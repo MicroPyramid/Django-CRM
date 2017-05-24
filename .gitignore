@@ -1,0 +1,9 @@
+*.pyc
+*~
+*.swo
+*.swp
+db.sqlite3
+media
+media-images
+cache
+.idea

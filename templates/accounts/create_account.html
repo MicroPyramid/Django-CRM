@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+<div class="main_container">
+  {% block breadcrumb %}
+  <!-- breadcrumb starts here -->
+  <ol class="breadcrumb">
+    <li><a href="/accounts/list/">Accounts</a></li>
+    <li class="active">Create</li>
+  </ol>
+  <!-- Breadcrumb Ends Here -->
+  {% endblock %}
+  {% block content %}
+  <!-- assigned_teams starts here -->
+  <form id="formid" action="" method='POST'>{% csrf_token %}
+    <div class="assigned_teams row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Assigned Users & Teams
+          </div>
+          <div class="panel-content">
+            <div class="filter_col col-md-6">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Assigned Users</label>
+                <select class="form-control" id="id_users" name="users">
+                  <option value="" >--Select User--</option>
+                    {% for user in users %}
+                  <option value="{{user.id}}" {% if edit%}{%ifequal user.id edit.users.id %}selected{% endifequal %}{% endif %} {% if request.POST.users %} {% ifequal user.id request.POST.users|add:"0" %}selected{% endifequal %}{% endif %}  >{{user.username}} </option>
+                    {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-6">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Teams</label>
+                <select class="form-control" id="id_teams" name="teams" >
+                  <option value="" selected="selected">--Select Team--</option>
+                    {% for team in teams %}
+                  <option value="{{team.0}}" {% if edit%}{% ifequal team.0 edit.teams %}selected{% endifequal %}{% endif %} {% if request.POST.teams %} {% ifequal team.0 request.POST.teams %}selected{% endifequal %}{% endif %}  >{{team.1}} </option>
+                    {% endfor%}
+                </select>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+
+    <!-- assigned users & teams ends here -->
+    <!-- overview starts here -->
+    <div class="overview_form_block row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Overview
+          </div>
+          <div class="panel-content">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label> *
+                    <input type="text" class="form-control" name="name" {% if acc_error.name %} value="" {% endif %} {%if edit%} value="{{edit.name}}" {% else %} value="{% if request.POST %}{{request.POST.name}}{%endif%}" {% endif %} />{% if acc_error.name %}{{ acc_error.name }}{% endif %}
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Website</label>
+                    <input type="text" class="form-control" name="website" {%if edit%} value="{{edit.website}}" {% else %} value="{% if request.POST %}{{request.POST.website}}{%endif%}" {% endif %} />
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                   <label for="exampleInputEmail1">Phone</label> *
+                   <input type="tel" class="form-control" name="phone" {% if acc_error.phone %} value="{{request.POST.phone}}" {% endif %} {%if edit%} value="{{edit.phone}}" {% else %} value="{% if request.POST %}{{request.POST.phone}}{%endif%}" {% endif %} />{% if acc_error.phone %}{{ acc_error.phone }}{% endif %}
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                   <label for="exampleInputEmail1">Email Address</label> *
+                   <input type="text" class="form-control" name="email" {% if acc_error.email %} value="{{request.POST.email}}" {% endif %} {%if edit%} value="{{edit.email}}" {% else %} value="{% if request.POST %}{{request.POST.email}}{%endif%}" {% endif %} />{% if acc_error.email %}{{ acc_error.email }}{% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col billing_block col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Billing Address</label>
+                    <input type="text" class="form-control" placeholder="Street" id="bstreet" name="street" {%if edit1%} value="{{edit1.street}}" {% else %} value="{% if request.POST %}{{request.POST.street}}{%endif%}" {% endif %} />
+                  </div>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="City" id="bcity" name="city" {%if edit1%} value="{{edit1.city}}" {% else %} value="{% if request.POST %}{{request.POST.city}}{%endif%}" {% endif %} />
+                    </div>
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="State" id="bstate" name="state" {%if edit1%} value="{{edit1.state}}" {% else %} value="{% if request.POST %}{{request.POST.state}}{%endif%}" {% endif %} />
+                    </div>
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="Postcal Code" id="bpostcode" name="postcode" {%if edit1%} value="{{edit1.postcode}}" {% else %} value="{% if request.POST %}{{request.POST.postcode}}{%endif%}" {% endif %} />
+                    </div>
+                  </div>
+                    <select class="form-control country_class" id="bcountry" name="country">
+                      <option value="" >--Country--</option>
+                    {% for c in form5 %}
+                      <option value="{{c.pk}}" {% if edit1%}{%ifequal c.pk edit1.country.pk %}selected {% endifequal %}{% endif %}{% if request.POST.country %} {% ifequal c.pk request.POST.country|add:"0" %}selected{% endifequal %}{% endif %}>{{ c.printable_name }}</option>
+                    {% endfor %}
+                    </select>
+                  <!-- <input type="text" class="form-control country_class" placeholder="Country" id="bcountry" name="country" value="{{ edit.billing_address.country }}" /> -->
+                </div>
+                <div>
+                  <h6 style="color:white;">shipping address</h6>
+                </div>
+                <div class="filter_col shipping_block col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Shipping Address</label>
+                    <input type="text" class="form-control" placeholder="Street" id="id_ship-street" name="ship-street" {%if edit2%} value="{{edit2.street}}" {% else %} value="{% if shipdata.street1 %}{{shipdata.street1}}{%endif%}" {% endif %} />
+                  </div>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="City" id="id_ship-city" name="ship-city" {%if edit2%} value="{{edit2.city}}" {% else %} value="{% if shipdata.city1 %}{{shipdata.city1}}{%endif%}" {% endif %}/>
+                    </div>
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="State" id="id_ship-state" name="ship-state" {%if edit2%} value="{{edit2.state}}" {% else %} value="{% if shipdata.state1 %}{{shipdata.state1}}{%endif%}" {% endif %}/>
+                    </div>
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" placeholder="Postcal Code" id="id_ship-postcode" name="ship-postcode" {%if edit2%} value="{{edit2.postcode}}" {% else %} value="{% if shipdata.postcode1 %}{{shipdata.postcode1}}{%endif%}" {% endif %}/>
+                    </div>
+                  </div>
+                    <select class="form-control country_class" id="id_ship-country" name="ship-country" value="{{ edit2.country }}">
+                      <option value="">--Country--</option>
+                      {% for c in form5 %}
+                      <option value="{{c.pk}}" {% if edit2%}{%ifequal c.pk edit2.country.pk %}selected {% endifequal %}{% endif %}{% if shipdata.country1 %} {% ifequal c.pk shipdata.country1|add:"0" %}selected{% endifequal %}{% endif %}>{{ c.printable_name }}</option>
+                      {% endfor %}
+                    </select>
+                  <!-- <input type="text" class="form-control country_class" placeholder="Country" id="id_ship-country" name="ship-country" value="{{ edit2.country }}"/> -->
+                </div>
+                <div>
+                  <h6 style="color:white;">copy address</h6>
+                </div>
+                <div class="col-md-12" style="text-align:center;">
+                   <button type="button" id="copy_billing_btn" class="btn btn-primary">Copy Billing</button>
+                </div>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+    <!-- overview ends here -->
+
+      <!-- details_block starts here -->
+    <div class="details_block row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Details
+          </div>
+          <div class="panel-content">
+            <div class="filter_col col-md-4">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Account Type</label>
+                <select class="form-control" id="id_account_type" name="account_type" >
+                  <option value="" selected="selected">--Select Type of Account--</option>
+                    {% for type in types %}
+                  <option value="{{type.0}}" {% if edit%}{% ifequal type.0 edit.account_type %}selected{% endifequal %}{% endif %} {% if request.POST.account_type %} {% ifequal type.0 request.POST.account_type %}selected{% endifequal %}{% endif %}  >{{type.1}} </option>
+                    {% endfor%}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-4">
+              <div class="form-group">
+                <label for="exampleInputEmail1">SIC Code</label>
+                <input type="text" class="form-control" placeholder="SIS Code" name="sis_code" {%if edit%} value="{{edit.sis_code}}" {% else %} value="{% if request.POST %}{{request.POST.sis_code}}{%endif%}" {% endif %} />
+              </div>
+            </div>
+              <div class="filter_col col-md-4">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Industry</label>
+                <select class="form-control industry_select" id="id_industry" name="industry" >
+                  <option value="" selected="selected">--Select Type of Industry--</option>
+                    {% for ind in industries %}
+                  <option value="{{ind.0}}" {% if edit%}{% ifequal ind.0 edit.industry %}selected{% endifequal %}{% endif %} {% if request.POST.industry %} {% ifequal ind.0 request.POST.industry %}selected{% endifequal %}{% endif %}  >{{ind.1}} </option>
+                    {% endfor%}
+                </select>
+              </div>
+            </div>
+               <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Description</label>
+
+                <textarea class="form-control" name="description"> {%if edit%}{{edit.description}} {% else %}{% if request.POST %}{{request.POST.description}}{%endif%} {% endif %}</textarea>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+
+    <!-- details_block ends here -->
+    <div class="row marl buttons_row text-center">
+      <button class="btn btn-default save" type="submit">Save</button>
+      <a href="{% url 'accounts:list' %}"><button type="button" class="btn btn-default">CANCEL</button></a>
+    </div>
+  </form>
+  {% endblock %}
+</div>
+<!-- main_container ends here -->
+{% block js_block %}
+<script type="text/javascript">
+  $("#copy_billing_btn").click(function(){
+    var street = $(".billing_block").find("#bstreet").val()
+    var city = $(".billing_block").find("#bcity").val()
+    var state = $(".billing_block").find("#bstate").val()
+    var postcode = $(".billing_block").find("#bpostcode").val()
+    var country = $(".billing_block").find("#bcountry").val()
+    $(".shipping_block").find("#id_ship-street").val(street)
+    $(".shipping_block").find("#id_ship-city").val(city)
+    $(".shipping_block").find("#id_ship-state").val(state)
+    $(".shipping_block").find("#id_ship-postcode").val(postcode)
+    $(".shipping_block").find("#id_ship-country").val(country)
+  });
+</script>
+{% endblock js_block %}

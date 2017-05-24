@@ -1,0 +1,58 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Micro CRM</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/build/css/bootstrap-datetimepicker.css"
+          rel="stylesheet">
+    <!-- Custom styling plus plugins -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+    {% block extralinks %}{% endblock %}
+</head>
+<body class="main_body_bg_color">
+<div class="wrapper">
+    <!-- header starts here -->
+    <header>
+        {% include 'nav_menu.html' %}
+    </header>
+    <!-- header ends here -->
+    <!-- main_container starts here -->
+    <div id="mainbody" class="main_container">
+        <!-- breadcrumb starts here -->
+        {% block breadcrumb %}
+        {% endblock %}
+
+        <!-- breadcrumb ends here -->
+        <!-- breadcrumb1 starts here -->
+        {% block breadcrumb1 %}
+        {% endblock %}
+
+        <!-- breadcrumb1 ends here -->
+        <!-- assigned_teams starts here -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+                integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+                crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
+        <script src="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/src/js/bootstrap-datetimepicker.js"></script>
+        <script src="{% static 'js/index.js' %}"></script>
+        {% block content %}
+        {% endblock %}
+    </div>
+    <!-- main_container ends here -->
+</div>
+{% block js_block %}
+
+{% endblock js_block %}
+</body>
+</html>

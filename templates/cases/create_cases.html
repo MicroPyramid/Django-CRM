@@ -1,0 +1,149 @@
+{% extends 'base.html'%}
+{% load staticfiles %}
+{% block content %}
+      <!-- main_container starts here -->
+      <div class="main_container">
+        <!-- breadcrumb starts here -->
+        <ol class="breadcrumb">
+          <li><a href="#">Cases</a></li>
+          <li class="active">Create</li>
+        </ol>
+        <!-- breadcrumb ends here -->
+        <!-- assigned_teams starts here -->
+        <div class="assigned_teams row marl">
+          <div class="col-md-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                Assigned Users & Teams
+              </div>
+              <form id="submitForm" method="POST" action="" >{% csrf_token %}
+              <div class="panel-content">
+                <div class="filter_col col-md-6">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    <select class="form-control" name="assigned_user">
+                      <option value="" selected="selected">--Select Assigned User--</option>
+                          {% for user in users %}
+                          <option value="{{user.id}}">{{user.username}}</option>
+                          {% endfor %}
+                        </select>
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-6">
+                  <div class="form-group">
+                    <label for="id_teams">Teams</label>
+                    <select class="form-control" id="id_teams" name="teams">
+                      <option value="" selected="selected">--Select Team--</option>
+                      <option value="Sales">Sales</option>
+                      <option value="Support">Support</option>
+                      <option value="TopManagement">TopManagement</option>
+                    </select>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+        <!-- assigned_teams ends here -->
+        <!-- overview starts here -->
+        <div class="overview_form_block row marl">
+          <div class="col-md-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                Overview
+              </div>
+              <div class="panel-content">
+                <div class="row marl">
+                  <div class="col-md-6">
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_name" >Name*</label>
+                        <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Enter Case Name" />
+                        {% if form.errors %}<ul class="errorlist">{{ form.name.errors }}</ul>{% endif %}
+                        <i id="NameError" style="display:none; color:red"> *This Field is Required</i>
+                      </div>
+                    </div>
+                   <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_status">Status</label>
+                        <select class="form-control" id="id_status" name="status" >
+                          <option value="" selected="selected">--Select Status--</option>
+                          <option value="New">New</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Closed">Closed</option>
+                          <option value="Rejected">Rejected</option>
+                          <option value="Duplicate">Duplicate</option>
+                        </select>
+                      </div>
+                    </div>
+                   <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_priority">Priority</label>
+                        <select class="form-control" id="id_priority" name="priority">
+                          <option value="" selected="selected">--Select Priority--</option>
+                          <option value="Low">Low</option>
+                          <option value="Normal">Normal</option>
+                          <option value="High">High</option>
+                          <option value="Urgent">Urgent</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_case_type">Type</label>
+                        <select class="form-control" id="id_case_type" name="case_type">
+                          <option value="" selected="selected">--Select Type--</option>
+                          <option value="Question">Question</option>
+                          <option value="Incident">Incident</option>
+                          <option value="Problem">Problem</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                         <label for="id_account">Account</label>
+                        <select class="form-control" id="id_account" name="account" >
+                          <option value="" selected="selected">--Select Account--</option>
+                          {% for ac in accounts %}
+                          <option value="{{ac.id}}">{{ac.name}}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                      <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_contacts">Contacts</label>
+                        <select class="form-control" multiple="multiple" id="id_contacts" name="contacts">
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="id_description">Description</label>
+                        <textarea class="form-control" textarea cols="40" id="id_description" name="description" rows="4" placeholder="Enter Description"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+        <!-- overview ends here -->
+        <div class="row marl buttons_row text-center">
+          <button class="btn btn-default save" id="formsubmit" type="submit">Save</button></form>
+          <a href="/cases/list" ><button class="btn btn-default" >Cancel</button></a>
+        </div>
+      </div>
+      <!-- main_container ends here -->
+    </div>
+   <script src="{% static 'js/cases/create_case.js' %}"></script>
+    {% endblock %}

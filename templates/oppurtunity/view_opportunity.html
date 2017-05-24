@@ -1,0 +1,914 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+<div id="maincontainer">
+  <!-- breadcrumb starts here -->
+  {% block breadcrumb1 %}
+  <ol class="breadcrumb">
+    <li><a href=".">OPPORTUNITIES</a></li>
+    {% if not edit_opp %}
+      <li class="active">VIEW</li>
+    {% else %}
+      <li class="active">EDIT</li>
+    {% endif %}
+  </ol>
+  {% endblock breadcrumb1 %}
+  <!-- breadcrumb ends here -->
+  <!-- Content Starts Here -->
+  {% block content%}
+  <!-- Main Container Starts Here -->
+  <!-- Opportunity View Starts Here -->
+  <div class="main_container" id="viewdiv" {% if edit_opp %} style="display:none" {% endif %}>
+    <div class="overview_form_block row marl">
+      <div class="col-md-8">
+        <div class="panel panel-default">
+          <!-- Opportunity View Starts Here-->
+          <div class="panel-heading view-pad">
+            <h5>OVERVIEW
+              <span class="pull-right" style="margin-top: -10px">
+                <div class="dropdown">
+                  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                  <span class="caret"></span></button>
+                  <ul class="dropdown-menu">
+                    <li><a onclick="editFun({{opp.id}})">Edit</a></li>
+                    <li><a href="{% url  'oppurtunities:opp_delete' opp.id %}">Remove</a></li>
+                  </ul>
+                </div>
+              </span>
+            </h5>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="iname">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Name</label>
+                    <div class="field" id="id_name" data-name="name">{{opp.name}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Stage</label>
+                    <div class="field" id="id_stage" data-name="name">{%ifequal opp.stage None%}Not Specified
+                    {% else %}{{opp.stage}}{% endifequal %}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Amount</label>
+                    <div class="field" id="id_amount" data-name="name">{%ifequal opp.amount None%}Not Specified
+                    {% else %}${{opp.amount}}{% endifequal %}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Probability</label>
+                    <div class="field" id="id_probability" data-name="name">
+                      {%ifequal opp.probability None%}Not Specified
+                    {% else %}{{opp.probability}}%{% endifequal %}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Account</label>
+                    <div class="field" id="id_account" data-name="name">{%ifequal opp.account None%}Not Specified
+                    {% else %}{{opp.account}}{% endifequal %}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name"  data-name="name" >Contacts</label>
+                    <div class="field" id="id_contacts">
+                      {% ifequal contact None %}
+                        Not Specified
+                      {% endifequal %}
+                      {% for c in contact %}
+                        <div class="field contacts_class" data-name="name">{{c.name}}</div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Source</label>
+                    <div class="field" id="id_lead_source" data-name="name">
+                      {%ifequal opp.lead_source None%}
+                        Not Specified
+                      {% else %}
+                        {{opp.lead_source}}
+                      {% endifequal %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Close Date</label>
+                    <div class="field" id="id_close_date" data-name="name">
+                      {%ifequal opp.close_date None%}
+                        Not Specified
+                      {% else %}
+                        {{opp.close_date}}
+                      {% endifequal %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row marl">
+              <div class="col-md-12">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_name" data-name="name" >Description</label>
+                    <div class="field" id ="id_description" data-name="name">
+                      {% if opp.description%}
+                        {{opp.description}}
+                      {% else%}
+                        Not Specified
+                      {% endif%}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Opportunity View Ends Here-->
+          <!-- Comments Section starts-->
+          <div class="panel-heading view-pad">
+            <h5>COMMENTS</h5>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-12">
+                <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
+                  <div class="form-group">
+                    <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" rows="1" placeholder="Submit Your Comments"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
+                    <br>
+                    <button class="btn btn-default save" id="comment_submit" type="submit">Submit</button>
+                  </div>
+                  <input type="hidden" value="{{opp.id}}" name="oppid">
+                </form>
+                <ul class="list-group" id="comments_div">
+                  {% for comment in comments %}
+                    <li class="list-group-item list-row" id="comment{{comment.id}}">
+                      <div class="pull-right right-container">
+                        <div class="list-row-buttons btn-group pull-right">
+                          <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                          <ul class="dropdown-menu pull-right">
+                            <li>
+                              <a class="action" onclick="edit_comment({{comment.id}})" >Edit</a>
+                            </li>
+                            <li>
+                              <a class="action" onclick="remove_comment({{comment.id}})" >Remove</a>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div class="stream-head-container">{{comment.comment_user}} Commented</div>
+                      <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
+                      <div class="stream-date-container">{{comment.comment_time}}</div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+            <!-- Comments Section Ends-->
+            <!-- Comment Edit Modal Starts Here -->
+            <div class="modal fade" id="myModal_comment" role="dialog" role="dialog" data-keyboard="false"data-backdrop="static">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Update Your Comment</h4>
+                  </div>
+                  <div class="modal-body">
+                    <div class="form-group">
+                      <form id="comment_edit_form" method="POST">{% csrf_token %}
+                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                        <input type="hidden" value="" name="commentid" id="commentid">
+                        <input type="hidden" value="" name="{{opp.id}}" id="oppurtunityid">
+                        <button class="btn btn-default save" id="comment_edit" type="submit">Update</button>
+                      </form>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- COmment Edit Modal Ends Here -->
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading view-pad">
+            <h5>Label</h5>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_name" data-name="name" >Assigned User</label>
+                  <div class="account_field" id="account_status" data-name="name">
+                    {%if not opp.users %}Not Assigned Yet
+                    {% else %}{{opp.users}}{% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_name" data-name="name" >Assigned Team</label>
+                  <div class="account_field" id="account_team" data-name="name">
+                    {%if not opp.teams%}Not Assigned Yet
+                    {% else %}{{opp.teams}}{% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_name" data-name="name" >Created On</label>
+                  <div class="account_field" id="account_date" data-name="name">
+                    {%if not opp.date %}Date Not Specified
+                    {% else %}{{opp.date}}{% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- CONTACTS LIST STARTS -->
+    <div class="contacts_list">
+      <form method='GET' class="accountdetails_row">
+        <div class="table_container_row row marl">
+          <div class="col-md-8">
+            <div class="panel panel-default">
+              <div class="panel-heading-list view-pad text-center">
+                CONTACTS
+                <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal_con" data-target="#myModal2"></span>
+              </div>
+              <div class="panel-content">
+                <table class="table table-bordered table-striped table-condensed">
+                  <thead>
+                    <tr>
+                      <!-- <th width="3%"><input type="checkbox"></th> -->
+                      <th width="30%" style="text-align:center;">CONTACT NAME</th>
+                      <th width="30%" style="text-align:center;">PHONE</th>
+                      <th width="30%" style="text-align:center;">EMAIL</th>
+                      <th width="10%" style="text-align:center;">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% for c in contact %}
+                    <tr id="contacts_details{{c.id}}">
+                      <td>{{ c.name }}</td>
+                      <td>{{ c.phone }}</td>
+                      <td>{{ c.email }}</td>
+                      <td>
+                        <div class="dropdown" style="text-align:center;">
+                          <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                          <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <!--<li style="text-align:center;">
+                              <a><button type="button" class="btn btn-primary" data-toggle="modal" data-dismiss="modal" data-target="#modal_{{ac.id}}">VIEW</button></a>
+                              </li> -->
+                            <li class="conview" id="con_view" data-toggle="modal" data-dismiss="modal" data-target="#conViewModal_{{c.id}}">VIEW</li>
+                            <li class="conedit" id="con_edit" data-toggle="modal" data-dismiss="modal" data-target="#conEditModal_{{c.id}}">EDIT</li>
+                            <li class="con_remove" id="{{ c.id }}" data-href="{% url 'contacts:delete_contact' pk=c.id %}">REMOVE</li>
+                            <!-- <li style="margin-left:20px" onclick="remove({{ac.id}})" id="remove{{ac.id}}">REMOVE</li> -->
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </form>
+    </div>
+    <!-- CONTACTS LIST ENDS -->
+    <!-- CONTACTS MODAL STARTS -->
+    <div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <form id="form_con" method="post" action="">{%csrf_token%}
+            <div class="modal-header" style="background:lightblue;">
+            <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CONTACTS</h4>
+            </div>
+            <div class="modal-body">
+              <div class="assigned_teams row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading view-pad">
+                      Assigned Users & Teams
+                    </div>
+                    <div class="panel-content">
+                      <div class="filter_col col-md-6">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Assigned Users</label>
+                          <select class="form-control" id="id_assigned_user" name="assigned_user">
+                            <option value="">--SELECT--</option>
+                            {%for u in users %}
+                            <option value="{{ u.id }}" {% ifequal u.id request.POST.users|add:"0" %} selected {% endifequal %}>{{ u.username }}</option>
+                            {%endfor%}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-6">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Teams</label>
+                          <select class="form-control" id="id_teams" name="teams" value="{{edit_obj.teams }}">
+                            <option value="">--SELECT--</option>
+                            {% for i in teams %}
+                            <option value="{{ i.0 }}" {% ifequal i.0 request.POST.teams|add:"0" %} selected {% endifequal %}>{{ i.1 }}</option>
+                            {% endfor%}
+                          </select>
+                        </div>
+                      </div>
+                      <br clear="all">
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+              <div class="overview_form_block row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading view-pad">
+                      Overview
+                    </div>
+                    <div class="panel-content">
+                      <div class="row marl">
+                        <div class="col-md-6">
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Name</label> *
+                              <input type="text" class="form-control"  id="id_name" name="name" value="{{request.POST.name}}"/>
+                                <p></p>
+                                {% if errors_con.name%}
+                                  {{errors_con.name}}
+                                {% endif %}
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Accounts</label> *
+                              <select class="form-control" id="id_account" name="account">
+                                <option value="{{ opp.id }}" selected >{{ opp.name }}</option>
+                              </select>
+                              {% if errors_con.account %}
+                              <p>{{errors_con.account}}</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group ">
+                              <label for="exampleInputEmail1">Phone</label> *
+                              <input type="text" class="form-control text-filter" id="id_phone" name="phone" value="{{request.POST.phone}}"/>
+                              {% if errors_con.phone %}
+                                <p>{{errors_con.phone}}</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group ">
+                              <label for="exampleInputEmail1">Email Address</label> *
+                              <input type="text" class="form-control text-filter" id="id_email" name="email" value="{{request.POST.email}}"/>
+                              {% if errors_con.email %}
+                                <p>{{errors_con.email}}</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Address</label>
+                              <input type="text" class="form-control" placeholder="Street" name="street" value="{{request.POST.street}}" id="id_street"/ >
+                            </div>
+                          </div>
+                          <div class="row marl">
+                            <div class="col-md-4">
+                              <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}" id="id_city" />
+                            </div>
+                            <div class="col-md-4">
+                              <input type="text" class="form-control" placeholder="State" name="state" value="{{request.POST.state}}" id="id_state"/>
+                            </div>
+                            <div class="col-md-4">
+                              <input type="text" class="form-control" placeholder="Postcal Code" name="postcode" value="{{request.POST.postcode}}" id="id_postcode"/>
+                            </div>
+                            <br clear="all">
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label></label>
+                              <select class="form-control" id="id_country" name="country">
+                                <option value="" selected="selected">Select Country</option>
+                                {% for i in country %}
+                                <option value="{{i.id}}" {% ifequal i.id request.POST.country|add:"0"%} selected {% endifequal %}>{{ i.printable_name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Description</label>
+                              <textarea class="form-control" rows="3"  id="id_description" name="description">{{request.POST.description}}</textarea>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <br clear="all">
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="row marl buttons_row text-center">
+                <button  class="btn btn-default save" type="submit">Save</button>
+                <button type="button" class="btn btn-default" onclick="conForm()" data-dismiss="modal">Cancel</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- CONTACTS MODAL ENDS -->
+    <!-- CONTACTS VIEW MODAL STARTS -->
+    {% for c in contact %}
+    <div class="modal fade" id="conViewModal_{{c.id}}" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header" style="background:lightblue;">
+            <h5 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CONTACT VIEW
+            </h5>
+          </div>
+          <div class="modal-body">
+            <div class="col-md-8">
+              <div class="panel panel-default">
+                <div class="panel-heading view_pad">
+                  OverView
+                </div>
+                <br clear="all">
+                <div class="panel-content" id="datashow">
+                  <div class="row marl">
+                    <div class="col-md-6">
+                      <div class="col-md-12" id="iname">
+                        <div class="form-group" >
+                          <label class="acc_field_label" for="id_name" data-name="name" >Name</label>
+                          <div class="account_field" id="opportunity_name" data-name="name">{{c.name}}</div>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name" >Account</label>
+                          <div class="opportunity_field" id="opportunity_account" data-name="name">
+                            {%if not opp.name %}Not Specified
+                            {% else %}{{opp.name}}{% endif %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name" >Phone</label>
+                          <div class="opportunity_field" id="opportunity_phone" data-name="name">{{ c.phone }}</div>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name" >Email</label>
+                          <div class="opportunity_field" id="opportunity_email" data-name="name">{{ c.email }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name" >Address</label>
+                          <div class="opportunity_field" id="opportunity_address" data-name="name">
+                            {{c.address.street}}
+                            {{c.address.city}}
+                            {{c.address.state}}
+                            {{c.address.postcode}}
+                            {{c.address.country.printable_name}}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name">Description</label>
+                          <div class="opportunity_field" id="opportunity_desc" data-name="name">{{ c.description }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <br clear="all">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="panel panel-default">
+                <div class="panel-heading view_pad">
+                  Labels
+                </div>
+                <br clear="all">
+                <div class="panel-content" id="datashow">
+                  <div class="row marl">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="acc_field_label" for="id_name" data-name="name" >Assigned User</label>
+                        <div class="opportunity_field" id="opportunity_assigned" data-name="name">
+                          {%if not c.assigned_user %}Not Assigned Yet
+                          {% else %}{{c.assigned_user}}{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="acc_field_label" for="id_name" data-name="name" >Assigned Team</label>
+                        <div class="opportunity_field" id="opportunity_team" data-name="name">
+                          {%if not c.teams%}Not Assigned Yet
+                          {% else %}{{c.teams}}{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="acc_field_label" for="id_name" data-name="name" >Created On</label>
+                        <div class="opportunity_field" id="opportunity_date" data-name="name">
+                          {%if not opp.date %}Date Not Specified
+                          {% else %}{{opp.date}}{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br clear="all">
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <!-- CONTACTS VIEW MODAL ENDS -->
+    <!-- CONTACTS EDIT MODAL STARTS -->
+    {% for co in contact %}
+    <div class="modal fade" id="conEditModal_{{co.id}}" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <form class= "form_con_edit" id="form_con_edit" method="POST" action="{% url 'contacts:edit_contact' pk=co.id %}">{% csrf_token %}
+            <div class="modal-header" style="background:lightblue;">
+              <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CONTACTS</h4>
+            </div>
+            <div class="modal-body">
+              <div class="assigned_teams row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading view-pad">
+                      Assigned Users & Teams
+                    </div>
+                    <div class="panel-content">
+                      <div class="filter_col col-md-6">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Assigned Users</label>
+                          <select class="form-control" id="id_user" name="assigned_user" >
+                            <option value="">-------</option>
+                            {% for m in users %}
+                            <option value="{{ m.id }}" {% ifequal m.id co.assigned_user.id %} selected {% endifequal %} >{{ m.username }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-6">
+                        <div class="form-group">
+                          <label for="id_teams">Teams</label>
+                          <select class="form-control" id="id_teams" name="teams">
+                            <option value="">---------</option>
+                            {% for t in teams %}
+                            <option value="{{ t.0 }}" {%ifequal t.0 co.teams %} selected {% endifequal %} >{{ t.1 }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </div>
+                      <br clear="all">
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+              <div class="overview_form_block row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading view-pad">
+                      Overview
+                    </div>
+                    <div class="panel-content">
+                      <div class="row marl">
+                        <div class="col-md-6">
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              {% if error.name %}
+                               {{error.name}}
+                              {% endif %}
+                              <label for="exampleInputEmail1">Name</label>
+                              <input type="text" class="form-control" id="id_name" name="name" value="{{co.name}}"/>
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Account</label>
+                              <select class="form-control" id="id_account" name="account">
+                                <option value="{{ opp.id }}" selected >{{ opp.name }}</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group ">
+                              <label for="exampleInputEmail1" >Phone</label> *
+                              <input type="text" class="form-control text-filter" id="id_phone" name="phone" value={% if co %}"{{ co.phone}}" {% else %}"{{request.POST.phone}}" {%endif%}>
+                              {% if errors_con.phone %}
+                                <p>{{errors_con.phone}}</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group ">
+                              <label for="exampleInputEmail1" >Email Address</label> *
+                              <input type="text" class="form-control text-filter" id="id_email" name="email" value={% if co %}"{{ co.email }}" {% else %}"{{request.POST.email}}" {%endif%}>
+                              {% if errors_con.email %}
+                                <p>{{errors_con.email}}</p>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1" >address</label>
+                              <input type="text" class="form-control" placeholder="Street" name="street" value={%if co %}"{{ co.address.street }}" {% else %}"{{request.POST.street}}"{%endif%} />
+                            </div>
+                            <div class="row">
+                              <div class="col-md-4">
+                                <input type="text" class="form-control" placeholder="City" name="city" value={%if co.address %}"{{ co.address.city }}" {% else %}"{{request.POST.city}}"{%endif%}   id="id_city" />
+                              </div>
+                              <div class="col-md-4">
+                                <input type="text" class="form-control" placeholder="State" name="state" value={% if co.address %}"{{ co.address.state }}" {% else %}"{{request.POST.state}}"{%endif%} id="id_state"/>
+                              </div>
+                              <div class="col-md-4">
+                                <input type="text" class="form-control" placeholder="Postcal Code" name="postcode" value={% if co.address %}"{{ co.address.postcode }}" {% else %}"{{ request.POST.postcode }}"{%endif%} />
+                              </div>
+                              <br clear="all">
+                            </div>
+                              <select class="form-control" id="id_country" name="country">
+                                <option value="">---------</option>
+                                  {% for i in country %}
+                                <option value="{{i.id}}" {%ifequal i.id co.get_country %} selected {% endifequal %} {%ifequal i.id request.POST.country|add:"0"%}selected {%endifequal%}>{{ i.printable_name }}</option>
+                                  {% endfor %}
+                              </select>
+                          </div>
+                          <div class="filter_col col-md-12">
+                            <div class="form-group">
+                              <label for="exampleInputEmail1" >Description</label>
+                              <textarea class="form-control" rows="3"  id="id_description" name="description"> {% if co %}{{ co.description}} {% else %}{{request.POST.description }} {%endif%} </textarea>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <br clear="all">
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="row marl buttons_row text-center">
+                <button class=" btn btn-default save" type="submit">Save</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              </div>
+            </div>
+          </form>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    {% endfor %}
+    <!-- CONTACTS EDIT MODAL ENDS -->
+  </div>
+  <!-- Opportunity View Ends Here -->
+
+  <!-- Opportunity Edit Starts Here -->
+  <div id="editdiv" {% if edit_opp %} style="display:block" {% endif %} style="display:none">
+    <form class= "form_user" method="POST">{% csrf_token %}
+        <div class="edit_div">
+          <div class="assigned_teams row marl">
+            <div class="col-md-12">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  Assigned Users & Teams
+                </div>
+                <div class="panel-content">
+                  <div class="filter_col col-md-6">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Assigned Users</label>
+                      <select class="form-control" id="id_users" name="users" >
+                        <option value="">---------</option>
+                        {% for m in users %}
+                        <option value="{{ m.id }}" {% ifequal m.id opp.users_id %} selected {% endifequal %}>{{ m.username }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-6">
+                    <div class="form-group">
+                      <label for="id_teams">Teams</label>
+                      <select class="form-control" id="id_teams" name="teams">
+                        {% ifequal opp.teams None%}
+                          <option value="" selected>--Select Support--</option>
+                        {% endifequal %}
+                        <option value="SALES" {% ifequal opp.teams "SALES"%} selected{% endifequal%}>SALES</option>
+                        <option value="SUPPORT" {% ifequal opp.teams "SUPPORT"%} selected{% endifequal%}>SUPPORT</option>
+                        <option value="TOP MANAGEMENT" {% ifequal opp.teams "TOP MANAGEMENT"%} selected{% endifequal%}>TOP MANAGEMENT</option>
+                      </select>
+                    </div>
+                  </div>
+                  <br clear="all">
+                </div>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+          <div class="overview_form_block row marl">
+            <div class="col-md-12">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  Overview
+                </div>
+                <div class="panel-content">
+                  <div class="row marl">
+                    <div class="col-md-6">
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Name</label>
+                          <input type="text" class="form-control" id="id_name" name="name" {% if error.name %} value="" {% endif %} value="{{opp.name}}"/>
+                        </div>
+                      </div>
+                      {% if error.name %}
+                      {{error.name}}
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Account</label>
+                          <select class="form-control" id="id_account" name="account">
+                            <option value="">---------</option>
+                            {% for acc in accunt %}
+                            <option value="{{acc.id}}" {% ifequal opp.account.id acc.id %} selected{% endifequal%}>{{acc.name}}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Amount</label>
+                          <div class="input-group" style="width:100%;">
+                            <div class="input-group-btn left-dropdown" style="width:auto;">
+                              <select class="form-control">
+                                <option>USD</option>
+                                <option>EUR</option>
+                              </select>
+                            </div>
+                            <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" {%if error.amount %} value="" {% endif %}value="{{opp.amount}}"/>
+                          </div>
+                        </div>
+                      </div>
+                      {% if error.amount %}
+                      {{error.amount}}
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Stage</label>
+                          <select class="form-control" id="id_stage" name="stage" >
+                            {% ifequal opp.stage None%}
+                              <option value="">--Select Stage--</option>
+                            {% endifequal %}
+                            <option value="QUALIFICATION" {% ifequal opp.stage "QUALIFICATION"%} selected{% endifequal%}>QUALIFICATION</option>
+                            <option value="NEEDS ANALYSIS" {% ifequal opp.stage "NEEDS ANALYSIS"%} selected{% endifequal%}>NEEDS ANALYSIS</option>
+                            <option value="VALUE PROPOSITION" {% ifequal opp.stage "VALUE PROPOSITION"%} selected{% endifequal%}>VALUE PROPOSITION</option>
+                            <option value="ID.DECISION MAKERS" {% ifequal opp.stage "ID.DECISION MAKERS"%} selected{% endifequal%}>ID.DECISION MAKERS</option>
+                            <option value="PERCEPTION ANALYSIS" {% ifequal opp.stage "PERCEPTION ANALYSIS"%} selected{% endifequal%}>PERCEPTION ANALYSIS</option>
+                            <option value="PROPOSAL/PRICE QUOTE" {% ifequal opp.stage "PROPOSAL/PRICE QUOTE"%} selected{% endifequal%}>PROPOSAL/PRICE QUOTE</option>
+                            <option value="NEGOTIATION/REVIEW" {% ifequal opp.stage "NEGOTIATION/REVIEW"%} selected{% endifequal%}>NEGOTIATION/REVIEW</option>
+                            <option value="CLOSED WON" {% ifequal opp.stage "CLOSED WON"%} selected{% endifequal%}>CLOSED WON</option>
+                            <option value="CLOSED LOST" {% ifequal opp.stage "CLOSED LOST"%} selected{% endifequal%}>CLOSED LOST</option>
+                          </select>
+                        </div>
+                      </div>
+                      {% if error.stage %}
+                      {{error.stage}}
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Lead Source</label>
+                          <select class="form-control" id="id_lead_source" name="lead_source" >
+                            {% ifequal opp.lead_source None%}
+                              <option value="">--Select Sources--</option>
+                            {% endifequal %}
+                            <option value="NONE" {% ifequal opp.lead_source "NONE"%} selected{% endifequal%}>NONE</option>
+                            <option value="CALL" {% ifequal opp.lead_source "CALL"%} selected{% endifequal%}>CALL</option>
+                            <option value="EMAIL" {% ifequal opp.lead_source "EMAIL"%} selected{% endifequal%}>EMAIL</option>
+                            <option value="EXISTING CUSTOMER" {% ifequal opp.lead_source "EXISTING CUSTOMER"%} selected{% endifequal%}>EXISTING CUSTOMER</option>
+                            <option value="PARTNER" {% ifequal opp.lead_source "PARTNER"%} selected{% endifequal%}>PARTNER</option>
+                            <option value="PUBLIC RELATIONS" {% ifequal opp.lead_source "PUBLIC RELATIONS"%} selected{% endifequal%}>PUBLIC RELATIONS</option>
+                            <option value="CAMPAIGN" {% ifequal opp.lead_source "CAMPAIGN"%} selected{% endifequal%}>CAMPAIGN</option>
+                            <option value="WEBSITE" {% ifequal opp.lead_source "WEBSITE"%} selected{% endifequal%}>WEBSITE</option>
+                            <option value="OTHER" {% ifequal opp.lead_source "OTHER"%} selected{% endifequal%}>OTHER</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Probability %</label>
+                          <input type="number" class="form-control " id="id_probability" name="probability" value={%if opp%}"{{opp.probability}}" {% else %}"{{request.POST.probability}}"{% endif %}/>
+                        </div>
+                      </div>
+                      {% if error.close_date %}
+                      {{error.close_date}}
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Contacts</label>
+                          <select class="form-control" id="id_contacts" name="contacts" multiple name="contacts">
+                          {% for cn in con %}
+                            <option value="{{cn.id}}" {% if selcon %}{% for sel in selcon %}{% ifequal cn.id sel.id %} selected {% endifequal%}{% endfor %}{% endif %}>{{cn.name}}</option>
+                          {% endfor %}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Close Date</label>
+                          <div class='input-group date' id='datepicker1'>
+                            <input type='text' class="form-control" id="id_close_date"  name="close_date" value={%if opp%}"{{opp.close_date|date:"Y-m-d"}}" {% else %}"{{request.POST.close_date}}"{% endif %}/>
+                            <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {% if error.close_date %}
+                      {{error.close_date}}
+                      {% endif %}
+                      <div class="form-group col-md-12">
+                        <label for="exampleInputEmail1" >Description</label>
+                        <textarea class="form-control" rows="5"  id="id_description" name="description"> {%if opp%}{{opp.description}} {% else %}{{request.POST.description}}{% endif %}</textarea>
+                      </div>
+                    </div>
+                  </div>
+                  <br clear="all">
+                </div>
+                <!-- overview ends here -->
+                <div class="row marl buttons_row text-center">
+                  <button class=" btn btn-default save" type="submit" id = "saveform">Save</button>
+                  <a href="{% url 'oppurtunities:list' %}"><button type="button">Cancel</button></a>
+                </div>
+              </div>
+              <!-- main_container ends here -->
+            </div>
+          </div>
+        </div>
+    </form>
+  </div>
+  <!-- Opportunity Edit Ends Here -->
+
+  {% endblock content %}
+</div>
+
+{% block js_block %}
+      <script src="{% static 'js/opportunities/contacts.js' %}"></script>
+       <script type="text/javascript">
+            $(function () {
+                $('#datepicker1').datetimepicker({
+                    'format': 'YYYY-MM-DD',
+                });
+            });
+        </script>
+  {% endblock js_block %}
+
+        <!-- overview ends here -->
+
+          <!-- details_block starts here -->

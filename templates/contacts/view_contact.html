@@ -1,0 +1,1492 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- breadcrumb starts here -->
+  {% block breadcrumb %}
+  <ol class="breadcrumb">
+    <li><a href="{% url 'contacts:list' %}">Contacts</a></li>
+    <li class="active">VIEW</li>
+  </ol>
+  {% endblock breadcrumb %}
+  {%block content%}
+  <div class="row marl">
+    <div class="col-md-8">
+      <div class="main_container" id="maincontainer">
+        <div class="overview_form_block row marl">
+          <div class="col-md-12">
+            <div class="panel panel-default">
+              <div class="panel-heading view-pad">
+                <h5>OVERVIEW
+                  <span class="pull-right" style="margin-top: -10px">
+                    <div class="dropdown">
+                      <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                      <span class="caret"></span></button>
+                      <ul class="dropdown-menu">
+                        <li><a href="{% url 'contacts:edit_contact' con.id%}">Edit</a></li>
+                        <li class="delete_account" ><a href="{% url 'contacts:delete_contact' con.id %}" id="remove_account">REMOVE</a></li>
+                      </ul>
+                    </div>
+                  </span>
+                </h5>
+              </div>
+              <div class="panel-content" id="datashow">
+                <div class="row marl">
+                  <div class="col-md-6">
+                    <div class="filter_col col-md-12" id="name">
+                      <div class="form-group" >
+                        <label for="id_name" data-name="name" >Name</label>
+                        <div class="field" id="id_name1" data-name="name">{{con.name}}</div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12"  id="account">
+                      <div class="form-group">
+                        <label for="id_account" data-name="name" >account</label>
+                        <div class="field" id="case_case_type" data-name="name">
+                          {%ifequal con.account None%}Not Specified
+                          {% else %}{{con.account}}{% endifequal %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12"  id="phone">
+                      <div class="form-group">
+                        <label for="id_phone" data-name="name" >phone</label>
+                        <div class="field" id="id_phone" data-name="name">{%ifequal con.phone None%}Not Specified
+                          {% else %}{{con.phone}}{% endifequal %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12"  id="email">
+                      <div class="form-group">
+                        <label for="id_email"  data-name="name" >email</label>
+                        <div class="field" id="id_email" data-name="name">{%ifequal con.email None%}Not Specified
+                          {% else %}{{con.email}}{% endifequal %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="filter_col col-md-12"  id="street">
+                      <div class="form-group">
+                        <label for="id_street"  data-name="name" >Address</label>
+                        <div class="field" id="id_street" data-name="name">{%ifequal con.address.street None%}
+                          {% else %}{{con.address.street}}{% endifequal %}
+                        </div>
+                        <div class="field" id="id_city" data-name="name">{%ifequal con.address.city None%}
+                          {% else %}{{con.address.city}}{% endifequal %}
+                        </div>
+                        <div class="field" id="id_state" data-name="name">{%ifequal con.address.state None%}
+                          {% else %}{{con.address.state}}{% endifequal %}
+                        </div>
+                        <div class="field" id="id_country" data-name="name">{%ifequal con.address.country None%}
+                          {% else %}{{con.address.country}}{% endifequal %}
+                        </div>
+                        <div class="field" id="id_postcode" data-name="name">{%ifequal con.address.postcode None%}
+                          {% else %}{{con.address.postcode}}{% endifequal %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="users">
+                      <div class="form-group">
+                        <label for="id_description" data-name="name" >Description</label>
+                        <div class="field" id ="id_description" data-name="name">{% if con.description%}{{con.description}}{% else%}Not Specified{% endif%}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel-heading view-pad">
+                <h5>Comments</h5>
+              </div>
+              <div class="panel-content">
+                <div class="row marl">
+                  <div class="col-md-12">
+                    <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
+                      <div class="form-group">
+                        <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
+                        </br>
+                        <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                      </div>
+                      <input type="hidden" value="{{con.id}}" name="contactid">
+                    </form>
+                    <ul class="list-group" id="comments_div">
+                      {% for comment in comments %}
+                      <li class="list-group-item list-row" id="comment{{comment.id}}">
+                        <div class="pull-right right-container">
+                          <div class="list-row-buttons btn-group pull-right">
+                            <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                            <ul class="dropdown-menu pull-right">
+                              <li>
+                                <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
+                              </li>
+                              <li>
+                                <a class="action" onclick="remove_comment({{comment.id}})">Remove</a>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="stream-head-container">{{comment.comment_user}} Commented</div>
+                        <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
+                        <div class="stream-date-container">{{comment.comment_time}}</div>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+                <div class="modal fade" id="myModal_comment" role="dialog" data-keyboard="false" data-backdrop="static">
+                  <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Update Your Comment</h4>
+                      </div>
+                      <div class="modal-body">
+                        <div class="form-group">
+                          <form id="comment_edit_form" method="POST" >{% csrf_token %}
+                            <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                            <input type="hidden" value="{{contact.id}}" name="contactid">
+                            <input type="hidden" value="" name="commentid" id="commentid">
+                            <button class="btn btn-default save" id="comment_edit" type="submit">Update</button>
+                          </form>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table_container_row row marl">
+        <div class="col-md-12">
+          <div class="panel panel-default">
+            <div class="panel-heading-list view-pad text-center">
+              OPPORTUNITIES
+              <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal" data-target="#myModal"></span>
+            </div>
+            {%ifequal opportunity|length 0%}
+              <h7>
+                <center>
+                  No opportunites found
+                </center>
+              </h7>
+            {%else%}
+              <div class="panel-content">
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th width="30%" style="text-align:center;">Name</th>
+                    <th width="30%" style="text-align:center;">Account</th>
+                    <th width="30%" style="text-align:center;">stage</th>
+                    <th width="10%" style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in opportunity %}
+                  <tr>
+                    <td><a href="" data-toggle="modal" data-target="#OppView{{m.id}}">{{ m.name }}</a></td>
+                    <td><a>{{ m.account }}</a></td>
+                    <td><a>{{ m.stage }}</a></td>
+                    <td>
+                      <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                        <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                          <li><a href="" data-toggle="modal" data-target="#OppView{{m.id}}">View</a></li>
+                          <li><a href="" data-toggle="modal" data-target="#OppEdit{{m.id}}">Edit</a></li>
+                          <li><a class="dell" id= "{{m.id}}" data-href="{% url  'oppurtunities:opp_delete' m.id %}">Delete</a></li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              </div>
+            {%endifequal%}
+          </div>
+        </div>
+      </div>
+      <div class="table_container_row row marl">
+        <div class="col-md-12">
+          <div class="panel panel-default">
+            <div class="panel-heading-list view-pad text-center">
+              CASES
+              <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal" data-target="#myModal"></span>
+            </div>
+            {%ifequal cases|length 0 %}
+              <h7>
+                <center>
+                  No cases found
+                </center>
+              </h7>
+            {%else%}
+              <div class="panel-content">
+                <table class="table table-bordered table-striped table-condensed">
+                  <thead>
+                    <tr>
+                      <th width="30%" style="text-align:center;">Name</th>
+                      <th width="30%" style="text-align:center;">Status</th>
+                      <th width="30%" style="text-align:center;">Priority</th>
+                      <th width="10%" style="text-align:center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for c in cases%}
+                    <tr>
+                      <td><a data-toggle="modal" data-target="#CaseView{{c.id}}">{{c.name}}</a></td>
+                      <td>{{c.status}}</td>
+                      <td>{{c.priority}}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                          <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li>{%for c in cases%}<a href="{% url 'cases:show-case' c.id %}">{%endfor%}View</a></li>
+                            <li><a href="" data-toggle="modal" data-target="#CaseEdit{{c.id}}">Edit</a></li>
+                            <li><a onclick="remove_case({{c.id}})">delete</a></li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {%endifequal%}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="panel panel-default assigned_teams_section">
+        <div class="panel-heading">Users</div>
+        <div class="panel-content">
+          <div class="filter_col col-md-12" id="assigned teams">
+          <div class="form-group">
+            <label for="id_teams" data-name="name" >Assigned Teams</label>
+            <div name="teams" id="id_teams" data-name="name">{%ifequal con.teams None%}Not Specified
+              {% else %}{{con.teams}}{% endifequal %}
+            </div>
+          </div>
+        </div>
+        <div class="filter_col col-md-12" id="id_users">
+          <div class="form-group">
+            <label for="id_users" data-name="name" >Assigned User</label>
+            <div name="users" id="id_users"
+              data-name="name">{{con.users}}{% ifequal con.users "None"%}Not Specified{% endifequal %}</div>
+          </div>
+        </div>
+        <div class="filter_col col-md-12" id="created On">
+          <div class="form-group">
+            <label for="id_date" data-name="name" >Created On</label>
+            <div class="field" id ="id_date" data-name="name">{{con.date}}</div>
+          </div>
+        </div>
+        <div class="filter_col col-md-12" id="Created By">
+          <div class="form-group">
+            <label for="id_created_user" data-name="name" >Created by</label>
+            <div class="field" id ="id_created_user" data-name="name">{{con.created_user}}</div>
+          </div>
+        </div>
+        </div>
+        <br clear="all">
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">Activity</div>
+        <div class="panel-content">
+            <div class="dropdown pull-right" style="margin-top:-5px;">
+              <button type="button" class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown">
+              <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="" data-toggle="modal" onclick="getreminders()" data-target="#meeting-create-model">Schedule Meeting</a></li>
+                <li><a href="#">Schedule Call</a></li>
+              </ul>
+            </div>
+        </div>
+        <div class="panel-content">
+          <div class="col-md-12">
+            <div class="btn-group button-container">
+                <button class="btn btn-default all active scope-switcher" data-scope="">All</button>
+                <button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button>
+              <button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button>
+            </div>
+            <div class="button_content">
+             <table>
+               <tbody id="meetingslist">
+                {% for meeting in meetings %}
+                    <tr id="meeting{{ meeting.id }}">
+                      <td><b>{{meeting.created_user}}</b>&nbsp;created</td>
+                      <td>&nbsp;Meeting<a id="meeting{{ meeting.id }}name" href="#">&nbsp;{{ meeting.name }}</a></td>
+                        <td>
+                            <div class="dropdown pull-right" style="margin-top:-5px;">
+                              <button type="button" class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown">
+                                <span class="caret"></span>
+                              </button>
+                                <ul class="dropdown-menu">
+                                    <li><a id="meeting{{ meeting.id }}view" class="viewthis" href="#">View</a></li>
+                                    <li><a id="meeting{{ meeting.id }}edit" class="editthis" href="#">Edit</a></li>
+                                    <li><a id="meeting{{ meeting.id }}remove" class="removethis" href="#">Remove</a>
+                                    <li><a class="setstatus" value="Held" href="#">Set Held</a></li>
+                                    <li><a class="setstatus" value="Not Held" href="#">Set Not Held</a></li>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+      </div>
+       <div class="panel panel-default">
+        <div class="panel-heading">History</div>
+        <div class="panel-content">
+            <div class="dropdown pull-right" style="margin-top:-5px;">
+              <button type="button" class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown">
+              <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="#">HTML</a></li>
+                <li><a href="#">CSS</a></li>
+                <li><a href="#">JavaScript</a></li>
+              </ul>
+            </div>
+        </div>
+        <div class="panel-content">
+          <div class="col-md-12">
+            <div class="btn-group button-container">
+                <button class="btn btn-default all scope-switcher" data-scope="">All</button>
+                <button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button>
+                <button class="btn btn-default all active scope-switcher" data-scope="Call">Calls</button>
+            </div>
+            <div class="button_content">
+             <div class="expanded-row">
+                <span class="cell"><span class="glyphicon glyphicon-briefcase text-muted action" style="cursor: pointer" title="View"></span></span>
+                <span class="cell"><a href="#Meeting/view/53203b9428e20" class="link">Press-conference</a>
+                </span>
+                <span class="cell" ><span class="text-success">Held</span>
+                </span>
+            </div>
+             <div class="expanded-row">
+                <span class="cell"><a href="#Meeting/view/53203b9428e20" class="link">Title come here</a>
+                </span>
+                 <span class="cell" ><span class="text-success">date comes here</span>
+                </span>
+            </div>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div class="modal fade main_container" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">opportunity create</h4>
+        </div>
+        <div class="modal-body">
+          <form class= "form_user" id="opp_add" action="">
+            {% csrf_token %}
+            <div class="assigned_teams row marl">
+              <div class="col-md-12">
+                <div class="panel panel-default">
+                  <div class="panel-heading"> Assigned Users & Teams </div>
+                  <div class="panel-content">
+                    <div class="filter_col col-md-6" id="user">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Assigned Users</label>
+                        <select class="form-control" id="id_user" name="user" >
+                          <option value="">---------</option>
+                          {% for m in users %}
+                          <option value="{{ m.id }}">{{ m.username }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-6" id="teams">
+                      <div class="form-group">
+                        <label for="id_teams">Teams</label>
+                        <select class="form-control" id="id_teams" name="teams">
+                          <option value="" selected="selected">---------</option>
+                          <option value="SALES"> Sales</option>
+                          <option value="SUPPORT"> Support</option>
+                          <option value="TOP MANAGEMENT">Top management</option>
+                        </select>
+                      </div>
+                    </div>
+                    <br clear="all">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="overview_form_block row marl">
+              <div class="col-md-12">
+                <div class="panel panel-default">
+                  <div class="panel-heading">
+                    Overview
+                  </div>
+                  <div class="panel-content">
+                    <div class="filter_col col-md-12" id="name">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Name</label>
+                        <input type="text" class="form-control" id="id_name" name="name"/>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="account">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Account</label>
+                        <span class="form-control">{{con.account}}</span>
+                        <!--<input type="hidden" name="account" id="id_account" value="{{con.account.id}}">-->
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Amount</label>
+                        <div class="input-group" style="width:100%;"  id="id_amount">
+                          <div class="input-group-btn left-dropdown" style="width:auto;">
+                          </div>
+                          <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="stage">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Stage</label>
+                        <select class="form-control" id="id_stage" name="stage" >
+                          <option value="" selected="selected">---------</option>
+                          {% for stage in stages %}
+                          <option value="{{stage.0}}">{{stage.1}} </option>
+                          {% endfor%}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="lead_source">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Lead Source</label>
+                        <select class="form-control" id="id_lead_source" name="lead_source" >
+                          <option value="" selected="selected">---------</option>
+                          {% for source in sources %}
+                          <option value="{{source.0}}">{{source.1}} </option>
+                          {% endfor%}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="probabality">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Probability %</label>
+                        <input type="number" class="form-control " id="id_probability" name="probability">
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="contacts">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">contacts</label>
+                        <span class="form-control">{{con.name}}</span>
+                        <!--<input type="hidden" name="contacts" id="id_contacts" value="{{con.id}}">-->
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12" id="close_date">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Close Date</label>
+                        <div class='input-group date' id='datepicker1'>
+                          <p><input type='text' class="form-control" id="id_close_date" name="close_date"/></p>
+                          <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group col-md-12" id="description">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1" >Description</label>
+                        <textarea class="form-control" rows="5"  id="id_description" name="description"> </textarea>
+                      </div>
+                    </div>
+                    <div class="row marl buttons_row text-center">
+                      <button class=" btn btn-default save" type="submit">Save</button>
+                      <button class="btn btn-default"  data-dismiss="modal">Cancel</button></a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- main_container ends here -->
+            </div>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!--fisrt model ends here-->
+  <div class="modal fade main_container" id="myModal1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">Case create</h4>
+        </div>
+        <div class="modal-body">
+          <form method="" action="" id="case_create" >
+            {% csrf_token %}
+            <div class="assigned_teams row marl">
+              <div class="col-md-12">
+                <div class="panel panel-default">
+                  <div class="panel-heading">
+                    Assigned Users & Teams
+                  </div>
+                  <div class="panel-content">
+                    <div class="filter_col col-md-6">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Assigned Users</label>
+                        <select class="form-control" name="assigned_user" id="case_assigned_user">
+                          <option value="" selected="selected">--Select Assigned User--</option>
+                          {%for m in users%}
+                          <option value="{{m.id}}">{{m.username}}</option>
+                          {%endfor%}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-6">
+                      <div class="form-group">
+                        <label for="id_teams">Teams</label>
+                        <select class="form-control" id="case_teams" name="teams">
+                          <option value="" selected="selected">--Select Team--</option>
+                          <option value="Sales">Sales</option>
+                          <option value="Support">Support</option>
+                          <option value="TopManagement">TopManagement</option>
+                        </select>
+                      </div>
+                    </div>
+                    <br clear="all">
+                  </div>
+                  <br clear="all">
+                  <!-- assigned_teams ends here -->
+                  <!-- overview starts here -->
+                </div>
+              </div>
+              <div class="overview_form_block row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading"> Overview</div>
+                    <div class="panel-content">
+                      <div class="row marl">
+                        <div class="filter_col col-md-12">
+                          <div class="form-group">
+                            <label for="id_name" >Name</label>
+                            <input type="text" id="case_name" maxlength="64" name="name" class="form-control" placeholder="Enter Case Name">
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12">
+                          <div class="form-group">
+                            <label for="id_status">Status</label>
+                            <select class="form-control" id="case_status" name="status" >
+                              <option value="" selected="selected">--Select Status--</option>
+                              <option value="New">New</option>
+                              <option value="Assigned">Assigned</option>
+                              <option value="Pending">Pending</option>
+                              <option value="Closed">Closed</option>
+                              <option value="Rejected">Rejected</option>
+                              <option value="Duplicate">Duplicate</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12">
+                          <div class="form-group">
+                            <label for="id_priority">Priority</label>
+                            <select class="form-control" id="case_priority" name="priority">
+                              <option value="" selected="selected">--Select Priority--</option>
+                              <option value="Low">Low</option>
+                              <option value="Normal">Normal</option>
+                              <option value="High">High</option>
+                              <option value="Urgent">Urgent</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12">
+                          <div class="form-group">
+                            <label for="id_case_type">Type</label>
+                            <select class="form-control" id="case_case_type" name="case_type">
+                              <option value="" selected="selected">--Select Type--</option>
+                              <option value="Question">Question</option>
+                              <option value="Incident">Incident</option>
+                              <option value="Problem">Problem</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12" id="account">
+                          <div class="form-group">
+                            <label for="exampleInputEmail1">Account</label>
+                            <span class="form-control">{{con.account}}</span>
+                            <!--<input type="hidden" name="account" id="id_account" value="{{con.account.id}}">-->
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12" id="contact">
+                          <div class="form-group">
+                            <label for="exampleInputEmail1">contacts</label>
+                            <span class="form-control">{{con.name}}</span>
+                            <!--<input type="hidden" name="contacts" id="id_contacts" value="{{con.id}}">-->
+                          </div>
+                        </div>
+                        <div class="filter_col col-md-12">
+                          <div class="form-group">
+                            <label for="id_description">Description</label>
+                            <textarea class="form-control" textarea cols="40" id="case_description" name="description" rows="4" placeholder="Enter Description"></textarea>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+        <!-- overview ends here -->
+        <div class="row marl buttons_row text-center">
+        <button class="btn btn-default save" type="submit">Save</button>
+        <button class="btn btn-default" data-dismiss="modal"4 >Cancel</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!--second model ends here-->
+  <!-- third model starts here -->
+  {%for a in opportunity%}
+  <div class="modal fade" id="OppView{{a.id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">Opportunity view</h4>
+        </div>
+        <div class="modal-body">
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_name" data-name="name" >Name</label>
+                    <div class="field" id="id_name" data-name="name">{{a.name}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_account" data-name="name" >account</label>
+                    <div class="field" id="id_account" data-name="name">{{con.account}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_amount" data-name="name" >amount</label>
+                    <div class="field" id="id_name1" data-name="name">{{a.amount}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_stage" data-name="name" >stage</label>
+                    <div class="field" id="id_stage" data-name="name">{{a.stage}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_lead_source" data-name="name" >lead_source</label>
+                    <div class="field" id="id_lead_source" data-name="name">{{a.lead_source}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_probability" data-name="name" >probabality</label>
+                    <div class="field" id="id_probability" data-name="name">{{a.probability}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_close_date" data-name="name" >close_date</label>
+                    <div class="field" id="id_close_date" data-name="name">{{a.close_date|date:"Y-m-d" }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_contacts" data-name="name" >contact</label>
+                    <div class="field" id="id_contacts" data-name="name">{{con.name}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_description" data-name="name" >description</label>
+                    <div class="field" id="id_description" data-name="name">{{a.description}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_created_by" data-name="name" >created_by</label>
+                    <div class="field" id="id_created_by" data-name="name">{{a.created_user}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_user" data-name="name" >assigned_user</label>
+                    <div class="field" name="user" id="id_user">{{a.user}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_teams" data-name="name" >assigned team</label>
+                    <div class="field" id="id_teams" data-name="name">{{a.teams}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group">
+                    <label for="id_created_on" data-name="name" >created_On</label>
+                    <div class="field" id="id_created_on" data-name="name">{{a.date}}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%endfor%}
+
+
+  <!--{%for c in cases%}
+  <div class="modal fade" id="CaseView{{c.id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">Case view</h4>
+        </div>
+        <div class="modal-body">
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_name" data-name="name" >Name</label>
+                    <div class="field" id="id_name" data-name="name">{{c.name}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_account" data-name="name" >status</label>
+                    <div class="field" id="id_status" data-name="name">{{c.status}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_amount" data-name="name" >priority</label>
+                    <div class="field" id="id_priority" data-name="name">{{c.priority}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_stage" data-name="name" >type</label>
+                    <div class="field" id="id_type" data-name="name">{{c.case_type}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="account">
+                  <div class="form-group" >
+                    <label for="id_probability" data-name="account" >account</label>
+                    <div class="field" id="id_account" data-name="name">{{con.account}}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_contacts" data-name="name" >contact</label>
+                    <div class="field" id="id_contacts" data-name="name">{{con.name}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_description" data-name="name" >description</label>
+                    <div class="field" id="id_description" data-name="name">{{c.description}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="id_created_by" data-name="name" >Created by</label>
+                    <div class="field" id ="id_created_by" data-name="name">{{c.userid}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_users" data-name="name" >assigned_user</label>
+                    <div class="field" id="id_assigned_user" name="assigned_user">{{c.assigned_user.username}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_teams" data-name="name" >assigned team</label>
+                    <div class="field" id="id_teams" data-name="name">{{c.teams}}</div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12" id="name">
+                  <div class="form-group" >
+                    <label for="id_created_on" data-name="name" >created_On</label>
+                    <div class="field" id="id_created_on" data-name="name">{{c.created}}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%endfor%}-->
+  {%for c in cases%}
+  <div class="modal fade main_container" id="CaseEdit{{c.id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">Case edit</h4>
+        </div>
+        <div class="modal-body">
+          <form class= "case_edit_{{c.id}}" id="{{c.id}}" action="">
+            {%csrf_token %}
+            <div class="assigned_teams row marl">
+              <div class="col-md-12">
+                <div class="panel panel-default">
+                  <div class="panel-heading"> Assigned Users & Teams </div>
+                  <div class="panel-content">
+                    <div class="filter_col col-md-6" id="user">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Assigned Users</label>
+                        <select class="form-control" id="case_edit_assigned_user" name="assigned_user" >
+                          <option value="" selected>---------</option>
+                          {%for u in users%}
+                          <option value="{{u.id}}" {% ifequal u.id c.assigned_user.id %}selected{% endifequal %}>{{u.username}}</option>
+                          {%endfor%}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-6">
+                      <div class="form-group">
+                        <label for="id_teams">Teams</label>
+                        <select class="form-control" id="case_edit_teams" name="teams">
+                          {% ifequal c.teams None%}
+                          <option value="" selected>--Select Support--</option>
+                          {% endifequal %}
+                          <option value="Sales" {% ifequal c.teams "Sales"%} selected{% endifequal%}>Sales</option>
+                          <option value="Support" {% ifequal c.teams "Support"%} selected{% endifequal%}>Support</option>
+                          <option value="TopManagement" {% ifequal c.teams "TopManagement"%} selected{% endifequal%}>TopManagement</option>
+                        </select>
+                      </div>
+                    </div>
+                    <br clear="all">
+                  </div>
+                </div>
+              </div>
+              <div class="overview_form_block row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading">
+                      Overview
+                    </div>
+                    <div class="panel-content">
+                      <div class="filter_col col-md-12" id="name">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Name</label>
+                          <input type="text" class="form-control" id="case_edit_name" name="name" value="{{c.name}}"/>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="account">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Account</label>
+                          <!--<select class="form-control" id="id_account" name="account">
+                            <option value="{{con.account.id}}" selected>{{con.account}}</option>
+                            </select>-->
+                          <span class="form-control">{{con.account}}</span>
+                          <!--<input type="hidden" name="account" id="id_account" value="{{con.account.id}}">-->
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="id_status">Status</label>
+                          <select class="form-control" id="case_edit_status" name="status" >
+                            {% ifequal c.status None%}
+                            <option value="">--Select Status--</option>
+                            {% endifequal %}
+                            <option value="New" {% ifequal c.status "New"%} selected{% endifequal%}>New</option>
+                            <option value="Assigned" {% ifequal c.status "Assigned"%} selected{% endifequal%}>Assigned</option>
+                            <option value="Pending" {% ifequal c.status "Pending"%} selected{% endifequal%}>Pending</option>
+                            <option value="Closed" {% ifequal c.status "Closed"%} selected{% endifequal%}>Closed</option>
+                            <option value="Rejected" {% ifequal c.status "Rejected"%} selected{% endifequal%}>Rejected</option>
+                            <option value="Duplicate" {% ifequal c.status "Duplicate"%} selected{% endifequal%}>Duplicate</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="id_priority">Priority</label>
+                          <select class="form-control" id="case_edit_priority" name="priority">
+                            {% ifequal c.priority None%}
+                            <option value="">--Select Priority--</option>
+                            {% endifequal %}
+                            <option value="Low" {% ifequal c.priority "Low"%} selected{% endifequal%}>Low</option>
+                            <option value="Normal" {% ifequal c.priority "Normal"%} selected{% endifequal%}>Normal</option>
+                            <option value="High" {% ifequal c.priority "High"%} selected{% endifequal%}>High</option>
+                            <option value="Urgent" {% ifequal c.priority "Urgent"%} selected{% endifequal%}>Urgent</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="id_case_type">Type</label>
+                          <select class="form-control" id="case_edit_case_type" name="case_type">
+                            {% ifequal c.case_type None%}
+                            <option value="">--Select CaseType--</option>
+                            {% endifequal %}
+                            <option value="Question" {% ifequal c.case_type "Question"%} selected{% endifequal%}>Question</option>
+                            <option value="Incident" {% ifequal c.case_type "Incident"%} selected{% endifequal%}>Incident</option>
+                            <option value="Problem" {% ifequal c.case_type "Problem"%} selected{% endifequal%}>Problem</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="contact">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">contacts</label>
+                          <!--<select class="form-control" id="id_contacts" name="contacts">
+                            <option value="{{con.id}}" selected>{{con.name}}</option>
+                            </select>-->
+                          <span class="form-control">{{con.name}}</span>
+                          <!--<input type="hidden" name="contacts" id="id_contacts" value="{{con.id}}">-->
+                        </div>
+                      </div>
+                      <div class="form-group col-md-12" id="description">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1" >Description</label>
+                          <textarea class="form-control" rows="5"  id="case_edit_description" name="description">{{c.description}}</textarea>
+                        </div>
+                      </div>
+                      <div class="row marl buttons_row text-center">
+                        <button class=" btn btn-default save case_save" id="{{c.id}}" type="submit">Save</button>
+                        <button class="btn btn-default"  data-dismiss="modal">Cancel</button></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- main_container ends here -->
+              </div>
+            </div>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {%endfor%}
+  {%for a in opportunity%}
+  <div class="modal fade main_container" id="OppEdit{{a.id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="myModalLabel">opportunity edit</h4>
+        </div>
+        <div class="modal-body">
+          <form class= "opp_edit_{{a.id}}" id="{{a.id}}" action="">
+            {%csrf_token %}
+            <div class="assigned_teams row marl">
+              <div class="col-md-12">
+                <div class="panel panel-default">
+                  <div class="panel-heading"> Assigned Users & Teams </div>
+                  <div class="panel-content">
+                    <div class="filter_col col-md-6" id="user">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Assigned Users</label>
+                        <select class="form-control" id="opp_edit_user" name="user" >
+                          <option value="">---------</option>
+                          {% for m in users %}
+                          <option value="{{ m.id }}" {% ifequal m.id a.user_id %}selected{% endifequal %}>{{ m.username }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-6" id="teams">
+                      <div class="form-group">
+                        <label for="id_teams">Teams</label>
+                        <select class="form-control" id="opp_edit_teams" name="teams">
+                          {% ifequal a.teams None%}
+                          <option value="" selected>--Select team--</option>
+                          {% endifequal %}
+                          <option value="SALES" {% ifequal a.teams "Sales"%} selected{% endifequal%}>Sales</option>
+                          <option value="SUPPORT" {% ifequal a.teams "Support"%} selected{% endifequal%}>Support</option>
+                          <option value="TOP MANAGEMENT" {% ifequal a.teams "TopManagement"%} selected{% endifequal%}>TopManagement</option>
+                        </select>
+                      </div>
+                    </div>
+                    <br clear="all">
+                  </div>
+                </div>
+              </div>
+              <div class="overview_form_block row marl">
+                <div class="col-md-12">
+                  <div class="panel panel-default">
+                    <div class="panel-heading">
+                      Overview
+                    </div>
+                    <div class="panel-content">
+                      <div class="filter_col col-md-12" id="name">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Name</label>
+                          <input type="text" class="form-control" id="opp_edit_name" name="name" value="{{a.name}}">
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="account">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Account</label>
+                          <span class="form-control">{{con.account}}</span>
+                          <!--<input type="hidden" name="account" id="id_account" value="{{con.account.id}}">-->
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Amount</label>
+                          <div class="input-group" style="width:100%;"  id="opp_edit_amount">
+                            <div class="input-group-btn left-dropdown" style="width:auto;">
+                            </div>
+                            <input type="number" class="form-control text-filter" tabindex="1"  id="opp_edit_amount" name="amount" value="{{a.amount}}">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="stage">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Stage</label>
+                          <select class="form-control" id="opp_edit_stage" name="stage" >
+                            <option value="" selected="selected">---------</option>
+                            {% for stage in stages %}
+                            <option value="{{stage.0}}" {% ifequal stage.0 a.stage %}selected{% endifequal %}>{{stage.1}} </option>
+                            {% endfor%}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="lead_source">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Lead Source</label>
+                          <select class="form-control" id="opp_edit_lead_source" name="lead_source" >
+                            <option value="" selected="selected">---------</option>
+                            {% for source in sources %}
+                            <option value="{{source.0}}" {% ifequal source.0 a.lead_source%}selected{% endifequal %}>{{source.1}} </option>
+                            {% endfor%}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="probabality">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Probability %</label>
+                          <input type="number" class="form-control " id="opp_edit_probability" name="probability" value="{{a.probability}}">
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="contacts">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">contact</label>
+                          <span class="form-control">{{con.name}}</span>
+                          <!--<input type="hidden" name="contacts" id="id_contacts" value="{{con.id}}">-->
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12" id="close_date">
+                        <div class="form-group"
+                        <label for="exampleInputEmail1">Close Date</label>
+                        <div class='input-group date' id='datepicker2'>
+                          <p><input type='text' class="form-control" id="opp_edit_close_date" name="close_date" value="{{a.close_date|date:"Y-m-d"}}"/></p>
+                          <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group col-md-12" id="description">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1" >Description</label>
+                        <textarea class="form-control" rows="5"  id="opp_edit_description" name="description" >{{a.description}} </textarea>
+                      </div>
+                    </div>
+                    <div class="row marl buttons_row text-center">
+                      <button class=" btn btn-default save edit_opp_submit" id="{{a.id}}" type="submit">Save</button>
+                      <button class="btn btn-default"  data-dismiss="modal">Cancel</button></a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- main_container ends here -->
+            </div>
+        </div>
+      </div>
+      </form>
+    </div>
+  </div>
+  {%endfor%}
+  <form id="model-form" method="POST">{% csrf_token %}
+    <div class="modal fade" id="meeting-create-model" role="dialog" data-keyboard="false"
+      data-backdrop="static">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 id="create-meeting-dialog-title" class="modal-title">Create New Meeting</h4>
+          <div id="modelbody" class="modal-body">
+            <div class="panel-body">
+              <div class="row">
+                <div class="cell col-sm-5 form-group inline-group" data-name="name">
+                  <label class="control-label" data-name="name" style="display: inline">
+                  Name *
+                  </label>
+                  <div class="field" data-name="name">
+                    <input type="hidden" name="event_type" value="Meeting"/>
+                    <input id="name" class="form-control input-sm" type="text"
+                      autocomplete="off"
+                      name="name" required/>
+                  </div>
+                  <i id="name_error"></i>
+                </div>
+                <div class="cell col-sm-3 form-group" data-name="assigned-user">
+                  <div class="field" data-name="assigned-user">
+                    <label for="assigned-user">Assigned User </label>
+                    <div class="form-group" data-name="assigned-user">
+                      <div class="input-group">
+                        <input type="text" placeholder="Select" autocomplete="off"
+                          id="user_name" value="" name="username"
+                          class="main-element form-control input-sm">
+                        <span class="input-group-btn">
+                        <button title="Select" tabindex="-1" type="button" class="btn btn-default input-sm" id="selectusers"><i
+                          class="glyphicon glyphicon-arrow-up"></i></button>
+                        <button tabindex="-1" type="button" class="btn btn-default input-sm" id="clearuser">
+                        <i class="glyphicon glyphicon-remove"></i></button>
+                        </span>
+                      </div>
+                      <i id="assigned_users_error"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="cell col-sm-4 form-group inline-group" data-name="teams">
+                  <div class="field" data-name="teams">
+                    <label for="teams">Teams</label>
+                    <select class="form-control input-sm" id="teams"
+                      name="teams">
+                      <option></option>
+                      <option value="Sales Department">Sales Department</option>
+                      <option value="Support">Support</option>
+                      <option value="Top Management">Top Management</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="cell col-sm-5 form-group" data-name="parent">
+                  <div class="field" data-name="parent">
+                    <label for="parent">Parent </label>
+                    <div class="form-group" data-name="parent">
+                      <div class="input-group">
+                        <span class="input-group-btn">
+                          <select class="form-control input-sm" id="parent_type" name="parent_type" style="width:100px">
+                            <option value="Account">Account</option>
+                            <option value="Lead">Lead</option>
+                            <option value="Opportunity">Opportunity</option>
+                            <option value="Case">Case</option>
+                          </select>
+                        </span>
+                        <input type="text" placeholder="Select" autocomplete="off"
+                          id="parent_name" value="" name="parent_name"
+                          class="main-element form-control input-sm">
+                        <span class="input-group-btn">
+                        <button title="Select" tabindex="-1" type="button" class="btn btn-default btn-sm" id="selectparent"><i
+                          class="glyphicon glyphicon-arrow-up"></i></button>
+                        <button tabindex="-1" type="button" class="btn btn-default btn-sm" id="clearparent">
+                        <i class="glyphicon glyphicon-remove"></i></button>
+                        </span>
+                      </div>
+                      <i id="parent_error"></i>
+                      <input type="hidden" value="" id="parent_id" name="parent_id">
+                    </div>
+                  </div>
+                </div>
+                <div class="cell col-sm-3 form-group" data-name="status">
+                  <label class="control-label" data-name="status"> Status</label>
+                  <div class="field" data-name="status">
+                    <select class="form-control main-element input-sm" id="status"
+                      name="status">
+                      <option selected="" value="Planned">Planned</option>
+                      <option value="Held">Held</option>
+                      <option value="Not Held">Not Held</option>
+                    </select>
+                    <i id="status_error"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="cell col-sm-5 form-group" data-name="dateStart">
+                  <label class="control-label" data-name="dateEnd"> Date Start * </label>
+                  <div class="form-group">
+                    <div class='input-group date' id='startdatepicker'>
+                      <input type='text' name="start_date"
+                        class="form-control input-sm"
+                        id="start_date"
+                        required
+                        placeholder="MM/DD/YYYY HH:MM:SS"/>
+                      <span class="input-group-addon">
+                      <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+                    </div>
+                    <i id="start_date_error"></i>
+                  </div>
+                </div>
+                <div class="cell col-sm-3 form-group" data-name="dateEnd">
+                  <label class="control-label" data-name="dateEnd"> Date End *</label>
+                  <div class="form-group">
+                    <div class='input-group date' id='enddatepicker'>
+                      <input type='text' id="close_date" name="close_date"
+                        class="form-control input-sm"
+                        required
+                        placeholder="MM/DD/YYYY HH:MM:SS"/>
+                      <span class="input-group-addon">
+                      <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+                    </div>
+                    <i id="close_date_error"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="cell col-sm-5 form-group" data-name="duration">
+                  <label class="control-label" data-name="duration"> Duration </label>
+                  <div class="field" data-name="duration">
+                    <select class="form-control main-element input-sm" id="duration"
+                      name="duration">
+                      <option value="900">15m</option>
+                      <option value="1800">30m</option>
+                      <option value="3600">1h</option>
+                      <option value="7200">2h</option>
+                      <option value="10800">3h</option>
+                      <option value="86400">1d</option>
+                    </select>
+                    <i id="duration_error"></i>
+                  </div>
+                </div>
+                <div class="cell col-sm-3 form-group" data-name="reminders">
+                  <label class="control-label" data-name="reminders"> Reminders </label>
+                  <a type="button" id="addreminder"
+                    style="padding-top: 5px;border: none">
+                  <span class="glyphicon glyphicon-plus"></span>
+                  </a>
+                  <div id="reminders" class="field" data-name="reminders">
+                    <div class="reminders-container">
+                      <div class="input-group reminder">
+                        <input type="hidden" id="pushreminder"/>
+                        <div id="reminder1">
+                          {{ reminder_form_set.management_form }}
+                          <div class="reminderslist"
+                            style="display:inline-flex;">
+                            {% for form in reminder_form_set %}
+                            {{ form.reminder_type }}
+                            {{ form.reminder_time }}
+                            {{ form.DELETE }}
+                            <span class="glyphicon glyphicon-trash"></span>
+                            {{ form.id }}
+                          </div>
+                            {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                    <i id="reminder_error"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="cell col-sm-7 form-group" data-name="description">
+                  <label class="control-label" data-name="description">
+                  Description </label>
+                  <div class="field" data-name="description">
+                    <textarea id="description" class="main-element form-control input-sm" rows="4"
+                      name="description"
+                      required></textarea>
+                    <i id="description_error"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="modeldialogclosed" data-dismiss="modal" type="button" class="btn btn-default btn-sm">
+            Close
+            </button>
+            <button id="gocreatemeeting" type="submit" class="btn btn-success btn-sm">
+            Create
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  {% endblock %}
+</div>
+
+{% block js_block %}
+
+<script>
+  $(function () {
+     var date = new Date();
+     var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+      $('#datepicker1, #datepicker2').datetimepicker({
+          'format': 'YYYY-MM-DD',
+          minDate:today
+      }).attr('readonly', 'true')
+  });
+
+
+  $("#opp_add").submit(function(e){
+        e.preventDefault();
+        var con={{con.id}}
+        var acc={{con.account.id}}
+        // console.log(con)
+        $("p.jqueryError_list").remove()
+        $.post("/oppurtunities/create/", $('#opp_add').serialize()+"&contacts="+con+"&account="+acc, function(data) {
+        if (data.error)
+        {
+          for (var key in data.errors){
+            $('#id_'+key).after('<p class="jqueryError_list">'+data.errors[key]+'</p>')
+          }
+        }
+        else{
+          window.location ="."
+        }
+   }, 'json');
+      });
+
+  $("#case_create").submit(function(e){
+        e.preventDefault();
+        var con={{con.id}}
+        var acc={{con.account.id}}
+        $("p.jqueryError_list").remove()
+        $.post("/cases/create/", $('#case_create').serialize()+"&contacts="+con+"&account="+acc,function(data) {
+        if (data.error)
+        {
+          for (var key in data.errors){
+            console.log(key)
+            $('#case_'+key).after('<p class="jqueryError_list">'+data.errors[key]+'</p>')
+          }
+        }
+        else{
+          window.location ="."
+        }
+   },'json');
+      });
+
+  $(".edit_opp_submit").click(function(e){
+        e.preventDefault();
+        var con={{con.id}}
+        var acc={{con.account.id}}
+        id=$(this).attr('id')
+        $("p.jqueryError_list").remove()
+        $.post("/oppurtunities/"+id+"/edit/",  $('.opp_edit_'+id).serialize()+"&contacts="+con+"&account="+acc,function(data) {
+        if (data.error)
+        {
+          for (var key in data.errors){
+            $('#opp_edit_'+key).after('<p class="jqueryError_list">'+data.errors[key]+'</p>')
+          }
+        }
+        else{
+          window.location ="."
+        }
+   }, 'json');
+      });
+
+  $(".case_save").click(function(e){
+        e.preventDefault();
+        var con={{con.id}}
+        var acc={{con.account.id}}
+        id=$(this).attr('id')
+        $("p.jqueryError_list").remove()
+        $.post("/cases/"+id+"/edit_case/", $('.case_edit_'+id).serialize()+"&contacts="+con+"&account="+acc, function(data) {
+        if (data.error)
+        {
+          for (var key in data.errors){
+            console.log(key)
+            $('#case_edit_'+key).after('<p class="jqueryError_list">'+data.errors[key]+'</p>')
+          }
+        }
+        else{
+          window.location ="."
+        }
+   }, 'json');
+      });
+
+  $("body" ).on("click",".dell",function(e){
+              href=$(this).attr("data-href")
+              id=$(this).attr("id")
+          $.get(href,{}, function(data){
+              window.location="."
+              $('#'+id).parent().remove()
+          },'json');
+  });
+
+
+  function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie != '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+
+  function remove_case(x){
+    var csrftoken = getCookie('csrftoken');
+        $.post("/cases/remove_case/", {
+         "case_id": x,
+         "csrfmiddlewaretoken": csrftoken
+        }, function(data) {
+          window.location="."
+         $(".case_row" + data.case_id).remove()
+         $(".total_count").html("Total "+data.count)
+        })
+       }
+</script>
+<script src="{% static 'js/contacts/meetings.js' %}"></script>
+<script src="{% static 'js/contacts/setstatus.js' %}"></script>
+<script src="{% static 'js/contacts/comments.js' %}"></script>
+
+{% endblock js_block %}
