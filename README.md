@@ -13,9 +13,9 @@ Installation
 ```
 2. Add the following in settings.py::
 ```
-	# import at the top
-	from django_crm import CRM_APPS
-	# below INSTALLED_APPS setting
+    # import at the top
+    from django_crm import CRM_APPS
+    # below INSTALLED_APPS setting
     INSTALLED_APPS += CRM_APPS
 ```    
 3. Include the Django-CRM urls in your urls.py::
