@@ -1,3 +1,2 @@
-Django==1.10
-django-simple-pagination==1.1.4
-pytz==2016.6.1
+whitenoise==2.0.6
+dj-database-url==0.4.1
