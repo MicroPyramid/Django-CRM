@@ -3,7 +3,7 @@
 	"description": "Customer relationship management application",
 	"repository": "https://github.com/MicroPyramid/Django-CRM.git",
 	"scripts": {
-		"postdeploy": "sandbox/manage.py makemigrations && python sandbox/manage.py migrate && echo \"from django.contrib.auth.models import User; User.objects.create_superuser('Admin001', 'admin001@djangocrm.com', 'admin001')\" | python sandbox/manage.py shell"
+		"postdeploy": "sandbox/django_crm_test/manage.py makemigrations && python sandbox/django_crm_test/manage.py migrate && echo \"from django.contrib.auth.models import User; User.objects.create_superuser('Admin001', 'admin001@djangocrm.com', 'admin001')\" | python sandbox/django_crm_test/manage.py shell"
 	},
 	"env": {}
 }
