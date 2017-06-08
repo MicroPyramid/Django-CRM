@@ -1,3 +1,4 @@
 Django==1.10
 django-simple-pagination==1.1.4
 pytz==2016.6.1
+-r sandbox/requirements.txt
