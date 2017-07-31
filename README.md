@@ -3,7 +3,7 @@
 Installation
 --------------
 
-1. Install Django-CRM using the following command::
+1. Install Django-CRM from pip using the following command::
 ```
     pip install Django-CRM
             (or)
