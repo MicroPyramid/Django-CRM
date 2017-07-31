@@ -7,3 +7,6 @@ media
 media-images
 cache
 .idea
+Django_CRM.egg-info/
+build/
+dist/
