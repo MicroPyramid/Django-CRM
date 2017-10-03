@@ -1,0 +1,56 @@
+{% load static %}
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" id="home" href="/">Micro Crm</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="{% url 'accounts:list' %}">Accounts</a></li>
+                <li><a href="{% url 'contacts:list' %}">contacts</a></li>
+                <li><a href="{% url 'leads:list' %}">Leads</a></li>
+                <li><a href="{% url 'oppurtunities:list' %}">Opportunities</a></li>
+                <li><a href="{% url 'cases:list' %}">Cases</a></li>
+                <!-- <li><a href="{% url 'emails:list' %}">Email</a></li>
+                <li><a href="{% url 'planner:meetings_list' %}">Meetings</a></li>
+                <li><a href="{% url 'planner:calls_list' %}">Calls</a></li>
+                <li><a href="{% url 'planner:tasks_list' %}">Tasks</a></li> -->
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                  {% with request.profile as profile %}
+                  <a href="#" class="dropdown-toggle abcd" data-toggle="dropdown" role="button" aria-haspopup="true"
+                    aria-expanded="false" >
+                  {% if not profile.profile_pic %}
+                  <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
+                  {% else %}
+                  <img src="{{profile.profile_pic.url}}" alt="Micro profile pic">
+                  {% endif %}
+                  <b class="caret"></b></a>
+                  {% endwith %}
+                  <ul class="dropdown-menu">
+                    <li><a href="#">Profile</a></li>
+                    <li><a href="#">Change Password</a></li>
+                    <li role="separator" class="divider"></li>
+                    <li><a href="{% url 'logout' %}">
+                      <span class="glyphicon glyphicon-log-out"></span>
+                      Logout
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container-fluid -->
+</nav>

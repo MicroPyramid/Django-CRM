@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load paginate %}
+
+<!-- main_container starts here -->
+{% block content %}
+  <div class="main_container" id="maincontainer">
+    <div id="container">
+      <!-- heading_create starts here -->
+      <div class="row marl heading_create">
+        <div class="heading col-md-2">Opportunities</div>
+          <div class="col-md-7">
+            <div class="row marl search-row">
+              <div class="form-group col-md-8 col-sm-8">
+                <div class="input-group">
+                  <div class="input-group-btn left-dropdown">
+                    <button type="button" class="btn dropdown-toggle filters-button btn-default" title="Filter" data-toggle="dropdown" tabindex="-1" aria-expanded="false"><span class="filters-label">All</span><span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu pull-left filter-menu">
+                      <li><a class="preset" tabindex="-1" href="javascript:" data-name="" data-action="selectPreset"><span class="glyphicon glyphicon-ok pull-right"></span><div>All</div></a></li>
+                      <li><a class="preset" tabindex="-1" href="javascript:" data-name="portalUsers" data-action="selectPreset"><div>Portal Users</div></a></li>
+                      <li class="divider preset-control hidden"></li>
+                      <li class="preset-control remove-preset hidden"><a tabindex="-1" href="#" data-action="removePreset">Remove Filter</a></li>
+                      <li class="preset-control save-preset hidden"><a tabindex="-1" href="#" data-action="savePreset">Save Filter</a></li>
+                      <li class="divider"></li>
+                      <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="onlyMy">&nbsp;&nbsp;Only My</label></li>
+                      <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="followed"> &nbsp;&nbsp;Followed</label></li>
+                    </ul>
+                  </div>
+                  <input type="text" class="form-control text-filter" name="textFilter" value="" tabindex="1">
+                  <div class="input-group-btn">
+                    <button type="button" class="btn btn-primary search btn-icon" data-action="search"><span class="glyphicon glyphicon-search"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group col-md-4 col-sm-4">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-default extra_option_btn" data-action="reset"><span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset
+                  </button>
+                  <button type="button" class="btn btn-default dropdown-toggle extra_option_btn add-filter-button" data-toggle="dropdown" tabindex="-1">Add Field <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu pull-right filter-list">
+                    <li data-name="account" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="account">Account</a></li>
+                    <li data-name="address" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="address">Address</a></li>
+                    <li data-name="assignedUser" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="assignedUser">Assigned User</a></li>
+                    <li data-name="createdAt" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="createdAt">Created At</a></li>
+                    <li data-name="emailAddress" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="emailAddress">Email</a></li>
+                    <li data-name="phoneNumber" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="phoneNumber">Phone</a></li>
+                    <li data-name="title" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="title">Title</a></li>
+                    <li data-name="teams" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="teams">Teams</a></li>
+                    <li data-name="targetLists" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="targetLists">Target Lists</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="create_new col-md-3 text-right">
+            <a href="{% url 'oppurtunities:save' %}"><i class="fa fa-plus"></i> Add New Opportunity</a>
+          </div>
+        </div>
+      </div>
+      <!-- heading_create ends here -->
+      <!-- filter_row starts here -->
+      <div class="filter_row row marl">
+        <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+          FILTERS
+          </div>
+          <form class = "opportunity_filter" method="GET" action="">{% csrf_token %}
+          <div class="panel-content">
+            <div class="filter_col col-md-3">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Name</label>
+                <input type="text" class="form-control" placeholder="Name" id="id_name" name="name" {% if request.GET %} value="{{request.GET.name}}" {% endif %}>
+              </div>
+            </div>
+            <div class="filter_col col-md-3">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Account</label>
+                <select class="form-control" id="id_account" name="account">
+                  <option value="">---------</option>
+                  {% for l in accounts %}
+                  <option value="{{l.id}}" {% if request.GET.account %}{%ifequal l.id request.GET.account|add:"0"%}selected{%endifequal%} {% endif %}>{{ l.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-2">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Stage</label>
+                <select class="form-control" id="id_stage" name="stage" >
+                  <option value="">---------</option>
+                  {% for stage in stages %}
+                  <option value="{{stage.0}}" {% if request.GET.stage %} {% ifequal stage.0 request.GET.stage %}selected{% endifequal %} {% endif %}>{{stage.1}} </option>
+                  {% endfor%}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-2">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Lead Source</label>
+                <select class="form-control" id="id_lead_source" name="lead_source" >
+                  <option value="">---------</option>
+                  {% for source in sources %}
+                  <option value="{{source.0}}" {% if request.GET.lead_source %} {% ifequal source.0 request.GET.lead_source %}selected{% endifequal %} {% endif %}>{{source.1}} </option>
+                  {% endfor%}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-2">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Contacts</label>
+                <select class="form-control" id="id_contacts" name="contacts">
+                  <option value="">---------</option>
+                  {% for con in contacts %}
+                  <option value="{{con.id}}" {% if request.GET.contacts %}{%ifequal con.id request.GET.contacts|add:"0"%}selected{%endifequal%} {% endif %}>{{ con.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-5"></div>
+                  <button class="btn btn-primary save" type="submit">Search</button>
+                  <a href="{% url 'oppurtunities:list' %}"><button class="btn btn-default" type="button">Cancel</button></a>
+
+          </div>
+          </form>
+          <br clear="all">
+        </div>
+        </div>
+      </div>
+      <!-- filter_row ends here -->
+      <div class="table_container_row row marl">
+        <div class="col-md-12">
+          <div class="panel panel-default">
+            <div class="panel-heading-list text-center">
+              LIST OF OPPORTUNITIES
+              <span class="pull-right total_count">Total Opportunities : {{count}}</span>
+            </div>
+            <div class="panel-content">
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th width="5%" class="text-center">S.No</th>
+                    <th width="20%" class="text-center">Name</th>
+                    <th width="20%" class="text-center">Account</th>
+                    <th width="20%" class="text-center">Stage</th>
+                    <th width="25%" class="text-center">Close Date</th>
+                    <th width="10%" class="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% paginate 5 opportunity as opportunity %}
+                  {% for m in opportunity %}
+                  <tr class="text-center">
+                    <td scope="row" style="text-align:center;">{{ forloop.counter }}</td>
+                    <td><a href="{% url  'oppurtunities:opp_view' m.id %}">{{ m.name }}</a></td>
+                    <td>{%ifequal m.account None%}Not Specified
+                     {% else %}<a
+                    href="{% url 'accounts:view_account' m.account.id %}">{{m.account}}{% endifequal %}</a></td>
+                    <td>{{ m.stage }}</td>
+                    <td>{{ m.close_date }}</td>
+                    <td>
+                      <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                        <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                          <li><a href="{% url  'oppurtunities:opp_view' m.id %}">View</a></li>
+                          <li><a href="{% url  'oppurtunities:opp_edit' m.id %}">Edit</a></li>
+                          <li><a href="{% url  'oppurtunities:opp_delete' m.id %}">Delete</a></li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% ifequal opportunity|length 0 %}
+                <h4>
+                  <center>No data Found</center>
+                </h4>
+              {% else %}
+                <div class="pagination_row marl row text-center">
+                  <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                      {% show_pages %}
+                    </ul>
+                  </nav>
+                </div>
+              {% endifequal %}
+              </div>
+                  </div>
+                 </div>
+               </div>
+            <br clear="all">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block js_block %}
+  <script src="{% static 'js/opportunities/contacts.js' %}"></script>
+{% endblock %}

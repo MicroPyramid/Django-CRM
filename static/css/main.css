@@ -1,0 +1,753 @@
+body {
+    font-family: Poppins, sans-serif;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 0;
+    padding-top: 60px;
+}
+
+.login_register_body {
+    background: #808080;
+}
+
+.marl {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.input-focus {
+    border-color: red
+}
+
+.login_block {
+    margin-top: 75px;
+    background: #fff;
+    -webkit-box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
+    -moz-box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
+    box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
+}
+
+.login_block .welcome {
+    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #333;
+}
+
+.login_block .welcome span {
+    color: #00e5ff;
+}
+
+.login_block .welcome span.create_head {
+    color: #7eea51;
+}
+
+.login_form_block {
+    margin-top: 30px;
+    padding: 50px 15px;
+}
+
+.login_form_block .welcome {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login_form_block .form-group {
+    margin-bottom: 15px;
+}
+
+.login_form_block label {
+    font-size: 12px;
+    color: #595f75;
+    font-weight: 500;
+}
+
+.login_form_block .form-control {
+    background: #dcdcdc;
+    color: #5a6e79;
+    min-height: 40px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    box-shadow: none;
+    border: none;
+    border-radius: 3px;
+}
+
+.login_form_block .btn {
+    background: #ed6364;
+    border-radius: 3px;
+    border: none;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 1px;
+    font-weight: 500;
+    color: #fff;
+    width: 100%;
+    outline: none;
+    padding: 10px 20px;
+}
+
+.login_form_block .btn:hover {
+    text-decoration: none;
+}
+
+.login_form_block .checkbox {
+    text-align: center;
+}
+
+.login_form_block .checkbox input[type=checkbox] {
+    vertical-align: middle;
+    margin: 0;
+    margin-top: 1px;
+    margin-left: -19px;
+}
+
+/* inner_pages starts here */
+.main_body_bg_color {
+    background: #CDCDCD;
+}
+
+header .navbar-default {
+    background: #39464d;
+    border: none;
+}
+
+header .navbar-default .navbar-brand {
+    color: #ed6364;
+}
+
+header .navbar-default .navbar-brand:hover {
+    color: #ed6364;
+}
+
+header .navbar-default .navbar-nav > li > a {
+    color: #aaa;
+    font-weight: 500;
+    font-size: 12px;
+    padding: 15px 10px;
+}
+
+header .navbar-default .navbar-nav > li > a:hover {
+    color: #ddd;
+}
+
+header .navbar-default .navbar-nav > .open > a {
+    background: #ed6364 !important;
+}
+
+header .navbar-default .navbar-nav li .dropdown-menu li a {
+    font-size: 12px;
+}
+
+header .navbar-default .navbar-nav.navbar-right .dropdown > a {
+    padding: 15px 10px;
+}
+
+.leadviewactions {
+    display: inline-block;
+}
+
+header .navbar-default .navbar-nav > li > a:hover {
+    color: #ddd;
+}
+
+header .navbar-default .navbar-nav > .open > a {
+    background: #ed6364 !important;
+}
+
+header .navbar-default .navbar-nav li .dropdown-menu li a {
+    font-size: 12px;
+}
+
+header .navbar-default .navbar-nav.navbar-right .dropdown > a {
+    background: #657b88;
+    color: #fff;
+    border-right: 1px solid #718895;
+}
+
+header .navbar-default .navbar-form .form-group .form-control {
+    border-radius: 3px;
+    border: none;
+}
+
+header .navbar-default .navbar-form .btn {
+    border-radius: 3px;
+    padding: 7px 12px;
+    border: none;
+    background: #41B871;
+}
+
+header .navbar-default .navbar-form .btn.btn-default {
+    color: #fff;
+}
+
+/* inner_pages ends here */
+/* CSS used here will be applied after bootstrap.css */
+.glyphicon-bell {
+    font-size: 1.5rem;
+}
+
+.notifications {
+    min-width: 420px;
+    font-size: 12px;
+    padding: 0;
+    border: none;
+}
+
+.notifications a.content {
+    text-decoration: none;
+    background: #ccc;
+}
+
+.notifications-wrapper {
+    overflow: auto;
+    max-height: 250px;
+}
+
+.menu-title {
+    color: #ffffff;
+    font-size: 12px;
+    display: inline-block;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+.glyphicon-circle-arrow-right {
+    margin-left: 10px;
+}
+
+.notification-heading {
+    padding: 2px 10px;
+    background: #657b88;
+    border-top: 1px solid #718895;
+}
+
+.notification-footer {
+    padding: 2px 10px;
+    background: #41B871;
+}
+
+.dropdown-menu.divider {
+    margin: 5px 0;
+}
+
+.item-title {
+    font-size: 12px;
+    color: #39464d;
+    margin: 0;
+}
+
+.notification-item {
+    padding: 10px;
+    margin: 5px;
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.notification-item p {
+    margin: 0;
+    color: #fff;
+    margin-top: 6px;
+}
+
+/* main_container stats here  */
+.main_container {
+    /* filter_row starts here */
+    /* filter_row ends here */
+    /* table_container_row starts here */
+}
+
+.main_container .heading_create .heading {
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #39464d;
+    font-weight: 600;
+}
+
+.main_container .heading_create .create_new a {
+    background: #ed6364;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    display: inline-block;
+    padding: 10px 10px 7px 10px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .left-dropdown .filters-button {
+    font-size: 12px;
+    background: #fff;
+    border: none;
+    box-shadow: none;
+    margin-top: 1px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .left-dropdown .dropdown-menu li a {
+    font-size: 12px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .left-dropdown .dropdown-menu li.checkbox {
+    color: #000;
+    padding-left: 10px;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .left-dropdown .dropdown-menu li.checkbox input[type=checkbox] {
+    margin: 0;
+    margin-left: -10px;
+    margin-top: 1px;
+    margin-right: 10px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .form-control {
+    height: 29px;
+    border: none;
+    margin-top: 2px;
+}
+
+.main_container .heading_create .search-row .form-group .input-group .search {
+    background: #41B871;
+    color: #fff;
+    border: none;
+    padding: 5px 13px;
+    margin-top: 2px;
+}
+
+.main_container .heading_create .search-row .extra_option_btn {
+    font-size: 12px;
+    background: #5b636e;
+    border: none;
+    color: #fff;
+    padding-top: 7px;
+    padding-bottom: 7px;
+}
+
+.main_container .heading_create .search-row .extra_option_btn.add-filter-button {
+    background-color: #099CBE;
+}
+
+.main_container .heading_create .search-row .dropdown-menu {
+    font-size: 12px;
+}
+
+.main_container .filter_row, .main_container .assigned_teams, .main_container .overview_form_block, .main_container .details_block, .main_container .attendees {
+    margin-top: 0px;
+}
+
+.main_container .filter_row .panel .panel-heading, .main_container .assigned_teams .panel .panel-heading, .main_container .overview_form_block .panel .panel-heading, .main_container .details_block .panel .panel-heading, .main_container .attendees .panel .panel-heading {
+    text-transform: uppercase;
+}
+
+.main_container .filter_row .panel .panel-content, .main_container .assigned_teams .panel .panel-content, .main_container .overview_form_block .panel .panel-content, .main_container .details_block .panel .panel-content, .main_container .attendees .panel .panel-content {
+    padding: 10px 0;
+}
+
+.main_container .filter_row .panel .panel-content .form-group, .main_container .assigned_teams .panel .panel-content .form-group, .main_container .overview_form_block .panel .panel-content .form-group, .main_container .details_block .panel .panel-content .form-group, .main_container .attendees .panel .panel-content .form-group {
+    margin-bottom: 10px;
+}
+
+.main_container .filter_row .panel .panel-content .form-group label, .main_container .assigned_teams .panel .panel-content .form-group label, .main_container .overview_form_block .panel .panel-content .form-group label, .main_container .details_block .panel .panel-content .form-group label, .main_container .attendees .panel .panel-content .form-group label {
+    color: #5a6e79;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.main_container .filter_row .panel .panel-content .form-group .form-control, .main_container .assigned_teams .panel .panel-content .form-group .form-control, .main_container .overview_form_block .panel .panel-content .form-group .form-control, .main_container .details_block .panel .panel-content .form-group .form-control, .main_container .attendees .panel .panel-content .form-group .form-control {
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 12px;
+}
+
+/* main_container ends here */
+.table_container_row {
+    margin-top: 10px;
+    /* mail_menu starts here */
+    /* mail_menu ends here */
+}
+
+.table_container_row .panel-default .panel-heading {
+    padding: 5px 10px;
+}
+
+.table_container_row .panel-default .panel-heading .dropdown {
+    display: inline-block;
+}
+
+.table_container_row .panel-default .panel-heading .dropdown .dropdown-toggle {
+    background: #099CBE;
+    font-size: 12px;
+    color: #fff;
+    border-radius: 0;
+    border: none;
+}
+
+.table_container_row .panel-default .panel-heading .mark_read {
+    background: #CDCDCD;
+    display: inline-block;
+    padding: 6px 10px;
+    margin-left: 6px;
+    color: #5a6e79;
+}
+
+.table_container_row .panel-default .panel-heading .mark_read:hover {
+    background: #5a6e79;
+    color: #fff;
+    text-decoration: none;
+}
+
+.table_container_row .panel-default .panel-heading .total_count {
+    margin-top: 5px;
+}
+
+.table_container_row .panel-content {
+    padding: 15px;
+}
+
+.table_container_row .panel-content table thead tr th {
+    background: #5b646d;
+    color: #fff;
+    font-weight: 500;
+    /* text-transform: uppercase; */
+    font-size: 12px;
+    border: none;
+}
+
+.table_container_row .panel-content table tbody tr td {
+    vertical-align: middle;
+    color: #5b636d;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.table_container_row .panel-content table tbody tr td .dropdown .dropdown-toggle {
+    background: #099CBE;
+    font-size: 12px;
+    color: #fff;
+    border-radius: 0;
+    border: none;
+}
+
+.table_container_row .mail_menu .panel {
+    border-radius: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+}
+
+.table_container_row .mail_menu .panel .panel-content {
+    padding: 0;
+}
+
+.table_container_row .mail_menu .panel .panel-content .mail_options {
+    margin: 0;
+    padding: 0;
+}
+
+.table_container_row .mail_menu .panel .panel-content .mail_options li {
+    list-style: none;
+}
+
+.table_container_row .mail_menu .panel .panel-content .mail_options li a {
+    display: block;
+    padding: 10px;
+    background: #5a6e79;
+    margin: 1px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.table_container_row .mail_menu .panel .panel-content .mail_options li a:hover {
+    background: #41B871;
+    color: #fff;
+    text-decoration: none;
+    border-left: 3px solid white;
+}
+
+.table_container_row .mail_menu .panel .panel-content .mail_options li.active a {
+    background: #41B871;
+    color: #fff;
+    text-decoration: none;
+    border-left: 3px solid white;
+}
+
+/* table_container_row ends here */
+/* breadcrumb starts here */
+.breadcrumb {
+    margin: 0;
+    display: inline-block;
+    background: none;
+}
+
+.breadcrumb > li + li {
+    color: #5a6e79;
+}
+
+.breadcrumb > li + li:before {
+    color: #696565;
+}
+.breadcrumb_view_actions{
+    margin-bottom: 10px;
+}
+.view_actions{
+    padding-right:15px;
+}
+
+.breadcrumb > li + li:before {
+    color: #5a6e79;
+}
+
+/* breadcrumb ends here */
+/* assigned_teams starts here */
+.assigned_teams {
+    margin-top: 0;
+}
+
+/* assigned_teams ends here */
+/* overview_form_block starts here */
+.overview_form_block {
+    margin-top: 0;
+}
+
+.overview_form_block .form-control {
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 12px;
+}
+
+.overview_form_block .country_class {
+    margin-top: 10px;
+}
+
+.overview_form_block .shiiping_block {
+    margin-top: 10px;
+}
+
+.overview_form_block .shiiping_block .checkbox {
+    color: #5a6e79;
+}
+
+.overview_form_block .filters-button {
+    border-radius: 0;
+}
+
+.overview_form_block .website_block {
+    margin-top: 10px;
+}
+
+.overview_form_block .search {
+    border-radius: 0;
+}
+
+.overview_form_block .copy_billing_btn {
+    margin-top: 10px;
+    display: block;
+}
+
+/* overview_form_block ends here */
+/* details_block starts here */
+.details_block .form-control {
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 12px;
+}
+
+.buttons_row {
+    margin-bottom: 20px;
+}
+
+.buttons_row button {
+    border-radius: 0;
+    font-size: 12px;
+}
+
+.buttons_row button.save {
+    background: #099CBE;
+    color: #fff;
+}
+
+/* details_block ends here */
+/* attendees starts here */
+/* attendees ends here */
+
+/*# sourceMappingURL=main.css.map */
+.filter_buttons {
+    margin-top: 20px;
+}
+
+.buttons_row button.save {
+    background: #099CBE;
+    color: #fff;
+}
+
+.fade {
+    opacity: 0;
+    transition: opacity 1s linear;
+}
+
+.fade-scale {
+    transform: scale(0);
+    opacity: 0;
+    -webkit-transition: all .25s linear;
+    -o-transition: all .25s linear;
+    transition: all .25s linear;
+}
+
+.fade-scale.in {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.errorlist li {
+    color: red;
+    font-size: 12px;
+    font-size: 100%;
+    list-style: none;
+    margin-left:-35px;
+    margin-top:0px;
+}
+
+.errorlist li:before {
+    content: "*";
+}
+
+.jqueryError_list{
+    color: red;
+    font-size: 12px;
+    font-size: 100%;
+    list-style: none;
+}
+
+.jqueryError_list{
+content:"*";
+}
+
+.filter_col.btn{
+    margin-top: 20px;
+}
+
+.btn-primary {
+    color: #000;
+    background-color: #099CBE;
+    border-color: #ffffff;
+}
+
+.table_container_row .panel-default .panel-heading-list {
+    padding: 15px 10px;
+    border-bottom: 1px solid transparent;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    color: #333;
+    background-color: #f5f5f5;
+    border-color: #ddd;
+}
+
+.reminderslist input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"] + label span {
+    display: inline-block;
+    width: 19px;
+    height: 19px;
+    margin: -1px 4px 0 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+input[type="checkbox"]:checked + label span {
+    color: red;
+    display: none;
+}
+
+.pagination {
+    text-align: center;
+}
+
+.pagination {
+    /*float: right;*/
+    position: relative;
+    top: 9px;
+}
+
+.pagination ul {
+    margin: 0px;
+    padding: 0;
+}
+
+.pagination ul li {
+    list-style: none;
+    display: inline-block;
+}
+
+.pagination ul li a {
+    padding: 8px 10px;
+    border: 1px solid #fff;
+    font-size: 13px;
+    margin: 15px 0px;
+    cursor: pointer;
+}
+
+.pagination ul li a:hover {
+    background: #fff;
+    color: #4c4c4c;
+}
+
+.pagination ul .active a {
+    background: #fff;
+    color: #4c4c4c;
+}
+
+.account_field {
+    font-size: 13px
+}
+
+.lead_address_col {
+    margin-top:10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.panel-heading{
+    background:#099CBE;
+}
+.opportunities_cases .panel .panel-heading{
+    padding:10px;
+}
+.assigned_teams_section{
+   padding:0px;
+}
+.button_content{
+    margin-top: 10px;
+}
+.stream_list{
+    margin-top:10px;
+}
+.stream_list ul {
+    margin:0;
+    padding:0;
+}
+.stream_list ul li{
+    list-style: none;
+    padding:10px;
+    border-top:1px solid #ddd;
+}
+.stream_list ul li .heading_dropdown{
+
+}
+.stream_list ul li .time{
+    margin-top:6px;
+}
+.stream_button_actions{
+    margin-top: 6px;
+}
+.nav>li>a>img{
+    width: 20px;
+}

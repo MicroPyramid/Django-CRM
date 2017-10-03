@@ -1,0 +1,51 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CRM Login</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <!-- Custom styling plus plugins -->
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+    <!-- <link href="css/main.css" rel="stylesheet"> -->
+</head>
+<body class="login_register_body">
+<div class="container">
+    <div class="row marl login_row">
+        <div class="col-md-offset-4 col-md-4 col-md-offset-4">
+            <div class="login_block">
+                <div class="login_form_block">
+                    <div class="welcome">Login to your crm account</div>
+                    {% if form.errors %}
+                    <p>Your username and password didn't match. Please try again.</p>
+                    {% endif %}
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                    <div class="form-group">
+                    <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
+                    </div>
+                    <div class="form-group">
+                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
+                    </div>
+
+                    <button type="submit" class="btn btn-default">Login here</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--<script src="js/jquery.min.js"></script>-->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+        integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+        crossorigin="anonymous"></script>
+</body>
+</html>

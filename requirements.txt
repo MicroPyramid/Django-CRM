@@ -1,0 +1,4 @@
+Django==1.11.5
+django-simple-pagination==1.1.8
+pytz==2017.2
+psycopg2==2.7.3.1

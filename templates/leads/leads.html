@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+{% load paginate %}
+
+<div class="row marl heading_create">
+   <div class="heading col-md-2">Leads</div>
+   <div class="col-md-7">
+      <div class="row marl search-row">
+         <div class="form-group col-md-8 col-sm-8">
+            <div class="input-group">
+               <div class="input-group-btn left-dropdown">
+                  <button type="button" class="btn dropdown-toggle filters-button btn-default" title="Filter" data-togg+le="dropdown" tabindex="-1" aria-expanded="false">
+                  <span class="filters-label">All</span>
+                  <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu pull-left filter-menu">
+                     <li>
+                        <a class="preset" tabindex="-1" href="javascript:" data-name="" data-action="selectPreset">
+                           <span class="glyphicon glyphicon-ok pull-right"></span>
+                           <div>All</div>
+                        </a>
+                     </li>
+                     <li>
+                        <a class="preset" tabindex="-1" href="javascript:" data-name="portalUsers" data-action="selectPreset">
+                           <div>Portal Users</div>
+                        </a>
+                     </li>
+                     <li class="divider preset-control hidden"></li>
+                     <li class="preset-control remove-preset hidden"><a tabindex="-1" href="#" data-action="removePreset">Remove Filter</a></li>
+                     <li class="preset-control save-preset hidden"><a tabindex="-1" href="#" data-action="savePreset">Save Filter</a></li>
+                     <li class="divider"></li>
+                     <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="onlyMy"> 
+                        &nbsp;&nbsp;Only My</label>
+                     </li>
+                     <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="followed"> &nbsp;&nbsp;Followed</label></li>
+                  </ul>
+               </div>
+               <input type="text" class="form-control text-filter" name="textFilter" value="" tabindex="1">
+               <div class="input-group-btn">
+                  <button type="button" class="btn btn-primary search btn-icon" data-action="search">
+                  <span class="glyphicon glyphicon-search"></span>
+                  </button>
+               </div>
+            </div>
+         </div>
+         <div class="form-group col-md-4 col-sm-4">
+            <div class="btn-group">
+               <a href="{% url 'contacts:list' %}"><button type="button" class="btn btn-default extra_option_btn" data-action="reset"></a>
+               <span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset
+               </button>
+               <button type="button" class="btn btn-default dropdown-toggle extra_option_btn add-filter-button" data-toggle="dropdown" tabindex="-1">
+               Add Field <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu pull-right filter-list">
+                  <li data-name="account" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="account">Account</a></li>
+                  <li data-name="address" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="address">Address</a></li>
+                  <li data-name="assignedUser" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="assignedUser">Assigned User</a></li>
+                  <li data-name="createdAt" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="createdAt">Created At</a></li>
+                  <li data-name="emailAddress" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="emailAddress">Email</a></li>
+                  <li data-name="phoneNumber" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="phoneNumber">Phone</a></li>
+                  <li data-name="title" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="title">Title</a></li>
+                  <li data-name="teams" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="teams">Teams</a></li>
+                  <li data-name="targetLists" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="targetLists">Target Lists</a></li>
+               </ul>
+            </div>
+         </div>
+      </div>
+   </div>
+   <div class="create_new col-md-3 text-right">
+      <a href="{% url 'leads:add_lead'%}"><i class="fa fa-plus"></i> Add New Lead</a>
+   </div>
+</div>
+<!-- heading_create ends here -->
+<!-- filter_row starts here -->
+<form action="" method='POST'>{%csrf_token%}
+  <div class="filter_row row marl">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          FILTERS
+        </div>
+        <div class="panel-content">
+          <div class="filter_col col-md-3">
+            <div class="form-group">
+              <label for="exampleInputEmail1">Name</label>
+              <input type="text" class="form-control" name="name" {% if request.GET %} value="{{request.GET.name}}" {% endif %}>
+            </div>
+          </div>
+          <div class="filter_col col-md-3">
+            <div class="form-group">
+              <label for="exampleInputEmail1">Accounts</label>
+              <select class="form-control" id="id_account" name="account">
+                <option value="" selected="selected">---------</option>
+                {% for i in account %}
+                <option value="{{i.id}}" {%ifequal i.id request.GET.account|add:"0" %}selected{%endifequal%}>{{ i.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="filter_col col-md-3">
+            <div class="form-group">
+              <label for="exampleInputEmail1">Email</label>
+              <input type="text" class="form-control" name="email" {% if request.GET %} value="{{request.GET.email}}" {% endif %} >
+            </div>
+          </div>
+          <div class="filter_col col-md-3">
+            <div class="form-group">
+              <label for="exampleInputEmail1">Status</label>
+              <select class="form-control" id="id_status" name="status" >
+                <option value="">----------</option>
+                {% for s in status %}
+                  <option value="{{s.0}}" {% if request.GET.status %} {% ifequal s.0 request.GET.status %} selected {% endifequal %}{% endif %} >{{s.1}} </option>
+                {% endfor%}
+              </select>
+            </div>
+          </div>
+          <div class="filter_col col-md-5"></div>
+            <button  class="btn btn-primary save" id="filters_search" type="submit">Search</button>
+            <a href="{% url 'leads:list' %}"><button class="btn btn-default" type="button">Cancel</button></a>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+  </div>
+</form>
+<div class="table_container_row row marl">
+   <div class="col-md-12">
+      <div class="panel panel-default">
+         <div class="panel-heading-list text-center">
+            LIST OF LEADS
+            <span class="pull-right total_count">Total Leads {{count}}</span>
+         </div>
+         <div class="panel-content">
+         <table  id="leadslist" class="table table-bordered table-striped table-condensed">
+            <thead>
+               <tr>
+                  <th width="5%" style="text-align:center;">S.No</th>
+                  <th width="30%" style="text-align:center;">NAME</th>
+                  <th width="25%" style="text-align:center;">EMAIL</th>
+                  <th width="25%" style="text-align:center;">STATUS</th>
+                  <th width="15%" style="text-align:center;">ACTIONS</th>
+               </tr>
+            </thead>
+            <tbody>
+            {% paginate 10 crm_task as crm_task %}
+            {% for m in crm_task %}
+              <tr>
+                <td scope="row" style="text-align:center;">{{ forloop.counter }}</td>
+                <td style="text-align:center;"><a href="{% url 'leads:view_lead' m.id %}">{{ m.name }}</a></td>
+                <td style="text-align:center;">{{ m.email }}</td>
+                <td style="text-align:center;">{{ m.status }}</td>
+                <td style="text-align:center;">
+                  <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                    <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                      <li><a href="{% url 'leads:view_lead' m.id %}">View</a></li>
+                      <li><a href="{% url 'leads:edit_lead' m.id %}">Edit</a></li>
+                      <li><a href="{% url 'leads:delete_lead' m.id %}">Delete</a></li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+         </table>
+         {%ifequal crm_task|length 0%}
+            <h4>
+               <center>No data Found</center>
+            </h4>
+         {% else %}
+         <div class="pagination_row marl row text-center">
+            <nav aria-label="Page navigation">
+              <ul class="pagination">
+                {% show_pages %}
+              </ul>
+            </nav>
+          </div>
+         {%endifequal%}
+{% endblock %}
+

@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+    <!-- header ends here -->
+    <!-- main_container starts here -->
+   {% block content %}
+    <div class="main_container">
+
+    <!-- heading_create starts here -->
+     <div class="row marl heading_create">
+       <div class="heading col-md-2"><h3>Cases</h3></div>
+       <div class="col-md-7">
+          <div class="row marl search-row">
+        <div class="form-group col-md-8 col-sm-8">
+            <div class="input-group">
+                <div class="input-group-btn left-dropdown">
+                    <button type="button" class="btn dropdown-toggle filters-button btn-default" title="Filter" data-toggle="dropdown" tabindex="-1" aria-expanded="false">
+                        <span class="filters-label">All</span>
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu pull-left filter-menu">
+
+                        <li><a class="preset" tabindex="-1" href="javascript:" data-name="" data-action="selectPreset"><span class="glyphicon glyphicon-ok pull-right"></span><div>All</div></a></li>
+                        <li><a class="preset" tabindex="-1" href="javascript:" data-name="portalUsers" data-action="selectPreset"><div>Portal Users</div></a></li>
+                        <li class="divider preset-control hidden"></li>
+
+
+                        <li class="preset-control remove-preset hidden"><a tabindex="-1" href="#" data-action="removePreset">Remove Filter</a></li>
+                        <li class="preset-control save-preset hidden"><a tabindex="-1" href="#" data-action="savePreset">Save Filter</a></li>
+                            <li class="divider"></li>
+
+                            <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="onlyMy">
+                            &nbsp;&nbsp;Only My</label></li>
+                            <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="followed"> &nbsp;&nbsp;Followed</label></li>
+                    </ul>
+                </div>
+                <input type="text" class="form-control text-filter" name="textFilter" value="" tabindex="1">
+                <div class="input-group-btn">
+                    <button type="button" class="btn btn-primary search btn-icon" data-action="search">
+                        <span class="glyphicon glyphicon-search"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+      <div class="form-group col-md-4 col-sm-4">
+          <div class="btn-group">
+              <button type="button" class="btn btn-default extra_option_btn" data-action="reset">
+                  <span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset
+              </button>
+              <button type="button" class="btn btn-default dropdown-toggle extra_option_btn add-filter-button" data-toggle="dropdown" tabindex="-1">
+                  Add Field <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu pull-right filter-list">
+                      <li data-name="account" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="account">Account</a></li>
+                      <li data-name="address" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="address">Address</a></li>
+                      <li data-name="assignedUser" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="assignedUser">Assigned User</a></li>
+                      <li data-name="createdAt" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="createdAt">Created At</a></li>
+                      <li data-name="emailAddress" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="emailAddress">Email</a></li>
+                      <li data-name="phoneNumber" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="phoneNumber">Phone</a></li>
+                      <li data-name="title" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="title">Title</a></li>
+                      <li data-name="teams" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="teams">Teams</a></li>
+                      <li data-name="targetLists" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="targetLists">Target Lists</a></li>
+              </ul>
+          </div>
+      </div>
+    </div>
+       </div>
+        <div class="create_new col-md-3 text-right">
+          <a href="{% url 'cases:case_add' %}"><i class="fa fa-plus"></i> Add New Case</a>
+        </div>
+      </div>
+    <!-- heading_create ends here -->
+    <!-- filter_row starts here -->
+    <div class="filter_row row marl">
+    <div class="col-md-12">
+     <div class="panel panel-default">
+      <div class="panel-heading">
+      filters
+      </div>
+      <form id="filter_form" method="POST" action="" >{% csrf_token %}
+      <div class="panel-content">
+         <div class="filter_col col-md-3">
+        <div class="form-group">
+          <label for="exampleInputEmail1">Name</label>
+          <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+        </div>
+       </div>
+        <div class="filter_col col-md-3">
+         <div class="form-group">
+           <label for="exampleInputEmail1">Status</label>
+          <select class="form-control" id="id_status" name="status">
+            <option value="">--Select Status--</option>
+            <option value="New" {% ifequal request.POST.status "New"%} selected {% endifequal %}>New</option>
+            <option value="Assigned" {% ifequal request.POST.status "Assigned"%} selected {% endifequal %}>Assigned</option>
+            <option value="Pending" {% ifequal request.POST.status "Pending"%} selected {% endifequal %}>Pending</option>
+            <option value="Closed" {% ifequal request.POST.status "Closed"%} selected {% endifequal %}>Closed</option>
+            <option value="Rejected" {% ifequal request.POST.status "Rejected"%} selected {% endifequal %}>Rejected</option>
+            <option value="Duplicate" {% ifequal request.POST.status "Duplicate"%} selected {% endifequal %}>Duplicate</option>
+          </select>
+        </div>
+        </div>
+         <div class="filter_col col-md-3">
+         <div class="form-group">
+           <label for="exampleInputEmail1">Priority</label>
+          <select class="form-control" id="id_priority" name="priority">
+            <option value="">--Select Priority--</option>
+             <option value="Low" {% ifequal request.POST.priority "Low"%} selected {% endifequal %}>Low</option>
+            <option value="Normal" {% ifequal request.POST.priority "Normal"%} selected {% endifequal %}>Normal</option>
+            <option value="High" {% ifequal request.POST.priority "High"%} selected {% endifequal %}>High</option>
+            <option value="Urgent" {% ifequal request.POST.priority "Urgent"%} selected {% endifequal %}>Urgent</option>
+          </select>
+        </div>
+        </div>
+         <div class="filter_col col-md-3">
+         <div class="form-group">
+          <label for="exampleInputEmail1">Account</label>
+          <select class="form-control" id="id_account" name="account">
+            <option value="">--Select Account--</option>
+             {% for ac in accounts %}
+                <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
+              {% endfor %}
+              </select>
+          </select>
+        </div>
+        </div>
+        <input type="hidden" id="per_page_field" name="per_page">
+        <div class="filter_col col-md-5"></div>
+         <button class="btn btn-default save" id="filter_click" type="submit">Search</button>
+         </form>
+
+        <br clear="all">
+      </div>
+      </div>
+     </div>
+    </div>
+    </div>
+    <!-- filter_row ends here -->
+     <div class="table_container_row row marl">
+      <div class="col-md-12">
+         <div class="panel panel-default">
+            <div class="panel-heading-list text-center">
+              LIST OF CASES
+              <span class="pull-right total_count">Total Cases {{cases|length}} </span>
+            <div class="panel-content">
+              <table class="table table-bordered table-striped table-condensed" id="multiselect">
+                  <thead>
+                    <tr>
+                      <th width="5%" style="text-align:center;">S.No</th>
+                      <th width="20%" style="text-align:center;">Name</th>
+                      <th width="20%" style="text-align:center;">Account</th>
+                      <th width="20%" style="text-align:center;">Status</th>
+                      <th width="20%" style="text-align:center;">Priority</th>
+                      <th width="15%" style="text-align:center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% paginate 10 cases as cases %}
+                  {% for c in cases %}
+                    <tr class="case_row{{c.id}}">
+                      <td scope="row" style="text-align:center;">{{ forloop.counter }}</td>
+                      <td style="text-align:center;"><a href="{% url 'cases:show-case' c.id %}">{{c.name}}</a></td>
+                      <td style="text-align:center;">{% ifequal c.account None %}Not Specified
+                       {% else %}<a href="{% url 'accounts:view_account' c.account.id %}">{{c.account}}{% endifequal %}</a></td>
+                      <td style="text-align:center;">{% ifequal c.status None %}Not Specified
+                       {% else %}{{c.status}}{% endifequal %}
+                      </td>
+                      <td style="text-align:center;">{%ifequal c.priority None%}Not Specified
+                       {% else %}{{c.priority}}{% endifequal %}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                          <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'cases:show-case' c.id %}">View</a></li>
+                            <li><a href="{% url 'cases:edit_case' c.id %}" >Edit</a></li>
+                            <li><a onclick="remove_case({{c.id}})">Remove</a></li>
+                            <li><a onclick="close_case({{c.id}})">Close Case</a></li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                 </tbody>
+                </table>
+                <div>{% ifequal cases|length 0 %}
+                <div class="marl row text-center">
+                    <h4>No cases Found</h4>
+                    {% endifequal %}
+                    </div>
+          <div class="marl row text-center">
+            {% show_pages %}
+            </div>
+          </div>
+           </div>
+            </div>
+          </div>
+        </div>
+  </div>
+      <br clear="all">
+    </div>
+    </div>
+    <!-- modal diologue ends here -->
+
+    <!-- main_container ends here -->
+    </div>
+ <script src="{% static 'js/cases/cases.js' %}"></script>
+ <script src="{% static 'js/cases/show_case.js' %}"></script>
+ <script src="{% static 'js/cases/create_case.js' %}"></script>
+    {% endblock %}

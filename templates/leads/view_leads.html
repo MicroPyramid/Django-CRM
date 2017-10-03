@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+<!-- main_container starts here -->
+<div class="main_container">
+  {% block breadcrumb1 %}
+  <!-- breadcrumb starts here -->
+  <ol class="breadcrumb">
+    <li><a href="/leads/list">LEADS</a></li>
+    <li>VIEW</li>
+    <li class="active">{{ss.name}}</li>
+  </ol>
+  <!-- breadcrumb ends here -->
+  {% endblock breadcrumb1 %}
+  {% block content %}
+  <!-- ACCOUNTS VIEW STARTS -->
+  <div class="main_container" id="maincontainer">
+    <div class="overview_form_block row marl">
+      <div class="col-md-8">
+        <div class="panel panel-default">
+          <div class="panel-heading view-pad">
+            <h5>OVERVIEW
+              <span class="pull-right" style="margin-top: -10px">
+                <div class="dropdown">
+                  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                  <span class="caret"></span></button>
+                  <ul class="dropdown-menu">
+                    <li><a href="{% url 'leads:edit_lead' ss.id %}" >Edit</a></li>
+                    <li class="delete_account" ><a href="{% url 'leads:delete_lead' ss.id %}" id="remove_account">REMOVE</a></li>
+                    <li><a href="{% url 'leads:leads_convert' ss.id %}">Convert</a></li>
+                  </ul>
+                </div>
+              </span>
+            </h5>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12" id="iname">
+                  <div class="form-group" >
+                    <label class="acc_field_label" for="id_name" data-name="name" >Name</label>
+                    <div class="account_field" id="name" data-name="name">
+                      {%if not ss.name %}
+                        Not Specified
+                      {% else %}
+                        {{ss.name}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Account</label>
+                    <div class="account_field" id="account" data-name="name">
+                      {%if not ss.account.name %}
+                        Not Specified
+                      {% else %}
+                        {{ss.account.name}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Title</label>
+                    <div class="account_field" id="title" data-name="name">
+                      {%if not ss.title %}
+                        Not Specified
+                      {% else %}
+                        {{ss.title}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Phone</label>
+                    <div class="account_field" id="phone" data-name="name">
+                      {%if not ss.phone %}
+                        Not Specified
+                      {% else %}
+                        {{ss.phone}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Email</label>
+                    <div class="account_field" id="email" data-name="name">
+                      {%if not ss.email %}
+                        Not Specified
+                      {% else %}
+                        {{ss.email}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Status</label>
+                    <div class="account_field" id="status" data-name="name">
+                      {%if not ss.status %}
+                        Not Specified
+                      {% else %}
+                        {{ss.status}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Source</label>
+                    <div class="account_field" id="source" data-name="name">
+                      {%if not ss.source %}
+                        Not Specified
+                      {% else %}
+                        {{ss.source}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Website</label>
+                    <div class="account_field" id="website" data-name="name">
+                      {%if not ss.website %}
+                        Not Specified
+                      {% else %}
+                        {{ss.website}}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_name" data-name="name" >Billing Address</label>
+                    <div class="account_field" id="address" data-name="name">{% if not ss.address %}Not Specified {% else %} {{ss.address.street}}, {{ss.address.city}}, {{ss.address.state}}, {{ss.address.postcode}}, {{ss.address.country.printable_name}}.{% endif %}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row marl">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_name" data-name="name">Description</label>
+                  <div class="account_field" id="description" data-name="name">
+                    {%if not ss.description %}
+                      Not Specified
+                    {% else %}
+                      {{ss.description}}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-heading view-pad">
+            <h5>COMMENTS</h5>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="col-md-12">
+                <form id="comment_form" method="POST" >{% csrf_token %}
+                  <div class="form-group">
+                    <textarea class="form-control" textarea cols="40" id="id_comments" name="comment" rows="1" onkeypress="HideError(event)" placeholder="Submit Your Comments"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
+                    </br>
+                    <button class="btn btn-default save" id="comment_submit" type="submit">Submit</button>
+                  </div>
+                  <input type="hidden" value="{{ss.id}}" name="leadid">
+                </form>
+                <ul class="list-group" id="comments_div">
+                  {% for comment in comments %}
+                  <li class="list-group-item list-row" id="comment{{comment.id}}">
+                    <div class="pull-right right-container">
+                      <div class="list-row-buttons btn-group pull-right">
+                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                        <ul class="dropdown-menu pull-right">
+                          <li>
+                            <a class="action" onclick="edit_comment({{comment.id}})" >Edit</a>
+                          </li>
+                          <li>
+                            <a class="action" onclick="remove_comment({{comment.id}})" >Remove</a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="stream-head-container">{{comment.comment_user}} Commented</div>
+                    <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
+                    <div class="stream-date-container">{{comment.comment_time}}</div>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+            <!-- Comments Section Ends-->
+            <!-- COmment Edit Modal Starts Here -->
+            <div class="modal fade" id="myModal" role="dialog">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Update Your Comment</h4>
+                  </div>
+                  <div class="modal-body">
+                    <div class="form-group">
+                      <form id="comment_edit_form" method="POST" >{% csrf_token %}
+                        <textarea class="form-control" textarea cols="40" id="id_editcomment" name="comment" rows="1" placeholder="Submit Your Comments"></textarea>
+                        <input type="hidden" value="{{ss.id}}" name="leadid">
+                        <input type="hidden" value="" name="commentid" id="commentid">
+                        <button class="btn btn-default save" id="comment_edit" type="submit">Update</button>
+                      </form>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading text-center">
+            <h6>Users&Teams</h6>
+          </div>
+          <div class="panel-content" id="datashow">
+            <div class="row marl">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Assigned User</label>
+                  <div class="field" id="assigned_user" data-name="name">
+                    {%if not ss.assigned_user %}
+                      Not Specified
+                    {% else %}
+                      {{ss.assigned_user}}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Assigned Teams</label>
+                  <div class="field" id="teams" data-name="name">
+                    {%if not ss.teams %}
+                      Not Specified
+                    {% else %}
+                      {{ss.teams}}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Created At</label>
+                  <div class="field" id="teams" data-name="name">
+                    {%if not ss.created_date %}
+                      Not Specified
+                    {% else %}
+                      {{ss.created_date}}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+</div>
+
+{% block js_block %}
+<script src="{% static 'js/leadcomments/lead_comments.js' %}"></script>
+{% endblock %}
