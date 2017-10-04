@@ -1,13 +1,10 @@
-# Django-CRM
+Django-CRM
+==========
 
 Django-CRM provides a Customer relationship management dashboard where you can manage customers at sales of the organization. It Provides to manage leads information and its activity, track issues from leads, manage contacts to send emails of their progress.
 
 .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
    :target: https://travis-ci.org/MicroPyramid/Django-CRM
-
-.. image:: https://img.shields.io/pypi/dm/Django-CRM.svg
-    :target: https://pypi.python.org/pypi/Django-CRM
-    :alt: Downloads
 
 .. image:: https://img.shields.io/pypi/v/Django-CRM.svg
     :target: https://pypi.python.org/pypi/Django-CRM
@@ -26,13 +23,6 @@ Django-CRM provides a Customer relationship management dashboard where you can m
 
 http://django-crm.readthedocs.io for latest documentation
 
-Modules used:
-=============
-
-    * Python  >= 2.6 (or Python 3.4)
-    * Django  = 1.9.6
-    * JQuery  >= 1.7
-    * django-simple-pagination
 
 This project contains the following modules.
 
@@ -40,9 +30,8 @@ This project contains the following modules.
    * Accounts
    * Cases
    * Leads
-   * Oppurtunity
+   * Opportunity
    * Planner
-
 
 Installation
 ============
@@ -58,6 +47,3 @@ We welcome your feedback and support, raise github ticket if you want to report 
 
 .. _contact us here: https://micropyramid.com/contact-us/
 
-    or
-
-mailto:: "hello@micropyramid.com"
