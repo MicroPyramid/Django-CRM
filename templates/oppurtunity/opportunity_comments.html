@@ -1,0 +1,17 @@
+{% for comment in comments %}
+<li class="list-group-item list-row" id="comment{{comment.id}}">
+  <div class="pull-right right-container">
+    <div class="list-row-buttons btn-group pull-right">
+      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+      <ul class="dropdown-menu pull-right">
+      <li>
+      <a href="{% url 'comment_remove' pk=comment.pk %}"><button type="submit">Submit</button></a>
+        <span class="glyphicon glyphicon-remove"></span></a>
+      </li>
+      </ul>
+    </div>
+  </div>
+  <div class="stream-head-container">{{comment.comment_person}} Commented</div>
+  <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
+  <div class="stream-date-container">{{comment.comment_time}}</div>
+  {% endfor %}

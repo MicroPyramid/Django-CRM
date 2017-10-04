@@ -1,0 +1,186 @@
+{% extends 'base.html'%}
+{% load staticfiles%}
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="{%  url 'oppurtunities:list' %}">Opportunities</a></li>
+  <li class="active">Create</li>
+</ol>
+{% endblock %}
+{% block content %}
+<form class= "form_user" method="POST" action={% if opportunity_edit %}"{% url 'oppurtunities:opp_edit' opportunity_edit.id %}"{% else %}"{% url 'oppurtunities:save' %}" {% endif %}>
+{% csrf_token %}
+  <div class="editdiv">
+    <div class="assigned_teams row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Assigned Users & Teams
+          </div>
+          <div class="panel-content">
+            <div class="filter_col col-md-6">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Assigned Users</label>
+                <select class="form-control" id="id_users" name="users" >
+                  <option value="">---------</option>
+                  {% for m in users %}
+                  <option value="{{ m.id }}" {% if opportunity_edit%} {%ifequal m.id opportunity_edit.users_id %}selected {% endifequal %} {% endif %}{%ifequal m.id request.POST.users|add:"0"%}selected{%endifequal%}>{{ m.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-6">
+              <div class="form-group">
+                <label for="id_teams">Teams</label>
+                <select class="form-control" id="id_teams" name="teams">
+                  <option value="" selected="selected">---------</option>
+                  {% for k in teams %}
+                  <option value="{{ k.0 }}" {%ifequal k.0 opportunity_edit.teams %}selected {% endifequal %} {%ifequal k.0 request.POST.teams%}selected{%endifequal%}>{{ k.1 }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+    <div class="overview_form_block row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Overview
+          </div>
+          <div class="panel-content">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name *</label>
+                    <input type="text" class="form-control" id="id_name" name="name" {% if error.name %} value="" {% endif %} value={%if opportunity_edit%}"{{opportunity_edit.name}}" {% else %}"{{request.POST.name}}"{% endif %}/>
+                  </div>
+                </div>
+                {% if error.name %}
+                {{error.name}}
+                {% endif %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Account</label>
+                    <select class="form-control" id="id_account" name="account">
+                      <option value="">---------</option>
+                      {% for acc in accunt %}
+                      <option value="{{acc.id}}" {%ifequal acc.id opportunity_edit.account_id %}selected {% endifequal %} {%ifequal acc.id request.POST.account|add:"0"%}selected{%endifequal%}>{{ acc.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Amount *</label>
+                    <div class="input-group" style="width:100%;">
+                      <div class="input-group-btn left-dropdown" style="width:auto;">
+                        <select class="form-control">
+                          <option>USD</option>
+                          <option>EUR</option>
+                        </select>
+                      </div>
+                      <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" {%if error.amount %} value="" {% endif %}value={%if opportunity_edit%}"{{opportunity_edit.amount}}" {% else %}"{{request.POST.amount}}"{% endif %}/>
+                    </div>
+                  </div>
+                </div>
+                {% if error.amount %}
+                {{error.amount}}
+                {% endif %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Stage *</label>
+                    <select class="form-control" id="id_stage" name="stage" >
+                      <option value="" selected="selected">---------</option>
+                      {% for stage in stages %}
+                      <option value="{{stage.0}}" {% if opportunity_edit%}{% ifequal stage.0 opportunity_edit.stage %}selected{% endifequal %}{% endif %} {% if request.POST.stage %} {% ifequal stage.0 request.POST.stage %}selected{% endifequal %}{% endif %}  >{{stage.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                {% if error.stage %}
+                {{error.stage}}
+                {% endif %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Lead Source</label>
+                    <select class="form-control" id="id_lead_source" name="lead_source" >
+                      <option value="" selected="selected">---------</option>
+                      {% for source in sources %}
+                      <option value="{{source.0}}" {% if opportunity_edit%}{% ifequal source.0 opportunity_edit.lead_source %}selected{% endifequal %}{% endif %} {% if request.POST.lead_source %} {% ifequal source.0 request.POST.lead_source %}selected{% endifequal %}{% endif %} >{{source.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Probability(%) *</label>
+                    <input type="number" class="form-control " id="id_probability" name="probability" value={%if opportunity_edit%}"{{opportunity_edit.probability}}" {% else %}"{{request.POST.probability}}"{% endif %}/>
+                  </div>
+                </div>
+                {% if error.close_date %}
+                {{error.close_date}}
+                {% endif %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Contacts</label>
+                    <select class="form-control" id="id_contacts" name="contacts" multiple name="contacts">
+                    {% for cn in con %}
+                      <option value="{{cn.id}}" {% if selcon %}{% for sel in selcon %}{% ifequal cn.id sel.id %} selected {% endifequal%}{% endfor %}{%endif%}>{{cn.name}}</option>
+                    {% endfor %}
+                    {% if request.POST.account %}
+
+                    {% endif %}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Close Date *</label>
+                    <div class='input-group date' id='datepicker1'>
+                      <input type='text' class="form-control" id="id_close_date"  name="close_date" value={%if opportunity_edit%}"{{opportunity_edit.close_date|date:"Y-m-d"}}" {% else %}"{{request.POST.close_date}}"{% endif %}/>
+                      <span class="input-group-addon">
+                      <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {% if error.close_date %}
+                {{error.close_date}}
+                {% endif %}
+                <div class="form-group col-md-12">
+                  <label for="exampleInputEmail1" >Description</label>
+                  <textarea class="form-control" rows="5"  id="id_description" name="description"> {%if opportunity_edit%}{{opportunity_edit.description}} {% else %}{{request.POST.description}}{% endif %}</textarea>
+                </div>
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+          <!-- overview ends here -->
+          <div class="row marl buttons_row text-center">
+            <button class=" btn btn-default save" type="submit" id = "saveform">Save</button>
+            <a href="{% url 'oppurtunities:list' %}"><button type="button">Cancel</button></a>
+          </div>
+        </div>
+        <!-- main_container ends here -->
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block js_block %}
+<script src="{% static 'js/opportunities/contacts.js' %}"></script>
+<script type="text/javascript">
+  $(function () {
+      $('#datepicker1').datetimepicker({
+          'format': 'YYYY-MM-DD',
+      });
+  });
+</script>
+{% endblock js_block %}

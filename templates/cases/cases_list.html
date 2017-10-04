@@ -1,0 +1,38 @@
+<table class="table">
+    <thead>
+    <tr>
+        <th width="50%">
+            <a href='#'>
+                Name
+            </a>
+            <span class="caret"></span>
+        </th>
+        <th>
+            <a href="#">
+                Status
+            </a>
+        </th>
+    </tr>
+    </thead>
+    <tbody>
+    {% ifequal cases|length  0 %}
+     <tr>
+         <td class="cell">
+         NO CASES FOUND!!
+         </td>
+     </tr>
+    {% endifequal %}
+    {% for case in cases %}
+    <tr>
+        <td class="cell">
+            <a class="cell parentname" id="{{ case.id }}">
+                {{ case.name }}
+            </a>
+        </td>
+        <td class="cell parentstatus">
+            {{ case.status }}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
