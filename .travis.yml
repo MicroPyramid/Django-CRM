@@ -1,0 +1,14 @@
+language: python
+
+python:
+  - "3.4.3"
+
+install:
+  - python setup.py install
+  - pip install -r requirements.txt  
+
+script:
+  - coverage run --source=django_crm run_tests.py test
+
+after_success:
+  coveralls
