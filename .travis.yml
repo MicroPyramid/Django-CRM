@@ -8,7 +8,7 @@ install:
   - pip install -r requirements.txt  
 
 script:
-  - coverage run --source=django_crm  run_tests.py test
+  - coverage run --source=django_crm run_tests.py test
 
 after_success:
   coveralls
