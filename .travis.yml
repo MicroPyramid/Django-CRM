@@ -2,27 +2,18 @@ language: python
 python:
   - "3.4"
 
-#Django & Database
-addons:
-  postgresql: "9.4"
-
 sudo: false
 
 env:
-  -DJANGO=1.11 DB=postgresql
+  -DJANGO=1.11
 
 install:
   - pip install -r requirements.txt
   - pip install coveralls
 
-#mysql db creation
-before_script:
-  - sleep 15
-  - psql -c 'create database test;' -U postgres
-
 # command to run tests
 script:
-  - python manage.py test
+  - python manage.py test accounts common
   - coverage run --source=accounts,common manage.py test accounts common
 
 after_success:
