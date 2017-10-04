@@ -2,7 +2,7 @@ import datetime
 from django.utils import timezone
 from django.test import TestCase
 from planner.models import Event
-from django.contrib.auth.models import User
+from common.models import User
 
 
 class EventObjects(object):
@@ -14,14 +14,14 @@ class EventObjects(object):
 
         self.meeting = Event.objects.create(event_type='Meeting', name='llll', status='Not Held',
                                             description='addsdasda', start_date=timezone.now(),
-                                            close_date=timezone.now() + datetime.timedelta(days=5), created_user=self.user)
+                                            close_date=timezone.now() + datetime.timedelta(days=5), created_by=self.user)
         self.task = Event.objects.create(event_type='Task', name='dddl', status='Not Held',
                                          description='addsdasda', start_date=timezone.now(),
-                                         close_date=timezone.now() + datetime.timedelta(days=1), created_user=self.user)
+                                         close_date=timezone.now() + datetime.timedelta(days=1), created_by=self.user)
         self.call = Event.objects.create(event_type='Call', name='asdfjkas dfasdfa 555',
                                          status='Held',
                                          description='addsdasda', start_date=timezone.now(),
-                                         close_date=timezone.now() + datetime.timedelta(days=2), created_user=self.user)
+                                         close_date=timezone.now() + datetime.timedelta(days=2), created_by=self.user)
 
 
 class EventCreateTestCase(EventObjects, TestCase):
@@ -209,14 +209,14 @@ class EventsGetViewsTestCase(EventObjects, TestCase):
         response = self.client.post('/planner/get/task/', {
             'taskID': self.task.id
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual('Task', response.json()['task']['event_type'])
 
     def test_get_task_invalidID(self):
         response = self.client.post('/planner/get/task/', {
             'taskID': 6
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual({'Event': 'DoesNotExist'}, response.json())
 
     def test_get_call_validID(self):
