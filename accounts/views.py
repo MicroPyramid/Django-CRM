@@ -1,171 +1,215 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account
-from common.models import Address, Team, Comment
-from common.utils import INDCHOICES, TYPECHOICES, COUNTRIES
+from common.models import User, Address, Team, Comment
+from common.utils import INDCHOICES, TYPECHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from oppurtunity.models import Opportunity, STAGES, SOURCES
 from contacts.models import Contact
 from cases.models import Case
-from accounts.forms import AccountForm, BillingAddressForm, ShippingAddressForm, CommentForm
+from accounts.forms import AccountForm, AccountCommentForm
+from common.forms import BillingAddressForm, ShippingAddressForm
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
+
+
+# CRUD Operations Start
 
 
 @login_required
 @csrf_exempt
-def account(request):
-    count = Account.objects.all().count()
+def accounts_list(request):
     accounts_list = Account.objects.all()
     page = request.POST.get('per_page')
-    if request.GET.get('name'):
-        accounts_list = Account.objects.filter(
-            name__contains=request.GET.get('name'))
-    if request.GET.get('city'):
+    name = request.POST.get('name')
+    city = request.POST.get('city')
+    industry = request.POST.get('industry')
+
+    if name:
+        accounts_list = Account.objects.filter(name__icontains=name)
+    if city:
         accounts_list = accounts_list.filter(
-            billing_address__in=[i.id for i in Address.objects.filter(
-                city__contains=request.GET.get('city'))])
-    if request.GET.get('account_type'):
-        accounts_list = accounts_list.filter(
-            account_type__contains=request.GET.get('account_type'))
-    if request.GET.get('industry'):
-        accounts_list = accounts_list.filter(
-            industry__contains=request.GET.get('industry'))
+            billing_address__in=[i.id for i in Address.objects.filter(city__contains=city)])
+    if industry:
+        accounts_list = accounts_list.filter(industry__icontains=industry)
+
     return render(request, "accounts/accounts.html", {
-        'count': count, 'industries': INDCHOICES, 'types': TYPECHOICES,
-        'per_page': page, 'accounts_list': accounts_list})
+        'accounts_list': accounts_list,
+        'industries': INDCHOICES,
+        'per_page': page
+    })
 
 
 @login_required
 @csrf_exempt
-def new_account(request):
-    account_form = AccountForm()
+def add_account(request):
+    users = User.objects.filter(is_active=True).order_by('email')
+    account_form = AccountForm(assigned_to=users)
     billing_form = BillingAddressForm()
     shipping_form = ShippingAddressForm(prefix='ship')
-    country_list = Country.objects.all()
-    users = User.objects.filter(is_active=True)
+    teams = Team.objects.all()
+    assignedto_list = request.POST.getlist('assigned_to')
+    teams_list = request.POST.getlist('teams')
     if request.method == 'POST':
-        account_form = AccountForm(request.POST)
+        account_form = AccountForm(request.POST, assigned_to=users)
         billing_form = BillingAddressForm(request.POST)
         shipping_form = ShippingAddressForm(request.POST, prefix='ship')
         if account_form.is_valid() and billing_form.is_valid() and shipping_form.is_valid():
-            if request.POST.get("users"):
-                users = User.objects.get(id=request.POST.get("users"))
-                users.save()
             billing_object = billing_form.save()
             shipping_object = shipping_form.save()
             account_object = account_form.save(commit=False)
             account_object.billing_address = billing_object
             account_object.shipping_address = shipping_object
+            account_object.created_by = request.user
             account_object.save()
-            return HttpResponseRedirect('/accounts/list/')
+            account_object.assigned_to.add(*assignedto_list)
+            account_object.teams.add(*teams_list)
+            if request.POST.get("savenewform"):
+                return redirect("accounts:new_account")
+            else:
+                return redirect("accounts:list")
         else:
-            street1 = request.POST.get('ship-street')
-            city1 = request.POST.get('ship-city')
-            state1 = request.POST.get('ship-state')
-            postcode1 = request.POST.get('ship-postcode')
-            country1 = request.POST.get('ship-country')
-            shipdata = {'street1': street1, 'city1': city1, 'state1': state1,
-                        'postcode1': postcode1, 'country1': country1}
             return render(request, 'accounts/create_account.html', {
-                'account_form': account_form, 'form1': billing_form,
-                'form2': shipping_form, 'shipdata': shipdata, 'users': users,
-                'form5': country_list, 'acc_error': account_form.errors,
-                'industries': INDCHOICES, 'types': TYPECHOICES, 'teams': TEAMS})
+                'account_form': account_form,
+                'billing_form': billing_form,
+                'shipping_form': shipping_form,
+                'industries': INDCHOICES,
+                'countries': COUNTRIES,
+                'users': users,
+                'teams': teams,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list
+            })
 
     else:
         return render(request, 'accounts/create_account.html', {
-            'form': account_form, 'form1': billing_form, 'users': users,
-            'form2': shipping_form, 'form5': country_list, 'teams': TEAMS,
-            'industries': INDCHOICES, 'types': TYPECHOICES})
+            'account_form': account_form,
+            'billing_form': billing_form,
+            'shipping_form': shipping_form,
+            'industries': INDCHOICES,
+            'countries': COUNTRIES,
+            'users': users,
+            'teams': teams,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list
+        })
 
 
 @login_required
 @csrf_exempt
-def remove_account(request, aid):
-    # aid = request.POST["acid"]
-    Account.objects.filter(id=aid).delete()
-    # count_list = Account.objects.all().count()
-    # data = {"aid": aid, 'count_list': count_list}
-    # return JsonResponse(data)
-    return HttpResponseRedirect('/accounts/list/')
-
-
-@login_required
-@csrf_exempt
-def view_account(request, aid):
-    acc = Account.objects.get(id=aid)
-    country = Country.objects.all()
-    comments = Comment.objects.filter(accountid=aid).order_by('-id')
-    opp_list = Opportunity.objects.filter(account=acc)
-    contact = Contact.objects.filter(account=acc)
-    user = User.objects.all()
-    case = Case.objects.filter(account=acc)
+def view_account(request, account_id):
+    account_record = get_object_or_404(Account, id=account_id)
+    comments = account_record.accounts_comments.all()
+    opportunity_list = Opportunity.objects.filter(account=account_record)
+    contacts = Contact.objects.filter(account=account_record)
+    users = User.objects.filter(is_active=True).order_by('email')
+    cases = Case.objects.filter(account=account_record)
+    teams = Team.objects.all()
     return render(request, "accounts/view_account.html", {
-        'ac': acc, 'opp': opp_list, 'stages': STAGES, 'sources': SOURCES,
-        'comments': comments, 'country': country, 'user': user, 'case': case,
-        'teams': TEAMS, 'contact': contact, 'user': user, 'case': case})
+        'account_record': account_record,
+        'opportunity_list': opportunity_list,
+        'stages': STAGES,
+        'sources': SOURCES,
+        'teams': teams,
+        'contacts': contacts,
+        'users': users,
+        'cases': cases,
+        'countries': COUNTRIES,
+        'currencies': CURRENCY_CODES,
+        'case_types': CASE_TYPE,
+        'case_priority': PRIORITY_CHOICE,
+        'case_status': STATUS_CHOICE,
+        'comments': comments
+    })
 
 
 @login_required
 @csrf_exempt
 def edit_account(request, edid):
     account_instance = get_object_or_404(Account, id=edid)
-    billing_instance = get_object_or_404(Address, id=account_instance.billing_address.id)
-    shipping_instance = get_object_or_404(Address, id=account_instance.shipping_address.id)
-    account_form = AccountForm(instance=account_instance)
-    billing_form = BillingAddressForm(instance=billing_instance)
-    shipping_form = ShippingAddressForm(prefix='ship', instance=shipping_instance)
-    country_list = Country.objects.all()
-    users = User.objects.filter(is_active=True)
+    account_billing_address = account_instance.billing_address
+    account_shipping_address = account_instance.shipping_address
+    users = User.objects.filter(is_active=True).order_by('email')
+    account_form = AccountForm(instance=account_instance, assigned_to=users)
+    billing_form = BillingAddressForm(instance=account_billing_address)
+    shipping_form = ShippingAddressForm(prefix='ship', instance=account_shipping_address)
+    teams = Team.objects.all()
+    assignedto_list = request.POST.getlist('assigned_to')
+    teams_list = request.POST.getlist('teams')
     if request.method == 'POST':
-        account_form = AccountForm(request.POST, instance=account_instance)
-        billing_form = BillingAddressForm(request.POST, instance=billing_instance)
-        shipping_form = ShippingAddressForm(request.POST, instance=shipping_instance, prefix='ship')
+        account_form = AccountForm(request.POST, instance=account_instance, assigned_to=users)
+        billing_form = BillingAddressForm(request.POST, instance=account_billing_address)
+        shipping_form = ShippingAddressForm(request.POST, instance=account_shipping_address, prefix='ship')
         if account_form.is_valid() and billing_form.is_valid() and shipping_form.is_valid():
-            if request.POST.get("users"):
-                users = User.objects.get(id=request.POST.get("users"))
-                users.save()
             billing_object = billing_form.save()
             shipping_object = shipping_form.save()
             account_object = account_form.save(commit=False)
             account_object.billing_address = billing_object
             account_object.shipping_address = shipping_object
+            account_object.created_by = request.user
             account_object.save()
-            return HttpResponseRedirect('/accounts/list/')
+            account_object.assigned_to.clear()
+            account_object.assigned_to.add(*assignedto_list)
+            account_object.teams.clear()
+            account_object.teams.add(*teams_list)
+            return redirect("accounts:list")
         else:
             return render(request, 'accounts/create_account.html', {
-                'form': account_form, 'form1': billing_form, 'teams': TEAMS,
-                'form2': shipping_form, 'edit2': shipping_instance,
-                'edit': account_instance, 'edit1': billing_instance,
-                'form5': country_list, 'acc_error': account_form.errors,
-                'types': TYPECHOICES, 'industries': INDCHOICES, 'users': users})
+                'account_form': account_form,
+                'billing_form': billing_form,
+                'shipping_form': shipping_form,
+                'account_obj': account_instance,
+                'billing_obj': account_billing_address,
+                'shipping_obj': account_shipping_address,
+                'countries': COUNTRIES,
+                'industries': INDCHOICES,
+                'teams': teams,
+                'users': users,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list
+            })
     else:
         return render(request, 'accounts/create_account.html', {
-            'form': account_form, 'form1': billing_form,
-            'form2': shipping_form, 'edit': account_instance,
-            'edit1': billing_instance, 'edit2': shipping_instance,
-            'form5': country_list, 'industries': INDCHOICES,
-            'types': TYPECHOICES, 'teams': TEAMS, 'users': users})
+            'account_form': account_form,
+            'billing_form': billing_form,
+            'shipping_form': shipping_form,
+            'account_obj': account_instance,
+            'billing_obj': account_billing_address,
+            'shipping_obj': account_shipping_address,
+            'countries': COUNTRIES,
+            'industries': INDCHOICES,
+            'teams': teams,
+            'users': users,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list
+        })
 
 
 @login_required
-def comment_add(request):
+@csrf_exempt
+def remove_account(request, aid):
+    account_record = get_object_or_404(Account, id=aid)
+    account_record.delete()
+    return redirect("accounts:list")
+
+# CRUD Operations Ends
+# Comments Section Starts
+
+
+@login_required
+def add_comment(request):
     if request.method == 'POST':
         account = get_object_or_404(Account, id=request.POST.get('accountid'))
-        assigned = False
-        if account.assigned_user:
-            assigned = (int(account.assigned_user) == request.user)
-        if request.user == account.users or assigned:
-            form = CommentForm(request.POST)
+        if request.user in account.assigned_to.all() or request.user == account.created_by:
+            form = AccountCommentForm(request.POST)
             if form.is_valid():
-                comment = request.POST.get('comment')
-                comment_user = request.user
-                accountid = request.POST.get('accountid')
-                c = Comment.objects.create(comment=comment, accountid=Account.objects.get(id=accountid), comment_user=comment_user)
-                data = {"com_id": c.id, "comment": c.comment,
-                        "comment_date": c.comment_date,
-                        "com_user": c.comment_user.username}
+                account_comment = form.save(commit=False)
+                account_comment.comment = request.POST.get('comment')
+                account_comment.commented_by = request.user
+                account_comment.account = account
+                account_comment.save()
+                data = {"comment_id": account_comment.id, "comment": account_comment.comment,
+                        "commented_on": account_comment.commented_on,
+                        "commented_by": account_comment.commented_by.email}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -175,28 +219,13 @@ def comment_add(request):
 
 
 @login_required
-def comment_remove(request):
-    if request.method == 'POST':
-        comment_id = request.POST.get('comment_id')
-        c = get_object_or_404(Comment, id=comment_id)
-        if request.user == c.comment_user:
-            get_object_or_404(Comment, id=comment_id).delete()
-            data = {"cid": comment_id}
-            return JsonResponse(data)
-        else:
-            return JsonResponse({"error": "You Dont have permisions to delete"})
-    else:
-        return HttpResponse("Something Went Wrong")
-
-
-@login_required
-def comment_edit(request):
+def edit_comment(request):
     if request.method == "POST":
         comment = request.POST.get('comment')
         comment_id = request.POST.get("commentid")
         com = get_object_or_404(Comment, id=comment_id)
-        form = CommentForm(request.POST)
-        if request.user == com.comment_user:
+        form = AccountCommentForm(request.POST)
+        if request.user == com.commented_by:
             if form.is_valid():
                 com.comment = comment
                 com.save()
@@ -208,6 +237,24 @@ def comment_edit(request):
             return JsonResponse({"error": "You dont have authentication to edit"})
     else:
         return render(request, "404.html")
+
+
+@login_required
+def remove_comment(request):
+    if request.method == 'POST':
+        comment_id = request.POST.get('comment_id')
+        comment = get_object_or_404(Comment, id=comment_id)
+        if request.user == comment.commented_by:
+            comment.delete()
+            data = {"cid": comment_id}
+            return JsonResponse(data)
+        else:
+            return JsonResponse({"error": "You Dont have permisions to delete"})
+    else:
+        return HttpResponse("Something Went Wrong")
+
+
+# Comments Section Ends
 
 
 @login_required
