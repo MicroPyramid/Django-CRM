@@ -1,8 +1,8 @@
 from django.test import TestCase
 from contacts.models import Contact
 from accounts.models import Account
-from common.models import Address, Country
-from django.contrib.auth.models import User
+from common.models import Address
+from common.models import User
 from django.test import Client
 from django.core.urlresolvers import reverse
 
@@ -10,13 +10,13 @@ from django.core.urlresolvers import reverse
 class ContactObjectsCreation(object):
     def setUp(self):
         self.client = Client()
-        self.country = Country.objects.create(iso_3166_1_a2=67, iso_3166_1_a3=87, iso_3166_1_numeric=456, printable_name="russia", name="Russia", is_shipping_country="True")
-        self.address = Address.objects.create(street="kphb 5th phase",  city="hyd",  state="telanagana",  postcode=502279, country=(Country.objects.get(pk=1)))
-        self.account = Account.objects.create(name="account", email="account@gmail.com", phone="12345", billing_address=Address.objects.get(pk=1), shipping_address=Address.objects.get(pk=1), website="account.com", account_type="account", sis_code="12345", industry="IT", description="account")
-        self.contact = Contact.objects.create(name="contact", email="contact@gmail.com", phone="12345", account=Account.objects.get(pk=1), address=Address.objects.get(pk=1), description="contact" )
         self.user = User.objects.create_superuser('user@micropyramid.com', 'username', 'password')
         user_login = self.client.login(username='user@micropyramid.com',
                      password='password')
+
+        self.address = Address.objects.create(street="kphb 5th phase",  city="hyd",  state="telanagana",  postcode=502279, country='IN')
+        self.account = Account.objects.create(name="account", email="account@gmail.com", phone="12345", billing_address=Address.objects.get(pk=1), shipping_address=Address.objects.get(pk=1), website="account.com", industry="IT", description="account", created_by=self.user)
+        self.contact = Contact.objects.create(first_name="contact", email="contact@gmail.com", phone="12345", account=Account.objects.get(pk=1), address=Address.objects.get(pk=1), description="contact", created_by=self.user)
 
 
 class ContactObjectsCreation_Count(ContactObjectsCreation, TestCase):

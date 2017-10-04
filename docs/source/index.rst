@@ -1,25 +1,18 @@
-# Django-CRM
+Django-CRM's documentation:
+=====================================
 
-.. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
-   :target: https://travis-ci.org/MicroPyramid/Django-CRM
+Introduction:
+=============
 
-.. image:: https://img.shields.io/pypi/dm/Django-CRM.svg
-    :target: https://pypi.python.org/pypi/Django-CRM
-    :alt: Downloads
+Django-CRM provides a dashboard where you can manage customers at sales of the organization. It Provides to manage leads information and its activity, track issues from leads, contacts to send emails.
 
-.. image:: https://img.shields.io/pypi/v/Django-CRM.svg
-    :target: https://pypi.python.org/pypi/Django-CRM
-    :alt: Latest Release
+Source Code is available in Micropyramid Repository(https://github.com/MicroPyramid/Django-CRM.git).
 
-.. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
-   :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
+Modules used:
 
-.. image:: https://landscape.io/github/MicroPyramid/Django-CRM/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/MicroPyramid/Django-CRM/master
-   :alt: Code Health
-
-.. image:: https://img.shields.io/github/license/MicroPyramid/Django-CRM.svg
-    :target: https://pypi.python.org/pypi/Django-CRM/
+    * Python  >= 2.6 (or Python 3.4)
+    * Django  = 1.9.6
+    * JQuery  >= 1.7
 
 
 Installation
@@ -48,7 +41,7 @@ Installation
 
 ```
     urlpatterns = [
-    	# ...........
+        # ...........
         url(r'^admin/', admin.site.urls),
         url(r'^', include('django_crm.urls')),
         # ...........

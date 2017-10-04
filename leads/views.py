@@ -11,7 +11,7 @@ from leads.forms import CommentForm, CreateLeadform, AddressLeadForm
 from django.urls import reverse
 from accounts.forms import AccountForm
 # from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from accounts.forms import BillingAddressForm, ShippingAddressForm
+from common.forms import BillingAddressForm, ShippingAddressForm
 from accounts.models import Account
 
 

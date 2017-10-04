@@ -1,9 +1,9 @@
 from django.test import TestCase
 from oppurtunity.models import Opportunity
-from common.models import Country, Address
+from common.models import Address
 from accounts.models import Account
 from contacts.models import Contact
-from django.contrib.auth.models import User
+from common.models import User
 
 
 # Create your tests here.
@@ -11,23 +11,21 @@ from django.contrib.auth.models import User
 
 class OpportunityModel(object):
     def setUp(self):
-        self.country = Country.objects.create(
-            iso_3166_1_a2="jh", iso_3166_1_a3="nh",
-            iso_3166_1_numeric="gt", printable_name="America",
-                                              name="India",
-                                              is_shipping_country="True")
         self.address = Address.objects.create(
             street="kphb", city="hyderabad", postcode="584",
-            country=Country.objects.get(pk=1))
+            country='IN')
+        self.user = User.objects.create(username='madhurima')
+        self.user.set_password('madhu123')
+        self.user.save()
+
         self.account = Account.objects.create(
             name="uday", email="uday@gmail.com",
             phone="58964", billing_address=self.address,
             shipping_address=self.address,
             website="hello.com",
-            account_type="initial",
-            sis_code="98745", industry="sw", description="bgyyr")
+            industry="sw", description="bgyyr", created_by=self.user)
         self.contacts = Contact.objects.create(
-            name="navi",
+            first_name="navi",
             email="navi@gmail.com", phone="8547",
             account=self.account,
             description="defyj",
@@ -37,9 +35,6 @@ class OpportunityModel(object):
             stage="negotiation/review", lead_source="Call", probability="58",
             close_date="2016-05-04",
             description="hgfdxc")
-        self.user = User.objects.create(username='madhurima')
-        self.user.set_password('madhu123')
-        self.user.save()
         self.client.login(username='madhurima', password='madhu123')
 
 
