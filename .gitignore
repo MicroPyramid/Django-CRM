@@ -1,0 +1,12 @@
+*.pyc
+*~
+*.swo
+*.swp
+db.sqlite3
+media
+media-images
+cache
+.idea
+Django_CRM.egg-info/
+build/
+dist/
