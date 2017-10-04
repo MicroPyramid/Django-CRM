@@ -1,5 +1,5 @@
 from django import forms
-from common.models import Person
+from common.models import Address
 from oppurtunity.models import Opportunity
 from cases.models import Case
 from leads.models import Lead
@@ -7,55 +7,46 @@ from contacts.models import Contact
 from accounts.models import Account
 
 
-class OpportunityForm(forms.ModelForm):
-    name = forms.CharField(max_length=255, required=True)
-    stage = forms.CharField(max_length=255, required=True)
+class BillingAddressForm(forms.ModelForm):
 
     class Meta:
-        model = Opportunity
-        fields = ['name',  'stage', 'amount', 'probability' , 'close_date', 'lead_source', 'description']
+        model = Address
+        fields = ('address_line', 'street', 'city', 'state', 'postcode', 'country')
+
+    def __init__(self, *args, **kwargs):
+        super(BillingAddressForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+        self.fields['address_line'].widget.attrs.update({
+            'placeholder': 'Address Line'})
+        self.fields['street'].widget.attrs.update({
+            'placeholder': 'Street'})
+        self.fields['city'].widget.attrs.update({
+            'placeholder': 'City'})
+        self.fields['state'].widget.attrs.update({
+            'placeholder': 'State'})
+        self.fields['postcode'].widget.attrs.update({
+            'placeholder': 'Postcode'})
+        self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
 
 
-class ContactForm(forms.ModelForm):
+class ShippingAddressForm(forms.ModelForm):
     class Meta:
-        model = Contact
-        fields = ('name', 'account', 'email', 'phone', 'address', 'description')
+        model = Address
+        fields = ('address_line', 'street', 'city', 'state', 'postcode', 'country')
 
-
-class PersonForm(forms.ModelForm):
-    class Meta:
-        model = Person
-        fields = ['first_name', 'last_name']
-
-
-class CreateLeadform(forms.ModelForm):
-    class Meta:
-        model = Lead
-        fields = ['title', 'name', 'email', 'description', 'account', 'website', 'status',
-                  'source', 'opportunity_amount', 'description']
-
-
-class TestTable(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        # return the field you want to display
-        return obj.name
-
-
-class caseForm(forms.ModelForm):
-    account = TestTable(queryset=Account.objects.all())
-
-    # contacts = TestTableContacts(queryset=Contact.objects.all())
-
-    class Meta:
-        model = Case
-        fields = "__all__"
-
-
-# class RegistrationForm(forms.ModelForm):
-
-#     class Meta:
-#         model = CustomUser
-#         fields = ('username', 'email', 'password')
-#         widgets = {
-#             'password': forms.PasswordInput(),
-#         }
+    def __init__(self, *args, **kwargs):
+        super(ShippingAddressForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+        self.fields['address_line'].widget.attrs.update({
+            'placeholder': 'Address Line'})
+        self.fields['street'].widget.attrs.update({
+            'placeholder': 'Street'})
+        self.fields['city'].widget.attrs.update({
+            'placeholder': 'City'})
+        self.fields['state'].widget.attrs.update({
+            'placeholder': 'State'})
+        self.fields['postcode'].widget.attrs.update({
+            'placeholder': 'Postcode'})
+        self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
