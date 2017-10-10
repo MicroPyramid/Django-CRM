@@ -1,0 +1,20 @@
+language: python
+python:
+  - "3.4"
+
+sudo: false
+
+env:
+  -DJANGO=1.11
+
+install:
+  - pip install -r requirements.txt
+  - pip install coveralls
+
+# command to run tests
+script:
+  - python manage.py test accounts common
+  - coverage run --source=accounts,common manage.py test accounts common
+
+after_success:
+  coveralls
