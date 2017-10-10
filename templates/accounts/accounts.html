@@ -1,220 +1,142 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-{% block content %}
 {% load paginate %}
+{% block content %}
 <!-- main_container starts here -->
 <div class="main_container">
-
-    <!-- heading_create starts here -->
-     <div class="row marl heading_create">
-       <div class="heading col-md-2"><h4>Accounts</h4></div>
-       <div class="col-md-7">
-          <div class="row marl search-row">
-        <div class="form-group col-md-8 col-sm-8">
-            <div class="input-group">
-                <div class="input-group-btn left-dropdown">
-                    <button type="button" class="btn dropdown-toggle filters-button btn-default" title="Filter" data-toggle="dropdown" tabindex="-1" aria-expanded="false">
-                        <span class="filters-label">All</span>
-                        <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu pull-left filter-menu">
-
-                        <li><a class="preset" tabindex="-1" href="javascript:" data-name="" data-action="selectPreset"><span class="glyphicon glyphicon-ok pull-right"></span><div>All</div></a></li>
-                        <li><a class="preset" tabindex="-1" href="javascript:" data-name="portalUsers" data-action="selectPreset"><div>Portal Users</div></a></li>
-                        <li class="divider preset-control hidden"></li>
-
-
-                        <li class="preset-control remove-preset hidden"><a tabindex="-1" href="#" data-action="removePreset">Remove Filter</a></li>
-                        <li class="preset-control save-preset hidden"><a tabindex="-1" href="#" data-action="savePreset">Save Filter</a></li>
-                            <li class="divider"></li>
-
-                            <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="onlyMy"> 
-                            &nbsp;&nbsp;Only My</label></li>
-                            <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox" name="followed"> &nbsp;&nbsp;Followed</label></li>
-                    </ul>
-                </div>
-                <input type="text" class="form-control text-filter" name="textFilter" value="" tabindex="1">
-                <div class="input-group-btn">
-                    <button type="button" class="btn btn-primary search btn-icon" data-action="search">
-                        <span class="glyphicon glyphicon-search"></span>
-                    </button>
-                </div>
-            </div>
+  <!-- heading_create starts here -->
+  <div class="row marl heading_create">
+    <div class="heading col-md-12">
+      <div class="col-md-6">
+        <h4>Accounts</h4>
+      </div>
+      <div class="col-md-6">
+        <div class="create_new text-right">
+          <a href="{% url 'accounts:new_account' %}"><i class="fa fa-plus"></i> Add New Account</a>
         </div>
-      <div class="form-group col-md-4 col-sm-4">
-          <div class="btn-group">
-              <button type="button" class="btn btn-default extra_option_btn" data-action="reset">
-                  <span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset
-              </button>
-              <button type="button" class="btn btn-default dropdown-toggle extra_option_btn add-filter-button" data-toggle="dropdown" tabindex="-1">
-                  Add Field <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu pull-right filter-list">
-                      <li data-name="account" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="account">Account</a></li>
-                      <li data-name="address" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="address">Address</a></li>
-                      <li data-name="assignedUser" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="assignedUser">Assigned User</a></li>
-                      <li data-name="createdAt" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="createdAt">Created At</a></li>
-                      <li data-name="emailAddress" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="emailAddress">Email</a></li>
-                      <li data-name="phoneNumber" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="phoneNumber">Phone</a></li>
-                      <li data-name="title" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="title">Title</a></li>
-                      <li data-name="teams" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="teams">Teams</a></li>
-                      <li data-name="targetLists" class=""><a href="#" class="add-filter" data-action="addFilter" data-name="targetLists">Target Lists</a></li>
-              </ul>
-          </div>
       </div>
     </div>
-       </div>
-        <div class="create_new col-md-3 text-right">
-          <a href="/accounts/create/"><i class="fa fa-plus"></i> Add New Account</a>
+  </div>
+  <!-- heading_create ends here -->
+  <!-- filter_row starts here -->
+  <div class="filter_row row marl">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
         </div>
-      </div>
-    <!-- heading_create ends here -->
-    <!-- filter_row starts here -->
-    <div class="filter_row row marl">
-      <div class="col-md-12">
-        <div class="panel panel-default">
-          <div class="panel-heading" style="text-align:center;">
-          FILTERS
-          </div>
-          <form id="accounts_filter" method="GET" action="" >{% csrf_token %}
-          <div class="panel-content">
-            <div class="filter_col col-md-3">
+        <form id="accounts_filter" method="POST" action="">{% csrf_token %}
+          <div class="panel-content text-center">
+            <div class="filter_col col-md-4">
               <div class="form-group">
-                <label for="exampleInputEmail1">Name</label>
-                <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.GET %} value="{{request.GET.name}}" {% endif %}/>
+                <label for="exampleInputEmail1">NAME</label>
+                <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %} value="{{request.POST.name}}" {%endif%}/>
               </div>
             </div>
-            <div class="filter_col col-md-3">
+            <div class="filter_col col-md-4">
               <div class="form-group">
-                <label for="exampleInputEmail1">City</label>
-                <input type="text" class="form-control" placeholder="City" name="city" {% if request.GET %} value="{{request.GET.city}}" {% endif %}/>
+                <label for="exampleInputEmail1">CITY</label>
+                <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
               </div>
             </div>
-            <div class="filter_col col-md-3">
+            <div class="filter_col col-md-4">
               <div class="form-group">
-                <label for="exampleInputEmail1">Account Type</label>
-                <select class="form-control" id="id_account_type" name="account_type" >
-                  <option value="" selected >--Select Type of Account--</option>
-                    {% for type in types %}
-                  <option value="{{type.0}}" {% if request.GET.account_type %} {% ifequal type.0 request.GET.account_type %} selected {% endifequal %}{% endif %} >{{type.1}} </option>
-                    {% endfor%}
-                </select>
-              </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Industry</label>
+                <label for="exampleInputEmail1">INDUSTRY</label>
                 <select class="form-control" id="id_industry" name="industry" >
                   <option value="">--Select Type of Industry--</option>
-                    {% for ind in industries %}
-                  <option value="{{ind.0}}" {% if request.GET.industry %} {% ifequal ind.0 request.GET.industry %} selected {% endifequal %}{% endif %} >{{ind.1}} </option>
-                    {% endfor%}
+                  {% for each_industry in industries %}
+                  <option value="{{each_industry.0}}" {% if request.POST.industry %} {% ifequal each_industry.0 request.POST.industry %}selected{% endifequal %}{% endif %} >{{each_industry.1}} </option>
+                  {% endfor%}
                 </select>
               </div>
             </div>
-            <div class="filter_col col-md-5"></div>
-              <button class="btn btn-primary save" id="filters_search" type="submit">Search</button>
-              <a href="/accounts/list/"><button type="button" class="btn btn-default">Clear</button></a>
+            <div class="filter_col text-center">
+              <div class="form-group">
+                <button class="btn btn-primary" type="submit">Search</button>
+                <a href="{% url 'accounts:list' %}" class="btn btn-default">Clear</a>
+              </div>
+            </div>
           </div>
-          </form>
-          <br clear="all">
-        </div>
-      </div>
-    </div>
-    <!-- filter_row ends here -->
-  <form method='GET' class="accountdetails_row">
-    <div class="table_container_row row marl">
-      <div class="col-md-12">
-          <div class="panel panel-default">
-            <div class="panel-heading-list text-center">
-              LIST OF ACCOUNTS
-              <span class="pull-right total_count">Total Accounts {{count}} </span>
-            </div>
-            <div class="panel-content">
-              {% ifequal accounts_list|length 0 %}
-              <h5 class="text-center">No Acccounts Data Found</h5>
-              {% else %}
-              <table class="table table-bordered table-striped table-condensed">
-                <thead>
-                  <tr>
-                    <th width="3%" style="text-align:center;">S.No</th>
-                    <th width="20%" style="text-align:center;">NAME</th>
-                    <th width="15%" style="text-align:center;">CITY</th>
-                    <th width="15%" style="text-align:center;">ACCOUNT TYPE</th>
-                    <th width="15%" style="text-align:center;">INDUSTRY</th>
-                    <th width="10%" style="text-align:center;">ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% paginate 10 accounts_list as accounts_list %}
-                  {% for ac in accounts_list %}
-                  <tr id="account_details{{ac.id}}">
-                    <td scope="row" style="text-align:center;">{{ forloop.counter }}</td>
-                    <td style="text-align:center;"><a href="{% url 'accounts:view_account' ac.id %}">{{ ac.name }}</a></td>
-                    <td style="text-align:center;">{{ ac.billing_address.city }}</td>
-                    <td style="text-align:center;">{{ ac.account_type }}</td>
-                    <td style="text-align:center;">{{ ac.industry }}</td>
-                    <td>
-                      <div class="dropdown" style="text-align:center;">
-                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                        <span class="caret"></span></button>
-                        <ul class="dropdown-menu">
-                          <li style="text-align:center;"><a href="{% url 'accounts:view_account' ac.id %}">VIEW</a></li>
-                          <li style="text-align:center;"><a href="{% url 'accounts:edit_account' ac.id %}">EDIT</a></li>
-                          <li class="delete_account" style="text-align:center;"><a href="{% url 'accounts:remove_account' ac.id %}" id="remove_account">REMOVE</a></li>
-                          <!-- <li style="margin-left:20px" onclick="remove({{ac.id}})" id="remove{{ac.id}}">REMOVE</li> -->
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            <div class="pagination_row text-center row marl">
-              <ul class="pagination">
-                {% show_pages %}
-              </ul>
-            </div>
-            {% endifequal %}
-          </div>
+        </form>
         <br clear="all">
       </div>
     </div>
-  </form>
-
-<!-- main_container ends here -->
+  </div>
+  <!-- filter_row ends here -->
+  <!-- accounts list start -->
+  <div class="table_container_row row marl">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-heading-list text-center">
+          LIST OF ACCOUNTS
+          <span class="pull-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Accounts {{accounts_list|length}}{% endif %}</span>
+        </div>
+        <div class="panel-content">
+          <table class="table table-bordered table-striped table-condensed">
+            <thead>
+              <tr>
+                <th width="5%" style="text-align:center;">S.No</th>
+                <th width="20%" style="text-align:center;">NAME</th>
+                <th width="15%" style="text-align:center;">CITY</th>
+                <th width="15%" style="text-align:center;">STATE</th>
+                <th width="20%" style="text-align:center;">INDUSTRY</th>
+                <th width="25%" style="text-align:center;">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if per_page %}
+                {% paginate per_page accounts_list %}
+              {% else%}
+                {% paginate 10 accounts_list %}
+              {% endif %}
+              {% for each_account in accounts_list %}
+              <tr id="account_details{{each_account.id}}" class="text-center">
+                <td scope="row">{{ forloop.counter }}</td>
+                <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
+                <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
+                <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
+                <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                <td>
+                  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info">VIEW</a>
+                  <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success">EDIT</a>
+                  <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger remove_account">REMOVE</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% ifequal accounts_list|length 0 %}
+            <h4 class="text-center">No Acccount Records Found</h4>
+          {% endifequal %}
+          <div class="text-center row marl">
+            {% show_pages %}
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+  </div>
+  <!-- accounts list end -->
 </div>
+<!-- main_container ends here -->
 {% endblock %}
-
 {% block js_block %}
-
 <script type="text/javascript">
-
-$(document).ready(function(){
-  $('#remove_account').click(function(e){
-    var result = confirm("Are You Sure You Want to delete?");
-    if (result==false) {
-      e.preventDefault()
-    }
+  $('.remove_account').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
   });
-});
 
-/*function remove(acid){
-    var result = confirm("Want to delete?");
-    if (result) {
-      $.ajax({
-        type: "POST",
-        url: '/accounts/delete/',
-        data: {acid: acid},
-        success: function(data){
-        $("#account_details"+data.aid).remove()
-        $(".total_count").html("Total Accounts "+data.count_list)
-        }
-      });
-    }
-};
-*/
+  $(".reset").click(function(e){
+    window.location = "{% url 'accounts:list'%}"
+  });
+
+  $("a[rel='page']").click(function(e){
+    e.preventDefault();
+    $('#accounts_filter').attr("action", $(this).attr("href"));
+    $('#accounts_filter').submit();
+  });
 </script>
-
 {% endblock js_block %}
