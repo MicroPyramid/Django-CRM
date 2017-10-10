@@ -3,32 +3,34 @@ from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
 from django.test import Client
-from common.models import Address
+from common.models import Country, Address
 from django.core.urlresolvers import reverse
-from common.models import User
+from django.contrib.auth.models import User
 
 
 class CaseCreation(object):
     def setUp(self):
+        self.country = Country.objects.create(iso_3166_1_a2="IN", iso_3166_1_a3="IN", iso_3166_1_numeric="IN",
+                                              printable_name="India",
+                                              name="India", is_shipping_country="True")
         self.address = Address.objects.create(street="6th phase", city="hyderabad", postcode="506344",
-                                              country='IN')
-        self.user = User.objects.create(username='raghu', email='r@mp.com')
-        self.user.set_password('raghu')
-        self.user.save()
-
+                                              country=Country.objects.get(pk=1))
         self.account = Account.objects.create(name="account", email="account@gmail.com", phone="12345",
                                                   billing_address=self.address, shipping_address=self.address,
                                                   website="www.account.com",
-                                                  industry="IT",
-                                                  description="account", created_by=self.user)
-        self.contacts = Contact.objects.create(first_name="contact",
+                                                  account_type="account", sis_code="12345", industry="IT",
+                                                  description="account")
+        self.contacts = Contact.objects.create(name="contact",
                                                email="contact@gmail.com", phone="12345",
-                                               account=self.account, description="contact", address=self.address, created_by=self.user)
+                                               account=self.account, description="contact", address=self.address)
         # self.comment = Comments.objects.create(comment="new", caseid=self.case.id, comment_)
-        self.client.login(email='r@mp.com', password='raghu')
+        self.user = User.objects.create(username='raghu')
+        self.user.set_password('raghu')
+        self.user.save()
+        self.client.login(username='raghu', password='raghu')
         self.case = Case.objects.create(name="raghu", case_type="Problem", status="New", account=self.account,
                                         priority="Low", description="something", teams="Sales",
-                                        created_by=self.user)
+                                        userid=User.objects.get(pk=1))
 
 
 class CaseCreateTestCase(CaseCreation, TestCase):

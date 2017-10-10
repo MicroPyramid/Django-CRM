@@ -1,10 +1,5 @@
 from django import forms
 from common.models import Address
-from oppurtunity.models import Opportunity
-from cases.models import Case
-from leads.models import Lead
-from contacts.models import Contact
-from accounts.models import Account
 
 
 class BillingAddressForm(forms.ModelForm):

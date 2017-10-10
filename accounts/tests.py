@@ -1,7 +1,7 @@
 from django.test import TestCase
 from common.models import *
 from accounts.models import Account
-from common.models import User
+from django.contrib.auth.models import User
 
 
 # Create your tests here.
@@ -9,17 +9,18 @@ from common.models import User
 
 class AccountCreateTest(object):
     def setUp(self):
-        self.user = User.objects.create(username='uday', email='u@mp.com')
-        self.user.set_password('uday2293')
-        self.user.save()
-
+        self.country = Country.objects.create(
+            iso_3166_1_a2="IN", iso_3166_1_a3="IND", iso_3166_1_numeric="01", printable_name="INDIA", name="INDIA", is_shipping_country="True")
         self.address = Address.objects.create(
-            street="KPHB", city="HYDERABAD", state="ANDHRA PRADESH", postcode="500073", country='IN')
+            street="KPHB", city="HYDERABAD", state="ANDHRA PRADESH", postcode="500073", country=Country.objects.get(pk=1))
         self.account = Account.objects.create(
             name="Uday", email="udayteja@micropyramid.com", phone="8333855552", billing_address=self.address,
-            shipping_address=self.address, website="www.uday.com", created_by=self.user,
-            industry="SOFTWARE", description="Yes.. Testing Done")
-        self.client.login(email='u@mp.com', password='uday2293')
+            shipping_address=self.address, website="www.uday.com", account_type="PARTNER",
+            sis_code="UDAYMP2016", industry="SOFTWARE", description="Yes.. Testing Done")
+        self.user = User.objects.create(username='uday')
+        self.user.set_password('uday2293')
+        self.user.save()
+        self.client.login(username='uday', password='uday2293')
 
 
 class AccountsCreateUrlTestCase(AccountCreateTest, TestCase):
@@ -27,7 +28,7 @@ class AccountsCreateUrlTestCase(AccountCreateTest, TestCase):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
             'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'sis_code': "UDAYMP2016", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
@@ -62,7 +63,7 @@ class AccountsViewTestCase(AccountCreateTest, TestCase):
         self.accounts = Account.objects.all()
         response = self.client.get('/accounts/1/view/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['account_record'].id, 1)
+        self.assertEqual(response.context['ac'].id, 1)
         self.assertTemplateUsed(response, 'accounts/view_account.html')
 
 

@@ -1,154 +1,144 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
-<ol class="breadcrumb">
-  <li><a href="{% url 'contacts:list' %}">Contacts</a></li>
-  <li class="active">{%if edit_obj%}Edit {%else%} Create {%endif%}</li>
-</ol>
-{%endblock%}
-{%block content%}
-<form id="add_form" method="post" action={% if edit_obj %}"{% url 'contacts:edit_contact' edit_obj.id%}"{% else %}"{% url 'contacts:add_contact' %}"{% endif%}>{%csrf_token%}
-<div class="assigned_teams row marl">
-  <div class="col-md-12">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        Assigned Users & Teams
-      </div>
-      <div class="panel-content">
-        <div class="filter_col col-md-6">
-          <div class="form-group">
-            <label for="exampleInputEmail1">Assigned Users</label>
-            <select class="form-control" id="id_users" name="users">
-              <option value="" selected="selected">---------</option>
-              {%for u in assigned_user%}
-              <option value="{{u.id}}" {% ifequal u.id edit_obj.users_id %}selected{% endifequal %} {%ifequal u.id request.POST.users|add:"0"%}selected{%endifequal%}>{{u.username}}</option>
-              {%endfor%}
-            </select>
+  <ol class="breadcrumb">
+    <li><a href="{% url 'contacts:list' %}">Contacts</a></li>
+    <li class="active">Create</li>
+  </ol>
+{% endblock %}
+{% block content %}
+  <form id="add_form" method="POST" action='' novalidate>{%csrf_token%}
+    <div class="assigned_teams row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Assigned Users & Teams
           </div>
-        </div>
-        <div class="filter_col col-md-6">
-          <div class="form-group">
-            <label for="exampleInputEmail1">Teams</label>
-            <select class="form-control" id="id_teams" name="teams">
-              <option value="" selected="selected">---------</option>
-              <option value="SALES" {% ifequal "SALES" edit_obj.teams %}selected{% endifequal %} {%ifequal  "SALES" request.POST.teams%}selected{%endifequal%}> Sales</option>
-              <option value="SUPPORT" {% ifequal "SUPPORT" edit_obj.teams %}selected{% endifequal %} {%ifequal "SUPPORT" request.POST.teams%}selected{%endifequal%}> Support</option>
-              <option value="TOP MANAGEMENT" {% ifequal "TOP MANAGEMENT" edit_obj.teams %}selected{% endifequal %} {%ifequal "TOP MANAGEMENT" request.POST.teams%}selected{%endifequal%}> Top Management</option>
-            </select>
-          </div>
-        </div>
-        <br clear="all">
-      </div>
-    </div>
-  </div>
-  <br clear="all">
-</div>
-<div class="overview_form_block row marl">
-  <div class="col-md-12">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        Overview
-      </div>
-      <div class="panel-content">
-        <div class="row marl">
-          <div class="col-md-6">
-            <div class="filter_col col-md-12">
+          <div class="panel-content">
+            <div class="filter_col col-md-6">
               <div class="form-group">
-                <label for="exampleInputEmail1">Name</label> *
-                <input type="text" class="form-control"  id="id_name" name="name"
-                value={%if edit_obj%}"{{edit_obj.name}}"{% else %}"{{request.POST.name}}"{%endif%}>
-                {% if err_contct_form.name%}
-                {{err_contct_form.name}}
-                {% endif %}
+                <label for="exampleInputEmail1">Assigned Users</label>
+                {{ contact_form.assigned_to }}
+                {{ contact_form.assigned_to.errors }}
               </div>
             </div>
-            <div class="filter_col col-md-12">
+            <div class="filter_col col-md-6">
               <div class="form-group">
-                <label for="exampleInputEmail1">Accounts</label> *
-                <select class="form-control" id="id_account" name="account">
-                  <option value="" selected="selected">---------</option>
-                  {% for i in acount %}
-                  <option value="{{i.id}}" {%ifequal i.id edit_obj.account_id %}selected {% endifequal %}  {%ifequal i.id request.POST.account|add:"0"%}selected{%endifequal%}>{{ i.name }}</option>
-                  {% endfor %}
-                  {% if err_contct_form.account %} 
-                  <option value="" selected="selected"></option>
-                  {%endif%}
-                </select>
-                {% if err_contct_form.account %}
-                {{err_contct_form.account}}
-                {% endif %}
+                <label for="exampleInputEmail1">Teams</label>
+                {{ contact_form.teams }}
+                {{ contact_form.teams.errors }}
               </div>
             </div>
-            <div class="filter_col col-md-12">
-              <div class="form-group ">
-                <label for="exampleInputEmail1" >Phone</label> *
-                <input type="text" class="form-control text-filter" id="id_phone" name="phone"
-                value={%if edit_obj%}"{{edit_obj.phone}}" {% else %}"{{request.POST.phone}}"{%endif%}>
-                {% if err_contct_form.phone %}
-                {{err_contct_form.phone}}
-                {% endif %}
-              </div>
-            </div>
-            <div class="filter_col col-md-12">
-              <div class="form-group ">
-                <label for="exampleInputEmail1" >Email Address</label> *
-                <input type="text" class="form-control text-filter" id="id_email" name="email" value={%if edit_obj%}"{{edit_obj.email}}" {% else %}"{{request.POST.email}}"{%endif%}>
-                {% if err_contct_form.email %}
-                {{err_contct_form.email}}
-                {% endif %}
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label for="exampleInputEmail1" >address</label>
-                <input type="text" class="form-control" placeholder="Street" name="street" value={%if address_obj%}"{{address_obj.street}}" {% else %}"{{request.POST.street}}"{%endif%}  id="id_street"/ >
-              </div>
-              <div class="row">
-                <div class="col-md-4">
-                  <input type="text" class="form-control" placeholder="City" name="city" value={%if address_obj%}"{{address_obj.city}}" {% else %}"{{request.POST.city}}"{%endif%}   id="id_city" />
-                </div>
-                <div class="col-md-4">
-                  <input type="text" class="form-control" placeholder="State" name="state" value={%if address_obj%}"{{address_obj.state}}" {% else %}"{{request.POST.state}}"{%endif%} id="id_state"/>
-                </div>
-                <div class="col-md-4">
-                  <input type="text" class="form-control" placeholder="Postcal Code" name="postcode" value={%if address_obj%}"{{address_obj.postcode}}" {% else %}"{{request.POST.postcode}}"{%endif%}   id="id_postcode" /></br>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>country</label>
-                <select class="form-control" id="id_country" name="country">
-                  <option value="" selected="selected">---------</option>
-                  {% for i in countri %}
-                  <option value="{{i.id}}" {%ifequal i.id address_obj.country_id %}selected {% endifequal %} {%ifequal i.id request.POST.country|add:"0"%}selected{%endifequal%}>{{ i.printable_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-            <div class="filter_col shiiping_block col-md-12">
-            </div>
-          </div>
-        </div>
-        <div class="filter_col col-md-12">
-          <div class="form-group col-md-12">
-            <label for="exampleInputEmail1" >Description</label>
-            <textarea class="form-control" rows="3"  id="id_description" name="description">{%if edit_obj%}{{edit_obj.description}} {% else %}{{request.POST.description}}{%endif%}</textarea>
+            <br clear="all">
           </div>
         </div>
       </div>
       <br clear="all">
     </div>
-    <div class="row marl buttons_row text-center">
-      <a><button  class="btn btn-default save" type="submit">Save</button></a>
-      <a href="{% url 'contacts:list' %}"><button class="btn btn-default" id= "create_contact_cancel" type="button">Cancel</button></a>
+    <div class="overview_form_block row marl">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Overview
+          </div>
+          <div class="panel-content">
+            <div class="row marl">
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1" class="required">Name</label>
+                    <div class="row">
+                      <div class="filter_col col-md-6">
+                        {{ contact_form.first_name }}
+                        {{ contact_form.first_name.errors }}
+                      </div>
+                      <div class="filter_col col-md-6">
+                        {{ contact_form.last_name }}
+                        {{ contact_form.last_name.errors }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Account</label>
+                    {{ contact_form.account }}
+                    {{ contact_form.account.errors }}
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                    <label for="exampleInputEmail1" class="required" >Phone</label>
+                    {{ contact_form.phone }}
+                    {{ contact_form.phone.errors }}
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                    <label for="exampleInputEmail1" class="required" >Email Address</label>
+                    {{ contact_form.email }}
+                    {{ contact_form.email.errors }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Address</label>
+                    {{ address_form.address_line }}
+                    {{ address_form.address_line.errors }}
+                  </div>
+                    {{ address_form.street }}
+                    {{ address_form.street.errors }}
+                  <div class="row" style="margin-top: 10px;">
+                    <div class="col-md-4">
+                      {{ address_form.city }}
+                      {{ address_form.city.errors }}
+                    </div>
+                    <div class="col-md-4">
+                      {{ address_form.state }}
+                      {{ address_form.state.errors }}
+                    </div>
+                    <div class="col-md-4">
+                      {{ address_form.postcode }}
+                      {{ address_form.postcode.errors }}
+                    </div>
+                    <div class="col-md-12" style="margin-top: 10px;">
+                      {{ address_form.country }}
+                      {{ address_form.country.errors }}
+                    </div>
+                  </div>
+                </div>
+                <br clear="all">
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Description</label>
+                    {{ contact_form.description }}
+                    {{ contact_form.description.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="save_new_form" name="savenewform">
     </div>
-    </form>
-  </div>
-</div>
-<br clear="all">
-</div>
+    <div class="row marl buttons_row text-center">
+      <button  class="btn btn-default save" type="submit">Save</button>
+      {% if not contact_obj %}
+        <button class="btn btn-success save savenew" type="submit">Save & New</button>
+      {% endif %}
+      <a href="{% url 'contacts:list' %}" class="btn btn-default" id="create_contact_cancel">Cancel</a>
+    </div>
+  </form>
 {% endblock %}
-</head>
-</body>
-</html>
+{% block js_block %}
+  <script type="text/javascript">
+    $(".savenew").on('click', function(e){
+      e.preventDefault()
+      $("#save_new_form").val('true')
+      $('#add_form').submit()
+    });
+  </script>
+{% endblock js_block %}

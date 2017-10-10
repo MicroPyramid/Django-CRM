@@ -1,172 +1,193 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from django.urls import reverse
-from common.models import Address, Comment, Team
+
+from common.models import User, Address, Comment, Team
+from common.forms import BillingAddressForm
+from common.utils import COUNTRIES
 from accounts.models import Account
-from oppurtunity.models import Opportunity, STAGES, SOURCES
-from cases.models import Case
-from contacts.forms import ContactForm, CommentForm, AddressForm
 from contacts.models import Contact
-from planner.models import Event
+from contacts.forms import ContactForm, ContactCommentForm
+
+
+# CRUD Operations Start
+
+
+@login_required
+def contacts_list(request):
+    contact_obj_list = Contact.objects.all()
+    accounts = Account.objects.all()
+    page = request.POST.get('per_page')
+    first_name = request.POST.get('first_name')
+    account = request.POST.get('account')
+    city = request.POST.get('city')
+    phone = request.POST.get('phone')
+    email = request.POST.get('email')
+    if first_name:
+        contact_obj_list = contact_obj_list.filter(first_name__icontains=first_name)
+    if account:
+        contact_obj_list = contact_obj_list.filter(account=account)
+    if city:
+        a = Address.objects.filter(city__icontains=city)
+        contact_obj_list = contact_obj_list.filter(address__in=a)
+    if phone:
+        contact_obj_list = contact_obj_list.filter(phone__icontains=phone)
+    if email:
+        contact_obj_list = contact_obj_list.filter(email__icontains=email)
+    return render(request, 'contacts/contacts.html', {
+        'contact_obj_list': contact_obj_list,
+        'accounts': accounts,
+        'per_page': page
+    })
 
 
 @login_required
 def add_contact(request):
-    acount = Account.objects.all()
-    countri = Country.objects.all()
-    assigned_user = User.objects.filter(is_active=True)
-
+    accounts = Account.objects.filter()
+    users = User.objects.filter(is_active=True).order_by('email')
+    form = ContactForm(assigned_to=users, account=accounts)
+    address_form = BillingAddressForm()
+    teams = Team.objects.all()
+    assignedto_list = request.POST.getlist('assigned_to')
+    teams_list = request.POST.getlist('teams')
     if request.method == 'POST':
-
-        address_form = AddressForm(request.POST)
-        form = ContactForm(request.POST)
-
+        form = ContactForm(request.POST, assigned_to=users, account=accounts)
+        address_form = BillingAddressForm(request.POST)
         if form.is_valid() and address_form.is_valid():
             address_obj = address_form.save()
             contact_obj = form.save(commit=False)
             contact_obj.address = address_obj
+            contact_obj.created_by = request.user
             contact_obj.save()
-            contact_obj.users = request.user
-            contact_obj.save()
-            return HttpResponseRedirect(reverse('contacts:list'))
+            contact_obj.assigned_to.add(*assignedto_list)
+            contact_obj.teams.add(*teams_list)
+            if request.is_ajax():
+                return JsonResponse({'error': False})
+            if request.POST.get("savenewform"):
+                return HttpResponseRedirect(reverse("contacts:add_contact"))
+            else:
+                return HttpResponseRedirect(reverse('contacts:list'))
         else:
+            if request.is_ajax():
+                return JsonResponse({'error': True, 'contact_errors': form.errors})
             return render(request, 'contacts/create_contact.html', {
-                'err_contct_form': form.errors, 'acount': acount,
-                'err_address_form': address_form.errors, 'teams': TEAMS,
-                'countri': countri, 'assigned_user': assigned_user})
-
+                'contact_form': form,
+                'address_form': address_form,
+                'accounts': accounts,
+                'countries': COUNTRIES,
+                'teams': teams,
+                'users': users,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list
+            })
     else:
         return render(request, 'contacts/create_contact.html', {
-            'acount': acount, 'countri': countri,
-            'teams': TEAMS, 'assigned_user': assigned_user})
+            'contact_form': form,
+            'address_form': address_form,
+            'accounts': accounts,
+            'countries': COUNTRIES,
+            'teams': teams,
+            'users': users,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list
+        })
 
 
 @login_required
-def display_contact(request):
-    display_obj = Contact.objects.all()
-    count = Contact.objects.all().count()
-    acount = Account.objects.all()
-    page = request.GET.get('per_page')
-    name = request.GET.get('name')
-    account = request.GET.get('account')
-    city = request.GET.get('city')
-    phone = request.GET.get('phone')
-    email = request.GET.get('email')
-
-    if name:
-        display_obj = display_obj.filter(name__icontains=name)
-
-    if account:
-        display_obj = display_obj.filter(account=account)
-
-    if city:
-        a = Address.objects.filter(city__icontains=city)
-        display_obj = display_obj.filter(address__in=a)
-
-    if phone:
-        display_obj = display_obj.filter(phone__contains=phone)
-
-    if email:
-        display_obj = display_obj.filter(email__contains=email)
-
-    return render(request, 'contacts/contacts.html', {
-        'contacts': display_obj, 'count': count,
-        'acount': acount, 'per_page': page})
-
-
-@login_required
-def delete_contact(request, pk):
-    Contact.objects.filter(id=pk).delete()
-    if request.is_ajax():
-        return JsonResponse({'error': False})
-    return HttpResponseRedirect(reverse('contacts:list'))
+def view_contact(request, contact_id):
+    contact_record = get_object_or_404(
+        Contact.objects.select_related("address"), id=contact_id)
+    comments = contact_record.contact_comments.all()
+    return render(request, 'contacts/view_contact.html', {
+        'contact_record': contact_record,
+        'comments': comments})
 
 
 @login_required
 def edit_contact(request, pk):
-    edit_obj = get_object_or_404(Contact, id=pk)
-    address_obj = get_object_or_404(Address, id=edit_obj.address.id)
-    acount = Account.objects.all()
-    countri = Country.objects.all()
-    assigned_user = User.objects.filter(is_active=True)
-    address_form = AddressForm(instance=address_obj)
-    form = ContactForm(instance=edit_obj)
+    contact_obj = get_object_or_404(Contact, id=pk)
+    address_obj = get_object_or_404(Address, id=contact_obj.address.id)
+    accounts = Account.objects.filter()
+    users = User.objects.filter(is_active=True).order_by('email')
+    form = ContactForm(instance=contact_obj, assigned_to=users, account=accounts)
+    address_form = BillingAddressForm(instance=address_obj)
+    teams = Team.objects.all()
+    assignedto_list = request.POST.getlist('assigned_to')
+    teams_list = request.POST.getlist('teams')
     if request.method == 'POST':
-        address_form = AddressForm(request.POST, instance=address_obj)
-        form = ContactForm(request.POST, instance=edit_obj)
+        form = ContactForm(request.POST, instance=contact_obj, assigned_to=users, account=accounts)
+        address_form = BillingAddressForm(request.POST, instance=address_obj)
         if form.is_valid() and address_form.is_valid():
             addres_obj = address_form.save()
             contact_obj = form.save(commit=False)
             contact_obj.address = addres_obj
+            contact_obj.created_by = request.user
             contact_obj.save()
+            contact_obj.assigned_to.clear()
+            contact_obj.assigned_to.add(*assignedto_list)
+            contact_obj.teams.clear()
+            contact_obj.teams.add(*teams_list)
             if request.is_ajax():
                 return JsonResponse({'error': False})
             return HttpResponseRedirect(reverse('contacts:list'))
         else:
+            if request.is_ajax():
+                return JsonResponse({'error': True, 'contact_errors': form.errors})
             return render(request, 'contacts/create_contact.html', {
-                'edit_obj': edit_obj, 'err_contct_form': form.errors,
-                'teams': TEAMS, 'err_address_form': address_form.errors,
-                'acount': acount, 'countri': countri,
-                'assigned_user': assigned_user})
+                'contact_form': form,
+                'address_form': address_form,
+                'contact_obj': contact_obj,
+                'accounts': accounts,
+                'countries': COUNTRIES,
+                'teams': teams,
+                'users': users,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list
+            })
     else:
         return render(request, 'contacts/create_contact.html', {
-            'edit_obj': edit_obj, 'address_obj': address_obj,
-            'acount': acount, 'countri': countri, 'teams': TEAMS,
-            'assigned_user': assigned_user})
+            'contact_form': form,
+            'address_form': address_form,
+            'contact_obj': contact_obj,
+            'address_obj': address_obj,
+            'accounts': accounts,
+            'countries': COUNTRIES,
+            'teams': teams,
+            'users': users,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list
+        })
 
 
 @login_required
-def view_contact(request, pk):
-    con = Contact.objects.get(id=pk)
-    accunt = Account.objects.all()
-    contact = Contact.objects.all()
-    opportunity = Opportunity.objects.filter(contacts=con).order_by('id')
-    cases = Case.objects.filter(contacts=con).order_by('id')
-    users = User.objects.filter(is_active=True)
-    comments = Comments.objects.filter(contactid=con)
-    meetings = Event.objects.all()
-    return render(request, 'contacts/view_contact.html', {
-        'meetings': meetings, 'opportunity': opportunity, 'comments': comments,
-        'con': con, 'stages': STAGES, 'sources': SOURCES,
-        'accunt': accunt, 'contact': contact, 'users': users, 'cases': cases})
-
-
-@login_required
-def get_contacts(request):
-    if request.method == 'GET':
-        if request.user.is_authenticated():
-            contacts = Contact.objects.all()
-            return render(request, 'contacts/contacts_list.html', {
-                'contacts': contacts})
-        else:
-            return HttpResponseRedirect('accounts/login')
+def remove_contact(request, pk):
+    contact_record = get_object_or_404(Contact, id=pk)
+    contact_record.delete()
+    if request.is_ajax():
+        return JsonResponse({'error': False})
     else:
-        return HttpResponse
-        ('Invalid Method or Not Authanticated in load_calls')
+        return HttpResponseRedirect(reverse('contacts:list'))
+
+# CRUD Operations End
+# Comments Section Starts
 
 
 @login_required
-def comment_add(request):
+def add_comment(request):
     if request.method == 'POST':
         contact = get_object_or_404(Contact, id=request.POST.get('contactid'))
-        assigned = False
-        if contact.created_user:
-            assigned = (int(contact.created_user) == request.user)
-        if request.user == contact.users or assigned:
-            form = CommentForm(request.POST)
+        if request.user in contact.assigned_to.all() or request.user == contact.created_by:
+            form = ContactCommentForm(request.POST)
             if form.is_valid():
-                comment = request.POST.get('comment')
-                comment_user = request.user
-                contactid = request.POST.get('contactid')
-                c = Comments.objects.create(
-                    comment=comment,
-                    contactid=Contact.objects.get(id=contactid),
-                    comment_user=comment_user)
-                data = {"com_id": c.id, "comment": c.comment,
-                        "comment_time": c.comment_time,
-                        "com_user": c.comment_user.username}
+                contact_comment = form.save(commit=False)
+                contact_comment.comment = request.POST.get('comment')
+                contact_comment.commented_by = request.user
+                contact_comment.contact = contact
+                contact_comment.save()
+                data = {"comment_id": contact_comment.id, "comment": contact_comment.comment,
+                        "commented_on": contact_comment.commented_on,
+                        "commented_by": contact_comment.commented_by.email}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -176,13 +197,13 @@ def comment_add(request):
 
 
 @login_required
-def comment_edit(request):
+def edit_comment(request):
     if request.method == "POST":
         comment = request.POST.get('comment')
         comment_id = request.POST.get("commentid")
-        com = get_object_or_404(Comments, id=comment_id)
-        form = CommentForm(request.POST)
-        if request.user == com.comment_user:
+        com = get_object_or_404(Comment, id=comment_id)
+        form = ContactCommentForm(request.POST)
+        if request.user == com.commented_by:
             if form.is_valid():
                 com.comment = comment
                 com.save()
@@ -191,21 +212,33 @@ def comment_edit(request):
             else:
                 return JsonResponse({"error": form['comment'].errors})
         else:
-            return JsonResponse({"error": "You dont have Access to edit"})
+            return JsonResponse({"error": "You dont have authentication to edit"})
     else:
         return render(request, "404.html")
 
 
 @login_required
-def comment_remove(request):
+def remove_comment(request):
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
-        c = get_object_or_404(Comments, id=comment_id)
-        if request.user == c.comment_user:
-            get_object_or_404(Comments, id=comment_id).delete()
+        comment = get_object_or_404(Comment, id=comment_id)
+        if request.user == comment.commented_by:
+            comment.delete()
             data = {"cid": comment_id}
             return JsonResponse(data)
         else:
             return JsonResponse({"error": "You Dont have permisions to delete"})
     else:
-        return HttpResponse("Something Went Wrong!!")
+        return HttpResponse("Something Went Wrong")
+
+# Comments Section Ends
+# Other Views
+
+
+@login_required
+def get_contacts(request):
+    if request.method == 'GET':
+        contacts = Contact.objects.filter()
+        return render(request, 'contacts/contacts_list.html', {'contacts': contacts})
+    else:
+        return HttpResponse('Invalid Method or Not Authanticated in load_calls')

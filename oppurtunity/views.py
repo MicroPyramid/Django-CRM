@@ -1,185 +1,226 @@
+import json
+
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
-from accounts.models import Account
-from oppurtunity.models import Opportunity
-from common.models import Comment, Team
-from common.utils import STAGES, SOURCES
-from oppurtunity.forms import OpportunityForm, CommentForm
-from contacts.models import Contact
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-import json
-# Create your views here.
+
+from common.models import User, Comment, Team
+from common.utils import STAGES, SOURCES, CURRENCY_CODES
+from accounts.models import Account
+from contacts.models import Contact
+from oppurtunity.models import Opportunity
+from oppurtunity.forms import OpportunityForm, OpportunityCommentForm
+
+# CRUD Operations Start
+
+
+@login_required
+def opp_list(request):
+    opportunity_list = Opportunity.objects.all().prefetch_related("contacts", "account")
+    accounts = Account.objects.all()
+    contacts = Contact.objects.all()
+    page = request.POST.get('per_page')
+    opp_name = request.POST.get('name')
+    opp_account = request.POST.get('account')
+    opp_contact = request.POST.get('contacts')
+    opp_stage = request.POST.get('stage')
+    opp_source = request.POST.get('lead_source')
+    if opp_name:
+        opportunity_list = Opportunity.objects.filter(name__contains=opp_name)
+    if opp_stage:
+        opportunity_list = opportunity_list.filter(stage=opp_stage)
+    if opp_source:
+        opportunity_list = opportunity_list.filter(lead_source=opp_source)
+    if opp_account:
+        opportunity_list = opportunity_list.filter(account=opp_account)
+    if opp_contact:
+        opportunity_list = opportunity_list.filter(contacts=opp_contact)
+    return render(request, "oppurtunity/opportunity.html", {
+        'opportunity_list': opportunity_list,
+        'accounts': accounts,
+        'contacts': contacts,
+        'stages': STAGES,
+        'sources': SOURCES,
+        'per_page': page
+    })
 
 
 @login_required
 def opp_create(request):
-    users = User.objects.filter(is_active=True)
-    accunt = Account.objects.all()
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.all()
+    contacts = Contact.objects.all()
+    form = OpportunityForm(assigned_to=users, account=accounts, contacts=contacts)
+    assignedto_list = request.POST.getlist("assigned_to")
+    teams_list = request.POST.getlist("teams")
+    contacts_list = request.POST.getlist("contacts")
+    teams = Team.objects.all()
     if request.method == 'POST':
-        form = OpportunityForm(request.POST)
+        form = OpportunityForm(request.POST, assigned_to=users, account=accounts, contacts=contacts)
         if form.is_valid():
-            a = form.save()
-            # a.contacts.add(*(request.POST.getlist("contacts")))
-            accunt = Account.objects.all()
-            a.users = request.user
-            a.save()
+            opportunity_obj = form.save(commit=False)
+            opportunity_obj.created_by = request.user
+            if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
+                opportunity_obj.closed_by = request.user
+            opportunity_obj.save()
+            opportunity_obj.assigned_to.add(*assignedto_list)
+            opportunity_obj.teams.add(*teams_list)
+            opportunity_obj.contacts.add(*contacts_list)
             if request.is_ajax():
                 return JsonResponse({'error': False})
-            if request.POST.get("user"):
-                a.users = User.objects.get(id=request.POST.get("users"))
-                a.save()
-            if request.POST.get("teams"):
-                a.teams = request.POST.get("teams")
-                a.save()
+            if request.POST.get("savenewform"):
+                return HttpResponseRedirect(reverse("oppurtunities:save"))
+            else:
+                return HttpResponseRedirect(reverse('oppurtunities:list'))
+        else:
             if request.is_ajax():
-                return HttpResponse(json.dumps({'error': False}))
+                return JsonResponse({'error': True, 'opportunity_errors': form.errors})
+            return render(request, 'oppurtunity/create_opportunity.html', {
+                'opportunity_form': form,
+                'accounts': accounts,
+                'users': users,
+                'teams': teams,
+                'stages': STAGES,
+                'sources': SOURCES,
+                'currencies': CURRENCY_CODES,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list,
+                'contacts_list': contacts_list
+            })
+    else:
+        return render(request, 'oppurtunity/create_opportunity.html', {
+            'opportunity_form': form,
+            'accounts': accounts,
+            'users': users,
+            'teams': teams,
+            'stages': STAGES,
+            'sources': SOURCES,
+            'currencies': CURRENCY_CODES,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list,
+            'contacts_list': contacts_list
+        })
+
+
+@login_required
+def opp_view(request, pk):
+    opportunity_record = get_object_or_404(
+        Opportunity.objects.prefetch_related("contacts", "account"), id=pk)
+    comments = opportunity_record.opportunity_comments.all()
+    return render(request, 'oppurtunity/view_opportunity.html', {
+        'opportunity_record': opportunity_record,
+        'comments': comments
+    })
+
+
+@login_required
+def opp_edit(request, pk):
+    opportunity_obj = get_object_or_404(Opportunity, id=pk)
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.all()
+    contacts = Contact.objects.all()
+    form = OpportunityForm(
+        instance=opportunity_obj, assigned_to=users, account=accounts, contacts=contacts)
+    assignedto_list = request.POST.getlist("assigned_to")
+    teams_list = request.POST.getlist("teams")
+    contacts_list = request.POST.getlist("contacts")
+    teams = Team.objects.all()
+    if request.method == 'POST':
+        form = OpportunityForm(
+            request.POST, instance=opportunity_obj, assigned_to=users, account=accounts,
+            contacts=contacts
+        )
+        if form.is_valid():
+            opportunity_obj = form.save(commit=False)
+            opportunity_obj.created_by = request.user
+            if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
+                opportunity_obj.closed_by = request.user
+            opportunity_obj.save()
+            opportunity_obj.assigned_to.clear()
+            opportunity_obj.assigned_to.add(*assignedto_list)
+            opportunity_obj.teams.clear()
+            opportunity_obj.teams.add(*teams_list)
+            opportunity_obj.contacts.clear()
+            opportunity_obj.contacts.add(*request.POST.getlist("contacts"))
+            if request.is_ajax():
+                return JsonResponse({'error': False})
             return HttpResponseRedirect(reverse('oppurtunities:list'))
         else:
+            if request.is_ajax():
+                return JsonResponse({'error': True, 'opportunity_errors': form.errors})
             return render(request, 'oppurtunity/create_opportunity.html', {
-                'stages': STAGES, 'sources': SOURCES,
-                'accunt': accunt, 'teams': TEAMS, 'users': users,
-                'error': form.errors})
+                'opportunity_form': form,
+                'opportunity_obj': opportunity_obj,
+                'accounts': accounts,
+                'users': users,
+                'teams': teams,
+                'stages': STAGES,
+                'sources': SOURCES,
+                'currencies': CURRENCY_CODES,
+                'assignedto_list': assignedto_list,
+                'teams_list': teams_list,
+                'contacts_list': contacts_list
+            })
     else:
-        form = OpportunityForm()
         return render(request, 'oppurtunity/create_opportunity.html', {
-            'form': form, 'stages': STAGES, 'sources': SOURCES,
-            'accunt': accunt, 'teams': TEAMS, 'users': users})
+            'opportunity_form': form,
+            'opportunity_obj': opportunity_obj,
+            'accounts': accounts,
+            'users': users,
+            'teams': teams,
+            'stages': STAGES,
+            'sources': SOURCES,
+            'currencies': CURRENCY_CODES,
+            'assignedto_list': assignedto_list,
+            'teams_list': teams_list,
+            'contacts_list': contacts_list
+        })
+
+
+@login_required
+def opp_remove(request, pk):
+    opportunity_record = get_object_or_404(Opportunity, id=pk)
+    opportunity_record.delete()
+    if request.is_ajax():
+        return JsonResponse({'error': False})
+    return HttpResponseRedirect(reverse('oppurtunities:list'))
 
 
 def contacts(request):
-        acc = request.GET["Account"]
-        account_contact = Account.objects.filter(id=acc)
-        contacts = Contact.objects.filter(account=account_contact)
-        data = {}
-        for i in contacts:
-            new = {i.pk: i.name}
-            data.update(new)
-        return JsonResponse(data)
-
-
-@login_required
-def editdetails(request):
-    eid = request.POST.get("tid")
-    edata = get_object_or_404(Opportunity, id=eid)
-    account = 0
-    if edata.account:
-        account = edata.account.id
-    con = Contact.objects.filter(account=account)
-    selcon = edata.contacts.all()
-    print ("selcon", selcon)
-    contactsHtml = render(request, "oppurtunity/opp_contacts.html", {
-        "con": con, "selcon": selcon})
-    data = {"name": edata.name, "stage": edata.stage, "close_date": edata.close_date,
-            "sources": edata.lead_source, "probability": edata.probability,
-            "description": edata.description, "account": account, "eid": eid, }
-    data['contacts'] = str(contactsHtml.content)
+    opp_account = request.GET["account"]
+    if opp_account:
+        account = get_object_or_404(Account, id=opp_account)
+        contacts = Contact.objects.filter(account=account)
+    else:
+        contacts = Contact.objects.all()
+    data = {}
+    for i in contacts:
+        new = {i.pk: i.first_name}
+        data.update(new)
     return JsonResponse(data)
 
 
-@login_required
-def opp_display(request):
-    page = request.GET.get('per_page')
-    count = Opportunity.objects.count()
-    accounts = Account.objects.all()
-    contacts = Contact.objects.all()
-    opportunity = Opportunity.objects.all()
-    if request.method == 'GET':
-        if request.GET.get('name'):
-            opportunity = Opportunity.objects.filter(
-                name__contains=request.GET.get('name'))
-        if request.GET.get('stage'):
-            opportunity = opportunity.filter(
-                stage=request.GET.get('stage'))
-        if request.GET.get('lead_source'):
-            opportunity = opportunity.filter(
-                lead_source=request.GET.get('lead_source'))
-        if request.GET.get('account'):
-            opportunity = opportunity.filter(
-                account=request.GET.get('account'))
-        if request.GET.get('contacts'):
-            opportunity = opportunity.filter(
-                contacts=request.GET.get('contacts'))
-        return render(request, 'oppurtunity/opportunity.html', {
-            'opportunity': opportunity, 'stages': STAGES,
-            'sources': SOURCES, 'accounts': accounts, 'per_page': page,
-            'contacts': contacts, 'teams': TEAMS, 'count': count})
-    else:
-        return render(request, "oppurtunity/opportunity.html", {
-            'opportunity': opportunity, 'stages': STAGES, 'sources': SOURCES,
-            'per_page': page, 'accounts': accounts, 'teams': TEAMS,
-            'contacts': contacts, 'count': count})
+# CRUD Operations Ends
+# Comments Section Start
 
 
 @login_required
-def opp_delete(request, opp_id):
-    Opportunity.objects.filter(id=opp_id).delete()
-    if request.is_ajax():
-        return HttpResponse(json.dumps({'error': False}))
-    return HttpResponseRedirect('/oppurtunities/list/')
-
-
-@login_required
-def opp_view(request, opp_id):
-    view_record = get_object_or_404(Opportunity, id=opp_id)
-    comments = Comments.objects.filter(oppid=opp_id).order_by('-id')
-    users = User.objects.all()
-    accunt = Account.objects.all()
-    contact = view_record.contacts.all()
-    return render(request, 'oppurtunity/view_opportunity.html', {
-        'opp': view_record, 'stages': STAGES,
-        'sources': SOURCES, 'accunt': accunt, 'teams': TEAMS,
-        'users': users, 'contact': contact, "comments": comments})
-
-
-@login_required
-def opp_edit(request, opp_id):
-    edata = get_object_or_404(Opportunity, id=opp_id)
-    selcon = edata.contacts.all()
-    con = Contact.objects.filter(account=edata.account)
-    edit_opp = "editing"
-    accunt = Account.objects.all()
+def add_comment(request):
     if request.method == 'POST':
-        eid = get_object_or_404(Opportunity, id=opp_id)
-        form = OpportunityForm(request.POST, instance=eid)
-        if form.is_valid():
-            form.save()
-            if request.is_ajax():
-                return HttpResponse(json.dumps({'error': False}))
-            return redirect("/oppurtunities/list")
-        else:
-            if request.is_ajax():
-                return JsonResponse({'error': True, 'errors_case': form.errors})
-            return render(request, "oppurtunity/view_opportunity.html", {
-                "opp": edata, "con": con, "accunt": accunt, "selcon": selcon,
-                "edit_opp": edit_opp})
-    assigned_user = "None"
-    if edata.assigned_user:
-        assigned_user = edata.get_assigned_user
-    users = User.objects.filter(is_active=True)
-    return render(request, "oppurtunity/view_opportunity.html", {
-        "opp": edata, "con": con, "accunt": accunt, "selcon": selcon,
-        "edit_opp": edit_opp, "users": users, "assigned_user": assigned_user})
-
-
-def comment_add(request):
-    if request.method == 'POST':
-        opp = get_object_or_404(Opportunity, id=request.POST.get('oppid'))
-        assigned = False
-        if opp.assigned_user:
-            assigned = (int(opp.assigned_user) == request.user)
-        if request.user == opp.users or assigned:
-            form = CommentForm(request.POST)
+        opportunity = get_object_or_404(Opportunity, id=request.POST.get('opportunityid'))
+        if request.user in opportunity.assigned_to.all() or request.user == opportunity.created_by:
+            form = OpportunityCommentForm(request.POST)
             if form.is_valid():
-                comment = request.POST.get('comment')
-                comment_user = request.user
-                oppid = request.POST.get('oppid')
-                c = Comments.objects.create(comment=comment, oppid=Opportunity.objects.get(id=oppid), comment_user=comment_user)
-                data = {"com_id": c.id, "comment": c.comment,
-                        "comment_time": c.comment_time,
-                        "com_user": c.comment_user.username}
+                opportunity_comment = form.save(commit=False)
+                opportunity_comment.comment = request.POST.get('comment')
+                opportunity_comment.commented_by = request.user
+                opportunity_comment.opportunity = opportunity
+                opportunity_comment.save()
+                data = {"comment_id": opportunity_comment.id, "comment": opportunity_comment.comment,
+                        "commented_on": opportunity_comment.commented_on,
+                        "commented_by": opportunity_comment.commented_by.email}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -189,17 +230,17 @@ def comment_add(request):
 
 
 @login_required
-def comment_edit(request):
+def edit_comment(request):
     if request.method == "POST":
         comment = request.POST.get('comment')
         comment_id = request.POST.get("commentid")
-        com = get_object_or_404(Comments, id=comment_id)
-        form = CommentForm(request.POST)
-        if request.user == com.comment_user:
+        comment_object = get_object_or_404(Comment, id=comment_id)
+        form = OpportunityCommentForm(request.POST)
+        if request.user == comment_object.commented_by:
             if form.is_valid():
-                com.comment = comment
-                com.save()
-                data = {"comment": com.comment, "commentid": comment_id}
+                comment_object.comment = comment
+                comment_object.save()
+                data = {"comment": comment_object.comment, "commentid": comment_id}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -210,13 +251,13 @@ def comment_edit(request):
 
 
 @login_required
-def comment_remove(request):
+def remove_comment(request):
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
-        c = get_object_or_404(Comments, id=comment_id)
-        if request.user == c.comment_user:
-            get_object_or_404(Comments, id=comment_id).delete()
-            data = {"oid": comment_id}
+        comment_object = get_object_or_404(Comment, id=comment_id)
+        if request.user == comment_object.commented_by:
+            get_object_or_404(Comment, id=comment_id).delete()
+            data = {"cid": comment_id}
             return JsonResponse(data)
         else:
             return JsonResponse({"error": "You Dont have permisions to delete"})
@@ -224,15 +265,14 @@ def comment_remove(request):
         return HttpResponse("Something Went Wrong")
 
 
+# Comments Section Start
+# Other Views
+
+
 @login_required
 def get_opportunity(request):
     if request.method == 'GET':
-        if request.user.is_authenticated():
-            opportunities = Opportunity.objects.all()
-            return render(request, 'oppurtunity/opportunities_list.html', {
-                'opportunities': opportunities})
-        else:
-            return HttpResponseRedirect('accounts/login')
+        opportunities = Opportunity.objects.all()
+        return render(request, 'oppurtunity/opportunities_list.html', {'opportunities': opportunities})
     else:
         return HttpResponse('Invalid Method or Not Authanticated in load_calls')
-    return HttpResponse('Oops!! Something Went Wrong..  in load_calls')
