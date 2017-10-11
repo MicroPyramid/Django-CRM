@@ -1,20 +1,21 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from cases.forms import caseForm
+from django.shortcuts import render, get_object_or_404, redirect, HttpResponseRedirect, reverse
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+
 from cases.models import Case
-from common.models import Comment, Comment_Files
+from cases.forms import CaseForm, CaseCommentForm
+from common.models import Team, User, Comment
 from accounts.models import Account
 from contacts.models import Contact
-from django.contrib.auth.models import User
-from cases.forms import CommentForm
-from django.db.models import Q
-import json
-from django.conf import settings
+from common.utils import PRIORITY_CHOICE, STATUS_CHOICE, CASE_TYPE
+
+# CRUD Operations Start
 
 
 @login_required
-def cases(request):
+def cases_list(request):
+    cases = Case.objects.all().select_related("account")
     accounts = Account.objects.all()
     page = request.POST.get('per_page')
     name = request.POST.get('name')
@@ -23,7 +24,6 @@ def cases(request):
     account = request.POST.get('account')
     if not account:
         account = 0
-    cases = Case.objects.filter(Q(userid=request.user) | Q(assigned_user=request.user)).order_by("-id")
     if name:
         cases = Case.objects.filter(name__contains=name)
     if account:
@@ -32,96 +32,155 @@ def cases(request):
         cases = cases.filter(status=status)
     if priority:
         cases = cases.filter(priority=priority)
-    return render(request, "cases/cases.html", {"cases": cases, "accounts": accounts, "acc": int(account), "per_page": page})
+    return render(request, "cases/cases.html", {
+        'cases': cases,
+        'accounts': accounts,
+        'acc': int(account),
+        'per_page': page,
+        'case_priority': PRIORITY_CHOICE,
+        'case_status': STATUS_CHOICE
+    })
+
+
+@login_required
+def add_case(request):
+    accounts = Account.objects.all()
+    contacts = Contact.objects.all()
+    users = User.objects.filter(is_active=True).order_by('email')
+    form = CaseForm(assigned_to=users, account=accounts, contacts=contacts)
+    teams = Team.objects.all()
+    teams_list = request.POST.getlist("teams")
+    assignedto_list = request.POST.getlist("assigned_to")
+    contacts_list = request.POST.getlist("contacts")
+    if request.method == 'POST':
+        form = CaseForm(request.POST, assigned_to=users, account=accounts, contacts=contacts)
+        if form.is_valid():
+            case = form.save(commit=False)
+            case.created_by = request.user
+            case.save()
+            case.assigned_to.add(*assignedto_list)
+            case.teams.add(*teams_list)
+            case.contacts.add(*contacts_list)
+            if request.is_ajax():
+                return JsonResponse({'error': False})
+            if request.POST.get("savenewform"):
+                return redirect("cases:case_add")
+            else:
+                return HttpResponseRedirect(reverse('cases:list'))
+        else:
+            if request.is_ajax():
+                return JsonResponse({'error': True, 'case_errors': form.errors})
+            return render(request, "cases/create_cases.html", {
+                'case_form': form,
+                'accounts': accounts,
+                'users': users,
+                'teams': teams,
+                'case_types': CASE_TYPE,
+                'case_priority': PRIORITY_CHOICE,
+                'case_status': STATUS_CHOICE,
+                'teams_list': teams_list,
+                'assignedto_list': assignedto_list,
+                'contacts_list': contacts_list
+            })
+    return render(request, "cases/create_cases.html", {
+        'case_form': form,
+        'accounts': accounts,
+        'users': users,
+        'teams': teams,
+        'teams_list': teams_list,
+        'assignedto_list': assignedto_list,
+        'contacts_list': contacts_list,
+        'case_types': CASE_TYPE,
+        'case_priority': PRIORITY_CHOICE,
+        'case_status': STATUS_CHOICE
+    })
+
+
+@login_required
+def view_case(request, case_id):
+    case_record = get_object_or_404(
+        Case.objects.prefetch_related("contacts", "account"), id=case_id)
+    comments = case_record.cases.all()
+    return render(request, "cases/view_case.html", {
+        'case_record': case_record,
+        'comments': comments
+    })
 
 
 @login_required
 def edit_case(request, case_id):
-    edata = get_object_or_404(Case, id=case_id)
-    selcon = edata.contacts.all()
-    con = Contact.objects.filter(account=edata.account)
-    edit2 = "edit from home"
+    case_object = get_object_or_404(Case, id=case_id)
+    users = User.objects.filter(is_active=True).order_by('email')
     accounts = Account.objects.all()
+    contacts = Contact.objects.all()
+    form = CaseForm(instance=case_object, assigned_to=users, account=accounts, contacts=contacts)
+    teams = Team.objects.all()
+    teams_list = request.POST.getlist("teams")
+    assignedto_list = request.POST.getlist("assigned_to")
+    contacts_list = request.POST.getlist("contacts")
     if request.method == 'POST':
-        eid = get_object_or_404(Case, id=case_id)
-        form = caseForm(request.POST, instance=eid)
+        form = CaseForm(
+            request.POST, instance=case_object, assigned_to=users, account=accounts,
+            contacts=contacts
+        )
         if form.is_valid():
-            form.save()
+            case_obj = form.save(commit=False)
+            if request.POST.get("account"):
+                case_obj.account = Account.objects.get(id=request.POST.get("account"))
+            case_obj.created_by = request.user
+            case_obj.save()
+            case_obj.assigned_to.clear()
+            case_obj.assigned_to.add(*assignedto_list)
+            case_obj.teams.clear()
+            case_obj.teams.add(*teams_list)
+            case_obj.contacts.clear()
+            case_obj.contacts.add(*contacts_list)
             if request.is_ajax():
-                return HttpResponse(json.dumps({'error': False}))
-            return redirect("/cases/list")
+                return JsonResponse({'error': False})
+            return HttpResponseRedirect(reverse('cases:list'))
         else:
             if request.is_ajax():
-                return JsonResponse({'error': True, 'errors_case': form.errors})
-            return render(request, "cases/show_case.html", {"case": edata, "con": con, "accounts": accounts, "selcon": selcon, "edit2": edit2})
-    assigned_user = "None"
-    if edata.assigned_user:
-        assigned_user = edata.get_assigned_user
-    users = User.objects.filter(is_active=True)
-    return render(request, "cases/show_case.html", {"case": edata, "con": con, "accounts": accounts, "selcon": selcon, "edit2": edit2,
-                                                    "users": users, "a_user": assigned_user})
+                return JsonResponse({'error': True, 'case_errors': form.errors})
+            return render(request, "cases/create_cases.html", {
+                'case_obj': case_object,
+                'case_form': form,
+                'accounts': accounts,
+                'users': users,
+                'teams': teams,
+                'case_types': CASE_TYPE,
+                'case_priority': PRIORITY_CHOICE,
+                'case_status': STATUS_CHOICE,
+                'teams_list': teams_list,
+                'assignedto_list': assignedto_list,
+                'contacts_list': contacts_list
+            })
 
-
-def selectContacts(request):
-        ac = request.GET["acc"]
-        company = Account.objects.filter(id=ac)
-        contacts = Contact.objects.filter(account=company)
-        data = {}
-        for i in contacts:
-            new = {i.pk: i.name}
-            data.update(new)
-        return JsonResponse(data)
-
-
-@login_required
-def editdetails(request):
-    eid = request.POST["tid"]
-    edata = get_object_or_404(Case, id=eid)
-    account = 0
-    if edata.account:
-        account = edata.account.id
-    con = Contact.objects.filter(account=account)
-    selcon = edata.contacts.all()
-    contactsHtml = render(request, "cases/sel_contacts.html", {"selcon": selcon, "con": con})
-    data = {"name": edata.name, "status": edata.status, "priority": edata.priority,
-            "case-type": edata.case_type, "description": edata.description, "account": account, "eid": eid, }
-    data['contacts'] = str(contactsHtml.content)
-    return JsonResponse(data)
-
-
-@login_required
-def case_add(request):
-    accounts = Account.objects.all()
-    users = User.objects.filter(is_active=True)
-    if request.method == 'POST':
-        form = caseForm(request.POST)
-        if form.is_valid():
-            case = form.save()
-            case_new = get_object_or_404(Case, id=case.id)
-            case_new.userid = request.user
-            case_new.save()
-            if request.is_ajax():
-                return HttpResponse(json.dumps({'error': False}))
-            accounts = Account.objects.all()
-            return redirect("/cases/list")
-        else:
-            if request.is_ajax():
-                return HttpResponse(json.dumps({'error': True, 'errors': form.errors}))
-            return render(request, "cases/create_cases.html", {"form": form, "accounts": accounts})
-    return render(request, "cases/create_cases.html", {"accounts": accounts, "users": users})
+    return render(request, "cases/create_cases.html", {
+        'case_form': form,
+        'case_obj': case_object,
+        'accounts': accounts,
+        'users': users,
+        'teams': teams,
+        'case_types': CASE_TYPE,
+        'case_priority': PRIORITY_CHOICE,
+        'case_status': STATUS_CHOICE,
+        'assignedto_list': assignedto_list,
+        'teams_list': teams_list,
+        'contacts_list': contacts_list
+    })
 
 
 @login_required
 def remove_case(request, case_id):
     if request.method == 'POST':
-        cid = request.POST.get('case_id')
+        cid = request.POST['case_id']
         get_object_or_404(Case, id=cid).delete()
-        count = Case.objects.filter(Q(userid=request.user) | Q(assigned_user=request.user)).count()
+        count = Case.objects.filter(Q(assigned_to=request.user) | Q(created_by=request.user)).count()
         data = {"case_id": cid, "count": count}
         return JsonResponse(data)
     else:
         Case.objects.filter(id=case_id).delete()
-        return redirect("/cases/list")
+        return HttpResponseRedirect(reverse('cases:list'))
 
 
 @login_required
@@ -134,54 +193,39 @@ def close_case(request):
     return JsonResponse(data)
 
 
-@login_required
-def show_case(request, case_id):
-    c = get_object_or_404(Case, id=case_id)
-    comments = Comments.objects.filter(caseid=case_id).order_by('-id')
-    users = User.objects.all()
-    con = c.contacts.all()
-    a_user = "None"
-    if c.assigned_user:
-        a_user = c.get_assigned_user
-    if not con:
-        con = "None"
-    accounts = Account.objects.all()
-    return render(request, "cases/show_case.html", {"case": c, "accounts": accounts, "contacts": con, "a_user": a_user,
-                                                    "users": users, "comments": comments})
-
-
-@login_required
-def get_cases(request):
-    if request.method == 'GET':
-        cases = Case.objects.all()
-        return render(request, 'cases/cases_list.html', {'cases': cases})
+def selectContacts(request):
+    contact_account = request.GET.get("account")
+    if contact_account:
+        account = get_object_or_404(Account, id=contact_account)
+        contacts = Contact.objects.filter(account=account)
     else:
-        return HttpResponse('Oops!! Something Went Wrong..  in load_calls')
+        contacts = Contact.objects.all()
+    data = {}
+    for i in contacts:
+        new = {i.pk: i.first_name}
+        data.update(new)
+    return JsonResponse(data)
+
+
+# CRUD Operations End
+# Comments Section Start
 
 
 @login_required
-def comment_add(request):
+def add_comment(request):
     if request.method == 'POST':
         case = get_object_or_404(Case, id=request.POST.get('caseid'))
-        assigned = False
-        if case.assigned_user:
-            assigned = (int(case.assigned_user) == request.user)
-        if request.user == case.userid or assigned:
-            form = CommentForm(request.POST)
+        if request.user in case.assigned_to.all() or request.user == case.created_by:
+            form = CaseCommentForm(request.POST)
             if form.is_valid():
-                comment = request.POST.get('comment')
-                comment_user = request.user
-                caseid = request.POST.get('caseid')
-                com_file = request.FILES.getlist('comment_file')
-                c = Comments.objects.create(comment=comment, caseid=Case.objects.get(id=caseid), comment_user=comment_user)
-                for com_file in com_file:
-                    Comment_Files.objects.create(comment_id=c, comment_file=com_file)
-                data = {"com_id": c.id, "comment": c.comment, "comment_time": c.comment_time,
-                        "com_user": c.comment_user.username, "file": {}}
-                for cc in Comment_Files.objects.filter(comment_id=c):
-                    comfile = cc.comment_file.path.split('/')[-1]
-                    fid = cc.id
-                    data['file'].update({fid: comfile})
+                case_comment = form.save(commit=False)
+                case_comment.comment = request.POST.get('comment')
+                case_comment.commented_by = request.user
+                case_comment.case = case
+                case_comment.save()
+                data = {"comment_id": case_comment.id, "comment": case_comment.comment,
+                        "commented_on": case_comment.commented_on,
+                        "commented_by": case_comment.commented_by.email}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -190,21 +234,18 @@ def comment_add(request):
             return JsonResponse(data)
 
 
-def comment_edit(request):
+@login_required
+def edit_comment(request):
     if request.method == "POST":
         comment = request.POST.get('comment')
         comment_id = request.POST.get("commentid")
-        files = request.FILES.getlist('edit_file')
-        com = get_object_or_404(Comments, id=comment_id)
-        form = CommentForm(request.POST)
-        if request.user == com.comment_user:
+        comment_obj = get_object_or_404(Comment, id=comment_id)
+        form = CaseCommentForm(request.POST)
+        if request.user == comment_obj.commented_by:
             if form.is_valid():
-                com.comment = comment
-                com.save()
-                data = {"comment": com.comment, "commentid": comment_id, "file": {}}
-                for file in files:
-                    attach = Comment_Files.objects.create(comment_id=com, comment_file=file)
-                    data['file'].update({attach.id: attach.comment_file.path.split('/')[-1]})
+                comment_obj.comment = comment
+                comment_obj.save()
+                data = {"comment": comment_obj.comment, "commentid": comment_id}
                 return JsonResponse(data)
             else:
                 return JsonResponse({"error": form['comment'].errors})
@@ -215,12 +256,12 @@ def comment_edit(request):
 
 
 @login_required
-def comment_remove(request):
+def remove_comment(request):
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
-        c = get_object_or_404(Comments, id=comment_id)
-        if request.user == c.comment_user:
-            get_object_or_404(Comments, id=comment_id).delete()
+        comment = get_object_or_404(Comment, id=comment_id)
+        if request.user == comment.commented_by:
+            comment.delete()
             data = {"cid": comment_id}
             return JsonResponse(data)
         else:
@@ -229,27 +270,14 @@ def comment_remove(request):
         return HttpResponse("Something Went Wrong")
 
 
+# Comments Section End
+# Other Views
+
+
 @login_required
-def remove_commentfile(request):
-    if request.method == 'POST':
-        file_id = request.POST.get('file_id')
-        file = get_object_or_404(Comment_Files, id=file_id)
-        com = get_object_or_404(Comments, id=file.comment_id.id)
-        if com.comment_user == request.user:
-            file.delete()
-            data = {"file_id": file_id}
-            return JsonResponse(data)
-        else:
-            return JsonResponse({"error": "You Dont Have permissions"})
+def get_cases(request):
+    if request.method == 'GET':
+        cases = Case.objects.all()
+        return render(request, 'cases/cases_list.html', {'cases': cases})
     else:
-        return HttpResponse("Something Went Wrong")
-
-
-def down_file(request, com_id):
-    file = get_object_or_404(Comment_Files, pk=com_id)
-    file_name = settings.BASE_DIR + '/media/' + str(file.comment_file)
-    file_open = open(file_name, 'rb')
-    mimetype = "application/octet-stream"
-    response = HttpResponse(file_open.read(), content_type=mimetype)
-    response["Content-Disposition"] = "attachment; filename=%s" % str(file.comment_file).split('/')[-1]
-    return response
+        return HttpResponse('Oops!! Something Went Wrong..  in load_calls')
