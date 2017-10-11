@@ -1,22 +1,31 @@
 from django import forms
 from cases.models import Case
 from common.models import Comment
-from accounts.models import Account
 
 
-class TestTable(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return obj.name
+class CaseForm(forms.ModelForm):
 
-
-class caseForm(forms.ModelForm):
-    account = TestTable(queryset=Account.objects.all())
-    name = forms.CharField(max_length=64, required=True)
+    def __init__(self, *args, **kwargs):
+        assigned_users = kwargs.pop('assigned_to', [])
+        case_accounts = kwargs.pop('account', [])
+        case_contacts = kwargs.pop('contacts', [])
+        super(CaseForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+        self.fields['description'].widget.attrs.update({
+            'rows': '6'})
+        self.fields['assigned_to'].queryset = assigned_users
+        self.fields['account'].queryset = case_accounts
+        self.fields['contacts'].queryset = case_contacts
+        self.fields['assigned_to'].required = False
+        self.fields['teams'].required = False
+        self.fields['contacts'].required = False
 
     class Meta:
         model = Case
-        fields = "__all__"
-        exclude = ('created', 'userid',)
+        fields = ('assigned_to', 'teams', 'name', 'status',
+                  'priority', 'case_type', 'account',
+                  'contacts', 'closed_on', 'description')
 
     def clean_name(self):
         name = self.cleaned_data['name']
@@ -26,10 +35,9 @@ class caseForm(forms.ModelForm):
         return name
 
 
-class CommentForm(forms.ModelForm):
+class CaseCommentForm(forms.ModelForm):
     comment = forms.CharField(max_length=64, required=True)
 
     class Meta:
         model = Comment
-        fields = ['comment', ]
-        exclude = ('commented_on', 'commented_by', 'case')
+        fields = ('comment', 'case', 'commented_by', )
