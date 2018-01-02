@@ -116,7 +116,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
+STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+
+STATIC_ROOT = (os.path.join(BASE_DIR, "static"))
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
@@ -127,3 +129,4 @@ AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend', )
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 AUTH_USER_MODEL = 'common.User'
+
