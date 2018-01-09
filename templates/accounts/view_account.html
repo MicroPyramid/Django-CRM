@@ -292,7 +292,7 @@
                   <td>
                     <button type="button" class="conview btn-info" id="con_view" data-toggle="modal" data-dismiss="modal" data-target="#conViewModal_{{contact.id}}">VIEW</button>
                     <button type="button" class="conedit btn-success" id="con_edit" data-toggle="modal" data-dismiss="modal" data-target="#conEditModal_{{contact.id}}">EDIT</button>
-                    <button type="button" class="con_remove btn-danger" id="{{ contact.id }}" data-href="{% url 'contacts:delete_contact' pk=contact.id %}">REMOVE</button>
+                    <button type="button" class="con_remove btn-danger" id="{{ contact.id }}" data-href="{% url 'contacts:remove_contact' pk=contact.id %}">REMOVE</button>
                   </td>
                 </tr>
                 {% endfor %}
@@ -327,7 +327,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to">
                           {%for each_user in users %}
-                          <option value="{{ each_user.id }}">{{ each_user.user }}</option>
+                          <option value="{{ each_user.id }}">{{each_user}}</option>
                           {%endfor%}
                         </select>
                         {{ contact_form.assigned_to.errors }}
@@ -638,7 +638,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to" >
                           {% for each_user in users %}
-                          <option value="{{ each_user.id }}" {% if each_user in contact.assigned_to.all %} selected {% endif %} >{{ each_user.user }}</option>
+                          <option value="{{ each_user.id }}" {% if each_user in contact.assigned_to.all %} selected {% endif %} >{{ each_user }}</option>
                           {% endfor %}
                         </select>
                         {{ contact_form.assigned_to.errors }}
@@ -803,7 +803,7 @@
                   <td>
                     <button type="button" class="oppview btn-info" id="opp_view" data-toggle="modal" data-dismiss="modal1_view" data-target="#oppViewModal_{{opportunity.id}}">VIEW</button>
                     <button type="button" class="oppedit btn-success" id="opp_edit" data-toggle="modal" data-dismiss="modal1_edit" data-target="#oppEditModal_{{opportunity.id}}">EDIT</button>
-                    <button type="button" class="opp_remove btn-danger" id="{{ opportunity.id }}" data-href="{% url 'oppurtunities:opp_delete' pk=opportunity.id %}">REMOVE</button>
+                    <button type="button" class="opp_remove btn-danger" id="{{ opportunity.id }}" data-href="{% url 'opportunities:opp_remove' pk=opportunity.id %}">REMOVE</button>
                   </td>
                 </tr>
                 {% endfor %}
@@ -838,7 +838,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to" >
                           {% for each_user in users %}
-                          <option value="{{ each_user.id }}">{{ each_user.user }}</option>
+                          <option value="{{ each_user.id }}">{{ each_user }}</option>
                           {% endfor %}
                         </select>
                         {{ opportunity_form.assigned_to.errors }}
@@ -991,7 +991,7 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header" style="background:lightblue;">
-          <h5 class="modal-title" id="myLargeModalLabel" style="text-align:center;">OPPURTUNITY VIEW
+          <h5 class="modal-title" id="myLargeModalLabel" style="text-align:center;">OPPORTUNITY VIEW
           </h5>
         </div>
         <div class="modal-body">
@@ -1164,7 +1164,7 @@
   <div class="modal fade" id="oppEditModal_{{opportunity.id}}" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
-        <form class= "form_opp_edit" id="form_opp_edit" method="POST" action="{% url 'oppurtunities:opp_edit' pk=opportunity.id %}">
+        <form class= "form_opp_edit" id="form_opp_edit" method="POST" action="{% url 'opportunities:opp_edit' pk=opportunity.id %}">
           {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">OPPORTUNITIES</h4>
@@ -1182,7 +1182,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to" >
                           {% for each_user in users %}
-                          <option value="{{ each_user.id }}" {% if each_user in opportunity.assigned_to.all %} selected {% endif %}>{{ each_user.user}}</option>
+                          <option value="{{ each_user.id }}" {% if each_user in opportunity.assigned_to.all %} selected {% endif %}>{{ each_user}}</option>
                           {% endfor %}
                         </select>
                         {{ opportunity_form.assigned_to.errors }}
@@ -1360,7 +1360,7 @@
                   <td>
                     <button type="button" class="caseview btn-info" id="case_view" data-toggle="modal" data-dismiss="modal" data-target="#caseViewModal_{{case.id}}">VIEW</button>
                     <button type="button" class="caseedit btn-success" id="case_edit" data-toggle="modal" data-dismiss="modal" data-target="#caseEditModal_{{case.id}}">EDIT</button>
-                    <button type="button" class="case_remove btn-danger" id="{{ case.id }}" data-href="{% url 'cases:delete_case' case_id=case.id %}">REMOVE</button>
+                    <button type="button" class="case_remove btn-danger" id="{{ case.id }}" data-href="{% url 'cases:remove_case' case_id=case.id %}">REMOVE</button>
                   </td>
                 </tr>
                 {% endfor %}
@@ -1395,7 +1395,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to">
                           {%for each_user in users %}
-                          <option value="{{ each_user.id }}">{{ each_user.user }}</option>
+                          <option value="{{ each_user.id }}">{{ each_user }}</option>
                           {%endfor%}
                         </select>
                         {{ case_form.assigned_to.errors }}
@@ -1704,7 +1704,7 @@
                         <label for="exampleInputEmail1">Assigned Users</label>
                         <select class="form-control" id="id_assignedto" multiple name="assigned_to">
                           {% for each_user in users %}
-                          <option value="{{ each_user.id }}" {% if each_user in case.assigned_to.all %} selected {% endif %}>{{ each_user.user}}</option>
+                          <option value="{{ each_user.id }}" {% if each_user in case.assigned_to.all %} selected {% endif %}>{{ each_user }}</option>
                           {% endfor %}
                         </select>
                       </div>
@@ -1844,7 +1844,7 @@
     $("#form_opp").submit(function(e) {
       e.preventDefault();
       $this = $(this)
-      url = "{% url 'oppurtunities:save' %}"
+      url = "{% url 'opportunities:save' %}"
       $.post(url, $this.serialize(), function(response){
         if(response.error){
           $(".error").remove();
@@ -1932,7 +1932,7 @@
     $("#form_case").submit(function(e) {
       e.preventDefault();
       $this = $(this)
-      url = "{% url 'cases:case_add' %}"
+      url = "{% url 'cases:add_case' %}"
       $.post(url, $this.serialize(), function(response){
         if(response.error){
           $(".error").remove();

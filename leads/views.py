@@ -239,7 +239,7 @@ def leads_convert(request, pk):
             opportunity_form = OpportunityForm(request.POST)
             if opportunity_form.is_valid():
                 opportunity_form.save()
-                return HttpResponseRedirect(reverse('oppurtunities:list'))
+                return HttpResponseRedirect(reverse('opportunities:list'))
             else:
                 return render(request, 'leads/checkbox.html', {
                               'post': lead_obj, 'accounts': accounts, 'sources': LEAD_SOURCE,
@@ -271,7 +271,7 @@ def add_comment(request):
                 data = {
                     "comment_id": lead_comment.id, "comment": lead_comment.comment,
                     "commented_on": lead_comment.commented_on,
-                    "commented_by": lead_comment.commented_by.user.email
+                    "commented_by": lead_comment.commented_by.email
                 }
                 return JsonResponse(data)
             else:

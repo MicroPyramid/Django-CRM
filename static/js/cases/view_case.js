@@ -42,6 +42,7 @@ $("#comment_form").submit(function (e) {
         )
         $("#id_comments").val("")
         alert("Comment Submitted")
+        $("#CommentError").html('')
       }
     }
   })
@@ -72,7 +73,7 @@ $("#comment_edit").click(function (e) {
         $("#comment_name" + data.commentid).html('<pre>' + data.comment + '</pre>')
         $('#Comments_Cases_Modal').modal('hide');
         $("#id_editcomment").val("")
-        $("#CommentEditError").hide()
+        $("#CommentEditError").html('')
       }
     }
   })

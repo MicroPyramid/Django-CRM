@@ -139,7 +139,7 @@
                 <div class="form-group">
                   <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
                   </br>
-                  <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                  <button class="btn btn-default save" style="text-align: center;" id="comment_submit">Submit</button>
                 </div>
                 <input type="hidden" value="{{lead_record.id}}" name="leadid">
               </form>
@@ -177,7 +177,7 @@
                 <form id="comment_edit_form" method="POST" >{% csrf_token %}
                   <div class="modal-body">
                     <div class="form-group">
-                      <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                      <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea><span><i id="CommentEditError" style="display:none; color:red"></i></span>
                       <input type="hidden" value="{{ lead.id }}" name="leadid">
                       <input type="hidden" value="" name="commentid" id="commentid">
                     </div>

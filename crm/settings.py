@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'contacts',
     'emails',
     'leads',
-    'oppurtunity',
+    'opportunity',
     'planner',
     'simple_pagination'
 ]

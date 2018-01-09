@@ -3,7 +3,7 @@
 {% block breadcrumb1 %}
 <!-- Breadcrumb Starts Here -->
   <ol class="breadcrumb">
-    <li><a href="{% url 'oppurtunities:list' %}">OPPORTUNITIES</a></li>
+    <li><a href="{% url 'opportunities:list' %}">OPPORTUNITIES</a></li>
     <li class="active">VIEW</li>
   </ol>
 <!-- Breadcrumb Ends Here -->
@@ -22,8 +22,8 @@
                   <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
                   <span class="caret"></span></button>
                   <ul class="dropdown-menu">
-                    <li><a href="{% url 'oppurtunities:opp_edit' opportunity_record.id %}" >Edit</a></li>
-                    <li class="delete_contact"><a href="{% url 'oppurtunities:opp_remove' opportunity_record.id %}" id="remove_contact">REMOVE</a></li>
+                    <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}" >Edit</a></li>
+                    <li class="delete_contact"><a href="{% url 'opportunities:opp_remove' opportunity_record.id %}" id="remove_contact">REMOVE</a></li>
                   </ul>
                 </div>
               </span>
@@ -158,7 +158,7 @@
                   <form id="comment_edit_form" method="POST" >{% csrf_token %}
                     <div class="modal-body">
                       <div class="form-group">
-                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea><span><i id="CommentEditError" style="display:none; color:red"></i></span>
                         <input type="hidden" value="{{ opportunity.id }}" name="opportunityid">
                         <input type="hidden" value="" name="commentid" id="commentid">
                       </div>

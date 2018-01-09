@@ -56,7 +56,7 @@ $('body').on('click', '#selectparent', function (e) {
         gURL = '/leads/get/list/'
     }
     else if ($('#parent_type').val() == 'Opportunity') {
-        gURL = '/oppurtunities/get/list/'
+        gURL = '/opportunities/get/list/'
     }
     else if ($('#parent_type').val() == 'Case') {
         gURL = '/cases/get/list/'

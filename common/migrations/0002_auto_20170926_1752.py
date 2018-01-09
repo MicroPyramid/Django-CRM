@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0008_alter_user_username_max_length'),
-        ('oppurtunity', '0001_initial'),
+        ('opportunity', '0001_initial'),
         ('contacts', '0001_initial'),
         ('common', '0001_initial'),
         ('leads', '0001_initial'),
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='comment',
             name='opportunity',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='opportunity_comments', to='oppurtunity.Opportunity'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='opportunity_comments', to='opportunity.Opportunity'),
         ),
         migrations.AddField(
             model_name='user',

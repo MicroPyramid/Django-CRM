@@ -29,7 +29,7 @@ This project contains the following modules.
    * Accounts
    * Cases
    * Leads
-   * Oppurtunity
+   * Opportunity
    * Planner
 
 

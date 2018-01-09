@@ -1,5 +1,5 @@
 from django import forms
-from oppurtunity.models import Opportunity
+from opportunity.models import Opportunity
 from common.models import Comment
 
 

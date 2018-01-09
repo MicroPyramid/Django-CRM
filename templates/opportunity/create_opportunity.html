@@ -2,7 +2,7 @@
 {% load staticfiles %}
 {% block breadcrumb %}
   <ol class="breadcrumb">
-    <li><a href="{%  url 'oppurtunities:list' %}">Opportunities</a></li>
+    <li><a href="{%  url 'opportunities:list' %}">Opportunities</a></li>
     <li class="active">Create</li>
   </ol>
 {% endblock %}
@@ -127,7 +127,7 @@
             {% if not opportunity_obj %}
               <button class="btn btn-success save savenew" type="submit">Save & New</button>
             {% endif %}
-            <a href="{% url 'oppurtunities:list' %}" class="btn btn-default">Cancel</a>
+            <a href="{% url 'opportunities:list' %}" class="btn btn-default">Cancel</a>
           </div>
         </div>
       </div>

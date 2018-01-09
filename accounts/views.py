@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from accounts.models import Account
 from common.models import User, Address, Team, Comment
 from common.utils import INDCHOICES, TYPECHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
-from oppurtunity.models import Opportunity, STAGES, SOURCES
+from opportunity.models import Opportunity, STAGES, SOURCES
 from contacts.models import Contact
 from cases.models import Case
 from accounts.forms import AccountForm, AccountCommentForm
