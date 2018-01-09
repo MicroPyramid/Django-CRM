@@ -18,7 +18,7 @@ $("#comment_form").submit(function (e) {
   e.preventDefault()
   var formData = new FormData($("#comment_form")[0]);
   $.ajax({
-    url: "/oppurtunities/comment/add/",
+    url: "/opportunities/comment/add/",
     type: "POST",
     data: formData,
     cache: false,
@@ -42,6 +42,7 @@ $("#comment_form").submit(function (e) {
         )
         $("#id_comments").val("")
         alert("Comment Submitted")
+        $("#CommentError").html("")
       }
     }
   })
@@ -59,7 +60,7 @@ $("#comment_edit").click(function (e) {
   e.preventDefault()
   var formData = new FormData($("#comment_edit_form")[0]);
   $.ajax({
-    url: "/oppurtunities/comment/edit/",
+    url: "/opportunities/comment/edit/",
     type: "POST",
     data: formData,
     cache: false,
@@ -72,7 +73,7 @@ $("#comment_edit").click(function (e) {
         $("#comment_name" + data.commentid).html('<pre>' + data.comment + '</pre>')
         $('#Comments_Opportunity_Modal').modal('hide');
         $("#id_editcomment").val("")
-        $("#CommentEditError").hide()
+        $("#CommentEditError").val("")
       }
     }
   })
@@ -87,7 +88,7 @@ function remove_comment(x) {
   var csrftoken = getCookie('csrftoken');
   var con = confirm("Do you want to Delete it for Sure!?")
   if (con == true) {
-    $.post('/oppurtunities/comment/remove/', {
+    $.post('/opportunities/comment/remove/', {
       "comment_id": x,
       "csrfmiddlewaretoken": csrftoken,
     }, function (data) {

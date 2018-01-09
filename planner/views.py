@@ -8,7 +8,7 @@
 # from django.contrib.auth.models import User
 # from accounts.models import Account
 # from cases.models import Case
-# from oppurtunity.models import Opportunity
+# from opportunity.models import Opportunity
 # from contacts.models import Contact
 # from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # from django.db.models import Q

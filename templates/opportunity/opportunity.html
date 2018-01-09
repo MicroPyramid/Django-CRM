@@ -12,7 +12,7 @@
       </div>
       <div class="col-md-6">
         <div class="create_new text-right">
-          <a href="{% url 'oppurtunities:save' %}"><i class="fa fa-plus"></i> Add New Opportunity</a>
+          <a href="{% url 'opportunities:save' %}"><i class="fa fa-plus"></i> Add New Opportunity</a>
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@
             <div class="filter_col text-center">
               <div class="form-group">
                 <button class="btn btn-primary" type="submit">Search</button>
-                <a href="{% url 'oppurtunities:list' %}" class="btn btn-default">Clear</a>
+                <a href="{% url 'opportunities:list' %}" class="btn btn-default">Clear</a>
               </div>
             </div>
           </div>
@@ -108,7 +108,7 @@
               {% for opportunity in opportunity_list %}
               <tr class="text-center">
                 <td scope="row">{{ forloop.counter }}</td>
-                <td><a href="{% url  'oppurtunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
+                <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
                 <td>
                   {% if opportunity.account %}
                     <a href="{% url  'accounts:view_account' opportunity.account.id %}">{{ opportunity.account }}</a>
@@ -130,9 +130,9 @@
                 <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
                 <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}</td>
                 <td>
-                  <a href="{% url 'oppurtunities:opp_view' opportunity.id %}" class="btn btn-info ">View</a>
-                  <a href="{% url 'oppurtunities:opp_edit' opportunity.id %}" class="btn btn-success ">Edit</a>
-                  <a href="{% url 'oppurtunities:opp_remove' opportunity.id %}" class="btn btn-danger delete">Delete</a>
+                  <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info ">View</a>
+                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success ">Edit</a>
+                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete">Delete</a>
                 </td>
               </tr>
               {% endfor %}

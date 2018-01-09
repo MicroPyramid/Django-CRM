@@ -1,5 +1,5 @@
 from django.conf.urls import url
-from oppurtunity import views
+from opportunity import views
 
 app_name = 'oppurtunity'
 

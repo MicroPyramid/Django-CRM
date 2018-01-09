@@ -10,8 +10,8 @@ from common.models import User, Comment, Team
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
 from accounts.models import Account
 from contacts.models import Contact
-from oppurtunity.models import Opportunity
-from oppurtunity.forms import OpportunityForm, OpportunityCommentForm
+from opportunity.models import Opportunity
+from opportunity.forms import OpportunityForm, OpportunityCommentForm
 
 # CRUD Operations Start
 
@@ -37,7 +37,7 @@ def opp_list(request):
         opportunity_list = opportunity_list.filter(account=opp_account)
     if opp_contact:
         opportunity_list = opportunity_list.filter(contacts=opp_contact)
-    return render(request, "oppurtunity/opportunity.html", {
+    return render(request, "opportunity/opportunity.html", {
         'opportunity_list': opportunity_list,
         'accounts': accounts,
         'contacts': contacts,
@@ -71,13 +71,13 @@ def opp_create(request):
             if request.is_ajax():
                 return JsonResponse({'error': False})
             if request.POST.get("savenewform"):
-                return HttpResponseRedirect(reverse("oppurtunities:save"))
+                return HttpResponseRedirect(reverse("opportunities:save"))
             else:
-                return HttpResponseRedirect(reverse('oppurtunities:list'))
+                return HttpResponseRedirect(reverse('opportunities:list'))
         else:
             if request.is_ajax():
                 return JsonResponse({'error': True, 'opportunity_errors': form.errors})
-            return render(request, 'oppurtunity/create_opportunity.html', {
+            return render(request, 'opportunity/create_opportunity.html', {
                 'opportunity_form': form,
                 'accounts': accounts,
                 'users': users,
@@ -90,7 +90,7 @@ def opp_create(request):
                 'contacts_list': contacts_list
             })
     else:
-        return render(request, 'oppurtunity/create_opportunity.html', {
+        return render(request, 'opportunity/create_opportunity.html', {
             'opportunity_form': form,
             'accounts': accounts,
             'users': users,
@@ -109,7 +109,7 @@ def opp_view(request, pk):
     opportunity_record = get_object_or_404(
         Opportunity.objects.prefetch_related("contacts", "account"), id=pk)
     comments = opportunity_record.opportunity_comments.all()
-    return render(request, 'oppurtunity/view_opportunity.html', {
+    return render(request, 'opportunity/view_opportunity.html', {
         'opportunity_record': opportunity_record,
         'comments': comments
     })
@@ -146,11 +146,11 @@ def opp_edit(request, pk):
             opportunity_obj.contacts.add(*request.POST.getlist("contacts"))
             if request.is_ajax():
                 return JsonResponse({'error': False})
-            return HttpResponseRedirect(reverse('oppurtunities:list'))
+            return HttpResponseRedirect(reverse('opportunities:list'))
         else:
             if request.is_ajax():
                 return JsonResponse({'error': True, 'opportunity_errors': form.errors})
-            return render(request, 'oppurtunity/create_opportunity.html', {
+            return render(request, 'opportunity/create_opportunity.html', {
                 'opportunity_form': form,
                 'opportunity_obj': opportunity_obj,
                 'accounts': accounts,
@@ -164,7 +164,7 @@ def opp_edit(request, pk):
                 'contacts_list': contacts_list
             })
     else:
-        return render(request, 'oppurtunity/create_opportunity.html', {
+        return render(request, 'opportunity/create_opportunity.html', {
             'opportunity_form': form,
             'opportunity_obj': opportunity_obj,
             'accounts': accounts,
@@ -185,7 +185,7 @@ def opp_remove(request, pk):
     opportunity_record.delete()
     if request.is_ajax():
         return JsonResponse({'error': False})
-    return HttpResponseRedirect(reverse('oppurtunities:list'))
+    return HttpResponseRedirect(reverse('opportunities:list'))
 
 
 def contacts(request):
@@ -273,6 +273,6 @@ def remove_comment(request):
 def get_opportunity(request):
     if request.method == 'GET':
         opportunities = Opportunity.objects.all()
-        return render(request, 'oppurtunity/opportunities_list.html', {'opportunities': opportunities})
+        return render(request, 'opportunity/opportunities_list.html', {'opportunities': opportunities})
     else:
         return HttpResponse('Invalid Method or Not Authanticated in load_calls')

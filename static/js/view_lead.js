@@ -18,7 +18,7 @@ $("#comment_form").submit(function (e) {
   e.preventDefault()
   var formData = new FormData($("#comment_form")[0]);
   $.ajax({
-    url: "/accounts/comment/add/",
+    url: "/leads/comment/add/",
     type: "POST",
     data: formData,
     cache: false,
@@ -42,7 +42,7 @@ $("#comment_form").submit(function (e) {
         )
         $("#id_comments").val("")
         alert("Comment Submitted")
-        $("#CommentError").html('')
+        $("#CommentError").html("")
       }
     }
   })
@@ -50,18 +50,17 @@ $("#comment_form").submit(function (e) {
 
 
 function edit_comment(x) {
-  $('#Comments_Accounts_Modal').modal('show');
+  $('#Comments_Leads_Modal').modal('show');
   comment = $("#comment_name" + x).text()
   $("#commentid").val(x)
   $("#id_editcomment").val(comment)
-  $("#edit_file_field").html($("#comment_file_div" + x).clone())
 }
 
 $("#comment_edit").click(function (e) {
   e.preventDefault()
   var formData = new FormData($("#comment_edit_form")[0]);
   $.ajax({
-    url: "/accounts/comment/edit/",
+    url: "/leads/comment/edit/",
     type: "POST",
     data: formData,
     cache: false,
@@ -72,9 +71,9 @@ $("#comment_edit").click(function (e) {
         $("#CommentEditError").html(data.error).show()
       } else {
         $("#comment_name" + data.commentid).html('<pre>' + data.comment + '</pre>')
-        $('#Comments_Accounts_Modal').modal('hide');
+        $('#Comments_Leads_Modal').modal('hide');
         $("#id_editcomment").val("")
-        $("#CommentEditError").html('')
+        $("#CommentEditError").html("")
       }
     }
   })
@@ -83,14 +82,13 @@ $("#comment_edit").click(function (e) {
 
 function HideError(e) {
   $("#CommentError").hide()
-  $("#CommentEditError").hide()
 }
 
 function remove_comment(x) {
   var csrftoken = getCookie('csrftoken');
   var con = confirm("Do you want to Delete it for Sure!?")
   if (con == true) {
-    $.post('/accounts/comment/remove/', {
+    $.post('/leads/comment/remove/', {
       "comment_id": x,
       "csrfmiddlewaretoken": csrftoken,
     }, function (data) {

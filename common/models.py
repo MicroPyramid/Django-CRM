@@ -54,7 +54,7 @@ class Comment(models.Model):
         'accounts.Account', blank=True, null=True, related_name="accounts_comments", on_delete=models.CASCADE)
     lead = models.ForeignKey('leads.Lead', blank=True, null=True, related_name="leads", on_delete=models.CASCADE)
     opportunity = models.ForeignKey(
-        'oppurtunity.Opportunity', blank=True, null=True, related_name="opportunity_comments", on_delete=models.CASCADE)
+        'opportunity.Opportunity', blank=True, null=True, related_name="opportunity_comments", on_delete=models.CASCADE)
     contact = models.ForeignKey(
         'contacts.Contact', blank=True, null=True, related_name="contact_comments", on_delete=models.CASCADE)
 
