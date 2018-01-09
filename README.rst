@@ -42,8 +42,16 @@ If you cloned the package from git use virtualenv to install requirements::
 
 Visit our Django web development page [Here](https://micropyramid.com/django-ecommerce-development/)
 
+`Demo`_ Available Here.
+
+Credentials to CRM Dashboard:
+
+  * **Email:** admin@micropyramid.com
+  * **Password:** admin
+
 
 We welcome your feedback and support, raise github ticket if you want to report a bug. Need new features? `Contact us here`_
 
 .. _contact us here: https://micropyramid.com/contact-us/
+.. _Demo: https://test-django-crm-app.herokuapp.com
 
