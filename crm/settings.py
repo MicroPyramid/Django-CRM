@@ -72,12 +72,25 @@ WSGI_APPLICATION = 'crm.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
+if 'DATABASE_URL' in os.environ:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default='sqlite:////{0}'.format(
+                os.path.join(BASE_DIR, 'db.sqlite3'))
+        )
+    }
+    STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
 
-DATABASES = {
-   'default': dj_database_url.config(
-       default='sqlite:////{0}'.format(os.path.join(BASE_DIR, 'db.sqlite3'))
-   )
-}
+    STATIC_ROOT = (os.path.join(BASE_DIR, "static"))
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
+
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 
 
 # Password validation
@@ -116,10 +129,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
-
-STATIC_ROOT = (os.path.join(BASE_DIR, "static"))
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = 'localhost'
@@ -129,4 +138,3 @@ AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend', )
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 AUTH_USER_MODEL = 'common.User'
-
