@@ -20,6 +20,8 @@ Django-CRM provides a Customer relationship management dashboard where you can m
 .. image:: https://img.shields.io/github/license/MicroPyramid/Django-CRM.svg
     :target: https://pypi.python.org/pypi/Django-CRM/
 
+.. image:: https://www.codetriage.com/micropyramid/django-crm/badges/users.svg
+    :target: https://www.codetriage.com/micropyramid/django-crm
 
 http://django-crm.readthedocs.io for latest documentation
 
