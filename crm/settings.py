@@ -129,11 +129,12 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 25
-AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend', )
+# EMAIL_HOST = 'localhost'
+# EMAIL_PORT = 25
+# AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend', )
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
