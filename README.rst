@@ -6,10 +6,6 @@ Django-CRM provides a Customer relationship management dashboard where you can m
 .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
    :target: https://travis-ci.org/MicroPyramid/Django-CRM
 
-.. image:: https://img.shields.io/pypi/v/Django-CRM.svg
-    :target: https://pypi.python.org/pypi/Django-CRM
-    :alt: Latest Release
-
 .. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
    :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
 
@@ -20,6 +16,8 @@ Django-CRM provides a Customer relationship management dashboard where you can m
 .. image:: https://img.shields.io/github/license/MicroPyramid/Django-CRM.svg
     :target: https://pypi.python.org/pypi/Django-CRM/
 
+.. image:: https://www.codetriage.com/micropyramid/django-crm/badges/users.svg
+    :target: https://www.codetriage.com/micropyramid/django-crm
 
 http://django-crm.readthedocs.io for latest documentation
 
