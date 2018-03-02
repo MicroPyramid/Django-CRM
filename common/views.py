@@ -6,7 +6,7 @@ from django.contrib.auth import logout, authenticate, login
 
 
 
-@login_required
+#@login_required
 def home(request):
     return render(request, 'index.html')
 
