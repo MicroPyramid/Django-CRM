@@ -1,7 +1,7 @@
 from django.conf.urls import url
 from opportunity import views
 
-app_name = 'oppurtunity'
+app_name = 'opportunity'
 
 
 urlpatterns = [

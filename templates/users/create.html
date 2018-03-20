@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block breadcrumb %}
+  <ol class="breadcrumb">
+    <li><a href="{% url 'common:users_list' %}">Users</a></li>
+    <li class="active">Create</li>
+  </ol>
+{% endblock breadcrumb %}
+{% block content %}
+<form id="add_form" method="POST" action="" novalidate>{%csrf_token%}
+  <div class="overview_form_block row marl">
+    <div class="col-md-offset-3 col-md-6 col-md-offset-3">
+      <div class="panel panel-default">
+        <div class="panel-heading text-center">
+          Create User
+        </div>
+        <div class="panel-content">
+          <div class="row marl">
+            <div class="col-md-12">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">First Name</label>{{ user_obj.first_name }}
+                  <input type="text" class="form-control" name="first_name" value="{% if user_obj %} {{ user_obj.first_name }} {% else %} {{request.POST.first_name}} {% endif %}">
+                </div>
+                {{ errors.first_name }}
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Last Name</label>
+                  <input type="text" class="form-control" name="last_name" value="{% if user_obj %} {{ user_obj.last_name }} {% else %} {{request.POST.last_name}} {% endif %}">
+                </div>
+                {{ errors.last_name }}
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Username</label>
+                  <input type="text" class="form-control" name="username" value="{% if user_obj %} {{ user_obj.username }} {% else %} {{request.POST.username}} {% endif %}">
+                </div>
+                {{ errors.username }}
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Email Address</label>
+                  <input type="text" class="form-control" name="email" value="{% if user_obj %} {{ user_obj.email }} {% else %} {{request.POST.email}} {% endif %}">
+                </div>
+                {{ errors.email }}
+              </div>
+              {% if not user_obj %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Password</label>
+                  <input type="password" class="form-control" name="password" value="{{request.POST.password}}">
+                </div>
+                {{ errors.password }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row marl buttons_row text-center">
+            <button class="btn btn-default save" type="submit">Save</button>
+            <button class="btn btn-default" type="submit">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock content %}
