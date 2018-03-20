@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class OppurtunityConfig(AppConfig):
-    name = 'oppurtunity'
+class OpportunityConfig(AppConfig):
+    name = 'opportunity'

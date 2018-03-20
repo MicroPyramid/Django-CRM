@@ -1,5 +1,5 @@
 from django.test import TestCase
-from oppurtunity.models import Opportunity
+from opportunity.models import Opportunity
 from common.models import Address
 from accounts.models import Account
 from contacts.models import Contact
@@ -53,7 +53,7 @@ class opportunityCreateTestCase(OpportunityModel, TestCase):
         self.assertEqual(self.opportunity.id, 1)
 
     def test_view_opportunity(self):
-        self.oppurtunity = Opportunity.objects.all()
+        self.opportunity = Opportunity.objects.all()
         response = self.client.get('/oppurtunities/1/view/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['opp'].id, self.opportunity.id)
