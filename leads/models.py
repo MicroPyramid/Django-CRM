@@ -34,5 +34,8 @@ class Lead(models.Model):
     is_active = models.BooleanField(default=False)
     enquery_type = models.CharField(max_length=255, blank=True, null=True)
 
+    class Meta:
+        ordering =['-created_on']
+
     def __str__(self):
         return self.first_name + self.last_name

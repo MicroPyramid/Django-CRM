@@ -2,10 +2,12 @@
 {% load staticfiles %}
 {% block breadcrumb1 %}
 <!-- breadcrumb starts here -->
+<nav aria-label="breadcrumb">
 <ol class="breadcrumb">
-  <li><a href="{% url 'accounts:list' %}">Accounts</a></li>
-  <li class="active">{{account_record.name}}</li>
+  <li  class="breadcrumb-item"><a href="{% url 'accounts:list' %}">Accounts</a></li>
+  <li class="active breadcrumb-item">{{account_record.name}}</li>
 </ol>
+</nav>
 <!-- breadcrumb ends here -->
 {% endblock breadcrumb1 %}
 {% block content %}
@@ -13,13 +15,15 @@
   <div class="main_container" id="maincontainer">
     <div class="overview_form_block row marl">
       <div class="col-md-8">
-        <div class="panel panel-default">
-          <div class="panel-heading view-pad">
+        <div class="card">
+         
+          <div class="card-body" id="datashow">
+           <div class="card-title">
             <h5>
-              OVERVIEW
-              <span class="pull-right" style="margin-top: -10px">
-                <div class="dropdown">
-                  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+              Overview
+              <span class="float-right" style="margin-top: 0px">
+                <div class="dropdown buttons_row">
+                  <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
                   <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'accounts:edit_account' account_record.id %}" >Edit</a></li>
@@ -29,7 +33,6 @@
               </span>
             </h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="col-md-6">
                 {% if account_record.name %}
@@ -140,17 +143,20 @@
             </div>
           </div>
           <!-- Comments Section starts-->
-          <div class="panel-heading view-pad">
-            <h5>COMMENTS</h5>
+          
+          <div class="card-body" id="datashow">
+          <div class="card-title">
+            <h5>Comments</h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="col-md-12">
                 <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
                   <div class="form-group">
                     <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
                     </br>
+                    <div class="buttons_row">
                     <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                    </div>
                   </div>
                   <input type="hidden" value="{{ account_record.id }}" name="accountid">
                 </form>
@@ -205,11 +211,12 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading view-pad">
+        <div class="card">
+       
+          <div class="card-body" id="datashow">
+             <div class="card-title">
             <h5>Label</h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="filter_col col-md-12">
                 <div class="form-group">
@@ -266,20 +273,22 @@
   <form method='GET' class="accountdetails_row">
     <div class="table_container_row row marl">
       <div class="col-md-8">
-        <div class="panel panel-default">
-          <div class="panel-heading-list view-pad text-center">
-            CONTACTS
+        <div class="card">
+          
+          <div class="card-body">
+          <div class="panel-heading-list card-title view-pad">
+            Contacts
             <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal_con" data-target="#myModal2"></span>
           </div>
-          <div class="panel-content">
+            <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
-                  <th width="25%" style="text-align:center;">CONTACT NAME</th>
-                  <th width="20%" style="text-align:center;">PHONE</th>
-                  <th width="25%" style="text-align:center;">EMAIL</th>
-                  <th width="25%" style="text-align:center;">ACTIONS</th>
+                  <th width="25%" style="text-align:center;">Contact Name</th>
+                  <th width="20%" style="text-align:center;">Phone</th>
+                  <th width="25%" style="text-align:center;">Email</th>
+                  <th width="25%" style="text-align:center;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -289,15 +298,16 @@
                   <td>{{ contact.first_name }} {{ contact.last_name }}</td>
                   <td>{{ contact.phone }}</td>
                   <td>{{ contact.email }}</td>
-                  <td>
-                    <button type="button" class="conview btn-info" id="con_view" data-toggle="modal" data-dismiss="modal" data-target="#conViewModal_{{contact.id}}">VIEW</button>
-                    <button type="button" class="conedit btn-success" id="con_edit" data-toggle="modal" data-dismiss="modal" data-target="#conEditModal_{{contact.id}}">EDIT</button>
-                    <button type="button" class="con_remove btn-danger" id="{{ contact.id }}" data-href="{% url 'contacts:remove_contact' pk=contact.id %}">REMOVE</button>
+                  <td class="actions">
+                    <button type="button" class="btn conview btn-info" id="con_view" data-toggle="modal" data-dismiss="modal" data-target="#conViewModal_{{contact.id}}">View</button>
+                    <button type="button" class="btn conedit btn-success" id="con_edit" data-toggle="modal" data-dismiss="modal" data-target="#conEditModal_{{contact.id}}">Edit</button>
+                    <button type="button" class="btn con_remove btn-danger" id="{{ contact.id }}" data-href="{% url 'contacts:remove_contact' pk=contact.id %}">Delete</button>
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         <br clear="all">
@@ -777,20 +787,22 @@
   <form method='GET' class="accountdetails_row">
     <div class="table_container_row row marl">
       <div class="col-md-8">
-        <div class="panel panel-default">
-          <div class="panel-heading-list view-pad text-center">
-            OPPORTUNITIES
+        <div class="card">
+         
+          <div class="card-body">
+           <div class="panel-heading-list card-title view-pad ">
+          Opportunities
             <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal" data-target="#myModal"></span>
           </div>
-          <div class="panel-content">
+          <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
-                  <th width="30%" style="text-align:center;">NAME</th>
-                  <th width="20%" style="text-align:center;">STAGE</th>
-                  <th width="20%" style="text-align:center;">PROBABILITY</th>
-                  <th width="25%" style="text-align:center;">ACTIONS</th>
+                  <th width="30%" style="text-align:center;">Name</th>
+                  <th width="20%" style="text-align:center;">Stage</th>
+                  <th width="20%" style="text-align:center;">Probability</th>
+                  <th width="25%" style="text-align:center;">Actions </th>
                 </tr>
               </thead>
               <tbody>
@@ -800,15 +812,16 @@
                   <td>{{opportunity.name}}</td>
                   <td>{{opportunity.stage}}</td>
                   <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
-                  <td>
-                    <button type="button" class="oppview btn-info" id="opp_view" data-toggle="modal" data-dismiss="modal1_view" data-target="#oppViewModal_{{opportunity.id}}">VIEW</button>
-                    <button type="button" class="oppedit btn-success" id="opp_edit" data-toggle="modal" data-dismiss="modal1_edit" data-target="#oppEditModal_{{opportunity.id}}">EDIT</button>
-                    <button type="button" class="opp_remove btn-danger" id="{{ opportunity.id }}" data-href="{% url 'opportunities:opp_remove' pk=opportunity.id %}">REMOVE</button>
+                  <td class="actions"> 
+                    <button type="button" class="btn oppview btn-info" id="opp_view" data-toggle="modal" data-dismiss="modal1_view" data-target="#oppViewModal_{{opportunity.id}}">VIEW</button>
+                    <button type="button" class="btn oppedit btn-success" id="opp_edit" data-toggle="modal" data-dismiss="modal1_edit" data-target="#oppEditModal_{{opportunity.id}}">EDIT</button>
+                    <button type="button" class="btn opp_remove btn-danger" id="{{ opportunity.id }}" data-href="{% url 'opportunities:opp_remove' pk=opportunity.id %}">REMOVE</button>
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
         <br clear="all">
@@ -1334,20 +1347,22 @@
   <form method='GET' class="accountdetails_row">
     <div class="table_container_row row marl">
       <div class="col-md-8">
-        <div class="panel panel-default">
-          <div class="panel-heading-list view-pad text-center">
-            CASES
+        <div class="card">
+         
+          <div class="card-body">
+           <div class="panel-heading-list card-title view-pad ">
+            Cases
             <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal_case" data-target="#myModal3"></span>
           </div>
-          <div class="panel-content">
+          <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
-                  <th width="30%" style="text-align:center;">NAME</th>
-                  <th width="20%" style="text-align:center;">STATUS</th>
-                  <th width="20%" style="text-align:center;">PRIORITY</th>
-                  <th width="25%" style="text-align:center;">ACTIONS</th>
+                  <th width="30%" style="text-align:center;">Name</th>
+                  <th width="20%" style="text-align:center;">Status</th>
+                  <th width="20%" style="text-align:center;">Priority</th>
+                  <th width="25%" style="text-align:center;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1357,15 +1372,16 @@
                   <td>{{ case.name }}</td>
                   <td>{{ case.status }}</td>
                   <td>{{ case.priority }}</td>
-                  <td>
-                    <button type="button" class="caseview btn-info" id="case_view" data-toggle="modal" data-dismiss="modal" data-target="#caseViewModal_{{case.id}}">VIEW</button>
-                    <button type="button" class="caseedit btn-success" id="case_edit" data-toggle="modal" data-dismiss="modal" data-target="#caseEditModal_{{case.id}}">EDIT</button>
-                    <button type="button" class="case_remove btn-danger" id="{{ case.id }}" data-href="{% url 'cases:remove_case' case_id=case.id %}">REMOVE</button>
+                  <td class="actions"> 
+                    <button type="button" class="btn caseview btn-info" id="case_view" data-toggle="modal" data-dismiss="modal" data-target="#caseViewModal_{{case.id}}">VIEW</button>
+                    <button type="button" class="btn caseedit btn-success" id="case_edit" data-toggle="modal" data-dismiss="modal" data-target="#caseEditModal_{{case.id}}">EDIT</button>
+                    <button type="button" class="btn case_remove btn-danger" id="{{ case.id }}" data-href="{% url 'cases:remove_case' case_id=case.id %}">REMOVE</button>
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
         <br clear="all">

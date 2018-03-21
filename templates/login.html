@@ -1,4 +1,6 @@
 {% load staticfiles %}
+    {% load compress %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,20 +9,22 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CRM Login</title>
+    <title>Django CRM</title>
     <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" />
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
     <!-- Custom styling plus plugins -->
-    <link href="{% static 'css/main.css' %}" rel="stylesheet">
-    <!-- <link href="css/main.css" rel="stylesheet"> -->
+      {% compress css %}
+      <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
+    {% endcompress %}
+    {% block extralinks %}{% endblock %}
 </head>
 <body class="login_register_body">
 <div class="container">
-    <div class="row marl login_row">
-        <div class="col-md-offset-4 col-md-4 col-md-offset-4">
+    <div class="row marl justify-content-center login_row">
+        <div class="col-md-4 col-lg-4 col-xl-4">
             <div class="login_block">
                 <div class="login_form_block">
                     <div class="welcome">Login to your crm account</div>
@@ -44,8 +48,7 @@
     </div>
 </div>
 <!--<script src="js/jquery.min.js"></script>-->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
-        integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
-        crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>

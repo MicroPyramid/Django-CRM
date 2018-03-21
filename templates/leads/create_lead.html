@@ -1,20 +1,25 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
+<nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li><a href="{% url 'leads:list' %}">Leads</a></li>
-    <li class="active">Create</li>
+    <li class="breadcrumb-item"><a href="{% url 'leads:list' %}">Leads</a></li>
+    <li class="breadcrumb-item active">Create</li>
   </ol>
+</nav>
+
 {% endblock %}
 {%block content%}
   <form id="add_form" method="POST" action="" novalidate>{%csrf_token%}
     <div class="assigned_teams row marl">
       <div class="col-md-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">
+        <div class="card">
+        
+          <div class="card-body">
+            <div class="card-title">
             Assigned Users & Teams
           </div>
-          <div class="panel-content">
+          <div class="row marl">
             <div class="filter_col col-md-6">
               <div class="form-group">
                 <label for="exampleInputEmail1">Assigned Users</label>
@@ -29,6 +34,7 @@
                 {{ lead_form.teams.errors }}
               </div>
             </div>
+            </div>
             <br clear="all">
           </div>
         </div>
@@ -37,12 +43,13 @@
     </div>
     <div class="overview_form_block row marl">
       <div class="col-md-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">
+        <div class="card">
+        
+          <div class="card-body">
+            <div class="card-title">
             Overview
           </div>
-          <div class="panel-content">
-            <div class="row marl">
+            <div class="row marl no-gutters">
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
@@ -85,6 +92,13 @@
                     <label for="exampleInputEmail1" class="required">Email Address</label>
                     {{ lead_form.email }}
                     {{ lead_form.email.errors }}
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Website</label>
+                    {{ lead_form.website }}
+                    {{ lead_form.website.errors }}
                   </div>
                 </div>
               </div>
@@ -130,13 +144,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Website</label>
-                    {{ lead_form.website }}
-                    {{ lead_form.website.errors }}
-                  </div>
-                </div>
+                
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group col-md-12">
@@ -152,12 +160,12 @@
       </div>
       <input type="hidden" id="save_new_form" name="savenewform">
     </div>
-    <div class="row marl buttons_row text-center">
+    <div class="row marl buttons_row text-center form_btn_row">
       <button  class="btn btn-default save" type="submit">Save</button>
       {% if not lead_obj %}
         <button class="btn btn-success save savenew" type="submit">Save & New</button>
       {% endif %}
-      <a href="{% url 'leads:list' %}" class="btn btn-default" id="create_lead_cancel">Cancel</a>
+      <a href="{% url 'leads:list' %}" class="btn btn-default clear" id="create_lead_cancel">Cancel</a>
     </div>
   </form>
 {% endblock %}

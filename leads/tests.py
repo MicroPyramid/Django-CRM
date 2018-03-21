@@ -1,26 +1,22 @@
 from django.test import TestCase
 from django.test import Client
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from leads.models import Lead
-from common.models import Address, Country
+from common.models import Address, User
 from accounts.models import Account
 
 
 class TestLeadModel(object):
     def setUp(self):
-        self.client = Client()
-        self.country = Country.objects.create(iso_3166_1_a2="IN",
-                                              iso_3166_1_a3="IND",
-                                              iso_3166_1_numeric="001",
-                                              name="India",
-                                              printable_name="Bharath",
-                                              is_shipping_country="True")
-
+        self.user = User.objects.create(username='uday', email='u@mp.com')
+        self.user.set_password('uday2293')
+        self.user.save()
+        self.client.login(username='u@mp.com', password='uday2293')
         self.address = Address.objects.create(street="Gokul enclave colony",
                                               city="Hasthinapuram",
                                               state="Telangana",
                                               postcode="500079",
-                                              country=self.country)
+                                              country='India')
 
         self.account = Account.objects.create(name="account",
                                                   email="account@gmail.com",
@@ -28,13 +24,13 @@ class TestLeadModel(object):
                                                   billing_address=Address.objects.get(pk=1),
                                                   shipping_address=Address.objects.get(pk=1),
                                                   website="account.com",
-                                                  account_type="account",
-                                                  sis_code="12345",
                                                   industry="IT",
-                                                  description="account")
+                                                  description="account",
+                                                  created_by=self.user)
 
         self.lead = Lead.objects.create(title="LeadCreation",
-                                        name="kotha",
+                                        first_name="kotha",
+                                        last_name="k",
                                         email="anjalikotha1993@gmail.com",
                                         account=self.account,
                                         address=self.address,
@@ -42,11 +38,9 @@ class TestLeadModel(object):
                                         status="assigned",
                                         source="Call",
                                         opportunity_amount="700",
-                                        description="Iam an Lead")
+                                        description="Iam an Lead",
+                                        created_by=self.user)
 
-        self.user = User.objects.create_superuser('user@micropyramid.com',
-                                                  'username', 'password')
-        self.client.login(username='user@micropyramid.com', password='password')
 
     def testaddress_post_object_creation(self):
         c = Address.objects.count()
@@ -56,13 +50,13 @@ class TestLeadModel(object):
         p = Address.objects.get(state="Telangana")
         self.assertEqual(p.street, "Gokul enclave colony")
 
-    def testcountry_post_object_creation(self):
-        c = Country.objects.count()
-        self.assertEqual(c, 1)
+    # def testcountry_post_object_creation(self):
+    #     c = Country.objects.count()
+    #     self.assertEqual(c, 1)
 
-    def test_get_countryobject_with_name(self):
-        p = Country.objects.get(name="India")
-        self.assertEqual(p.name, "India")
+    # def test_get_countryobject_with_name(self):
+    #     p = Country.objects.get(name="India")
+    #     self.assertEqual(p.name, "India")
 
     def test_lead_object_creation(self):
         c = Lead.objects.count()
@@ -144,7 +138,8 @@ class LeadsViewTestCase(TestLeadModel, TestCase):
 
     def test_leads_view(self):
         Lead.objects.create(title="LeadCreationbylead",
-                            name="kotha",
+                            first_name="kotha",
+                            last_name="k",
                             email="srilathakotha1993@gmail.com",
                             account=self.account,
                             address=self.address,
@@ -152,7 +147,8 @@ class LeadsViewTestCase(TestLeadModel, TestCase):
                             status='converted',
                             source="Call",
                             opportunity_amount="900",
-                            description="Iam an Opportunity")
+                            description="Iam an Opportunity",
+                            created_by=self.user)
         self.lead = Lead.objects.all()
         response = self.client.get('/leads/1/view/')
         self.assertEqual(response.status_code, 200)
