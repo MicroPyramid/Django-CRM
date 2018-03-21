@@ -5,13 +5,15 @@
     <div class="main_container" id="maincontainer">
       <div class="overview_form_block row marl">
         <div class="col-md-8">
-          <div class="panel panel-default">
-            <div class="panel-heading view-pad">
+          <div class="card">
+           
+            <div class="card-body" id="datashow">
+             <div class="panel-heading view-pad card-title">
               <h5>
-                OVERVIEW
-                <span class="pull-right" style="margin-top: -10px">
-                  <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                Overview
+                <span class="float-right" style="margin-top: 0px">
+                  <div class="dropdown buttons_row">
+                    <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
                     <span class="caret"></span></button>
                     <ul class="dropdown-menu">
                       <li><a href="{% url 'cases:edit_case' case_record.id %}" id="edit_case">Edit</a></li>
@@ -21,7 +23,6 @@
                 </span>
               </h5>
             </div>
-            <div class="panel-content" id="datashow">
               <div class="row marl">
                 <div class="col-md-6">
                   <div class="filter_col col-md-12" id="iname">
@@ -94,17 +95,20 @@
               </div>
             </div>
             <!-- Comments Section starts-->
-            <div class="panel-heading view-pad">
-              <h5>COMMENTS</h5>
+           
+            <div class="card-body" id="datashow">
+             <div class="panel-heading card-title view-pad">
+              <h5>Comments</h5>
             </div>
-            <div class="panel-content" id="datashow">
               <div class="row marl">
                 <div class="col-md-12">
                   <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
                     <div class="form-group">
                       <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
                       </br>
+                      <div class="buttons_row">
                       <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                      </div>
                     </div>
                     <input type="hidden" value="{{case_record.id}}" name="caseid">
                   </form>
@@ -159,11 +163,12 @@
           </div>
         </div>
         <div class="col-md-4">
-          <div class="panel panel-default">
-            <div class="panel-heading view-pad">
+          <div class="card">
+            
+            <div class="card-body" id="datashow">
+            <div class="panel-heading card-title view-pad">
               <h5>Label</h5>
             </div>
-            <div class="panel-content" id="datashow">
               <div class="row marl">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
@@ -213,19 +218,30 @@
             </div>
           </div>
           <!-- Activities block Starts here-->
-          <div class="panel panel-default panel-activities" data-name="activities">
-            <div class="panel-heading">
-              <h4 class="panel-title">
+          <div class="card panel-activities" data-name="activities" style="margin-top:15px;">
+            
+            <div class="card-body" data-name="activities">
+            <div class="card-title" style="height:auto;">
+              <span class="panel-title">
                 <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> Activities </span>
-              </h4>
+              </span>
             </div>
-            <div class="panel-body" data-name="activities">
-              <div class="btn-group button-container nav nav-tabs">
-                <a data-toggle="tab" href="#show_meets"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
-                <a data-toggle="tab" href="#tasks_list"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
-                <a data-toggle="tab" href="#calls_list"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
-              </div>
-              <div class="list-container">
+              <div class="col-12">
+
+              <ul class="nav nav-tabs" id="myTab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="show-meets" data-toggle="tab" href="#show_meets" role="tab" aria-controls="home" aria-selected="true">Meetings</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="tasks-list" data-toggle="tab" href="#tasks_list" role="tab" aria-controls="profile" aria-selected="false">Tasks</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="calls-list" data-toggle="tab" href="#calls_list" role="tab" aria-controls="contact" aria-selected="false">Calls</a>
+              </li>
+            </ul>
+
+
+              <div class="list-container case-list-container">
                 <div class="list list-expanded">
                   <div class="tab-content">
                     <div id="show_meets" class="tab-pane fade in active">
@@ -368,22 +384,35 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
           <!--Activities block ends here-->
           <!-- History block starts here-->
-          <div class="panel panel-default panel-activities" data-name="activities">
-            <div class="panel-heading">
-              <h4 class="panel-title">
+          <div class="card panel-default panel-activities" data-name="activities" style="margin-top:15px;">
+           
+            <div class="card-body" data-name="activities">
+             <div class="card-title" style="height:auto;">
+              <span class="panel-title">
                 <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> History </span>
-              </h4>
+              </span>
             </div>
-            <div class="panel-body" data-name="activities">
-              <div class="btn-group button-container nav nav-tabs">
-                <a data-toggle="tab" href="#show_meets_completed"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
-                <a data-toggle="tab" href="#tasks_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
-                <a data-toggle="tab" href="#calls_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
-              </div>
-              <div class="list-container">
+            <div class="col-12">
+
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="show-meets-completed" data-toggle="tab" href="#show_meets_completed" role="tab" aria-controls="home" aria-selected="true">Meetings</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="tasks-list-completed" data-toggle="tab" href="#tasks_list_completed" role="tab" aria-controls="profile" aria-selected="false">Tasks</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="calls-list-completed" data-toggle="tab" href="#calls_list_completed" role="tab" aria-controls="contact" aria-selected="false">Calls</a>
+              </li>
+            </ul>
+
+
+
+              <div class="list-container case-list-containers">
                 <div class="list list-expanded">
                   <div class="tab-content">
                     <div id="show_meets_completed" class="tab-pane fade in active">
@@ -521,6 +550,7 @@
                 </ul>
                 <div class="show-more hide">
                 </div>
+              </div>
               </div>
             </div>
           </div>

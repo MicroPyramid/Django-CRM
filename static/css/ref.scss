@@ -19,3 +19,50 @@ $inner_page_bg:#CDCDCD;
 //fonts
 $font_0: Poppins;
 $font_1: sans-serif;
+
+//mediaviews
+$med_min:992px;
+$med_max:1199px;
+$tab_max:991px;
+$tab_min:768px;
+$smob_max:767px;
+$smob_min:480px;
+$mob_max:479px;
+$mob_min:240px;
+
+.card{
+  border:1px solid #ccc;
+}
+.buttons_row{
+  margin-top: 23px;
+  button{
+    border-radius: 0;
+    font-size: 12px;
+    &.save{
+      background: $dark_sky;
+      color: #fff;
+    }
+  }
+   .clear{
+    	border:1px solid $dark_sky;
+    	border:1px solid $dark_sky;
+    	border-radius: 0;
+    	color: $dark_sky;
+    	font-size: 12px;
+    }
+  &.form_btn_row{
+  	display: block;
+  }  
+}
+.table-responsive{
+	padding:10px;
+}
+select{
+	&.form-control{
+		height: 32px !important;
+	}
+}
+
+.mar-top{
+	margin-top: 15px;
+}

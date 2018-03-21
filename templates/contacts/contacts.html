@@ -7,6 +7,7 @@
   <!-- heading_create starts here -->
   <div class="row marl heading_create">
     <div class="heading col-md-12">
+     <div class="no-gutters row">
       <div class="col-md-6">
         <h4>Contacts</h4>
       </div>
@@ -15,18 +16,21 @@
           <a href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i> Add New Contact</a>
         </div>
       </div>
+      </div>
     </div>
   </div>
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
     <div class="col-md-12">
-      <div class="panel panel-default">
-        <div class="panel-heading">
-        </div>
+      <div class="card">
+       
         <form id="contacts_filter" action="" method="POST">{%csrf_token%}
-          <div class="panel-content text-center">
-            <div class="filter_col col-md-4">
+
+          <div class="card-body">
+                          <div class="card-title">Filters</div>
+                           <div class="row marl">
+            <div class="filter_col col-md-3">
               <div class="form-group">
                 <label for="exampleInputEmail1">ACCOUNTS</label>
                 <select class="form-control" id="id_account" name="account">
@@ -37,24 +41,25 @@
                 </select>
               </div>
             </div>
-            <div class="filter_col col-md-4">
+            <div class="filter_col col-md-3">
               <div class="form-group">
                 <label for="exampleInputEmail1">NAME</label>
                 <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
               </div>
             </div>
-            <div class="filter_col col-md-4">
+            <div class="filter_col col-md-3">
               <div class="form-group">
                 <label for="exampleInputEmail1">CITY</label>
                 <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
               </div>
             </div>
             <div class="filter_col text-center">
-              <div class="form-group">
-                <button  class="btn btn-primary" type="submit">Search</button>
-                <a href="{% url 'contacts:list' %}" class="btn btn-default">Clear</a>
+              <div class="form-group buttons_row">
+                <button  class="btn btn-primary save" type="submit">Search</button>
+                <a href="{% url 'contacts:list' %}" class="btn btn-default clear">Clear</a>
               </div>
             </div>
+          </div>
           </div>
         </form>
         <br clear="all">
@@ -65,21 +70,23 @@
   <!-- contacts list start -->
   <div class="table_container_row row marl">
     <div class="col-md-12">
-      <div class="panel panel-default">
-        <div class="panel-heading-list text-center">
-          LIST OF CONTACTS
+      <div class="card">
+        
+        <div class="card-body">
+        <div class="card-title">
+          List of Contacts
           <span class="pull-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Contacts {{contact_obj_list|length}}{% endif %}</span>
         </div>
-        <div class="panel-content">
+        <div class="table-responsive">
           <table class="table table-bordered table-striped table-condensed">
             <thead>
               <tr>
-                <th width="5%" style="text-align:center;">S.No</th>
-                <th width="20%" style="text-align:center;">NAME</th>
-                <th width="20%" style="text-align:center;">ACCOUNT</th>
-                <th width="15%" style="text-align:center;">CITY</th>
-                <th width="15%" style="text-align:center;">STATE</th>
-                <th width="25%" style="text-align:center;">ACTIONS</th>
+                <th width="5%" style="text-align:center;">S.no</th>
+                <th width="20%" style="text-align:center;">Name</th>
+                <th width="15%" style="text-align:center;">City</th>
+                <th width="15%" style="text-align:center;">State</th>
+                <th width="20%" style="text-align:center;">Industry</th>
+                <th width="25%" style="text-align:center;">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -113,17 +120,18 @@
                     Not Specified
                   {% endif %}
                 </td>
-                <td>
-                  <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info">View</a>
-                  <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success">Edit</a>
-                  <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete">Delete</a>
+                <td class="actions">
+                  <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
+                  <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
+                  <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i>Delete</a>
                 </td>
               </tr>
               {% endfor%}
             </tbody>
           </table>
+          </div>
           {%ifequal contact_obj_list|length 0 %}
-            <h4 class="text-center">No Contact Records Found</h4>
+            <h6 class="text-center">No Contact Records Found</h6>
           {%endifequal%}
           <div class="marl row text-center">
             {% show_pages %}

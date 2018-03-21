@@ -26,6 +26,9 @@ class Case(models.Model):
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['-created_on']
+
     def __str__(self):
         return self.name
 

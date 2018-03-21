@@ -7,12 +7,14 @@
   <!-- heading_create starts here -->
   <div class="row marl heading_create">
     <div class="heading col-md-12">
+      <div class="row marl no-gutters">
       <div class="col-md-6">
         <h4>Opportunities</h4>
       </div>
       <div class="col-md-6">
         <div class="create_new text-right">
           <a href="{% url 'opportunities:save' %}"><i class="fa fa-plus"></i> Add New Opportunity</a>
+        </div>
         </div>
       </div>
     </div>
@@ -21,11 +23,12 @@
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
     <div class="col-md-12">
-      <div class="panel panel-default">
-        <div class="panel-heading">
-        </div>
+      <div class="card">
+        
         <form id="opportunity_filter" method="POST" action="">{% csrf_token %}
-          <div class="panel-content text-center">
+          <div class="card-body ">
+           <div class="card-title">Filters</div>
+          <div class="row marl">
             <div class="filter_col col-md-3">
               <div class="form-group">
                 <label for="exampleInputEmail1">Name</label>
@@ -65,12 +68,13 @@
                 </select>
               </div>
             </div>
-            <div class="filter_col text-center">
-              <div class="form-group">
-                <button class="btn btn-primary" type="submit">Search</button>
-                <a href="{% url 'opportunities:list' %}" class="btn btn-default">Clear</a>
+            <div class="filter_col text-center col-12">
+              <div class="form-group buttons_row">
+                <button class="btn btn-primary save" type="submit">Search</button>
+                <a href="{% url 'opportunities:list' %}" class="btn btn-default clear">Clear</a>
               </div>
             </div>
+          </div>
           </div>
         </form>
         <br clear="all">
@@ -81,12 +85,14 @@
   <!-- opportunities list start-->
   <div class="table_container_row row marl">
     <div class="col-md-12">
-      <div class="panel panel-default">
-        <div class="panel-heading-list text-center">
-          LIST OF OPPORTUNITIES
-          <span class="pull-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Opportunities {{ opportunity_list|length }}{% endif %}</span>
+      <div class="card">
+       
+        <div class="card-body">
+         <div class="panel-heading-list card-title ">
+         List of opportunities
+          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Opportunities {{ opportunity_list|length }}{% endif %}</span>
         </div>
-        <div class="panel-content">
+        <div class="table-responsive">
           <table class="table table-bordered table-striped table-condensed">
             <thead>
               <tr>
@@ -129,22 +135,24 @@
                 </td>
                 <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
                 <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}</td>
-                <td>
-                  <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info ">View</a>
-                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success ">Edit</a>
-                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete">Delete</a>
+                <td class="actions">
+                  <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
+                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
+                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i>Delete</a>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
+          </div>
           {% ifequal opportunity_list|length 0 %}
-            <h4 class="text-center">No Opportunity Records Found</h4>
+            <h6 class="text-center">No Opportunity Records Found</h6>
           {% endifequal %}
           <div class="marl row text-center">
             {% show_pages %}
           </div>
         </div>
+
       </div>
     </div>
     <br clear="all">

@@ -1,23 +1,27 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
+<nav aria-label="breadcrumb">
 <ol class="breadcrumb">
-  <li><a href="{% url 'contacts:list' %}">Contacts</a></li>
-  <li class="active">view</li>
+  <li class="breadcrumb-item"> <a  href="{% url 'contacts:list' %}">Contacts</a></li>
+  <li class="breadcrumb-item active">view</li>
 </ol>
+</nav>
 {%endblock%}
 {%block content%}
 <!-- CONTACTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
     <div class="overview_form_block row marl">
       <div class="col-md-8">
-        <div class="panel panel-default">
-          <div class="panel-heading view-pad">
+        <div class="card">
+          
+          <div class="card-body" id="datashow">
+          <div class="panel-heading card-title view-pad">
             <h5>
-              OVERVIEW
-              <span class="pull-right" style="margin-top: -10px">
-                <div class="dropdown">
-                  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+              overview
+              <span class="float-right" style="margin-top: 0px">
+                <div class="dropdown buttons_row">
+                  <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
                   <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'contacts:edit_contact' contact_record.id %}">Edit</a></li>
@@ -27,7 +31,6 @@
               </span>
             </h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="col-md-6">
                 <div class="filter_col col-md-12" id="iname">
@@ -95,17 +98,20 @@
             </div>
           </div>
           <!-- Comments Section starts-->
-          <div class="panel-heading view-pad">
-            <h5>COMMENTS</h5>
+         
+          <div class="card-body" id="datashow">
+           <div class="card-title view-pad">
+            <h5>Comments</h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="col-md-12">
                 <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
                   <div class="form-group">
                     <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
                     </br>
+                    <div class="buttons_row">
                     <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                    </div>
                   </div>
                   <input type="hidden" value="{{contact_record.id}}" name="contactid">
                 </form>
@@ -160,11 +166,12 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading view-pad">
+        <div class="card">
+       
+          <div class="card-body" id="datashow">
+             <div class="panel-heading card-title view-pad">
             <h5>Label</h5>
           </div>
-          <div class="panel-content" id="datashow">
             <div class="row marl">
               <div class="filter_col col-md-12">
                 <div class="form-group">

@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'leads',
     'opportunity',
     'planner',
-    'simple_pagination'
+    'simple_pagination',
+    'compressor'
 ]
 
 MIDDLEWARE = [
@@ -139,3 +140,33 @@ EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 AUTH_USER_MODEL = 'common.User'
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = (BASE_DIR + '/static',)
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+)
+
+COMPRESS_ROOT = BASE_DIR + '/static/'
+COMPRESS_URL = STATIC_URL
+COMPRESS_ENABLED = True
+
+COMPRESS_CSS_FILTERS = ['compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
+COMPRESS_REBUILD_TIMEOUT = 5400
+
+
+COMPRESS_OUTPUT_DIR = 'CACHE'
+COMPRESS_URL = STATIC_URL
+COMPRESS_ENABLED = True
+
+COMPRESS_PRECOMPILERS = (
+    ('text/less', '/usr/local/bin/lessc {infile} {outfile}'),
+    ('text/x-sass', '/usr/local/bin/sass {infile} {outfile}'),
+    ('text/x-scss', '/usr/local/bin/sass --scss {infile} {outfile}'),
+)
+
+COMPRESS_OFFLINE_CONTEXT = {
+    'STATIC_URL': 'STATIC_URL',
+}
