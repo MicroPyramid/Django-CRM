@@ -22,39 +22,39 @@
             <div class="col-md-12">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">First Name</label>
+                  <label for="exampleInputEmail1">First Name{% if user_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" class="form-control" name="first_name" value="{% if user_obj %} {{ user_obj.first_name }} {% else %} {{request.POST.first_name}} {% endif %}">
                 </div>
-                {{ errors.first_name }}
+                <span class="error">{{ errors.first_name }}</span>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Last Name</label>
+                  <label for="exampleInputEmail1">Last Name{% if user_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" class="form-control" name="last_name" value="{% if user_obj %} {{ user_obj.last_name }} {% else %} {{request.POST.last_name}} {% endif %}">
                 </div>
-                {{ errors.last_name }}
+                <span class="error">{{ errors.last_name }}</span>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Username</label>
+                  <label for="exampleInputEmail1">Username{% if user_form.username.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" class="form-control" name="username" value="{% if user_obj %} {{ user_obj.username }} {% else %} {{request.POST.username}} {% endif %}">
                 </div>
-                {{ errors.username }}
+                <span class="error">{{ errors.username }}</span>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Email Address</label>
+                  <label for="exampleInputEmail1">Email Address{% if user_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" class="form-control" name="email" value="{% if user_obj %} {{ user_obj.email }} {% else %} {{request.POST.email}} {% endif %}">
                 </div>
-                {{ errors.email }}
+                <span class="error">{{ errors.email }}</span>
               </div>
               {% if not user_obj %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Password</label>
+                  <label for="exampleInputEmail1">Password{% if user_form.password.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="password" class="form-control" name="password" value="{{request.POST.password}}">
                 </div>
-                {{ errors.password }}
+                <span class="error">{{ errors.password }}</span>
               </div>
               {% endif %}
             </div>

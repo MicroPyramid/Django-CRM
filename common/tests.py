@@ -3,15 +3,19 @@ from django.test import Client
 from common.models import User
 
 
-class TestHomePage(TestCase):
+class ObjectsCreation(object):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_superuser(
-            'user@micropyramid.com', 'username', 'password')
-        user_login = self.client.login(username='user@micropyramid.com', password='password')
+        self.user = User.objects.create(first_name="admin", username='admin', email='admin@micropyramid.com')
+        self.user.set_password('admin123')
+        self.user.save()
+        user_login = self.client.login(username='admin@micropyramid.com', password='admin123')
 
+
+class TestHomePage(ObjectsCreation, TestCase):
     def test_home_page(self):
         response = self.client.get('/')
+        print(response)
         self.assertEqual(response.status_code, 200)
         if response.status_code == 200:
             self.assertIn("Micro", str(response.content))

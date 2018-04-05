@@ -53,94 +53,94 @@
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" class="name" >Name</label>
+                    <label for="exampleInputEmail1" class="name" >Name{% if lead_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                     <div class="row">
                       <div class="filter_col col-md-6">
                         {{ lead_form.first_name }}
-                        {{ lead_form.first_name.errors }}
+                        <span class="error">{{ lead_form.first_name.errors }}</span>
                       </div>
                       <div class="filter_col col-md-6">
                         {{ lead_form.last_name }}
-                        {{ lead_form.last_name.errors }}
+                        <span class="error">{{ lead_form.last_name.errors }}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" {% if request.POST.status == "converted" %} class="required" {% endif %}>Account Name</label>
+                    <label for="exampleInputEmail1" {% if request.POST.status == "converted" %} class="required" {% endif %}>Account Name{% if lead_form.account_name.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.account_name }}
-                    {{ lead_form.account_name.errors }}
+                    <span class="error">{{ lead_form.account_name.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Title</label>
+                    <label for="exampleInputEmail1">Title{% if lead_form.title.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.title }}
-                    {{ lead_form.title.errors }}
+                    <span class="error">{{ lead_form.title.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group ">
-                    <label for="exampleInputEmail1">Phone</label>
+                    <label for="exampleInputEmail1">Phone{% if lead_form.phone.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.phone }}
-                    {{ lead_form.phone.errors }}
+                    <span class="error">{{ lead_form.phone.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group ">
-                    <label for="exampleInputEmail1" class="required">Email Address</label>
+                    <label for="exampleInputEmail1" class="required">Email Address{% if lead_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.email }}
-                    {{ lead_form.email.errors }}
+                    <span class="error">{{ lead_form.email.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Website</label>
+                    <label for="exampleInputEmail1">Website{% if lead_form.website.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.website }}
-                    {{ lead_form.website.errors }}
+                    <span class="error">{{ lead_form.website.errors }}</span>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1"/>Status</label>
+                    <label for="exampleInputEmail1"/>Status{% if lead_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.status }}
-                    {{ lead_form.status.errors }}
+                    <span class="error">{{ lead_form.status.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1"/>Source</label>
+                    <label for="exampleInputEmail1"/>Source{% if lead_form.source.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.source }}
-                    {{ lead_form.source.errors }}
+                    <span class="error">{{ lead_form.source.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1" >Address</label>
                     {{ address_form.address_line }}
-                    {{ address_form.address_line.errors }}
+                    <span class="error">{{ address_form.address_line.errors }}</span>
                   </div>
                     {{ address_form.street }}
-                    {{ address_form.street.errors }}
+                    <span class="error">{{ address_form.street.errors }}</span>
                   <div class="row" style="margin-top:10px;">
                     <div class="col-md-4">
                       {{ address_form.city }}
-                      {{ address_form.city.errors }}
+                      <span class="error">{{ address_form.city.errors }}</span>
                     </div>
                     <div class="col-md-4">
                       {{ address_form.state }}
-                      {{ address_form.state.errors }}
+                      <span class="error">{{ address_form.state.errors }}</span>
                     </div>
                     <div class="col-md-4">
                       {{ address_form.postcode }}
-                      {{ address_form.postcode.errors }}
+                      <span class="error">{{ address_form.postcode.errors }}</span>
                     </div>
                     <div class="col-md-12" style="margin-top:10px;">
                       {{ address_form.country }}
-                      {{ address_form.country.errors }}
+                      <span class="error">{{ address_form.country.errors }}</span>
                     </div>
                   </div>
                 </div>
@@ -148,9 +148,9 @@
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group col-md-12">
-                  <label for="exampleInputEmail1" >Description</label>
+                  <label for="exampleInputEmail1" >Description{% if lead_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ lead_form.description }}
-                  {{ lead_form.description.errors }}
+                  <span class="error">{{ lead_form.description.errors }}</span>
                 </div>
               </div>
             </div>

@@ -33,8 +33,8 @@
                         <input type="email" class="form-control" id="from_email" name="from_email"{% if x %} value="{{x.from_email.value}}" {% endif %} 
                         {% if form.errors %} value="{{request.POST.from_email}}" {% endif %}
                         value="{{em.from_email}}"/>
-                        <p class='errors'> {{ form.from_email.errors }}</p>
                       </div>
+                      <span class='error'> {{ form.from_email.errors }}</span>
                     </div>
                       <div class="filter_col col-md-12">
                       <div class="form-group">
@@ -49,8 +49,8 @@
                         {% if x %} value="{{x.to_email.value}}" {% endif %} 
                          {% if form.errors %} value="{{request.POST.to_email}}" {% endif %}
                         value="{{em.to_email}}" />
-                        <p class='errors'> {{ form.to_email.errors }}</p>
                       </div>
+                      <span class='error'> {{ form.to_email.errors }}</span>
                     </div>
                       <div class="filter_col col-md-12">
                       <div class="form-group">
@@ -65,8 +65,8 @@
                         {% if x %} value="{{x.subject.value}}" {% endif %} 
                           {% if form.errors %} value="{{request.POST.subject}}" {% endif %}
                         value="{{em.subject}}"/>
-                        <p class='errors'> {{ form.subject.errors }}</p>
                       </div>
+                      <span class='error'> {{ form.subject.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
@@ -105,8 +105,8 @@
                         <textarea class="input form-control" rows="8" name="message" id="message">
                         {% if x %} {{x.message.value}} {% endif %}  {{em.message}}
                         </textarea>
-                        <p class='errors'> {{ form.message.errors }}</p>
                       </div>
+                      <span class='error'> {{ form.message.errors }}</span>
                     </div>
                    
                   </div>
