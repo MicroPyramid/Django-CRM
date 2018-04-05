@@ -11,7 +11,7 @@
 {% endblock %}
 {% block content %}
   <form id="submitForm" method="POST" action="" novalidate>{% csrf_token %}
-    <div class="assigned_teams row marl">
+    <!-- <div class="assigned_teams row marl">
       <div class="col-md-12">
         <div class="card">
          
@@ -38,14 +38,14 @@
         </div>
       </div>
       <br clear="all">
-    </div>
+    </div> -->
     <div class="overview_form_block row marl">
       <div class="col-md-12">
         <div class="card">
        
           <div class="card-body">
-             <div class="card-title" style="height:auto;">
-            Overview
+             <div class="card-title text-center">
+            CREATE CASE
           </div>
             <div class="row marl no-gutters">
               <div class="col-md-6">
@@ -91,6 +91,12 @@
                 </div>
               </div>
               <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    {{ case_form.assigned_to }}
+                  </div>
+                </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="id_account">Account{% if case_form.account.field.required %}<span class="error">*</span>{% endif %}</label>

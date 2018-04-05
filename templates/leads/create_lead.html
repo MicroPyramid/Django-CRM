@@ -11,10 +11,9 @@
 {% endblock %}
 {%block content%}
   <form id="add_form" method="POST" action="" novalidate>{%csrf_token%}
-    <div class="assigned_teams row marl">
+    <!-- <div class="assigned_teams row marl">
       <div class="col-md-12">
         <div class="card">
-        
           <div class="card-body">
             <div class="card-title">
             Assigned Users & Teams
@@ -40,14 +39,14 @@
         </div>
       </div>
       <br clear="all">
-    </div>
+    </div> -->
     <div class="overview_form_block row marl">
       <div class="col-md-12">
         <div class="card">
         
           <div class="card-body">
-            <div class="card-title">
-            Overview
+            <div class="card-title text-center">
+            CREATE LEAD
           </div>
             <div class="row marl no-gutters">
               <div class="col-md-6">
@@ -103,6 +102,14 @@
                 </div>
               </div>
               <div class="col-md-6">
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    {{ lead_form.assigned_to }}
+                    {{ lead_form.assigned_to.errors }}
+                  </div>
+                </div>
+                <br>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1"/>Status{% if lead_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
