@@ -11,7 +11,7 @@
 {% endblock %}
 {% block content %}
   <form id="formid" action='' method="POST" novalidate>{% csrf_token %}
-    <div class="assigned_teams ro marl">
+    <!-- <div class="assigned_teams ro marl">
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
@@ -39,16 +39,15 @@
         </div>
       </div>
       <br clear="all">
-    </div>
-    <!-- assigned users & teams ends here -->
+    </div> -->
     <!-- overview starts here -->
     <div class="overview_form_block row marl ">
       <div class="col-md-12">
         <div class="card">
           
           <div class="card-body">
-          <div class="card-title">
-            Overview
+          <div class="card-title text-center">
+            CREATE ACCOUNT
           </div>
             <div class="row marl">
               <div class="col-md-6">
@@ -96,6 +95,14 @@
                 </div>
               </div>
               <div class="col-md-6">
+                <div class="filter_col col-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    {{ account_form.assigned_to }}
+                    {{ account_form.assigned_to.errors }}
+                  </div>
+                </div>
+                <br>
                 <div class="filter_col billing_block col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Billing Address</label>

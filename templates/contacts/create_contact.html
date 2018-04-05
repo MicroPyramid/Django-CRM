@@ -11,7 +11,7 @@
 {% endblock %}
 {% block content %}
   <form id="add_form" method="POST" action='' novalidate>{%csrf_token%}
-    <div class="assigned_teams row marl">
+    <!-- <div class="assigned_teams row marl">
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
@@ -39,14 +39,14 @@
         </div>
       </div>
       <br clear="all">
-    </div>
+    </div> -->
     <div class="overview_form_block row marl">
       <div class="col-md-12">
         <div class="card">
           
           <div class="card-body">
-          <div class="card-title">
-            Overview
+          <div class="card-title text-center">
+            CREATE CONTACT
           </div>
             <div class="row marl no-gutters">
               <div class="col-md-6">
@@ -84,6 +84,13 @@
                     <label for="exampleInputEmail1" class="required" >Email Address{% if contact_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ contact_form.email }}
                     <span class="error">{{ contact_form.email.errors }}</span>
+                  </div>
+                </div>
+                <div class="filter_col col-12">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    {{ contact_form.assigned_to }}
+                    {{ contact_form.assigned_to.errors }}
                   </div>
                 </div>
               </div>

@@ -56,10 +56,24 @@ def logout_crm(request):
 @csrf_exempt
 def users_list(request):
     users_list = User.objects.all()
+    page = request.POST.get('per_page')
+    first_name = request.POST.get('first_name')
+    last_name = request.POST.get('last_name')
+    username = request.POST.get('username')
+    email = request.POST.get('email')
     active_users = User.objects.filter(is_active=True)
     inactive_users = User.objects.filter(is_active=False)
+    if first_name:
+        users_list = User.objects.filter(first_name__icontains=first_name)
+    if last_name:
+        users_list = User.objects.filter(last_name__icontains=last_name)
+    if username:
+        users_list = User.objects.filter(username__icontains=username)
+    if email:
+        users_list = User.objects.filter(email__icontains=email)
     return render(request, "users/list.html", {
-        'users': users_list, 'active_users': active_users, 'inactive_users': inactive_users
+        'users': users_list, 'active_users': active_users,
+        'per_page': page, 'inactive_users': inactive_users
     })
 
 
