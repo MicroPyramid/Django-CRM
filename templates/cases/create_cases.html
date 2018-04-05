@@ -135,10 +135,10 @@
     $(function () {
      var date = new Date();
      var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      $('#datepicker1').datetimepicker({
+      $('#id_closed_on').datetimepicker({
           'format': 'YYYY-MM-DD',
           minDate: today
-      }).attr('readonly', 'true')
+      })
     });
 
     $(".savenew").on('click', function(e){

@@ -4,7 +4,7 @@ from contacts.models import Contact
 from accounts.models import Account
 from django.test import Client
 from common.models import Address
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from common.models import User
 from django.utils import timezone
 
@@ -13,11 +13,14 @@ class CaseCreation(object):
     def setUp(self):
         self.address = Address.objects.create(street="6th phase", city="hyderabad", postcode="506344",
                                               country='IN')
-        self.user = User.objects.create(username='raghu', email='r@mp.com')
+
+        self.user = User.objects.create(first_name="raghu", username='raghu', email='r@mp.com')
         self.user.set_password('raghu')
         self.user.save()
         self.client.login(email='r@mp.com', password='raghu')
 
+
+        self.client.login(email='r@mp.com', password='raghu')
 
         self.account = Account.objects.create(name="account", email="account@gmail.com", phone="12345",
                                                   billing_address=self.address, shipping_address=self.address,
@@ -28,10 +31,10 @@ class CaseCreation(object):
                                                email="contact@gmail.com", phone="12345",
                                                account=self.account, description="contact", address=self.address, created_by=self.user)
         # self.comment = Comments.objects.create(comment="new", caseid=self.case.id, comment_)
-        self.case = Case.objects.create(name="raghu", case_type="Problem", status="New",
-                                        priority="low", description="something",
-                                        created_by=self.user, closed_on=timezone.now())
 
+        self.case = Case.objects.create(name="raghu", case_type="Problem", status="New", account=self.account,
+                                        priority="Low", description="something",
+                                        created_by=self.user, closed_on="2016-05-04")
 
 class CaseCreateTestCase(CaseCreation, TestCase):
     def test_create_case(self):
@@ -82,7 +85,7 @@ class CaseShowTestCase(CaseCreation, TestCase):
 class CaseRemoveTestCase(CaseCreation, TestCase):
     def test_case_deletion_show_case(self):
         response = self.client.get('/cases/1/remove/')
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['location'], '/cases/list/')
 
 
 class CaseUpdateTestCase(CaseCreation, TestCase):
@@ -96,8 +99,4 @@ class CaseUpdateTestCase(CaseCreation, TestCase):
 
     def test_case_update_html(self):
         response = self.client.post('/cases/1/edit_case/', {'hiddenval': self.case.id})
-        self.assertEqual(response.status_code, 200)
-
-    # def test_edit_details(self):
-    #     response = self.client.post('/cases/editdetails/', {'tid': self.case.id})
-    #     self.assertEqual(int(response.json()['eid']), self.case.id)
+        self.assertTemplateUsed(response, 'cases/create_cases.html')

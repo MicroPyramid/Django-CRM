@@ -7,3 +7,6 @@ media
 media-images
 cache
 .idea
+CACHE/
+.sass-cache/
+

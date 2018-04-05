@@ -27,37 +27,37 @@
 
         <form id="leads_filter" action="" method="POST">{%csrf_token%}
           <div class="card-body ">
-           <div class="card-title">Filters</div>
-                           <div class="row marl">
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">First Name</label>
-                <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+            <div class="card-title">Filters</div>
+            <div class="row marl">
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">First Name</label>
+                  <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+                </div>
               </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Last Name</label>
-                <input type="text" class="form-control" placeholder="Last Name" name="last_name" value="{{request.POST.last_name}}">
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Last Name</label>
+                  <input type="text" class="form-control" placeholder="Last Name" name="last_name" value="{{request.POST.last_name}}">
+                </div>
               </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Lead Status</label>
-                <select class="form-control" id="id_status" name="status" >
-                  <option value="">--Status of Lead--</option>
-                  {% for each_status in status %}
-                  <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
-                  {% endfor%}
-                </select>
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Lead Status</label>
+                  <select class="form-control" id="id_status" name="status" >
+                    <option value="">--Status of Lead--</option>
+                    {% for each_status in status %}
+                    <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                    {% endfor%}
+                  </select>
+                </div>
               </div>
-            </div>
-            <div class="filter_col col-3">
-              <div class="form-group buttons_row">
-                <button class="btn btn-primary save" type="submit">Search</button>
-                <a href="{% url 'leads:list' %}" class="btn btn-default clear">Clear</a>
+              <div class="filter_col text-center col-12">
+                <div class="form-group buttons_row">
+                  <button class="btn btn-primary save" type="submit">Search</button>
+                  <a href="{% url 'leads:list' %}" class="btn btn-default clear">Clear</a>
+                </div>
               </div>
-            </div>
             </div>
           </div>
         </form>
@@ -73,8 +73,8 @@
        
         <div class="card-body">
          <div class="card-title">
-          LIST OF LEADS
-          <span class="pull-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Leads {{ lead_obj|length }}{% endif %}</span>
+          List of Leads
+          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Leads {{ lead_obj|length }}{% endif %}</span>
         </div>
           <div class="table-responsive">
           <table class="table table-bordered table-striped table-condensed">
@@ -138,6 +138,14 @@
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
+  $('.delete').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+  
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#leads_filter').attr("action", $(this).attr("href"));

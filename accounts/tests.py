@@ -9,7 +9,7 @@ from common.models import User
 
 class AccountCreateTest(object):
     def setUp(self):
-        self.user = User.objects.create(username='uday', email='u@mp.com')
+        self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com')
         self.user.set_password('uday2293')
         self.user.save()
 
