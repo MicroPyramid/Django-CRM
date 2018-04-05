@@ -38,6 +38,12 @@
                         {% if errors %}
                             <p>Your username and password didn't match. Please try again.</p>
                         {% endif %}
+                        {% if inactiveuser %}
+                            <p>Your Account is InActive. Please Contact Administrator</p>
+                        {% endif %}
+                        {% if usernone %}
+                            <p>Your Account is not Found. Please Contact Administrator</p>
+                        {% endif %}
                         <button type="submit" class="btn btn-default">Login here</button>
                     </form>
                 </div>

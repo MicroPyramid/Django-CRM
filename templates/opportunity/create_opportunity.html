@@ -51,16 +51,16 @@
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" class="required">Name</label>
+                    <label for="exampleInputEmail1" class="required">Name{% if opportunity_form.name.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.name }}
-                    <span>{{opportunity_form.name.errors}}</span>
+                    <span class="error">{{opportunity_form.name.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Account</label>
+                    <label for="exampleInputEmail1">Account{% if opportunity_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.account }}
-                    <span>{{opportunity_form.account.errors}}</span>
+                    <span class="error">{{opportunity_form.account.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
@@ -69,59 +69,59 @@
                     <div class="input-group" style="width:100%;">
                       <div class="input-group-btn left-dropdown" style="width:auto;">
                         {{ opportunity_form.currency }}
-                        <span>{{opportunity_form.currency.errors}}</span>
+                        <span class="error">{{opportunity_form.currency.errors}}</span>
                       </div>
                       {{ opportunity_form.amount }}
-                      <span>{{opportunity_form.amount.errors}}</span>
+                      <span class="error">{{opportunity_form.amount.errors}}</span>
                     </div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" class="required">Stage</label>
+                    <label for="exampleInputEmail1" class="required">Stage{% if opportunity_form.stage.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.stage }}
-                    <span>{{opportunity_form.stage.errors}}</span>
+                    <span class="error">{{opportunity_form.stage.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Lead Source</label>
+                    <label for="exampleInputEmail1">Lead Source{% if opportunity_form.lead_source.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.lead_source }}
-                    <span>{{opportunity_form.lead_source.errors}}</span>
+                    <span class="error">{{opportunity_form.lead_source.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Probability %</label>
+                    <label for="exampleInputEmail1">Probability %{% if opportunity_form.probability.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.probability }}
-                    <span>{{opportunity_form.probability.errors}}</span>
+                    <span class="error">{{opportunity_form.probability.errors}}</span>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Contacts</label>
+                    <label for="exampleInputEmail1">Contacts{% if opportunity_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ opportunity_form.contacts }}
-                    <span>{{opportunity_form.contacts.errors}}</span>
+                    <span class="error">{{opportunity_form.contacts.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Close Date</label>
+                    <label for="exampleInputEmail1">Close Date{% if opportunity_form.closed_on.field.required %}<span class="error">*</span>{% endif %}</label>
                     <div class='input-group date' id='datepicker1'>
                       {{ opportunity_form.closed_on }}
                       <span class="input-group-addon">
                       <span class="glyphicon glyphicon-calendar"></span>
                       </span>
                     </div>
-                    <span>{{opportunity_form.closed_on.errors}}</span>
+                    <span class="error">{{opportunity_form.closed_on.errors}}</span>
                   </div>
                 </div>
                 <div class="form-group col-md-12">
-                  <label for="exampleInputEmail1" >Description</label>
+                  <label for="exampleInputEmail1" >Description{% if opportunity_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ opportunity_form.description }}
-                  <span>{{opportunity_form.description.errors}}</span>
+                  <span class="error">{{opportunity_form.description.errors}}</span>
                 </div>
               </div>
             </div>

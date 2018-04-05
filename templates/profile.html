@@ -1,8 +1,5 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-{% block breadcrumb1 %}
-
-{% endblock%}
 {% block content%}
 <!-- OPPORTUNITY VIEW STARTS -->
   <div class="main_container" id="maincontainer">
@@ -11,59 +8,40 @@
         <div class="card">
           
           <div class="card-body" id="datashow">
-         <div class="panel-heading card-title view-pad">
-            <h5>
-              Profile
-               <span class="float-right" style="margin-top: 0px">
-                <div class="dropdown buttons_row">
-                  <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
-                  <span class="caret"></span></button>
-                  <ul class="dropdown-menu">
-                    <li><a href="#" >Edit</a></li>
-                    <li class="delete_contact"><a href="#" id="remove_contact">Remove</a></li>
-                  </ul>
-                </div>
-              </span>            
-            </h5>
-          </div>
+            <div class="panel-heading card-title view-pad text-center">
+              <h5>
+                Profile
+                <!-- <span class="float-right" style="margin-top: 0px">
+                  <div class="dropdown buttons_row">
+                    <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
+                    <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                      <li><a href="#" >Edit</a></li>
+                      <li class="delete_contact"><a href="#" id="remove_contact">Remove</a></li>
+                    </ul>
+                  </div>
+                </span> -->
+              </h5>
+            </div>
+            {% for user in user_obj %}
             <div class="row marl no-gutters">
               <div class="col-md-8">
-                <div class="filter_col col-md-12" id="iname">
+                <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_name" data-name="name">Name</label>
-                    <div class="contact_field" id="contact_name" data-name="name">santharao nowpada</div>
+                    <div class="contact_field" id="contact_name" data-name="name">{{ user.first_name }} {{ user.last_name }}</div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label class="contact_field_label" for="id_contact_account" data-name="name">Account</label>
-                    <div class="contact_field" id="contact_account" data-name="name">santharao</div>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_phone" data-name="name">Phone</label>
-                    <div class="contact_field" id="contact_phone" data-name="name">8686828686</div>
+                    <label class="contact_field_label" for="id_contact_account" data-name="name">UserName</label>
+                    <div class="contact_field" id="contact_account" data-name="name">{{ user.username }}</div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_email" data-name="name">Email</label>
-                    <div class="contact_field" id="contact_email" data-name="name">santharao@micropyramid.com</div>
-                  </div>
-                </div>
-                 <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_email" data-name="name">Address</label>
-                    <div class="contact_field" id="contact_email" data-name="name">
-                      <address>
-                        Written by <a href="mailto:webmaster@example.com">Jon Doe</a>.<br> 
-                        Visit us at:<br>
-                        Example.com<br>
-                        Box 564, Disneyland<br>
-                        USA
-                      </address>
-                    </div>
+                    <div class="contact_field" id="contact_email" data-name="name">{{ user.email }}</div>
                   </div>
                 </div>
               </div>
@@ -73,11 +51,10 @@
                 </div>
               </div>
             </div>
+            {% endfor %}
           </div>
-        
         </div>
       </div>
-      
     </div>
   </div>
 <!-- OPPORTUNITY VIEW ENDS -->

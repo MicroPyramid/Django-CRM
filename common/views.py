@@ -8,17 +8,21 @@ from common.models import User
 from common.forms import UserForm, LoginForm
 
 
-#@login_required
+@login_required
 def home(request):
     return render(request, 'index.html')
 
 
+@login_required
 def change_pass(request):
     return render(request, 'change_password.html')
 
-def profile(request):
-    return render(request, 'profile.html')
 
+@login_required
+def profile(request):
+    user = request.user
+    user_obj = User.objects.filter(id=user.id)
+    return render(request, "profile.html", {'user_obj': user_obj})
 
 @csrf_exempt
 def login_crm(request):
@@ -33,18 +37,18 @@ def login_crm(request):
                     login(request, user)
                     return HttpResponseRedirect('/')
                 else:
-                    print("User is Inactive")
+                    return render(request, "login.html", {"error": True, "inactiveuser": form.errors})
             else:
-                print("User is None")
+                return render(request, "login.html", {"error": True, "usernone": form.errors})
         else:
             return render(request, "login.html", {"error": True, "errors": form.errors})
     return render(request, 'login.html')
 
 
-@login_required
 @csrf_exempt
 def logout_crm(request):
     logout(request)
+    request.session.flush()
     return redirect("common:login")
 
 

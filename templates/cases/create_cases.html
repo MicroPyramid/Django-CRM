@@ -51,64 +51,64 @@
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_name" class="required">Name</label>
+                    <label for="id_name" class="required">Name{% if case_form.name.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.name }}
-                    <span>{{ case_form.name.errors }}</span>
+                    <span class="error">{{ case_form.name.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_status" class="required">Status</label>
+                    <label for="id_status" class="required">Status{% if case_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.status }}
-                    <span>{{ case_form.status.errors }}</span>
+                    <span class="error">{{ case_form.status.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_priority" class="required">Priority</label>
+                    <label for="id_priority" class="required">Priority{% if case_form.priority.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.priority }}
-                    <span>{{ case_form.priority.errors }}</span>
+                    <span class="error">{{ case_form.priority.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_case_type">Type of Case</label>
+                    <label for="id_case_type">Type of Case{% if case_form.case_type.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.case_type }}
-                    <span>{{ case_form.case_type.errors }}</span>
+                    <span class="error">{{ case_form.case_type.errors }}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" class="required">Close Date</label>
+                    <label for="exampleInputEmail1" class="required">Close Date{% if case_form.closed_on.field.required %}<span class="error">*</span>{% endif %}</label>
                     <div class='input-group date' id='datepicker1'>
                       {{ case_form.closed_on }}
                       <span class="input-group-addon">
                       <span class="glyphicon glyphicon-calendar"></span>
                       </span>
                     </div>
-                    <span>{{ case_form.closed_on.errors }}</span>
+                    <span class="error">{{ case_form.closed_on.errors }}</span>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_account">Account</label>
+                    <label for="id_account">Account{% if case_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.account }}
-                    <span> {{case_form.account.errors}}</span>
+                    <span class="error">{{case_form.account.errors}}</span>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_contacts">Contacts</label>
+                    <label for="id_contacts">Contacts{% if case_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.contacts }}
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="id_description">Description</label>
+                    <label for="id_description">Description{% if case_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ case_form.description }}
-                    <span>{{ case_form.description.errors }}</span>
+                    <span class="error">{{ case_form.description.errors }}</span>
                   </div>
                 </div>
               </div>

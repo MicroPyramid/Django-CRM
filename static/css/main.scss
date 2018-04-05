@@ -625,3 +625,12 @@ $color_2: #000;
     border:4px solid #eee;
   }
 }
+
+.error {
+  color: red;
+}
+
+.error ul {
+  list-style-type: none;
+  padding: 0px;
+}
