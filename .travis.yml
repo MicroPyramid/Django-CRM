@@ -13,6 +13,7 @@ install:
   - gem install sass
   - pip install npm
   - npm install less
+  - npm install -g sass
 
 # command to run tests
 script:
