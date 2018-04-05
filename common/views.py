@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import logout, authenticate, login
 
 from common.models import User
-from common.forms import UserForm
+from common.forms import UserForm, LoginForm
 
 
 #@login_required
@@ -13,20 +13,40 @@ def home(request):
     return render(request, 'index.html')
 
 
+def change_pass(request):
+    return render(request, 'change_password.html')
+
+def profile(request):
+    return render(request, 'profile.html')
+
+
 @csrf_exempt
 def login_crm(request):
-    print('login')
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return HttpResponseRedirect('/')
     if request.method == 'POST':
-        user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                return HttpResponseRedirect('/')
+        form = LoginForm(request.POST, request=request)
+        if form.is_valid():
+            user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    return HttpResponseRedirect('/')
+                else:
+                    print("User is Inactive")
+            else:
+                print("User is None")
         else:
-            return HttpResponseRedirect('/')
+            return render(request, "login.html", {"error": True, "errors": form.errors})
     return render(request, 'login.html')
+
+
+@login_required
+@csrf_exempt
+def logout_crm(request):
+    logout(request)
+    return redirect("common:login")
+
 
 
 @csrf_exempt

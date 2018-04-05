@@ -28,19 +28,17 @@
             <div class="login_block">
                 <div class="login_form_block">
                     <div class="welcome">Login to your crm account</div>
-                    {% if form.errors %}
-                    <p>Your username and password didn't match. Please try again.</p>
-                    {% endif %}
-                    <form method="POST" action="">
-                        {% csrf_token %}
-                    <div class="form-group">
-                    <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
-                    </div>
-                    <div class="form-group">
-                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
-                    </div>
-
-                    <button type="submit" class="btn btn-default">Login here</button>
+                    <form method="POST" action="">{% csrf_token %}
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
+                        </div>
+                        {% if errors %}
+                            <p>Your username and password didn't match. Please try again.</p>
+                        {% endif %}
+                        <button type="submit" class="btn btn-default">Login here</button>
                     </form>
                 </div>
             </div>

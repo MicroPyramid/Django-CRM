@@ -27,62 +27,59 @@
         
         <form id="cases_filter" method="POST" action="" >{% csrf_token %}
           <div class="card-body">
-          <div class="card-title">Filters</div>
-                           <div class="row marl">
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Name</label>
-                <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+            <div class="card-title">Filters</div>
+            <div class="row marl">
+              <div class="filter_col col-md-3">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Name</label>
+                  <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+                </div>
+              </div>
+              <div class="filter_col col-md-3">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Status</label>
+                  <select class="form-control" id="id_status" name="status" >
+                    <option value="">--Status--</option>
+                    {% for each_status in case_status %}
+                    <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                    {% endfor%}
+                  </select>
+                </div>
+              </div>
+              <div class="filter_col col-md-3">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Priority</label>
+                  <select class="form-control" id="id_priority" name="priority" >
+                    <option value="">--Priority--</option>
+                    {% for each_priority in case_priority %}
+                    <option value="{{each_priority.0}}" {% if request.POST.priority %} {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>{{each_priority.1}} </option>
+                    {% endfor%}
+                  </select>
+                </div>
+              </div>
+              <div class="filter_col col-md-3">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Account</label>
+                  <select class="form-control" id="id_account" name="account">
+                    <option value="">--Select Account--</option>
+                    {% for ac in accounts %}
+                    <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
+                    {% endfor %}
+                  </select>
+                  </select>
+                </div>
+              </div>
+              <input type="hidden" id="per_page_field" name="per_page">
+              <div class="filter_col text-center col-12">
+                <div class="form-group buttons_row text-center">
+                  <button class="btn btn-primary save" id="filter_click" type="submit">Search</button>
+                  <a href="{% url 'cases:list' %}" id="filter_clear" class="btn btn-default clear">Clear</a>
+                </div>
               </div>
             </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Status</label>
-                <select class="form-control" id="id_status" name="status" >
-                  <option value="">--Status--</option>
-                  {% for each_status in case_status %}
-                  <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
-                  {% endfor%}
-                </select>
-              </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Priority</label>
-                <select class="form-control" id="id_priority" name="priority" >
-                  <option value="">--Priority--</option>
-                  {% for each_priority in case_priority %}
-                  <option value="{{each_priority.0}}" {% if request.POST.priority %} {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>{{each_priority.1}} </option>
-                  {% endfor%}
-                </select>
-              </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Account</label>
-                <select class="form-control" id="id_account" name="account">
-                  <option value="">--Select Account--</option>
-                  {% for ac in accounts %}
-                  <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
-                  {% endfor %}
-                </select>
-                </select>
-              </div>
-            </div>
-            <input type="hidden" id="per_page_field" name="per_page">
-            <div class="col-12">
-            <div class="filter_col text-center">
-              <div class="form-group buttons_row text-center">
-                <button class="btn btn-primary save" id="filter_click" type="submit">Search</button>
-                <a href="{% url 'cases:list' %}" id="filter_clear" class="btn btn-default clear">Clear</a>
-              </div>
-              </div>
-            </div>
-          </div>
           </div>
         </form>
         <br clear="all">
-        </div>
       </div>
     </div>
   </div>
@@ -93,8 +90,8 @@
       <div class="card">
         
         <div class="card-body">
-        <div class="panel-heading-list card-title text-center">
-          List Of Cases
+        <div class="panel-heading-list card-title">
+          List of Cases
           <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Cases {{ cases|length }}{% endif %}</span>
         </div>
         <div class="table-responsive">

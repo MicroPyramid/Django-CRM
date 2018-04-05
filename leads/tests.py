@@ -1,6 +1,4 @@
-from django.test import TestCase
-from django.test import Client
-# from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from leads.models import Lead
 from common.models import Address, User
 from accounts.models import Account
@@ -8,15 +6,19 @@ from accounts.models import Account
 
 class TestLeadModel(object):
     def setUp(self):
+        self.client = Client()
+
         self.user = User.objects.create(username='uday', email='u@mp.com')
         self.user.set_password('uday2293')
         self.user.save()
+
         self.client.login(username='u@mp.com', password='uday2293')
+
         self.address = Address.objects.create(street="Gokul enclave colony",
                                               city="Hasthinapuram",
                                               state="Telangana",
                                               postcode="500079",
-                                              country='India')
+                                              country="AD")
 
         self.account = Account.objects.create(name="account",
                                                   email="account@gmail.com",
@@ -29,7 +31,7 @@ class TestLeadModel(object):
                                                   created_by=self.user)
 
         self.lead = Lead.objects.create(title="LeadCreation",
-                                        first_name="kotha",
+                                        first_name="anjali",
                                         last_name="k",
                                         email="anjalikotha1993@gmail.com",
                                         account=self.account,
@@ -41,7 +43,6 @@ class TestLeadModel(object):
                                         description="Iam an Lead",
                                         created_by=self.user)
 
-
     def testaddress_post_object_creation(self):
         c = Address.objects.count()
         self.assertEqual(c, 1)
@@ -49,14 +50,6 @@ class TestLeadModel(object):
     def test_get_addressobject_with_name(self):
         p = Address.objects.get(state="Telangana")
         self.assertEqual(p.street, "Gokul enclave colony")
-
-    # def testcountry_post_object_creation(self):
-    #     c = Country.objects.count()
-    #     self.assertEqual(c, 1)
-
-    # def test_get_countryobject_with_name(self):
-    #     p = Country.objects.get(name="India")
-    #     self.assertEqual(p.name, "India")
 
     def test_lead_object_creation(self):
         c = Lead.objects.count()
@@ -93,7 +86,7 @@ class LeadsCreateUrlTestCase(TestLeadModel, TestCase):
     def test_leads_create_url(self):
         response = self.client.post('/leads/create/', {
                                     'title': 'LeadCreation',
-                                    'name': "kotha",
+                                    'first_name': "kotha",
                                     'email': "anjalikotha1993@gmail.com",
                                     'account': self.account,
                                     'address': self.address,
@@ -101,14 +94,15 @@ class LeadsCreateUrlTestCase(TestLeadModel, TestCase):
                                     "status": "assigned",
                                     "source": "Call",
                                     'opportunity_amount': "700",
-                                    'description': "Iam an Lead"})
+                                    'description': "Iam an Lead",
+                                    'created_by': self.user})
         self.assertEqual(response.status_code, 200)
 
     def test_leads_create_html(self):
         response = self.client.post('/leads/create/', {
             'title': 'LeadCreation', 'name': "kotha", 'email': "anjalikotha1993@gmail.com", 'account': self.account,
             'address': self.address, 'website': "www.gmail.com", 'status': "assigned",
-            "source": "Call", 'opportunity_amount': "700", 'description': "Iam an Lead"})
+            "source": "Call", 'opportunity_amount': "700", 'description': "Iam an Lead", 'created_by': self.user})
         self.assertTemplateUsed(response, 'leads/create_lead.html')
 
 
@@ -116,7 +110,7 @@ class LeadsEditUrlTestCase(TestLeadModel, TestCase):
     def test_lead_editurl(self):
         response = self.client.get('/leads/1/edit/', {
                                    'title': 'LeadCreation',
-                                   'name': "kotha",
+                                   'first_name': "kotha",
                                    'email': "fathimakotha1993@gmail.com",
                                    'account': self.account,
                                    'address': self.address,
@@ -124,7 +118,8 @@ class LeadsEditUrlTestCase(TestLeadModel, TestCase):
                                    "status ": "assigned",
                                    "source": "Call",
                                    'opportunity_amount': "700",
-                                   'description': "Iam an Lead"})
+                                   'description': "Iam an Lead",
+                                   'created_by': self.user})
         self.assertEqual(response.status_code, 200)
 
 
@@ -138,7 +133,7 @@ class LeadsViewTestCase(TestLeadModel, TestCase):
 
     def test_leads_view(self):
         Lead.objects.create(title="LeadCreationbylead",
-                            first_name="kotha",
+                            first_name="anjali",
                             last_name="k",
                             email="srilathakotha1993@gmail.com",
                             account=self.account,

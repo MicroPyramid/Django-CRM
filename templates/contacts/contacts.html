@@ -7,15 +7,15 @@
   <!-- heading_create starts here -->
   <div class="row marl heading_create">
     <div class="heading col-md-12">
-     <div class="no-gutters row">
-      <div class="col-md-6">
-        <h4>Contacts</h4>
-      </div>
-      <div class="col-md-6">
-        <div class="create_new text-right">
-          <a href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i> Add New Contact</a>
+      <div class="no-gutters row">
+        <div class="col-md-6">
+          <h4>Contacts</h4>
         </div>
-      </div>
+        <div class="col-md-6">
+          <div class="create_new text-right">
+            <a href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i> Add New Contact</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -26,40 +26,39 @@
       <div class="card">
        
         <form id="contacts_filter" action="" method="POST">{%csrf_token%}
-
           <div class="card-body">
-                          <div class="card-title">Filters</div>
-                           <div class="row marl">
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">ACCOUNTS</label>
-                <select class="form-control" id="id_account" name="account">
-                  <option value="" selected="selected">--Select an Account--</option>
-                  {% for account in accounts %}
-                  <option value="{{account.id}}" {%ifequal account.id request.POST.account|add:"0"%} selected {%endifequal%}>{{ account.name }}</option>
-                  {% endfor %}
-                </select>
+            <div class="card-title">Filters</div>
+            <div class="row marl">
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">ACCOUNTS</label>
+                  <select class="form-control" id="id_account" name="account">
+                    <option value="" selected="selected">--Select an Account--</option>
+                    {% for account in accounts %}
+                    <option value="{{account.id}}" {%ifequal account.id request.POST.account|add:"0"%} selected {%endifequal%}>{{ account.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">NAME</label>
+                  <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+                </div>
+              </div>
+              <div class="filter_col col-md-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">CITY</label>
+                  <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
+                </div>
+              </div>
+              <div class="filter_col text-center col-12">
+                <div class="form-group buttons_row">
+                  <button  class="btn btn-primary save" type="submit">Search</button>
+                  <a href="{% url 'contacts:list' %}" class="btn btn-default clear">Clear</a>
+                </div>
               </div>
             </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">NAME</label>
-                <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
-              </div>
-            </div>
-            <div class="filter_col col-md-3">
-              <div class="form-group">
-                <label for="exampleInputEmail1">CITY</label>
-                <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
-              </div>
-            </div>
-            <div class="filter_col text-center">
-              <div class="form-group buttons_row">
-                <button  class="btn btn-primary save" type="submit">Search</button>
-                <a href="{% url 'contacts:list' %}" class="btn btn-default clear">Clear</a>
-              </div>
-            </div>
-          </div>
           </div>
         </form>
         <br clear="all">
@@ -75,7 +74,7 @@
         <div class="card-body">
         <div class="card-title">
           List of Contacts
-          <span class="pull-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Contacts {{contact_obj_list|length}}{% endif %}</span>
+          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Contacts {{contact_obj_list|length}}{% endif %}</span>
         </div>
         <div class="table-responsive">
           <table class="table table-bordered table-striped table-condensed">

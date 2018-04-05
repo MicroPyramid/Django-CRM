@@ -22,7 +22,7 @@
             <div class="col-md-12">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">First Name</label>{{ user_obj.first_name }}
+                  <label for="exampleInputEmail1">First Name</label>
                   <input type="text" class="form-control" name="first_name" value="{% if user_obj %} {{ user_obj.first_name }} {% else %} {{request.POST.first_name}} {% endif %}">
                 </div>
                 {{ errors.first_name }}
@@ -61,7 +61,7 @@
           </div>
           <div class="row marl buttons_row form_btn_row text-center">
             <button class="btn btn-default save" type="submit">Save</button>
-            <button class="btn btn-default" type="submit">Cancel</button>
+            <a href="{% url 'common:users_list' %}" class="btn btn-default clear" id="create_user_cancel">Cancel</a>
           </div>
         </div>
       </div>

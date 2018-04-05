@@ -527,10 +527,11 @@ $color_2: #000;
   @extend .filter_row;
   .card-title{
     height: 45px;
+    height: auto;
+    padding:1.8% 10px !important;
     h5{
       margin-bottom: 0;
       position: relative;
-      top: 10px;
       font-size: 13px;
     }
     .dropdown{
@@ -614,4 +615,13 @@ $color_2: #000;
 
 .case-list-container{
   margin-bottom: 15px;
+}
+
+.profile_pic{
+  text-align: center;
+  img{
+    width: 125px;
+    height: 125px;
+    border:4px solid #eee;
+  }
 }
