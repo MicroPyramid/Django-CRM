@@ -2,10 +2,14 @@ language: python
 python:
   - "3.4"
 
+#Django & Database
+addons:
+  postgresql: "9.4"
+
 sudo: false
 
 env:
-  -DJANGO=2.0
+  -DJANGO=1.11
 
 install:
   - pip install -r requirements.txt
@@ -13,11 +17,11 @@ install:
   - gem install sass
   - pip install npm
   - npm install less
-  - npm install -g sass
+  - pip install redis
 
 # command to run tests
 script:
-  - python manage.py test accounts common
+  - python manage.py test
   - coverage run --source=accounts,common manage.py test accounts common
 
 after_success:
