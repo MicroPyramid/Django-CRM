@@ -10,6 +10,9 @@ env:
 install:
   - pip install -r requirements.txt
   - pip install coveralls
+  - gem install sass
+  - pip install npm
+  - npm install less
 
 # command to run tests
 script:
