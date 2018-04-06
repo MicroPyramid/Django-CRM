@@ -6,17 +6,19 @@ python:
 addons:
   postgresql: "9.4"
 
-sudo: false
+sudo: required
 
 env:
   -DJANGO=1.11
 
+before_install:
+  - gem install sass
+  - gem install compass
+  - npm install less
+
 install:
   - pip install -r requirements.txt
   - pip install coveralls
-  - gem install sass
-  - pip install npm
-  - npm install less
   - pip install redis
 
 # command to run tests
