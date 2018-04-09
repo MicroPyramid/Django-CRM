@@ -9,4 +9,8 @@ cache
 .idea
 CACHE/
 .sass-cache/
+main.css
+main.css.map
+ref.css
+ref.css.map
 
