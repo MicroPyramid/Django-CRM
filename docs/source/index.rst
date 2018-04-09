@@ -1,29 +1,22 @@
-Django-CRM's documentation:
-=====================================
+Django CRM
+==========
 
 Introduction:
 =============
 
-Django-CRM provides a dashboard where you can manage customers at sales of the organization. It Provides to manage leads information and its activity, track issues from leads, contacts to send emails.
+Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
 
 Source Code is available in Micropyramid Repository(https://github.com/MicroPyramid/Django-CRM.git).
 
-Modules used:
-
-    * Python  >= 2.6 (or Python 3.4)
-    * Django  = 1.9.6
-    * JQuery  >= 1.7
-
-
-Modules used:
+Tech stack used:
 =============
 
-    * Python  >= 2.6 (or Python 3.4)
-    * Django  = 1.9.6
-    * JQuery  >= 1.7
+    * Python >= 3.4
+    * Django >= 2.0
+    * Redis
     * django-simple-pagination
 
-This project contains the following modules.
+This CRM contains the following modules.
 
    * Contacts
    * Accounts
@@ -33,17 +26,23 @@ This project contains the following modules.
    * Planner
 
 
-Installation
-============
+Installation - Requirements
+===========================
 
-If you cloned the package from git use virtualenv to install requirements::
 
-    pip install -r requirements.txt
+Ubuntu 64bit - 16.04
+--------------------
+
+$ sudo apt-get update && apt-get upgrade -y
+$ sudo apt-get install -y curl wget libpq-dev python3-dev gem ruby ruby-dev build-essential libssl-dev libffi-dev python-dev python-virtualenv python-pip git redis-server libtiff5-dev libjpeg8-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev libharfbuzz-dev libfribidi-dev tcl8.6-dev tk8.6-dev python-tk
+$ sudo gem install sass
 
 Visit our Django web development page [Here](https://micropyramid.com/django-ecommerce-development/)
 
 
-We welcome your feedback and support, raise github ticket if you want to report a bug. Need new features? `Contact us here`_
+We welcome your feedback and support, raise github ticket if you want to report a bug or need new feature.
+
+Need additional support? `Contact us here`_
 
 .. _contact us here: https://micropyramid.com/contact-us/
 
