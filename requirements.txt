@@ -8,3 +8,4 @@ dj-database-url==0.4.2
 redis
 django-compressor==2.2
 coverage
+coveralls
