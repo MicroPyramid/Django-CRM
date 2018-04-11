@@ -119,3 +119,20 @@ class LoginForm(forms.ModelForm):
                 raise forms.ValidationError("Invalid email and password")
         return self.cleaned_data
 
+
+class ChangePasswordForm(forms.Form):
+    CurrentPassword = forms.CharField(max_length=100)
+    Newpassword = forms.CharField(max_length=100)
+    confirm = forms.CharField(max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        super(ChangePasswordForm, self).__init__(*args, **kwargs)
+
+    def clean_confirm(self):
+        if len(self.data.get('confirm')) < 4:
+            raise forms.ValidationError(
+                'Password must be at least 4 characters long!')
+        if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
+            raise forms.ValidationError(
+                'Confirm password do not match with new password')
+        return self.data.get('confirm')

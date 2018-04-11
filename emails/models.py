@@ -16,3 +16,6 @@ class Email(models.Model):
 
     def __unicode__(self):
         return self.timedelta
+
+    class Meta:
+        ordering = ['-id']

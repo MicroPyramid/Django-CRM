@@ -25,7 +25,7 @@ def accounts_list(request):
     industry = request.POST.get('industry')
 
     if name:
-        accounts_list = Account.objects.filter(name__icontains=name)
+        accounts_list = accounts_list.filter(name__icontains=name)
     if city:
         accounts_list = accounts_list.filter(
             billing_address__in=[i.id for i in Address.objects.filter(city__contains=city)])

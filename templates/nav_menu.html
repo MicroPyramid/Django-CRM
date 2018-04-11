@@ -7,7 +7,9 @@
 
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
    <ul class="navbar-nav mr-auto">
+       {% if request.user.is_staff %}
         <li class="nav-item"><a class="nav-link" href="{% url 'common:users_list' %}">Users</a></li>
+       {% endif %}
         <li class="nav-item"><a class="nav-link" href="{% url 'accounts:list' %}">Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'contacts:list' %}">Contacts</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'leads:list' %}">Leads</a></li>

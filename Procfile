@@ -1,1 +1,0 @@
-web: sh -c 'gunicorn crm.wsgi && pip install -r requirements.txt'

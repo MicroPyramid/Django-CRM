@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
-
+{% block extralinks %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'opportunities:list' %}">Opportunities</a></li>
@@ -102,7 +104,11 @@
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Assigned Users</label>
-                    {{ opportunity_form.assigned_to }}
+                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                      {% for user in users %}
+                        <option value="{{user.id}}" {% if user in opportunity_obj.assigned_to.all %} selected="" {% endif %}>{{user.email}}</option>
+                      {% endfor %}
+                    </select>
                   </div>
                 </div>
                 <br>
@@ -149,6 +155,7 @@
   </form>
 {% endblock %}
 {% block js_block %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   <script src="{% static 'js/opportunities/contacts.js' %}"></script>
   <script type="text/javascript">
     $(function () {
@@ -164,6 +171,9 @@
       e.preventDefault()
       $("#save_new_form").val('true')
       $('.form_user').submit()
+    });
+    $(document).ready(function() {
+      $('.assigned_users').select2();
     });
   </script>
 {% endblock js_block %}

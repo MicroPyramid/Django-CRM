@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
+{% block extralinks %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'accounts:list' %}">Accounts</a></li>
@@ -98,7 +101,11 @@
                 <div class="filter_col col-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Assigned Users</label>
-                    {{ account_form.assigned_to }}
+                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                      {% for user in users %}
+                        <option value="{{user.id}}" {% if user in account_obj.assigned_to.all %} selected="" {% endif %}>{{user.email}}</option>
+                      {% endfor %}
+                    </select>
                     {{ account_form.assigned_to.errors }}
                   </div>
                 </div>
@@ -133,10 +140,10 @@
                 <div>
                   <h6 style="color:white;">Copy Address</h6>
                 </div>
-                <div class="col-md-12 buttons_row" style="text-align:center;">
+               <!--  <div class="col-md-12 buttons_row" style="text-align:center;">
                   <button type="button" id="copy_billing_btn" class="btn btn-primary save">Copy Billing Address</button>
-                </div>
-                <div class="filter_col shipping_block col-md-12">
+                </div> -->
+               <!--  <div class="filter_col shipping_block col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Shipping Address</label>
                     {{ shipping_form.address_line }}
@@ -162,7 +169,7 @@
                       <span class="error">{{ shipping_form.country.errors }}</span>
                     </div>
                   </div>
-                </div>
+                </div> -->
               </div>
             </div>
             <br clear="all">
@@ -183,6 +190,7 @@
   </form>
 {% endblock %}
 {% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   <script type="text/javascript">
     $("#copy_billing_btn").click(function(){
       var address_line = $("#id_address_line").val()
@@ -203,6 +211,9 @@
       e.preventDefault()
       $("#save_new_form").val('true')
       $('#formid').submit()
+    });
+    $(document).ready(function() {
+      $('.assigned_users').select2();
     });
   </script>
 {% endblock js_block %}

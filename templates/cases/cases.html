@@ -13,7 +13,7 @@
       </div>
       <div class="col-md-6">
         <div class="create_new text-right">
-          <a href="{% url 'cases:add_case' %}"><i class="fa fa-plus"></i>Add New Case</a>
+          <a href="{% url 'cases:add_case' %}"><i class="fa fa-plus"></i> Add New Case</a>
         </div>
       </div>
       </div>
@@ -128,8 +128,10 @@
                 <td class="actions">
                   <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
                   <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                  <a onclick="remove_case({{case.id}}, '{% url 'cases:remove_case' case.id %}')" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i>Delete</a>
+                  <a onclick="remove_case({{case.id}}, '{% url 'cases:remove_case' case.id %}')" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i>Delete</a>
+                  {% if case.status != 'Closed' %}
                   <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> Close</a>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}
