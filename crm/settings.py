@@ -1,5 +1,6 @@
 import os
 import dj_database_url
+from .log_filters import ManagementFilter
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,6 +113,39 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+verbose = ("[%(asctime)s] %(levelname)s "
+           "[%s(name)s:%(lineno)s] %(message)s")
+
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'remove_migration_sql': {
+            '()': ManagementFilter,
+        },
+    },
+    'handlers': {
+        'console': {
+        'class': 'logging.StreamHandler',
+        },
+    },
+    'formaters': {
+        'verbose': {
+            'format': verbose,
+            'datefmt': "%Y-%b-%d %H:%M:%S"
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'formatter': 'verbose'
+        },
+    },
+
+}
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
