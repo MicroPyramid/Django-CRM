@@ -1,6 +1,10 @@
 Django-CRM
 ==========
 
+.. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/ashwin/Django-CRM?utm_source=github.com&utm_medium=referral&utm_content=MicroPyramid/Django-CRM&utm_campaign=badger
+
 Django-CRM provides a Customer relationship management dashboard where you can manage customers at sales of the organization. It Provides to manage leads information and its activity, track issues from leads, manage contacts to send emails of their progress.
 
 .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
