@@ -46,6 +46,7 @@ def login_crm(request):
 
 
 @csrf_exempt
+@login_required
 def logout_crm(request):
     logout(request)
     request.session.flush()
@@ -54,6 +55,7 @@ def logout_crm(request):
 
 
 @csrf_exempt
+@login_required
 def users_list(request):
     users_list = User.objects.all()
     page = request.POST.get('per_page')
@@ -98,6 +100,7 @@ def create_user(request):
 
 
 @csrf_exempt
+@login_required
 def view_user(request, user_id):
     users_list = User.objects.all()
     user_obj = User.objects.filter(id=user_id)
@@ -110,6 +113,7 @@ def view_user(request, user_id):
 
 
 @csrf_exempt
+@login_required
 def edit_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
     user_form = UserForm(instance=user_obj)
@@ -125,6 +129,7 @@ def edit_user(request, user_id):
 
 
 @csrf_exempt
+@login_required
 def remove_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
     user_obj.delete()
