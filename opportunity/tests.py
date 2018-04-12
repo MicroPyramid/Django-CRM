@@ -4,8 +4,6 @@ from common.models import Address
 from accounts.models import Account
 from contacts.models import Contact
 from common.models import User
-from django.utils import timezone
-
 
 # Create your tests here.
 

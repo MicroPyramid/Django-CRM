@@ -1,6 +1,5 @@
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.contrib.auth import views
 
 
 app_name = 'crm'
