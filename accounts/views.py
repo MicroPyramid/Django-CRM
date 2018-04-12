@@ -3,8 +3,6 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account
 from common.models import User, Address, Team, Comment
-
-#removed TYPECHOICES since it wasnt in use
 from common.utils import INDCHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from opportunity.models import Opportunity, STAGES, SOURCES
 from contacts.models import Contact
