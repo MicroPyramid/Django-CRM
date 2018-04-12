@@ -2,6 +2,7 @@
 *~
 *.swo
 *.swp
+.coverage
 db.sqlite3
 media
 media-images
@@ -9,4 +10,3 @@ cache
 .idea
 CACHE/
 .sass-cache/
-
