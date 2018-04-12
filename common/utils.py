@@ -41,6 +41,11 @@ TYPECHOICES = (
     ('RESELLER', 'RESELLER'),
 )
 
+ROLES = (
+    ('ADMIN', 'ADMIN'),
+    ('USER', 'USER'),
+)
+
 LEAD_STATUS = (
     ('assigned', 'Assigned'),
     ('in process', 'In Process'),

@@ -16,7 +16,7 @@ class OpportunityModel(object):
             street="kphb", city="hyderabad", postcode="584",
             country='IN')
 
-        self.user = User.objects.create(first_name="madhurima", username='madhurima', email="m@mp.com")
+        self.user = User.objects.create(first_name="madhurima", username='madhurima', email="m@mp.com", role="ADMIN")
         self.user.set_password('madhu123')
         self.user.save()
 
@@ -26,8 +26,8 @@ class OpportunityModel(object):
             name="uday", email="uday@gmail.com",
             phone="58964", billing_address=self.address,
             shipping_address=self.address,
-            website="hello.com",
-            industry="sw", description="bgyyr", created_by=self.user)
+            website="hello.com", industry="sw",
+            description="bgyyr", created_by=self.user)
 
         self.contacts = Contact.objects.create(
             first_name="navi",
@@ -57,17 +57,14 @@ class OpportunityCreateTestCase(OpportunityModel, TestCase):
 
 
 class opportunityCreateTestCase(OpportunityModel, TestCase):
-    def test_create_opportunity(self):
-        self.assertEqual(self.opportunity.id, 1)
 
     def test_view_opportunity(self):
-        self.opportunity = Opportunity.objects.all()
-        response = self.client.get('/opportunities/1/view/')
+        response = self.client.get('/opportunities/'+ str(self.opportunity.id) +'/view/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['opportunity_record'].id, self.opportunity[0].id)
+        self.assertEqual(response.context['opportunity_record'].id, self.opportunity.id)
 
-    def test_del_opportunity(self):
-        response = self.client.get('/opportunities/1/delete/')
+    def test_del_opportunity_url(self):
+        response = self.client.get('/opportunities/'+ str(self.opportunity.id) +'/delete/')
         self.assertEqual(response['location'], '/opportunities/list/')
 
     def test_opportunity_delete(self):
@@ -77,14 +74,15 @@ class opportunityCreateTestCase(OpportunityModel, TestCase):
 
 
 class EditOpportunityTestCase(OpportunityModel, TestCase):
-    def test_edit(self):
-        response = self.client.get('/opportunities/1/edit/')
+    def test_edit_url(self):
+        response = self.client.get('/opportunities/'+ str(self.opportunity.id) +'/edit/')
         self.assertEqual(response.status_code, 200)
 
     def test_edit_opportunity(self):
-        response = self.client.get('/opportunities/1/edit/', {
+        response = self.client.get('/opportunities/'+ str(self.opportunity.id) +'/edit/', {
             'name': "madhurima", 'amount': "478",
             'stage': "negotiation/review",
             'lead_source': "Call", 'probability': "58",
             'closed_on': "2016-05-04", 'description': "hgfdxc"})
         self.assertEqual(response.status_code, 200)
+

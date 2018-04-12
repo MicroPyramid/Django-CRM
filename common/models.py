@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 
-from common.utils import COUNTRIES
+from common.utils import COUNTRIES, ROLES
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -14,6 +14,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(('date joined'), auto_now_add=True)
+    role = models.CharField(max_length=50, choices=ROLES)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]

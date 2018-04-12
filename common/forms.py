@@ -55,7 +55,7 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'username']
+        fields = ['email', 'first_name', 'last_name', 'username', 'role']
 
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
@@ -109,9 +109,7 @@ class LoginForm(forms.ModelForm):
         password = self.cleaned_data.get("password")
 
         if email and password:
-            print(email, password)
             self.user = authenticate(email=email, password=password)
-            print(self.user)
             if self.user:
                 if not self.user.is_active:
                     raise forms.ValidationError("User is Inactive")
