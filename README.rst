@@ -5,8 +5,8 @@ Django-CRM provides a Customer relationship management dashboard where you can m
 sales of the organization. It Provides to manage leads information and its activity,
 track issues from leads, manage contacts to send emails of their progress.
 
-[![Codacy Badge]
 .. image:: https://api.codacy.com/project/badge/Grade/92884aebee3e4183b75f313654bdc8bf
+   :target: https://github.com/kitten77/Django-CRM
 
 
 This project contains the following modules.
