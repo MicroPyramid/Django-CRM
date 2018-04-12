@@ -40,9 +40,9 @@ $("#comment_form").submit(function (e) {
           "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
           "<div class='stream-date-container" + data.comment_id + "'>" + d.toGMTString() + "</div></div><div class='stream-date-container' id='comment_file_div" + data.comment_id + "'><div id='new_comment" + data.comment_id + "'</div></div></li>"
         )
-        $("#id_comments").val("")
-        alert("Comment Submitted")
-        $("#CommentError").html('')
+        $("#id_comments").val("");
+        alert("Comment Submitted");
+        $("#CommentError").html('');
       }
     }
   })

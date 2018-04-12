@@ -60,7 +60,7 @@ $("#comment_form").submit(function(e){
 
 function edit_comment(x){
     $('#myModal_comment').modal('show');
-    comment = $("#comment_name"+x).text()
+    var comment = $("#comment_name"+x).text()
      $("#commentid").val(x)
      $("#id_editcomment").val(comment)
 }
