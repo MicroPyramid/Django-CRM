@@ -2,7 +2,7 @@ from django.test import TestCase
 from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
-from django.test import Client
+#from django.test import Client
 from common.models import Address
 from django.urls import reverse
 from common.models import User
