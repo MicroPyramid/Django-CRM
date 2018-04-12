@@ -1,24 +1,3 @@
-
-/*Cookie Js Starts*/
-
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-/*Cookie Js Ends*/
-
 /*Comment Add Js Start*/
 
 $("#comment_form").submit(function(e){
@@ -98,12 +77,10 @@ function HideError(e) {
 /*Comment Remove Js Start*/
 
 function remove_comment(x) {
-  var csrftoken = getCookie('csrftoken');
   var con = confirm("Do you want to Delete it for Sure!?")
   if (con == true) {
     $.post('/accounts/comment/remove/', {
-      "comment_id": x,
-      "csrfmiddlewaretoken": csrftoken,
+      "comment_id": x
     }, function (data) {
       if (data.error) {
         alert(data.error)

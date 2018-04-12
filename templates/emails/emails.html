@@ -9,23 +9,19 @@
 
 
 <form method="POST" action="/emails/email_sent/">
-{% csrf_token %}
-<input type="submit" name="sent_email" id="sent_mail" value="sent mails"/>
+	<input type="submit" name="sent_email" id="sent_mail" value="sent mails"/>
 </form>
 
 <form method="POST" action="/emails/email_trash/">
-{% csrf_token %}
-<input type="submit" name="trash" id="trash" value="trash"/>
+	<input type="submit" name="trash" id="trash" value="trash"/>
 </form>
 
 <form method="POST" action="/emails/email_draft/">
-{% csrf_token %}
-<input type="submit" name="draft" id="draft" value="draft"/>
+	<input type="submit" name="draft" id="draft" value="draft"/>
 </form>
 
 <div id="table" style="display:none">
 <form method="POST" id="detail" action="/emails/email/" enctype="multipart/form-data">
-{% csrf_token %} 
 <table border="1">
 
 

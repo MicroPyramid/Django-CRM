@@ -78,7 +78,7 @@ def add_contact(request):
                 'countries': COUNTRIES,
                 'teams': teams,
                 'users': users,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list
             })
     else:
@@ -142,7 +142,7 @@ def edit_contact(request, pk):
                 'countries': COUNTRIES,
                 'teams': teams,
                 'users': users,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list
             })
     else:

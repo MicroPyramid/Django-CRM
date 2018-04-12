@@ -1,22 +1,7 @@
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 
 $('#id_account').change(function(){
-    var csrftoken = getCookie('csrftoken');
     var Account= $("#id_account").val()
-        $.get("/opportunities/contacts/", {"Account":Account, "csrfmiddlewaretoken": csrftoken}, function(data){
+        $.get("/opportunities/contacts/", {"Account":Account}, function(data){
           $("#id_contacts").html("")
           $.each(data, function (index, value) {
                 $("#id_contacts").append("<option value="+index+">"+value+"</option>")
@@ -89,10 +74,9 @@ $("#comment_edit").click(function(e){
 });
 
 function remove_comment(x){
-  var csrftoken = getCookie('csrftoken');
   var warn = confirm("Are You Sure, you Want to Delete this Comment!?")
   if (warn == true){
-    $.post('/opportunities/comment_remove/', {"comment_id":x, "csrfmiddlewaretoken": csrftoken, }, function(data){
+    $.post('/opportunities/comment_remove/', {"comment_id":x}, function(data){
       if(data.error){
         alert(data.error)
       } else {
@@ -103,15 +87,10 @@ function remove_comment(x){
 }
 
 function editFun(x) {
-    var csrftoken = getCookie('csrftoken');
-    alert("Heloooooooooooooo")
     $.ajax({
         type: "POST",
         url: "/opportunities/editdetails/",
-        data: {
-            csrfmiddlewaretoken: csrftoken,
-            tid: x
-        },
+        data: {tid: x},
         success: function(data) {
             $("#viewdiv").hide()
             $("#editdiv").show()
@@ -136,10 +115,8 @@ function editFun(x) {
 
     $('#id_account').change(function() {
         var Account = $("#id_account").val()
-        var csrftoken = getCookie('csrftoken');
         $.get("/opportunities/contacts/", {
-            "Account": Account,
-            "csrfmiddlewaretoken": csrftoken
+            "Account": Account
         }, function(data) {
             $("#id_contacts").html("")
             $.each(data, function(index, value) {

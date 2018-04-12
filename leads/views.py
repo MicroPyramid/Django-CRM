@@ -3,13 +3,12 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import modelformset_factory
 
 from leads.models import Lead
 from contacts.forms import ContactForm
 from common.models import User, Address, Comment, Team
-from common.utils import LEAD_STATUS, LEAD_SOURCE, INDCHOICES, TYPECHOICES, COUNTRIES
+from common.utils import LEAD_STATUS, LEAD_SOURCE, INDCHOICES, COUNTRIES
 from leads.forms import LeadCommentForm, LeadForm
 from accounts.forms import AccountForm
 from common.forms import BillingAddressForm, ShippingAddressForm
@@ -69,9 +68,12 @@ def add_lead(request):
             if request.POST.get('status') == "converted":
                 account_object = Account.objects.create(
                     created_by=request.user, name=lead_account,
-                    email=lead_email, phone=lead_phone
+                    email=lead_email, phone=lead_phone,
+                    description=request.POST.get('description'),
+                    website=request.POST.get('website'),
                 )
                 account_object.billing_address = address_object
+                account_object.assigned_to.add(*assignedto_list)
                 account_object.save()
             if request.POST.get("savenewform"):
                 return HttpResponseRedirect(reverse("leads:add_lead"))
@@ -83,7 +85,7 @@ def add_lead(request):
                           'accounts': accounts, 'countries': COUNTRIES,
                           'teams': teams, 'users': users,
                           'status': LEAD_STATUS, 'source': LEAD_SOURCE,
-                          'assignedto_list': assignedto_list, 'teams_list': teams_list})
+                          'assignedto_list': [int(user_id) for user_id in assignedto_list], 'teams_list': teams_list})
     else:
         return render(request, 'leads/create_lead.html', {
                       'lead_form': form, 'address_form': address_form,
@@ -93,7 +95,6 @@ def add_lead(request):
 
 
 @login_required
-@csrf_exempt
 def view_lead(request, lead_id):
     lead_record = get_object_or_404(Lead, id=lead_id)
     comments = Comment.objects.filter(lead__id=lead_id).order_by('-id')
@@ -149,9 +150,12 @@ def edit_lead(request, lead_id):
             if request.POST.get('status') == "converted":
                 account_object = Account.objects.create(
                     created_by=request.user, name=lead_account,
-                    email=lead_email, phone=lead_phone
+                    email=lead_email, phone=lead_phone,
+                    description=request.POST.get('description'),
+                    website=request.POST.get('website')
                 )
                 account_object.billing_address = dis_address_obj
+                account_object.assigned_to.add(*assignedto_list)
                 account_object.save()
             return HttpResponseRedirect(reverse('leads:list'))
         else:
@@ -162,7 +166,7 @@ def edit_lead(request, lead_id):
                           'accounts': accounts, 'countries': COUNTRIES,
                           'teams': teams, 'users': users,
                           'status': LEAD_STATUS, 'source': LEAD_SOURCE,
-                          'assignedto_list': assignedto_list, 'teams_list': teams_list})
+                          'assignedto_list': [int(user_id) for user_id in assignedto_list], 'teams_list': teams_list})
     else:
         return render(request, 'leads/create_lead.html', {
                       'lead_form': form, 'address_form': address_form,
