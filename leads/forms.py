@@ -1,6 +1,6 @@
 from django import forms
 from leads.models import Lead
-from common.models import Address, Comment
+from common.models import Comment
 
 
 class LeadForm(forms.ModelForm):
