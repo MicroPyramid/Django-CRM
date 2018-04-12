@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
+{% block extralinks %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Contacts</a></li>
@@ -89,8 +92,12 @@
                 <div class="filter_col col-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Assigned Users</label>
-                    {{ contact_form.assigned_to }}
-                    {{ contact_form.assigned_to.errors }}
+                    <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                      {% for user in users %}
+                        <option value="{{user.id}}" {% if user in contact_obj.assigned_to.all %} selected="" {% endif %}>{{user.email}}</option>
+                      {% endfor %}
+                    </select>
+                     <span class="error">{{ contact_form.assigned_to.errors }}</span>
                   </div>
                 </div>
               </div>
@@ -147,11 +154,15 @@
   </form>
 {% endblock %}
 {% block js_block %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   <script type="text/javascript">
     $(".savenew").on('click', function(e){
       e.preventDefault()
       $("#save_new_form").val('true')
       $('#add_form').submit()
+    });
+    $(document).ready(function() {
+      $('.assigned_users').select2();
     });
   </script>
 {% endblock js_block %}

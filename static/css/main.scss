@@ -634,3 +634,29 @@ $color_2: #000;
   list-style-type: none;
   padding: 0px;
 }
+
+.view-pad{
+padding:0px !important;
+  h5{
+   width: 79%;
+    margin-bottom: 0;
+    position: relative;
+    font-size: 13px;
+    display: inline-block;
+    text-align: left;
+    padding-top: 0px;
+  }
+  a{
+    float: right;
+    margin-right: 95px;
+    border-radius: 0;
+    font-size: 12px;
+    padding: 3px 10px;
+    color: #fff;
+    margin-top: -4px;
+    &:hover{
+      text-decoration:none;
+    }
+  }
+
+}

@@ -22,26 +22,26 @@
                   </div>
                 </span> -->
               </h5>
+              <a href="{% url 'common:edit_user' user_obj.id %}" class="btn btn-success edit">Edit</a>
             </div>
-            {% for user in user_obj %}
             <div class="row marl no-gutters">
               <div class="col-md-8">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_name" data-name="name">Name</label>
-                    <div class="contact_field" id="contact_name" data-name="name">{{ user.first_name }} {{ user.last_name }}</div>
+                    <div class="contact_field" id="contact_name" data-name="name">{{ user_obj.first_name }} {{ user_obj.last_name }}</div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_contact_account" data-name="name">UserName</label>
-                    <div class="contact_field" id="contact_account" data-name="name">{{ user.username }}</div>
+                    <div class="contact_field" id="contact_account" data-name="name">{{ user_obj.username }}</div>
                   </div>
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_email" data-name="name">Email</label>
-                    <div class="contact_field" id="contact_email" data-name="name">{{ user.email }}</div>
+                    <div class="contact_field" id="contact_email" data-name="name">{{ user_obj.email }}</div>
                   </div>
                 </div>
               </div>
@@ -51,7 +51,6 @@
                 </div>
               </div>
             </div>
-            {% endfor %}
           </div>
         </div>
       </div>

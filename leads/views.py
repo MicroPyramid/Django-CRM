@@ -12,31 +12,32 @@ from common.models import User, Address, Comment, Team
 from common.utils import LEAD_STATUS, LEAD_SOURCE, INDCHOICES, TYPECHOICES, COUNTRIES
 from leads.forms import LeadCommentForm, LeadForm
 from accounts.forms import AccountForm
-from common.forms import BillingAddressForm
+from common.forms import BillingAddressForm, ShippingAddressForm
 from accounts.models import Account
 from planner.models import Event, Reminder
 from planner.forms import ReminderForm
+from opportunity.forms import OpportunityForm
 
 # CRUD Operations Start
 
 
 @login_required
 def leads_list(request):
-    lead_obj = Lead.objects.all()
+    lead_obj = Lead.objects.all().exclude(status='converted')
     page = request.POST.get('per_page')
     first_name = request.POST.get('first_name')
     last_name = request.POST.get('last_name')
     city = request.POST.get('city')
     email = request.POST.get('email')
     if first_name:
-        lead_obj = Lead.objects.filter(first_name__icontains=first_name)
+        lead_obj = lead_obj.filter(first_name__icontains=first_name)
     if last_name:
-        lead_obj = Lead.objects.filter(last_name__icontains=last_name)
+        lead_obj = lead_obj.filter(last_name__icontains=last_name)
     if city:
-        lead_obj = Lead.objects.filter(address=Address.objects.filter
+        lead_obj = lead_obj.filter(address=Address.objects.filter
                                        (city__icontains=city))
     if email:
-        lead_obj = Lead.objects.filter(email__icontains=email)
+        lead_obj = lead_obj.filter(email__icontains=email)
 
     return render(request, 'leads/leads.html', {
         'lead_obj': lead_obj, 'per_page': page})
@@ -66,10 +67,12 @@ def add_lead(request):
             lead_obj.assigned_to.add(*assignedto_list)
             lead_obj.teams.add(*teams_list)
             if request.POST.get('status') == "converted":
-                Account.objects.create(
+                account_object = Account.objects.create(
                     created_by=request.user, name=lead_account,
                     email=lead_email, phone=lead_phone
                 )
+                account_object.billing_address = address_object
+                account_object.save()
             if request.POST.get("savenewform"):
                 return HttpResponseRedirect(reverse("leads:add_lead"))
             else:
@@ -144,10 +147,12 @@ def edit_lead(request, lead_id):
             lead_obj.teams.clear()
             lead_obj.teams.add(*teams_list)
             if request.POST.get('status') == "converted":
-                Account.objects.create(
+                account_object = Account.objects.create(
                     created_by=request.user, name=lead_account,
                     email=lead_email, phone=lead_phone
                 )
+                account_object.billing_address = dis_address_obj
+                account_object.save()
             return HttpResponseRedirect(reverse('leads:list'))
         else:
             return render(request, 'leads/create_lead.html', {

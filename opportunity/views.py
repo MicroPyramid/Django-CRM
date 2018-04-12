@@ -28,7 +28,7 @@ def opp_list(request):
     opp_stage = request.POST.get('stage')
     opp_source = request.POST.get('lead_source')
     if opp_name:
-        opportunity_list = Opportunity.objects.filter(name__contains=opp_name)
+        opportunity_list = opportunity_list.filter(name__contains=opp_name)
     if opp_stage:
         opportunity_list = opportunity_list.filter(stage=opp_stage)
     if opp_source:

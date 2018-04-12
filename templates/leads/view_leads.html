@@ -153,10 +153,10 @@
               <ul class="list-group" id="comments_div">
                 {% for comment in comments %}
                 <li class="list-group-item list-row" id="comment{{comment.id}}">
-                  <div class="pull-right right-container">
-                    <div class="list-row-buttons btn-group pull-right">
+                  <div class="float-right right-container">
+                    <div class="list-row-buttons btn-group float-right">
                       <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
-                      <ul class="dropdown-menu pull-right">
+                      <ul class="dropdown-menu text-center">
                         <li>
                           <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
                         </li>
@@ -166,9 +166,11 @@
                       </ul>
                     </div>
                   </div>
-                  <div class="stream-head-container">{{ comment.commented_by }} Commented</div>
                   <div class="stream-post-container" id="comment_name{{comment.id}}"><pre>{{ comment.comment }}</pre></div>
-                  <div class="stream-date-container">{{ comment.commented_on }}</div>
+                  <div class="stream-container">
+                    <pre class="float-left">{{ comment.commented_by }}</pre>
+                    <pre class="float-right">{{ comment.commented_on }}</pre>
+                  </div>
                 </li>
                 {% endfor %}
               </ul>
@@ -211,16 +213,14 @@
           <div class="row marl">
             <div class="filter_col col-md-12">
               <div class="form-group">
+              {%if lead_record.assigned_to.all %}
                 <label class="lead_field_label" for="id_assigned_user" data-name="name" >Assigned User(s)</label>
                 <div class="lead_field" id="lead_assigned_users" data-name="name">
-                  {%if not lead_record.assigned_to %}
-                    Not Assigned Yet
-                  {% else %}
                     {% for user in lead_record.assigned_to.all %}
                       <li>{{ user }}</li>
                     {% endfor %}
-                  {% endif %}
                 </div>
+              {% endif %}
               </div>
             </div>
             <!-- <div class="filter_col col-md-12">
@@ -261,7 +261,7 @@
 </div>
 {% endblock %}
 {% block js_block %}
- <script src="{% static 'js/view_lead.js' %}"></script>
+ <script src="{% static 'js/leads/view_lead.js' %}"></script>
  <script src="{% static 'js/calls.js' %}"></script>
  <script src="{% static 'js/meetings.js' %}"></script>
 {% endblock js_block %}

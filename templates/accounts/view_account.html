@@ -163,10 +163,10 @@
                 <ul class="list-group" id="comments_div">
                   {% for comment in comments %}
                   <li class="list-group-item list-row" id="comment{{comment.id}}">
-                    <div class="pull-right right-container">
-                      <div class="list-row-buttons btn-group pull-right">
+                    <div class="float-right right-container">
+                      <div class="list-row-buttons btn-group float-right">
                         <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
-                        <ul class="dropdown-menu pull-right">
+                        <ul class="dropdown-menu text-center">
                           <li>
                             <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
                           </li>
@@ -176,9 +176,11 @@
                         </ul>
                       </div>
                     </div>
-                    <div class="stream-head-container">{{ comment.commented_by }} Commented</div>
                     <div class="stream-post-container" id="comment_name{{comment.id}}"><pre>{{ comment.comment }}</pre></div>
-                    <div class="stream-date-container">{{ comment.commented_on }}</div>
+                    <div class="stream-container">
+                      <pre class="float-left">{{ comment.commented_by }}</pre>
+                      <pre class="float-right">{{ comment.commented_on }}</pre>
+                    </div>
                   </li>
                   {% endfor %}
                 </ul>
@@ -220,16 +222,14 @@
             <div class="row marl">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label class="acc_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
-                  <div class="account_field" id="account_assigned_users" data-name="name">
-                    {%if not account_record.assigned_to.all %}
-                      Not Assigned Yet
-                    {% else %}
+                  {%if account_record.assigned_to.all %}
+                    <label class="acc_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
+                    <div class="account_field" id="account_assigned_users" data-name="name">
                       {% for user in account_record.assigned_to.all %}
                         <li>{{ user }}</li>
                       {% endfor %}
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endif %}
                 </div>
               </div>
               <!-- <div class="filter_col col-md-12">
@@ -301,7 +301,7 @@
                   <td class="actions">
                     <button type="button" class="btn conview btn-info" id="con_view" data-toggle="modal" data-dismiss="modal" data-target="#conViewModal_{{contact.id}}">View</button>
                     <button type="button" class="btn conedit btn-success" id="con_edit" data-toggle="modal" data-dismiss="modal" data-target="#conEditModal_{{contact.id}}">Edit</button>
-                    <button type="button" class="btn con_remove btn-danger" id="{{ contact.id }}" data-href="{% url 'contacts:remove_contact' pk=contact.id %}">Delete</button>
+                    <a href="{% url 'contacts:remove_contact' pk=contact.id %}" class="btn btn-danger delete remove_contact">Delete</a>
                   </td>
                 </tr>
                 {% endfor %}
@@ -815,7 +815,7 @@
                   <td class="actions"> 
                     <button type="button" class="btn oppview btn-info" id="opp_view" data-toggle="modal" data-dismiss="modal1_view" data-target="#oppViewModal_{{opportunity.id}}">VIEW</button>
                     <button type="button" class="btn oppedit btn-success" id="opp_edit" data-toggle="modal" data-dismiss="modal1_edit" data-target="#oppEditModal_{{opportunity.id}}">EDIT</button>
-                    <button type="button" class="btn opp_remove btn-danger" id="{{ opportunity.id }}" data-href="{% url 'opportunities:opp_remove' pk=opportunity.id %}">REMOVE</button>
+                    <a href="{% url 'opportunities:opp_remove' pk=opportunity.id %}" class="btn btn-danger delete remove_opportunity">REMOVE</a>
                   </td>
                 </tr>
                 {% endfor %}
@@ -1375,7 +1375,8 @@
                   <td class="actions"> 
                     <button type="button" class="btn caseview btn-info" id="case_view" data-toggle="modal" data-dismiss="modal" data-target="#caseViewModal_{{case.id}}">VIEW</button>
                     <button type="button" class="btn caseedit btn-success" id="case_edit" data-toggle="modal" data-dismiss="modal" data-target="#caseEditModal_{{case.id}}">EDIT</button>
-                    <button type="button" class="btn case_remove btn-danger" id="{{ case.id }}" data-href="{% url 'cases:remove_case' case_id=case.id %}">REMOVE</button>
+                    <a href="{% url 'cases:remove_case' case_id=case.id %}" class="btn btn-danger delete remove_case">REMOVE</a>
+
                   </td>
                 </tr>
                 {% endfor %}
@@ -2016,5 +2017,12 @@
       $('.error').hide()
       document.getElementById("form_case").reset();
     }
+    $('.remove_contact, .remove_opportunity, .remove_case').click(function(e){
+      e.preventDefault()
+      url = $(this).attr('href')
+      if (!confirm('Are you sure you want to delete?'))
+        return;
+      window.location = $(this).attr('href')
+    });
   </script>
 {% endblock js_block %}

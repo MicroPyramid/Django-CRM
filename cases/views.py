@@ -25,7 +25,7 @@ def cases_list(request):
     if not account:
         account = 0
     if name:
-        cases = Case.objects.filter(name__contains=name)
+        cases = cases.filter(name__contains=name)
     if account:
         cases = cases.filter(account=account)
     if status:

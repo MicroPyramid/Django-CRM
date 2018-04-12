@@ -1,7 +1,8 @@
 Django-CRM
 ==========
 
-Django-CRM provides a Customer relationship management dashboard where you can manage customers at sales of the organization. It Provides to manage leads information and its activity, track issues from leads, manage contacts to send emails of their progress.
+Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
+
 
 .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
    :target: https://travis-ci.org/MicroPyramid/Django-CRM
@@ -36,11 +37,19 @@ This project contains the following modules.
    * Opportunity
    * Planner
 
-Installation
-============
 
-dependency for debian and ubuntu:
-    apt install ruby-sass 
+Installation - Requirements
+===========================
+
+
+Ubuntu 64bit - 16.04
+--------------------
+$ sudo apt-get update && apt-get upgrade -y
+
+$ sudo apt-get install -y curl wget libpq-dev python3-dev gem ruby ruby-dev build-essential libssl-dev libffi-dev python-dev python-virtualenv python-pip git redis-server libtiff5-dev libjpeg8-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev libharfbuzz-dev libfribidi-dev tcl8.6-dev tk8.6-dev python-tk
+
+$ sudo gem install sass
+
 
 If you cloned the package from git use virtualenv to install requirements::
 
@@ -59,4 +68,6 @@ Credentials to CRM Dashboard:
 We welcome your feedback and support, raise github ticket if you want to report a bug. Need new features? `Contact us here`_
 
 .. _contact us here: https://micropyramid.com/contact-us/
+
 .. _Demo: https://django-crm.micropyramid.com/
+

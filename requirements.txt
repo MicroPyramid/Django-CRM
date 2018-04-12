@@ -2,9 +2,6 @@ Django==2.0
 django-simple-pagination==1.1.8
 pytz==2018.3
 psycopg2==2.7.4
-gunicorn==19.7.1
-whitenoise==3.3.1
-dj-database-url==0.4.2
 redis
 django-compressor==2.2
 coverage

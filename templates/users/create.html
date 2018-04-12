@@ -44,7 +44,7 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Email Address{% if user_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
-                  <input type="text" class="form-control" name="email" value="{% if user_obj %} {{ user_obj.email }} {% else %} {{request.POST.email}} {% endif %}">
+                  <input type="text" class="form-control" name="email" value="{% if user_obj %} {{ user_obj.email }} {% else %} {{request.POST.email}} {% endif %}" {% if user_obj and not user_obj.is_staff %} readonly=""{% endif %}>
                 </div>
                 <span class="error">{{ errors.email }}</span>
               </div>

@@ -118,10 +118,10 @@
                 <ul class="list-group" id="comments_div">
                   {% for comment in comments %}
                   <li class="list-group-item list-row" id="comment{{comment.id}}">
-                    <div class="pull-right right-container">
-                      <div class="list-row-buttons btn-group pull-right">
+                    <div class="float-right right-container">
+                      <div class="list-row-buttons btn-group float-right">
                         <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
-                        <ul class="dropdown-menu pull-right">
+                        <ul class="dropdown-menu text-center">
                           <li>
                             <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
                           </li>
@@ -131,9 +131,11 @@
                         </ul>
                       </div>
                     </div>
-                    <div class="stream-head-container">{{ comment.commented_by }} Commented</div>
                     <div class="stream-post-container" id="comment_name{{comment.id}}"><pre>{{ comment.comment }}</pre></div>
-                    <div class="stream-date-container">{{ comment.commented_on }}</div>
+                    <div class="stream-container">
+                      <pre class="float-left">{{ comment.commented_by }}</pre>
+                      <pre class="float-right">{{ comment.commented_on }}</pre>
+                    </div>
                   </li>
                   {% endfor %}
                 </ul>
@@ -175,16 +177,14 @@
             <div class="row marl">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label class="contact_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
-                  <div class="contact_field" id="contact_assigned_users" data-name="name">
-                    {%if not contact_record.assigned_to %}
-                      Not Assigned Yet
-                    {% else %}
+                  {%if contact_record.assigned_to.all %}
+                    <label class="contact_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
+                    <div class="contact_field" id="contact_assigned_users" data-name="name">
                       {% for user in contact_record.assigned_to.all %}
                         <li>{{ user }}</li>
                       {% endfor %}
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endif %}
                 </div>
               </div>
               <!-- <div class="filter_col col-md-12">
@@ -227,4 +227,12 @@
 {% endblock%}
 {% block js_block %}
   <script src="{% static 'js/contacts/view_contact.js' %}"></script>
+  <script type="text/javascript">
+    $('#remove_contact').click(function(e){
+        var result = confirm("Are You Sure You Want to delete?");
+        if (result==false) {
+          e.preventDefault()
+        }
+    });
+  </script>
 {% endblock js_block %}

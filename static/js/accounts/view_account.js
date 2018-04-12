@@ -1,53 +1,61 @@
+
+/*Cookie Js Starts*/
+
 function getCookie(name) {
-  var cookieValue = null;
-  if (document.cookie && document.cookie != '') {
-    var cookies = document.cookie.split(';');
-    for (var i = 0; i < cookies.length; i++) {
-      var cookie = jQuery.trim(cookies[i]);
-      // Does this cookie string begin with the name we want?
-      if (cookie.substring(0, name.length + 1) == (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
     }
-  }
-  return cookieValue;
+    return cookieValue;
 }
 
-$("#comment_form").submit(function (e) {
+/*Cookie Js Ends*/
+
+/*Comment Add Js Start*/
+
+$("#comment_form").submit(function(e){
   e.preventDefault()
   var formData = new FormData($("#comment_form")[0]);
   $.ajax({
-    url: "/accounts/comment/add/",
-    type: "POST",
-    data: formData,
+    url : "/accounts/comment/add/",
+    type : "POST",
+    data : formData,
     cache: false,
     contentType: false,
     processData: false,
-    success: function (data) {
-      if (data.error) {
+    success: function(data){
+      if(data.error){
         $("#CommentError").html(data.error).show()
       } else {
         d = new Date(data.commented_on);
-        $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
-          "<div class='pull-right right-container'>" +
-          "<div class='list-row-buttons btn-group pull-right'>" +
-          "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>" +
-          "<ul class='dropdown-menu pull-right'>" +
-          "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
-          "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
-          "<div class='stream-head-container'> " + data.commented_by + " Commented</div>" +
-          "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
-          "<div class='stream-date-container" + data.comment_id + "'>" + d.toGMTString() + "</div></div><div class='stream-date-container' id='comment_file_div" + data.comment_id + "'><div id='new_comment" + data.comment_id + "'</div></div></li>"
-        )
+        $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.comment_id+"'>"+
+                             "<div class='float-right right-container'>"+
+                             "<div class='list-row-buttons btn-group float-right'>"+
+                             "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>"+
+                             "<ul class='dropdown-menu text-center'>"+
+                             "<li><a class='action' onclick='edit_comment("+data.comment_id+")'>Edit</a></li>"+
+                             "<li><a class='action' onclick='remove_comment("+data.comment_id+")''>Remove</a></li></ul></div></div>"+
+                             "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
+                             "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>"
+                             )
         $("#id_comments").val("")
         alert("Comment Submitted")
-        $("#CommentError").html('')
       }
     }
-  })
-})
+  });
+});
 
+/*Comment Add Js Ends*/
+
+/*Comment Edit Js Start*/
 
 function edit_comment(x) {
   $('#Comments_Accounts_Modal').modal('show');
@@ -80,11 +88,14 @@ $("#comment_edit").click(function (e) {
   })
 })
 
+/*Comment Edit Js Ends*/
 
 function HideError(e) {
   $("#CommentError").hide()
   $("#CommentEditError").hide()
 }
+
+/*Comment Remove Js Start*/
 
 function remove_comment(x) {
   var csrftoken = getCookie('csrftoken');
@@ -102,3 +113,5 @@ function remove_comment(x) {
     })
   }
 }
+
+/*Comment Remove Js Ends*/

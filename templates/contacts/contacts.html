@@ -82,9 +82,9 @@
               <tr>
                 <th width="5%" style="text-align:center;">S.no</th>
                 <th width="20%" style="text-align:center;">Name</th>
+                <th width="20%" style="text-align:center;">Account</th>
                 <th width="15%" style="text-align:center;">City</th>
                 <th width="15%" style="text-align:center;">State</th>
-                <th width="20%" style="text-align:center;">Industry</th>
                 <th width="25%" style="text-align:center;">Actions</th>
               </tr>
             </thead>
@@ -122,7 +122,7 @@
                 <td class="actions">
                   <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
                   <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                  <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i>Delete</a>
+                  <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i>Delete</a>
                 </td>
               </tr>
               {% endfor%}
