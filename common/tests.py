@@ -9,7 +9,7 @@ class ObjectsCreation(object):
         self.user = User.objects.create(first_name="admin", username='admin', email='admin@micropyramid.com')
         self.user.set_password('admin123')
         self.user.save()
-        user_login = self.client.login(username='admin@micropyramid.com', password='admin123')
+        self.client.login(username='admin@micropyramid.com', password='admin123')
 
 
 class TestHomePage(ObjectsCreation, TestCase):
