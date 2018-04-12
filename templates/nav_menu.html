@@ -7,7 +7,7 @@
 
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
    <ul class="navbar-nav mr-auto">
-       {% if request.user.is_staff %}
+       {% if request.user.role == "ADMIN" %}
         <li class="nav-item"><a class="nav-link" href="{% url 'common:users_list' %}">Users</a></li>
        {% endif %}
         <li class="nav-item"><a class="nav-link" href="{% url 'accounts:list' %}">Accounts</a></li>
@@ -18,7 +18,6 @@
       </ul>
 
     <ul class="navbar-nav navbar-right my-2 my-lg-0">
-     
       <li class="nav-item dropdown">
          {% with request.profile as profile %}
           <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button" aria-haspopup="true"
@@ -36,10 +35,6 @@
           <a class="dropdown-item" href="{% url 'common:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
       </li>
-      
     </ul>
-   
   </div>
 </nav>
-
-    

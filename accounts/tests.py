@@ -9,7 +9,7 @@ from common.models import User
 
 class AccountCreateTest(object):
     def setUp(self):
-        self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com')
+        self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com', role='ADMIN')
         self.user.set_password('uday2293')
         self.user.save()
 
@@ -22,25 +22,20 @@ class AccountCreateTest(object):
         self.client.login(email='u@mp.com', password='uday2293')
 
 
-class AccountsCreateUrlTestCase(AccountCreateTest, TestCase):
+class AccountsCreateTestCase(AccountCreateTest, TestCase):
     def test_account_create_url(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
+            'shipping_address': self.address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
-            'sis_code': "UDAYMP2016", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'shipping_address': self.address, 'website': "www.uday.com",
+            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertTemplateUsed(response, 'accounts/create_account.html')
-
-
-class AccountCreateTestCase(AccountCreateTest, TestCase):
-    def test_account_create(self):
-        self.assertEqual(self.account.id, 1)
 
 
 class AccountsListTestCase(AccountCreateTest, TestCase):
@@ -60,16 +55,14 @@ class AccountsCountTestCase(AccountCreateTest, TestCase):
 class AccountsViewTestCase(AccountCreateTest, TestCase):
     def test_accounts_view(self):
         self.accounts = Account.objects.all()
-        response = self.client.get('/accounts/1/view/')
+        response = self.client.get('/accounts/'+ str(self.account.id) +'/view/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['account_record'].id, 1)
         self.assertTemplateUsed(response, 'accounts/view_account.html')
 
 
 class AccountsRemoveTestCase(AccountCreateTest, TestCase):
     def test_accounts_remove(self):
-        # self.account_del = Account.objects.filter(id=1).delete()
-        response = self.client.get('/accounts/1/delete/')
+        response = self.client.get('/accounts/'+ str(self.account.id) +'/delete/')
         self.assertEqual(response['location'], '/accounts/list/')
 
     def test_accounts_remove_status(self):
@@ -80,26 +73,26 @@ class AccountsRemoveTestCase(AccountCreateTest, TestCase):
 
 class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
     def test_accounts_update(self):
-        response = self.client.get('/accounts/1/edit/', {
+        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "8333855552", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
-            'sis_code': "UDAYMP2016", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'shipping_address': self.address, 'website': "www.uday.com",
+            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts/create_account.html')
 
     def test_accounts_update_status(self):
-        response = self.client.get('/accounts/1/edit/')
+        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
         self.assertEqual(response.status_code, 200)
 
     def tst_accounts_update_html(self):
-        response = self.client.get('/accounts/1/edit/')
+        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
         self.assertTemplateUsed(response, 'accounts/create_account.html')
 
 
 class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 
     def test_account_creation_invalid_data(self):
-        data = {'name': "", 'email': "", 'phone': "", 'billing_address': self.address, 'shipping_address': self.address,
-                'website': "", 'account_type': "", 'sis_code': "", 'industry': "", 'description': ""}
+        data = {'name': "", 'email': "", 'phone': "", 'billing_address': self.address,
+        'shipping_address': self.address, 'website': "", 'industry': "", 'description': ""}
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)

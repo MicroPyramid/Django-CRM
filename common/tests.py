@@ -15,7 +15,6 @@ class ObjectsCreation(object):
 class TestHomePage(ObjectsCreation, TestCase):
     def test_home_page(self):
         response = self.client.get('/')
-        print(response)
         self.assertEqual(response.status_code, 200)
         if response.status_code == 200:
             self.assertIn("Micro", str(response.content))

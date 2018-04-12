@@ -8,7 +8,7 @@ class TestLeadModel(object):
     def setUp(self):
         self.client = Client()
 
-        self.user = User.objects.create(username='uday', email='u@mp.com')
+        self.user = User.objects.create(username='uday', email='u@mp.com', role="ADMIN")
         self.user.set_password('uday2293')
         self.user.save()
 
@@ -23,8 +23,8 @@ class TestLeadModel(object):
         self.account = Account.objects.create(name="account",
                                                   email="account@gmail.com",
                                                   phone="12345",
-                                                  billing_address=Address.objects.get(pk=1),
-                                                  shipping_address=Address.objects.get(pk=1),
+                                                  billing_address=self.address,
+                                                  shipping_address=self.address,
                                                   website="account.com",
                                                   industry="IT",
                                                   description="account",
@@ -106,9 +106,9 @@ class LeadsCreateUrlTestCase(TestLeadModel, TestCase):
         self.assertTemplateUsed(response, 'leads/create_lead.html')
 
 
-class LeadsEditUrlTestCase(TestLeadModel, TestCase):
-    def test_lead_editurl(self):
-        response = self.client.get('/leads/1/edit/', {
+class LeadsEditTestCase(TestLeadModel, TestCase):
+    def test_lead_edit(self):
+        response = self.client.get('/leads/'+ str(self.lead.id) +'/edit/', {
                                    'title': 'LeadCreation',
                                    'first_name': "kotha",
                                    'email': "fathimakotha1993@gmail.com",
@@ -123,9 +123,9 @@ class LeadsEditUrlTestCase(TestLeadModel, TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class LeadsUpdateTestCase(TestLeadModel, TestCase):
-    def test_leadsedit_update_status(self):
-        response = self.client.get('/leads/1/edit/')
+class LeadsEditUrlTestCase(TestLeadModel, TestCase):
+    def test_leads_editurl(self):
+        response = self.client.get('/leads/'+ str(self.lead.id) +'/edit/')
         self.assertEqual(response.status_code, 200)
 
 
@@ -144,16 +144,14 @@ class LeadsViewTestCase(TestLeadModel, TestCase):
                             opportunity_amount="900",
                             description="Iam an Opportunity",
                             created_by=self.user)
-        self.lead = Lead.objects.all()
-        response = self.client.get('/leads/1/view/')
+        response = self.client.get('/leads/'+ str(self.lead.id) +'/view/')
         self.assertEqual(response.status_code, 200)
 
 
 class LeadsRemoveTestCase(TestLeadModel, TestCase):
 
     def test_leads_remove(self):
-        self.lead = Lead.objects.all()
-        response = self.client.get('/leads/1/delete/')
+        response = self.client.get('/leads/'+ str(self.lead.id) +'/delete/')
         self.assertEqual(response['location'], '/leads/list/')
 
     def test_leads_remove_status(self):

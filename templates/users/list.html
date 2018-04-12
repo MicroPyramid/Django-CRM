@@ -102,7 +102,7 @@
                     <td class="actions">
                       <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
                       <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email and user.is_staff %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email or user.role == "ADMIN" %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
                     </td>
                   </tr>
                   {% endfor %}

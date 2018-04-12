@@ -2,11 +2,26 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect, JsonResponse
+from django.http.response import Http404
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
 
 from common.models import User
 from common.forms import UserForm, LoginForm, ChangePasswordForm
+
+
+def admin_required(function):
+
+    def wrapper(request, *args, **kwargs):
+        user = request.user
+        if user.is_authenticated:
+            if user.role == "ADMIN":
+                return function(request, *args, **kwargs)
+            else:
+                raise Http404
+        else:
+            return redirect("common:login")
+    return wrapper
 
 
 @login_required
@@ -41,6 +56,7 @@ def profile(request):
     user_obj = User.objects.get(id=user.id)
     return render(request, "profile.html", {'user_obj': user_obj})
 
+
 @csrf_exempt
 def login_crm(request):
     if request.user.is_authenticated:
@@ -69,7 +85,7 @@ def logout_crm(request):
     return redirect("common:login")
 
 
-
+@admin_required
 @csrf_exempt
 def users_list(request):
     users_list = User.objects.all()
@@ -94,12 +110,11 @@ def users_list(request):
     })
 
 
+@admin_required
 @csrf_exempt
-@login_required
 def create_user(request):
     user_form = UserForm()
     users_list = User.objects.all()
-    print(users_list)
     if request.method == 'POST':
         user_form = UserForm(request.POST)
         if user_form.is_valid():
@@ -114,6 +129,7 @@ def create_user(request):
         return render(request, 'users/create.html', {'user_form': user_form})
 
 
+@admin_required
 @csrf_exempt
 def view_user(request, user_id):
     users_list = User.objects.all()
@@ -126,6 +142,7 @@ def view_user(request, user_id):
     })
 
 
+@admin_required
 @csrf_exempt
 def edit_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
@@ -144,6 +161,7 @@ def edit_user(request, user_id):
         return render(request, 'users/create.html', {'user_form': user_form, 'user_obj': user_obj})
 
 
+@admin_required
 @csrf_exempt
 def remove_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
