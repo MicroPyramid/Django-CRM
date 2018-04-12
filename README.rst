@@ -6,7 +6,7 @@ sales of the organization. It Provides to manage leads information and its activ
 track issues from leads, manage contacts to send emails of their progress.
 
 .. image:: https://api.codacy.com/project/badge/Grade/92884aebee3e4183b75f313654bdc8bf
-   :target: https://github.com/kitten77/Django-CRM
+   :target: https://app.codacy.com/app/ashwin/kitten77/Django-CRM?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kitten77/Django-CRM&amp;utm_campaign=Badge_Grade
 
 
 This project contains the following modules.
