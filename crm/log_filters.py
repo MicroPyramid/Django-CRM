@@ -1,5 +1,5 @@
 from logging import Filter
-from pprint import pprint
+
 
 class ManagementFilter(Filter):
     def filter(self, record):
@@ -7,4 +7,3 @@ class ManagementFilter(Filter):
             return False
         else:
             return True
-        
