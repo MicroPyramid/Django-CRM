@@ -1,10 +1,7 @@
 @import "ref.scss";
-
-
 body {
-  font-family: $font_0, $font_1;
+  font-family: 'Muli', sans-serif;
   padding: 0;
-  font-size: 12px;
   font-weight: 500;
   margin: 0;
   padding-top:60px; 
@@ -12,6 +9,13 @@ body {
 .login_register_body {
   background: $body_bg;
 }
+
+*{
+    font-size: 14px;
+    @media(min-width:$large){
+      font-size:17px;
+    }
+  }
 .marl {
   margin-left: 0;
   margin-right: 0;
@@ -105,6 +109,7 @@ header{
     border:none;
     .navbar-brand{
       color: $login_btn_bg;
+      font-weight: 600;
       &:hover{
         color: $login_btn_bg;
       }
@@ -112,15 +117,19 @@ header{
     .navbar-nav{
       >li{
         >a{
-          color: $text_color3;
-          font-weight: 500;
-          font-size: 12px;
-          padding:15px 10px;
+          color: lighten($text_color3, 10%) !important;
+          font-weight: 600;
+          font-size: 0.9rem;
+          padding:14px 10px;
+          padding-top: 16px;
           @media(min-width: $mob_min) and (max-width: $smob_max) {
             padding:5px 10px;
           }
+          @media(min-width:$large){
+            font-size:1rem;
+          }
           &:hover{
-            color:#ddd;
+            color:#fff !important;
           }
         }
       }
@@ -139,7 +148,16 @@ header{
           }
         .dropdown-menu{
             a{
-              font-size: 12px;
+              font-size: 0.9rem;
+              color: darken($text_color,5%);
+              svg{
+                display: inline-block;
+                margin-right: 5px;
+                font-size: 0.75rem;
+              }
+              @media(min-width:$large){
+                font-size:0.95rem;
+              }
            }
         }
       }
@@ -158,9 +176,19 @@ header{
             &.nav-link{
               padding:0.5rem;
             }
+            &.nav-link .active {
+              color: white;
+            }
           }
         }
       }
+     /* li{
+        a{
+          &:hover{
+            color:lighten($text_color,15%);
+          }
+        }
+      }*/
     }
     .navbar-form{
       .form-group{
@@ -246,28 +274,42 @@ $color_2: #000;
 
 /* main_container stats here  */
 .main_container{
-  padding-top: 10px;
+  padding-top: 0.8rem;
   .heading_create{
     .heading{
-      font-size: 14px;
+      font-size: 1.1rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: darken($text_color, 15%);
-      font-weight: 600;
       h4{
-        font-size: 15px;
+        font-size: 1.1rem;
+        font-weight: 800;        
       }
     }
     .create_new{
      a{
         background: $login_btn_bg;
         color: #fff;
-        font-size: 12px;
-        font-weight: 500;
+        font-size: 1rem;
+        font-weight: 600;
         text-transform: capitalize;
         letter-spacing: initial;
         display: inline-block;
         padding: 5px 10px 3px 10px;
+        /*svg{
+          font-size: 0.8rem;
+        }*/
+        @media(min-width:$large){
+          font-size:1rem;
+          svg{
+            position: relative;
+            top: -1px;
+          }
+        }
+        svg{
+          display: inline-block;
+          margin-right: 5px;
+        }
      }
     }
     .search-row{

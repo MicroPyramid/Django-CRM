@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.http.response import Http404
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
@@ -57,7 +56,6 @@ def profile(request):
     return render(request, "profile.html", {'user_obj': user_obj})
 
 
-@csrf_exempt
 def login_crm(request):
     if request.user.is_authenticated:
         return HttpResponseRedirect('/')
@@ -78,7 +76,6 @@ def login_crm(request):
     return render(request, 'login.html')
 
 
-@csrf_exempt
 def logout_crm(request):
     logout(request)
     request.session.flush()
@@ -86,7 +83,6 @@ def logout_crm(request):
 
 
 @admin_required
-@csrf_exempt
 def users_list(request):
     users_list = User.objects.all()
     page = request.POST.get('per_page')
@@ -111,10 +107,8 @@ def users_list(request):
 
 
 @admin_required
-@csrf_exempt
 def create_user(request):
     user_form = UserForm()
-    users_list = User.objects.all()
     if request.method == 'POST':
         user_form = UserForm(request.POST)
         if user_form.is_valid():
@@ -130,7 +124,6 @@ def create_user(request):
 
 
 @admin_required
-@csrf_exempt
 def view_user(request, user_id):
     users_list = User.objects.all()
     user_obj = User.objects.filter(id=user_id)
@@ -143,7 +136,6 @@ def view_user(request, user_id):
 
 
 @admin_required
-@csrf_exempt
 def edit_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
     user_form = UserForm(instance=user_obj)
@@ -162,7 +154,6 @@ def edit_user(request, user_id):
 
 
 @admin_required
-@csrf_exempt
 def remove_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
     user_obj.delete()

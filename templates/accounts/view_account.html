@@ -16,7 +16,6 @@
     <div class="overview_form_block row marl">
       <div class="col-md-8">
         <div class="card">
-         
           <div class="card-body" id="datashow">
            <div class="card-title">
             <h5>
@@ -143,14 +142,13 @@
             </div>
           </div>
           <!-- Comments Section starts-->
-          
           <div class="card-body" id="datashow">
           <div class="card-title">
             <h5>Comments</h5>
           </div>
             <div class="row marl">
               <div class="col-md-12">
-                <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
+                <form id="comment_form" method="POST" enctype="multipart/form-data">
                   <div class="form-group">
                     <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
                     </br>
@@ -193,7 +191,7 @@
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4 class="modal-title">Update Your Comment</h4>
                   </div>
-                  <form id="comment_edit_form" method="POST" >{% csrf_token %}
+                  <form id="comment_edit_form" method="POST" >
                     <div class="modal-body">
                       <div class="form-group">
                         <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea><span><i id="CommentEditError" style="display:none; color:red"></i></span>
@@ -214,7 +212,6 @@
       </div>
       <div class="col-md-4">
         <div class="card">
-       
           <div class="card-body" id="datashow">
              <div class="card-title">
             <h5>Label</h5>
@@ -232,20 +229,6 @@
                   {% endif %}
                 </div>
               </div>
-              <!-- <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="acc_field_label" for="id_team" data-name="name">Assigned Team(s)</label>
-                  <div class="account_field" id="account_team" data-name="name">
-                    {%if not account_record.teams.all %}
-                      Not Assigned Yet
-                    {% else %}
-                      {% for team in account_record.teams.all %}
-                        <li>{{ team }}</li>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-                </div>
-              </div> -->
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="acc_field_label" for="id_created_on" data-name="name">Created On</label>
@@ -274,7 +257,6 @@
     <div class="table_container_row row marl">
       <div class="col-md-8">
         <div class="card">
-          
           <div class="card-body">
           <div class="panel-heading-list card-title view-pad">
             Contacts
@@ -320,7 +302,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form id="form_con" method="post" action="">
-          {%csrf_token%}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CONTACTS</h4>
           </div>
@@ -371,7 +352,7 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Name</label> 
+                            <label for="exampleInputEmail1" class="required">Name</label>
                             <div class="row">
                               <div class="filter_col col-md-6">
                                 <input type="text" class="form-control" placeholder="First Name" id="id_first_name" name="first_name"  value="{{request.POST.first_name}}">
@@ -386,7 +367,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Accounts</label> 
+                            <label for="exampleInputEmail1">Accounts</label>
                             <select class="form-control" id="id_account" name="account">
                               <option value="{{ account_record.id }}" selected >{{ account_record.name }}</option>
                             </select>
@@ -395,14 +376,14 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Phone</label> 
+                            <label for="exampleInputEmail1" class="required">Phone</label>
                             <input type="text" class="form-control text-filter" id="id_phone" name="phone" value="{{request.POST.phone}}"/>
                             {{ contact_form.phone.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Email Address</label> 
+                            <label for="exampleInputEmail1" class="required">Email Address</label>
                             <input type="text" class="form-control text-filter" id="id_email" name="email" value="{{request.POST.email}}"/>
                             {{ contact_form.email.errors }}
                           </div>
@@ -631,7 +612,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form class= "form_con_edit" id="form_con_edit" method="POST" action="{% url 'contacts:edit_contact' pk=contact.id %}">
-          {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CONTACTS</h4>
           </div>
@@ -640,7 +620,7 @@
               <div class="col-md-12">
                 <div class="panel panel-default">
                   <div class="panel-heading view-pad">
-                    Assigned Users & Teams
+                    Assigned Users &amp; Teams
                   </div>
                   <div class="panel-content">
                     <div class="filter_col col-md-6">
@@ -834,7 +814,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form class= "form_user" id="form_opp" method="POST" action="">
-          {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">OPPORTUNITIES</h4>
           </div>
@@ -843,7 +822,7 @@
               <div class="col-md-12">
                 <div class="panel panel-default">
                   <div class="panel-heading view-pad">
-                    Assigned Users & Teams
+                    Assigned Users &amp; Teams
                   </div>
                   <div class="panel-content">
                     <div class="filter_col col-md-6">
@@ -1178,7 +1157,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form class= "form_opp_edit" id="form_opp_edit" method="POST" action="{% url 'opportunities:opp_edit' pk=opportunity.id %}">
-          {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">OPPORTUNITIES</h4>
           </div>
@@ -1187,7 +1165,7 @@
               <div class="col-md-12">
                 <div class="panel panel-default">
                   <div class="panel-heading view-pad">
-                    Assigned Users & Teams
+                    Assigned Users &amp; Teams
                   </div>
                   <div class="panel-content">
                     <div class="filter_col col-md-6">
@@ -1395,7 +1373,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form id="form_case" method="POST" action="" >
-          {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">Overview</h4>
           </div>
@@ -1404,7 +1381,7 @@
               <div class="col-md-12">
                 <div class="panel panel-default">
                   <div class="panel-heading view-pad">
-                    Assigned Users & Teams
+                    Assigned Users &amp; Teams
                   </div>
                   <div class="panel-content">
                     <div class="filter_col col-md-6">
@@ -1704,7 +1681,6 @@
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <form class= "form_case_edit" id="form_case_edit" method="POST" action="{% url 'cases:edit_case' case.id %}">
-          {% csrf_token %}
           <div class="modal-header" style="background:lightblue;">
             <h4 class="modal-title" id="myLargeModalLabel" style="text-align:center;">CASES</h4>
           </div>
@@ -1713,7 +1689,7 @@
               <div class="col-md-12">
                 <div class="panel panel-default">
                   <div class="panel-heading view-pad">
-                    Assigned Users & Teams
+                    Assigned Users &amp; Teams
                   </div>
                   <div class="panel-content">
                     <div class="filter_col col-md-6">

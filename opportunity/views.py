@@ -1,6 +1,4 @@
-import json
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
@@ -85,7 +83,7 @@ def opp_create(request):
                 'stages': STAGES,
                 'sources': SOURCES,
                 'currencies': CURRENCY_CODES,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list,
                 'contacts_list': contacts_list
             })
@@ -159,7 +157,7 @@ def opp_edit(request, pk):
                 'stages': STAGES,
                 'sources': SOURCES,
                 'currencies': CURRENCY_CODES,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list,
                 'contacts_list': contacts_list
             })
@@ -200,10 +198,6 @@ def contacts(request):
         new = {i.pk: i.first_name}
         data.update(new)
     return JsonResponse(data)
-
-
-# CRUD Operations Ends
-# Comments Section Start
 
 
 @login_required

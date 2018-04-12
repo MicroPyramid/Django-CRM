@@ -3,7 +3,7 @@
 {% load staticfiles %}
 {% block breadcrumb %}
 
-<form id="formid"  method='POST'  action="{% url 'leads:leads_convert' post.id%}">{% csrf_token %}
+<form id="formid"  method='POST'  action="{% url 'leads:leads_convert' post.id%}">
 
 <div class="page-header">
 <h3>
@@ -240,7 +240,6 @@
 
 
 <div class="contactconvert" style="display:none;">
- {% csrf_token %}
     <div class="assigned_teams row marl">
       <div class="col-md-12">
         <div class="panel panel-default">

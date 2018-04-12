@@ -13,41 +13,10 @@
 
 {% endblock %}
 {% block content %}
-  <form id="formid" action='' method="POST" novalidate>{% csrf_token %}
-    <!-- <div class="assigned_teams ro marl">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-body">
-          <div class="card-title">
-            Assigned Users & Teams
-          </div>
-          <div class="row marl">
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Assigned Users</label>
-                {{ account_form.assigned_to }}
-                {{ account_form.assigned_to.errors }}
-              </div>
-            </div>
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Teams</label>
-                {{ account_form.teams }}
-                {{ account_form.teams.errors }}
-              </div>
-            </div>
-            <br clear="all">
-          </div>
-          </div>
-        </div>
-      </div>
-      <br clear="all">
-    </div> -->
-    <!-- overview starts here -->
+  <form id="formid" action='' method="POST" novalidate>
     <div class="overview_form_block row marl ">
       <div class="col-md-12">
         <div class="card">
-          
           <div class="card-body">
           <div class="card-title text-center">
             CREATE ACCOUNT
@@ -101,9 +70,10 @@
                 <div class="filter_col col-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Assigned Users</label>
+                    {{request.POST.assigned_to}}
                      <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                       {% for user in users %}
-                        <option value="{{user.id}}" {% if user in account_obj.assigned_to.all %} selected="" {% endif %}>{{user.email}}</option>
+                        <option value="{{user.id}}" {% if user in account_obj.assigned_to.all  or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
                       {% endfor %}
                     </select>
                     {{ account_form.assigned_to.errors }}
@@ -140,36 +110,6 @@
                 <div>
                   <h6 style="color:white;">Copy Address</h6>
                 </div>
-               <!--  <div class="col-md-12 buttons_row" style="text-align:center;">
-                  <button type="button" id="copy_billing_btn" class="btn btn-primary save">Copy Billing Address</button>
-                </div> -->
-               <!--  <div class="filter_col shipping_block col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Shipping Address</label>
-                    {{ shipping_form.address_line }}
-                    <span class="error">{{ shipping_form.address_line.errors }}</span>
-                  </div>
-                    {{ shipping_form.street }}
-                    <span class="error">{{ shipping_form.street.errors }}</span>
-                  <div class="row" style="margin-top: 10px;">
-                    <div class="col-md-4">
-                      {{ shipping_form.city }}
-                      <span class="error">{{ shipping_form.city.errors }}</span>
-                    </div>
-                    <div class="col-md-4">
-                      {{ shipping_form.state }}
-                      <span class="error">{{ shipping_form.state.errors }}</span>
-                    </div>
-                    <div class="col-md-4">
-                      {{ shipping_form.postcode }}
-                      <span class="error">{{ shipping_form.postcode.errors }}</span>
-                    </div>
-                    <div class="col-md-12" style="margin-top: 10px;">
-                      {{ shipping_form.country }}
-                      <span class="error">{{ shipping_form.country.errors }}</span>
-                    </div>
-                  </div>
-                </div> -->
               </div>
             </div>
             <br clear="all">

@@ -103,10 +103,10 @@ def email_draft(request):
         fd = datetime.strptime(from_date, "%Y-%m-%d").date()
         filter_list = filter_list.filter(send_time__gte=fd)
     if request.GET.get('to_date', ''):
-            to_date = request.GET.get('to_date', '')
-            td = datetime.strptime(to_date, "%Y-%m-%d")
-            td = td + timedelta(seconds=(24 * 60 * 60 - 1))
-            filter_list = filter_list.filter(send_time__lte=td)
+        to_date = request.GET.get('to_date', '')
+        td = datetime.strptime(to_date, "%Y-%m-%d")
+        td = td + timedelta(seconds=(24 * 60 * 60 - 1))
+        filter_list = filter_list.filter(send_time__lte=td)
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
@@ -146,15 +146,14 @@ def email_imp_list(request):
         filter_list = filter_list.filter(send_time__gte=fd)
 
     if request.GET.get('to_date', ''):
-            to_date = request.GET.get('to_date', '')
-            td = datetime.strptime(to_date, "%Y-%m-%d")
-            td = td + timedelta(seconds=(24 * 60 * 60 - 1))
-            filter_list = filter_list.filter(send_time__lte=td)
+        to_date = request.GET.get('to_date', '')
+        td = datetime.strptime(to_date, "%Y-%m-%d")
+        td = td + timedelta(seconds=(24 * 60 * 60 - 1))
+        filter_list = filter_list.filter(send_time__lte=td)
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_important.html',
-                  {'filter_list': filter_list})
+    return render(request, 'emails/mail_important.html', {'filter_list': filter_list})
 
 
 def email_sent_edit(request, pk):

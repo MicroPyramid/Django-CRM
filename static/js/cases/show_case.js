@@ -1,20 +1,4 @@
 
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
 $("#comment_form").submit(function(e){
     e.preventDefault()
     var formData = new FormData($("#comment_form")[0]);
@@ -115,10 +99,9 @@ function HideError(e){
 }
 
 function remove_file(x){
-    var csrftoken = getCookie('csrftoken');
     var con = confirm("Sure, You want to delete")
     if (con == true){
-    $.post('/cases/remove_comment_file/', {"file_id":x, "csrfmiddlewaretoken": csrftoken,}, function(data){
+    $.post('/cases/remove_comment_file/', {"file_id":x}, function(data){
         if(data.error){
             alert(data.error)
         }
@@ -129,10 +112,9 @@ function remove_file(x){
 }
 
 function remove_comment(x){
-    var csrftoken = getCookie('csrftoken');
     var con = confirm("Sure, You want to delete")
     if (con == true){
-    $.post('/cases/remove_comment/', {"comment_id":x, "csrfmiddlewaretoken": csrftoken,}, function(data){
+    $.post('/cases/remove_comment/', {"comment_id":x}, function(data){
         if(data.error){
          alert(data.error)
         }
@@ -143,12 +125,10 @@ function remove_comment(x){
 }
 
 function editFun(x) {
-    var csrftoken = getCookie('csrftoken');
     $.ajax({
         type: "POST",
         url: "/cases/editdetails/", // the endpoint,commonly same url
         data: {
-            csrfmiddlewaretoken: csrftoken,
             tid: x
         },
         success: function(data) {
@@ -173,10 +153,8 @@ function editFun(x) {
 
     $('#id_account').change(function() {
         var acc = $("#id_account").val()
-        var csrftoken = getCookie('csrftoken');
         $.get("/cases/select_contacts/", {
-            "acc": acc,
-            "csrfmiddlewaretoken": csrftoken
+            "acc": acc
         }, function(data) {
             $("#id_contacts").html("")
             $.each(data, function(index, value) {
@@ -198,11 +176,10 @@ $('body').on('click', '.status_set', function (e) {
      eventID = $(this).closest('ul').attr('id')
      event = eventID.match(/\d+/)[0]
      status = $(this).text().replace('Set ', '')
-     var token = getCookie('csrftoken');
      window.location = ""
     $.post(
         '/planner/event/set/status/',
-        {id: event, status: status, csrfmiddlewaretoken: token},
+        {id: event, status: status},
         function (data) {
             console.log("success")
         })
@@ -212,11 +189,10 @@ $('body').on('click', '.remove_event', function (e) {
     e.preventDefault();
      eventID = $(this).closest('ul').attr('id')
      event = eventID.match(/\d+/)[0]
-     var token = getCookie('csrftoken');
      window.location = ""
       $.post(
         '/planner/meeting/delete/',
-        {meetingID: event, csrfmiddlewaretoken: token},
+        {meetingID: event},
         function (data) {
             console.log("removed")
         })
@@ -226,10 +202,9 @@ $('body').on('click', '.display_event', function (e) {
     e.preventDefault();
     eventID = $(this).closest('ul').attr('id')
      event = eventID.match(/\d+/)[0]
-     var token = getCookie('csrftoken');
       $.post(
         '/planner/get/meeting/',
-        {meetingID: event, csrfmiddlewaretoken: token},
+        {meetingID: event},
         function (data, status, xhr) {
           $("#meeting-dispaly-model").modal("show")        })
   })

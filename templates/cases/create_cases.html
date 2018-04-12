@@ -13,39 +13,10 @@
 
 {% endblock %}
 {% block content %}
-  <form id="submitForm" method="POST" action="" novalidate>{% csrf_token %}
-    <!-- <div class="assigned_teams row marl">
-      <div class="col-md-12">
-        <div class="card">
-         
-          <div class="card-body">
-           <div class="card-title">
-            Assigned Users & Teams
-          </div>
-            <div class="row marl">
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Assigned Users</label>
-                {{ case_form.assigned_to }}
-              </div>
-            </div>
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Teams</label>
-                {{ case_form.teams }}
-              </div>
-            </div>
-            </div>
-            <br clear="all">
-          </div>
-        </div>
-      </div>
-      <br clear="all">
-    </div> -->
+  <form id="submitForm" method="POST" action="" novalidate>
     <div class="overview_form_block row marl">
       <div class="col-md-12">
         <div class="card">
-       
           <div class="card-body">
              <div class="card-title text-center">
             CREATE CASE
@@ -99,7 +70,7 @@
                     <label for="exampleInputEmail1">Assigned Users</label>
                      <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                       {% for user in users %}
-                        <option value="{{user.id}}" {% if user in case_obj.assigned_to.all %} selected="" {% endif %}>{{user.email}}</option>
+                        <option value="{{user.id}}" {% if user in case_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
                       {% endfor %}
                     </select>
                     <span class="error">{{ case_form.assigned_to.errors }}</span>

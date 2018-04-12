@@ -7,48 +7,8 @@
         <div class="col-md-7">
             <div class="row marl search-row">
                 <form id="filter-form" method="get">
-                    {% csrf_token %}
                     <div class="form-group col-md-8 col-sm-8">
                         <div class="input-group">
-                            {#                            <div class="input-group-btn left-dropdown">#}
-                            {#                                <button type="button" class="btn dropdown-toggle filters-button btn-default"#}
-                            {#                                        title="Filter"#}
-                            {#                                        data-toggle="dropdown" tabindex="-1" aria-expanded="false">#}
-                            {#                                    <span class="filters-label">All</span>#}
-                            {#                                    <span class="caret"></span>#}
-                            {#                                </button>#}
-                            {#                                <ul class="dropdown-menu pull-left filter-menu">#}
-                            {##}
-                            {#                                    <li><a class="preset" tabindex="-1" href="javascript:" data-name=""#}
-                            {#                                           data-action="selectPreset"><span#}
-                            {#                                            class="glyphicon glyphicon-ok pull-right"></span>#}
-                            {#                                        <div>All</div>#}
-                            {#                                    </a></li>#}
-                            {#                                    <li><a class="preset" tabindex="-1" href="javascript:" data-name="portalUsers"#}
-                            {#                                           data-action="selectPreset">#}
-                            {#                                        <div>Portal Users</div>#}
-                            {#                                    </a></li>#}
-                            {#                                    <li class="divider preset-control hidden"></li>#}
-                            {##}
-                            {##}
-                            {#                                    <li class="preset-control remove-preset hidden"><a tabindex="-1" href="#"#}
-                            {#                                                                                       data-action="removePreset">Remove#}
-                            {#                                        Filter</a></li>#}
-                            {#                                    <li class="preset-control save-preset hidden"><a tabindex="-1" href="#"#}
-                            {#                                                                                     data-action="savePreset">Save#}
-                            {#                                        Filter</a>#}
-                            {#                                    </li>#}
-                            {#                                    <li class="divider"></li>#}
-                            {##}
-                            {#                                    <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox"#}
-                            {#                                                                       name="onlyMy">#}
-                            {#                                        &nbsp;&nbsp;Only My</label></li>#}
-                            {#                                    <li class="checkbox"><label><input type="checkbox" data-role="boolFilterCheckbox"#}
-                            {#                                                                       name="followed"> &nbsp;&nbsp;Followed</label>#}
-                            {#                                    </li>#}
-                            {#                                </ul>#}
-                            {#                            </div>#}
-
                             <input placeholder="Search Calls" type="text" class="form-control text-filter"
                                    name="event_name" value="" tabindex="1">
                             <div class="input-group-btn">
@@ -335,7 +295,6 @@
                 </div>
                 <!-- CREATE CALL MODEL -->
                 <form id="model-form" method="post">
-                    {% csrf_token %}
                     <div class="modal fade" id="call-create-model" role="dialog" data-keyboard="false"
                          data-backdrop="static">
                         <div class="modal-dialog modal-lg">

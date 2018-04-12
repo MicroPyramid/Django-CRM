@@ -64,10 +64,9 @@ $("#comment_edit").click(function(e){
 
 
 function remove_comment(x){
-  var csrftoken = getCookie('csrftoken');
   var verify = confirm("Are You Sure, you Want to Delete this Comment!?")
   if (verify == true){
-    $.post('/contacts/comment_remove/', {"comment_id":x, "csrfmiddlewaretoken": csrftoken, }, function(data){
+    $.post('/contacts/comment_remove/', {"comment_id":x}, function(data){
       if(data.error){
         alert(data.error)
       } else {

@@ -79,7 +79,7 @@ def add_case(request):
                 'case_priority': PRIORITY_CHOICE,
                 'case_status': STATUS_CHOICE,
                 'teams_list': teams_list,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'contacts_list': contacts_list
             })
     return render(request, "cases/create_cases.html", {
@@ -151,7 +151,7 @@ def edit_case(request, case_id):
                 'case_priority': PRIORITY_CHOICE,
                 'case_status': STATUS_CHOICE,
                 'teams_list': teams_list,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'contacts_list': contacts_list
             })
 

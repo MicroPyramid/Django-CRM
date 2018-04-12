@@ -3,20 +3,15 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account
 from common.models import User, Address, Team, Comment
-from common.utils import INDCHOICES, TYPECHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
+from common.utils import INDCHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from opportunity.models import Opportunity, STAGES, SOURCES
 from contacts.models import Contact
 from cases.models import Case
 from accounts.forms import AccountForm, AccountCommentForm
 from common.forms import BillingAddressForm, ShippingAddressForm
-from django.views.decorators.csrf import csrf_exempt
-
-
-# CRUD Operations Start
 
 
 @login_required
-@csrf_exempt
 def accounts_list(request):
     accounts_list = Account.objects.all()
     page = request.POST.get('per_page')
@@ -40,7 +35,6 @@ def accounts_list(request):
 
 
 @login_required
-@csrf_exempt
 def add_account(request):
     users = User.objects.filter(is_active=True).order_by('email')
     account_form = AccountForm(assigned_to=users)
@@ -76,7 +70,7 @@ def add_account(request):
                 'countries': COUNTRIES,
                 'users': users,
                 'teams': teams,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list
             })
 
@@ -95,7 +89,6 @@ def add_account(request):
 
 
 @login_required
-@csrf_exempt
 def view_account(request, account_id):
     account_record = get_object_or_404(Account, id=account_id)
     comments = account_record.accounts_comments.all()
@@ -123,7 +116,6 @@ def view_account(request, account_id):
 
 
 @login_required
-@csrf_exempt
 def edit_account(request, edid):
     account_instance = get_object_or_404(Account, id=edid)
     account_billing_address = account_instance.billing_address
@@ -164,7 +156,7 @@ def edit_account(request, edid):
                 'industries': INDCHOICES,
                 'teams': teams,
                 'users': users,
-                'assignedto_list': assignedto_list,
+                'assignedto_list': [int(user_id) for user_id in assignedto_list],
                 'teams_list': teams_list
             })
     else:
@@ -185,14 +177,10 @@ def edit_account(request, edid):
 
 
 @login_required
-@csrf_exempt
 def remove_account(request, aid):
     account_record = get_object_or_404(Account, id=aid)
     account_record.delete()
     return redirect("accounts:list")
-
-# CRUD Operations Ends
-# Comments Section Starts
 
 
 @login_required

@@ -1,5 +1,5 @@
 from django import forms
-from planner.models import Event, Reminder
+from planner.models import Reminder
 
 
 # class EventForm(forms.ModelForm):

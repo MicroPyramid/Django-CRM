@@ -76,7 +76,7 @@
               <!-- show case ends here-->
             </div>
             <!-- Comments Section starts-->
-            <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
+            <form id="comment_form" method="POST" enctype="multipart/form-data">
               <div class="filter_col col-md-12">
                 <div style="background-color:gray"><h4 >Comments</h4></div>
                 <div class="form-group">
@@ -131,7 +131,8 @@
                     <h4 class="modal-title">Update Your Comment</h4>
                   </div>
                   <div class="modal-body">
-                    <div class="form-group"><form id="comment_edit_form" method="POST" >{% csrf_token %}
+                    <div class="form-group">
+                    <form id="comment_edit_form" method="POST" >
                       <textarea class="form-control" textarea cols="40" id="id_editcomment" name="comment" rows="1" placeholder="Submit Your Comments"></textarea>
                       <input type="hidden" value="{{case.id}}" name="caseid">
                       <input type="hidden" value="" name="commentid" id="commentid">
@@ -635,7 +636,7 @@
             <!--END CREATE MEETING MODEL-->
   </div>
 </div>
-<form id="edit_form" method="POST" action="{% url 'cases:edit_case' case.id %}" >{% csrf_token %}
+<form id="edit_form" method="POST" action="{% url 'cases:edit_case' case.id %}" >
   <div class="overview_form_block row marl" id="editdiv" {% if edit2%}style="display:block"{% endif %} style="display:none">
   <div class="col-md-12">
     <div class="panel panel-default">
