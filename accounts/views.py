@@ -27,7 +27,7 @@ def accounts_list(request):
     if industry:
         accounts_list = accounts_list.filter(industry__icontains=industry)
 
-    return render(request, "accounts/accounts.html", {
+    return render(request, "accounts.html", {
         'accounts_list': accounts_list,
         'industries': INDCHOICES,
         'per_page': page
@@ -62,7 +62,7 @@ def add_account(request):
             else:
                 return redirect("accounts:list")
         else:
-            return render(request, 'accounts/create_account.html', {
+            return render(request, 'create_account.html', {
                 'account_form': account_form,
                 'billing_form': billing_form,
                 'shipping_form': shipping_form,
@@ -75,7 +75,7 @@ def add_account(request):
             })
 
     else:
-        return render(request, 'accounts/create_account.html', {
+        return render(request, 'create_account.html', {
             'account_form': account_form,
             'billing_form': billing_form,
             'shipping_form': shipping_form,
@@ -97,7 +97,7 @@ def view_account(request, account_id):
     users = User.objects.filter(is_active=True).order_by('email')
     cases = Case.objects.filter(account=account_record)
     teams = Team.objects.all()
-    return render(request, "accounts/view_account.html", {
+    return render(request, "view_account.html", {
         'account_record': account_record,
         'opportunity_list': opportunity_list,
         'stages': STAGES,
@@ -145,7 +145,7 @@ def edit_account(request, edid):
             account_object.teams.add(*teams_list)
             return redirect("accounts:list")
         else:
-            return render(request, 'accounts/create_account.html', {
+            return render(request, 'create_account.html', {
                 'account_form': account_form,
                 'billing_form': billing_form,
                 'shipping_form': shipping_form,
@@ -160,7 +160,7 @@ def edit_account(request, edid):
                 'teams_list': teams_list
             })
     else:
-        return render(request, 'accounts/create_account.html', {
+        return render(request, 'create_account.html', {
             'account_form': account_form,
             'billing_form': billing_form,
             'shipping_form': shipping_form,
@@ -248,9 +248,9 @@ def remove_comment(request):
 @login_required
 def get_accounts(request):
     if request.method == 'GET':
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             accounts = Account.objects.all()
-            return render(request, 'accounts/accounts_list.html', {
+            return render(request, 'accounts_list.html', {
                 'accounts': accounts})
         else:
             return HttpResponseRedirect('accounts/login')

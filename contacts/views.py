@@ -35,7 +35,7 @@ def contacts_list(request):
         contact_obj_list = contact_obj_list.filter(phone__icontains=phone)
     if email:
         contact_obj_list = contact_obj_list.filter(email__icontains=email)
-    return render(request, 'contacts/contacts.html', {
+    return render(request, 'contacts.html', {
         'contact_obj_list': contact_obj_list,
         'accounts': accounts,
         'per_page': page
@@ -71,7 +71,7 @@ def add_contact(request):
         else:
             if request.is_ajax():
                 return JsonResponse({'error': True, 'contact_errors': form.errors})
-            return render(request, 'contacts/create_contact.html', {
+            return render(request, 'create_contact.html', {
                 'contact_form': form,
                 'address_form': address_form,
                 'accounts': accounts,
@@ -82,7 +82,7 @@ def add_contact(request):
                 'teams_list': teams_list
             })
     else:
-        return render(request, 'contacts/create_contact.html', {
+        return render(request, 'create_contact.html', {
             'contact_form': form,
             'address_form': address_form,
             'accounts': accounts,
@@ -99,7 +99,7 @@ def view_contact(request, contact_id):
     contact_record = get_object_or_404(
         Contact.objects.select_related("address"), id=contact_id)
     comments = contact_record.contact_comments.all()
-    return render(request, 'contacts/view_contact.html', {
+    return render(request, 'view_contact.html', {
         'contact_record': contact_record,
         'comments': comments})
 
@@ -134,7 +134,7 @@ def edit_contact(request, pk):
         else:
             if request.is_ajax():
                 return JsonResponse({'error': True, 'contact_errors': form.errors})
-            return render(request, 'contacts/create_contact.html', {
+            return render(request, 'create_contact.html', {
                 'contact_form': form,
                 'address_form': address_form,
                 'contact_obj': contact_obj,
@@ -146,7 +146,7 @@ def edit_contact(request, pk):
                 'teams_list': teams_list
             })
     else:
-        return render(request, 'contacts/create_contact.html', {
+        return render(request, 'create_contact.html', {
             'contact_form': form,
             'address_form': address_form,
             'contact_obj': contact_obj,
@@ -239,6 +239,6 @@ def remove_comment(request):
 def get_contacts(request):
     if request.method == 'GET':
         contacts = Contact.objects.filter()
-        return render(request, 'contacts/contacts_list.html', {'contacts': contacts})
+        return render(request, 'contacts_list.html', {'contacts': contacts})
     else:
         return HttpResponse('Invalid Method or Not Authanticated in load_calls')

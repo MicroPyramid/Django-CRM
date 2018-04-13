@@ -38,7 +38,7 @@ def leads_list(request):
     if email:
         lead_obj = lead_obj.filter(email__icontains=email)
 
-    return render(request, 'leads/leads.html', {
+    return render(request, 'leads.html', {
         'lead_obj': lead_obj, 'per_page': page})
 
 
@@ -80,14 +80,14 @@ def add_lead(request):
             else:
                 return HttpResponseRedirect(reverse('leads:list'))
         else:
-            return render(request, 'leads/create_lead.html', {
+            return render(request, 'create_lead.html', {
                           'lead_form': form, 'address_form': address_form,
                           'accounts': accounts, 'countries': COUNTRIES,
                           'teams': teams, 'users': users,
                           'status': LEAD_STATUS, 'source': LEAD_SOURCE,
                           'assignedto_list': [int(user_id) for user_id in assignedto_list], 'teams_list': teams_list})
     else:
-        return render(request, 'leads/create_lead.html', {
+        return render(request, 'create_lead.html', {
                       'lead_form': form, 'address_form': address_form,
                       'accounts': accounts, 'countries': COUNTRIES, 'teams': teams,
                       'users': users, 'status': LEAD_STATUS, 'source': LEAD_SOURCE,
@@ -109,7 +109,7 @@ def view_lead(request, lead_id):
         'form-MAX_NUM_FORMS': '10',
     }
     reminder_form_set = RemindersFormSet(data)
-    return render(request, "leads/view_leads.html", {
+    return render(request, "view_leads.html", {
                   "lead_record": lead_record, 'status': LEAD_STATUS, 'countries': COUNTRIES,
                   'comments': comments, 'reminder_form_set': reminder_form_set,
                   'meetings': meetings, 'calls': calls
@@ -159,7 +159,7 @@ def edit_lead(request, lead_id):
                 account_object.save()
             return HttpResponseRedirect(reverse('leads:list'))
         else:
-            return render(request, 'leads/create_lead.html', {
+            return render(request, 'create_lead.html', {
                           'lead_obj': lead_obj,
                           'lead_form': form,
                           'address_form': address_form,
@@ -168,7 +168,7 @@ def edit_lead(request, lead_id):
                           'status': LEAD_STATUS, 'source': LEAD_SOURCE,
                           'assignedto_list': [int(user_id) for user_id in assignedto_list], 'teams_list': teams_list})
     else:
-        return render(request, 'leads/create_lead.html', {
+        return render(request, 'create_lead.html', {
                       'lead_form': form, 'address_form': address_form,
                       'lead_obj': lead_obj, 'address_obj': address_obj,
                       'accounts': accounts, 'countries': COUNTRIES, 'teams': teams,
@@ -222,7 +222,7 @@ def leads_convert(request, pk):
                 country1 = request.POST.get('country')
                 shipdata = {'street1': street1, 'city1': city1, 'state1': state1,
                             'postcode1': postcode1, 'country1': country1}
-                return render(request, 'leads/checkbox.html', {
+                return render(request, 'checkbox.html', {
                               'account_form': account_form, 'form1': billing_form, 'form2': shipping_form,
                               'form5': COUNTRIES, 'stages': STAGES, 'acc_error': account_form.errors,
                               'shipdata': shipdata, 'sources': LEAD_SOURCE, 'industries': INDCHOICES,
@@ -241,7 +241,7 @@ def leads_convert(request, pk):
                 contact_obj.save()
                 return HttpResponseRedirect(reverse('contacts:list'))
             else:
-                return render(request, 'leads/checkbox.html', {
+                return render(request, 'checkbox.html', {
                               'post': lead_obj, 'accounts': accounts, 'teams': teams,
                               'contact_form': contact_form, 'address_form': address_form})
         if request.POST.get('opportunityname') == "on":
@@ -250,11 +250,11 @@ def leads_convert(request, pk):
                 opportunity_form.save()
                 return HttpResponseRedirect(reverse('opportunities:list'))
             else:
-                return render(request, 'leads/checkbox.html', {
+                return render(request, 'checkbox.html', {
                               'post': lead_obj, 'accounts': accounts, 'sources': LEAD_SOURCE,
                               'teams': teams, 'stages': STAGES, 'opportunity_form': opportunity_form})
     else:
-        return render(request, 'leads/checkbox.html', {
+        return render(request, 'checkbox.html', {
                       'form': account_form, 'form1': billing_form, 'form2': shipping_form,
                       'form5': COUNTRIES, 'industries': INDCHOICES, 'teams': teams,
                       'task': lead_objects, 'counties': COUNTRIES,
@@ -333,6 +333,6 @@ def remove_comment(request):
 def get_leads(request):
     if request.method == 'GET':
         leads = Lead.objects.all()
-        return render(request, 'leads/leads_list.html', {'leads': leads})
+        return render(request, 'leads_list.html', {'leads': leads})
     else:
         return HttpResponse('Invalid Method or No Authanticated in load_calls')

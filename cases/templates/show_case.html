@@ -1,0 +1,791 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+  <div class="main_container" id="maincontainer" {% if edit2%}style="display:none"{% endif %}>
+  <div class="overview_form_block row marl">
+    <div class="col-md-8">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Actions
+            <span class="caret"></span></button>
+            <ul class="dropdown-menu">
+              <li><a onclick="editFun({{case.id}})">Edit</a></li>
+              <li><a href="{% url 'cases:delete_case' case.id %}">Remove</a></li>
+              <li><a href="{% url 'cases:delete_case' case.id %}">Reject</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel-content" id="datashow">
+          <div class="row marl">
+            <div class="col-md-6">
+              <div class="filter_col col-md-12" id="iname">
+                <div class="form-group" >
+                  <label for="id_name" data-name="name" >Name</label>
+                  <div class="field" id="case_name" data-name="name">{{case.name}}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Status</label>
+                  <div class="field" id="case_status" data-name="name">{%ifequal case.status None%}Not Specified
+                  {% else %}{{case.status}}{% endifequal %}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Priority</label>
+                  <div class="field" id="case_priority" data-name="name">{%ifequal case.priority None%}Not Specified
+                  {% else %}{{case.priority}}{% endifequal %}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Case-Type</label>
+                  <div class="field" id="case_case_type" data-name="name">
+                    {%ifequal case.case_type None%}Not Specified
+                  {% else %}{{case.case_type}}{% endifequal %}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Account</label>
+                  <div class="field" id="case_account" data-name="name">{%ifequal case.account None%}Not Specified
+                  {% else %}{{case.account}}{% endifequal %}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name"  data-name="name" >Contacts</label>
+                  <div class="field" id="case_contacts">
+                  {% ifequal contacts "None" %}Not Specified{% endifequal %}
+                  {% for c in contacts %}
+                    <div class="field contacts_class" data-name="name">{{c.name}}</div>
+                  {% endfor %}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_name" data-name="name" >Description</label>
+                  <div class="field" id ="case_description" data-name="name">{% if case.description%}{{case.description}}{% else%}Not Specified{% endif%}</div>
+                </div>
+              </div>
+              <!-- show case ends here-->
+            </div>
+            <!-- Comments Section starts-->
+            <form id="comment_form" method="POST" enctype="multipart/form-data">
+              <div class="filter_col col-md-12">
+                <div style="background-color:gray"><h4 >Comments</h4></div>
+                <div class="form-group">
+                  <textarea class="form-control" textarea cols="40" id="id_comments" name="comment" rows="1" onkeypress="HideError(event)" placeholder="Submit Your Comments"></textarea><span><i id="CommentError" style="display:none; color:red"></i></span>
+                  <input  type="file" name="comment_file" id="comments_file" multiple>
+                <ul id="selected_files"></ul>
+                <span>
+                  <button class="btn btn-default save" id="comment_submit" type="submit">Submit</button>
+                </span>
+              </div>
+              <input type="hidden" value="{{case.id}}" name="caseid">
+            </form>
+            <ul class="list-group" id="comments_div">
+              {% for comment in comments %}
+                <li class="list-group-item list-row" id="comment{{comment.id}}">
+                  <div class="pull-right right-container">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                      <ul class="dropdown-menu pull-right">
+                        <li>
+                          <a class="action" onclick="edit_comment({{comment.id}})" >Edit</a>
+                        </li>
+                        <li>
+                          <a class="action" onclick="remove_comment({{comment.id}})" >Remove</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="stream-head-container">{{comment.comment_user}} Commented</div>
+                  <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
+                  <div class="stream-date-container">{{comment.comment_time}}</div>
+                  <div class="stream-date-container" id="comment_file_div{{comment.id}}">{% for com in comment.get_files %}
+                    <div class="gray-box" id="comment_file_span{{com.get_file_id}}" style="background-color:#cccccc; padding:5px;display: inline-block;margin:4px; width: 100%; max-width: 400px;">
+                      <span class="preview"><a href="{% url 'cases:download_comfile' com.get_file_id %}">{{com.get_file}}</a></span>
+                      <a class="remove-attachment pull-right" onclick="remove_file({{com.get_file_id}})">
+                        <span class="glyphicon glyphicon-remove"></span>
+                      </a>
+                    </div>
+                  {% endfor %}</div>
+                {% endfor %}
+              </ul>
+            </div>
+            <!-- Comments Section Ends-->
+            <!-- Comment Edit Modal Starts Here -->
+            <!-- Modal -->
+            <div class="modal fade" id="myModal" role="dialog" role="dialog" data-keyboard="false"
+                         data-backdrop="static">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Update Your Comment</h4>
+                  </div>
+                  <div class="modal-body">
+                    <div class="form-group">
+                    <form id="comment_edit_form" method="POST" >
+                      <textarea class="form-control" textarea cols="40" id="id_editcomment" name="comment" rows="1" placeholder="Submit Your Comments"></textarea>
+                      <input type="hidden" value="{{case.id}}" name="caseid">
+                      <input type="hidden" value="" name="commentid" id="commentid">
+                      <input type="file" multiple="multiple" name="edit_file" id="comments_file_edit" >
+                      <span id="edit_file_field"></span>
+                      <button class="btn btn-default save" id="comment_edit" type="submit">Update</button>
+                    </form>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- COmment Edit Modal Ends Here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Assigned users and teams starts-->
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading text-center">
+        <h6>Users&Teams</h6>
+      </div>
+      <div class="panel-content" id="datashow">
+        <div class="row marl">
+          <div class="filter_col col-md-12">
+            <div class="form-group">
+              <label for="id_name" data-name="name" >Assigned User</label>
+              <div class="field" id="case_assigned_user" data-name="name">{{ a_user.username }}{% ifequal a_user "None" %}Not Specified{% endifequal %}</div>
+            </div>
+          </div>
+          <div class="filter_col col-md-12">
+            <div class="form-group">
+              <label for="id_name" data-name="name" >Assigned Teams</label>
+              <div class="field" id="case_teams" data-name="name">{% ifequal case.teams None%}Not Specified
+              {% else %}{{case.teams}}{% endifequal %}
+            </div>
+          </div>
+        </div>
+        <div class="filter_col col-md-12">
+          <div class="form-group">
+            <label for="id_name" data-name="name" >Created On</label>
+            <div class="field" id ="case_description" data-name="name">{{case.created}}</div>
+          </div></div>
+          <div class="filter_col col-md-12">
+            <div class="form-group">
+              <label for="id_name" data-name="name" >Created by</label>
+              <div class="field" id ="case_description" data-name="name">{{case.userid}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Activities block Starts here-->
+    <div class="panel panel-default panel-activities" data-name="activities">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+        <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> Activities </span>
+        </h4>
+      </div>
+      <div class="panel-body" data-name="activities">
+        <div class="btn-group button-container nav nav-tabs">
+          <a data-toggle="tab" href="#show_meets"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
+          <a data-toggle="tab" href="#tasks_list"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
+          <a data-toggle="tab" href="#calls_list"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
+        </div>
+        <div class="list-container">
+          <div class="list list-expanded">
+            <div class="tab-content">
+              <div id="show_meets" class="tab-pane fade in active">
+                <ul class="list-group">
+                {% ifequal case.get_meetings|length 0 %}
+                  <li class="list-group-item list-row" > No Meetings </li>
+                  {% else %}
+                  {% for meet in case.get_meetings %}
+                    <li class="list-group-item list-row" >
+                      <div class="pull-right right cell" data-name="buttons">
+                        <div class="list-row-buttons btn-group pull-right">
+                          <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                          <span class="caret"></span>
+                          </button>
+                           <ul class="dropdown-menu pull-right" id="meetings_activity{{meet.id}}">
+                           <li>
+                                    <a class="action display_event"  href="">view</a>
+                                </li>
+                                <li>
+                                    <a class="action remove_event"  href="">Remove</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                                </li>
+                              </ul>
+                          </div>
+                        </div>
+                        <div class="expanded-row">
+                          <span class="cell" data-name="ico">
+                            <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                          </span>
+                          <span class="cell" data-name="name">
+                            <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}}</a>
+                          </span>
+                        </div>
+                        <div class="expanded-row">
+                          <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                        </div>
+                      </li>
+                    {% endfor %}
+                    {% endifequal %}
+                  </ul>
+                </div>
+                <!-- Tasks Tab Division starts-->
+                <div id="tasks_list" class="tab-pane fade">
+                  <ul class="list-group">
+                  {% ifequal case.get_tasks|length 0 %}
+                  <li class="list-group-item list-row" > No Tasks </li>
+                  {% else %}
+                    {% for meet in case.get_tasks %}
+                      <li class="list-group-item list-row" >
+                        <div class="pull-right right cell" data-name="buttons">
+                          <div class="list-row-buttons btn-group pull-right">
+                            <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                            <span class="caret"></span>
+                            </button>
+                             <ul class="dropdown-menu pull-right" id="tasks_activity{{meet.id}}">
+                                <li>
+                                    <a class="action remove_event"  href="">Remove</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                          <div class="expanded-row">
+                            <span class="cell" data-name="ico">
+                              <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                            </span>
+                            <span class="cell" data-name="name">
+                              <a class="link" title="Discuss pricing" data-id="" href="/planner/tasks/list">{{meet.name}}</a>
+                            </span>
+                          </div>
+                          <div class="expanded-row">
+                            <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                          </div>
+                        </li>
+                      {% endfor %}
+                      {% endifequal %}
+                      </ul>
+                    </div>
+                    <!-- Tasks Tab Division ends here-->
+                    <!-- Calls Tab Division Starts here-->
+                    <div id="calls_list" class="tab-pane fade">
+                      <ul class="list-group">
+                      {% ifequal case.get_calls|length 0 %}
+                  <li class="list-group-item list-row" > No Calls </li>
+                  {% else %}
+                        {% for call in case.get_calls %}
+                          <li class="list-group-item list-row" >
+                            <div class="pull-right right cell" data-name="buttons">
+                              <div class="list-row-buttons btn-group pull-right">
+                                <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                                <span class="caret"></span>
+                                </button>
+                                 <ul class="dropdown-menu pull-right" id="calls_activities{{call.id}}">
+                                <li>
+                                    <a class="action remove_event"  href="">Remove</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                                </li>
+                              </ul>
+                                </div>
+                              </div>
+                              <div class="expanded-row">
+                                <span class="cell" data-name="ico">
+                                  <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                                </span>
+                                <span class="cell" data-name="name">
+                                  <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{call.name}}</a>
+                                </span>
+                              </div>
+                              <div class="expanded-row">
+                                <!--<span class="cell" data-name="assignedUser">
+                                  <a href="#User/view/52eb7b4ba5500">Raghu</a>
+                                </span>-->
+                                <span class="cell" data-name="dateStart">{{call.start_date}}</span>
+                              </div>
+                            </li>
+                          {% endfor %}
+                          {% endifequal %}
+                        </ul>
+                      </div>
+                    </div>
+                    <!-- Calls Tab Division ends here-->
+                  </div>
+                </ul>
+                <div class="show-more hide">
+                </div>
+              </div>
+            </div>
+          </div>
+          <!--Activities block ends here-->
+          <!-- History block starts here-->
+              <div class="panel panel-default panel-activities" data-name="activities">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+        <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> History </span>
+        </h4>
+      </div>
+      <div class="panel-body" data-name="activities">
+        <div class="btn-group button-container nav nav-tabs">
+          <a data-toggle="tab" href="#show_meets_completed"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
+          <a data-toggle="tab" href="#tasks_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
+          <a data-toggle="tab" href="#calls_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
+        </div>
+        <div class="list-container">
+          <div class="list list-expanded">
+            <div class="tab-content">
+              <div id="show_meets_completed" class="tab-pane fade in active">
+                <ul class="list-group">
+                {% ifequal case.get_completed_meetings|length 0 %}
+                  <li class="list-group-item list-row" > No Data </li>
+                  {% else %}
+                  {% for meet in case.get_completed_meetings %}
+                    <li class="list-group-item list-row" >
+                      <div class="pull-right right cell" data-name="buttons">
+                        <div class="list-row-buttons btn-group pull-right">
+                          <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                          <span class="caret"></span>
+                          </button>
+                          <ul class="dropdown-menu pull-right" id="meeting_history{{meet.id}}">
+<li>
+<a class="action remove_event"  href="">Remove</a>
+</li>
+<li>
+<a class="action status_set" data-action="setHeld" href="">Set Held</a>
+</li>
+<li>
+<a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+</li></ul>
+                          </div>
+                        </div>
+                        <div class="expanded-row">
+                          <span class="cell" data-name="ico">
+                            <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                          </span>
+                          <span class="cell" data-name="name">
+                            <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}} </a>| {{ meet.status }}
+                          </span>
+                        </div>
+                        <div class="expanded-row">
+                          <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                        </div>
+                      </li>
+                    {% endfor %}
+                    {% endifequal %}
+                  </ul>
+                </div>
+                <!-- Tasks Tab Division starts-->
+                <div id="tasks_list_completed" class="tab-pane fade">
+                  <ul class="list-group">
+                  {% ifequal case.get_completed_tasks|length 0 %}
+                  <li class="list-group-item list-row" > No Tasks </li>
+                  {% else %}
+                    {% for meet in case.get_completed_tasks %}
+                      <li class="list-group-item list-row" >
+                        <div class="pull-right right cell" data-name="buttons">
+                          <div class="list-row-buttons btn-group pull-right">
+                            <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                            <span class="caret"></span>
+                            </button>
+                             <ul class="dropdown-menu pull-right" id="tasks_history{{meet.id}}">
+                                <li>
+                                    <a class="action remove_event"  href="">Remove</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                          <div class="expanded-row">
+                            <span class="cell" data-name="ico">
+                              <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                            </span>
+                            <span class="cell" data-name="name">
+                              <a class="link" data-id="" href="/planner/tasks/list">{{meet.name}} </a>| {{meet.status }}
+                            </span>
+                          </div>
+                          <div class="expanded-row">
+                            <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                          </div>
+                        </li>
+                      {% endfor %}
+                      {% endifequal %}
+                      </ul>
+                    </div>
+                    <!-- Tasks Tab Division ends here-->
+                    <!-- Calls Tab Division Starts here-->
+                    <div id="calls_list_completed" class="tab-pane fade">
+                      <ul class="list-group">
+                      {% ifequal case.get_completed_calls|length 0 %}
+                  <li class="list-group-item list-row" > No Calls </li>
+                  {% else %}
+                        {% for call in case.get_completed_calls %}
+                          <li class="list-group-item list-row" >
+                            <div class="pull-right right cell" data-name="buttons">
+                              <div class="list-row-buttons btn-group pull-right">
+                                <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                                <span class="caret"></span>
+                                </button>
+                                 <ul class="dropdown-menu pull-right" id="calls_history{{call.id}}">
+                                <li>
+                                    <a class="action remove_event"  href="">Remove</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                                </li>
+                                <li>
+                                    <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                                </li>
+                              </ul>
+                                </div>
+                              </div>
+                              <div class="expanded-row">
+                                <span class="cell" data-name="ico">
+                                  <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                                </span>
+                                <span class="cell" data-name="name">
+                                  <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{ call.name }}</a> | {{ call.status }}
+                                </span>
+                              </div>
+                              <div class="expanded-row">
+                                <!--<span class="cell" data-name="assignedUser">
+                                  <a href="#User/view/52eb7b4ba5500">Raghu</a>
+                                </span>-->
+                                <span class="cell" data-name="dateStart">{{ call.start_date }}</span>
+                              </div>
+                            </li>
+                          {% endfor %}
+                          {% endifequal %}
+                        </ul>
+                      </div>
+                    </div>
+                    <!-- Calls Tab Division ends here-->
+                  </div>
+                </ul>
+                <div class="show-more hide">
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <!-- History block ends here-->
+            </div></div>
+      </div>
+    </div>
+    <!-- Assigned users and teams sends-->
+      <!-- CREATE MEETING MODEL -->
+                    <div class="modal fade" id="meeting-dispaly-model" role="dialog" data-keyboard="false"
+                         data-backdrop="static">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 id="create-meeting-dialog-title" class="modal-title">Meeting</h4>
+                                </div>
+                                <div id="modelbody" class="modal-body">
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="cell col-sm-6 form-group inline-group" data-name="name">
+                                                <label class="control-label" data-name="name" style="display: inline">
+                                                    Name *
+                                                </label>
+                                                <div class="field" data-name="name">
+                                                    <input type="hidden" name="event_type" value="Meeting"/>
+                                                    <input id="name" class="main-element form-control" type="text"
+                                                           autocomplete="off"
+                                                           name="name" required/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="cell col-sm-6 form-group" data-name="parent">
+                                                <div class="field" data-name="parent">
+                                                    <label for="parent">Parent </label>
+                                                    <div class="form-group" data-name="parent">
+                                                        <div class="input-group">
+            <span class="input-group-btn">
+                <select class="form-control" id="parent_type" name="parent_type" style="width:150px">
+                </select>
+            </span>
+                                                            <input type="text" placeholder="Select" autocomplete="off"
+                                                                   id="parent_name" value="" name="parent_name"
+                                                                   class="main-element form-control">
+    <span class="input-group-btn">
+        <button title="Select" tabindex="-1" type="button" class="btn btn-default" id="selectparent"><i
+                class="glyphicon glyphicon-arrow-up"></i></button>
+        <button tabindex="-1" type="button" class="btn btn-default" id="clearparent">
+    </button>
+    </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="cell col-sm-6 form-group" data-name="status">
+                                                <label class="control-label" data-name="status"> Status</label>
+                                                <div class="field" data-name="status">
+                                                    <select class="form-control main-element" id="status" name="status">
+                                                    </select>
+                                                    <i id="status_error"></i>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6"></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="cell col-sm-6 form-group" data-name="dateStart">
+                                                <label class="control-label" data-name="dateEnd"> Date Start * </label>
+                                                <div class="form-group">
+                                                    <div class='input-group date' id='startdatepicker'>
+                                                        <input type='text' name="start_date" class="form-control"
+                                                               id="start_date"
+                                                               required/>
+                                                <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="cell col-sm-6 form-group" data-name="dateEnd">
+                                                <label class="control-label" data-name="dateEnd"> Date End *</label>
+                                                <div class="form-group">
+                                                    <div class='input-group date' id='enddatepicker'>
+                                                        <input type='text' id="close_date" name="close_date"
+                                                               class="form-control"/>
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="cell col-sm-6 form-group" data-name="duration">
+                                            <label class="control-label" data-name="duration"> Duration </label>
+                                            <div class="field" data-name="duration">
+                                                <select class="form-control main-element" id="duration" name="duration">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="cell col-sm-6 form-group" data-name="reminders">
+                                            <label class="control-label" data-name="reminders"> Reminders </label>
+                                            <a type="button" id="addreminder"
+                                               style="padding-top: 5px;border: none">
+                                                <span class="glyphicon glyphicon-plus"></span>
+                                            </a>
+                                            <div id="reminders" class="field" data-name="reminders">
+                                                <div class="reminders-container">
+                                                    <div class="input-group reminder">
+                                                        <input type="hidden" id="pushreminder"/>
+                                                        <div id="reminder1">
+                                                            <div class="reminderslist" style="display: inline-flex;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div><i id="reminder_error"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="cell col-sm-12 form-group" data-name="description">
+                                            <label class="control-label" data-name="description"> Description </label>
+                                            <div class="field" data-name="description">
+                                <textarea id="description" class="main-element form-control" rows="4" name="description"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button data-dismiss="modal" type="button" class="btn btn-default">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            <!--END CREATE MEETING MODEL-->
+  </div>
+</div>
+<form id="edit_form" method="POST" action="{% url 'cases:edit_case' case.id %}" >
+  <div class="overview_form_block row marl" id="editdiv" {% if edit2%}style="display:block"{% endif %} style="display:none">
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        Overview
+      </div>
+      <div class="panel-content">
+        <div class="row marl">
+          <div class="col-md-6">
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_name" >Name*</label>
+                <input type="text" id="id_name" maxlength="64" name="name" value="{{case.name}}" class="form-control" />
+                {% if form.errors %}<ul class="errorlist">{{ form.name.errors }}</ul>{% endif %}
+                <i id="NameError" style="display:none; color:red"> *This Field is Required</i>
+              </div>
+            </div>
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_status">Status</label>
+                <select class="form-control" id="id_status" name="status" >
+                  {% ifequal case.status None%}<option value="">--Select Status--</option>{% endifequal %}
+                  <option value="New" {% ifequal edata.status "New"%} selected{% endifequal%}>New</option>
+                  <option value="Assigned" {% ifequal case.status "Assigned"%} selected{% endifequal%}>Assigned</option>
+                  <option value="Pending" {% ifequal case.status "Pending"%} selected{% endifequal%}>Pending</option>
+                  <option value="Closed" {% ifequal case.status "Closed"%} selected{% endifequal%}>Closed</option>
+                  <option value="Rejected" {% ifequal case.status "Rejected"%} selected{% endifequal%}>Rejected</option>
+                  <option value="Duplicate" {% ifequal case.status "Duplicate"%} selected{% endifequal%}>Duplicate</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_priority">Priority</label>
+                <select class="form-control" id="id_priority" name="priority">
+                  {% ifequal case.priority None%}<option value="">--Select Priority--</option>{% endifequal %}
+                  <option value="Low" {% ifequal case.priority "Low"%} selected{% endifequal%}>Low</option>
+                  <option value="Normal" {% ifequal case.priority "Normal"%} selected{% endifequal%}>Normal</option>
+                  <option value="High" {% ifequal case.priority "High"%} selected{% endifequal%}>High</option>
+                  <option value="Urgent" {% ifequal case.priority "Urgent"%} selected{% endifequal%}>Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_case_type">Type</label>
+                <select class="form-control" id="id_case_type" name="case_type">
+                  {% ifequal case.case_type None%}<option value="">--Select CaseType--</option>{% endifequal %}
+                  <option value="Question" {% ifequal case.case_type "Question"%} selected{% endifequal%}>Question</option>
+                  <option value="Incident" {% ifequal case.case_type "Incident"%} selected{% endifequal%}>Incident</option>
+                  <option value="Problem" {% ifequal case.case_type "Problem"%} selected{% endifequal%}>Problem</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_account">Account</label>
+                <select class="form-control" id="id_account" name="account" >
+                  {% ifequal case.account None%}<option value="">--Select Account--</option>{% endifequal %}
+                  {% for ac in accounts %}
+                    <option value="{{ac.id}}" {% ifequal case.account.id ac.id %} selected{% endifequal%}>{{ac.name}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="id_contacts">Contacts</label>
+                <select class="form-control" multiple="multiple" id="id_contacts" name="contacts" >
+                  {% for con in con %}
+                    <option value="{{con.id}}" {% for sel in selcon %}
+                      {% ifequal con.id sel.id %}
+                      selected {% endifequal%}{% endfor %}>{{con.name}}</option>
+                      }
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_description">Description</label>
+                  <textarea class="form-control" textarea cols="40" id="id_description" name="description" rows="4" > {{case.description}}</textarea>
+                  <input type="hidden" name="hiddenval" id="hiddenval" value="{{case.id}}">
+                </div>
+              </div>
+            </div>
+            <div class="filter_col col-md-6">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Assigned Users</label>
+                <select class="form-control" name="assigned_user">
+                  {% ifequal a_user "None"%}<option value="" selected>--Select User--</option>{% endifequal %}
+                  {% for user in users %}
+                    <option value="{{user.id}}" {% ifequal a_user.id user.id %} selected{% endifequal%}>{{user.username}}</option>
+                  {% endfor %}
+                </select>
+              </select>
+            </div>
+          </div>
+          <div class="filter_col col-md-6">
+            <div class="form-group">
+              <label for="id_teams">Teams</label>
+              <select class="form-control" id="id_teams" name="teams">
+                {% ifequal case.teams None%}<option value="" selected>--Select Support--</option>{% endifequal %}
+                <option value="Sales" {% ifequal case.teams "Sales"%} selected{% endifequal%}>Sales</option>
+                <option value="Support" {% ifequal case.teams "Support"%} selected{% endifequal%}>Support</option>
+                <option value="TopManagement" {% ifequal case.teams "TopManagement"%} selected{% endifequal%}>TopManagement</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row marl buttons_row text-center">
+        <button class="btn btn-default save" id="edit_update" type="submit">Update</button>
+        <a href="/cases/list" ><button class="btn btn-default" id="edit_cancel" type="submit">Cancel</button></a></form>
+      </div></div></div>  </div>
+    {% endblock %}
+
+  {% block js_block %}
+    <script src='js/cases/show_case.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script type="text/javascript">
+      $(function () {
+       var date = new Date();
+       var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        $('#id_closed_on').datetimepicker({
+            'format': 'YYYY-MM-DD',
+            minDate: today
+        })
+      });
+
+      $(".savenew").on('click', function(e){
+        e.preventDefault()
+        $("#save_new_form").val('true')
+        $('#submitForm').submit()
+      });
+      $(document).ready(function() {
+        $('.assigned_users').select2();
+      });
+
+      $('#id_account').change(function(){
+      var account = $("#id_account").val()
+      $.get("{% url 'cases:select_contacts' %}", {"account":account}, function(data){
+        $("#id_contacts").html("")
+        $.each(data, function (index, value) {
+          $("#id_contacts").append("<option value="+index+">"+value+"</option>")
+        });
+      })
+  });
+    </script>
+  {% endblock js_block %}

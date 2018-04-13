@@ -100,7 +100,7 @@ def users_list(request):
         users_list = users_list.filter(username__icontains=username)
     if email:
         users_list = users_list.filter(email__icontains=email)
-    return render(request, "users/list.html", {
+    return render(request, "list.html", {
         'users': users_list, 'active_users': active_users,
         'per_page': page, 'inactive_users': inactive_users
     })
@@ -118,9 +118,9 @@ def create_user(request):
             user.save()
             return redirect("common:users_list")
         else:
-            return render(request, 'users/create.html', {'user_form': user_form, "errors": user_form.errors})
+            return render(request, 'create.html', {'user_form': user_form, "errors": user_form.errors})
     else:
-        return render(request, 'users/create.html', {'user_form': user_form})
+        return render(request, 'create.html', {'user_form': user_form})
 
 
 @admin_required
@@ -129,7 +129,7 @@ def view_user(request, user_id):
     user_obj = User.objects.filter(id=user_id)
     active_users = User.objects.filter(is_active=True)
     inactive_users = User.objects.filter(is_active=False)
-    return render(request, "users/list.html", {
+    return render(request, "list.html", {
         'users': users_list, 'user_obj': user_obj,
         'active_users': active_users, 'inactive_users': inactive_users
     })
@@ -148,9 +148,9 @@ def edit_user(request, user_id):
             else:
                 return redirect("common:users_list")
         else:
-            return render(request, 'users/create.html', {'user_form': user_form, "errors": user_form.errors})
+            return render(request, 'create.html', {'user_form': user_form, "errors": user_form.errors})
     else:
-        return render(request, 'users/create.html', {'user_form': user_form, 'user_obj': user_obj})
+        return render(request, 'create.html', {'user_form': user_form, 'user_obj': user_obj})
 
 
 @admin_required

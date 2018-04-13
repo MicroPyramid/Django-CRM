@@ -35,7 +35,7 @@ class AccountsCreateTestCase(AccountCreateTest, TestCase):
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
             'shipping_address': self.address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
-        self.assertTemplateUsed(response, 'accounts/create_account.html')
+        self.assertTemplateUsed(response, 'create_account.html')
 
 
 class AccountsListTestCase(AccountCreateTest, TestCase):
@@ -43,7 +43,7 @@ class AccountsListTestCase(AccountCreateTest, TestCase):
         self.accounts = Account.objects.all()
         response = self.client.get('/accounts/list/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'accounts/accounts.html')
+        self.assertTemplateUsed(response, 'accounts.html')
 
 
 class AccountsCountTestCase(AccountCreateTest, TestCase):
@@ -57,7 +57,7 @@ class AccountsViewTestCase(AccountCreateTest, TestCase):
         self.accounts = Account.objects.all()
         response = self.client.get('/accounts/'+ str(self.account.id) +'/view/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'accounts/view_account.html')
+        self.assertTemplateUsed(response, 'view_account.html')
 
 
 class AccountsRemoveTestCase(AccountCreateTest, TestCase):
@@ -78,7 +78,7 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
             'shipping_address': self.address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'accounts/create_account.html')
+        self.assertTemplateUsed(response, 'create_account.html')
 
     def test_accounts_update_status(self):
         response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
@@ -86,7 +86,7 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
 
     def tst_accounts_update_html(self):
         response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
-        self.assertTemplateUsed(response, 'accounts/create_account.html')
+        self.assertTemplateUsed(response, 'create_account.html')
 
 
 class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):

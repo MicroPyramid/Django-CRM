@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+  <!-- main_container starts here -->
+  <div class="main_container">
+    <!-- heading_create starts here -->
+    <div class="row marl heading_create">
+      <div class="heading col-md-12">
+        <div class="no-gutters row">
+        <div class="col-md-6">
+          <h4>Users</h4>
+        </div>
+        <div class="col-md-6">
+          <div class="create_new text-right">
+            <a href="{% url 'common:create_user'%}"><i class="fa fa-plus"></i> Add New User</a>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <!-- heading_create ends here -->
+    <!-- filter_row starts here -->
+    <div class="filter_row row marl">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+          <div class="card-title">Filters</div>
+          <form id="users_filter" action="" method="POST">
+            <div class="row marl">
+              <div class="filter_col col-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">User Name</label>
+                  <input type="text" class="form-control" placeholder="Username" name="username" value="{{request.POST.username}}">
+                </div>
+              </div> 
+              <div class="filter_col col-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">First Name</label>
+                  <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+                </div>
+              </div>
+              <div class="filter_col col-4">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Email</label>
+                  <input type="text" class="form-control" placeholder="Email" name="email" value="{{request.POST.email}}">
+                </div>
+              </div>
+              <div class="filter_col text-center col-12">
+                <div class="form-group buttons_row">
+                  <button class="btn btn-primary save" type="submit">Search</button>
+                  <a href="{% url 'common:users_list' %}" class="btn btn-default clear">Clear</a>
+                </div>
+              </div>
+              <br clear="all">
+            </div>
+          </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- filter_row ends here -->
+    <div class="table_container_row row marl">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title list">
+              List of Users
+              <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Users {{ users|length }}{% endif %}</span>
+            </div>
+            <div class="table-responsive ">
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th width="5%" style="text-align:center;">S.No</th>
+                    <th width="20%" style="text-align:center;">First Name</th>
+                    <th width="20%" style="text-align:center;">Username</th>
+                    <th width="20%" style="text-align:center;">Email Address</th>
+                    <th width="15%" style="text-align:center;">Status</th>
+                    <th width="20%" style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if per_page %}
+                    {% paginate per_page users %}
+                  {% else %}
+                    {% paginate 10 users %}
+                  {% endif %}
+                  {% for user in users %}
+                  <tr class="text-center">
+                    <td scope="row">{{ forloop.counter }}</td>
+                    <td>{{ user.first_name }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                      {% if user.is_active == True %}
+                        Active
+                      {% else %}
+                        InActive
+                      {% endif %}
+                    </td>
+                    <td class="actions">
+                      <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                      <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
+                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email or user.role == "ADMIN" %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% ifequal users|length 0 %}
+              <h6 class="text-center">No User Records Found</h6>
+            {% endifequal %}
+            <div class="marl row text-center">
+              {% show_pages %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- main_container ends here -->
+{% endblock %}
+{% block js_block %}
+<script type="text/javascript">
+  $('.trash').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+
+  $("a[rel='page']").click(function(e){
+    e.preventDefault();
+    $('#users_filter').attr("action", $(this).attr("href"));
+    $('#users_filter').submit();
+  });
+</script>
+{% endblock js_block %}

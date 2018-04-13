@@ -36,7 +36,8 @@ $mob_min:240px;
   margin-top: 23px;
   button{
     border-radius: 0;
-    font-size: 12px;
+    font-size: 1rem;
+    font-weight: 600;
     &.save{
       background: $dark_sky;
       color: #fff;
@@ -47,7 +48,7 @@ $mob_min:240px;
     	border:1px solid $dark_sky;
     	border-radius: 0;
     	color: $dark_sky;
-    	font-size: 12px;
+    	font-size: 1rem;
     }
   &.form_btn_row{
   	display: block;
@@ -58,7 +59,7 @@ $mob_min:240px;
 }
 select{
 	&.form-control{
-		height: 32px !important;
+		height: 32px ;
 	}
 }
 

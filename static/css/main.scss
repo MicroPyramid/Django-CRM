@@ -385,20 +385,21 @@ $color_2: #000;
         .card-title{
           background: #e5e5e5;
           padding:6px 10px;
-          font-size: 13px;
-
+          font-weight: 600;
+          font-size: 1rem;
         }
         .form-group{
           margin-bottom: 10px;
           label{
             color: $text_color;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: none;
           }
           .form-control{
             border-radius: 0;
             box-shadow: none;
-            font-size: 12px;
+            font-size: 1rem;
           }
         }
       }
@@ -415,9 +416,10 @@ $color_2: #000;
       .card-title{
         padding:5px 10px;
         background: #e5e5e5;
-          padding:6px 10px;
-          font-size: 13px;
+        padding:6px 10px;
+        font-size: 1rem;
         margin-bottom: 0;
+        font-weight: 600;
         .dropdown{
           display: inline-block;
           .dropdown-toggle{
@@ -453,9 +455,9 @@ $color_2: #000;
             th{
               background: #5b646d;
               color: #fff;
-              font-weight: 500;
+              font-weight: 600;
               /* text-transform: uppercase; */
-              font-size: 12px;
+              font-size: 1rem;
               border: none;
               padding:6px;
             }
@@ -466,9 +468,12 @@ $color_2: #000;
             td{
               vertical-align: middle;
               color: #454545;
-              font-size: 12px;
-              font-weight: 400;
+              font-size: 1rem;
+              font-weight: 500;
               padding:7px 0;
+              @media(min-width: $large){
+                font-size:1rem;
+              }
               a{
                 color: #454545;
               }
@@ -484,12 +489,13 @@ $color_2: #000;
               &.actions{
                 .btn{
                   border-radius: 0;
-                  font-size: 12px;
+                  font-size: 1rem;
                   padding:3px 5px;
                   color: #fff;
                   svg{
                     display: inline-block;
                     margin-right: 5px;
+                    font-size: 0.85rem;
                   }
                 }
               }
@@ -599,7 +605,7 @@ $color_2: #000;
   .form-control{
     border-radius: 0;
     box-shadow: none;
-    font-size: 12px;
+    font-size: 1rem;
   }
   margin-top:0;
   .country_class{
@@ -639,7 +645,8 @@ $color_2: #000;
   margin-bottom: 20px;
   button{
     border-radius: 0;
-    font-size: 12px;
+    font-size: 1rem;
+    font-weight: 600;
     &.save{
       background: $dark_sky;
       color: #fff;
@@ -680,19 +687,19 @@ $color_2: #000;
 .view-pad{
 padding:0px !important;
   h5{
-   width: 79%;
+   width: 90%;
     margin-bottom: 0;
     position: relative;
-    font-size: 13px;
+    font-size: 1rem;
+    font-weight: 600;
     display: inline-block;
     text-align: left;
     padding-top: 0px;
   }
   a{
     float: right;
-    margin-right: 95px;
     border-radius: 0;
-    font-size: 12px;
+    font-size: 1rem;
     padding: 3px 10px;
     color: #fff;
     margin-top: -4px;
@@ -701,4 +708,14 @@ padding:0px !important;
     }
   }
 
+}
+
+.select2-container{
+  width: 100% !important;
+  border-radius: 0;
+  border: 1px solid #ced4da;
+}
+.select2-container--default .select2-selection--multiple{
+  border-radius: 0 important;
+  border: none !important;
 }
