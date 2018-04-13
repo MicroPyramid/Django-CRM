@@ -47,7 +47,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_list_html(self):
         response = self.client.get('/contacts/list/')
-        self.assertTemplateUsed(response, 'contacts/contacts.html')
+        self.assertTemplateUsed(response, 'contacts.html')
 
     def test_contacts_create(self):
         response = self.client.post('/contacts/create/', {
@@ -59,7 +59,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         response = self.client.post('/contacts/create/', {
             'name': 'contact', 'email': 'contact@gmail.com', 'phone': '12345',
             'account': self.account.id, 'address': self.address, 'description': 'contact'})
-        self.assertTemplateUsed(response, 'contacts/create_contact.html')
+        self.assertTemplateUsed(response, 'create_contact.html')
 
     def test_contacts_delete(self):
         Contact.objects.filter(id=self.contact.id).delete()
@@ -80,7 +80,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         response = self.client.post('/contacts/'+ str(self.contact.id) +'/edit/', {
             'name': 'priya', 'email': 'contact@gmail.com', 'phone': '12345',
             'pk': self.contact.id, 'account': self.account.id, 'address': self.address.id})
-        self.assertTemplateUsed(response, 'contacts/create_contact.html')
+        self.assertTemplateUsed(response, 'create_contact.html')
 
     def test_contacts_view(self):
         response = self.client.get('/contacts/'+ str(self.contact.id) +'/view/')
@@ -89,6 +89,6 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_view_html(self):
         response = self.client.get('/contacts/'+ str(self.contact.id) +'/view/')
-        self.assertTemplateUsed(response, 'contacts/view_contact.html')
+        self.assertTemplateUsed(response, 'view_contact.html')
 
 

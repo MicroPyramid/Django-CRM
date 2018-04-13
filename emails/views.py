@@ -23,7 +23,7 @@ def emails_list(request):
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_all.html', {
+    return render(request, 'mail_all.html', {
         'filter_list': filter_list})
 
 
@@ -49,10 +49,10 @@ def email(request):
             f.save()
             return HttpResponseRedirect(reverse('emails:list'))
         else:
-            return render(request, 'emails/create_mail.html', {'form': form})
+            return render(request, 'create_mail.html', {'form': form})
     else:
         form = EmailForm()
-        return render(request, 'emails/create_mail.html', {'form': form})
+        return render(request, 'create_mail.html', {'form': form})
 
 
 def email_sent(request):
@@ -69,7 +69,7 @@ def email_sent(request):
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_sent.html',
+    return render(request, 'mail_sent.html',
                   {'filter_list': filter_list})
 
 
@@ -87,7 +87,7 @@ def email_trash(request):
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_trash.html',
+    return render(request, 'mail_trash.html',
                   {'filter_list': filter_list})
 
 
@@ -110,7 +110,7 @@ def email_draft(request):
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_drafts.html',
+    return render(request, 'mail_drafts.html',
                   {'filter_list': filter_list})
 
 
@@ -153,7 +153,7 @@ def email_imp_list(request):
     if request.GET.get('name', ''):
         name = request.GET.get('name', '')
         filter_list = filter_list.filter(to_email__startswith=name)
-    return render(request, 'emails/mail_important.html', {'filter_list': filter_list})
+    return render(request, 'mail_important.html', {'filter_list': filter_list})
 
 
 def email_sent_edit(request, pk):
@@ -180,11 +180,11 @@ def email_sent_edit(request, pk):
             f.save()
             return HttpResponseRedirect(reverse('emails:list'))
         else:
-            return render(request, 'emails/create_mail.html',
+            return render(request, 'create_mail.html',
                           {'form': form, 'em': em})
     else:
         form = EmailForm()
-    return render(request, 'emails/create_mail.html',
+    return render(request, 'create_mail.html',
                   {'form': form, 'em': em})
 
 
@@ -198,4 +198,4 @@ def email_unimp(request, pk):
 def email_view(request, pk):
     email_view = get_object_or_404(Email, pk=pk)
     x = EmailForm(instance=email_view)
-    return render(request, 'emails/create_mail.html', {'x': x})
+    return render(request, 'create_mail.html', {'x': x})

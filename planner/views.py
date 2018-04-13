@@ -32,13 +32,13 @@
 #         paginator = Paginator(meetings, 5)
 #         try:
 #             meetings = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/meetings_list.html',
+#             return render(request, 'meetings_list.html',
 #                           {'meetings': meetings})
 #         except PageNotAnInteger:
 #             meetings = paginator.page(1)
 #         except EmptyPage:
 #             meetings = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/meetings.html',
+#         return render(request, 'meetings.html',
 #                       {'meetings': meetings, 'reminder_form_set': reminder_form_set})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_meetings')
@@ -52,13 +52,13 @@
 #         paginator = Paginator(tasks, 3)
 #         try:
 #             tasks = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/tasks_list.html',
+#             return render(request, 'tasks_list.html',
 #                           {'tasks': tasks})
 #         except PageNotAnInteger:
 #             tasks = paginator.page(1)
 #         except EmptyPage:
 #             tasks = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/tasks.html', {'tasks': tasks})
+#         return render(request, 'tasks.html', {'tasks': tasks})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_tasks')
 
@@ -78,13 +78,13 @@
 #         paginator = Paginator(calls, 3)
 #         try:
 #             calls = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/calls_list.html',
+#             return render(request, 'calls_list.html',
 #                           {'calls': calls})
 #         except PageNotAnInteger:
 #             calls = paginator.page(1)
 #         except EmptyPage:
 #             calls = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/calls.html', {'calls': calls, 'reminder_form_set': reminder_form_set})
+#         return render(request, 'calls.html', {'calls': calls, 'reminder_form_set': reminder_form_set})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_calls')
 
@@ -222,7 +222,7 @@
 #             meeting = Event.objects.get(id=int(request.POST.get('meetingID')), created_user=request.user)
 #             ReminderFormSet = modelformset_factory(Reminder, ReminderForm, can_delete=True, extra=0)
 #             reminder_form_set = ReminderFormSet(queryset=meeting.reminders.all())
-#             remindersHtML = render(request, 'planner/reminder.html', {'reminder_form_set': reminder_form_set})
+#             remindersHtML = render(request, 'reminder.html', {'reminder_form_set': reminder_form_set})
 #             data = {}
 #             if meeting.parent:
 #                 data['parent_type'] = meeting.parent.__class__.__name__
@@ -517,35 +517,35 @@
 #             if request.GET.get('event_type') == 'Meeting':
 #                 try:
 #                     event = paginator.page(request.GET.get('page'))
-#                     return render(request, 'planner/meetings_list.html',
+#                     return render(request, 'meetings_list.html',
 #                                   {'meetings': event})
 #                 except PageNotAnInteger:
 #                     event = paginator.page(1)
 #                 except EmptyPage:
 #                     event = paginator.page(paginator.num_pages)
-#                 return render(request, 'planner/meetings_list.html',
+#                 return render(request, 'meetings_list.html',
 #                               {'meetings': event})
 #             elif request.GET.get('event_type') == 'Call':
 #                 try:
 #                     event = paginator.page(request.GET.get('page'))
-#                     return render(request, 'planner/calls_list.html',
+#                     return render(request, 'calls_list.html',
 #                                   {'calls': event})
 #                 except PageNotAnInteger:
 #                     event = paginator.page(1)
 #                 except EmptyPage:
 #                     event = paginator.page(paginator.num_pages)
-#                 return render(request, 'planner/calls_list.html',
+#                 return render(request, 'calls_list.html',
 #                               {'calls': event})
 #             elif request.GET.get('event_type') == 'Task':
 #                 try:
 #                     event = paginator.page(request.GET.get('page'))
-#                     return render(request, 'planner/tasks_list.html',
+#                     return render(request, 'tasks_list.html',
 #                                   {'tasks': event})
 #                 except PageNotAnInteger:
 #                     event = paginator.page(1)
 #                 except EmptyPage:
 #                     event = paginator.page(paginator.num_pages)
-#                 return render(request, 'planner/tasks_list.html',
+#                 return render(request, 'tasks_list.html',
 #                               {'tasks': event})
 #         except models.Event.DoesNotExist:
 #             return JsonResponse({'Event': 'DoesNotExist'})
@@ -563,7 +563,7 @@
 #             'form-MAX_NUM_FORMS': '10',
 #         }
 #         reminder_form_set = RemindersFormSet(data)
-#         return render(request, 'planner/reminder.html', {'reminder_form_set': reminder_form_set})
+#         return render(request, 'reminder.html', {'reminder_form_set': reminder_form_set})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
 
@@ -661,13 +661,13 @@
 #         paginator = Paginator(users, 5)
 #         try:
 #             users = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/users.html',
+#             return render(request, 'users.html',
 #                           {'users': users})
 #         except PageNotAnInteger:
 #             users = paginator.page(1)
 #         except EmptyPage:
 #             users = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/users.html', {'users': users})
+#         return render(request, 'users.html', {'users': users})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
 
@@ -678,13 +678,13 @@
 #         paginator = Paginator(contacts, 5)
 #         try:
 #             contacts = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/contacts.html',
+#             return render(request, 'contacts.html',
 #                           {'contacts': contacts})
 #         except PageNotAnInteger:
 #             contacts = paginator.page(1)
 #         except EmptyPage:
 #             contacts = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/contacts.html', {'contacts': contacts})
+#         return render(request, 'contacts.html', {'contacts': contacts})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
 
@@ -695,12 +695,12 @@
 #         paginator = Paginator(leads, 5)
 #         try:
 #             leads = paginator.page(request.GET.get('page'))
-#             return render(request, 'planner/leads.html',
+#             return render(request, 'leads.html',
 #                           {'leads': leads})
 #         except PageNotAnInteger:
 #             leads = paginator.page(1)
 #         except EmptyPage:
 #             leads = paginator.page(paginator.num_pages)
-#         return render(request, 'planner/leads.html', {'leads': leads})
+#         return render(request, 'leads.html', {'leads': leads})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})

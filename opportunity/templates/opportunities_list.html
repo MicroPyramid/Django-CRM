@@ -1,0 +1,38 @@
+<table class="table">
+  <thead>
+    <tr>
+      <th width="50%">
+        <a href='#'>
+        Name
+        </a>
+        <span class="caret"></span>
+      </th>
+      <th>
+        <a href="#">
+        Stage
+        </a>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    {% ifequal opportunities|length  0 %}
+    <tr>
+      <td class="cell">
+        NO OPPORTUNITIES FOUND!!
+      </td>
+    </tr>
+    {% endifequal %}
+    {% for opportunity in opportunities %}
+    <tr>
+      <td class="cell">
+        <a class="cell parentname" id="{{ opportunity.id }}">
+        {{ opportunity.name }}
+        </a>
+      </td>
+      <td class="cell parentstage">
+        {{ opportunity.stage }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -45,7 +45,7 @@ class CaseViewTestCase(CaseCreation, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cases'][0].id, self.case.id)
         self.assertTrue(response.context['cases'])
-        self.assertTemplateUsed(response, 'cases/cases.html')
+        self.assertTemplateUsed(response, 'cases.html')
 
 
 class CaseCreationUrlTestCase(CaseCreation, TestCase):
@@ -61,7 +61,7 @@ class CaseCreationUrlTestCase(CaseCreation, TestCase):
                                                        'account': self.account, 'contacts': self.contacts,
                                                        'priority': "Low",
                                                        'description': "something", 'teams': 'Sales'})
-        self.assertTemplateUsed(response, 'cases/create_cases.html')
+        self.assertTemplateUsed(response, 'create_cases.html')
 
 
 class CaseShowTestCase(CaseCreation, TestCase):
@@ -72,7 +72,7 @@ class CaseShowTestCase(CaseCreation, TestCase):
 
     def test_show_case_html(self):
         response = self.client.get('/cases/' + str(self.case.id) + '/view/')
-        self.assertTemplateUsed(response, 'cases/view_case.html')
+        self.assertTemplateUsed(response, 'view_case.html')
 
     def test_show_case_invalid_data(self):
         response = self.client.get('/cases/' + str(self.case.id) + '/view/')
@@ -96,6 +96,6 @@ class CaseUpdateTestCase(CaseCreation, TestCase):
 
     def test_case_update_html(self):
         response = self.client.post('/cases/' + str(self.case.id) + '/edit_case/', {'hiddenval': self.case.id})
-        self.assertTemplateUsed(response, 'cases/create_cases.html')
+        self.assertTemplateUsed(response, 'create_cases.html')
 
 
