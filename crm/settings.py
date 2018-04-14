@@ -152,7 +152,7 @@ LOGGING = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Calcutta'
+TIME_ZONE = 'America/Chicago'
 
 USE_I18N = True
 
@@ -198,9 +198,11 @@ COMPRESS_ENABLED = True
 
 COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
-    ('text/x-sass', 'sass {infile} {outfile}'),
-    ('text/x-scss', 'sass --scss {infile} {outfile}'),
 )
+
+### removing sass becuase of the LSW compliation errors over complicating the project
+#    ('text/x-sass', 'sass {infile} {outfile}'),
+#    ('text/x-scss', 'sass --scss {infile} {outfile}'),
 
 COMPRESS_OFFLINE_CONTEXT = {
     'STATIC_URL': 'STATIC_URL',

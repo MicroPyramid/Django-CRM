@@ -86,7 +86,7 @@ $("#comment_edit").click(function(e){
         if(data.error)
         {
             // $('#id_editcomment').attr('placeholder',data.error);
-            alert(data.error)
+            alert(data.error);
             // $('#id_editcomment').addClass("input-focus");
         }
         else{
