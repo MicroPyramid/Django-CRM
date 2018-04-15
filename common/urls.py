@@ -1,6 +1,6 @@
 from django.conf.urls import url
 from common import views
-from user import views as usr
+
 from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 app_name = 'common'
