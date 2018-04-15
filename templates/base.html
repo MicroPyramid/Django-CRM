@@ -33,41 +33,32 @@
 </head>
 <body class="main_body_bg_color">
 <div class="wrapper">
-  <!-- menu header -->
+  <!-- header starts here -->
   <header>
     {% include 'nav_menu.html' %}
   </header>
-  <div class="wrapper">
-      <!-- header starts here -->
-      <header>
-          {% include 'nav_menu.html' %}
-      </header>
-      <!-- header ends here -->
-      <!-- main_container starts here -->
-      <div id="mainbody" class="main_container">
-          <!-- breadcrumb starts here -->
-          {% block breadcrumb %}
-          {% endblock %}
-
-          <!-- breadcrumb ends here -->
-          <!-- breadcrumb1 starts here -->
-          {% block breadcrumb1 %}
-          {% endblock %}
-
-          <!-- breadcrumb1 ends here -->
-          <!-- assigned_teams starts here -->
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-          <script src="{% static 'js/index.js' %}"></script>
-          {% block content %}
-          {% endblock %}
-      </div>
-      <!-- main_container ends here -->
-  </div>
-
+  <!-- header ends here -->
+  <!-- main_container starts here -->
+  <div id="mainbody" class="main_container">
+    <!-- breadcrumb starts here -->
+    {% block breadcrumb %}
+    {% endblock %}
+    <!-- breadcrumb ends here -->
+    <!-- breadcrumb1 starts here -->
+    {% block breadcrumb1 %}
+    {% endblock %}
+    <!-- breadcrumb1 ends here -->
+    <!-- assigned_teams starts here -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    <script src="{% static 'js/index.js' %}"></script>
+    {% block content %}
+    {% endblock %}
+    </div>
+    <!-- main_container ends here -->
 </div>
 {% block js_block %}
 {% endblock js_block %}

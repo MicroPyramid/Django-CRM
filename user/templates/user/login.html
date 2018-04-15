@@ -1,8 +1,8 @@
-{% extends parent_template|default:"base.html" %}
+{% extends parent_template|default:"user/base_user.html" %}
 
-{% load staticfiles %}
-{% load compress %}
-
+{% block title %}
+{{ block.super }} - Login
+{% endblock %}
 
 {% block content %}
 <div class="container">

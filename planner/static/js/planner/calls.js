@@ -1,4 +1,12 @@
 $(document).ready(function () {
+    $('.addedFilters .input-group').toggle()
+    $(function () {
+        $('.startdatepicker').datetimepicker(
+            {
+                format: 'MM/DD/YYYY HH:MM:ss'
+            }
+        );
+    });
     $("#addreminder").click(function (e) {
         e.preventDefault()
         forms_count = $(".reminderslist").length
@@ -14,72 +22,56 @@ $(document).ready(function () {
             $(".reminderslist").last().after($temp_reminder)
             $(".reminderslist").last().show()
             // console.log($(".reminderslist").last())
-            $('#' + $(".reminderslist").last().children()[0].id).removeAttr('disabled')
-            $('#' + $(".reminderslist").last().children()[1].id).removeAttr('disabled')
-            $('#' + $(".reminderslist").last().children()[2].id).removeAttr('checked')
-            $('#' + $(".reminderslist").last().children()[3].id).removeAttr('style')
-            $('#' + $(".reminderslist").last().children()[4].id).removeAttr('value')
+            $($(".reminderslist").last().children()[0]).removeAttr('disabled')
+            $($(".reminderslist").last().children()[1]).removeAttr('disabled')
+            $($(".reminderslist").last().children()[2]).removeAttr('checked')
+            $($(".reminderslist").last().children()[3]).removeAttr('style')
+            $($(".reminderslist").last().children()[4]).removeAttr('value')
             $("#id_form-TOTAL_FORMS").val($(".reminderslist").length)
         }
     });
-    $(function () {
-        $('#startdatepicker').datetimepicker(
-            {
-                format: 'MM/DD/YYYY HH:MM:ss'
-            }
-        );
-        $('#enddatepicker').datetimepicker({
-            useCurrent: false,
-            format: 'MM/DD/YYYY HH:MM:ss'
-        });
-        $("#startdatepicker").on("dp.change", function (e) {
-            $('#enddatepicker').data("DateTimePicker").minDate(e.date);
-        });
-        $("#enddatepicker").on("dp.change", function (e) {
-            $('#startdatepicker ').data("DateTimePicker").maxDate(e.date);
-        });
-    });
+});
+$("body").on("click", "button[id=remove]", function (e) {
+    if ($('.reminderslist').length != 1) {
+        $(this).closest(".reminderslist").remove();
+        $("#id_form-TOTAL_FORMS").val($(".reminderslist").length)
+    }
 });
 $('body').on('click', '#modeldialogclosed', function () {
     $('i[id$=_error]').text('')
-    $('#meeting-create-model').modal("hide");
+    $('#call-create-model').modal("hide");
     $('#update-form').attr({"id": "model-form"})
     $('#model-form').find("input[type=text], textarea").val("");
     $('#parent_name').val('')
     $('#parent_id').val('')
-    $('#update').attr("id", "gocreatemeeting").text('Create');
-    getreminders()
+    $('#update').attr("id", "gocreatecall").text('Create');
     $('#updatemodeldialogclosed').attr({"id": "modeldialogclosed"})
-
 
 });
 $('body').on('click', '#successmodeldialogclosed', function () {
-    $('#meeting-success-model').modal("hide");
-    $('#parent_name').val('')
-
+    $('#call-success-model').modal("hide");
 });
 $('body').on('submit', '#model-form', function (e) {
     e.preventDefault();
-    console.log($('#model-form').serialize())
     $.post(
-        '/planner/meeting/create/',
+        '/planner/call/create/',
         $('#model-form').serialize(),
         function (data, status, xhr) {
             if (status == 'success') {
-                if (data['success'] == 'Meeting Created') {
-                    $("#meetingslist").prepend('<tr id="meeting' + data["id"] + '">' +
-                        '<td><a id="meeting' + data["id"] + 'name" name" href="#">' + data["name"] + '</a></td>' +
-                        '<td id="meeting' + data["id"] + 'parent">' + data["parent"] + '</td>' +
-                        '<td id="meeting' + data["id"] + 'status" >' + data["status"] + '</td>' +
-                        '<td id="meeting' + data["id"] + 'startdate">' + data["startdate"] + '</td>' +
+                if (data['success'] == 'Call Created') {
+                    $("#callslist").prepend('<tr id="call' + data['id'] + '">' +
+                        '<td><a id="call' + data["id"] + 'name" name" href="#">' + data["name"] + '</a></td>' +
+                        '<td id="call' + data["id"] + 'parent" >' + data["parent"] + '</td>' +
+                        '<td id="call' + data["id"] + 'status" >' + data["status"] + '</td>' +
+                        '<td id="call' + data["id"] + 'start_date">' + data["start_date"] + '</td>' +
                         '<td>' +
                         '<div class="dropdown">' +
-                        '<button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Action ' +
+                        '<button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Action' +
                         '<span class="caret"></span></button>' +
                         '<ul class="dropdown-menu">' +
-                        '<li><a id="meeting' + data["id"] + 'view" class="viewthis" href="#">View</a></li>' +
-                        '<li><a id="meeting' + data["id"] + 'edit" class="editthis" href="#">Edit</a></li>' +
-                        '<li><a id="meeting' + data["id"] + 'remove" class="removethis" href="#">Remove</a></li>' +
+                        '<li><a class="viewthis" href="#">View</a></li>' +
+                        '<li><a class="editthis" href="#">Edit</a></li>' +
+                        '<li><a class="removethis" href="#">Remove</a></li>' +
                         '<li><a class="setstatus" href="#">Set Held</a></li>' +
                         '<li><a class="setstatus" href="#">Set Not Held</a></li>' +
                         '</ul>' +
@@ -87,19 +79,20 @@ $('body').on('submit', '#model-form', function (e) {
                         '</td>' +
                         '</tr>');
                     $('i[id$=_error]').text('')
-                    $('#meeting-create-model').modal("hide");
-                    $('#meeting-success-model').modal("show");
+                    $('#call-create-model').modal("hide");
+                    $('#call-success-model').modal("show");
                     $('#model-form').find("input[type=text], textarea").val("");
+                    $('.selected-assigned-users').html('')
+                    $('.selectedcontacts').html('')
+                    $('.selectedusers').html('')
+                    $('#selectedleads').html('')
                 }
                 else if (data['auth'] == 'NO') {
                     alert('Not Authanticated!!')
-
                     //login REDIRECT URL
                 }
                 else {
-                    // console.log("Meeting Not Created")
-                    // resp = JSON.parse(data);
-                    if (data['success'] != 'Meeting Created') {
+                    if (data['success'] != 'Call Created') {
                         for (a in data) {
                             $('#' + a + "_error").text(data[a]);
                             $('#' + a + "_error").css("color", "red");
@@ -107,20 +100,13 @@ $('body').on('submit', '#model-form', function (e) {
                     }
                 }
             }
-            else if (status == 'error') {
-                console.log(jqXhr);
-                if (data['error'] == 'Something Went Wrong!!!') {
-
-                    window.location = '/';
-                    console.log('Something Went Wrong!!!')
-                }
-            }
-            else {
+            else if (status == 'success') {
                 console.log(status)
             }
-        });
+        }
+    );
 });
-$("body").on("click", "#reminders input[type=checkbox]", function (e) {
+$("body").on("click", "select input[type=checkbox]", function (e) {
     is_match = $(this).attr("name").match(/form-\d+-DELETE/)
     if (is_match) {
         // $(this).closest(".reminderslist").hide();
@@ -129,18 +115,18 @@ $("body").on("click", "#reminders input[type=checkbox]", function (e) {
 });
 $("body").on("click", ".removethis", function (e) {
     e.preventDefault()
-    meetingID = $(this).closest("tr")[0].id
-    $('#meeting-delete-model').modal("show");
+    callID = $(this).closest("tr")[0].id
+    $('#call-delete-model').modal("show");
 });
-$('body').on('click', '#deletemeeting', function () {
-    $('#meeting-delete-model').modal("hide");
+$('body').on('click', '#deletecall', function () {
+    $('#call-delete-model').modal("hide");
     $.post(
-        '/planner/meeting/delete/',
-        {meetingID: meetingID.match(/\d+/)[0]},
+        '/planner/call/delete/',
+        {callID: callID.match(/\d+/)[0]},
         function (data, status, xhr) {
             if (status == 'success') {
-                if (data['success'] == 'Meeting Deleted') {
-                    $('#' + meetingID).css({
+                if (data['success'] == 'Call Deleted') {
+                    $('#' + callID).css({
                         "background": "#e6f9ff",
                     }).animate({opacity: '0'}, 2000, function () {
                         $(this).remove();
@@ -170,28 +156,34 @@ $('body').on('click', '#deletemeeting', function () {
 });
 $("body").on("click", ".viewthis", function (e, from_edit_this) {
     e.preventDefault()
-    meetingID = $(this).closest("tr")[0].id
-    meet = meetingID.match(/\d+/)[0]
-    $('#model-form').append('<input type="hidden" name="meetingID" value="' + meet + '">');
-    $('#gocreatemeeting').attr("id", "editmeeting").text('Edit');
+    callID = $(this).closest("tr")[0].id
+    call = callID.match(/\d+/)[0]
+    $('#model-form').append('<input type="hidden" name="callID" value="' + call + '">');
+    $('#gocreatecall').attr("id", "editcall").text('Edit');
+    $('#selectedleads').html('')
+    $('#selectedcontacts').html('')
+    $('#selected-assignee-users').html('')
+    $('#selectedusers').html('')
     $.post(
-        '/planner/get/meeting/',
-        {meetingID: meetingID.match(/\d+/)[0]},
+        '/planner/get/call/',
+        {callID: callID.match(/\d+/)[0]},
         function (data, status, xhr) {
             // console.log(data)
             if (status == 'success') {
-                if (data['meeting']['event_type'] == 'Meeting') {
-                    $('#name').val(data['meeting']['name'])
-                    $('#status').val(data['meeting']['status'])
-                    $('#start_date').val(data['meeting']['start_date'])
-                    $('#close_date').val(data['meeting']['close_date'])
-                    $('#duration').val(data['meeting']['duration'])
-                    $('#description').val(data['meeting']['description'])
+                if (data['call']['event_type'] == 'Call') {
+                    $('#name').val(data['call']['name'])
+                    $('#parent').val(data['call']['parent'])
+                    $('#status').val(data['call']['status'])
+                    $('#start_date').val(data['call']['start_date'])
+                    $('#close_date').val(data['call']['close_date'])
+                    $('#duration').val(data['call']['duration'])
+                    $('#description').val(data['call']['description'])
                     $('#parent_name').val(data['parent_name'])
                     $('#parent_id').val(data['parent_id'])
                     $('#parent_type').val(data['parent_type'])
-                    $('#teams').val(data['teams'])
-
+                    $('#teams').val(data['call']['teams'])
+                    getOtherFields(data)
+                    // reminders = JSON.parse(data['reminders'])
                     remindersHTML = data.remindersHTML.replace("b'", "")
                     remindersHTML.replace("</div>'", "</div>")
                     remindersHTML = remindersHTML.replace(/\\n/g, '')
@@ -199,6 +191,7 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
                     $("#reminder1").replaceWith(remindersHTML)
                     $("#reminder1").show()
                     if (from_edit_this != true) {
+                        // alert(from_edit_this)
                         $('.reminderslist select').attr('disabled', true)
                         $('.glyphicon-plus').hide()
                         $('.glyphicon-trash').hide()
@@ -222,25 +215,27 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
                 console.log(status)
             }
         });
-    $('#meeting-create-model').modal("show");
+    $('#call-create-model').modal("show");
     $('.modal-body :input').attr("disabled", true);
+
+
 });
 
-$("body").on("click", "#editmeeting", function (e) {
+$("body").on("click", "#editcall", function (e) {
     e.preventDefault();
     $('.modal-body :input').removeAttr('disabled')
     $('.reminderslist select').removeAttr('disabled')
     $('.glyphicon-plus').show()
     $('.glyphicon-trash').show()
     $('#model-form').attr({"id": "update-form", "type": "submit"});
-    $('#editmeeting').attr({"id": "update", "type": "submit"}).text('Update');
+    $('#editcall').attr({"id": "update", "type": "submit"}).text('Update');
     $('#modeldialogclosed').attr({"id": "modeldialogclosed"});
-    $('#modelbody').append('<input type="hidden" value="' + meetingID + '">')
+    $('#modelbody').append('<input type="hidden" value="' + callID + '">')
 });
 $("body").on("click", "#updatemodeldialogclosed", function (e) {
     e.preventDefault();
     $('i[id$=_error]').text('')
-    $('#meeting-create-model').modal("hide");
+    $('#call-create-model').modal("hide");
     $('#update').attr({"id": "create", "type": "submit"}).text('Create');
     $('#model-form').find("input[type=text], textarea").val("");
     $('#update-form').attr({"id": "model-form"})
@@ -248,52 +243,53 @@ $("body").on("click", "#updatemodeldialogclosed", function (e) {
     $(".reminderslist[style='display:inline-flex']").remove();
 
 });
-$("body").on("click", "#createmeeting", function (e) {
+$("body").on("click", "#createcall", function (e) {
     $('.modal-body :input').removeAttr('disabled')
-    $('#gocreatemeeting').attr("id", "gocreatemeeting").text('Create');
-    $('#editmeeting').attr("id", "gocreatemeeting").text('Create');
+    $('#gocreatecall').attr("id", "gocreatecall").text('Create');
+    $('#editcall').attr("id", "gocreatecall").text('Create');
     $('#model-form').find("input[type=text], textarea").val("");
     $('#parent_name').val('')
     $('#parent_id').val('')
-    // $('#update').attr("id", "gocreatemeeting").text('Create');
+    $('#selectedleads').html('')
+    $('#selectedcontacts').html('')
+    $('#selected-assignee-users').html('')
+    $('#selectedusers').html('')
     getreminders()
-
-
 });
 
 $('body').on('submit', '#update-form', function (e) {
     e.preventDefault();
     $.post(
-        '/planner/meeting/update/',
+        '/planner/call/update/',
         $('#update-form').serialize(),
         function (data, status, xhr) {
             if (status == 'success') {
-                if (data['success'] == 'Meeting Updated') {
-                    $('#meeting' + data["id"] + 'name').text(data["name"]);
-                    $('#meeting' + data["id"] + 'parent').text(data["parent"]);
-                    $('#meeting' + data["id"] + 'startdate').text(data["startdate"]);
+                if (data['success'] == 'Call Updated') {
+                    $('#call' + data["id"] + 'name').text(data["name"]);
+                    $('#call' + data["id"] + 'parent').text(data["parent"]);
+                    $('#call' + data["id"] + 'status').text(data["status"]);
+                    $('#call' + data["id"] + 'startdate').text(data["startdate"]);
                     $('i[id$=_error]').text('')
-                    $('#meeting-create-model').modal("hide");
-                    $('#update').attr({"id": "gocreatemeeting", "type": "submit"}).text('Create');
-
+                    $('#call-create-model').modal("hide");
+                    $('#update').attr({"id": "gocreatecall", "type": "submit"}).text('Create');
                     $('#update-form').attr({"id": "model-form"})
                     $('#model-form').find("input[type=text], textarea").val("");
                     $('#updatemodeldialogclosed').attr({"id": "modeldialogclosed"})
                     $(".reminderslist[style='display:inline-flex']").remove();
+                    $('.selected-assigned-users').html('')
+                    $('.selectedcontacts').html('')
+                    $('.selectedusers').html('')
+                    $('#selectedleads').html('')
                 }
                 else if (data['auth'] == 'NO') {
                     alert('Not Authanticated!!')
-
+                    window.location='/'
                     //login REDIRECT URL
                 }
                 else {
-                    // console.log("Meeting Not Created")
                     // resp = JSON.parse(data);
                     if (data['success'] != 'Meeting Updated') {
                         for (a in data) {
-                            if (data[a] == 'Please correct the duplicate values below.') {
-                                data[a] = 'Please remove duplicate Reminders.'
-                            }
                             $('#' + a + "_error").text(data[a]);
                             $('#' + a + "_error").css("color", "red");
                         }
@@ -314,10 +310,10 @@ $('body').on('submit', '#update-form', function (e) {
         });
 });
 $('body').on('click', '.editthis', function (e) {
-    e.preventDefault()
     $($(this).parent().siblings()[0]).children().trigger('click', true)
-    $('#editmeeting').trigger('click')
+    $('#editcall').trigger('click')
 });
+
 function getreminders() {
     $.get(
         '/planner/get/reminders/',
@@ -330,7 +326,6 @@ function getreminders() {
                     alert('Not Authanticated!!')
                     //login REDIRECT URL
                 }
-
             }
             if (status == 'error') {
                 console.log(jqXhr);
@@ -357,8 +352,6 @@ $.ajaxSetup({
         }
     }
 });
-
-
 function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {

@@ -7,7 +7,7 @@ body {
   font-size: 12px;
   font-weight: 500;
   margin: 0;
-  padding-top:60px; 
+  padding-top:60px;
 }
 .login_register_body {
   background: $body_bg;
@@ -127,7 +127,7 @@ header{
       >.open{
         >a{
           background: $login_btn_bg !important;
-         
+
         }
       }
       li{
@@ -181,7 +181,7 @@ header{
     }
   }
 }
-/* inner_pages ends here */ 
+/* inner_pages ends here */
 
 /* CSS used here will be applied after bootstrap.css */
 $color_1: #ff7788;
@@ -437,7 +437,7 @@ $color_2: #000;
                   color:#fff;
                   border-radius: 0;
                   border:none;
-                }  
+                }
               }
               &.actions{
                 .btn{
@@ -503,7 +503,7 @@ $color_2: #000;
   /* table_container_row ends here */
 /* breadcrumb starts here */
 .breadcrumb{
- margin:0; 
+ margin:0;
  background: none;
  .breadcrumb-item{
   a{
@@ -520,7 +520,7 @@ $color_2: #000;
   @extend .filter_row;
   margin-top:0;
 }
-/* assigned_teams ends here */ 
+/* assigned_teams ends here */
 
 /* overview_form_block starts here */
 .overview_form_block{
