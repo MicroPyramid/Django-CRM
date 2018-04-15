@@ -198,11 +198,9 @@ COMPRESS_ENABLED = True
 
 COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
+    ('text/x-sass', 'sassc {infile} {outfile}'),
+    ('text/x-scss', 'sassc {infile} {outfile}'),
 )
-
-### removing sass becuase of the LSW compliation errors over complicating the project
-#    ('text/x-sass', 'sass {infile} {outfile}'),
-#    ('text/x-scss', 'sass --scss {infile} {outfile}'),
 
 COMPRESS_OFFLINE_CONTEXT = {
     'STATIC_URL': 'STATIC_URL',
