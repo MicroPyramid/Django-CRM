@@ -21,15 +21,13 @@ class UserLogin(View):
 
     def post(self, request):
         bound_form = self.form_class(request.POST,  request=request)
-        print("here i am and i dont understand")
         if bound_form.is_valid():
-            print("form was valid moving on")
             user = auth_authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
             auth_login(request, user)
             return HttpResponseRedirect('/')
         else:
-            context = {'form': self.form_class()}
-            return render(request, self.template_name, context)
+            #context = {'form': self.form_class()}
+            return render(request, self.template_name, {'form': bound_form})
 
 @login_required
 def logout(request):

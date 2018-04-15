@@ -2,7 +2,7 @@
 <form action="{% url 'user:login' %}" method="POST">
   {% csrf_token %}
   <div class="form-group">
-    {{ form }}
+    {{ form.as_p }}
     {% if next %}
     <input type="hidden" value="{{ next }}">
     {% endif %}

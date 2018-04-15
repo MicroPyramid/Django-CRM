@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 from common.models import User
 
@@ -23,12 +24,8 @@ class LoginForm(forms.ModelForm):
         password = self.cleaned_data.get("password")
 
         if email and password:
-            print(email, password)
             self.user = authenticate(email=email, password=password)
-            print(self.user)
-            if self.user:
-                if not self.user.is_active:
-                    raise forms.ValidationError("User is Inactive")
+            if self.user is not None:
+                pass
             else:
-                raise forms.ValidationError("Invalid email and password")
-        return self.cleaned_data
+                raise ValidationError('Invalid email and password')
