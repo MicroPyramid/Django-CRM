@@ -1,6 +1,7 @@
 import os
 import dj_database_url
 from .log_filters import ManagementFilter
+from django.urls import reverse_lazy
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,9 +20,10 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = reverse_lazy('common:home')
+LOGIN_URL = reverse_lazy('user:login')
+LOGOUT_URL = reverse_lazy('user:logout')
 
-LOGIN_URL = '/login/'
 
 INSTALLED_APPS = [
     'django.contrib.admin',

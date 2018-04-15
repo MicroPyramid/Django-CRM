@@ -1,0 +1,11 @@
+<div class="welcome">{{ login_header|default:'Log in to your crm account' }} </div>
+<form action="{% url 'user:login' %}" method="POST">
+  {% csrf_token %}
+  <div class="form-group">
+    {{ form }}
+    {% if next %}
+    <input type="hidden" value="{{ next }}">
+    {% endif %}
+  </div>
+  <button type="submit" class="btn btn-default">{{ login_button|default:'Log in' }}</button>
+</form>

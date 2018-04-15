@@ -35,7 +35,10 @@
 <div class="wrapper">
   <!-- header starts here -->
   <header>
-    {% include 'nav_menu.html' %}
+    {% if user.is_authenticated %}
+      {% include 'nav_menu.html' %}
+    {% endif %}
+
   </header>
   <!-- header ends here -->
   <!-- main_container starts here -->

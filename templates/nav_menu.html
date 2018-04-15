@@ -39,16 +39,10 @@
       <ul class="navbar-nav navbar-right my-2 my-lg-0">
 
         <li class="nav-item dropdown">
-           {% with request.profile as profile %}
             <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button" aria-haspopup="true"
               aria-expanded="false" >
-            {% if not profile.profile_pic %}
-            <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
-            {% else %}
-            <img src="{{profile.profile_pic.url}}" alt="Micro profile pic">
-            {% endif %}
-            <b class="caret"></b></a>
-            {% endwith %}
+              <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
+
           <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
             <a class="dropdown-item" href="/change-password/">Change Password</a>
             <a class="dropdown-item" href="{% url 'common:profile' %}">profile</a>

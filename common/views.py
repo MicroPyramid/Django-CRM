@@ -50,7 +50,7 @@ def login_crm(request):
 def logout_crm(request):
     logout(request)
     request.session.flush()
-    return redirect("common:login")
+    return redirect("user:login")
 
 
 

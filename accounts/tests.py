@@ -9,7 +9,7 @@ from common.models import User
 
 class AccountCreateTest(object):
     def setUp(self):
-        self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com')
+        self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com', role='ADMIN')
         self.user.set_password('uday2293')
         self.user.save()
 
@@ -26,15 +26,13 @@ class AccountsCreateUrlTestCase(AccountCreateTest, TestCase):
     def test_account_create_url(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'shipping_address': self.address, 'website': "www.uday.com", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com", 'account_type': "PARTNER",
-            'sis_code': "UDAYMP2016", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'shipping_address': self.address, 'website': "www.uday.com", 'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertTemplateUsed(response, 'accounts/create_account.html')
 
 
