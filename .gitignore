@@ -12,3 +12,4 @@ cache
 CACHE/
 .sass-cache/
 old_stuff
+migrations

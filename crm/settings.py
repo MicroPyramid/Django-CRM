@@ -176,7 +176,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
-AUTH_USER_MODEL = 'common.User'
+AUTH_USER_MODEL = 'user.User'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (BASE_DIR + '/static',)
