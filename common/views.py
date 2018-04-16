@@ -24,33 +24,33 @@ def profile(request):
     user_obj = User.objects.filter(id=user.id)
     return render(request, "profile.html", {'user_obj': user_obj})
 
-@csrf_exempt
-def login_crm(request):
-    if request.user.is_authenticated:
-        return HttpResponseRedirect('/')
-    if request.method == 'POST':
-        form = LoginForm(request.POST, request=request)
-        if form.is_valid():
-            user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-                    return HttpResponseRedirect('/')
-                else:
-                    return render(request, "login.html", {"error": True, "inactiveuser": form.errors})
-            else:
-                return render(request, "login.html", {"error": True, "usernone": form.errors})
-        else:
-            return render(request, "login.html", {"error": True, "errors": form.errors})
-    return render(request, 'login.html')
+# @csrf_exempt
+# def login_crm(request):
+#     if request.user.is_authenticated:
+#         return HttpResponseRedirect('/')
+#     if request.method == 'POST':
+#         form = LoginForm(request.POST, request=request)
+#         if form.is_valid():
+#             user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
+#             if user is not None:
+#                 if user.is_active:
+#                     login(request, user)
+#                     return HttpResponseRedirect('/')
+#                 else:
+#                     return render(request, "login.html", {"error": True, "inactiveuser": form.errors})
+#             else:
+#                 return render(request, "login.html", {"error": True, "usernone": form.errors})
+#         else:
+#             return render(request, "login.html", {"error": True, "errors": form.errors})
+#     return render(request, 'login.html')
 
-
-@csrf_exempt
-@login_required
-def logout_crm(request):
-    logout(request)
-    request.session.flush()
-    return redirect("user:login")
+#
+# @csrf_exempt
+# @login_required
+# def logout_crm(request):
+#     logout(request)
+#     request.session.flush()
+#     return redirect("user:login")
 
 
 
