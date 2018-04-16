@@ -11,3 +11,5 @@ cache
 .idea
 CACHE/
 .sass-cache/
+old_stuff
+migrations

@@ -753,6 +753,9 @@
         <button class="btn btn-default save" id="edit_update" type="submit">Update</button>
         <a href="/cases/list" ><button class="btn btn-default" id="edit_cancel" type="submit">Cancel</button></a></form>
       </div></div></div>  </div>
-      <script src="{% static 'js/cases/show_case.js' %}"></script>
-      <script src="{% static 'js/cases/create_case.js' %}"></script>
-    {% endblock %}
+{% endblock %}
+
+{% block js_block %}
+  <script src="{% static 'js/cases/show_case.js' %}"></script>
+  <script src="{% static 'js/cases/create_case.js' %}"></script>
+{% endblock %}

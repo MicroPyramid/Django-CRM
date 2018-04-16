@@ -18,31 +18,43 @@ body {
   background: #fff;
   -webkit-box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
   -moz-box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
-  box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19); }
-  .login_block .welcome {
+  box-shadow: 10px 10px 0px -4px rgba(0, 0, 0, 0.19);
+  }
+
+.login_block .welcome {
     text-transform: uppercase;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 1px;
     color: #333; }
-    .login_block .welcome span {
-      color: #00e5ff; }
-      .login_block .welcome span.create_head {
-        color: #7eea51; }
+
+.login_block .welcome span {
+    color: #00e5ff;
+    }
+
+.login_block .welcome span.create_head {
+      color: #7eea51;
+      }
 
 .login_form_block {
   margin-top: 30px;
-  padding: 50px 15px; }
-  .login_form_block .welcome {
+  padding: 50px 15px;
+  }
+
+.login_form_block .welcome {
     margin-bottom: 20px;
-    text-align: center; }
-  .login_form_block .form-group {
+    text-align: center;
+    }
+
+.login_form_block .form-group {
     margin-bottom: 15px; }
-  .login_form_block label {
+
+.login_form_block label {
     font-size: 12px;
     color: #595f75;
     font-weight: 500; }
-  .login_form_block .form-control {
+
+.login_form_block .form-control {
     background: #dcdcdc;
     color: #5a6e79;
     min-height: 40px;
@@ -51,7 +63,8 @@ body {
     box-shadow: none;
     border: none;
     border-radius: 3px; }
-  .login_form_block .btn {
+
+.login_form_block .btn {
     background: #ed6364;
     border-radius: 3px;
     border: none;
@@ -63,11 +76,14 @@ body {
     width: 100%;
     outline: none;
     padding: 10px 20px; }
-    .login_form_block .btn:hover {
+
+.login_form_block .btn:hover {
       text-decoration: none; }
-  .login_form_block .checkbox {
+
+.login_form_block .checkbox {
     text-align: center; }
-    .login_form_block .checkbox input[type=checkbox] {
+
+.login_form_block .checkbox input[type=checkbox] {
       vertical-align: middle;
       margin: 0;
       margin-top: 1px;
@@ -80,34 +96,34 @@ body {
 header .navbar-default {
   background: #39464d;
   border: none; }
-  header .navbar-default .navbar-brand {
+header .navbar-default .navbar-brand {
     color: #ed6364; }
-    header .navbar-default .navbar-brand:hover {
+header .navbar-default .navbar-brand:hover {
       color: #ed6364; }
-  header .navbar-default .navbar-nav > li > a {
+header .navbar-default .navbar-nav > li > a {
     color: #aaa;
     font-weight: 500;
     font-size: 12px;
     padding: 15px 10px; }
-    header .navbar-default .navbar-nav > li > a:hover {
+header .navbar-default .navbar-nav > li > a:hover {
       color: #ddd; }
-  header .navbar-default .navbar-nav > .open > a {
+header .navbar-default .navbar-nav > .open > a {
     background: #ed6364 !important; }
-  header .navbar-default .navbar-nav li .dropdown-menu li a {
+header .navbar-default .navbar-nav li .dropdown-menu li a {
     font-size: 12px; }
-  header .navbar-default .navbar-nav.navbar-right .dropdown > a {
+header .navbar-default .navbar-nav.navbar-right .dropdown > a {
     background: #657b88;
     color: #fff;
     border-right: 1px solid #718895; }
-  header .navbar-default .navbar-form .form-group .form-control {
+header .navbar-default .navbar-form .form-group .form-control {
     border-radius: 3px;
     border: none; }
-  header .navbar-default .navbar-form .btn {
+header .navbar-default .navbar-form .btn {
     border-radius: 3px;
     padding: 7px 12px;
     border: none;
     background: #41B871; }
-    header .navbar-default .navbar-form .btn.btn-default {
+header .navbar-default .navbar-form .btn.btn-default {
       color: #fff; }
 
 /* inner_pages ends here */

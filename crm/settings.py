@@ -1,6 +1,7 @@
 import os
 import dj_database_url
 from .log_filters import ManagementFilter
+from django.urls import reverse_lazy
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,9 +20,10 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = reverse_lazy('common:home')
+LOGIN_URL = reverse_lazy('user:login')
+LOGOUT_URL = reverse_lazy('user:logout')
 
-LOGIN_URL = '/login/'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -152,7 +154,7 @@ LOGGING = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Calcutta'
+TIME_ZONE = 'America/Chicago'
 
 USE_I18N = True
 
@@ -174,7 +176,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
-AUTH_USER_MODEL = 'common.User'
+AUTH_USER_MODEL = 'user.User'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (BASE_DIR + '/static',)
@@ -198,8 +200,8 @@ COMPRESS_ENABLED = True
 
 COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
-    ('text/x-sass', 'sass {infile} {outfile}'),
-    ('text/x-scss', 'sass --scss {infile} {outfile}'),
+    ('text/x-sass', 'sassc {infile} {outfile}'),
+    ('text/x-scss', 'sassc {infile} {outfile}'),
 )
 
 COMPRESS_OFFLINE_CONTEXT = {
