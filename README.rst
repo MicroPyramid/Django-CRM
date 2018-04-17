@@ -20,12 +20,12 @@ This project contains the following modules.
 
 Installation
 ============
-If you cloned the package from git use virtualenv to install requirements:
+If you cloned the package from git use virtualenv to install requirements::
 
     python3.6 -m venv yourvirtualenv
     activate yourvirtualenv/bin/activate
     pip install -r requirements.txt
 
-We welcome your feedback and support, raise github ticket if you want to report a bug. 
+We welcome your feedback and support, raise github ticket if you want to report a bug.
 Need new features?
-Open a issue and we will look into it 
+Open a issue and we will look into it
