@@ -1,25 +1,9 @@
-{% extends parent_template|default:"user/base_user.html" %}
+{% extends "user/base_user.html" %}
 
 {% block title %}
 {{ block.super }} - Login
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row marl justify-content-center login_row">
-        <div class="col-md-4 col-lg-4 col-xl-4">
-            <div class="login_block">
-                <div class="login_form_block">
-                  {% include "user/login_form.html" %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% include "user/login_form.html" with login_button="Log in" login_header="Please login into your CRM account" %}
 {% endblock %}
-<!--<script src="js/jquery.min.js">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
-</body>
-</html>
-</script>-->

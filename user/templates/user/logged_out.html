@@ -1,19 +1,9 @@
-{% extends parent_template|default:"base.html" %}
+{% extends "user/base_user.html" %}
 
 {% block title %}
 {{ block.super }} - Logged out
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row marl justify-content-center login_row">
-        <div class="col-md-4 col-lg-4 col-xl-4">
-            <div class="login_block">
-                <div class="login_form_block">
-                    {% include "user/login_form.html" with login_button="Log back in" login_header="You've successfully logged out." %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% include "user/login_form.html" with login_button="Log back in" login_header="You've successfully logged out." %}
 {% endblock %}

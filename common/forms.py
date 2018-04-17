@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib.auth import authenticate
 
-from common.models import Address, User
-
+from common.models import Address
+from user.models import User
 
 class BillingAddressForm(forms.ModelForm):
 

@@ -1,0 +1,32 @@
+{% extends "user/base_user.html" %}
+
+{% block title %}
+{{ block.super }} - Edit password
+{% endblock %}
+
+{% block content %}
+<form id="add_form" method="POST" action="" novalidate>{%csrf_token%}
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+         <div class="card-title text-center">Change Password</div>
+          <div class="col-md-12">
+            <div class="row marl no-gutters">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  {{ form.as_p }}
+              </div>
+            </div>
+          </div>
+          <div class="row marl buttons_row form_btn_row text-center">
+            <button class="btn btn-default save" type="submit">Change Password</button>
+            <button class="btn btn-default clear" type="submit">Reset</button>
+            <button class="btn btn-default clear" type="submit">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
