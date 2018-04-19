@@ -5,13 +5,13 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserM
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100, unique=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
-    email = models.EmailField(max_length=255, unique=True)
-    is_active = models.BooleanField(default=True)
-    is_admin = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(('date joined'), auto_now_add=True)
+    first_name = models.CharField('User First Name', max_length=150, blank=True)
+    last_name = models.CharField('User Last Name', max_length=150, blank=True)
+    email = models.EmailField('Email Account', max_length=255, unique=True)
+    is_active = models.BooleanField('Active Account', default=True)
+    is_admin = models.BooleanField('Administration Account', default=False)
+    is_staff = models.BooleanField('Staff Account', default=False)
+    date_joined = models.DateTimeField('Date Joined', auto_now_add=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]
