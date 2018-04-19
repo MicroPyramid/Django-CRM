@@ -7,14 +7,5 @@ app_name = 'common'
 
 
 urlpatterns = [
-    url(r'^$', views.home, name="home"),
-    url(r'^login/$', RedirectView.as_view(pattern_name='user:login', permanent=False), name="login"),
-    url(r'^logout/$', RedirectView.as_view(pattern_name='user:logout', permanent=False), name="logout"),
-    url(r'^users/create$', RedirectView.as_view(pattern_name='user:create', permanent=False), name="create_user"),
-    url(r'^change-password/$', RedirectView.as_view(pattern_name='user:change_pass'), name="change_pass"),
-    url(r'^profile/$', views.profile, name="profile"),
-    url(r'^users/list$', views.users_list, name="users_list"),
-    url(r'^user/(?P<user_id>\d*)/view/$', views.view_user, name="view_user"),
-    url(r'^user/(?P<user_id>\d*)/edit/$', views.edit_user, name="edit_user"),
-    url(r'^user/(?P<user_id>\d*)/delete/$', views.remove_user, name="remove_user"),
+    url(r'^$',  RedirectView.as_view(pattern_name='user:list'), name="home"),
 ]

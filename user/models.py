@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 # Create your models here.
 
@@ -16,6 +17,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['username', ]
 
     objects = UserManager()
+
+    def get_view_url(self):
+        """
+        returns a reverse url for user view
+        """
+        return reverse('user:view', kwargs={'user_id': self.pk})
+
+    def get_update_url(self):
+        """
+        returns a reverse url for updating user pk
+        """
+        return reverse('user:update', kwargs={'user_id': self.pk})
 
     def get_short_name(self):
         return self.username

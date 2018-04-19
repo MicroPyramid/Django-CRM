@@ -13,7 +13,7 @@
         </div>
         <div class="col-md-6">
           <div class="create_new text-right">
-            <a href="{% url 'common:create_user'%}"><i class="fa fa-plus"></i> Add New User</a>
+            <a href="{% url 'user:create'%}"><i class="fa fa-plus"></i> Add New User</a>
           </div>
         </div>
         </div>
@@ -33,7 +33,7 @@
                   <label for="exampleInputEmail1">User Name</label>
                   <input type="text" class="form-control" placeholder="Username" name="username" value="{{request.POST.username}}">
                 </div>
-              </div> 
+              </div>
               <div class="filter_col col-4">
                 <div class="form-group">
                   <label for="exampleInputEmail1">First Name</label>
@@ -49,7 +49,7 @@
               <div class="filter_col text-center col-12">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'common:users_list' %}" class="btn btn-default clear">Clear</a>
+                  <a href="{% url 'user:list' %}" class="btn btn-default clear">Clear</a>
                 </div>
               </div>
               <br clear="all">
@@ -71,25 +71,20 @@
             <div class="table-responsive ">
               <table class="table table-bordered table-striped table-condensed">
                 <thead>
-                  <tr>
-                    <th width="5%" style="text-align:center;">S.No</th>
-                    <th width="20%" style="text-align:center;">First Name</th>
-                    <th width="20%" style="text-align:center;">Username</th>
-                    <th width="20%" style="text-align:center;">Email Address</th>
-                    <th width="15%" style="text-align:center;">Status</th>
-                    <th width="20%" style="text-align:center;">Actions</th>
+                  <tr class="text-center">
+                    <th width="5%">S.No</th>
+                    <th width="20%">First Name</th>
+                    <th width="20%">Username</th>
+                    <th width="20%">Email Address</th>
+                    <th width="15%">Status</th>
+                    <th width="20%">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {% if per_page %}
-                    {% paginate per_page users %}
-                  {% else %}
-                    {% paginate 10 users %}
-                  {% endif %}
                   {% for user in users %}
                   <tr class="text-center">
-                    <td scope="row">{{ forloop.counter }}</td>
-                    <td>{{ user.first_name }}</td>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
                     <td>
@@ -100,9 +95,10 @@
                       {% endif %}
                     </td>
                     <td class="actions">
-                      <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
-                      <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash"><i class="fas fa-trash"></i>Delete</a>
+                      <a href="{{ user.get_view_url }}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a>
+                      <a href="{{ user.get_update_url }}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
+                      {# {% url 'user:delete' user.id %} #}
+                      <a href="#" class="btn btn-danger delete"><i class="fas fa-trash"></i>Delete</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -112,30 +108,37 @@
             {% ifequal users|length 0 %}
               <h6 class="text-center">No User Records Found</h6>
             {% endifequal %}
-            <div class="marl row text-center">
-              {% show_pages %}
+            <div class="container">
+              {% if is_paginated %}
+                <ul class="pagination">
+                  {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                  {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="?page=1">&laquo;</a></li>
+                  {% endif %}
+                  {% for i in paginator.page_range %}
+                    {% if page_obj.number == i %}
+                      <li class="page-item active"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                    {% else %}
+                      <li class="page-item active"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                    {% endif %}
+                  {% endfor %}
+                  {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                  {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+                  {% endif %}
+                </ul>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
-<script type="text/javascript">
-  $('.trash').click(function(e){
-    e.preventDefault()
-    url = $(this).attr('href')
-    if (!confirm('Are you sure you want to delete?'))
-      return;
-    window.location = $(this).attr('href')
-  });
 
-  $("a[rel='page']").click(function(e){
-    e.preventDefault();
-    $('#users_filter').attr("action", $(this).attr("href"));
-    $('#users_filter').submit();
-  });
-</script>
 {% endblock js_block %}

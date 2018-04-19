@@ -4,18 +4,18 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'user:list' %}">Users</a></li>
-    <li class="breadcrumb-item">Create</li>
+    <li class="breadcrumb-item">update</li>
   </ol>
 </nav>
 
 {% endblock breadcrumb %}
 {% block content %}
-<form id="add_form" method="POST" action="{% url 'user:create' %}" novalidate>{%csrf_token%}
+<form id="add_form" method="POST" action="{{ user_obj.get_update_url }}" novalidate>{%csrf_token%}
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-6">
       <div class="card">
         <div class="card-body">
-         <div class="card-title text-center">CREATE USER</div>
+         <div class="card-title text-center">Updating {{ user_obj.username }}</div>
           <div class="row marl">
             <div class="col-md-12">
               <div class="filter_col col-md-12">
