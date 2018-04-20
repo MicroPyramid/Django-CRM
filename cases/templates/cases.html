@@ -22,19 +22,19 @@
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-12">
+    <div class="col-md-3 col-xl-2">
       <div class="card">
         <form id="cases_filter" method="POST" action="" >
           <div class="card-body">
             <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Name</label>
                   <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Status</label>
                   <select class="form-control" id="id_status" name="status" >
@@ -45,7 +45,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Priority</label>
                   <select class="form-control" id="id_priority" name="priority" >
@@ -56,7 +56,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Account</label>
                   <select class="form-control" id="id_account" name="account">
@@ -81,10 +81,9 @@
         <br clear="all">
       </div>
     </div>
-  </div>
-  <!-- filter_row ends here -->
-  <!-- cases_list starts here -->
-  <div class="table_container_row row marl">
+    <div class="col-md-9 col-xl-10">
+       <!-- cases_list starts here -->
+  <div class="table_container_row row marl no-gutters">
     <div class="col-md-12">
       <div class="card">
         
@@ -148,6 +147,11 @@
     </div>
   </div>
   <!-- cases_list ends here -->
+    </div>
+
+  </div>
+  <!-- filter_row ends here -->
+ 
 </div>
 <!-- main_container ends here -->
 {% endblock %}

@@ -22,26 +22,26 @@
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-12">
+    <div class="col-md-3 col-lg-2">
       <div class="card">
 
         <form id="leads_filter" action="" method="POST">
           <div class="card-body ">
             <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">First Name</label>
                   <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Last Name</label>
                   <input type="text" class="form-control" placeholder="Last Name" name="last_name" value="{{request.POST.last_name}}">
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Lead Status</label>
                   <select class="form-control" id="id_status" name="status" >
@@ -64,10 +64,9 @@
         <br clear="all">
       </div>
     </div>
-  </div>
-  <!-- filter_row ends here -->
-  <!-- leads list start-->
-  <div class="table_container_row row marl">
+    <div class="col-md-9 col-lg-10">
+     <!-- leads list start-->
+  <div class="table_container_row row marl no-gutters">
     <div class="col-md-12">
       <div class="card">
        
@@ -134,6 +133,11 @@
     </div>
   </div>
   <!-- leads list end-->
+
+    </div>  
+  </div>
+  <!-- filter_row ends here -->
+ 
 </div>
 <!-- main_container ends here -->
 {% endblock %}

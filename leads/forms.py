@@ -15,7 +15,7 @@ class LeadForm(forms.ModelForm):
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
-        self.fields['phone'].required = False
+        self.fields['phone'].required = True
         self.fields['first_name'].widget.attrs.update({
             'placeholder': 'First Name'})
         self.fields['last_name'].widget.attrs.update({

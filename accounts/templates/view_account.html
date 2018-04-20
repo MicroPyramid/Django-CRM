@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-{% block breadcrumb1 %}
+{% block breadcrumb %}
 <!-- breadcrumb starts here -->
 <nav aria-label="breadcrumb">
 <ol class="breadcrumb">
@@ -9,7 +9,7 @@
 </ol>
 </nav>
 <!-- breadcrumb ends here -->
-{% endblock breadcrumb1 %}
+{% endblock breadcrumb %}
 {% block content %}
   <!-- ACCOUNTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
@@ -1997,7 +1997,13 @@
       url = $(this).attr('href')
       if (!confirm('Are you sure you want to delete?'))
         return;
-      window.location = $(this).attr('href')
+        $.ajax({
+             type:"POST",
+             url: url,
+             success: function(){
+                location.reload(true);
+             }
+        });
     });
   </script>
   <script type="text/javascript">

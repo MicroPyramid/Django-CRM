@@ -22,14 +22,14 @@
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-12">
+    <div class="col-md-3 col-xl-2 ">
       <div class="card">
        
         <form id="contacts_filter" action="" method="POST">
           <div class="card-body">
             <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">ACCOUNTS</label>
                   <select class="form-control" id="id_account" name="account">
@@ -40,13 +40,13 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">NAME</label>
                   <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">CITY</label>
                   <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
@@ -64,10 +64,9 @@
         <br clear="all">
       </div>
     </div>
-  </div>
-  <!-- filter_row ends here -->
-  <!-- contacts list start -->
-  <div class="table_container_row row marl">
+    <div class="col-xl-10 col-md-9">
+    <!-- contacts list start -->
+  <div class="table_container_row row marl no-gutters">
     <div class="col-md-12">
       <div class="card">
         
@@ -141,6 +140,10 @@
     <br clear="all">
   </div>
   <!-- contacts list end -->
+    </div>
+  </div>
+  <!-- filter_row ends here -->
+  
 </div>
 <!-- main_container ends here -->
 {%endblock%}

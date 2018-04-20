@@ -1,6 +1,5 @@
 from django.conf.urls import url
 from common import views
-from django.contrib.auth import views as auth_views
 
 app_name = 'common'
 
@@ -8,6 +7,7 @@ app_name = 'common'
 urlpatterns = [
     url(r'^$', views.home, name="home"),
     url(r'^login/$', views.login_crm, name="login"),
+    url(r'^forgot-password/$', views.forgot_password, name="forgot_password"),
     url(r'^logout/$', views.logout_crm, name="logout"),
     url(r'^change-password/$', views.change_pass, name="change_pass"),
     url(r'^profile/$', views.profile, name="profile"),

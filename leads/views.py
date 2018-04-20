@@ -118,6 +118,7 @@ def view_lead(request, lead_id):
 
 @login_required
 def edit_lead(request, lead_id):
+    status = request.GET.get('status', None)
     lead_obj = get_object_or_404(Lead, id=lead_id)
     address_obj = get_object_or_404(Address, id=lead_obj.address.id)
     accounts = Account.objects.all()
@@ -130,6 +131,11 @@ def edit_lead(request, lead_id):
     lead_email = request.POST.get('email')
     lead_phone = request.POST.get('phone')
     teams = Team.objects.all()
+    error = ""
+    if status:
+        error = "please specify account name"
+        lead_obj.status = "converted"
+        form = LeadForm(instance=lead_obj, assigned_to=users)
     if request.method == 'POST':
         form = LeadForm(request.POST, instance=lead_obj, assigned_to=users)
         address_form = BillingAddressForm(request.POST, instance=address_obj)
@@ -157,7 +163,10 @@ def edit_lead(request, lead_id):
                 account_object.billing_address = dis_address_obj
                 account_object.assigned_to.add(*assignedto_list)
                 account_object.save()
-            return HttpResponseRedirect(reverse('leads:list'))
+            if status:
+                return HttpResponseRedirect(reverse('accounts:list'))
+            else:
+                return HttpResponseRedirect(reverse('leads:list'))
         else:
             return render(request, 'create_lead.html', {
                           'lead_obj': lead_obj,
@@ -173,7 +182,8 @@ def edit_lead(request, lead_id):
                       'lead_obj': lead_obj, 'address_obj': address_obj,
                       'accounts': accounts, 'countries': COUNTRIES, 'teams': teams,
                       'users': users, 'status': LEAD_STATUS, 'source': LEAD_SOURCE,
-                      'assignedto_list': assignedto_list, 'teams_list': teams_list})
+                      'assignedto_list': assignedto_list, 'teams_list': teams_list,
+                      'error': error, 'status': status})
 
 
 @login_required
@@ -190,75 +200,23 @@ def remove_lead(request, lead_id):
 # The Below View Should be Discussed for Functionality
 @login_required
 def leads_convert(request, pk):
-    account_form = AccountForm()
-    billing_form = BillingAddressForm()
-    shipping_form = ShippingAddressForm(prefix='ship')
-    lead_objects = Lead.objects.all()
-    lead_obj = Lead.objects.get(id=pk)
-    accounts = Account.objects.all()
-    contact_form = ContactForm()
-    opportunity_form = OpportunityForm()
-    teams = Team.objects.all()
-    if request.method == "POST":
-        if request.POST.get('accountname') == "on":
-            account_form = AccountForm(request.POST)
-            billing_form = BillingAddressForm(request.POST)
-            shipping_form = ShippingAddressForm(request.POST, prefix='ship')
-            if account_form.is_valid() and billing_form.is_valid() and shipping_form.is_valid():
-                billing_object = billing_form.save()
-                shipping_object = shipping_form.save()
-                account_object = account_form.save(commit=False)
-                account_object.billing_address = billing_object
-                account_object.shipping_address = shipping_object
-                account_object.created_by = request.user
-                account_object.save()
-                lead_obj.delete()
-                return HttpResponseRedirect(reverse('leads:list'))
-            else:
-                street1 = request.POST.get('street')
-                city1 = request.POST.get('city')
-                state1 = request.POST.get('state')
-                postcode1 = request.POST.get('postcode')
-                country1 = request.POST.get('country')
-                shipdata = {'street1': street1, 'city1': city1, 'state1': state1,
-                            'postcode1': postcode1, 'country1': country1}
-                return render(request, 'checkbox.html', {
-                              'account_form': account_form, 'form1': billing_form, 'form2': shipping_form,
-                              'form5': COUNTRIES, 'stages': STAGES, 'acc_error': account_form.errors,
-                              'shipdata': shipdata, 'sources': LEAD_SOURCE, 'industries': INDCHOICES,
-                              'teams': teams, 'task': lead_objects, 'post': lead_obj,
-                              'accounts': accounts,
-                              'counties': COUNTRIES})
-
-        if request.POST.get('contactname') == "on":
-            contact_form = ContactForm(request.POST)
-            address_form = BillingAddressForm(request.POST)
-            if contact_form.is_valid() and address_form.is_valid():
-                address_obj = address_form.save()
-                contact_obj = contact_form.save(commit=False)
-                contact_obj.address = address_obj
-                contact_obj.created_by = request.user
-                contact_obj.save()
-                return HttpResponseRedirect(reverse('contacts:list'))
-            else:
-                return render(request, 'checkbox.html', {
-                              'post': lead_obj, 'accounts': accounts, 'teams': teams,
-                              'contact_form': contact_form, 'address_form': address_form})
-        if request.POST.get('opportunityname') == "on":
-            opportunity_form = OpportunityForm(request.POST)
-            if opportunity_form.is_valid():
-                opportunity_form.save()
-                return HttpResponseRedirect(reverse('opportunities:list'))
-            else:
-                return render(request, 'checkbox.html', {
-                              'post': lead_obj, 'accounts': accounts, 'sources': LEAD_SOURCE,
-                              'teams': teams, 'stages': STAGES, 'opportunity_form': opportunity_form})
+    lead_obj = get_object_or_404(Lead, id=pk)
+    if lead_obj.account_name:
+        lead_obj.status = 'converted'
+        lead_obj.save()
+        account_object = Account.objects.create(
+            created_by=request.user, name=lead_obj.account_name,
+            email=lead_obj.email, phone=lead_obj.phone,
+            description=lead_obj.description,
+            website=lead_obj.website, billing_address=lead_obj.address
+        )
+        assignedto_list = lead_obj.assigned_to.all().values_list('id', flat=True)
+        account_object.assigned_to.add(*assignedto_list)
+        account_object.save()
+        return HttpResponseRedirect(reverse('accounts:list'))
     else:
-        return render(request, 'checkbox.html', {
-                      'form': account_form, 'form1': billing_form, 'form2': shipping_form,
-                      'form5': COUNTRIES, 'industries': INDCHOICES, 'teams': teams,
-                      'task': lead_objects, 'counties': COUNTRIES,
-                      'post': lead_obj, 'accounts': accounts})
+        return HttpResponseRedirect(
+            reverse('leads:edit_lead', kwargs={'lead_id': lead_obj.id}) + '?status=converted')
 
 
 # Leads Conversion Functionality Ends

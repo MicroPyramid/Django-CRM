@@ -1,5 +1,4 @@
 from django.conf.urls import url, include
-from django.contrib import admin
 from django.contrib.auth import views
 
 app_name = 'crm'
@@ -7,7 +6,6 @@ app_name = 'crm'
 
 urlpatterns = [
 
-    url(r'^admin/', admin.site.urls),
     url(r'^', include('common.urls', namespace='common')),
     url(r'^accounts/', include('accounts.urls', namespace='accounts')),
     url(r'^leads/', include('leads.urls', namespace='leads')),
