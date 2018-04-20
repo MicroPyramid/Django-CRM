@@ -51,7 +51,13 @@
               <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="id_role">User Role{% if user_form.role.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ user_form.role }}
+                    {% if request.user.role == 'ADMIN' %}
+                      {{ user_form.role }}
+                    {% else %}
+                    <select name="role">
+                      <option value="{{user_obj.role}}">{{user_obj.role}}</option>
+                    </select>
+                    {% endif %}
                     <span class="error">{{ user_form.role.errors }}</span>
                   </div>
                 </div>

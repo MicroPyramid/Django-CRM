@@ -68,12 +68,16 @@ def login_crm(request):
                     login(request, user)
                     return HttpResponseRedirect('/')
                 else:
-                    return render(request, "login.html", {"error": True, "inactiveuser": form.errors})
+                    return render(request, "login.html", {"error": True, "message": "Your Account is InActive. Please Contact Administrator"})
             else:
-                return render(request, "login.html", {"error": True, "usernone": form.errors})
+                return render(request, "login.html", {"error": True, "message": "Your Account is not Found. Please Contact Administrator"})
         else:
-            return render(request, "login.html", {"error": True, "errors": form.errors})
+            return render(request, "login.html", {"error": True, "message": "Your username and password didn't match. Please try again."})
     return render(request, 'login.html')
+
+
+def forgot_password(request):
+    return render(request, 'forgot_password.html')
 
 
 def logout_crm(request):
@@ -135,7 +139,6 @@ def view_user(request, user_id):
     })
 
 
-@admin_required
 def edit_user(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
     user_form = UserForm(instance=user_obj)

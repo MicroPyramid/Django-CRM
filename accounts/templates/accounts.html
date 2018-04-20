@@ -22,27 +22,27 @@
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-12">
+    <div class="col-md-3 col-lg-2 col-xl-2">
       <div class="card">
         <form id="accounts_filter" method="POST" action="">
           <div class="card-body">
             <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">NAME</label>
+                  <label for="exampleInputEmail1">Name</label>
                   <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %} value="{{request.POST.name}}" {%endif%}/>
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">CITY</label>
+                  <label for="exampleInputEmail1">City</label>
                   <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
                 </div>
               </div>
-              <div class="filter_col col-md-4">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">INDUSTRY</label>
+                  <label for="exampleInputEmail1">Industry</label>
                   <select class="form-control" id="id_industry" name="industry" >
                     <option value="">--Select Type of Industry--</option>
                     {% for each_industry in industries %}
@@ -60,13 +60,10 @@
             </div>
           </div>
         </form>
-        <br clear="all">
       </div>
     </div>
-  </div>
-  <!-- filter_row ends here -->
-  <!-- accounts list start -->
-  <div class="table_container_row row marl">
+    <div class="col-md-9 col-lg-10 col-xl-10">
+       <div class="table_container_row row marl no-gutters">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
@@ -75,15 +72,15 @@
           <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Accounts {{accounts_list|length}}{% endif %}</span>
         </div>
           <div class="table-responsive">
-          <table class="table table-bordered table-striped table-condensed">
+          <table class="table ">
             <thead>
               <tr>
-                <th width="5%" style="text-align:center;">S.no</th>
-                <th width="20%" style="text-align:center;">Name</th>
-                <th width="15%" style="text-align:center;">City</th>
-                <th width="15%" style="text-align:center;">State</th>
-                <th width="20%" style="text-align:center;">Industry</th>
-                <th width="25%" style="text-align:center;">Actions</th>
+                <th width="5%">ID</th>
+                <th width="25%">Name</th>
+                <th width="15%">City</th>
+                <th width="15%">State</th>
+                <th width="20%">Industry</th>
+                <th width="10%">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -100,9 +97,9 @@
                 <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
                 <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
                 <td class="actions">
-                  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
-                  <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                  <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i>Delete</a>
+                 {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                  <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                  <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                 </td>
               </tr>
               {% endfor %}
@@ -120,6 +117,11 @@
       <br clear="all">
     </div>
   </div>
+    </div>
+  </div>
+  <!-- filter_row ends here -->
+  <!-- accounts list start -->
+ 
   <!-- accounts list end -->
 </div>
 <!-- main_container ends here -->

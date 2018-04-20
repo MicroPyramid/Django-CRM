@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-{% block breadcrumb1 %}
+{% block breadcrumb %}
 <!-- Breadcrumb Starts Here -->
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -94,10 +94,12 @@
                   {% endif %}
                 </div>
                 <div class="filter_col col-md-12">
+                  {% if opportunity_record.closed_on %}
                   <div class="form-group">
                     <label class="opportunity_field_label" for="id_close_date" data-name="name">Close Date</label>
                     <div class="opportunity_field" id="opportunity_close_date" data-name="name">{{opportunity_record.closed_on|date}}</div>
                   </div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-12">

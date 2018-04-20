@@ -5,17 +5,14 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <!-- Meta, title, CSS, favicons, etc. -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Django CRM</title>
-    <!-- Bootstrap core CSS -->
     <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.9/css/all.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
-    <!-- Custom styling plus plugins -->
       {% compress css %}
       <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
     {% endcompress %}
@@ -25,7 +22,45 @@
 <div class="wrapper">
     <!-- header starts here -->
     <header>
-        {% include 'nav_menu.html' %}
+        <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+  <a class="navbar-brand" href="#">Django CRM</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+   <ul class="navbar-nav mr-auto">
+       {% if request.user.role == "ADMIN" %}
+        <li class="nav-item"><a class="nav-link" id="users" href="{% url 'common:users_list' %}">Users</a></li>
+       {% endif %}
+        <li class="nav-item"><a class="nav-link" id="accounts" href="{% url 'accounts:list' %}">Accounts</a></li>
+        <li class="nav-item"><a class="nav-link" id="contacts" href="{% url 'contacts:list' %}">Contacts</a></li>
+        <li class="nav-item"><a class="nav-link" id="leads" href="{% url 'leads:list' %}">Leads</a></li>
+        <li class="nav-item"><a class="nav-link" id="opportunities"href="{% url 'opportunities:list' %}">Opportunities</a></li>
+        <li class="nav-item"><a class="nav-link" id="cases" href="{% url 'cases:list' %}">Cases</a></li>
+      </ul>
+
+    <ul class="navbar-nav navbar-right my-2 my-lg-0">
+      <li class="nav-item dropdown">
+         {% with request.profile as profile %}
+          <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button" aria-haspopup="true"
+            aria-expanded="false" >
+          {% if not profile.profile_pic %}
+          <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
+          {% else %}
+          <img src="{{profile.profile_pic.url}}" alt="Micro profile pic">
+          {% endif %}
+          <b class="caret"></b></a>
+          {% endwith %}
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+          <a class="dropdown-item" href="/change-password/"><i class="fas fa-key"></i> Change Password</a>
+          <a class="dropdown-item" href="{% url 'common:profile' %}"><i class="fas fa-user"></i> Profile</a>
+          <a class="dropdown-item" href="{% url 'common:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav>
     </header>
     <!-- header ends here -->
     <!-- main_container starts here -->
@@ -33,26 +68,19 @@
         <!-- breadcrumb starts here -->
         {% block breadcrumb %}
         {% endblock %}
-
         <!-- breadcrumb ends here -->
-        <!-- breadcrumb1 starts here -->
-        {% block breadcrumb1 %}
-        {% endblock %}
-
-        <!-- breadcrumb1 ends here -->
-        <!-- assigned_teams starts here -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>
-        <script defer src="https://use.fontawesome.com/releases/v5.0.9/js/all.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-        <script src="{% static 'js/index.js' %}"></script>
         {% block content %}
         {% endblock %}
     </div>
     <!-- main_container ends here -->
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>
+<script defer src="https://use.fontawesome.com/releases/v5.0.9/js/all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+<script src="{% static 'js/index.js' %}"></script>
 {% block js_block %}
 
 {% endblock js_block %}

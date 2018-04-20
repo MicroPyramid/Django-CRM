@@ -44,6 +44,9 @@
                     <label for="exampleInputEmail1" {% if request.POST.status == "converted" %} class="required" {% endif %}>Account Name{% if lead_form.account_name.field.required %}<span class="error">*</span>{% endif %}</label>
                     {{ lead_form.account_name }}
                     <span class="error">{{ lead_form.account_name.errors }}</span>
+                    {% if error %}
+                      <span class="error">{{ error }}</span>
+                    {% endif %}
                   </div>
                 </div>
                 <div class="filter_col col-md-12">

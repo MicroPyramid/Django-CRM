@@ -5,13 +5,17 @@ body {
   font-weight: 500;
   margin: 0;
   padding-top:60px; 
+  font-size: 15px;
+  @media(min-width:$large){
+    font-size:17px;
+  }
 }
 .login_register_body {
-  background: $body_bg;
+  
 }
 
 *{
-    font-size: 14px;
+    font-size: 15px;
     @media(min-width:$large){
       font-size:17px;
     }
@@ -23,16 +27,11 @@ body {
 .login_row {
 }
 .login_block {
-  margin-top: 75px;
-  background: $login_bg;
-  -webkit-box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
--moz-box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
-box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
+  margin-top: 0px;
+
   .welcome {
-    text-transform: uppercase;
-    font-size: 14px;
+    font-size: 1.6rem;
     font-weight: 600;
-    letter-spacing: 1px;
     color: #333;
     span {
       color: $color_cyan_aqua_approx;
@@ -42,6 +41,11 @@ box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
     }
   }
 }
+a{
+  &:hover{
+    text-decoration:none;
+  }
+}
 .login_form_block {
     margin-top: 30px;
     padding:50px 15px;
@@ -49,7 +53,17 @@ box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
       margin-bottom: 20px;
       text-align: center;
     }
-
+    .forgot{
+      font-size: 13px;
+      display: block;
+      color: darken($text_color2, 15%);
+      a{
+        display: inline-block;
+        color: $dark_sky;
+        margin-bottom: 10px;
+        font-size: 13px;
+      }
+    }
   .form-group {
     margin-bottom: 15px;
   }
@@ -59,26 +73,22 @@ box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
     font-weight:500;
   }
   .form-control {
-    background: #dcdcdc;
     color: $text_color;
     min-height: 40px;
     font-size: 13px;
     letter-spacing: 0.5px;
+    border:1px solid #ddd;
     //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
     box-shadow: none;
-    border: none;
     //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 3px;
   }
   .btn {
-    background: $login_btn_bg;
     //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 3px;
     border: none;
-    text-transform: uppercase;
-    font-size: 13px;
-    letter-spacing: 1px;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
     color: $white;
     width: 100%;
     outline:none;
@@ -101,27 +111,32 @@ box-shadow: 10px 10px 0px -4px rgba(0,0,0,0.19);
 
 /* inner_pages starts here */
 .main_body_bg_color{
-  background: $inner_page_bg;
+  background: #fff;
 }
 header{
   .navbar{
-    background: darken($text_color, 15%);
+    background: #fff;
     border:none;
+    border:1px solid #ddd;
+    padding:0 15px;
     .navbar-brand{
-      color: $login_btn_bg;
+      color: darken($text_color, 10%);
       font-weight: 600;
+      margin-right: 50px;
       &:hover{
         color: $login_btn_bg;
       }
     }
     .navbar-nav{
-      >li{
-        >a{
-          color: lighten($text_color3, 10%) !important;
-          font-weight: 600;
+      .nav-item{
+        a{
+          color: lighten($text_color,5%) !important;
+          font-weight: 500;
           font-size: 0.9rem;
-          padding:14px 10px;
+          padding:10px 15px;
+          display: inline-block;
           padding-top: 16px;
+          border-bottom: 3px solid #fff;
           @media(min-width: $mob_min) and (max-width: $smob_max) {
             padding:5px 10px;
           }
@@ -129,12 +144,17 @@ header{
             font-size:1rem;
           }
           &:hover{
-            color:#fff !important;
+            color:darken($text_color,5%) !important;
+            border-bottom: 3px solid $dark_sky;
+          }
+          &.active{
+            color:darken($text_color,5%) !important;
+            border-bottom: 3px solid $dark_sky;
           }
         }
       }
-      >.open{
-        >a{
+      .open{
+        a{
           background: $login_btn_bg !important;
          
         }
@@ -147,9 +167,12 @@ header{
             }
           }
         .dropdown-menu{
+            padding:0;
             a{
               font-size: 0.9rem;
+              padding:8px 10px;
               color: darken($text_color,5%);
+              border:none !important;
               svg{
                 display: inline-block;
                 margin-right: 5px;
@@ -157,6 +180,9 @@ header{
               }
               @media(min-width:$large){
                 font-size:0.95rem;
+              }
+              &:hover{
+                border:none !important;
               }
            }
         }
@@ -169,16 +195,16 @@ header{
               height: 25px;
             }
           }
-          >a{
-            background:lighten($text_color,5%);
+          a{
             color: #fff;
-            border-right:1px solid lighten($text_color,10%);
             &.nav-link{
-              padding:0.5rem;
+              padding:11px 15px;
+              border-bottom:3px solid #fff;
             }
-            &.nav-link .active {
-              color: white;
-            }
+            &:hover{
+            color:darken($text_color,5%) !important;
+            border-bottom: 3px solid $dark_sky;
+          }
           }
         }
       }
@@ -399,7 +425,7 @@ $color_2: #000;
           .form-control{
             border-radius: 0;
             box-shadow: none;
-            font-size: 1rem;
+            font-size: 0.85rem;
           }
         }
       }
@@ -411,10 +437,10 @@ $color_2: #000;
 }
 /* main_container ends here */
  .table_container_row{
-    margin-top: 10px;
+    margin-top: 0px;
     .card{
       .card-title{
-        padding:5px 10px;
+        padding:5px 10px !important;
         background: #e5e5e5;
         padding:6px 10px;
         font-size: 1rem;
@@ -453,11 +479,10 @@ $color_2: #000;
         thead{
           tr{
             th{
-              background: #5b646d;
-              color: #fff;
+              color: #5b646d;
               font-weight: 600;
               /* text-transform: uppercase; */
-              font-size: 1rem;
+              font-size: 0.9rem;
               border: none;
               padding:6px;
             }
@@ -468,14 +493,19 @@ $color_2: #000;
             td{
               vertical-align: middle;
               color: #454545;
-              font-size: 1rem;
+              font-size: 0.9rem;
               font-weight: 500;
-              padding:7px 0;
+              padding:7px 5px;
+              text-align: left;
               @media(min-width: $large){
                 font-size:1rem;
               }
               a{
-                color: #454545;
+                color: lighten($dark_sky,5%);
+                &:hover{
+                  color:$dark_sky;
+                  text-decoration: underline;
+                }
               }
               .dropdown{
                 .dropdown-toggle{
@@ -492,9 +522,9 @@ $color_2: #000;
                   font-size: 1rem;
                   padding:3px 5px;
                   color: #fff;
+                  margin-right:4px;
                   svg{
                     display: inline-block;
-                    margin-right: 5px;
                     font-size: 0.85rem;
                   }
                 }
@@ -559,7 +589,7 @@ $color_2: #000;
   }
  }
 }
-.breadcrumb>li+li:before{
+.breadcrumb li+li:before{
   color:$text_color;
 }
 /* breadcrumb ends here */
@@ -576,11 +606,12 @@ $color_2: #000;
   .card-title{
     height: 45px;
     height: auto;
-    padding:1.8% 10px !important;
+    padding:15px 10px !important;
     h5{
       margin-bottom: 0;
       position: relative;
-      font-size: 13px;
+      font-size: 1rem;
+      font-weight: 600;
     }
     .dropdown{
       .dropdown-menu{
@@ -642,7 +673,7 @@ $color_2: #000;
   }
 }
 .buttons_row{
-  margin-bottom: 20px;
+  margin-bottom: 0px;
   button{
     border-radius: 0;
     font-size: 1rem;

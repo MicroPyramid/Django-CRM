@@ -240,20 +240,3 @@ def remove_comment(request):
             return JsonResponse({"error": "You Dont have permisions to delete"})
     else:
         return HttpResponse("Something Went Wrong")
-
-
-# Comments Section Ends
-
-
-@login_required
-def get_accounts(request):
-    if request.method == 'GET':
-        if request.user.is_authenticated:
-            accounts = Account.objects.all()
-            return render(request, 'accounts_list.html', {
-                'accounts': accounts})
-        else:
-            return HttpResponseRedirect('accounts/login')
-    else:
-        return HttpResponse('Invalid Method or Not Authanticated in load_calls')
-    return HttpResponse('Oops!! Something Went Wrong..  in load_calls')

@@ -22,19 +22,19 @@
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-12">
+    <div class="col-md-3 col-lg-2">
       <div class="card">
         <form id="opportunity_filter" method="POST" action="">
           <div class="card-body ">
            <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Name</label>
                   <input type="text" class="form-control" placeholder="Name" id="id_name" name="name" {% if request.POST %} value="{{request.POST.name}}" {% endif %}>
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Account</label>
                   <select class="form-control" id="id_account" name="account">
@@ -45,7 +45,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Stage</label>
                   <select class="form-control" id="id_stage" name="stage" >
@@ -56,7 +56,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-3">
+              <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Lead Source</label>
                   <select class="form-control" id="id_lead_source" name="lead_source" >
@@ -79,10 +79,10 @@
         <br clear="all">
       </div>
     </div>
-  </div>
-  <!-- filter_row ends here -->
-  <!-- opportunities list start-->
-  <div class="table_container_row row marl">
+
+    <div class="col-md-9 col-lg-10">
+    <!-- opportunities list start-->
+  <div class="table_container_row row marl no-gutters">
     <div class="col-md-12">
       <div class="card">
        
@@ -157,6 +157,11 @@
     <br clear="all">
   </div>
   <!-- opportunities list end-->
+    </div>
+
+  </div>
+  <!-- filter_row ends here -->
+  
 </div>
 <!-- main_container ends here -->
 {% endblock %}

@@ -173,10 +173,11 @@ def edit_case(request, case_id):
 @login_required
 def remove_case(request, case_id):
     if request.method == 'POST':
-        cid = request.POST['case_id']
-        get_object_or_404(Case, id=cid).delete()
+        get_object_or_404(Case, id=case_id).delete()
+        if request.is_ajax():
+            return JsonResponse({'error': False})
         count = Case.objects.filter(Q(assigned_to=request.user) | Q(created_by=request.user)).count()
-        data = {"case_id": cid, "count": count}
+        data = {"case_id": case_id, "count": count}
         return JsonResponse(data)
     else:
         Case.objects.filter(id=case_id).delete()
