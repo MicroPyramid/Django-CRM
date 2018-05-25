@@ -76,15 +76,15 @@
             <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Leads {{ lead_obj|length }}{% endif %}</span>
             </div>
             <div class="table-responsive">
-              <table class="table table-bordered table-striped table-condensed">
+              <table class="table ">
                 <thead>
                  <tr>
-                    <th width="5%" style="text-align:center;">S.no</th>
-                    <th width="20%" style="text-align:center;">Name</th>
-                    <th width="15%" style="text-align:center;">Status</th>
-                    <th width="15%" style="text-align:center;">Assigned User</th>
-                    <th width="20%" style="text-align:center;">Created On</th>
-                    <th width="25%" style="text-align:center;">Actions</th>
+                    <th width="5%">ID</th>
+                    <th width="25%" >Name</th>
+                    <th width="15%" >Status</th>
+                    <th width="15%" >Assigned User</th>
+                    <th width="20%" >Created On</th>
+                    <th width="10%" >Actions</th>
                   </tr>
 
                 </thead>
@@ -112,9 +112,9 @@
                     </td>
                     <td>{{ lead.created_on }}</td>
                     <td class="actions"> 
-                      <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
-                      <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                      <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i>Delete</a>
+                      {# <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> </a> #}
+                      <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                      <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                     </td>
                   </tr>
                   {% endfor %}

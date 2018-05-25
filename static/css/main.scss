@@ -300,7 +300,7 @@ $color_2: #000;
 
 /* main_container stats here  */
 .main_container{
-  padding-top: 0.8rem;
+  padding-top: 0;
   .heading_create{
     .heading{
       font-size: 1.1rem;
@@ -430,6 +430,9 @@ $color_2: #000;
         }
       }
     }
+    .table_container_row{
+      margin-top: 0;
+    }
   }
   /* filter_row ends here */
   /* table_container_row starts here */
@@ -437,7 +440,7 @@ $color_2: #000;
 }
 /* main_container ends here */
  .table_container_row{
-    margin-top: 0px;
+    margin-top: 10px;
     .card{
       .card-title{
         padding:5px 10px !important;
@@ -582,6 +585,7 @@ $color_2: #000;
 /* breadcrumb starts here */
 .breadcrumb{
  margin:0; 
+ padding:0 15px;
  background: none;
  .breadcrumb-item{
   a{
@@ -749,4 +753,8 @@ padding:0px !important;
 .select2-container--default .select2-selection--multiple{
   border-radius: 0 important;
   border: none !important;
+}
+.created_information{
+  padding-left: 15px;
+  margin:10px 0;
 }

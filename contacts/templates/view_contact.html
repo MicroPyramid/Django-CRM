@@ -11,14 +11,15 @@
 {%block content%}
 <!-- CONTACTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
-    <div class="overview_form_block row marl">
+    <div class="overview_form_block row marl justify-content-center">
       <div class="col-md-8">
         <div class="card">
           
           <div class="card-body" id="datashow">
-          <div class="panel-heading card-title view-pad">
+
+           <div class="card-title">
             <h5>
-              overview
+              Overview
               <span class="float-right" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
                   <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
@@ -31,6 +32,7 @@
               </span>
             </h5>
           </div>
+
             <div class="row marl">
               <div class="col-md-6">
                 <div class="filter_col col-md-12" id="iname">
@@ -58,7 +60,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     {% if contact_record.address.address_line or contact_record.address.street or contact_record.address.city or  contact_record.address.state or contact_record.address.postcode or contact_record.address.country %}
@@ -93,6 +95,11 @@
                     <div class="contact_field" id="contact_description" data-name="name">{{ contact_record.description }}</div>
                     {% endif %}
                   </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="created_information">
+                  Created by <b>santharao@micropyramid.com</b> created on <i><b>April 20, 2018, 5:37 p.m.</b></i> 
                 </div>
               </div>
             </div>
@@ -167,60 +174,7 @@
           <!-- Comments Section Ends-->
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="card">
-       
-          <div class="card-body" id="datashow">
-             <div class="panel-heading card-title view-pad">
-            <h5>Label</h5>
-          </div>
-            <div class="row marl">
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  {%if contact_record.assigned_to.all %}
-                    <label class="contact_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
-                    <div class="contact_field" id="contact_assigned_users" data-name="name">
-                      {% for user in contact_record.assigned_to.all %}
-                        <li>{{ user }}</li>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-              </div>
-              <!-- <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="contact_field_label" for="id_team" data-name="name">Assigned Team(s)</label>
-                  <div class="contact_field" id="contact_team" data-name="name">
-                    {%if not contact_record.teams %}
-                      Not Assigned Yet
-                    {% else %}
-                      {% for team in contact_record.teams.all %}
-                        <li>{{ team }}</li>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-                </div>
-              </div> -->
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="contact_field_label" for="id_created_on" data-name="name">Created On</label>
-                  <div class="contact_field" id="contact_created_on" data-name="name">
-                    {{ contact_record.created_on }}
-                  </div>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="contact_field_label" for="id_created_by" data-name="name">Created by</label>
-                  <div class="contact_field" id="contact_created_by" data-name="name">
-                   {{ contact_record.created_by }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+   
     </div>
   </div>
 <!-- CONTACTS VIEW ENDS -->
