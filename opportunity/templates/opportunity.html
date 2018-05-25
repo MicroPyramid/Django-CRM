@@ -92,16 +92,16 @@
           <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Opportunities {{ opportunity_list|length }}{% endif %}</span>
         </div>
         <div class="table-responsive">
-          <table class="table table-bordered table-striped table-condensed">
+          <table class="table ">
             <thead>
               <tr>
-                <th width="5%" style="text-align:center;">S.No</th>
-                <th width="15%" style="text-align:center;">Name</th>
-                <th width="15%" style="text-align:center;">Account</th>
-                <th width="15%" style="text-align:center;">Contact(s)</th>
-                <th width="15%" style="text-align:center;">Stage</th>
-                <th width="10%" style="text-align:center;">Lead Source</th>
-                <th width="25%" style="text-align:center;">Actions</th>
+                <th width="5%">S.No</th>
+                <th width="15%">Name</th>
+                <th width="15%">Account</th>
+                <th width="15%">Contact(s)</th>
+                <th width="15%">Stage</th>
+                <th width="10%">Lead Source</th>
+                <th width="15%">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -135,9 +135,9 @@
                 <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
                 <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}</td>
                 <td class="actions">
-                  <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a>
-                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i>Delete</a>
+                  {# <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                 </td>
               </tr>
               {% endfor %}

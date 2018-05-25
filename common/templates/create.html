@@ -74,7 +74,7 @@
           </div>
           <div class="row marl buttons_row form_btn_row text-center">
             <button class="btn btn-default save" type="submit">Save</button>
-            <a href="{% url 'common:users_list' %}" class="btn btn-default clear" id="create_user_cancel">Cancel</a>
+            <a href="{% if not user_obj %}{% url 'common:users_list' %}{% else %}{% url 'common:profile' %}{% endif %}" class="btn btn-default clear" id="create_user_cancel">Cancel</a>
           </div>
         </div>
       </div>

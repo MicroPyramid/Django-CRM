@@ -146,10 +146,7 @@ def edit_user(request, user_id):
         user_form = UserForm(request.POST, instance=user_obj)
         if user_form.is_valid():
             user_form.save()
-            if not request.user.is_staff:
-                return redirect("common:profile")
-            else:
-                return redirect("common:users_list")
+            return redirect("common:profile")
         else:
             return render(request, 'create.html', {'user_form': user_form, "errors": user_form.errors})
     else:

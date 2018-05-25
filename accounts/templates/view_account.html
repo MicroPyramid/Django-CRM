@@ -13,7 +13,7 @@
 {% block content %}
   <!-- ACCOUNTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
-    <div class="overview_form_block row marl">
+    <div class="overview_form_block row marl justify-content-center">
       <div class="col-md-8">
         <div class="card">
           <div class="card-body" id="datashow">
@@ -75,7 +75,7 @@
                 </div>
                 {% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 {% if account_record.billing_address.address_line or account_record.billing_address.street or  account_record.billing_address.city or   account_record.billing_address.state or account_record.billing_address.postcode or account_record.billing_address.country %}
                 <div class="filter_col col-md-12">
                   <div class="form-group">
@@ -128,6 +128,7 @@
                       {% endif %}
                     </div>
                   </div>
+
                 </div>
                 {% endif %}
                 {% if account_record.description %}
@@ -139,9 +140,14 @@
                 </div>
                 {% endif %}
               </div>
-            </div>
-          </div>
-          <!-- Comments Section starts-->
+               <div class="col-md-12">
+                <div class="created_information">
+                  Created by <b>santharao@micropyramid.com</b> created on <i><b>April 20, 2018, 5:37 p.m.</b></i> 
+                </div>
+              </div>
+
+              <div class="col-md-12 " style="padding:0">
+                 <!-- Comments Section starts-->
           <div class="card-body" id="datashow">
           <div class="card-title">
             <h5>Comments</h5>
@@ -208,54 +214,18 @@
             </div>
           </div>
           <!-- Comments Section Ends-->
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-body" id="datashow">
-             <div class="card-title">
-            <h5>Label</h5>
-          </div>
-            <div class="row marl">
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  {%if account_record.assigned_to.all %}
-                    <label class="acc_field_label" for="id_assigned_user" data-name="name">Assigned User(s)</label>
-                    <div class="account_field" id="account_assigned_users" data-name="name">
-                      {% for user in account_record.assigned_to.all %}
-                        <li>{{ user }}</li>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="acc_field_label" for="id_created_on" data-name="name">Created On</label>
-                  <div class="account_field" id="account_created_on" data-name="name">
-                    {{ account_record.created_on }}
-                  </div>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="acc_field_label" for="id_created_by" data-name="name">Created By</label>
-                  <div class="account_field" id="account_created_by" data-name="name">
-                    {{ account_record.created_by }}
-                  </div>
-                </div>
               </div>
             </div>
+
           </div>
+         
         </div>
-      </div>
-    </div>
-  </div>
-  <!-- ACCOUNTS VIEW ENDS -->
-  <!-- CONTACTS LIST STARTS -->
+      
+      <!-- CONTACTS LIST STARTS -->
+      <br>
   <form method='GET' class="accountdetails_row">
-    <div class="table_container_row row marl">
-      <div class="col-md-8">
+    <div class="table_container_row row marl no-gutters">
+      <div class="col-md-12">
         <div class="card">
           <div class="card-body">
           <div class="panel-heading-list card-title view-pad">
@@ -765,8 +735,8 @@
   <!-- CONTACTS EDIT MODAL ENDS -->
   <!-- OPPORTUNITY LIST STARTS -->
   <form method='GET' class="accountdetails_row">
-    <div class="table_container_row row marl">
-      <div class="col-md-8">
+    <div class="table_container_row row marl no-gutters">
+      <div class="col-md-12">
         <div class="card">
          
           <div class="card-body">
@@ -1323,8 +1293,8 @@
   <!-- OPPORTUNITY EDIT MODAL ENDS -->
   <!-- CASES LIST STARTS -->
   <form method='GET' class="accountdetails_row">
-    <div class="table_container_row row marl">
-      <div class="col-md-8">
+    <div class="table_container_row row marl no-gutters">
+      <div class="col-md-12">
         <div class="card">
          
           <div class="card-body">
@@ -1830,7 +1800,13 @@
   </div>
   {% endfor %}
   <!-- CASES EDIT MODAL ENDS -->
-{% endblock content %}
+
+      </div>
+      
+    </div>
+  </div>
+  <!-- ACCOUNTS VIEW ENDS -->
+  {% endblock content %}
 {% block js_block %}
   <script type="text/javascript">
     $("#form_opp").submit(function(e) {

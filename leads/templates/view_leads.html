@@ -11,7 +11,7 @@
 {%endblock%}
 {% block content %}
 <div class="main_container" id="maincontainer">
-  <div class="overview_form_block row marl">
+  <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-8">
       <div class="card">
        
@@ -69,7 +69,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-12">
               <div class="filter_col col-md-12">
                 {% if lead_record.status %}
                 <div class="form-group">
@@ -130,6 +130,11 @@
                 {% endif %}
               </div>
             </div>
+            <div class="col-md-12">
+                <div class="created_information">
+                  Created by <b>santharao@micropyramid.com</b> created on <i><b>April 20, 2018, 5:37 p.m.</b></i> 
+                </div>
+              </div>
           </div>
         </div>
         <!-- Comments Section starts-->
@@ -203,60 +208,7 @@
       </div>
     </div>
     <tr id="meeting{{ meeting.id }}">
-    <div class="col-md-4">
-      <div class="card">
-       
-        <div class="card-body" id="datashow">
-         <div class="card-title">
-          <h5>Label</h5>
-        </div>
-          <div class="row marl">
-            <div class="filter_col col-md-12">
-              <div class="form-group">
-              {%if lead_record.assigned_to.all %}
-                <label class="lead_field_label" for="id_assigned_user" data-name="name" >Assigned User(s)</label>
-                <div class="lead_field" id="lead_assigned_users" data-name="name">
-                    {% for user in lead_record.assigned_to.all %}
-                      <li>{{ user }}</li>
-                    {% endfor %}
-                </div>
-              {% endif %}
-              </div>
-            </div>
-            <!-- <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label class="lead_field_label" for="id_team" data-name="name" >Assigned Team(s)</label>
-                <div class="lead_field" id="lead_team" data-name="name">
-                  {%if not lead_record.teams %}
-                    Not Assigned Yet
-                  {% else %}
-                    {% for team in lead_record.teams.all %}
-                      <li>{{ team }}</li>
-                    {% endfor %}
-                  {% endif %}
-                </div>
-              </div>
-            </div> -->
-            <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label class="lead_field_label" for="id_created_on" data-name="name">Created On</label>
-                <div class="lead_field" id="lead_created_on" data-name="name">
-                  {{lead_record.created_on}}
-                </div>
-              </div>
-            </div>
-            <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label class="lead_field_label" for="id_created_by" data-name="name">Created by</label>
-                <div class="lead_field" id="lead_created_by" data-name="name">
-                  {{lead_record.created_by}}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+   
   </div>
 </div>
 {% endblock %}
