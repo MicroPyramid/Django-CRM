@@ -25,24 +25,9 @@
 <div class="container">
     <div class="row marl justify-content-center login_row">
         <div class="col-md-6 col-lg-6 col-xl-4">
-            <div class="login_block">
-                <div class="login_form_block">
-                    <div class="welcome">Django CRM</div>
-                    <form method="POST" action="">
-                        <div class="form-group">
-                            <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
-                        </div>
-                        <div class="form-group">
-                            <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
-                        </div>
-                        <div class="forgot">Forgot Password <a href="/password-reset/">Click Here?</a></div>
-                        {% if error %}
-                            <p>{{ message }}</p>
-                        {% endif %}
-                        <button type="submit" class="btn btn-danger">Login</button>
-                    </form>
-                </div>
-            </div>
+            {% block content %}
+            
+            {% endblock %}
         </div>
     </div>
 </div>

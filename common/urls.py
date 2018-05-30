@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from common import views
+from django.contrib.auth import views as auth_views
 
 app_name = 'common'
 
@@ -16,4 +17,9 @@ urlpatterns = [
     url(r'^users/(?P<user_id>\d*)/view/$', views.view_user, name="view_user"),
     url(r'^users/(?P<user_id>\d*)/edit/$', views.edit_user, name="edit_user"),
     url(r'^user/(?P<user_id>\d*)/delete/$', views.remove_user, name="remove_user"),
+     url(r'^password_reset/$',auth_views.password_reset,name='password_reset'),
+    url(r'^passowrd-reset/done/$',auth_views.password_reset_done,name='password_reset_done'),
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm, name='password_reset_confirm'),
+     url(r'^reset/done/$', auth_views.password_reset_complete, name='password_reset_complete'),
 ]
