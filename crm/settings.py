@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'simple_pagination',
+    'compressor',
     'common',
     'accounts',
     'cases',
@@ -35,11 +37,7 @@ INSTALLED_APPS = [
     'leads',
     'opportunity',
     'planner',
-    'simple_pagination',
-    'compressor'
-
 ]
-
 
 
 MIDDLEWARE = [

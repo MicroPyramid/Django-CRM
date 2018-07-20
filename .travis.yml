@@ -25,6 +25,8 @@ install:
 script:
   - python manage.py test
   - coverage run --source=accounts,common manage.py test accounts common
+  - pytest --cov=koalixcrm --cov-report xml --cov-report term
+  - python-codacy-coverage -r coverage.xml
 
 after_success:
   coveralls

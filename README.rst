@@ -1,15 +1,8 @@
 Django-CRM
 ==========
 
-.. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
-   :alt: Codacy Badge
-   :target: https://app.codacy.com/app/ashwin/Django-CRM?utm_source=github.com&utm_medium=referral&utm_content=MicroPyramid/Django-CRM&utm_campaign=badger
-
 Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
 
-
-.. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
-   :target: https://travis-ci.org/MicroPyramid/Django-CRM
 
 .. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
    :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
@@ -21,8 +14,20 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
 .. image:: https://img.shields.io/github/license/MicroPyramid/Django-CRM.svg
     :target: https://pypi.python.org/pypi/Django-CRM/
 
-.. image:: https://www.codetriage.com/micropyramid/django-crm/badges/users.svg
-    :target: https://www.codetriage.com/micropyramid/django-crm
+.. list-table::
+   :header-rows: 1
+   :widths: 7 7 7 60
+   :stub-columns: 1
+
+   *  -  Build Status
+      -  Codacy
+      -  Support
+   *  -  .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
+      -  .. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
+         .. image:: https://api.codacy.com/project/badge/Coverage/b11da5f09dd542479fd3bd53944595d2
+      -  .. image:: https://badges.gitter.im/Micropyramid/Django-CRM.png
+         .. image:: https://www.codetriage.com/micropyramid/django-crm/badges/users.svg
+
 
 http://django-crm.readthedocs.io for latest documentation
 
@@ -72,4 +77,3 @@ Need additional commercial support? `Contact us here`_
 .. _contact us here: https://micropyramid.com/contact-us/
 
 .. _here: https://django-crm.micropyramid.com/
-

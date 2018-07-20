@@ -1,12 +1,9 @@
 from django.test import TestCase
-from common.models import *
 from accounts.models import Account
-from common.models import User
+from common.models import User, Address
 
 
 # Create your tests here.
-
-
 class AccountCreateTest(object):
     def setUp(self):
         self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com', role='ADMIN')
