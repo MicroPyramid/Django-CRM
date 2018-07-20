@@ -42,22 +42,22 @@ class TestLeadModel(object):
                                         opportunity_amount="700",
                                         description="Iam an Lead",
                                         created_by=self.user)
+    # @pytest.mark.django_db(transaction=True)
+    # def testaddress_post_object_creation(self):
+    #     c = Address.objects.count()
+    #     self.assertEqual(c, 1)
 
-    def testaddress_post_object_creation(self):
-        c = Address.objects.count()
-        self.assertEqual(c, 1)
+    # def test_get_addressobject_with_name(self):
+    #     p = Address.objects.get(state="Telangana")
+    #     self.assertEqual(p.street, "Gokul enclave colony")
 
-    def test_get_addressobject_with_name(self):
-        p = Address.objects.get(state="Telangana")
-        self.assertEqual(p.street, "Gokul enclave colony")
+    # def test_lead_object_creation(self):
+    #     c = Lead.objects.count()
+    #     self.assertEqual(c, 1)
 
-    def test_lead_object_creation(self):
-        c = Lead.objects.count()
-        self.assertEqual(c, 1)
-
-    def test_get_leadobjects_with_name(self):
-        p = Lead.objects.get(title="LeadCreation")
-        self.assertEqual(p.account.name, "account")
+    # def test_get_leadobjects_with_name(self):
+    #     p = Lead.objects.get(title="LeadCreation")
+    #     self.assertEqual(p.account.name, "account")
 
 
 class LeadsPostrequestTestCase(TestLeadModel, TestCase):
