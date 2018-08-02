@@ -1,5 +1,5 @@
 from django.test import TestCase
-from accounts.models import *
+from accounts.models import Account
 from common.models import User, Address
 
 

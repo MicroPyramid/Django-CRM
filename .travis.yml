@@ -25,6 +25,9 @@ install:
 script:
   - python manage.py test
   - coverage run --source=accounts,common manage.py test accounts common
+  - coverage xml
+  - pytest
+  - python-codacy-coverage -r coverage.xml
 
 after_success:
   coveralls
