@@ -37,7 +37,7 @@ class Address(models.Model):
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
-        return self.city
+        return self.city if self.city else ""
 
 
 class Team(models.Model):

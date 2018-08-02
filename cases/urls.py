@@ -1,20 +1,23 @@
-from django.conf.urls import url
-from cases import views
+from django.urls import path
+from cases.views import (
+    CasesListView, CreateCaseView, CaseDetailView, UpdateCaseView, RemoveCaseView,
+    CloseCaseView, SelectContactsView, GetCasesView, AddCommentView,
+    UpdateCommentView, DeleteCommentView)
 
 app_name = 'cases'
 
-
 urlpatterns = [
-    url(r'^list/$', views.cases_list, name='list'),
-    url(r'^create/$', views.add_case, name='add_case'),
-    url(r'^(?P<case_id>\d+)/view/$', views.view_case, name='view_case'),
-    url(r'^(?P<case_id>\d+)/edit_case/$', views.edit_case, name='edit_case'),
-    url(r'^close_case/$', views.close_case, name="close_case"),
-    url(r'^(?P<case_id>\d+)/remove/$', views.remove_case, name='remove_case'),
-    url(r'^select_contacts/$', views.selectContacts, name="select_contacts"),
-    url(r'^get/list/$', views.get_cases, name='get_cases'),
-    # comments
-    url(r'^comment/add/$', views.add_comment, name='add_comment'),
-    url(r'^comment/edit/$', views.edit_comment, name='edit_comment'),
-    url(r'^comment/remove/$', views.remove_comment, name='remove_comment'),
+    path('list/', CasesListView.as_view(), name='list'),
+    path('create/', CreateCaseView.as_view(), name='add_case'),
+    path('<int:pk>/view/', CaseDetailView.as_view(), name="view_case"),
+    path('<int:pk>/edit_case/', UpdateCaseView.as_view(), name="edit_case"),
+    path('<int:case_id>/remove/', RemoveCaseView.as_view(), name="remove_case"),
+
+    path('close_case/', CloseCaseView.as_view(), name="close_case"),
+    path('select_contacts/', SelectContactsView.as_view(), name="select_contacts"),
+    path('get/list/', GetCasesView.as_view(), name="get_cases"),
+
+    path('comment/add/', AddCommentView.as_view(), name="add_comment"),
+    path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
+    path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 ]

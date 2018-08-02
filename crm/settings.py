@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'simple_pagination',
+    'compressor',
     'common',
     'accounts',
     'cases',
@@ -35,11 +37,8 @@ INSTALLED_APPS = [
     'leads',
     'opportunity',
     'planner',
-    'simple_pagination',
-    'compressor'
 
 ]
-
 
 
 MIDDLEWARE = [
@@ -171,3 +170,19 @@ COMPRESS_PRECOMPILERS = (
 COMPRESS_OFFLINE_CONTEXT = {
     'STATIC_URL': 'STATIC_URL',
 }
+
+DEFAULT_FROM_EMAIL = 'no-reply@django-crm.micropyramid.com'
+MAIL_SENDER = 'AMAZON'
+INACTIVE_MAIL_SENDER = 'MANDRILL'
+
+AM_ACCESS_KEY = os.getenv('AM_ACCESS_KEY', '')
+AM_PASS_KEY = os.getenv('AM_PASS_KEY', '')
+AWS_REGION = os.getenv('AWS_REGION', '')
+
+MGUN_API_URL = os.getenv('MGUN_API_URL', '')
+MGUN_API_KEY = os.getenv('MGUN_API_KEY', '')
+
+SG_USER = os.getenv('SG_USER', '')
+SG_PWD = os.getenv('SG_PWD', '')
+
+MANDRILL_API_KEY = os.getenv('MANDRILL_API_KEY', '')
