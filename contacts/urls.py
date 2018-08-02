@@ -1,18 +1,21 @@
-from django.conf.urls import url
-from contacts import views
+from django.urls import path
+from contacts.views import (
+    ContactsListView, CreateContactView, ContactDetailView, UpdateContactView, RemoveContactView,
+    GetContactsView, AddCommentView, UpdateCommentView, DeleteCommentView)
 
 app_name = 'contacts'
 
 
 urlpatterns = [
-    url(r'^list/$', views.contacts_list, name='list'),
-    url(r'^create/$', views.add_contact, name='add_contact'),
-    url(r'^(?P<contact_id>\d+)/view/$', views.view_contact, name='view_contact'),
-    url(r'^(?P<pk>\d+)/edit/$', views.edit_contact, name='edit_contact'),
-    url(r'^(?P<pk>\d+)/delete/$', views.remove_contact, name='remove_contact'),
-    url(r'^get/list/$', views.get_contacts, name='get_contacts'),
-    # comments
-    url(r'^comment/add/$', views.add_comment, name='add_comment'),
-    url(r'^comment/edit/$', views.edit_comment, name='edit_comment'),
-    url(r'^comment/remove/$', views.remove_comment, name='remove_comment'),
+    path('list/', ContactsListView.as_view(), name='list'),
+    path('create/', CreateContactView.as_view(), name='add_contact'),
+    path('<int:pk>/view/', ContactDetailView.as_view(), name="view_contact"),
+    path('<int:pk>/edit/', UpdateContactView.as_view(), name="edit_contact"),
+    path('<int:pk>/delete/', RemoveContactView.as_view(), name="remove_contact"),
+
+    path('get/list/', GetContactsView.as_view(), name="get_contacts"),
+
+    path('comment/add/', AddCommentView.as_view(), name="add_comment"),
+    path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
+    path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 ]

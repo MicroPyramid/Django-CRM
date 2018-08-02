@@ -54,7 +54,7 @@ $("#comment_edit").click(function (e) {
       if (data.error) {
         $("#CommentEditError").html(data.error).show()
       } else {
-        $("#comment_name" + data.commentid).html('<pre>' + data.comment + '</pre>')
+        $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
         $('#Comments_Cases_Modal').modal('hide');
         $("#id_editcomment").val("")
         $("#CommentEditError").html('')

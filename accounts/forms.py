@@ -10,8 +10,7 @@ class AccountForm(forms.ModelForm):
         super(AccountForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
-        self.fields['description'].widget.attrs.update({
-            'rows': '8'})
+        self.fields['description'].widget.attrs.update({'rows': '8'})
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
@@ -28,7 +27,6 @@ class AccountForm(forms.ModelForm):
                 ph_length = str(client_phone)
                 if len(ph_length) < 10 or len(ph_length) > 13:
                     raise forms.ValidationError('Phone number must be minimum 10 Digits and maximum of 13 Digits')
-
         except (ValueError, TypeError):
             raise forms.ValidationError('Phone Number should contain only Numbers')
         return client_phone

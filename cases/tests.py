@@ -51,16 +51,16 @@ class CaseViewTestCase(CaseCreation, TestCase):
 class CaseCreationUrlTestCase(CaseCreation, TestCase):
     def test_create_cases(self):
         response = self.client.post('/cases/create/', {'name': 'new case', 'case_type': 'Problem', 'status': 'New',
-                                                       'account': self.account, 'contacts': self.contacts,
+                                                       'account': self.account, 'contacts': [self.contacts.id],
                                                        'priority': "Low",
-                                                       'description': "something", 'teams': 'Sales'})
+                                                       'description': "something"})
         self.assertEqual(response.status_code, 200)
 
     def test_create_cases_html(self):
         response = self.client.post('/cases/create/', {'name': 'new case', 'case_type': 'Problem', 'status': 'New',
-                                                       'account': self.account, 'contacts': self.contacts,
+                                                       'account': self.account, 'contacts': [self.contacts.id],
                                                        'priority': "Low",
-                                                       'description': "something", 'teams': 'Sales'})
+                                                       'description': "something"})
         self.assertTemplateUsed(response, 'create_cases.html')
 
 

@@ -135,14 +135,14 @@
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="acc_field_label" for="id_description" data-name="name">Description</label>
-                    <div class="account_field" id="account_description" data-name="name">{{account_record.description}}</div>
+                    <div class="account_field" id="account_description" data-name="name">{{ account_record.description }}</div>
                   </div>
                 </div>
                 {% endif %}
               </div>
                <div class="col-md-12">
                 <div class="created_information">
-                  Created by <b>santharao@micropyramid.com</b> created on <i><b>April 20, 2018, 5:37 p.m.</b></i> 
+                  Created by <b>{{ account_record.created_by }}</b> created on <i><b>{{ account_record.created_on }}</b></i> 
                 </div>
               </div>
 
@@ -2042,7 +2042,8 @@
         if (data.error) {
           $("#CommentEditError").html(data.error).show()
         } else {
-          $("#comment_name" + data.commentid).html('<pre>' + data.comment + '</pre>')
+          console.log($("#comment_name" + data.comment_id))
+          $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
           $('#Comments_Accounts_Modal').modal('hide');
           $("#id_editcomment").val("")
           $("#CommentEditError").html('')

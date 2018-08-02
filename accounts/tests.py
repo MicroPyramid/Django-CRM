@@ -12,9 +12,11 @@ class AccountCreateTest(object):
 
         self.address = Address.objects.create(
             street="KPHB", city="HYDERABAD", state="ANDHRA PRADESH", postcode="500073", country='IN')
+        self.shipping_address = Address.objects.create(
+            street="KPHB", city="HYDERABAD", state="ANDHRA PRADESH", postcode="500073", country='IN')
         self.account = Account.objects.create(
             name="Uday", email="udayteja@micropyramid.com", phone="8333855552", billing_address=self.address,
-            shipping_address=self.address, website="www.uday.com", created_by=self.user,
+            shipping_address=self.shipping_address, website="www.uday.com", created_by=self.user,
             industry="SOFTWARE", description="Yes.. Testing Done")
         self.client.login(email='u@mp.com', password='uday2293')
 
@@ -23,14 +25,14 @@ class AccountsCreateTestCase(AccountCreateTest, TestCase):
     def test_account_create_url(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com",
+            'shipping_address': self.shipping_address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
         response = self.client.get('/accounts/create/', {
             'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "", 'billing_address': self.address,
-            'shipping_address': self.address, 'website': "www.uday.com",
+            'shipping_address': self.shipping_address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertTemplateUsed(response, 'create_account.html')
 
@@ -90,6 +92,6 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 
     def test_account_creation_invalid_data(self):
         data = {'name': "", 'email': "", 'phone': "", 'billing_address': self.address,
-        'shipping_address': self.address, 'website': "", 'industry': "", 'description': ""}
+        'shipping_address': self.shipping_address, 'website': "", 'industry': "", 'description': ""}
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)
