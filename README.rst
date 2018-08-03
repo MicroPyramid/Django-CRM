@@ -16,7 +16,7 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
 
 .. list-table::
    :header-rows: 1
-   :widths: 7 7 7 60
+   :widths: 7 7 60
    :stub-columns: 1
 
    *  -  Build Status
