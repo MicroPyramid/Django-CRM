@@ -1,42 +1,38 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
-from django.http.response import Http404
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
-
+from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import (
+    CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
 from common.models import User
 from common.forms import UserForm, LoginForm, ChangePasswordForm
 
 
-def admin_required(function):
+class AdminRequiredMixin(AccessMixin):
 
-    def wrapper(request, *args, **kwargs):
-        user = request.user
-        if user.is_authenticated:
-            if user.role == "ADMIN":
-                return function(request, *args, **kwargs)
-            else:
-                raise Http404
-        else:
-            return redirect("common:login")
-    return wrapper
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.raise_exception = True
+        if not request.user.role == "ADMIN":
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
 
 
-@login_required
-def home(request):
-    return render(request, 'index.html')
+class HomeView(LoginRequiredMixin, TemplateView):
+    template_name = "index.html"
 
 
-@login_required
-def change_pass(request):
-    error, errors = "", ""
-    form = ChangePasswordForm()
-    if request.method == 'POST':
+class ChangePasswordView(LoginRequiredMixin, TemplateView):
+    template_name = "change_password.html"
+
+    def post(self, request, *args, **kwargs):
+        error, errors = "", ""
         form = ChangePasswordForm(request.POST)
         if form.is_valid():
             user = request.user
-            if not check_password(request.POST['CurrentPassword'], user.password):
+            if not check_password(request.POST.get('CurrentPassword'), user.password):
                 error = "Invalid old password"
             else:
                 user.set_password(request.POST.get('Newpassword'))
@@ -45,21 +41,27 @@ def change_pass(request):
                 return HttpResponseRedirect('/')
         else:
             errors = form.errors
-    return render(request, "change_password.html", {'error': error,
-                                                    'errors': errors})
+        return render(request, "change_password.html", {'error': error, 'errors': errors})
 
 
-@login_required
-def profile(request):
-    user = request.user
-    user_obj = User.objects.get(id=user.id)
-    return render(request, "profile.html", {'user_obj': user_obj})
+class ProfileView(LoginRequiredMixin, TemplateView):
+    template_name = "profile.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ProfileView, self).get_context_data(**kwargs)
+        context["user_obj"] = self.request.user
+        return context
 
 
-def login_crm(request):
-    if request.user.is_authenticated:
-        return HttpResponseRedirect('/')
-    if request.method == 'POST':
+class LoginView(TemplateView):
+    template_name = "login.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return HttpResponseRedirect('/')
+        return super(LoginView, self).dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
         form = LoginForm(request.POST, request=request)
         if form.is_valid():
             user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
@@ -68,93 +70,135 @@ def login_crm(request):
                     login(request, user)
                     return HttpResponseRedirect('/')
                 else:
-                    return render(request, "login.html", {"error": True, "message": "Your Account is InActive. Please Contact Administrator"})
+                    return render(request, "login.html", {
+                        "error": True,
+                        "message": "Your Account is InActive. Please Contact Administrator"
+                    })
             else:
-                return render(request, "login.html", {"error": True, "message": "Your Account is not Found. Please Contact Administrator"})
+                return render(request, "login.html", {
+                    "error": True,
+                    "message": "Your Account is not Found. Please Contact Administrator"
+                })
         else:
-            return render(request, "login.html", {"error": True, "message": "Your username and password didn't match. Please try again."})
-    return render(request, 'login.html')
+            return render(request, "login.html", {
+                "error": True,
+                "message": "Your username and password didn't match. Please try again."
+            })
 
 
-def forgot_password(request):
-    return render(request, 'forgot_password.html')
+class ForgotPasswordView(TemplateView):
+    template_name = "forgot_password.html"
 
 
-def logout_crm(request):
-    logout(request)
-    request.session.flush()
-    return redirect("common:login")
+class LogoutView(LoginRequiredMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        logout(request)
+        request.session.flush()
+        return redirect("common:login")
 
 
-@admin_required
-def users_list(request):
-    users_list = User.objects.all()
-    page = request.POST.get('per_page')
-    first_name = request.POST.get('first_name')
-    last_name = request.POST.get('last_name')
-    username = request.POST.get('username')
-    email = request.POST.get('email')
-    active_users = User.objects.filter(is_active=True)
-    inactive_users = User.objects.filter(is_active=False)
-    if first_name:
-        users_list = users_list.filter(first_name__icontains=first_name)
-    if last_name:
-        users_list = users_list.filter(last_name__icontains=last_name)
-    if username:
-        users_list = users_list.filter(username__icontains=username)
-    if email:
-        users_list = users_list.filter(email__icontains=email)
-    return render(request, "list.html", {
-        'users': users_list, 'active_users': active_users,
-        'per_page': page, 'inactive_users': inactive_users
-    })
+class UsersListView(AdminRequiredMixin, TemplateView):
+    model = User
+    context_object_name = "users"
+    template_name = "list.html"
+
+    def get_queryset(self):
+        queryset = self.model.objects.all()
+        request_post = self.request.POST
+        if request_post:
+            if request_post.get('first_name'):
+                queryset = queryset.filter(first_name__icontains=request_post.get('first_name'))
+            if request_post.get('last_name'):
+                queryset = queryset.filter(last_name_id=request_post.get('last_name'))
+            if request_post.get('username'):
+                queryset = queryset.filter(username=request_post.get('username'))
+            if request_post.get('email'):
+                queryset = queryset.filter(email=request_post.get('email'))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(UsersListView, self).get_context_data(**kwargs)
+        context["users"] = self.get_queryset()
+        context["active_users"] = self.get_queryset().filter(is_active=True)
+        context["inactive_users"] = self.get_queryset().filter(is_active=False)
+        context["per_page"] = self.request.POST.get('per_page')
+        return context
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
 
 
-@admin_required
-def create_user(request):
-    user_form = UserForm()
-    if request.method == 'POST':
-        user_form = UserForm(request.POST)
-        if user_form.is_valid():
-            user = user_form.save(commit=False)
-            if request.POST.get("password"):
-                user.set_password(request.POST.get("password"))
-            user.save()
+class CreateUserView(AdminRequiredMixin, CreateView):
+    model = User
+    form_class = UserForm
+    template_name = "create.html"
+
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        if form.cleaned_data.get("password"):
+            user.set_password(form.cleaned_data.get("password"))
+        user.save()
+        return redirect("common:users_list")
+
+    def form_invalid(self, form):
+        return self.render_to_response(
+            self.get_context_data(form=form, errors=form.errors))
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateUserView, self).get_context_data(**kwargs)
+        context["user_form"] = context["form"]
+        if "errors" in kwargs:
+            context["errors"] = kwargs["errors"]
+        return context
+
+
+class UserDetailView(AdminRequiredMixin, DetailView):
+    model = User
+    context_object_name = "users"
+    template_name = "list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(UserDetailView, self).get_context_data(**kwargs)
+        users_list = User.objects.all()
+        context.update({
+            "users": users_list, "user_obj": self.object,
+            "active_users": users_list.filter(is_active=True),
+            "inactive_users": users_list.filter(is_active=False)
+        })
+        return context
+
+
+class UpdateUserView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserForm
+    template_name = "create.html"
+
+    def form_valid(self, form):
+        form.save()
+        if self.request.user.role == "ADMIN":
             return redirect("common:users_list")
-        else:
-            return render(request, 'create.html', {'user_form': user_form, "errors": user_form.errors})
-    else:
-        return render(request, 'create.html', {'user_form': user_form})
+        return redirect("common:profile")
+
+    def form_invalid(self, form):
+        return self.render_to_response(
+            self.get_context_data(form=form, errors=form.errors))
+
+    def get_context_data(self, **kwargs):
+        context = super(UpdateUserView, self).get_context_data(**kwargs)
+        context["user_obj"] = self.object
+        context["user_form"] = context["form"]
+        if "errors" in kwargs:
+            context["errors"] = kwargs["errors"]
+        return context
 
 
-@admin_required
-def view_user(request, user_id):
-    users_list = User.objects.all()
-    user_obj = User.objects.filter(id=user_id)
-    active_users = User.objects.filter(is_active=True)
-    inactive_users = User.objects.filter(is_active=False)
-    return render(request, "list.html", {
-        'users': users_list, 'user_obj': user_obj,
-        'active_users': active_users, 'inactive_users': inactive_users
-    })
+class UserDeleteView(AdminRequiredMixin, DeleteView):
+    model = User
 
-
-def edit_user(request, user_id):
-    user_obj = get_object_or_404(User, id=user_id)
-    user_form = UserForm(instance=user_obj)
-    if request.method == 'POST':
-        user_form = UserForm(request.POST, instance=user_obj)
-        if user_form.is_valid():
-            user_form.save()
-            return redirect("common:profile")
-        else:
-            return render(request, 'create.html', {'user_form': user_form, "errors": user_form.errors})
-    else:
-        return render(request, 'create.html', {'user_form': user_form, 'user_obj': user_obj})
-
-
-@admin_required
-def remove_user(request, user_id):
-    user_obj = get_object_or_404(User, id=user_id)
-    user_obj.delete()
-    return redirect("common:users_list")
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect("common:users_list")
+ 

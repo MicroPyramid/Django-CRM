@@ -1,19 +1,23 @@
-from django.conf.urls import url
-from leads import views
+from django.urls import path
+from leads.views import (
+    LeadListView, CreateLeadView, LeadDetailView, UpdateLeadView, DeleteLeadView, ConvertLeadView,
+    GetLeadsView, AddCommentView, UpdateCommentView, DeleteCommentView)
+
 
 app_name = 'leads'
 
 
 urlpatterns = [
-    url(r'^list/$', views.leads_list, name='list'),
-    url(r'^create/$', views.add_lead, name='add_lead'),
-    url(r'^(?P<lead_id>\d+)/view/$', views.view_lead, name="view_lead"),
-    url(r'^(?P<lead_id>\d+)/edit/$', views.edit_lead, name='edit_lead'),
-    url(r'^(?P<lead_id>\d+)/delete/$', views.remove_lead, name="remove_lead"),
-    url(r'^(?P<pk>\d+)/convert/$', views.leads_convert, name='leads_convert'),
-    # comments
-    url(r'^comment/add/$', views.add_comment, name='add_comment'),
-    url(r'^comment/edit/$', views.edit_comment, name='edit_comment'),
-    url(r'^comment/remove/$', views.remove_comment, name='remove_comment'),
-    url(r'^get/list/$', views.get_leads, name='get_lead'),
+    path('list/', LeadListView.as_view(), name='list'),
+    path('create/', CreateLeadView.as_view(), name='add_lead'),
+    path('<int:pk>/view/', LeadDetailView.as_view(), name="view_lead"),
+    path('<int:pk>/edit/', UpdateLeadView.as_view(), name="edit_lead"),
+    path('<int:pk>/delete/', DeleteLeadView.as_view(), name="remove_lead"),
+    path('<int:pk>/convert/', ConvertLeadView.as_view(), name="leads_convert"),
+
+    path('get/list/', GetLeadsView.as_view(), name="get_lead"),
+
+    path('comment/add/', AddCommentView.as_view(), name="add_comment"),
+    path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
+    path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 ]
