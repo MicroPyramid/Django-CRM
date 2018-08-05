@@ -4,9 +4,6 @@ Django-CRM
 Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
 
 
-.. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
-   :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
-
 .. image:: https://landscape.io/github/MicroPyramid/Django-CRM/master/landscape.svg?style=flat
    :target: https://landscape.io/github/MicroPyramid/Django-CRM/master
    :alt: Code Health
@@ -23,10 +20,19 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
       -  Codacy
       -  Support
    *  -  .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
+            :target: https://travis-ci.org/MicroPyramid/Django-CRM
       -  .. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
+            :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
+            :alt: Codacy Dashboard
          .. image:: https://api.codacy.com/project/badge/Coverage/b11da5f09dd542479fd3bd53944595d2
+            :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
+            :alt: Codacy Coverage
       -  .. image:: https://badges.gitter.im/Micropyramid/Django-CRM.png
+            :target: https://gitter.im/MicroPyramid/Django-CRM
+            :alt: Gitter
          .. image:: https://www.codetriage.com/micropyramid/django-crm/badges/users.svg
+            :target: https://www.codetriage.com/micropyramid/django-crm
+            :alt: Code Helpers
 
 
 http://django-crm.readthedocs.io for latest documentation
