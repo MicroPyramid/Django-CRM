@@ -67,12 +67,15 @@ a{
   .form-group {
     margin-bottom: 15px;
   }
+  .errorlist li{
+    color: red;
+  }
   label {
-    font-size: 12px;
+    font-size: 14px;
     color: darken($text_color2, 15%);
     font-weight:500;
   }
-  .form-control {
+  .form-control, input {
     color: $text_color;
     min-height: 40px;
     font-size: 13px;
