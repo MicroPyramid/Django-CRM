@@ -16,7 +16,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    path('change-password/', ChangePasswordView.as_view(), name='change_pass'),
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('profile/', ProfileView.as_view(), name='profile'),
 
     # User views
@@ -26,9 +26,9 @@ urlpatterns = [
     path('users/<int:pk>/view/', UserDetailView.as_view(), name='view_user'),
     path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='remove_user'),
 
-    url(r'^password_reset/$',auth_views.password_reset,name='password_reset'),
-    url(r'^passowrd-reset/done/$',auth_views.password_reset_done,name='password_reset_done'),
-    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    path('password-reset/', auth_views.password_reset, name='password_reset'),
+    path('password-reset/done/', auth_views.password_reset_done, name='password_reset_done'),
+    path('reset/uidb64>/<token>/',
         auth_views.password_reset_confirm, name='password_reset_confirm'),
-     url(r'^reset/done/$', auth_views.password_reset_complete, name='password_reset_complete'),
+    path('reset/done/', auth_views.password_reset_complete, name='password_reset_complete'),
 ]

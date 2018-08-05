@@ -35,7 +35,7 @@
                         <div class="form-group">
                             <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
                         </div>
-                        <div class="forgot">Forgot Password <a href="/password-reset/">Click Here?</a></div>
+                        <div class="forgot">Forgot Password <a href="{% url "common:password_reset" %}">Click Here?</a></div>
                         {% if error %}
                             <p>{{ message }}</p>
                         {% endif %}
