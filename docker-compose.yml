@@ -7,7 +7,7 @@ services:
       - /home/db:/var/lib/postgresql/data
   dockertest:
     build: .
-    image: micropyramid/django-crm:1.1
+    image: micropyramid/django-crm:1
     environment:
       - DJANGO_SETTINGS_MODULE=crm.dev_settings
     ports:
