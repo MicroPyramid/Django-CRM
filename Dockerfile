@@ -1,5 +1,3 @@
-LABEL authors="Micropyramid"
-
 FROM python:3.6
 
 WORKDIR /app
