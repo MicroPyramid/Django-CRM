@@ -5,11 +5,12 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
 
 .. list-table::
    :header-rows: 1
-   :widths: 30 30 50
+   :widths: 50 50 150 90
    :stub-columns: 1
 
    *  -  Build Status
       -  Codacy
+      -  Docker
       -  Support
    *  -   .. image:: https://travis-ci.org/MicroPyramid/Django-CRM.svg?branch=master
              :target: https://travis-ci.org/MicroPyramid/Django-CRM
@@ -25,6 +26,20 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
          .. image:: https://api.codacy.com/project/badge/Coverage/b11da5f09dd542479fd3bd53944595d2
             :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
             :alt: Codacy Coverage
+
+      -  .. image:: https://img.shields.io/docker/automated/micropyramid/django-crm.svg
+            :target: https://github.com/MicroPyramid/Django-CRM
+            :alt: Docker Automated
+         .. image:: https://img.shields.io/docker/build/micropyramid/django-crm.svg
+            :target: https://github.com/MicroPyramid/Django-CRM
+            :alt: Docker Build Passing
+         .. image:: https://img.shields.io/docker/stars/micropyramid/django-crm.svg
+            :target: https://hub.docker.com/r/micropyramid/django-crm/
+            :alt: Docker Stars
+         .. image:: https://img.shields.io/docker/pulls/micropyramid/django-crm.svg
+            :target: https://hub.docker.com/r/micropyramid/django-crm/
+            :alt: Docker Pulls
+
       -  .. image:: https://badges.gitter.im/Micropyramid/Django-CRM.png
             :target: https://gitter.im/MicroPyramid/Django-CRM
             :alt: Gitter
