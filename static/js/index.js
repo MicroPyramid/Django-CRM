@@ -1,4 +1,4 @@
-$('body').on('click', '#home', function (e) {
+$("body").on("click", "#home", function (e) {
     e.preventDefault();
     window.location = '/';
 });
