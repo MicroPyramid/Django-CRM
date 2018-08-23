@@ -2,9 +2,8 @@ from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import (
-    CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
+from django.shortcuts import render, redirect
+from django.views.generic import CreateView, UpdateView, DetailView, TemplateView, View, DeleteView
 from common.models import User
 from common.forms import UserForm, LoginForm, ChangePasswordForm
 

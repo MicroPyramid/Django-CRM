@@ -2,9 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
-from django.views.generic import (
-    CreateView, UpdateView, DetailView, ListView, TemplateView, View, DeleteView)
+from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
 
 from cases.models import Case
 from cases.forms import CaseForm, CaseCommentForm

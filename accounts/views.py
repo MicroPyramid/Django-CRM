@@ -1,10 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse
-from django.views.generic import (
-    CreateView, UpdateView, DetailView, ListView, TemplateView, View, DeleteView)
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.generic import CreateView, UpdateView, DetailView, TemplateView, View, DeleteView
 
 from accounts.models import Account
 from common.models import User, Address, Team, Comment
