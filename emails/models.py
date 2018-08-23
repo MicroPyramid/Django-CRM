@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import datetime, timedelta
+from datetime import datetime
 # Create your models here.
 
 
@@ -15,7 +15,7 @@ class Email(models.Model):
     important = models.BooleanField(max_length=10, default=False)
 
     def __unicode__(self):
-        return self.timedelta
+        return self.subject
 
     class Meta:
         ordering = ['-id']

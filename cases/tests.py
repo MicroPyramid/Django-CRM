@@ -2,11 +2,8 @@ from django.test import TestCase
 from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
-from django.test import Client
 from common.models import Address
-from django.urls import reverse
 from common.models import User
-from django.utils import timezone
 
 
 class CaseCreation(object):
@@ -19,23 +16,23 @@ class CaseCreation(object):
         self.user.save()
         self.client.login(email='r@mp.com', password='raghu')
 
-
         self.client.login(email='r@mp.com', password='raghu')
 
         self.account = Account.objects.create(
-          name="account", email="account@gmail.com", phone="12345",
-          billing_address=self.address, shipping_address=self.address,
-          website="www.account.com", industry="IT", description="account",
-          created_by=self.user)
+            name="account",
+            email="account@gmail.com", phone="12345",
+            billing_address=self.address, shipping_address=self.address,
+            website="www.account.com", industry="IT", description="account",
+            created_by=self.user)
 
         self.contacts = Contact.objects.create(
-          first_name="contact", email="contact@gmail.com", phone="12345",
-          account=self.account, description="contact", address=self.address, created_by=self.user)
+            first_name="contact", email="contact@gmail.com", phone="12345",
+            account=self.account, description="contact", address=self.address, created_by=self.user)
 
         self.case = Case.objects.create(
-          name="raghu", case_type="Problem", status="New", account=self.account,
-          priority="Low", description="something",
-          created_by=self.user, closed_on="2016-05-04")
+            name="raghu", case_type="Problem", status="New", account=self.account,
+            priority="Low", description="something",
+            created_by=self.user, closed_on="2016-05-04")
 
 
 class CaseViewTestCase(CaseCreation, TestCase):
@@ -97,5 +94,3 @@ class CaseUpdateTestCase(CaseCreation, TestCase):
     def test_case_update_html(self):
         response = self.client.post('/cases/' + str(self.case.id) + '/edit_case/', {'hiddenval': self.case.id})
         self.assertTemplateUsed(response, 'create_cases.html')
-
-
