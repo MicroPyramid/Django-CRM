@@ -1,6 +1,6 @@
 $("body").on("click", "#home", function (e) {
     e.preventDefault();
-    window.location = '/';
+    window.location = "/";
 });
 //
 // $('body').on('click', '#loadmeetings', function (e) {

@@ -9,7 +9,7 @@ from django.views.generic import (
 
 from accounts.models import Account
 from common.forms import BillingAddressForm
-from common.models import User, Address, Comment, Team
+from common.models import User, Comment, Team
 from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
 from leads.models import Lead
 from leads.forms import LeadCommentForm, LeadForm
