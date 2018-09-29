@@ -1,5 +1,6 @@
 from django.contrib.auth import views
 from django.urls import include, path
+from common.views import handler404, handler500
 
 app_name = 'crm'
 
@@ -15,3 +16,6 @@ urlpatterns = [
     # path('planner/', include('planner.urls', namespace="planner")),
     path('logout/', views.LogoutView, {'next_page': '/login/'}, name="logout"),
 ]
+
+handler404 = handler404
+handler500 = handler500
