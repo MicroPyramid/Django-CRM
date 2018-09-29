@@ -761,3 +761,22 @@ padding:0px !important;
   padding-left: 15px;
   margin:10px 0;
 }
+.pagination{
+    li{
+      a{
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      font-weight: 600;
+      }
+      .active{
+        background: #369cbe;
+        padding: 5px 10px;
+        border: 1px solid #369cbe;
+        color: #fff;
+      }
+    }
+}
+
+.text-center {
+  justify-content: center!important;
+}

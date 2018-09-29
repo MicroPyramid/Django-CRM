@@ -1,9 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import CreateView, UpdateView, DetailView, TemplateView, View
+from django.urls import reverse
+from django.views.generic import (
+    CreateView, UpdateView, DetailView, ListView, TemplateView, View, DeleteView)
 from accounts.models import Account
-from common.models import User, Comment, Team
+from common.models import User, Address, Comment, Team
 from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
@@ -63,16 +66,17 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         form = self.get_form()
         address_form = BillingAddressForm(request.POST)
         if form.is_valid() and address_form.is_valid():
-            return self.form_valid(form, address_form)
+            ddress_obj = address_form.save()
+            contact_obj = form.save(commit=False)
+            contact_obj.address = ddress_obj
+            contact_obj.created_by = self.request.user
+            contact_obj.save()
+            return self.form_valid(form)
         else:
-            return self.form_invalid(form, address_form)
+            return self.form_invalid(form)
 
-    def form_valid(self, form, address_form):
-        address_obj = address_form.save()
-        contact_obj = form.save(commit=False)
-        contact_obj.address = address_obj
-        contact_obj.created_by = self.request.user
-        contact_obj.save()
+    def form_valid(self, form):
+        contact_obj = form.save(commit=True)
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
         if self.request.POST.getlist('teams', []):
@@ -84,7 +88,8 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         else:
             return redirect('contacts:list')
 
-    def form_invalid(self, form, address_form):
+    def form_invalid(self, form):
+        address_form = BillingAddressForm(self.request.POST)
         if self.request.is_ajax():
             return JsonResponse({'error': True, 'contact_errors': form.errors,
                                  'address_errors': address_form.errors})
@@ -148,15 +153,16 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         form = self.get_form()
         address_form = BillingAddressForm(request.POST, instance=address_obj)
         if form.is_valid() and address_form.is_valid():
-            return self.form_valid(form, address_form)
+            addres_obj = address_form.save()
+            contact_obj = form.save(commit=False)
+            contact_obj.address = addres_obj
+            contact_obj.save()
+            return self.form_valid(form)
         else:
-            return self.form_invalid(form, address_form)
+            return self.form_invalid(form)
 
-    def form_valid(self, form, address_form):
-        addres_obj = address_form.save()
+    def form_valid(self, form):
         contact_obj = form.save(commit=False)
-        contact_obj.address = addres_obj
-        contact_obj.save()
         contact_obj.assigned_to.clear()
         contact_obj.teams.clear()
         if self.request.POST.getlist('assigned_to', []):
@@ -167,7 +173,9 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
             return JsonResponse({'error': False})
         return redirect("contacts:list")
 
-    def form_invalid(self, form, address_form):
+    def form_invalid(self, form):
+        address_obj = self.object.address
+        address_form = BillingAddressForm(self.request.POST, instance=address_obj)
         if self.request.is_ajax():
             return JsonResponse({'error': True, 'contact_errors': form.errors,
                                  'address_errors': address_form.errors})
