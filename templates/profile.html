@@ -21,7 +21,9 @@
                   </div>
                 </span> -->
               </h5>
+              {% if not request.user.role == "ADMIN" and not request.user.is_superuser %}
               <a href="{% url 'common:edit_user' user_obj.id %}" class="btn btn-success edit">Edit</a>
+              {% endif %}
             </div>
             <div class="row marl no-gutters">
               <div class="col-md-8">

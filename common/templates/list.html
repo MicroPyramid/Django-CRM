@@ -76,6 +76,7 @@
                     <th width="20%" style="text-align:center;">First Name</th>
                     <th width="20%" style="text-align:center;">Username</th>
                     <th width="20%" style="text-align:center;">Email Address</th>
+                    <th width="8%" style="text-align:center;">User Role</th>
                     <th width="15%" style="text-align:center;">Status</th>
                     <th width="20%" style="text-align:center;">Actions</th>
                   </tr>
@@ -92,6 +93,7 @@
                     <td>{{ user.first_name }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
+                    <td>{% if user.is_superuser %} ADMIN {% else %} {{user.role}} {% endif %}</td>
                     <td>
                       {% if user.is_active == True %}
                         Active
@@ -101,8 +103,10 @@
                     </td>
                     <td class="actions">
                       <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                      {% if request.user.id != user.id and user.email != "admin@micropyramid.com" %}
                       <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
-                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email or user.role == "ADMIN" %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                      {% endif %}
+                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email or user.role == "ADMIN"  or user.is_superuser %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
                     </td>
                   </tr>
                   {% endfor %}

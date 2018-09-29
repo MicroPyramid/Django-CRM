@@ -16,7 +16,11 @@
       <div class="card">
         <div class="card-body">
          <div class="card-title text-center">
+          {% if user_obj %}
+          EDIT USER
+          {% else %}
           CREATE USER
+          {% endif %}
         </div>
           <div class="row marl">
             <div class="col-md-12">
@@ -44,7 +48,7 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="id_email">Email Address{% if user_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
-                  <input type="text" class="form-control" name="email" value="{% if user_obj %}{{ user_obj.email }}{% else %}{{request.POST.email}}{% endif %}" {% if user_obj and not user_obj.is_staff %} readonly=""{% endif %}>
+                  <input type="text" class="form-control" name="email" value="{% if user_obj %}{{ user_obj.email }}{% else %}{{request.POST.email}}{% endif %}" {% if user_obj %} readonly=""{% endif %}>
 
                 </div>
                 <span class="error">{{ errors.email }}</span>
@@ -52,8 +56,12 @@
               <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="id_role">User Role{% if user_form.role.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {% if request.user.role == 'ADMIN' %}
-                      {{ user_form.role }}
+                    {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+                      <select name="role">
+                      {% for key, value in form.role.field.choices %}
+                      <option value="{{key}}" {% if value == user_obj.role %}selected="selected"{% elif user_obj.is_superuser and value == "ADMIN" %}selected{% endif %}>{{value}}</option>
+                      {% endfor %}
+                      </select>
                     {% else %}
                     <select name="role">
                       <option value="{{user_obj.role}}">{{user_obj.role}}</option>
