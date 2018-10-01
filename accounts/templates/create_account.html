@@ -123,7 +123,7 @@
     <div class="row marl buttons_row text-center form_btn_row">
       <button class="btn btn-default save" type="submit">Save</button>
       {% if not account_obj %}
-        <button class="btn btn-default save " type="submit">Save & New</button>
+        <button class="btn btn-default save savenew" type="submit">Save & New</button>
       {% endif %}
       <a href="{% url 'accounts:list' %}" class="btn btn-default clear">CANCEL</a>
     </div>
