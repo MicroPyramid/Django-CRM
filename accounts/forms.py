@@ -14,6 +14,8 @@ class AccountForm(forms.ModelForm):
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
+        for key, value in self.fields.items():
+            value.widget.attrs['placeholder'] = value.label
 
     class Meta:
         model = Account

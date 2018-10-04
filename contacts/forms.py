@@ -17,6 +17,8 @@ class ContactForm(forms.ModelForm):
         self.fields['account'].queryset = contact_account
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
+        for key, value in self.fields.items():
+            value.widget.attrs['placeholder'] = value.label
 
     class Meta:
         model = Contact
