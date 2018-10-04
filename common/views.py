@@ -28,6 +28,7 @@ class AdminRequiredMixin(AccessMixin):
                 return self.handle_no_permission()
         return super(AdminRequiredMixin, self).dispatch(request, *args, **kwargs)
 
+
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "index.html"
 
