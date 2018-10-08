@@ -74,6 +74,7 @@
           <div class="table-responsive">
           <table class="table ">
             <thead>
+            {% if accounts_list|length > 0 %}
               <tr>
                 <th width="5%">ID</th>
                 <th width="25%">Name</th>
@@ -82,6 +83,7 @@
                 <th width="20%">Industry</th>
                 <th width="10%">Actions</th>
               </tr>
+            {% endif %}
             </thead>
             <tbody>
               {% if per_page %}

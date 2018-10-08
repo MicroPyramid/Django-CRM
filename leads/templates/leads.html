@@ -78,6 +78,7 @@
             <div class="table-responsive">
               <table class="table ">
                 <thead>
+                {% if lead_obj|length > 0 %}
                  <tr>
                     <th width="5%">ID</th>
                     <th width="25%" >Name</th>
@@ -86,7 +87,7 @@
                     <th width="20%" >Created On</th>
                     <th width="10%" >Actions</th>
                   </tr>
-
+                {% endif %}
                 </thead>
                 <tbody>
                   {% if per_page %}
