@@ -71,15 +71,17 @@
             <div class="table-responsive ">
               <table class="table table-bordered table-striped table-condensed">
                 <thead>
-                  <tr>
-                    <th width="5%" style="text-align:center;">S.No</th>
-                    <th width="20%" style="text-align:center;">First Name</th>
-                    <th width="20%" style="text-align:center;">Username</th>
-                    <th width="20%" style="text-align:center;">Email Address</th>
-                    <th width="8%" style="text-align:center;">User Role</th>
-                    <th width="15%" style="text-align:center;">Status</th>
-                    <th width="20%" style="text-align:center;">Actions</th>
-                  </tr>
+                  {% if users|length > 0 %}
+                    <tr>
+                      <th width="5%" style="text-align:center;">S.No</th>
+                      <th width="20%" style="text-align:center;">First Name</th>
+                      <th width="20%" style="text-align:center;">Username</th>
+                      <th width="20%" style="text-align:center;">Email Address</th>
+                      <th width="8%" style="text-align:center;">User Role</th>
+                      <th width="15%" style="text-align:center;">Status</th>
+                      <th width="20%" style="text-align:center;">Actions</th>
+                    </tr>
+                  {% endif %}
                 </thead>
                 <tbody>
                   {% if per_page %}

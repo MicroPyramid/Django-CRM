@@ -94,15 +94,17 @@
         <div class="table-responsive">
           <table class="table ">
             <thead>
-              <tr>
-                <th width="5%">S.No</th>
-                <th width="15%">Name</th>
-                <th width="15%">Account</th>
-                <th width="15%">Contact(s)</th>
-                <th width="15%">Stage</th>
-                <th width="10%">Lead Source</th>
-                <th width="15%">Actions</th>
-              </tr>
+              {% if opportunity_list|length > 0 %}
+                <tr>
+                  <th width="5%">S.No</th>
+                  <th width="15%">Name</th>
+                  <th width="15%">Account</th>
+                  <th width="15%">Contact(s)</th>
+                  <th width="15%">Stage</th>
+                  <th width="10%">Lead Source</th>
+                  <th width="15%">Actions</th>
+                </tr>
+              {% endif %}
             </thead>
             <tbody>
               {% if per_page %}
