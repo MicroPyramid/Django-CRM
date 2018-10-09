@@ -1,12 +1,14 @@
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
 from common.models import User
 from common.forms import UserForm, LoginForm, ChangePasswordForm
+from django.urls import reverse_lazy
+from django.conf import settings
 
 
 def handler404(request, exception):
@@ -132,6 +134,7 @@ class UsersListView(AdminRequiredMixin, TemplateView):
         context["active_users"] = self.get_queryset().filter(is_active=True)
         context["inactive_users"] = self.get_queryset().filter(is_active=False)
         context["per_page"] = self.request.POST.get('per_page')
+        context['admin_email'] = settings.ADMIN_EMAIL
         return context
 
     def post(self, request, *args, **kwargs):
@@ -149,11 +152,17 @@ class CreateUserView(AdminRequiredMixin, CreateView):
         if form.cleaned_data.get("password"):
             user.set_password(form.cleaned_data.get("password"))
         user.save()
-        return redirect("common:users_list")
+        if self.request.is_ajax():
+            data = {'success_url': reverse_lazy('common:users_list'), 'error': False}
+            return JsonResponse(data)
+        return super(CreateUserView, self).form_valid(form)
+
 
     def form_invalid(self, form):
-        return self.render_to_response(
-            self.get_context_data(form=form, errors=form.errors))
+        response = super(CreateUserView, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse({'error': True, 'errors': form.errors})
+        return response
 
     def get_context_data(self, **kwargs):
         context = super(CreateUserView, self).get_context_data(**kwargs)
@@ -190,12 +199,20 @@ class UpdateUserView(LoginRequiredMixin, UpdateView):
             user.is_superuser = False
         user.save()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            return redirect("common:users_list")
-        return redirect("common:profile")
+            if self.request.is_ajax():
+                data = {'success_url': reverse_lazy('common:users_list'), 'error': False}
+                return JsonResponse(data)
+        if self.request.is_ajax():
+            data = {'success_url': reverse_lazy('common:profile'), 'error': False}
+            return JsonResponse(data)
+        return super(UpdateUserView, self).form_valid(form)
+
 
     def form_invalid(self, form):
-        return self.render_to_response(
-            self.get_context_data(form=form, errors=form.errors))
+        response = super(UpdateUserView, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse({'error': True, 'errors': form.errors})
+        return response
 
     def get_context_data(self, **kwargs):
         context = super(UpdateUserView, self).get_context_data(**kwargs)

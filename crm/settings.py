@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'leads',
     'opportunity',
     'planner',
+    'sorl.thumbnail',
 ]
 
 
@@ -182,3 +183,5 @@ SG_USER = os.getenv('SG_USER', '')
 SG_PWD = os.getenv('SG_PWD', '')
 
 MANDRILL_API_KEY = os.getenv('MANDRILL_API_KEY', '')
+
+ADMIN_EMAIL = "admin@micropyramid.com"

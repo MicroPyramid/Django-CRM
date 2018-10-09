@@ -236,6 +236,7 @@
           </div>
             <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
+              {% if contacts|length > 0 %}
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
@@ -245,6 +246,7 @@
                   <th width="25%" style="text-align:center;">Actions</th>
                 </tr>
               </thead>
+              {% endif %}
               <tbody>
                 {% for contact in contacts %}
                 <tr id="contacts_details{{contact.id}}" class="text-center">
@@ -262,6 +264,9 @@
               </tbody>
             </table>
             </div>
+            {% ifequal contacts|length 0 %}
+              <h6 class="text-center">No Contact Records Found</h6>
+            {% endifequal %}
           </div>
         </div>
         <br clear="all">
@@ -748,6 +753,7 @@
           </div>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
+              {% if opportunity_list|length > 0 %}
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
@@ -757,6 +763,7 @@
                   <th width="25%" style="text-align:center;">Actions </th>
                 </tr>
               </thead>
+              {% endif %}
               <tbody>
                 {% for opportunity in opportunity_list %}
                 <tr id="opp_details{{opportunity.id}}" class="text-center">
@@ -774,6 +781,9 @@
               </tbody>
             </table>
           </div>
+          `{% ifequal contacts|length 0 %}
+              <h6 class="text-center">No Opportunity Records Found</h6>
+           {% endifequal %}
           </div>
         </div>
         <br clear="all">
@@ -1306,6 +1316,7 @@
           </div>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
+              {% if cases|length > 0 %}
               <thead>
                 <tr>
                   <th width="5%" style="text-align:center;">S.No</th>
@@ -1315,6 +1326,7 @@
                   <th width="25%" style="text-align:center;">Actions</th>
                 </tr>
               </thead>
+              {% endif %}
               <tbody>
                 {% for case in cases %}
                 <tr id="cases_details{{case.id}}" class="text-center">
@@ -1333,6 +1345,9 @@
               </tbody>
             </table>
             </div>
+            {% ifequal cases|length 0 %}
+            <h6 class="text-center">No Case Records Found</h6>
+            {% endifequal %}
           </div>
         </div>
         <br clear="all">

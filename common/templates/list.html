@@ -72,15 +72,15 @@
               <table class="table table-bordered table-striped table-condensed">
                 <thead>
                   {% if users|length > 0 %}
-                    <tr>
-                      <th width="5%" style="text-align:center;">S.No</th>
-                      <th width="20%" style="text-align:center;">First Name</th>
-                      <th width="20%" style="text-align:center;">Username</th>
-                      <th width="20%" style="text-align:center;">Email Address</th>
-                      <th width="8%" style="text-align:center;">User Role</th>
-                      <th width="15%" style="text-align:center;">Status</th>
-                      <th width="20%" style="text-align:center;">Actions</th>
-                    </tr>
+                  <tr>
+                    <th width="5%" style="text-align:center;">S.No</th>
+                    <th width="20%" style="text-align:center;">First Name</th>
+                    <th width="20%" style="text-align:center;">Username</th>
+                    <th width="20%" style="text-align:center;">Email Address</th>
+                    <th width="8%" style="text-align:center;">User Role</th>
+                    <th width="15%" style="text-align:center;">Status</th>
+                    <th width="20%" style="text-align:center;">Actions</th>
+                  </tr>
                   {% endif %}
                 </thead>
                 <tbody>
@@ -105,7 +105,7 @@
                     </td>
                     <td class="actions">
                       <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
-                      {% if request.user.id != user.id and user.email != "admin@micropyramid.com" %}
+                      {% if user.email != admin_email  or request.user.email == admin_email %}
                       <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
                       {% endif %}
                       <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email or user.role == "ADMIN"  or user.is_superuser %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
