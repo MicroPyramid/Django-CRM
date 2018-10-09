@@ -1,6 +1,6 @@
 {% load staticfiles %}
 {% load compress %}
-
+{% load thumbnail %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,16 +41,16 @@
 
     <ul class="navbar-nav navbar-right my-2 my-lg-0">
       <li class="nav-item dropdown">
-         {% with request.profile as profile %}
           <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button" aria-haspopup="true"
             aria-expanded="false" >
-          {% if not profile.profile_pic %}
+          {% if not request.user.profile_pic %}
           <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
           {% else %}
-          <img src="{{profile.profile_pic.url}}" alt="Micro profile pic">
+            {% thumbnail request.user.profile_pic "25x25" as im %}
+              <img src="{{ im.url }}">
+            {% endthumbnail %}
           {% endif %}
           <b class="caret"></b></a>
-          {% endwith %}
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
           {% if request.user.email != "admin@micropyramid.com" %}
           <a class="dropdown-item" href="/change-password/"><i class="fas fa-key"></i> Change Password</a>

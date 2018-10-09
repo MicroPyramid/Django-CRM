@@ -3,9 +3,16 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 
 from common.utils import COUNTRIES, ROLES
+import time
+
+
+def img_url(self, filename):
+    hash_ = int(time.time())
+    return "%s/%s/%s" % ("profile_pics", hash_, filename)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    file_prepend = "users/profile_pics"
     username = models.CharField(max_length=100, unique=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
@@ -15,6 +22,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(('date joined'), auto_now_add=True)
     role = models.CharField(max_length=50, choices=ROLES)
+    profile_pic = models.FileField(max_length=1000, upload_to=img_url, null=True, blank=True)
+
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]

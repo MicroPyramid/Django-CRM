@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load thumbnail %}
 {% block content%}
+
 <!-- OPPORTUNITY VIEW STARTS -->
   <div class="main_container" id="maincontainer">
     <div class="overview_form_block row marl justify-content-center">
@@ -21,18 +23,18 @@
                   </div>
                 </span> -->
               </h5>
-              {% if not request.user.role == "ADMIN" and not request.user.is_superuser %}
               <a href="{% url 'common:edit_user' user_obj.id %}" class="btn btn-success edit">Edit</a>
-              {% endif %}
             </div>
             <div class="row marl no-gutters">
               <div class="col-md-8">
+                {% if user_obj.first_name %}
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_name" data-name="name">Name</label>
                     <div class="contact_field" id="contact_name" data-name="name">{{ user_obj.first_name }} {{ user_obj.last_name }}</div>
                   </div>
                 </div>
+                {% endif %}
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_contact_account" data-name="name">UserName</label>
@@ -48,7 +50,13 @@
               </div>
               <div class="col-md-4">
                 <div class="profile_pic">
+                  {% if user_obj.profile_pic %}
+                    {% thumbnail request.user.profile_pic "125x125" as im %}
+                    <img src="{{ im.url }}">
+                    {% endthumbnail %}
+                  {% else %}
                   <img src="https://cdn.dribbble.com/users/99875/screenshots/4353558/2018-03-01biker_site-2.gif" />
+                  {% endif %}
                 </div>
               </div>
             </div>
