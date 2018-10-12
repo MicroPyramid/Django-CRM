@@ -185,3 +185,8 @@ SG_PWD = os.getenv('SG_PWD', '')
 MANDRILL_API_KEY = os.getenv('MANDRILL_API_KEY', '')
 
 ADMIN_EMAIL = "admin@micropyramid.com"
+
+try:
+    from .dev_settings import *
+except ImportError:
+    pass
