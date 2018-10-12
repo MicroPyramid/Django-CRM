@@ -99,24 +99,7 @@
                   {% if lead_record.address.address_line or lead_record.address.street or lead_record.address.city or lead_record.address.state or lead_record.address.postcode or lead_record.address.country %}
                   <label class="lead_field_label" for="id_address" data-name="name" >Billing Address</label>
                   <div class="lead_field" id="lead_address" data-name="name">
-                    {% if lead_record.address.address_line %}
-                      Address Line:{{lead_record.address.address_line}}</br>
-                    {% endif %}
-                    {% if lead_record.address.street %}
-                      Street:{{ lead_record.address.street }}</br>
-                    {% endif %}
-                    {% if lead_record.address.city %}
-                      City: {{ lead_record.address.city }}</br>
-                    {% endif %}
-                    {% if lead_record.address.state %}
-                      State:{{ lead_record.address.state }}</br>
-                    {% endif %}
-                    {% if lead_record.address.postcode %}
-                      Post Code:{{ lead_record.address.postcode }}</br>
-                    {% endif %}
-                    {% if lead_record.address.country %}
-                      Country: {{ lead_record.address.get_country_display }}
-                    {% endif %}
+                    {{lead_record.address.get_complete_address}}
                   </div>
                   {% endif %}
                 </div>
