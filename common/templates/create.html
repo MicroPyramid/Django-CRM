@@ -4,7 +4,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'common:users_list' %}">Users</a></li>
-    <li class="breadcrumb-item">Create</li>
+    <li class="breadcrumb-item">{% if user_obj %}Edit{% else %}Create{% endif %}</li>
   </ol>
 </nav>
 

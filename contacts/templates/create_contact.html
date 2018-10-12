@@ -7,7 +7,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Contacts</a></li>
-    <li class="breadcrumb-item active">Create</li>
+    <li class="breadcrumb-item active">{% if contact_obj %}Edit{% else %}Create{% endif %}</li>
   </ol>
 </nav>
 

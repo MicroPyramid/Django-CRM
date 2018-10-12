@@ -81,24 +81,7 @@
                   <div class="form-group">
                     <label class="acc_field_label" for="id_billing_address" data-name="name">Billing Address</label>
                     <div class="account_field" id="account_billing_address" data-name="name">
-                      {% if account_record.billing_address.address_line %}
-                        Address Line:{{account_record.billing_address.address_line}}</br>
-                      {% endif %}
-                      {% if account_record.billing_address.street %}
-                        Street:{{ account_record.billing_address.street }}</br>
-                      {% endif %}
-                      {% if account_record.billing_address.city %}
-                        City: {{ account_record.billing_address.city }}</br>
-                      {% endif %}
-                      {% if account_record.billing_address.state %}
-                        State:{{ account_record.billing_address.state }}</br>
-                      {% endif %}
-                      {% if account_record.billing_address.postcode %}
-                        Post Code:{{ account_record.billing_address.postcode }}</br>
-                      {% endif %}
-                      {% if account_record.billing_address.country %}
-                        Country: {{ account_record.billing_address.get_country_display }}
-                      {% endif %}
+                      {{account_record.billing_address.get_complete_address}}
                     </div>
                   </div>
                 </div>
@@ -481,24 +464,7 @@
                         {% if contact.address.address_line or contact.address.street or contact.address.city or  contact.address.state or contact.address.postcode or contact.address.country %}
                         <label class="acc_field_label" for="id_name" data-name="name" >Address</label>
                         <div class="account_field" id="account_account" data-name="name">
-                          {% if contact.address.address_line %}
-                            Address Line: {{ contact.address.address_line }}</br>
-                          {% endif %}
-                          {% if contact.address.street %}
-                            Street: {{ contact.address.street }}</br>
-                          {% endif %}
-                          {% if contact.address.city %}
-                            City: {{ contact.address.city }}</br>
-                          {% endif %}
-                          {% if contact.address.state %}
-                            State: {{ contact.address.state }}</br>
-                          {% endif %}
-                          {% if contact.address.postcode %}
-                            Post Code: {{ contact.address.postcode }}</br>
-                          {% endif %}
-                          {% if contact.address.country %}
-                            Country: {{ contact.address.get_country_display }}
-                          {% endif %}
+                          {{contact.address.get_complete_address}}
                         </div>
                         {% endif %}
                       </div>
