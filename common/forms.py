@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import authenticate
-
+from django.contrib.auth.forms import PasswordResetForm
 from common.models import Address, User
 
 
@@ -134,3 +134,12 @@ class ChangePasswordForm(forms.Form):
             raise forms.ValidationError(
                 'Confirm password do not match with new password')
         return self.data.get('confirm')
+
+
+class PasswordResetEmailForm(PasswordResetForm):
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if not User.objects.filter(email__iexact=email, is_active=True).exists():
+            raise forms.ValidationError("User doesn't exist with this Email")
+        return email

@@ -76,7 +76,7 @@ class CreateContactView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        contact_obj = form.save(commit=True)
+        contact_obj = form.save(commit=False)
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
         if self.request.POST.getlist('teams', []):

@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
 from common.views import (
     HomeView, LoginView, ForgotPasswordView, LogoutView, ChangePasswordView, ProfileView,
-    UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView)
+    UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView, PasswordResetView)
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -27,7 +27,7 @@ urlpatterns = [
     path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='remove_user'),
 
     path(
-        'password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+        'password-reset/', PasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path(
         'reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),

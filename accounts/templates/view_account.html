@@ -1,3 +1,5 @@
+
+
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
@@ -215,7 +217,7 @@
           <div class="card-body">
           <div class="panel-heading-list card-title view-pad">
             Contacts
-            <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal_con" data-target="#myModal2"></span>
+            <span class="fa fa-plus pull-right" data-toggle="modal" data-dismiss="modal_con" data-target="#myModal2"></span>
           </div>
             <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
@@ -337,14 +339,14 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
                             <label for="exampleInputEmail1" class="required">Phone</label>
-                            <input type="text" class="form-control text-filter" id="id_phone" name="phone" value="{{request.POST.phone}}"/>
+                            <input type="text" class="form-control text-filter" id="id_phone" name="phone" value="{{request.POST.phone}}" placeholder="Phone" />
                             {{ contact_form.phone.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
                             <label for="exampleInputEmail1" class="required">Email Address</label>
-                            <input type="text" class="form-control text-filter" id="id_email" name="email" value="{{request.POST.email}}"/>
+                            <input type="text" class="form-control text-filter" id="id_email" name="email" value="{{request.POST.email}}" placeholder="Email" />
                             {{ contact_form.email.errors }}
                           </div>
                         </div>
@@ -387,7 +389,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1">Description</label>
-                            <textarea class="form-control" rows="3"  id="id_description" name="description">{{request.POST.description}}</textarea>
+                            <textarea class="form-control" rows="3"  id="id_description" name="description" placeholder="Description">{{request.POST.description}}</textarea>
                             {{ contact_form.description.errors }}
                           </div>
                         </div>
@@ -421,7 +423,7 @@
           </h5>
         </div>
         <div class="modal-body">
-          <div class="col-md-7">
+          <div class="col-md-12">
             <div class="panel panel-default">
               <div class="panel-heading view_pad">
                 OverView
@@ -629,14 +631,14 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
                             <label for="exampleInputEmail1" class="required">Phone</label>
-                            <input type="text" class="form-control text-filter" id="id_phone" name="phone" value={% if contact.phone %}"{{ contact.phone}}" {% else %}"{{request.POST.phone}}" {%endif%}>
+                            <input type="text" class="form-control text-filter" id="id_phone" name="phone" value={% if contact.phone %}"{{ contact.phone}}" {% else %}"{{request.POST.phone}}" {%endif%} placeholder="Phone">
                             {{ contact_form.phone.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
                             <label for="exampleInputEmail1" class="required">Email Address</label>
-                            <input type="text" class="form-control text-filter" id="id_email" name="email" value={% if contact.email %}"{{ contact.email }}" {% else %}"{{request.POST.email}}" {%endif%}>
+                            <input type="text" class="form-control text-filter" id="id_email" name="email" value={% if contact.email %}"{{ contact.email }}" {% else %}"{{request.POST.email}}" {%endif%} placeholder="Email">
                             {{ contact_form.email.errors }}
                           </div>
                         </div>
@@ -681,7 +683,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1" >Description</label>
-                            <textarea class="form-control" rows="3"  id="id_description" name="description"> {% if contact.description %}{{ contact.description}} {% else %}{{request.POST.description }} {%endif%} </textarea>
+                            <textarea class="form-control" rows="3"  id="id_description" name="description" placeholder="Description"> {% if contact.description %}{{ contact.description}} {% else %}{{request.POST.description }} {%endif%} </textarea>
                             {{ contact_form.description.errors }}
                           </div>
                         </div>
@@ -715,7 +717,7 @@
           <div class="card-body">
            <div class="panel-heading-list card-title view-pad ">
           Opportunities
-            <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal" data-target="#myModal"></span>
+            <span class="pull-right fa fa-plus" data-toggle="modal" data-dismiss="modal" data-target="#myModal"></span>
           </div>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
@@ -813,7 +815,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail" class="required">Name</label>
-                            <input type="text" class="form-control" id="id_name" name="name" {% if error.name %} value="" {% else %} value="{{request.POST.name}}"{% endif %}/>
+                            <input type="text" class="form-control" id="id_name" name="name" {% if error.name %} value="" {% else %} value="{{request.POST.name}}"{% endif %} placeholder="Name" />
                             {{ opportunity_form.name.errors }}
                           </div>
                         </div>
@@ -839,7 +841,7 @@
                                 </select>
                                 {{ opportunity_form.currency.errors }}
                               </div>
-                              <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" value="{{request.POST.amount}}"/>
+                              <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" value="{{request.POST.amount}}" placeholder="Amount" />
                               {{ opportunity_form.amount.errors }}
                             </div>
                           </div>
@@ -873,7 +875,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1">Probability %</label>
-                            <input type="number" class="form-control " id="id_probability" name="probability" value="{{request.POST.probability}}"/>
+                            <input type="number" class="form-control " id="id_probability" name="probability" value="{{request.POST.probability}}" placeholder="Probability" />
                             {{ opportunity_form.probability.errors }}
                           </div>
                         </div>
@@ -892,7 +894,7 @@
                           <div class="form-group">
                             <label for="exampleInputEmail1">Close Date</label>
                             <div class='input-group date' id='datetimepicker1'>
-                              <input type='text' class="form-control" id="id_closed_on" name="closed_on" value="{{request.POST.closed_on}}"/>
+                              <input type='text' class="form-control" id="opportunity_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
@@ -902,7 +904,7 @@
                         </div>
                         <div class="form-group col-md-12">
                           <label for="exampleInputEmail1" >Description</label>
-                          <textarea class="form-control" rows="5"  id="id_description" name="description">{{request.POST.description}}</textarea>
+                          <textarea class="form-control" rows="5"  id="id_description" name="description" placeholder="Description">{{request.POST.description}}</textarea>
                           {{ opportunity_form.description.errors }}
                         </div>
                       </div>
@@ -1156,7 +1158,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1" class="required">Name</label>
-                            <input type="text" class="form-control" id="id_name" name="name" value="{{opportunity.name}}"/>
+                            <input type="text" class="form-control" id="id_name" name="name" value="{{opportunity.name}}" placeholder="Name" />
                             {{ opportunity_form.name.errors }}
                           </div>
                         </div>
@@ -1182,7 +1184,7 @@
                                 </select>
                                 {{ opportunity_form.currency.errors }}
                               </div>
-                              <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" value="{{opportunity.amount}}"/>
+                              <input type="number" class="form-control text-filter" tabindex="1"  id="id_amount" name="amount" value="{{opportunity.amount}}" placeholder="Amount" />
                               {{ opportunity_form.amount.errors }}
                             </div>
                           </div>
@@ -1216,7 +1218,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1">Probability %</label>
-                            <input type="number" class="form-control " id="id_probability" name="probability" value="{{opportunity.probability}}"/>
+                            <input type="number" class="form-control " id="id_probability" name="probability" value="{{opportunity.probability}}" placeholder="Probability" />
                             {{ opportunity_form.probability.errors }}
                           </div>
                         </div>
@@ -1235,7 +1237,7 @@
                           <div class="form-group">
                             <label for="exampleInputEmail1">Close Date</label>
                             <div class='input-group date' id='datetimepicker2'>
-                              <input type='text' class="form-control" id="id_closedon" name="closed_on" value="{{opportunity.closed_on|date:"Y-m-d"}}"/>
+                              <input type='text' class="form-control" id="opp_closedon" name="closed_on" value="{{opportunity.closed_on|date:"Y-m-d"}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
@@ -1245,7 +1247,7 @@
                         </div>
                         <div class="form-group col-md-12">
                           <label for="exampleInputEmail1">Description</label>
-                          <textarea class="form-control" rows="5"  id="id_description" name="description"> {{opportunity.description}} </textarea>
+                          <textarea class="form-control" rows="5"  id="id_description" name="description" placeholder="Description"> {{opportunity.description}} </textarea>
                           {{ opportunity_form.description.errors }}
                         </div>
                       </div>
@@ -1278,7 +1280,7 @@
           <div class="card-body">
            <div class="panel-heading-list card-title view-pad ">
             Cases
-            <span class="pull-right glyphicon glyphicon-plus" data-toggle="modal" data-dismiss="modal_case" data-target="#myModal3"></span>
+            <span class="pull-right fa fa-plus" data-toggle="modal" data-dismiss="modal_case" data-target="#myModal3"></span>
           </div>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-condensed">
@@ -1377,7 +1379,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="id_name" class="required">Name</label>
-                            <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Enter Case Name"/>
+                            <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Case Name"/>
                             {{ case_form.name.errors }}
                           </div>
                         </div>
@@ -1421,11 +1423,12 @@
                           <div class="form-group">
                             <label for="exampleInputEmail1" class="required">Close Date</label>
                             <div class='input-group date' id='datetimepicker1'>
-                              <input type='text' class="form-control" id="id_closed_on" name="closed_on" value="{{request.POST.closed_on}}"/>
+                              <input type='text' class="form-control" id="id_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
                             </div>
+                            <span class="closed_on_error"></span>
                             {{ case_form.closed_on.errors }}
                           </div>
                         </div>
@@ -1454,7 +1457,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="id_description">Description</label>
-                            <textarea class="form-control" textarea cols="40" id="id_description" name="description" rows="4" placeholder="Enter Description"></textarea>
+                            <textarea class="form-control" textarea cols="40" id="id_description" name="description" rows="4" placeholder="Description"></textarea>
                             {{ case_form.description.errors }}
                           </div>
                         </div>
@@ -1726,11 +1729,12 @@
                           <div class="form-group">
                             <label for="exampleInputEmail1">Close Date</label>
                             <div class='input-group date' id='datetimepicker2'>
-                              <input type='text' class="form-control" id="id_closedon" name="closed_on" value="{{case.closed_on|date:"Y-m-d"}}"/>
+                              <input type='text' class="form-control" id="case_closedon" name="closed_on" value="{{case.closed_on|date:"Y-m-d"}}"/>
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
                             </div>
+                            <span class="closed_on_error"></span>
                             {{ case_form.closed_on.errors }}
                           </div>
                         </div>
@@ -1890,8 +1894,14 @@
           $.each(response.case_errors,
             function(field_name, error){
               case_error = '<span class="error" style="color:red;"> *' + error + '</span>'
-              $this.find("[name=" + field_name + "]").after(case_error); })
-            }
+              if(field_name == "closed_on"){
+                $('.closed_on_error').html(case_error)
+              }
+              else{
+                $this.find("[name=" + field_name + "]").after(case_error);
+              }
+            })
+        }
         else {
           window.location = "";
         }
@@ -1908,8 +1918,14 @@
             $.each(response.case_errors,
               function(field_name, error){
                 case_error = '<span class="error" style="color:red;">' + error + '</span>'
-                $this.find("[name=" + field_name + "]").after(case_error); })
-              }
+                if(field_name == "closed_on"){
+                  $('.closed_on_error').html(case_error)
+                }
+                else{
+                  $this.find("[name=" + field_name + "]").after(case_error);
+                }
+              })
+          }
           else {
             window.location = "";
           }
@@ -2059,7 +2075,14 @@
       })
     }
   }
-
+ $(function () {
+     var date = new Date();
+     var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      $('#opportunity_closed_on, #case_closedon, #opp_closedon, #id_closed_on').datetimepicker({
+          'format': 'YYYY-MM-DD',
+          minDate: today
+      })
+    });
   /*Comment Remove Js Ends*/
   </script>
 {% endblock js_block %}
