@@ -6,7 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
 from common.models import User
-from common.forms import UserForm, LoginForm, ChangePasswordForm
+from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm
+from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
 from django.conf import settings
 
@@ -230,3 +231,9 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
         self.object = self.get_object()
         self.object.delete()
         return redirect("common:users_list")
+
+
+class PasswordResetView(PasswordResetView):
+    template_name = 'registration/password_reset_form.html'
+    form_class = PasswordResetEmailForm
+    email_template_name = 'registration/password_reset_email.html'
