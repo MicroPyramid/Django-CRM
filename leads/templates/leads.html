@@ -104,7 +104,7 @@
                       {% with lead_users=lead.assigned_to.all %}
                         {% if lead_users %}
                           {% for user in lead_users %}
-                            <li class="text-left">{{ user.email }}</li>
+                            <span class="text-left">{{ user.email }}</span><br>
                           {% endfor %}
                         {% else %}
                           Not Assigned to Any
