@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from accounts.models import Account
 from common.models import User, Address, Team
 from common.utils import LEAD_STATUS, LEAD_SOURCE
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Lead(models.Model):
@@ -14,7 +15,7 @@ class Lead(models.Model):
     first_name = models.CharField(("First name"), max_length=255)
     last_name = models.CharField(("Last name"), max_length=255)
     email = models.EmailField()
-    phone = models.CharField(max_length=20, null=True, blank=True)
+    phone = PhoneNumberField(null=True, blank=True)
     account = models.ForeignKey(Account, related_name='Leads', on_delete=models.CASCADE, blank=True, null=True)
     status = models.CharField(_("Status of Lead"), max_length=255,
                               blank=True, null=True, choices=LEAD_STATUS)

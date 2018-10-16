@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'opportunity',
     'planner',
     'sorl.thumbnail',
+    'phonenumber_field',
 ]
 
 
