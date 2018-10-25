@@ -168,7 +168,7 @@
       $.post(url, {
        "case_id": x
       }, function(data) {
-       $("#status_id"+data.cid).text(data.status)
+        location.reload();
       })
     }
   }
