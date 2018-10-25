@@ -243,8 +243,10 @@ class AccountDeleteView(LoginRequiredMixin, DeleteView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.object.billing_address.delete()
-        self.object.shipping_address.delete()
+        if self.object.billing_address:
+            self.object.billing_address.delete()
+        if self.object.shipping_address:
+            self.object.shipping_address.delete()
         self.object.delete()
         return redirect("accounts:list")
 
