@@ -128,7 +128,7 @@
                 <td class="actions">
                  {#  <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
                   <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  <a onclick="remove_case({{case.id}}, '{% url 'cases:remove_case' case.id %}')" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                  <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
                   {% if case.status != 'Closed' %}
                   <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> </a>
                   {% endif %}
@@ -173,17 +173,13 @@
     }
   }
 
-  function remove_case(x, url){
-    if (!confirm('Are you sure you want to Remove?'))
+  $('.remove_case').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
       return;
-    window.location = url
-      $.post(url, {
-       "case_id": x
-      }, function(data) {
-       $(".case_row" + data.case_id).remove()
-       $(".total_count").html("Total "+data.count)
-      })
-  }
+    window.location = $(this).attr('href')
+  });
 
   $("a[rel='page']").click(function(e){
     e.preventDefault();
