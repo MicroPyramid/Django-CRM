@@ -30,7 +30,7 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="id_lastname">Last Name{% if user_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
-                  <input type="text" class="form-control" name="last_name" value="{% if user_obj %}{{ user_obj.last_name }}{% else %}{{request.POST.last_name}} {% endif %}" placeholder="Last Name">
+                  <input type="text" class="form-control" name="last_name" value="{% if user_obj %}{{ user_obj.last_name }}{% else %}{{request.POST.last_name}}{% endif %}" placeholder="Last Name">
                 </div>
                 <span class="error" id="id_last_name">{{ errors.last_name }}</span>
               </div>
@@ -41,7 +41,7 @@
                 </div>
                 <span class="error" id="id_username">{{ errors.username }}</span>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-12" {% if user_obj %} style="display: none;" {% endif %}>
                 <div class="form-group">
                   <label for="id_email">Email Address{% if user_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" class="form-control" name="email" value="{% if user_obj %}{{ user_obj.email }}{% else %}{{request.POST.email}}{% endif %}" {% if user_obj %} readonly=""{% endif %} placeholder="Email">
@@ -49,7 +49,7 @@
                 </div>
                 <span class="error" id="id_email">{{ errors.email }}</span>
               </div>
-              <div class="filter_col col-md-12" {% if request.user.role != 'ADMIN' and not request.user.is_superuser %}style="display:none;"{% endif %}>
+              <div class="filter_col col-md-12" {% if request.user.role != 'ADMIN' and not request.user.is_superuser or user_obj.email == admin_email %}style="display:none;"{% endif %}>
                   <div class="form-group">
                     <label for="id_role">User Role{% if user_form.role.field.required %}<span class="error">*</span>{% endif %}</label>
                     {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
@@ -96,7 +96,7 @@
 </form>
 {% endblock content %}
 {% block js_block %}
-<script src="http://malsup.github.com/jquery.form.js"></script> 
+<script src="https://malsup.github.io/jquery.form.js"></script>
 <script type="text/javascript">
  $('form#add_form').ajaxForm({
     type:'POST',

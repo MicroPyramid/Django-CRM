@@ -313,7 +313,7 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Name</label>
+                            <label for="exampleInputEmail1" class="required">Name<span class="required_color">*</span></label>
                             <div class="row">
                               <div class="filter_col col-md-6">
                                 <input type="text" class="form-control" placeholder="First Name" id="id_first_name" name="first_name"  value="{{request.POST.first_name}}">
@@ -328,7 +328,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Accounts</label>
+                            <label for="exampleInputEmail1">Accounts<span class="required_color">*</span></label>
                             <select class="form-control" id="id_account" name="account">
                               <option value="{{ account_record.id }}" selected >{{ account_record.name }}</option>
                             </select>
@@ -337,14 +337,14 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Phone</label>
+                            <label for="exampleInputEmail1" class="required">Phone<span class="required_color">*</span></label>
                             <input type="text" class="form-control text-filter" id="id_phone" name="phone" value="{{request.POST.phone}}" placeholder="Phone" />
                             {{ contact_form.phone.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Email Address</label>
+                            <label for="exampleInputEmail1" class="required">Email Address<span class="required_color">*</span></label>
                             <input type="text" class="form-control text-filter" id="id_email" name="email" value="{{request.POST.email}}" placeholder="Email" />
                             {{ contact_form.email.errors }}
                           </div>
@@ -606,7 +606,7 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Name</label>
+                            <label for="exampleInputEmail1" class="required">Name<span class="required_color">*</span></label>
                             <div class="row">
                               <div class="filter_col col-md-6">
                                 <input type="text" class="form-control" placeholder="First Name" id="id_first_name" name="first_name"  value="{{contact.first_name}}">
@@ -621,7 +621,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Account</label>
+                            <label for="exampleInputEmail1">Account<span class="required_color">*</span></label>
                             <select class="form-control" id="id_account" name="account">
                               <option value="{{ account_record.id }}" selected >{{ account_record.name }}</option>
                             </select>
@@ -629,14 +629,14 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Phone</label>
+                            <label for="exampleInputEmail1" class="required">Phone<span class="required_color">*</span></label>
                             <input type="text" class="form-control text-filter" id="id_phone" name="phone" value={% if contact.phone %}"{{ contact.phone}}" {% else %}"{{request.POST.phone}}" {%endif%} placeholder="Phone">
                             {{ contact_form.phone.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="exampleInputEmail1" class="required">Email Address</label>
+                            <label for="exampleInputEmail1" class="required">Email Address<span class="required_color">*</span></label>
                             <input type="text" class="form-control text-filter" id="id_email" name="email" value={% if contact.email %}"{{ contact.email }}" {% else %}"{{request.POST.email}}" {%endif%} placeholder="Email">
                             {{ contact_form.email.errors }}
                           </div>
@@ -681,9 +681,8 @@
                       <div class="col-md-12">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" >Description</label>
-                            <textarea class="form-control" rows="3"  id="id_description" name="description" placeholder="Description"> {% if contact.description %}{{ contact.description}} {% else %}{{request.POST.description }} {%endif%} </textarea>
-                            {{ contact_form.description.errors }}
+                            <label for="exampleInputEmail1" >Description</label>EAD
+                            <textarea class="form-control" rows="3"  id="id_description" name="description" placeholder="Description">{% if contact.description %}{{ contact.description}}{% else %}{{request.POST.description }}{%endif%}</textarea>
                           </div>
                         </div>
                       </div>
@@ -813,14 +812,14 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail" class="required">Name</label>
+                            <label for="exampleInputEmail" class="required">Name<span class="required_color">*</span></label>
                             <input type="text" class="form-control" id="id_name" name="name" {% if error.name %} value="" {% else %} value="{{request.POST.name}}"{% endif %} placeholder="Name" />
                             {{ opportunity_form.name.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Account</label>
+                            <label for="exampleInputEmail1">Account<span class="required_color">*</span></label>
                             <select class="form-control" id="id_account" name="account">
                               <option value="{{ account_record.id }}" selected >{{ account_record.name }}</option>
                             </select>
@@ -847,7 +846,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Stage</label>
+                            <label for="exampleInputEmail1" class="required">Stage<span class="required_color">*</span></label>
                             <select class="form-control" id="id_stage" name="stage" >
                               <option value="" selected="selected">---------</option>
                               {% for stage in stages %}
@@ -893,7 +892,7 @@
                           <div class="form-group">
                             <label for="exampleInputEmail1">Close Date</label>
                             <div class='input-group date' id='datetimepicker1'>
-                              <input type='text' class="form-control" id="opportunity_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
+                              <input type='text' class="form-control" id="opp_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
@@ -1156,14 +1155,14 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Name</label>
+                            <label for="exampleInputEmail1" class="required">Name<span class="required_color">*</span></label>
                             <input type="text" class="form-control" id="id_name" name="name" value="{{opportunity.name}}" placeholder="Name" />
                             {{ opportunity_form.name.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Account</label>
+                            <label for="exampleInputEmail1">Account<span class="required_color">*</span></label>
                             <select class="form-control" id="id_account" name="account">
                               <option value="{{ account_record.id }}" selected >{{ account_record.name }}</option>
                             </select>
@@ -1190,7 +1189,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Stage</label>
+                            <label for="exampleInputEmail1" class="required">Stage<span class="required_color">*</span></label>
                             <select class="form-control" id="id_stage" name="stage" >
                               <option value="">---------</option>
                               {% for stage in stages %}
@@ -1246,7 +1245,7 @@
                         </div>
                         <div class="form-group col-md-12">
                           <label for="exampleInputEmail1">Description</label>
-                          <textarea class="form-control" rows="5"  id="id_description" name="description" placeholder="Description"> {{opportunity.description}} </textarea>
+                          <textarea class="form-control" rows="5"  id="id_description" name="description" placeholder="Description">{{opportunity.description}}</textarea>
                           {{ opportunity_form.description.errors }}
                         </div>
                       </div>
@@ -1377,14 +1376,14 @@
                       <div class="col-md-6">
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="id_name" class="required">Name</label>
+                            <label for="id_name" class="required">Name<span class="required_color">*</span></label>
                             <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Case Name"/>
                             {{ case_form.name.errors }}
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="id_status" class="required">Status</label>
+                            <label for="id_status" class="required">Status<span class="required_color">*</span></label>
                             <select class="form-control" id="id_status" name="status" >
                               <option value="">--Select Status--</option>
                               {% for status in case_status %}
@@ -1396,7 +1395,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="id_priority" class="required">Priority</label>
+                            <label for="id_priority" class="required">Priority<span class="required_color">*</span></label>
                             <select class="form-control" id="id_priority" name="priority">
                               <option value="">--Select Priority--</option>
                               {% for priority in case_priority %}
@@ -1420,9 +1419,9 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1" class="required">Close Date</label>
+                            <label for="exampleInputEmail1" class="required">Close Date<span class="required_color">*</span></label>
                             <div class='input-group date' id='datetimepicker1'>
-                              <input type='text' class="form-control" id="id_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
+                              <input type='text' class="form-control" id="case_closed_on" name="closed_on" value="{{request.POST.closed_on}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
@@ -1687,13 +1686,13 @@
                             {% if error.name %}
                             {{error.name}}
                             {% endif %}
-                            <label for="id_name" class="required">Name</label>
-                            <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Enter Case Name" value="{{ case.name }}"/>
+                            <label for="id_name" class="required">Name<span class="required_color">*</span></label>
+                            <input type="text" id="id_name" maxlength="64" name="name" class="form-control" placeholder="Case Name" value="{{ case.name }}"/>
                           </div>
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group ">
-                            <label for="id_status">Status</label>
+                            <label for="id_status">Status<span class="required_color">*</span></label>
                             <select class="form-control" id="id_status" name="status" >
                               <option value="">--Select Status--</option>
                               {% for status in case_status %}
@@ -1704,7 +1703,7 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="id_priority">Priority</label>
+                            <label for="id_priority">Priority<span class="required_color">*</span></label>
                             <select class="form-control" id="id_priority" name="priority">
                               <option value="">--Select Priority--</option>
                               {% for priority in case_priority %}
@@ -1726,9 +1725,9 @@
                         </div>
                         <div class="filter_col col-md-12">
                           <div class="form-group">
-                            <label for="exampleInputEmail1">Close Date</label>
+                            <label for="exampleInputEmail1">Close Date<span class="required_color">*</span></label>
                             <div class='input-group date' id='datetimepicker2'>
-                              <input type='text' class="form-control" id="case_closedon" name="closed_on" value="{{case.closed_on|date:"Y-m-d"}}"/>
+                              <input type='text' class="form-control" id="case_closedon" name="closed_on" value="{{case.closed_on|date:"Y-m-d"}}" placeholder="Closed On" />
                               <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                               </span>
@@ -1761,7 +1760,7 @@
                         <div class="filter_col col-md-12">
                           <div class="form-group">
                             <label for="exampleInputEmail1" >Description</label>
-                            <textarea class="form-control" rows="3"  id="id_description" name="description"> {% if case.description %}{{ case.description}} {% else %}{{request.POST.description }} {%endif%} </textarea>
+                            <textarea class="form-control" rows="3"  id="id_description" name="description" placeholder="Description">{% if case.description %}{{ case.description}}{% else %}{{request.POST.description}}{%endif%}</textarea>
                             {{ case_form.description.errors }}
                           </div>
                         </div>
@@ -1848,7 +1847,7 @@
             $(".error").remove();
             $.each(response.contact_errors,
               function(field_name, error){
-                contact_error = '<span class="error" style="color:red;">' + error + '</span>'
+                contact_error = '<span class="error" style="font-size:14px;">' + error + '</span>'
                 $this.find("[name=" + field_name + "]").after(contact_error); })
               }
           else {
@@ -1866,7 +1865,7 @@
             $(".error").remove();
             $.each(response.contact_errors,
               function(field_name, error){
-                contact_error = '<span class="error" style="color:red;">' + error + '</span>'
+                contact_error = '<span class="error" style="font-size:14px;">' + error + '</span>'
                 $this.find("[name=" + field_name + "]").after(contact_error); })
               }
           else {
@@ -1892,14 +1891,15 @@
           $(".error").remove();
           $.each(response.case_errors,
             function(field_name, error){
-              case_error = '<span class="error" style="color:red;"> *' + error + '</span>'
+              case_error = '<span class="error" style="color:red;">' + error + '</span>'
               if(field_name == "closed_on"){
                 $('.closed_on_error').html(case_error)
               }
               else{
                 $this.find("[name=" + field_name + "]").after(case_error);
               }
-            })
+            }
+          )
         }
         else {
           window.location = "";
@@ -1921,9 +1921,10 @@
                   $('.closed_on_error').html(case_error)
                 }
                 else{
-                  $this.find("[name=" + field_name + "]").after(case_error);
+                  $this.find("[name=" + field_name + "]").after(case_error); 
                 }
-              })
+              }
+            )
           }
           else {
             window.location = "";
@@ -2074,14 +2075,15 @@
       })
     }
   }
- $(function () {
+
+  $(function () {
      var date = new Date();
      var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      $('#opportunity_closed_on, #case_closedon, #opp_closedon, #id_closed_on').datetimepicker({
+      $('#opp_closed_on, #case_closed_on, #opp_closedon, #case_closedon').datetimepicker({
           'format': 'YYYY-MM-DD',
           minDate: today
       })
-    });
+  });
   /*Comment Remove Js Ends*/
   </script>
 {% endblock js_block %}
