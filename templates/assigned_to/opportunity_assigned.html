@@ -1,0 +1,8 @@
+{% autoescape off %}
+Hello {{ user.get_username }},
+you was assigned to opportunity {{ opportunity.name }}
+click the link below:
+{{ protocol }}://{{ domain }}{% url 'opportunity:opp_view' pk=opportunity.id %}
+Sincerely,
+The Django-CRM Team
+{% endautoescape %}
