@@ -56,16 +56,16 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name', 'username', 'role', 'profile_pic']
-
-    def __init__(self, *args, **kwargs):
-        super(UserForm, self).__init__(*args, **kwargs)
-
-        self.fields['first_name'].required = True
-        self.fields['username'].required = True
-        self.fields['email'].required = True
-
-        if not self.instance.pk:
-            self.fields['password'].required = True
+    #
+    # def __init__(self, args: object, kwargs: object) -> object:
+    #     super(UserForm, self).__init__(*args, **kwargs)
+    #
+    #     self.fields['first_name'].required = True
+    #     self.fields['username'].required = True
+    #     self.fields['email'].required = True
+    #
+    #     if not self.instance.pk:
+    #         self.fields['password'].required = True
 
     def clean_password(self):
         password = self.cleaned_data.get('password')

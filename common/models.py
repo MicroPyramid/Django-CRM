@@ -80,7 +80,6 @@ class Address(models.Model):
         return address
 
 
-
 class Team(models.Model):
     name = models.CharField(max_length=55)
     members = models.ManyToManyField(User)
