@@ -1,12 +1,9 @@
 from django.test import TestCase
-from faker import Factory
 from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
 from common.models import Address, Comment
 from common.models import User
-
-faker = Factory.create()
 
 
 class CaseCreation(object):
@@ -37,7 +34,7 @@ class CaseCreation(object):
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
-            comment= faker.text(), case=self.case,
+            comment='testikd', case=self.case,
             commented_by=self.user
         )
 
@@ -53,9 +50,9 @@ class CaseViewTestCase(CaseCreation, TestCase):
 
     def test_list_cases_post(self):
         self.cases = Case.objects.all()
-        data = {'name': faker.word(),
-                'status': faker.word(),
-                'priority': faker.word(),
+        data = {'name': 'name',
+                'status': 'status',
+                'priority': 'prioty',
                 'account': int(self.account.id)}
         response = self.client.post('/cases/list/', data)
         self.assertEqual(response.status_code, 200)
@@ -115,7 +112,7 @@ class CaseUpdateTestCase(CaseCreation, TestCase):
 class CaseModelTestCase(CaseCreation, TestCase):
 
     def test_string_representation(self):
-        case = Case(name=faker.word(), )
+        case = Case(name='name', )
         self.assertEqual(str(case), case.name)
 
 
@@ -123,18 +120,18 @@ class CaseFormTestCase(CaseCreation, TestCase):
 
     def test_case_creation_same_name(self):
         response = self.client.post('/cases/create/',
-                                    {'name': 'raghu', 'case_type': faker.word(), 'status': faker.word(),
+                                    {'name': 'raghu', 'case_type': 'type', 'status': 'status',
                                      'account': self.account, 'contacts': [self.contacts.id],
-                                     'priority': faker.word(),
-                                     'description': faker.text()})
+                                     'priority': 'priority',
+                                     'description': 'testingskdjf'})
         self.assertEqual(response.status_code, 200)
 
     def test_case_create_valid(self):
         response = self.client.post('/cases/create/',
-                                    {'name': faker.word(), 'case_type': faker.word(), 'status': faker.word(),
+                                    {'name': 'name', 'case_type': 'case', 'status': 'status',
                                      'account': self.account, 'contacts': [self.contacts.id],
-                                     'priority': faker.word(),
-                                     'description': faker.text()
+                                     'priority': 'priotiy',
+                                     'description': 'tejkskjdsa'
                                      })
         self.assertEqual(response.status_code, 200)
 
@@ -153,4 +150,3 @@ class CaseFormTestCase(CaseCreation, TestCase):
     def test_comment_delete(self):
         response = self.client.post('/cases/comment/remove/', {'comment_id': self.comment.id})
         self.assertEqual(response.status_code, 200)
-

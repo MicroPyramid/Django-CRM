@@ -1,13 +1,7 @@
-from faker import Factory
 from django.test import TestCase
 
-from accounts.forms import AccountForm
 from accounts.models import Account
 from common.models import User, Address
-from django_forms_test import field, cleaned, FormTest
-
-# Create your tests here.
-faker = Factory.create()
 
 
 class AccountCreateTest(object):
@@ -53,8 +47,8 @@ class AccountsListTestCase(AccountCreateTest, TestCase):
 
     def test_accounts_list_queryset(self):
         self.account = Account.objects.all()
-        data = {'name': faker.word(), 'city': faker.word(),
-                'billing_address': self.address, 'industry': faker.word()}
+        data = {'name': 'name','city': 'city',
+                'billing_address': self.address, 'industry':'industry'}
         response = self.client.post('/accounts/list/', data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts.html')
@@ -121,23 +115,7 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)
 
-    def test_account_creation_valid_data(self):
-        data = {'name': faker.word(), 'email': faker.email(), 'phone': faker.phone_number(), 'website': "",
-                'industry': faker.word(),
-                'description': "", "street": faker.street_name(), 'city': faker.city(), "state": faker.state(),
-                'postcode': faker.postalcode(),
-                'country': faker.country_code(representation="alpha-2"), 'ship_street': faker.street_name(),
-                'ship_city': faker.city(), 'ship_state': faker.state(),
-                'ship_postcode': faker.postalcode(), 'ship_country': faker.country_code(representation="alpha-2")}
-        response = self.client.post('/accounts/create/', data)
-        self.assertEqual(response.status_code, 200)
 
-    def test_account_creation_invalid_phone(self):
-        data = {'name': faker.word(), 'email': faker.email(), 'phone': faker.phone_number(),
-                'billing_address': self.address,
-                'shipping_address': self.shipping_address, 'website': "", 'industry': faker.word(), 'description': ""}
-        response = self.client.post('/accounts/create/', data)
-        self.assertEqual(response.status_code, 200)
 
 
 class AccountModelTest(AccountCreateTest, TestCase):
@@ -147,4 +125,4 @@ class AccountModelTest(AccountCreateTest, TestCase):
         self.assertEqual(str(account), account.name)
 
     def setUp(self):
-        self.user = User.objects.create(username=faker.name(), email=faker.email())
+        self.user = User.objects.create(username='username', email='email@email.com')
