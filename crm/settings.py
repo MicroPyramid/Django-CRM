@@ -34,8 +34,6 @@ INSTALLED_APPS = [
     'opportunity',
     'planner',
     'sorl.thumbnail',
-    'django_nose',
-    'coverage'
 ]
 
 MIDDLEWARE = [
@@ -189,13 +187,3 @@ try:
     from .dev_settings import *
 except ImportError:
     pass
-# Use nose to run all tests
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-
-# Tell nose to measure coverage on the 'foo' and 'bar' apps
-NOSE_ARGS = [
-    '--with-coverage',
-    '--cover-package=common,accounts,cases,contacts,crm,leads,opportunity,planner'
-]
-FAKER_LOCALE = None     # settings.LANGUAGE_CODE is loaded
-FAKER_PROVIDERS = None
