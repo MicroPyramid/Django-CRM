@@ -1,7 +1,9 @@
 from django.urls import path
 from accounts.views import (
 	AccountsListView, CreateAccountView, AccountDetailView, AccountUpdateView,
-	AccountDeleteView, AddCommentView, UpdateCommentView, DeleteCommentView)
+	AccountDeleteView, AddCommentView, UpdateCommentView, DeleteCommentView,
+	AddAttachmentView, DeleteAttachmentsView
+)
 
 app_name = 'accounts'
 
@@ -14,4 +16,7 @@ urlpatterns = [
 	path('comment/add/', AddCommentView.as_view(), name="add_comment"),
 	path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
 	path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
+
+	path('attachment/add/', AddAttachmentView.as_view(), name="add_attachment"),
+	path('attachment/remove/', DeleteAttachmentsView.as_view(), name="remove_attachment"),
 ]

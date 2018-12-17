@@ -1,6 +1,6 @@
 from django import forms
 from leads.models import Lead
-from common.models import Address, Comment
+from common.models import Address, Comment, Attachments
 
 
 class LeadForm(forms.ModelForm):
@@ -50,3 +50,11 @@ class LeadCommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('comment', 'lead', 'commented_by')
+
+
+class LeadAttachmentForm(forms.ModelForm):
+    attachment = forms.FileField(max_length=1001, required=True)
+
+    class Meta:
+        model = Attachments
+        fields = ('attachment', 'lead')
