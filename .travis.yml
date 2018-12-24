@@ -23,6 +23,7 @@ install:
 
 # command to run tests
 script:
+  - python manage.py migrate
   - python manage.py test
   - coverage run --source=accounts,common manage.py test accounts common
   - coverage xml
