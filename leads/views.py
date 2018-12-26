@@ -9,10 +9,10 @@ from django.views.generic import (
 
 from accounts.models import Account
 from common.forms import BillingAddressForm
-from common.models import User, Comment, Team
+from common.models import User, Comment, Team, Attachments
 from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
 from leads.models import Lead
-from leads.forms import LeadCommentForm, LeadForm
+from leads.forms import LeadCommentForm, LeadForm, LeadAttachmentForm
 from planner.models import Event, Reminder
 from planner.forms import ReminderForm
 
@@ -137,6 +137,7 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(LeadDetailView, self).get_context_data(**kwargs)
         comments = Comment.objects.filter(lead__id=self.object.id).order_by('-id')
+        attachments = Attachments.objects.filter(lead__id=self.object.id).order_by('-id')
         events = Event.objects.filter(
             Q(created_by=self.request.user) | Q(updated_by=self.request.user)
         ).filter(attendees_leads=context["lead_record"])
@@ -149,7 +150,7 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
             'form-MAX_NUM_FORMS': '10',
         })
         context.update({
-            "comments": comments, "status": LEAD_STATUS, "countries": COUNTRIES,
+            "attachments": attachments, "comments": comments, "status": LEAD_STATUS, "countries": COUNTRIES,
             "reminder_form_set": reminder_form_set, "meetings": meetings, "calls": calls})
         return context
 
@@ -380,3 +381,54 @@ class GetLeadsView(LoginRequiredMixin, ListView):
         context = super(GetLeadsView, self).get_context_data(**kwargs)
         context["leads"] = self.get_queryset()
         return context
+
+
+class AddAttachmentsView(LoginRequiredMixin, CreateView):
+    model = Attachments
+    form_class = LeadAttachmentForm
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        self.lead = get_object_or_404(Lead, id=request.POST.get('leadid'))
+        if (
+                request.user in self.lead.assigned_to.all() or
+                request.user == self.lead.created_by
+        ):
+            form = self.get_form()
+            if form.is_valid():
+                return self.form_valid(form)
+            else:
+                return self.form_invalid(form)
+        else:
+            data = {'error': "You don't have permission to add attachment."}
+            return JsonResponse(data)
+
+    def form_valid(self, form):
+        attachment = form.save(commit=False)
+        attachment.created_by = self.request.user
+        attachment.file_name = attachment.attachment.name
+        attachment.lead = self.lead
+        attachment.save()
+        return JsonResponse({
+            "attachment_id": attachment.id,
+            "attachment": attachment.attachment,
+            "created_on": attachment.created_on,
+            "created_by": attachment.created_by.email
+        })
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form['attachment'].errors})
+
+
+class DeleteAttachmentsView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        if request.user == self.object.created_by:
+            self.object.delete()
+            data = {"aid": request.POST.get("attachment_id")}
+            return JsonResponse(data)
+        else:
+            data = {'error': "You don't have permission to delete this attachment."}
+            return JsonResponse(data)
