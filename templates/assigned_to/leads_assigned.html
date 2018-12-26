@@ -1,0 +1,8 @@
+{% autoescape off %}
+Hello {{ user.get_username }},
+you was assigned to lead {{ lead.name }}
+click the link below:
+{{ protocol }}://{{ domain }}{% url 'leads:view_lead' pk=lead.id %}
+Sincerely,
+The Django-CRM Team
+{% endautoescape %}

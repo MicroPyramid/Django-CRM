@@ -2,11 +2,11 @@ from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
-
 from accounts.models import Account
 from contacts.models import Contact
 from common.models import User, Team
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
+from planner.models import Event
 
 
 class Case(models.Model):

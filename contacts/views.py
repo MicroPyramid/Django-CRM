@@ -1,7 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View, DeleteView)
@@ -66,9 +69,9 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         form = self.get_form()
         address_form = BillingAddressForm(request.POST)
         if form.is_valid() and address_form.is_valid():
-            ddress_obj = address_form.save()
+            address_obj = address_form.save()
             contact_obj = form.save(commit=False)
-            contact_obj.address = ddress_obj
+            contact_obj.address = address_obj
             contact_obj.created_by = self.request.user
             contact_obj.save()
             return self.form_valid(form)
@@ -79,6 +82,19 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         contact_obj = form.save(commit=False)
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to contact.'
+                message = render_to_string('assigned_to/contact_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'contact': contact_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
@@ -169,6 +185,19 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         contact_obj.teams.clear()
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to contact.'
+                message = render_to_string('assigned_to/contact_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'contact': contact_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
