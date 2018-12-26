@@ -92,7 +92,7 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                 message = render_to_string('assigned_to/leads_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'lead': lead_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
@@ -117,7 +117,7 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                     message = render_to_string('assigned_to/account_assigned.html', {
                         'user': user,
                         'domain': current_site.domain,
-                        'protocol': 'http',
+                        'protocol': self.request.scheme,
                         'account': account_object
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
@@ -244,7 +244,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                     message = render_to_string('assigned_to/leads_assigned.html', {
                         'user': user,
                         'domain': current_site.domain,
-                        'protocol': 'http',
+                        'protocol': self.request.scheme,
                         'lead': lead_obj
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
@@ -269,7 +269,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                     message = render_to_string('assigned_to/account_assigned.html', {
                         'user': user,
                         'domain': current_site.domain,
-                        'protocol': 'http',
+                        'protocol': self.request.scheme,
                         'account': account_object
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
@@ -351,7 +351,7 @@ class ConvertLeadView(LoginRequiredMixin, View):
                 message = render_to_string('assigned_to/account_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'account': account_object
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])

@@ -90,7 +90,7 @@ class CreateContactView(LoginRequiredMixin, CreateView):
                 message = render_to_string('assigned_to/contact_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'contact': contact_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
@@ -191,7 +191,7 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
                 message = render_to_string('assigned_to/contact_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'contact': contact_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])

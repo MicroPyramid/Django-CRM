@@ -90,7 +90,7 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
                 message = render_to_string('assigned_to/opportunity_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'opportunity': opportunity_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
@@ -191,7 +191,7 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
                 message = render_to_string('assigned_to/opportunity_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'opportunity': opportunity_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])

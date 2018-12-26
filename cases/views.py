@@ -92,7 +92,7 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
                 message = render_to_string('assigned_to/cases_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'case': case
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
@@ -187,7 +187,7 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
                 message = render_to_string('assigned_to/cases_assigned.html', {
                     'user': user,
                     'domain': current_site.domain,
-                    'protocol': 'http',
+                    'protocol': self.request.scheme,
                     'case': case_obj
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
