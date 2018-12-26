@@ -37,7 +37,7 @@
                         </div>
                         <div class="forgot">Forgot Password <a href="{% url "common:password_reset" %}">Click Here?</a></div>
                         {% if error %}
-                            <p>{{ message }}</p>
+                            <p class="error">{{ message }}</p>
                         {% endif %}
                         <button type="submit" class="btn btn-danger">Login</button>
                     </form>

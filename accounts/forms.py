@@ -1,6 +1,6 @@
 from django import forms
 from .models import Account
-from common.models import Comment
+from common.models import Comment, Attachments
 
 
 class AccountForm(forms.ModelForm):
@@ -40,3 +40,11 @@ class AccountCommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('comment', 'account', 'commented_by')
+
+
+class AccountAttachmentForm(forms.ModelForm):
+    attachment = forms.FileField(max_length=1001, required=True)
+
+    class Meta:
+        model = Attachments
+        fields = ('attachment', 'account')

@@ -1,6 +1,6 @@
 from django import forms
 from contacts.models import Contact
-from common.models import Comment
+from common.models import Comment, Attachments
 
 
 class ContactForm(forms.ModelForm):
@@ -44,3 +44,11 @@ class ContactCommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('comment', 'contact', 'commented_by')
+
+
+class ContactAttachmentForm(forms.ModelForm):
+    attachment = forms.FileField(max_length=1001, required=True)
+
+    class Meta:
+        model = Attachments
+        fields = ('attachment', 'contact')

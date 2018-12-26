@@ -9,7 +9,6 @@
     <div class="heading col-md-12">
      <div class="no-gutters row">
       <div class="col-md-6">
-        <h4>Leads</h4>
       </div>
       <div class="col-md-6">
         <div class="create_new text-right">
@@ -104,7 +103,7 @@
                       {% with lead_users=lead.assigned_to.all %}
                         {% if lead_users %}
                           {% for user in lead_users %}
-                            <li class="text-left">{{ user.email }}</li>
+                            <span class="text-left">{{ user.email }}</span><br>
                           {% endfor %}
                         {% else %}
                           Not Assigned to Any

@@ -124,9 +124,9 @@ class UsersListView(AdminRequiredMixin, TemplateView):
             if request_post.get('last_name'):
                 queryset = queryset.filter(last_name_id=request_post.get('last_name'))
             if request_post.get('username'):
-                queryset = queryset.filter(username=request_post.get('username'))
+                queryset = queryset.filter(username__icontains=request_post.get('username'))
             if request_post.get('email'):
-                queryset = queryset.filter(email=request_post.get('email'))
+                queryset = queryset.filter(email__icontains=request_post.get('email'))
         return queryset
 
     def get_context_data(self, **kwargs):
