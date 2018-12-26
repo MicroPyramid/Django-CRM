@@ -1,18 +1,21 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.forms.models import modelformset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View)
 
 from accounts.models import Account
 from common.forms import BillingAddressForm
-from common.models import User, Comment, Team
+from common.models import User, Comment, Team, Attachments
 from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
 from leads.models import Lead
-from leads.forms import LeadCommentForm, LeadForm
+from leads.forms import LeadCommentForm, LeadForm, LeadAttachmentForm
 from planner.models import Event, Reminder
 from planner.forms import ReminderForm
 
@@ -81,9 +84,21 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
         lead_obj.save()
         if self.request.POST.getlist('assigned_to', []):
             lead_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to lead.'
+                message = render_to_string('assigned_to/leads_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'lead': lead_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             lead_obj.teams.add(*self.request.POST.getlist('teams'))
-
         if self.request.POST.get('status') == "converted":
             account_object = Account.objects.create(
                 created_by=self.request.user, name=lead_obj.account_name,
@@ -94,6 +109,19 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
             account_object.billing_address = address_object
             if self.request.POST.getlist('assigned_to', []):
                 account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+                assigned_to_list = self.request.POST.getlist('assigned_to')
+                current_site = get_current_site(self.request)
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to account.'
+                    message = render_to_string('assigned_to/account_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'account': account_object
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
             if self.request.POST.getlist('teams', []):
                 account_object.teams.add(*self.request.POST.getlist('teams'))
             account_object.save()
@@ -137,6 +165,7 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(LeadDetailView, self).get_context_data(**kwargs)
         comments = Comment.objects.filter(lead__id=self.object.id).order_by('-id')
+        attachments = Attachments.objects.filter(lead__id=self.object.id).order_by('-id')
         events = Event.objects.filter(
             Q(created_by=self.request.user) | Q(updated_by=self.request.user)
         ).filter(attendees_leads=context["lead_record"])
@@ -149,7 +178,7 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
             'form-MAX_NUM_FORMS': '10',
         })
         context.update({
-            "comments": comments, "status": LEAD_STATUS, "countries": COUNTRIES,
+            "attachments": attachments, "comments": comments, "status": LEAD_STATUS, "countries": COUNTRIES,
             "reminder_form_set": reminder_form_set, "meetings": meetings, "calls": calls})
         return context
 
@@ -207,6 +236,20 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
         lead_obj.teams.clear()
         if self.request.POST.getlist('assigned_to', []):
             lead_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            if self.request.POST.get('status') != "converted":
+                assigned_to_list = self.request.POST.getlist('assigned_to')
+                current_site = get_current_site(self.request)
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to lead.'
+                    message = render_to_string('assigned_to/leads_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'lead': lead_obj
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
         if self.request.POST.getlist('teams', []):
             lead_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.get('status') == "converted":
@@ -219,6 +262,19 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
             account_object.billing_address = address_obj
             if self.request.POST.getlist('assigned_to', []):
                 account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+                assigned_to_list = self.request.POST.getlist('assigned_to')
+                current_site = get_current_site(self.request)
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to account.'
+                    message = render_to_string('assigned_to/account_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'account': account_object
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
             if self.request.POST.getlist('teams', []):
                 account_object.teams.add(*self.request.POST.getlist('teams'))
             account_object.save()
@@ -289,6 +345,18 @@ class ConvertLeadView(LoginRequiredMixin, View):
             assignedto_list = lead_obj.assigned_to.all().values_list('id', flat=True)
             account_object.assigned_to.add(*assignedto_list)
             account_object.save()
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assignedto_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to account.'
+                message = render_to_string('assigned_to/account_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'account': account_object
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
             return redirect("accounts:list")
         else:
             return HttpResponseRedirect(
@@ -380,3 +448,54 @@ class GetLeadsView(LoginRequiredMixin, ListView):
         context = super(GetLeadsView, self).get_context_data(**kwargs)
         context["leads"] = self.get_queryset()
         return context
+
+
+class AddAttachmentsView(LoginRequiredMixin, CreateView):
+    model = Attachments
+    form_class = LeadAttachmentForm
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        self.lead = get_object_or_404(Lead, id=request.POST.get('leadid'))
+        if (
+                request.user in self.lead.assigned_to.all() or
+                request.user == self.lead.created_by
+        ):
+            form = self.get_form()
+            if form.is_valid():
+                return self.form_valid(form)
+            else:
+                return self.form_invalid(form)
+        else:
+            data = {'error': "You don't have permission to add attachment."}
+            return JsonResponse(data)
+
+    def form_valid(self, form):
+        attachment = form.save(commit=False)
+        attachment.created_by = self.request.user
+        attachment.file_name = attachment.attachment.name
+        attachment.lead = self.lead
+        attachment.save()
+        return JsonResponse({
+            "attachment_id": attachment.id,
+            "attachment": attachment.attachment,
+            "created_on": attachment.created_on,
+            "created_by": attachment.created_by.email
+        })
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form['attachment'].errors})
+
+
+class DeleteAttachmentsView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        if request.user == self.object.created_by:
+            self.object.delete()
+            data = {"aid": request.POST.get("attachment_id")}
+            return JsonResponse(data)
+        else:
+            data = {'error': "You don't have permission to delete this attachment."}
+            return JsonResponse(data)

@@ -7,22 +7,13 @@ import phonenumber_field.modelfields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contacts', '0001_initial'),
+        ('contacts', '0002_auto_20181226_2115'),
     ]
 
     operations = [
         migrations.AlterField(
             model_name='contact',
-            name='email',
-            field=models.EmailField(max_length=254, unique=True),
-        ),
-        migrations.AlterField(
-            model_name='contact',
             name='phone',
             field=phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, unique=True),
-        ),
-        migrations.AlterUniqueTogether(
-            name='contact',
-            unique_together={('email',)},
         ),
     ]

@@ -24,7 +24,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=50, choices=ROLES)
     profile_pic = models.FileField(max_length=1000, upload_to=img_url, null=True, blank=True)
 
-
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]
 
@@ -80,7 +79,6 @@ class Address(models.Model):
         return address
 
 
-
 class Team(models.Model):
     name = models.CharField(max_length=55)
     members = models.ManyToManyField(User)
@@ -116,3 +114,14 @@ class Comment_Files(models.Model):
             return self.comment_file.path.split('/')[-1]
         else:
             return None
+
+
+class Attachments(models.Model):
+    created_by = models.ForeignKey(User, related_name='attachment_created_by', on_delete=models.CASCADE)
+    file_name = models.CharField(max_length=60)
+    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
+    attachment = models.FileField(max_length=1001, upload_to='attachments/%Y/%m/')
+    lead = models.ForeignKey('leads.Lead', null=True, blank=True, related_name='lead_attachment', on_delete=models.CASCADE)
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, related_name='account_attachment', on_delete=models.CASCADE)
+    contact = models.ForeignKey('contacts.Contact', on_delete=models.CASCADE, related_name='contact_attachment', blank=True, null=True)
+    opportunity = models.ForeignKey('opportunity.Opportunity',blank=True,null=True,on_delete=models.CASCADE,related_name='opportunity_attachment')

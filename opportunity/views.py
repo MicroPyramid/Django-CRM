@@ -1,12 +1,15 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
 from accounts.models import Account
-from common.models import User, Comment, Team
+from common.models import User, Comment, Team, Attachments
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
 from contacts.models import Contact
-from opportunity.forms import OpportunityForm, OpportunityCommentForm
+from opportunity.forms import OpportunityForm, OpportunityCommentForm, OpportunityAttachmentForm
 from opportunity.models import Opportunity
 
 
@@ -79,6 +82,19 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
         opportunity_obj.save()
         if self.request.POST.getlist('assigned_to', []):
             opportunity_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to opportunity.'
+                message = render_to_string('assigned_to/opportunity_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'opportunity': opportunity_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             opportunity_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
@@ -128,7 +144,7 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(OpportunityDetailView, self).get_context_data(**kwargs)
         comments = context["opportunity_record"].opportunity_comments.all()
-        context.update({"comments": comments})
+        context.update({"comments": comments, 'attachments': context["opportunity_record"].opportunity_attachment.all()})
         return context
 
 
@@ -167,6 +183,19 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
         opportunity_obj.contacts.clear()
         if self.request.POST.getlist('assigned_to', []):
             opportunity_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to opportunity.'
+                message = render_to_string('assigned_to/opportunity_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'opportunity': opportunity_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             opportunity_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
@@ -236,8 +265,8 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         self.object = None
         self.opportunity = get_object_or_404(Opportunity, id=request.POST.get('opportunityid'))
         if (
-            request.user in self.opportunity.assigned_to.all() or
-            request.user == self.opportunity.created_by
+                request.user in self.opportunity.assigned_to.all() or
+                request.user == self.opportunity.created_by
         ):
             form = self.get_form()
             if form.is_valid():
@@ -312,3 +341,54 @@ class GetOpportunitiesView(LoginRequiredMixin, ListView):
         context = super(GetOpportunitiesView, self).get_context_data(**kwargs)
         context["opportunities"] = self.get_queryset()
         return context
+
+
+class AddAttachmentsView(LoginRequiredMixin, CreateView):
+    model = Attachments
+    form_class = OpportunityAttachmentForm
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        self.opportunity = get_object_or_404(Opportunity, id=request.POST.get('opportunityid'))
+        if (
+                request.user in self.opportunity.assigned_to.all() or
+                request.user == self.opportunity.created_by
+        ):
+            form = self.get_form()
+            if form.is_valid():
+                return self.form_valid(form)
+            else:
+                return self.form_invalid(form)
+        else:
+            data = {'error': "You don't have permission to add attachment."}
+            return JsonResponse(data)
+
+    def form_valid(self, form):
+        attachment = form.save(commit=False)
+        attachment.created_by = self.request.user
+        attachment.file_name = attachment.attachment.name
+        attachment.opportunity = self.opportunity
+        attachment.save()
+        return JsonResponse({
+            "attachment_id": attachment.id,
+            "attachment": attachment.attachment,
+            "created_on": attachment.created_on,
+            "created_by": attachment.created_by.email
+        })
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form['attachment'].errors})
+
+
+class DeleteAttachmentsView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        if request.user == self.object.created_by:
+            self.object.delete()
+            data = {"aid": request.POST.get("attachment_id")}
+            return JsonResponse(data)
+        else:
+            data = {'error': "You don't have permission to delete this attachment."}
+            return JsonResponse(data)

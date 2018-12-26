@@ -1,16 +1,19 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View, DeleteView)
 from accounts.models import Account
-from common.models import User, Address, Comment, Team
+from common.models import User, Address, Comment, Team, Attachments
 from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
-from contacts.forms import ContactForm, ContactCommentForm
+from contacts.forms import ContactForm, ContactCommentForm, ContactAttachmentForm
 
 
 class ContactsListView(LoginRequiredMixin, TemplateView):
@@ -66,9 +69,9 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         form = self.get_form()
         address_form = BillingAddressForm(request.POST)
         if form.is_valid() and address_form.is_valid():
-            ddress_obj = address_form.save()
+            address_obj = address_form.save()
             contact_obj = form.save(commit=False)
-            contact_obj.address = ddress_obj
+            contact_obj.address = address_obj
             contact_obj.created_by = self.request.user
             contact_obj.save()
             return self.form_valid(form)
@@ -79,6 +82,19 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         contact_obj = form.save(commit=False)
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to contact.'
+                message = render_to_string('assigned_to/contact_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'contact': contact_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
@@ -128,7 +144,9 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ContactDetailView, self).get_context_data(**kwargs)
-        context.update({"comments": context["contact_record"].contact_comments.all()})
+        context.update({"comments": context["contact_record"].contact_comments.all(),
+                        'attachments':context["contact_record"].contact_attachment.all()
+                        })
         return context
 
 
@@ -167,6 +185,19 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         contact_obj.teams.clear()
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            assigned_to_list = self.request.POST.getlist('assigned_to')
+            current_site = get_current_site(self.request)
+            for assigned_to_user in assigned_to_list:
+                user = get_object_or_404(User, pk=assigned_to_user)
+                mail_subject = 'Assigned to contact.'
+                message = render_to_string('assigned_to/contact_assigned.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    'protocol': self.request.scheme,
+                    'contact': contact_obj
+                })
+                email = EmailMessage(mail_subject, message, to=[user.email])
+                email.send()
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
@@ -309,3 +340,54 @@ class GetContactsView(LoginRequiredMixin, TemplateView):
         context = super(GetContactsView, self).get_context_data(**kwargs)
         context["contacts"] = self.get_queryset()
         return context
+
+
+class AddAttachmentsView(LoginRequiredMixin, CreateView):
+    model = Attachments
+    form_class = ContactAttachmentForm
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        self.contact = get_object_or_404(Contact, id=request.POST.get('contactid'))
+        if (
+                request.user in self.contact.assigned_to.all() or
+                request.user == self.contact.created_by
+        ):
+            form = self.get_form()
+            if form.is_valid():
+                return self.form_valid(form)
+            else:
+                return self.form_invalid(form)
+        else:
+            data = {'error': "You don't have permission to add attachment."}
+            return JsonResponse(data)
+
+    def form_valid(self, form):
+        attachment = form.save(commit=False)
+        attachment.created_by = self.request.user
+        attachment.file_name = attachment.attachment.name
+        attachment.contact = self.contact
+        attachment.save()
+        return JsonResponse({
+            "attachment_id": attachment.id,
+            "attachment": attachment.attachment,
+            "created_on": attachment.created_on,
+            "created_by": attachment.created_by.email
+        })
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form['attachment'].errors})
+
+
+class DeleteAttachmentsView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        if request.user == self.object.created_by:
+            self.object.delete()
+            data = {"aid": request.POST.get("attachment_id")}
+            return JsonResponse(data)
+        else:
+            data = {'error': "You don't have permission to delete this attachment."}
+            return JsonResponse(data)

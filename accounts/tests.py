@@ -1,9 +1,9 @@
 from django.test import TestCase
+
 from accounts.models import Account
 from common.models import User, Address
 
 
-# Create your tests here.
 class AccountCreateTest(object):
     def setUp(self):
         self.user = User.objects.create(first_name="uday", username='uday', email='u@mp.com', role='ADMIN')
@@ -38,9 +38,18 @@ class AccountsCreateTestCase(AccountCreateTest, TestCase):
 
 
 class AccountsListTestCase(AccountCreateTest, TestCase):
+
     def test_accounts_list(self):
         self.accounts = Account.objects.all()
         response = self.client.get('/accounts/list/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts.html')
+
+    def test_accounts_list_queryset(self):
+        self.account = Account.objects.all()
+        data = {'name': 'name','city': 'city',
+                'billing_address': self.address, 'industry':'industry'}
+        response = self.client.post('/accounts/list/', data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts.html')
 
@@ -54,14 +63,14 @@ class AccountsCountTestCase(AccountCreateTest, TestCase):
 class AccountsViewTestCase(AccountCreateTest, TestCase):
     def test_accounts_view(self):
         self.accounts = Account.objects.all()
-        response = self.client.get('/accounts/'+ str(self.account.id) +'/view/')
+        response = self.client.get('/accounts/' + str(self.account.id) + '/view/')
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'view_account.html')
 
 
 class AccountsRemoveTestCase(AccountCreateTest, TestCase):
     def test_accounts_remove(self):
-        response = self.client.get('/accounts/'+ str(self.account.id) +'/delete/')
+        response = self.client.get('/accounts/' + str(self.account.id) + '/delete/')
         self.assertEqual(response['location'], '/accounts/list/')
 
     def test_accounts_remove_status(self):
@@ -72,19 +81,29 @@ class AccountsRemoveTestCase(AccountCreateTest, TestCase):
 
 class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
     def test_accounts_update(self):
-        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/', {
-            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "8333855552", 'billing_address': self.address,
+        response = self.client.get('/accounts/' + str(self.account.id) + '/edit/', {
+            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "8333855552",
+            'billing_address': self.address,
+            'shipping_address': self.address, 'website': "www.uday.com",
+            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'create_account.html')
+
+    def test_accounts_update_post(self):
+        response = self.client.post('/accounts/' + str(self.account.id) + '/edit/', {
+            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "8333855552",
+            'billing_address': self.address,
             'shipping_address': self.address, 'website': "www.uday.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create_account.html')
 
     def test_accounts_update_status(self):
-        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
+        response = self.client.get('/accounts/' + str(self.account.id) + '/edit/')
         self.assertEqual(response.status_code, 200)
 
     def tst_accounts_update_html(self):
-        response = self.client.get('/accounts/'+ str(self.account.id) +'/edit/')
+        response = self.client.get('/accounts/' + str(self.account.id) + '/edit/')
         self.assertTemplateUsed(response, 'create_account.html')
 
 
@@ -92,6 +111,18 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 
     def test_account_creation_invalid_data(self):
         data = {'name': "", 'email': "", 'phone': "", 'billing_address': self.address,
-        'shipping_address': self.shipping_address, 'website': "", 'industry': "", 'description': ""}
+                'shipping_address': self.shipping_address, 'website': "", 'industry': "", 'description': ""}
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)
+
+
+
+
+class AccountModelTest(AccountCreateTest, TestCase):
+
+    def test_string_representation(self):
+        account = Account(name="My entry title", )
+        self.assertEqual(str(account), account.name)
+
+    def setUp(self):
+        self.user = User.objects.create(username='username', email='email@email.com')
