@@ -1,6 +1,6 @@
 from django import forms
 from opportunity.models import Opportunity
-from common.models import Comment
+from common.models import Comment, Attachments
 
 
 class OpportunityForm(forms.ModelForm):
@@ -40,3 +40,11 @@ class OpportunityCommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('comment', 'opportunity', 'commented_by')
+
+
+class OpportunityAttachmentForm(forms.ModelForm):
+    attachment = forms.FileField(max_length=1001, required=True)
+
+    class Meta:
+        model = Attachments
+        fields = ('attachment', 'opportunity')

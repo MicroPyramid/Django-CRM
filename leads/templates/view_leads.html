@@ -119,8 +119,49 @@
               </div>
           </div>
         </div>
+
+        <!-- Attachment Section start -->
+      <div>
+      <div class="card-body mar-top" id="datashow">
+          <div class="card-title view-pad">
+              <h5>Attachments</h5>
+         </div>
+          <div class="row marl">
+              <div class="col-md-12">
+                  <form id="attachment_form" method="POST" enctype="multipart/form-data">
+                      <div class="form-group ">
+                        <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
+                          <div><i id="AttachmentError" style="display:none; color:red"></i></div>
+                          <br>
+                          <div class="buttons_row">
+                              <button class="btn btn-default save" style="text-align: center;" id="attachment_submit">Save</button>
+                          </div>
+                      </div>
+                      <input type="hidden" value="{{lead_record.id}}" name="leadid">
+                  </form>
+                  <ul class="list-group" id="attachment_div">
+                      {% for attachemnt in attachments %}
+                          <li class="list-group-item list-row" id="attachment{{attachemnt.id}}">
+                              <div class="float-right right-container">
+                                <div class="list-row-buttons btn-group float-right">
+                                  <button  class="action btn btn-danger" onclick="remove_attachment({{attachemnt.id}})">Remove</button>
+                                </div>
+                              </div>
+                                <div class="stream-post-container" id="attachment_name{{attachemnt.id}}"><pre><a href="{{ attachemnt.attachment.url }}">{{ attachemnt.file_name }}</a></pre></div>
+                              <div class="stream-container">
+                                <pre class="float-left">{{ attachemnt.created_by }}</pre>
+                                <pre class="float-right">{{ attachemnt.created_on }}</pre>
+                              </div>
+                          </li>
+                      {% endfor %}
+                  </ul>
+              </div>
+          </div>
+      </div>
+        <!-- Attachment Section end -->
+
         <!-- Comments Section starts-->
-       
+      <div>
         <div class="card-body mar-top" id="datashow">
          <div class="card-title view-pad">
           <h5>Comments </h5>
@@ -186,23 +227,25 @@
               </div>
             </div>
           </div>
-        </div>
+        </div></div>
         <!-- Comments Section Ends-->
-      </div>
-    </div>
+        </div>
+        </div>
     <tr id="meeting{{ meeting.id }}">
-   
+    </div>
   </div>
 </div>
 {% endblock %}
+
 {% block js_block %}
  <script src="{% static 'js/calls.js' %}"></script>
  <script src="{% static 'js/meetings.js' %}"></script>
  <script type="text/javascript">
+
 $("#comment_form").submit(function (e) {
   e.preventDefault()
-  var formData = new FormData($("#comment_form")[0]);
-  $.ajax({
+    const formData = new FormData($("#comment_form")[0]);
+    $.ajax({
     url: "{% url 'leads:add_comment' %}",
     type: "POST",
     data: formData,
@@ -224,15 +267,14 @@ $("#comment_form").submit(function (e) {
           "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
           "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>"+
           "<div class='stream-date-container' id='comment_file_div"+data.comment_id+"'><div id='new_comment"+data.comment_id+"'</div></div></li>"
-        )
+        );
         $("#id_comments").val("")
         alert("Comment Submitted")
         $("#CommentError").html("")
       }
     }
   })
-})
-
+});
 
 function edit_comment(x) {
   $('#Comments_Leads_Modal').modal('show');
@@ -243,8 +285,8 @@ function edit_comment(x) {
 
 $("#comment_edit").click(function (e) {
   e.preventDefault()
-  var formData = new FormData($("#comment_edit_form")[0]);
-  $.ajax({
+    const formData = new FormData($("#comment_edit_form")[0]);
+    $.ajax({
     url: "{% url 'leads:edit_comment' %}",
     type: "POST",
     data: formData,
@@ -262,16 +304,18 @@ $("#comment_edit").click(function (e) {
       }
     }
   })
-})
-
+});
 
 function HideError(e) {
-  $("#CommentError").hide()
+    $("#CommentError").hide()
+}
+function HideError(e) {
+  $("#AttachmentError").hide()
 }
 
 function remove_comment(x) {
-  var con = confirm("Do you want to Delete it for Sure!?")
-  if (con == true) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
     $.post('{% url "leads:remove_comment" %}', {
       "comment_id": x
     }, function (data) {
@@ -283,5 +327,52 @@ function remove_comment(x) {
     })
   }
 }
+
+$("#attachment_form").submit(function (e) {
+  e.preventDefault()
+    const formData = new FormData($("#attachment_form")[0]);
+    $.ajax({
+    url: "{% url 'leads:add_attachment' %}",
+    type: "POST",
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    success: function (data) {
+        alert("Attachment Saved")
+      if (data.error) {
+        $("#AttachmentError").html(data.error).show()
+      alert("Attachment Saved")
+      } else {
+        d = new Date(data.created_by);
+        $("#attachment_div").prepend(
+            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>" +
+            "</li>"
+        );
+        $("#id_attachments").val("")
+        alert("Attachment Saved")
+        $("#AttachmentError").html("")
+      }
+    }
+  })
+});
+
+
+function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+    $.post('{% url "leads:remove_attachment" %}', {
+      "attachment_id": x
+    }, function (data) {
+      if (data.error) {
+        alert(data.error)
+      } else {
+        $("#attachment" + data.aid).remove()
+      }
+    })
+  }
+}
+
 </script>
 {% endblock js_block %}
