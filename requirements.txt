@@ -1,4 +1,4 @@
-Django==2.1.2
+Django==2.1.5
 django-simple-pagination==1.1.8
 pytz==2018.3
 psycopg2-binary==2.7.4
