@@ -80,14 +80,18 @@ If you cloned the package from git use virtualenv to install requirements::
 
     pip install -r requirements.txt
 
-Visit our Django web development page [Here](https://micropyramid.com/django-ecommerce-development/)
-
+Try
+===
 Demo Available `here`_.
 
 Demo credentials for Django CRM:
 
   * **Email:** admin@micropyramid.com
   * **Password:** admin
+
+Contribution
+============
+We need contributions in UI development and documentation.
 
 Feature requests and bug reports
 ================================
