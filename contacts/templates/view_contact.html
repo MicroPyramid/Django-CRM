@@ -204,6 +204,12 @@
 {% endblock%}
 {% block js_block %}
   <script type="text/javascript">
+
+  function resetForm() {
+    $('#CommentEditError').hide()
+    document.getElementById("CommentEditError").reset();
+    }
+
 $("#comment_form").submit(function (e) {
   e.preventDefault()
   var formData = new FormData($("#comment_form")[0]);
@@ -269,9 +275,9 @@ $("#comment_edit").click(function (e) {
 })
 
 function HideError(e) {
-    $("#CommentError").hide()
 }
 function HideError(e) {
+    $("#CommentError").hide()
   $("#AttachmentError").hide()
 }
 

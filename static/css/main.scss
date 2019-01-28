@@ -787,3 +787,22 @@ padding:0px !important;
 .pull-right {
   float: right;
 }
+.credentials {
+    border: 1px solid;
+    width: 309px;
+    border: 6px solid #0404040d;
+    padding: 30px 0;
+    text-align: center;
+    position: relative;
+    margin-top: 6rem;
+}
+.credentials .heading{
+  position: absolute;
+  display: inline-block;
+  top: -15px;
+  left: 17%;
+  background: #333;
+  color: #fff;
+  padding:3px 10px;
+  border-radius: 3px;
+}

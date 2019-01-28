@@ -26,6 +26,18 @@ class ContactForm(forms.ModelForm):
             'assigned_to', 'teams', 'first_name', 'last_name', 'account', 'email', 'phone', 'address', 'description'
         )
 
+    def clean_phone(self):
+        client_phone = self.cleaned_data.get('phone', None)
+        try:
+            if int(client_phone) and not client_phone.isalpha():
+                ph_length = str(client_phone)
+                if len(ph_length) < 10 or len(ph_length) > 13:
+                    raise forms.ValidationError('Phone number must be minimum 10 Digits and maximum of 13 Digits')
+        except (ValueError):
+            raise forms.ValidationError('Phone Number should contain only Numbers')
+        return client_phone
+
+
 
 class ContactCommentForm(forms.ModelForm):
     comment = forms.CharField(max_length=64, required=True)
