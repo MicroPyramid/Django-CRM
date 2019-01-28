@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
-from common.models import Address, User
+from common.models import Address, User, Document
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -143,3 +143,10 @@ class PasswordResetEmailForm(PasswordResetForm):
         if not User.objects.filter(email__iexact=email, is_active=True).exists():
             raise forms.ValidationError("User doesn't exist with this Email")
         return email
+
+
+class DocumentForm(forms.ModelForm):
+
+    class Meta:
+        model = Document
+        fields = ['title', 'document_file']
