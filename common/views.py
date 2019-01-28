@@ -1,12 +1,13 @@
+import os
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
-from common.models import User
-from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm
+from common.models import User, Document
+from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm,DocumentForm
 from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
 from django.conf import settings
@@ -237,3 +238,125 @@ class PasswordResetView(PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     form_class = PasswordResetEmailForm
     email_template_name = 'registration/password_reset_email.html'
+
+
+
+class DocumentCreateView(AdminRequiredMixin, CreateView):
+    model = Document
+    form_class = DocumentForm
+    template_name = "doc_create.html"
+
+    def form_valid(self, form):
+        print('heeee')
+        doc = form.save(commit=False)
+        doc.created_by = self.request.user
+        doc.save()
+        print('doc saved')
+        if self.request.is_ajax():
+            data = {'success_url': reverse_lazy('common:doc_list'), 'error': False}
+            return JsonResponse(data)
+        return super(DocumentCreateView, self).form_valid(form)
+
+
+    def form_invalid(self, form):
+        response = super(DocumentCreateView, self).form_invalid(form)
+        if self.request.is_ajax():
+            print(form.errors, 'qeeee')
+            return JsonResponse({'error': True, 'errors': form.errors})
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super(DocumentCreateView, self).get_context_data(**kwargs)
+        context["doc_form"] = context["form"]
+        if "errors" in kwargs:
+            context["errors"] = kwargs["errors"]
+        return context
+
+
+
+class DocumentListView(AdminRequiredMixin, TemplateView):
+    model = Document
+    context_object_name = "documents"
+    template_name = "doc_list.html"
+
+    def get_queryset(self):
+        queryset = self.model.objects.all()
+        request_post = self.request.POST
+        if request_post:
+            if request_post.get('doc_name'):
+                queryset = queryset.filter(title__icontains=request_post.get('doc_name'))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(DocumentListView, self).get_context_data(**kwargs)
+        context["documents"] = self.get_queryset()
+        context["per_page"] = self.request.POST.get('per_page')
+        return context
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+
+class DocumentDeleteView(AdminRequiredMixin, DeleteView):
+    model = Document
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect("common:doc_list")
+
+
+class UpdateDocumentView(LoginRequiredMixin, UpdateView):
+    model = Document
+    form_class = DocumentForm
+    template_name = "doc_create.html"
+
+    def form_valid(self, form):
+        doc = form.save(commit=False)
+        doc.save()
+        if self.request.is_ajax():
+            data = {'success_url': reverse_lazy('common:doc_list'), 'error': False}
+            return JsonResponse(data)
+        return super(UpdateDocumentView, self).form_valid(form)
+
+
+    def form_invalid(self, form):
+        response = super(UpdateDocumentView, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse({'error': True, 'errors': form.errors})
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super(UpdateDocumentView, self).get_context_data(**kwargs)
+        context["doc_obj"] = self.object
+        context["doc_form"] = context["form"]
+        if "errors" in kwargs:
+            context["errors"] = kwargs["errors"]
+        return context
+
+
+class DocumentDetailView(AdminRequiredMixin, DetailView):
+    model = Document
+    template_name = "doc_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(DocumentDetailView, self).get_context_data(**kwargs)
+        documents = Document.objects.all()
+        context.update({
+            "file_type_code": self.object.file_type()[1],
+            "doc_obj": self.object,
+        })
+        return context
+
+
+def download_document(request, pk):
+    doc_obj = Document.objects.filter(id=pk).last()
+    path = doc_obj.document_file.path
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+            return response
+    raise Http404

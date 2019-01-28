@@ -3,7 +3,9 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
 from common.views import (
     HomeView, LoginView, ForgotPasswordView, LogoutView, ChangePasswordView, ProfileView,
-    UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView, PasswordResetView)
+    UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView, PasswordResetView,
+    DocumentListView, DocumentCreateView, UpdateDocumentView, DocumentDetailView, DocumentDeleteView, 
+    download_document)
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -33,5 +35,14 @@ urlpatterns = [
         'reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
+    # Document
+    path('documents/list/', DocumentListView.as_view(), name='doc_list'),
+    path('documents/create/', DocumentCreateView.as_view(), name='create_doc'),
+    path('documents/<int:pk>/edit/', UpdateDocumentView.as_view(), name="edit_doc"),
+    path('documents/<int:pk>/view/', DocumentDetailView.as_view(), name='view_doc'),
+    path('documents/<int:pk>/delete/', DocumentDeleteView.as_view(), name='remove_doc'),
+
+    # download
+    path('documents/<int:pk>/download/', download_document, name='download_document'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
