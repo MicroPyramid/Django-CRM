@@ -37,8 +37,11 @@ class Event(models.Model):
         pgettext_lazy("status of the Event", "Status"), choices=EVENT_STATUS,
         max_length=64, blank=True)
     direction = models.CharField(max_length=20, blank=True)  # only for calls
-    start_date = models.DateTimeField(default=None)
-    close_date = models.DateTimeField(default=None, null=True)
+    # start_date = models.DateTimeField(default=None)
+    # close_date = models.DateTimeField(default=None, null=True)
+    start_date = models.DateField(default=None)
+    close_date = models.DateField(default=None, null=True)
+
     duration = models.IntegerField(pgettext_lazy("Duration of the Event in Seconds", "Durations"), default=None,
                                    null=True)  # not for tasks
     reminders = models.ManyToManyField(Reminder, blank=True)
