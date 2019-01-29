@@ -206,23 +206,33 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         account_object.billing_address = billing_address_object
         account_object.shipping_address = shipping_address_object
         account_object.save()
+
+        assigned_to_ids = account_object.assigned_to.all().values_list('id', flat=True)
+
         account_object.assigned_to.clear()
         account_object.teams.clear()
+        all_members_list = []
+    
         if self.request.POST.getlist('assigned_to', []):
             account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
             current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to account.'
-                message = render_to_string('assigned_to/account_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'account': account_object
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.send()
+
+            assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
+            all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+
+            if len(all_members_list):
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to account.'
+                    message = render_to_string('assigned_to/account_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'account': account_object
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
         if self.request.POST.getlist('teams', []):
             account_object.teams.add(*self.request.POST.getlist('teams'))
         return redirect("accounts:list")
@@ -383,7 +393,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         attachment.save()
         return JsonResponse({
             "attachment_id": attachment.id,
-            "attachment": attachment.attachment,
+            "attachment": attachment.file_name,
+            "attachment_url": attachment.attachment.url,
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email
         })

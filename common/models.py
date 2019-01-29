@@ -127,6 +127,7 @@ class Attachments(models.Model):
     account = models.ForeignKey('accounts.Account', null=True, blank=True, related_name='account_attachment', on_delete=models.CASCADE)
     contact = models.ForeignKey('contacts.Contact', on_delete=models.CASCADE, related_name='contact_attachment', blank=True, null=True)
     opportunity = models.ForeignKey('opportunity.Opportunity',blank=True,null=True,on_delete=models.CASCADE,related_name='opportunity_attachment')
+    case = models.ForeignKey('cases.Case',blank=True,null=True,on_delete=models.CASCADE,related_name='case_attachment')
 
 
 def document_path(self, filename):

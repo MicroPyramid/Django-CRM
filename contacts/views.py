@@ -181,23 +181,31 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         contact_obj = form.save(commit=False)
+
+        assigned_to_ids = contact_obj.assigned_to.all().values_list('id', flat=True)
+
         contact_obj.assigned_to.clear()
         contact_obj.teams.clear()
+        all_members_list = []
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
             current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to contact.'
-                message = render_to_string('assigned_to/contact_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'contact': contact_obj
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.send()
+
+            assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
+            all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+            if len(all_members_list):
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to contact.'
+                    message = render_to_string('assigned_to/contact_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'contact': contact_obj
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
@@ -371,7 +379,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
         attachment.save()
         return JsonResponse({
             "attachment_id": attachment.id,
-            "attachment": attachment.attachment,
+            "attachment": attachment.file_name,
+            "attachment_url": attachment.attachment.url,
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email
         })

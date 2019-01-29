@@ -363,10 +363,11 @@ $("#attachment_form").submit(function (e) {
         $("#AttachmentError").html(data.error).show()
       alert("Attachment Saved")
       } else {
-        d = new Date(data.created_by);
         $("#attachment_div").prepend(
             "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
-              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>" +
+              "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn btn-danger' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
+              "<div class='stream-post-container' id='comment_name"+data.attachment_id+"'><pre><a href='"+data.attachment_url+"'>"+data.attachment+"</a></pre></div>"+
+              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+data.created_on+"</pre></div>" +
             "</li>"
         )
         $("#id_attachments").val("")
