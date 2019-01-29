@@ -8,8 +8,8 @@ from django.template.loader import render_to_string
 from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
 
 from cases.models import Case
-from cases.forms import CaseForm, CaseCommentForm
-from common.models import Team, User, Comment
+from cases.forms import CaseForm, CaseCommentForm, CaseAttachmentForm
+from common.models import Team, User, Comment, Attachments
 from accounts.models import Account
 from contacts.models import Contact
 from common.utils import PRIORITY_CHOICE, STATUS_CHOICE, CASE_TYPE
@@ -143,7 +143,8 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CaseDetailView, self).get_context_data(**kwargs)
-        context.update({"comments": context["case_record"].cases.all()})
+        context.update({"comments": context["case_record"].cases.all(), 
+            "attachments": context['case_record'].case_attachment.all()})
         return context
 
 
@@ -174,24 +175,30 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         case_obj = form.save()
+
+        assigned_to_ids = case_obj.assigned_to.all().values_list('id', flat=True)
         case_obj.assigned_to.clear()
         case_obj.teams.clear()
         case_obj.contacts.clear()
+        all_members_list = []
         if self.request.POST.getlist('assigned_to', []):
             case_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
             current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to case.'
-                message = render_to_string('assigned_to/cases_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'case': case_obj
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.send()
+            assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
+            all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+            if len(all_members_list):
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to case.'
+                    message = render_to_string('assigned_to/cases_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': self.request.scheme,
+                        'case': case_obj
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.send()
         if self.request.POST.getlist('teams', []):
             case_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
@@ -348,4 +355,52 @@ class DeleteCommentView(LoginRequiredMixin, View):
             return JsonResponse(data)
         else:
             data = {'error': "You don't have permission to delete this comment."}
+            return JsonResponse(data)
+
+
+class AddAttachmentView(LoginRequiredMixin, CreateView):
+    model = Attachments
+    form_class = CaseAttachmentForm
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        self.case = get_object_or_404(Case, id=request.POST.get('caseid'))
+        if (
+            request.user in self.case.assigned_to.all() or
+            request.user == self.case.created_by
+        ):
+            form = self.get_form()
+            if form.is_valid():
+                return self.form_valid(form)
+            else:
+                return self.form_invalid(form)
+        else:
+            data = {'error': "You don't have permission to add attachment for this case."}
+            return JsonResponse(data)
+
+    def form_valid(self, form):
+        attachment = form.save(commit=False)
+        attachment.created_by = self.request.user
+        attachment.file_name = attachment.attachment.name
+        attachment.case = self.case
+        attachment.save()
+        return JsonResponse({
+              "message": "Attachment Saved"
+        })
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form['attachment'].errors})
+
+
+class DeleteAttachmentsView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        if request.user == self.object.created_by:
+            self.object.delete()
+            data = {"acd": request.POST.get("attachment_id")}
+            return JsonResponse(data)
+        else:
+            data = {'error': "You don't have permission to delete this attachment."}
             return JsonResponse(data)

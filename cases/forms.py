@@ -1,6 +1,6 @@
 from django import forms
 from cases.models import Case
-from common.models import Comment
+from common.models import Comment, Attachments
 
 
 class CaseForm(forms.ModelForm):
@@ -42,4 +42,13 @@ class CaseCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
+
         fields = ('comment', 'case', 'commented_by', )
+
+
+class CaseAttachmentForm(forms.ModelForm):
+    attachment = forms.FileField(max_length=1001, required=True)
+
+    class Meta:
+        model = Attachments
+        fields = ('attachment', 'case')
