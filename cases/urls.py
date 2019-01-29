@@ -2,7 +2,7 @@ from django.urls import path
 from cases.views import (
     CasesListView, CreateCaseView, CaseDetailView, UpdateCaseView, RemoveCaseView,
     CloseCaseView, SelectContactsView, GetCasesView, AddCommentView,
-    UpdateCommentView, DeleteCommentView)
+    UpdateCommentView, DeleteCommentView, AddAttachmentView, DeleteAttachmentsView)
 
 app_name = 'cases'
 
@@ -20,4 +20,7 @@ urlpatterns = [
     path('comment/add/', AddCommentView.as_view(), name="add_comment"),
     path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
     path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
+
+    path('attachment/add/', AddAttachmentView.as_view(), name="add_attachment"),
+    path('attachment/remove/', DeleteAttachmentsView.as_view(), name="remove_attachment"),
 ]

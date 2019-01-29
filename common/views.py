@@ -241,7 +241,7 @@ class PasswordResetView(PasswordResetView):
 
 
 
-class DocumentCreateView(AdminRequiredMixin, CreateView):
+class DocumentCreateView(LoginRequiredMixin, CreateView):
     model = Document
     form_class = DocumentForm
     template_name = "doc_create.html"
@@ -274,7 +274,7 @@ class DocumentCreateView(AdminRequiredMixin, CreateView):
 
 
 
-class DocumentListView(AdminRequiredMixin, TemplateView):
+class DocumentListView(LoginRequiredMixin, TemplateView):
     model = Document
     context_object_name = "documents"
     template_name = "doc_list.html"
@@ -298,7 +298,7 @@ class DocumentListView(AdminRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class DocumentDeleteView(AdminRequiredMixin, DeleteView):
+class DocumentDeleteView(LoginRequiredMixin, DeleteView):
     model = Document
 
     def get(self, request, *args, **kwargs):
@@ -336,7 +336,7 @@ class UpdateDocumentView(LoginRequiredMixin, UpdateView):
         return context
 
 
-class DocumentDetailView(AdminRequiredMixin, DetailView):
+class DocumentDetailView(LoginRequiredMixin, DetailView):
     model = Document
     template_name = "doc_detail.html"
 

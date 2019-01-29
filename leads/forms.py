@@ -17,13 +17,19 @@ class LeadForm(forms.ModelForm):
         self.fields['teams'].required = False
         self.fields['phone'].required = True
         for key, value in self.fields.items():
-            value.widget.attrs['placeholder'] = value.label
+            if key == 'phone':
+                value.widget.attrs['placeholder'] = 'Enter phone number with country code'
+            else:
+                value.widget.attrs['placeholder'] = value.label
+
         self.fields['first_name'].widget.attrs.update({
             'placeholder': 'First Name'})
         self.fields['last_name'].widget.attrs.update({
             'placeholder': 'Last Name'})
         self.fields['account_name'].widget.attrs.update({
             'placeholder': 'Account Name'})
+        self.fields['phone'].widget.attrs.update({
+            'placeholder': '+91-123-456-7890'})
 
     class Meta:
         model = Lead
@@ -31,16 +37,6 @@ class LeadForm(forms.ModelForm):
                   'phone', 'email', 'status', 'source', 'website', 'address', 'description'
                   )
 
-    def clean_phone(self):
-        client_phone = self.cleaned_data.get('phone', None)
-        try:
-            if int(client_phone) and not client_phone.isalpha():
-                ph_length = str(client_phone)
-                if len(ph_length) < 10 or len(ph_length) > 13:
-                    raise forms.ValidationError('Phone number must be minimum 10 Digits and maximum of 13 Digits')
-        except (ValueError):
-            raise forms.ValidationError('Phone Number should contain only Numbers')
-        return client_phone
 
 
 class LeadCommentForm(forms.ModelForm):

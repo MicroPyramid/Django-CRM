@@ -17,25 +17,18 @@ class ContactForm(forms.ModelForm):
         self.fields['account'].queryset = contact_account
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
+
         for key, value in self.fields.items():
-            value.widget.attrs['placeholder'] = value.label
+            if key == 'phone':
+                value.widget.attrs['placeholder'] = "+91-123-456-7890"
+            else:
+                value.widget.attrs['placeholder'] = value.label
 
     class Meta:
         model = Contact
         fields = (
             'assigned_to', 'teams', 'first_name', 'last_name', 'account', 'email', 'phone', 'address', 'description'
         )
-
-    def clean_phone(self):
-        client_phone = self.cleaned_data.get('phone', None)
-        try:
-            if int(client_phone) and not client_phone.isalpha():
-                ph_length = str(client_phone)
-                if len(ph_length) < 10 or len(ph_length) > 13:
-                    raise forms.ValidationError('Phone number must be minimum 10 Digits and maximum of 13 Digits')
-        except (ValueError):
-            raise forms.ValidationError('Phone Number should contain only Numbers')
-        return client_phone
 
 
 
