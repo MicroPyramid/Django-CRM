@@ -31,7 +31,7 @@ setup(
     author='Micropyramid',
     author_email='hello@micropyramid.com',
     classifiers=[
-        'Development Status :: 2 - Beta',
+        'Development Status :: 4 - Beta',
         'Framework :: Django',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
