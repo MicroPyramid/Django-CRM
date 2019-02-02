@@ -22,7 +22,7 @@ $("#comment_form").submit(function (e) {
           "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
           "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
           "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
-          "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>"
+          "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>"
         );
         $("#id_comments").val("");
         alert("Comment Submitted");
