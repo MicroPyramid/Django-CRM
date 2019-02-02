@@ -1,0 +1,70 @@
+.mention-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mention-wrapper textarea { color: rgba(0, 0, 0, 0.1); }
+
+.mention-display {
+  color: rgba(0, 0, 0, 0.9);
+  position: absolute;
+  display: inline-block;
+  box-sizing: border-box;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  top: 0px;
+  left: 0px;
+  border-radius: 4px;
+  word-break: break-word;
+  -moz-appearance: textfield-multiline;
+  -webkit-appearance: textarea;
+  font: medium -moz-fixed;
+  font: -webkit-small-control;
+  border: 3px solid transparent;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.mention-options {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  color: rgba(0, 0, 0, 0.9);
+  width: 100%;
+  border: 3px solid transparent;
+  box-sizing: border-box;
+}
+
+.mention-options.show {
+  pointer-events: initial;
+  opacity: 1;
+  z-index: 9999;
+  border: 2px solid #ddd;
+  background: #ddd;
+}
+
+
+.mention-options .mention-option {
+  padding: 5px 10px;
+  background: #FFF;
+  position: relative;
+  cursor: pointer;
+  display: none;
+}
+
+.mention-options .mention-option:hover:after, .mention-options .mention-option.active:after {
+  content: '';
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.mention-options .mention-option.show { display: block; }

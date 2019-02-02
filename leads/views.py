@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -177,9 +178,18 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
             'form-INITIAL_FORMS': '0',
             'form-MAX_NUM_FORMS': '10',
         })
+
+        assigned_data = []
+        for each in context['lead_record'].assigned_to.all():
+            assigned_dict = {}
+            assigned_dict['id'] = each.id
+            assigned_dict['name'] =  each.email
+            assigned_data.append(assigned_dict)
+
         context.update({
             "attachments": attachments, "comments": comments, "status": LEAD_STATUS, "countries": COUNTRIES,
-            "reminder_form_set": reminder_form_set, "meetings": meetings, "calls": calls})
+            "reminder_form_set": reminder_form_set, "meetings": meetings, "calls": calls,
+            "assigned_data": json.dumps(assigned_data)})
         return context
 
 

@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -143,8 +144,18 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(OpportunityDetailView, self).get_context_data(**kwargs)
+
+        assigned_data = []
+        for each in context['opportunity_record'].assigned_to.all():
+            assigned_dict = {}
+            assigned_dict['id'] = each.id
+            assigned_dict['name'] =  each.email
+            assigned_data.append(assigned_dict)
+
         comments = context["opportunity_record"].opportunity_comments.all()
-        context.update({"comments": comments, 'attachments': context["opportunity_record"].opportunity_attachment.all()})
+        context.update({
+            "comments": comments, 'attachments': context["opportunity_record"].opportunity_attachment.all(),
+            "assigned_data": json.dumps(assigned_data)})
         return context
 
 

@@ -12,6 +12,8 @@
 </nav>
 <!-- breadcrumb ends here -->
 {% endblock breadcrumb %}
+
+
 {% block content %}
   <!-- ACCOUNTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
@@ -1833,6 +1835,7 @@
   <!-- ACCOUNTS VIEW ENDS -->
   {% endblock content %}
 {% block js_block %}
+
   <script type="text/javascript">
     $("#form_opp").submit(function(e) {
       e.preventDefault();
@@ -2022,6 +2025,16 @@
     });
   </script>
   <script type="text/javascript">
+
+  var assigned_to_list = "{{ assigned_data }}";
+  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
+         return {
+              l   : '<',
+              g   : '>',
+              quo : '"'
+          }[b];
+      }));
+
     /*Comment Add Js Start*/
   $("#comment_form").submit(function(e){
     e.preventDefault()
@@ -2164,14 +2177,13 @@ $("#attachment_form").submit(function (e) {
         )
 
         $("#AttachmentError").html("")
+        $("#id_attachments").val("")
+          alert("Attachment Saved")
       }
-      $("#id_attachments").val("")
-        alert("Attachment Saved")
     }
   })
 })
+</script>
+<script src="{% static 'js/mention.js' %}"></script>
 
-
-
-  </script>
 {% endblock js_block %}
