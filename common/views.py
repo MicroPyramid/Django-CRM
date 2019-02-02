@@ -360,3 +360,13 @@ def download_document(request, pk):
             response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
             return response
     raise Http404
+
+
+def change_user_status(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if user.is_active:
+        user.is_active = False
+    else:
+        user.is_active = True
+    user.save()
+    return HttpResponseRedirect('/users/list/')

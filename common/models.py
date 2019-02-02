@@ -37,6 +37,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __unicode__(self):
         return self.email
 
+    class Meta:
+        ordering = ['-is_active']
+
 
 class Address(models.Model):
     address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)

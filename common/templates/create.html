@@ -51,7 +51,7 @@
                 </div>
                 <span class="error" id="id_email">{{ errors.email }}</span>
               </div>
-              <div class="filter_col col-md-12" {% if request.user.role != 'ADMIN' and not request.user.is_superuser %}style="display:none;"{% endif %}>
+              <div class="filter_col col-md-12" {% if request.user.role != 'ADMIN' and not request.user.is_superuser or request.user.id == user_obj.id %}style="display:none;"{% endif %}>
                   <div class="form-group">
                     <label for="id_role">User Role{% if user_form.role.field.required %}<span class="error">*</span>{% endif %}</label>
                     {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
