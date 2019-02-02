@@ -27,22 +27,31 @@
           <div class="card-title">Filters</div>
           <form id="users_filter" action="" method="POST">
             <div class="row marl">
-              <div class="filter_col col-4">
+              <div class="filter_col col-3">
                 <div class="form-group">
                   <label for="exampleInputEmail1">User Name</label>
                   <input type="text" class="form-control" placeholder="Username" name="username" value="{{request.POST.username}}">
                 </div>
               </div> 
-              <div class="filter_col col-4">
+              <div class="filter_col col-3">
                 <div class="form-group">
                   <label for="exampleInputEmail1">First Name</label>
                   <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
                 </div>
               </div>
-              <div class="filter_col col-4">
+              <div class="filter_col col-3">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Email</label>
                   <input type="text" class="form-control" placeholder="Email" name="email" value="{{request.POST.email}}">
+                </div>
+              </div>
+              <div class="filter_col col-3">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Status</label>
+                  <select class="form-control" name="status">
+                    <option value="True" {% if request.POST.status == "True"%}selected{% endif %}>Active</option>
+                    <option value="False" {% if request.POST.status == "False"%}selected{% endif %}>InActive</option>
+                  </select>
                 </div>
               </div>
               <div class="filter_col text-center col-12">

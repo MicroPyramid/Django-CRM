@@ -128,6 +128,8 @@ class UsersListView(AdminRequiredMixin, TemplateView):
                 queryset = queryset.filter(username__icontains=request_post.get('username'))
             if request_post.get('email'):
                 queryset = queryset.filter(email__icontains=request_post.get('email'))
+            if request_post.get('status'):
+                queryset = queryset.filter(is_active=request_post.get('status'))
         return queryset
 
     def get_context_data(self, **kwargs):
