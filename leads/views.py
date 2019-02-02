@@ -254,7 +254,6 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
 
                 assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
                 all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
-                
                 if len(all_members_list):
                     for assigned_to_user in assigned_to_list:
                         user = get_object_or_404(User, pk=assigned_to_user)

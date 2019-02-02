@@ -2,7 +2,7 @@ from django.test import TestCase
 from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
-from common.models import Address, Comment
+from common.models import Address, Comment,Attachments
 from common.models import User
 
 
@@ -36,6 +36,10 @@ class CaseCreation(object):
         self.comment = Comment.objects.create(
             comment='testikd', case=self.case,
             commented_by=self.user
+        )
+        self.attachment = Attachments.objects.create(
+            attachment='image.png', case=self.case,
+            created_by=self.user,account=self.account
         )
 
 
@@ -94,6 +98,10 @@ class CaseRemoveTestCase(CaseCreation, TestCase):
         response = self.client.get('/cases/' + str(self.case.id) + '/remove/')
         self.assertEqual(response['location'], '/cases/list/')
 
+    def test_case_delete(self):
+        response = self.client.post('/cases/'+ str(self.case.id) + '/remove/', {'case_id':self.case.id})
+        self.assertEqual(response.status_code, 200)
+
 
 class CaseUpdateTestCase(CaseCreation, TestCase):
     def test_update_case_view(self):
@@ -150,3 +158,17 @@ class CaseFormTestCase(CaseCreation, TestCase):
     def test_comment_delete(self):
         response = self.client.post('/cases/comment/remove/', {'comment_id': self.comment.id})
         self.assertEqual(response.status_code, 200)
+
+class AttachmentTestCase(CaseCreation,TestCase):
+    def test_attachment_add(self):
+        response = self.client.post('/cases/attachment/add/', {'caseid': self.case.id})
+        self.assertEqual(response.status_code, 200)
+
+    def test_attachment_delete(self):
+        response = self.client.post('/cases/attachment/remove/', {'attachment_id': self.attachment.id})
+        self.assertEqual(response.status_code, 200)
+
+class SelectViewTestCase(CaseCreation,TestCase):
+    def test_select_contact(self):
+        response = self.client.get('/cases/select_contacts/')
+        self.assertEqual(response.status_code,200)

@@ -222,7 +222,6 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         account_object.assigned_to.clear()
         account_object.teams.clear()
         all_members_list = []
-    
         if self.request.POST.getlist('assigned_to', []):
             account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
