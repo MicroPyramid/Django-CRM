@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+
 {% block content %}
   <!-- CASE VIEW STARTS -->
     <div class="main_container" id="maincontainer">
@@ -118,17 +119,17 @@
                       <input type="hidden" value="{{case_record.id}}" name="caseid">
                   </form>
                   <ul class="list-group" id="attachment_div">
-                      {% for attachemnt in attachments %}
-                          <li class="list-group-item list-row" id="attachment{{attachemnt.id}}">
+                      {% for attachment in attachments %}
+                          <li class="list-group-item list-row" id="attachment{{attachment.id}}">
                               <div class="float-right right-container">
                                 <div class="list-row-buttons btn-group float-right">
-                                  <button  class="action btn btn-danger" onclick="remove_attachment({{attachemnt.id}})">Remove</button>
+                                  <button  class="action btn btn-danger" onclick="remove_attachment({{attachment.id}})">Remove</button>
                                 </div>
                               </div>
-                                <div class="stream-post-container" id="attachment_name{{attachemnt.id}}"><pre><a href="{{ attachemnt.attachment.url }}">{{ attachemnt.file_name }}</a></pre></div>
+                                <div class="stream-post-container" id="attachment_name{{attachment.id}}"><pre><a href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a></pre></div>
                               <div class="stream-container">
-                                <pre class="float-left">{{ attachemnt.created_by }}</pre>
-                                <pre class="float-right">{{ attachemnt.created_on }}</pre>
+                                <pre class="float-left">{{ attachment.created_by }}</pre>
+                                <pre class="float-right">{{ attachment.created_on }}</pre>
                               </div>
                           </li>
                       {% endfor %}
@@ -149,7 +150,7 @@
                       <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><div><i id="CommentError" style="display:none; color:red"></i></div>
                       </br>
                       <div class="buttons_row">
-                      <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                      <button class="btn btn-default save" id="comment_submit" type="submit">Submit</button>
                       </div>
                     </div>
                     <input type="hidden" value="{{case_record.id}}" name="caseid">
@@ -345,6 +346,17 @@
   <script src="{% static 'js/cases/view_case.js' %}"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   <script type="text/javascript">
+
+    var assigned_to_list = "{{ assigned_data }}";
+    assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
+         return {
+              l   : '<',
+              g   : '>',
+              quo : '"'
+          }[b];
+      }));
+
+
     $('#remove_case').click(function(e){
       var result = confirm("Are You Sure You Want to delete?");
       if (result==false) {
@@ -389,10 +401,9 @@ function remove_attachment(x) {
       "attachment_id": x
     }, function (data) {
       if (data.error) {
-        alert(data.error)
+        alert(data.errors)
       } else {
-        // $("#attachment" + data.aid).remove()
-        window.location.reload();
+        $("#attachment" + data.attachment_object).remove()
       }
     })
   }
@@ -410,16 +421,23 @@ $("#attachment_form").submit(function (e) {
     processData: false,
     success: function (data) {
       if (data.error) {
-        $("#AttachmentError").html(data.error).show()
+        $("#AttachmentError").html(data.errors).show()
       } else {
-          alert(data.message)
+          $("#attachment_div").prepend(
+            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+              "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn btn-danger' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
+              "<div class='stream-post-container' id='comment_name"+data.attachment_id+"'><pre><a href='"+data.attachment_url+"'>"+data.attachment+"</a></pre></div>"+
+              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+data.created_on+"</pre></div>" +
+            "</li>"
+          )
+          $("#AttachmentError").html("")
           $("#id_attachments").val("")
-          window.location.reload();
       }
     }
   })
 })
-   
 
-  </script>
+</script>
+<script src="{% static 'js/mention.js' %}"></script>
+
 {% endblock js_block %}

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
 <ol class="breadcrumb">
@@ -203,12 +204,22 @@
 <!-- CONTACTS VIEW ENDS -->
 {% endblock%}
 {% block js_block %}
-  <script type="text/javascript">
+<script type="text/javascript">
 
-  function resetForm() {
-    $('#CommentEditError').hide()
-    document.getElementById("CommentEditError").reset();
-    }
+var assigned_to_list = "{{ assigned_data }}";
+assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
+       return {
+            l   : '<',
+            g   : '>',
+            quo : '"'
+        }[b];
+    }));
+
+
+function resetForm() {
+  $('#CommentEditError').hide()
+  document.getElementById("CommentEditError").reset();
+  }
 
 $("#comment_form").submit(function (e) {
   e.preventDefault()
@@ -306,10 +317,8 @@ $("#attachment_form").submit(function (e) {
     contentType: false,
     processData: false,
     success: function (data) {
-        alert("Attachment Saved")
       if (data.error) {
         $("#AttachmentError").html(data.error).show()
-      alert("Attachment Saved")
       } else {
         $("#attachment_div").prepend(
             "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
@@ -348,4 +357,6 @@ function remove_attachment(x) {
     });
 
   </script>
+  <script src="{% static 'js/mention.js' %}"></script>
+
 {% endblock js_block %}

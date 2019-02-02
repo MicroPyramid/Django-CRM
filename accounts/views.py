@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -152,6 +153,14 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
             comment_permission = True
         else:
             comment_permission = False
+
+        assigned_data = []
+        for each in context['account_record'].assigned_to.all():
+            assigned_dict = {}
+            assigned_dict['id'] = each.id
+            assigned_dict['name'] =  each.email
+            assigned_data.append(assigned_dict)
+
         context.update({
             "comments": account_record.accounts_comments.all(),
             "attachments": account_record.account_attachment.all(),
@@ -168,6 +177,7 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
             "case_priority": PRIORITY_CHOICE,
             "case_status": STATUS_CHOICE,
             'comment_permission': comment_permission,
+            "assigned_data": json.dumps(assigned_data)
         })
         return context
 

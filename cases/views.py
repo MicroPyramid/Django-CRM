@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -143,8 +144,16 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CaseDetailView, self).get_context_data(**kwargs)
+        assigned_data = []
+        for each in context['case_record'].assigned_to.all():
+            assigned_dict = {}
+            assigned_dict['id'] = each.id
+            assigned_dict['name'] =  each.email
+            assigned_data.append(assigned_dict)
+
         context.update({"comments": context["case_record"].cases.all(), 
-            "attachments": context['case_record'].case_attachment.all()})
+            "attachments": context['case_record'].case_attachment.all(), 
+            "assigned_data": json.dumps(assigned_data)})
         return context
 
 
@@ -292,7 +301,8 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         self.case = get_object_or_404(Case, id=request.POST.get('caseid'))
         if (
             request.user in self.case.assigned_to.all() or
-            request.user == self.case.created_by
+            request.user == self.case.created_by or request.user.is_superuser or
+            request.user.role == 'admin'
         ):
             form = self.get_form()
             if form.is_valid():
@@ -323,7 +333,8 @@ class UpdateCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.comment_obj = get_object_or_404(Comment, id=request.POST.get("commentid"))
-        if request.user == self.comment_obj.commented_by:
+        if (request.user == self.comment_obj.commented_by or request.user.is_superuser or
+            request.user.role == 'admin'):
             form = CaseCommentForm(request.POST, instance=self.comment_obj)
             if form.is_valid():
                 return self.form_valid(form)
@@ -349,7 +360,8 @@ class DeleteCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Comment, id=request.POST.get("comment_id"))
-        if request.user == self.object.commented_by:
+        if (request.user == self.object.commented_by or request.user.is_superuser or
+            request.user.role == 'admin'):
             self.object.delete()
             data = {"cid": request.POST.get("comment_id")}
             return JsonResponse(data)
@@ -368,7 +380,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         self.case = get_object_or_404(Case, id=request.POST.get('caseid'))
         if (
             request.user in self.case.assigned_to.all() or
-            request.user == self.case.created_by
+            request.user == self.case.created_by or request.user.is_superuser or
+            request.user.role == 'admin'
         ):
             form = self.get_form()
             if form.is_valid():
@@ -376,7 +389,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             else:
                 return self.form_invalid(form)
         else:
-            data = {'error': "You don't have permission to add attachment for this case."}
+            data = {"error":True, "errors": "You don't have permission to add attachment for this case."}
             return JsonResponse(data)
 
     def form_valid(self, form):
@@ -385,22 +398,31 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         attachment.file_name = attachment.attachment.name
         attachment.case = self.case
         attachment.save()
+        # return JsonResponse({"error": False, "message": "Attachment Saved"
+        # })
         return JsonResponse({
-              "message": "Attachment Saved"
+            "attachment_id": attachment.id,
+            "attachment": attachment.file_name,
+            "attachment_url": attachment.attachment.url,
+            "created_on": attachment.created_on,
+            "created_by": attachment.created_by.email,
+            "message": "attachment Created",
+            "error": False
         })
 
     def form_invalid(self, form):
-        return JsonResponse({"error": form['attachment'].errors})
+        return JsonResponse({"error":True, "errors": form['attachment'].errors})
 
 
 class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
-        if request.user == self.object.created_by:
+        if (request.user == self.object.created_by or request.user.is_superuser or
+            request.user.role == 'admin'):
             self.object.delete()
-            data = {"acd": request.POST.get("attachment_id")}
+            data = {"attachment_object": request.POST.get("attachment_id"), "error": False}
             return JsonResponse(data)
         else:
-            data = {'error': "You don't have permission to delete this attachment."}
+            data = {"error":True, "errors": "You don't have permission to delete this attachment."}
             return JsonResponse(data)
