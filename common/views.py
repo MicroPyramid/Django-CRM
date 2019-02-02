@@ -153,6 +153,7 @@ class CreateUserView(AdminRequiredMixin, CreateView):
 
     def form_valid(self, form):
         user = form.save(commit=False)
+        print(form.errors)
         if form.cleaned_data.get("password"):
             user.set_password(form.cleaned_data.get("password"))
         user.save()
@@ -249,11 +250,9 @@ class DocumentCreateView(LoginRequiredMixin, CreateView):
     template_name = "doc_create.html"
 
     def form_valid(self, form):
-        print('heeee')
         doc = form.save(commit=False)
         doc.created_by = self.request.user
         doc.save()
-        print('doc saved')
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy('common:doc_list'), 'error': False}
             return JsonResponse(data)
@@ -263,7 +262,6 @@ class DocumentCreateView(LoginRequiredMixin, CreateView):
     def form_invalid(self, form):
         response = super(DocumentCreateView, self).form_invalid(form)
         if self.request.is_ajax():
-            print(form.errors, 'qeeee')
             return JsonResponse({'error': True, 'errors': form.errors})
         return response
 
