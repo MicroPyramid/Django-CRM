@@ -491,6 +491,7 @@ $color_2: #000;
               font-size: 0.9rem;
               border: none;
               padding:6px;
+              text-align: center;
             }
           }
         }
@@ -502,7 +503,6 @@ $color_2: #000;
               font-size: 0.9rem;
               font-weight: 500;
               padding:7px 5px;
-              text-align: left;
               @media(min-width: $large){
                 font-size:1rem;
               }
@@ -712,7 +712,7 @@ $color_2: #000;
   }
 }
 
-.error {
+.error, .errors {
   color: red;
 }
 
