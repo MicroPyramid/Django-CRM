@@ -53,6 +53,14 @@
                   </div>
                 </div>
                 {% endif %}
+                {% if account_record.status %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="acc_field_label" for="id_status" data-name="name">Status</label>
+                    <div class="account_field" id="account_status" data-name="name">{{ account_record.status }}</div>
+                  </div>
+                </div>
+                {% endif %}
                 {% if account_record.email %}
                 <div class="filter_col col-md-12">
                   <div class="form-group">

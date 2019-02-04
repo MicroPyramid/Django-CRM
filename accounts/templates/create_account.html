@@ -86,6 +86,14 @@
                   </div>
                 </div>
                 <br>
+                <div class="filter_col col-12">
+                  <div class="form-group">
+                    <label for="id_sattus">Status{% if account_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
+                    {{ account_form.status }}
+                    <span class="error">{{ account_form.status.errors }}</span>
+                  </div>
+                </div>
+                <br>
                 <div class="filter_col billing_block col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Billing Address</label>
@@ -124,6 +132,7 @@
                   <h6 style="color:white;">Copy Address</h6>
                 </div>
               </div>
+
             </div>
             <br clear="all">
           </div>
