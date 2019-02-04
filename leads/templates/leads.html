@@ -51,6 +51,17 @@
                   </select>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Tags</label>
+                  <select class="form-control" id="id_tag" name="tag" >
+                    <option value="">--Select Tags--</option>
+                    {% for tag in tags %}
+                    <option value="{{tag.id}}" {% if request.POST.tag %} {% ifequal tag.id request.POST.tag|add:"0" %}selected{% endifequal %}{% endif %} >{{ tag.name }} </option>
+                    {% endfor%}
+                  </select>
+                </div>
+              </div>
               <div class="filter_col text-center col-12">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
@@ -80,10 +91,11 @@
                 {% if lead_obj|length > 0 %}
                  <tr>
                     <th width="5%">ID</th>
-                    <th width="25%" >Name</th>
-                    <th width="15%" >Status</th>
-                    <th width="15%" >Assigned User</th>
-                    <th width="20%" >Created On</th>
+                    <th width="20%" >Name</th>
+                    <th width="5%" >Status</th>
+                    <th width="20%" >Assigned User</th>
+                    <th width="25%" >Tags</th>
+                    <th width="15%" >Created On</th>
                     <th width="10%" >Actions</th>
                   </tr>
                 {% endif %}
@@ -107,6 +119,17 @@
                           {% endfor %}
                         {% else %}
                           Not Assigned to Any
+                        {% endif %}
+                      {% endwith %}
+                    </td>
+                    <td style="display: block;">
+                      {% with tags=lead.tags.all %}
+                        {% if tags %}
+                          {% for tag in tags %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span><br>
+                          {% endfor %}
+                        {% else %}
+                          No Tags
                         {% endif %}
                       {% endwith %}
                     </td>

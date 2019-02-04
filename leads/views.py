@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View)
 
-from accounts.models import Account
+from accounts.models import Account, Tags
 from common.forms import BillingAddressForm
 from common.models import User, Comment, Team, Attachments
 from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
@@ -40,6 +40,8 @@ class LeadListView(LoginRequiredMixin, TemplateView):
                 queryset = queryset.filter(email__icontains=request_post.get('email'))
             if request_post.get('status'):
                 queryset = queryset.filter(status=request_post.get('status'))
+            if request_post.get('tag'):
+                queryset = queryset.filter(tags__in=request_post.get('tag'))
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -47,6 +49,7 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         context["lead_obj"] = self.get_queryset()
         context["status"] = LEAD_STATUS
         context["per_page"] = self.request.POST.get('per_page')
+        context['tags'] = Tags.objects.all()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -83,6 +86,16 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
         lead_obj.address = address_object
         lead_obj.created_by = self.request.user
         lead_obj.save()
+        if self.request.POST.get('tags', ''):
+                tags = self.request.POST.get("tags")
+                splitted_tags = tags.split(",")
+                for t in splitted_tags:
+                    tag = Tags.objects.filter(name=t)
+                    if tag:
+                        tag = tag[0]
+                    else:
+                        tag = Tags.objects.create(name=t)
+                    lead_obj.tags.add(tag)
         if self.request.POST.getlist('assigned_to', []):
             lead_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
@@ -105,9 +118,12 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                 created_by=self.request.user, name=lead_obj.account_name,
                 email=lead_obj.email, phone=lead_obj.phone,
                 description=self.request.POST.get('description'),
-                website=self.request.POST.get('website')
+                website=self.request.POST.get('website'),
             )
             account_object.billing_address = address_object
+            for tag in lead_obj.tags.all():
+                account_object.tags.add(tag)
+            account_object.tags.add(address_object)
             if self.request.POST.getlist('assigned_to', []):
                 account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
                 assigned_to_list = self.request.POST.getlist('assigned_to')
@@ -244,7 +260,18 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
         lead_obj.address = address_obj
         lead_obj.save()
         lead_obj.teams.clear()
+        lead_obj.tags.clear()
         all_members_list = []
+        if self.request.POST.get('tags', ''):
+                tags = self.request.POST.get("tags")
+                splitted_tags = tags.split(",")
+                for t in splitted_tags:
+                    tag = Tags.objects.filter(name=t)
+                    if tag:
+                        tag = tag[0]
+                    else:
+                        tag = Tags.objects.create(name=t)
+                    lead_obj.tags.add(tag)
         if self.request.POST.getlist('assigned_to', []):
             if self.request.POST.get('status') != "converted":
 
@@ -278,6 +305,8 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                 website=self.request.POST.get('website')
             )
             account_object.billing_address = address_obj
+            for tag in lead_obj.tags.all():
+                account_object.tags.add(tag)
             if self.request.POST.getlist('assigned_to', []):
                 account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
                 assigned_to_list = self.request.POST.getlist('assigned_to')

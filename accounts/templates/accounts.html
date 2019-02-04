@@ -50,6 +50,17 @@
                   </select>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Tags</label>
+                  <select class="form-control" id="id_tag" name="tag" >
+                    <option value="">--Select Tags--</option>
+                    {% for tag in tags %}
+                    <option value="{{tag.id}}" {% if request.POST.tag %} {% ifequal tag.id request.POST.tag|add:"0" %}selected{% endifequal %}{% endif %} >{{ tag.name }} </option>
+                    {% endfor%}
+                  </select>
+                </div>
+              </div>
               <div class="filter_col text-center col-12">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
@@ -76,10 +87,11 @@
             {% if accounts_list|length > 0 %}
               <tr>
                 <th width="5%">ID</th>
-                <th width="25%">Name</th>
+                <th width="20%">Name</th>
                 <th width="15%">City</th>
                 <th width="15%">State</th>
                 <th width="20%">Industry</th>
+                <th width="15%">Tags</th>
                 <th width="10%">Actions</th>
               </tr>
             {% endif %}
@@ -97,6 +109,17 @@
                 <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
                 <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
                 <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                <td style="display: block;">
+                  {% with tags=each_account.tags.all %}
+                    {% if tags %}
+                      {% for tag in tags %}
+                        <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                      {% endfor %}
+                    {% else %}
+                      No Tags
+                    {% endif %}
+                  {% endwith %}
+                </td>
                 <td class="actions">
                  {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
                   <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
