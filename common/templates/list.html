@@ -102,7 +102,7 @@
                   <tr class="text-center">
                     <td scope="row">{{ forloop.counter }}</td>
                     <td>{{ user.first_name }}</td>
-                    <td>{{ user.username }}</td>
+                    <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
                     <td>{{ user.email }}</td>
                     <td>{% if user.is_superuser %} ADMIN {% else %} {{user.role}} {% endif %}</td>
                     <td><a href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">

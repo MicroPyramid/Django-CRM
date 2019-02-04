@@ -1,0 +1,609 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block breadcrumb %}
+{% load thumbnail %}
+<nav aria-label="breadcrumb">
+   <ol class="breadcrumb">
+      <li  class="breadcrumb-item"><a href="{% url 'common:users_list' %}">Users</a></li>
+      <li class="active breadcrumb-item">{{user_obj.username}}</li>
+   </ol>
+</nav>
+<!-- breadcrumb ends here -->
+{% endblock breadcrumb %}
+{% block content %}
+<!-- ACCOUNTS VIEW STARTS -->
+<div class="main_container" id="maincontainer">
+   <div class="overview_form_block row marl justify-content-center">
+      <div class="col-md-8">
+         <div class="card">
+            <div class="card-body" id="datashow">
+               <div class="card-title">
+                  <h5>
+                     Overview
+                     <span class="float-right" style="margin-top: 0px">
+                        <div class="dropdown buttons_row">
+                           <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
+                           <span class="caret"></span></button>
+                           <ul class="dropdown-menu">
+                              <li><a href="{% url 'common:edit_user' user_obj.id %}" >Edit</a></li>
+                           </ul>
+                        </div>
+                     </span>
+                  </h5>
+               </div>
+               <div class="row marl">
+                  <div class="col-md-6">
+                     {% if user_obj.first_name %}
+                     <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group" >
+                           <label class="acc_field_label" for="id_name" data-name="name">First Name</label>
+                           <div class="account_field" id="account_name" data-name="name">{{ user_obj.first_name }}</div>
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if user_obj.last_name %}
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label class="acc_field_label" for="id_phone" data-name="name">Last Nmae</label>
+                           <div class="account_field" id="account_phone" data-name="name">{{ user_obj.last_name }}</div>
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if user_obj.email %}
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label class="acc_field_label" for="id_email" data-name="name">Email</label>
+                           <div class="account_field" id="account_email" data-name="name">{{ user_obj.email }}</div>
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if user_obj.username %}
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label class="acc_field_label" for="id_website" data-name="name">Username</label>
+                           <div class="account_field" id="account_website" data-name="name">{{ user_obj.username }}</div>
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if user_obj.role %}
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label class="acc_field_label" for="id_industry" data-name="name">Role</label>
+                           <div class="account_field" id ="account_industry" data-name="name">{{ user_obj.role }}</div>
+                        </div>
+                     </div>
+                     {% endif %}
+                  </div>
+                  <div class="col-md-6">
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_shipping_address" data-name="name">Profile pic</label>
+                            <div class="profile_pic" style="text-align: left;">
+                           {% if user_obj.profile_pic %}
+                            {% thumbnail request.user.profile_pic "125x125" as im %}
+                            <img src="{{ im.url }}">
+                            {% endthumbnail %}
+                          {% else %}
+                          <img src="https://cdn.dribbble.com/users/99875/screenshots/4353558/2018-03-01biker_site-2.gif" />
+                          {% endif %}
+                        </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <!-- CONTACTS LIST STARTS -->
+         <br>
+         <form method='GET' class="accountdetails_row">
+            <div class="table_container_row row marl no-gutters">
+               <div class="col-md-12">
+                  <div class="card">
+                     <div class="card-body">
+                        <div class="panel-heading-list card-title view-pad">
+                           Accounts
+                        </div>
+                        <div class="table-responsive">
+                           <table class="table table-bordered table-striped table-condensed">
+                              {% if accounts|length > 0 %}
+                              <thead>
+                                 <tr>
+                                    <th width="5%" style="text-align:center;">S.No</th>
+                                    <th width="25%" style="text-align:center;">Account Name</th>
+                                    <th width="20%" style="text-align:center;">Phone</th>
+                                    <th width="25%" style="text-align:center;">Email</th>
+                                 </tr>
+                              </thead>
+                              {% endif %}
+                              <tbody>
+                                 {% for account in accounts %}
+                                 <tr id="contacts_details{{account.id}}" class="text-center">
+                                    <td scope="row">{{ forloop.counter }}</td>
+                                    <td><a href="{% url 'accounts:view_account' account.id %}">{{ account.name }}</a></td>
+                                    <td>{{ account.phone }}</td>
+                                    <td>{{ account.email }}</td>
+                                 </tr>
+                                 {% endfor %}
+                              </tbody>
+                           </table>
+                        </div>
+                        {% ifequal accounts|length 0 %}
+                        <h6 class="text-center">No Account Records Found</h6>
+                        {% endifequal %}
+                     </div>
+                  </div>
+                  <br clear="all">
+               </div>
+            </div>
+         </form>
+         <form method='GET' class="accountdetails_row">
+            <div class="table_container_row row marl no-gutters">
+               <div class="col-md-12">
+                  <div class="card">
+                     <div class="card-body">
+                        <div class="panel-heading-list card-title view-pad">
+                           Contacts
+                        </div>
+                        <div class="table-responsive">
+                           <table class="table table-bordered table-striped table-condensed">
+                              {% if contacts|length > 0 %}
+                              <thead>
+                                 <tr>
+                                    <th width="5%" style="text-align:center;">S.No</th>
+                                    <th width="25%" style="text-align:center;">Contact Name</th>
+                                    <th width="20%" style="text-align:center;">Phone</th>
+                                    <th width="25%" style="text-align:center;">Email</th>
+                                 </tr>
+                              </thead>
+                              {% endif %}
+                              <tbody>
+                                 {% for contact in contacts %}
+                                 <tr id="contacts_details{{contact.id}}" class="text-center">
+                                    <td scope="row">{{ forloop.counter }}</td>
+                                    <td><a href="{% url 'contacts:view_contact' contact.id %}">{{ contact.first_name }} {{ contact.last_name }}</a></td>
+                                    <td>{{ contact.phone }}</td>
+                                    <td>{{ contact.email }}</td>
+                                 </tr>
+                                 {% endfor %}
+                              </tbody>
+                           </table>
+                        </div>
+                        {% ifequal contacts|length 0 %}
+                        <h6 class="text-center">No Contact Records Found</h6>
+                        {% endifequal %}
+                     </div>
+                  </div>
+                  <br clear="all">
+               </div>
+            </div>
+         </form>
+         <form method='GET' class="accountdetails_row">
+            <div class="table_container_row row marl no-gutters">
+               <div class="col-md-12">
+                  <div class="card">
+                     <div class="card-body">
+                        <div class="panel-heading-list card-title view-pad ">
+                           Opportunities
+                        </div>
+                        <div class="table-responsive">
+                           <table class="table table-bordered table-striped table-condensed">
+                              {% if opportunity_list|length > 0 %}
+                              <thead>
+                                 <tr>
+                                    <th width="5%" style="text-align:center;">S.No</th>
+                                    <th width="30%" style="text-align:center;">Name</th>
+                                    <th width="20%" style="text-align:center;">Stage</th>
+                                    <th width="20%" style="text-align:center;">Probability</th>
+                                 </tr>
+                              </thead>
+                              {% endif %}
+                              <tbody>
+                                 {% for opportunity in opportunity_list %}
+                                 <tr id="opp_details{{opportunity.id}}" class="text-center">
+                                    <td scope="row">{{ forloop.counter }}</td>
+                                    <td><a href="{% url 'opportunities:opp_view' opportunity.id %}">{{opportunity.name}}</a></td>
+                                    <td>{{opportunity.stage}}</td>
+                                    <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
+                                 </tr>
+                                 {% endfor %}
+                              </tbody>
+                           </table>
+                        </div>
+                        `{% ifequal contacts|length 0 %}
+                        <h6 class="text-center">No Opportunity Records Found</h6>
+                        {% endifequal %}
+                     </div>
+                  </div>
+                  <br clear="all">
+               </div>
+            </div>
+         </form>
+         <form method='GET' class="accountdetails_row">
+            <div class="table_container_row row marl no-gutters">
+               <div class="col-md-12">
+                  <div class="card">
+                     <div class="card-body">
+                        <div class="panel-heading-list card-title view-pad ">
+                           Cases
+                        </div>
+                        <div class="table-responsive">
+                           <table class="table table-bordered table-striped table-condensed">
+                              {% if cases|length > 0 %}
+                              <thead>
+                                 <tr>
+                                    <th width="5%" style="text-align:center;">S.No</th>
+                                    <th width="30%" style="text-align:center;">Name</th>
+                                    <th width="20%" style="text-align:center;">Status</th>
+                                    <th width="20%" style="text-align:center;">Priority</th>
+                                 </tr>
+                              </thead>
+                              {% endif %}
+                              <tbody>
+                                 {% for case in cases %}
+                                 <tr id="cases_details{{case.id}}" class="text-center">
+                                    <td scope="row">{{ forloop.counter }}</td>
+                                    <td><a href="{% url 'cases:view_case' case.id %}">{{ case.name }}</a></td>
+                                    <td>{{ case.status }}</td>
+                                    <td>{{ case.priority }}</td>
+                                 </tr>
+                                 {% endfor %}
+                              </tbody>
+                           </table>
+                        </div>
+                        {% ifequal cases|length 0 %}
+                        <h6 class="text-center">No Case Records Found</h6>
+                        {% endifequal %}
+                     </div>
+                  </div>
+                  <br clear="all">
+               </div>
+            </div>
+         </form>
+      </div>
+   </div>
+</div>
+<!-- ACCOUNTS VIEW ENDS -->
+{% endblock content %}
+{% block js_block %}
+<script type="text/javascript">
+   $("#form_opp").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = "{% url 'opportunities:save' %}"
+     $.post(url, $this.serialize(), function(response){
+       if(response.error){
+         $(".error").remove();
+         $.each(response.opportunity_errors,
+           function(field_name, error){
+             opp_error = '<span class="error" style="color:red;">' + error + '</span>'
+             $this.find("[name=" + field_name + "]").after(opp_error); })
+           }
+       else {
+         window.location = "";
+       }
+     })
+   });
+   
+   $(".form_opp_edit").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = $this.attr('action')
+     $.post(url , $this.serialize(), function(response){
+       if(response.error){
+         $(".error").remove();
+         $.each(response.opportunity_errors,
+           function(field_name, error){
+             opp_error = '<span class="error" style="color:red;">' + error + '</span>'
+             $this.find("[name=" + field_name + "]").after(opp_error); })
+           }
+       else {
+         window.location = "";
+       }
+     })
+   });
+   
+   $("body").on("click",".opp_remove",function(e){
+     href=$(this).attr("data-href")
+     id=$(this).attr("id")
+     $.get(href,{}, function(data){
+       window.location = "";
+     },'json');
+   });
+   
+   $("#form_con").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = "{% url 'contacts:add_contact' %}"
+     $.post(url, $this.serialize(), function(response){
+         if(response.error){
+           $(".error").remove();
+           $.each(response.contact_errors,
+             function(field_name, error){
+               contact_error = '<span class="error" style="font-size:14px;">' + error + '</span>'
+               $this.find("[name=" + field_name + "]").after(contact_error); })
+             }
+         else {
+           window.location = "";
+         }
+     })
+   });
+   
+   $(".form_con_edit").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = $this.attr('action')
+     $.post(url , $this.serialize(), function(response){
+         if(response.error){
+           $(".error").remove();
+           $.each(response.contact_errors,
+             function(field_name, error){
+               contact_error = '<span class="error" style="font-size:14px;">' + error + '</span>'
+               $this.find("[name=" + field_name + "]").after(contact_error); })
+             }
+         else {
+           window.location = "";
+         }
+     })
+   });
+   
+   $("body").on("click",".con_remove",function(e){
+     href=$(this).attr("data-href")
+     id=$(this).attr("id")
+     $.get(href,{}, function(data){
+       window.location = "";
+     },'json');
+   });
+   
+   $("#form_case").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = "{% url 'cases:add_case' %}"
+     $.post(url, $this.serialize(), function(response){
+       if(response.error){
+         $(".error").remove();
+         $.each(response.case_errors,
+           function(field_name, error){
+             case_error = '<span class="error" style="color:red;">' + error + '</span>'
+             if(field_name == "closed_on"){
+               $('.closed_on_error').html(case_error)
+             }
+             else{
+               $this.find("[name=" + field_name + "]").after(case_error);
+             }
+           }
+         )
+       }
+       else {
+         window.location = "";
+       }
+     })
+   });
+   
+   $(".form_case_edit").submit(function(e) {
+     e.preventDefault();
+     $this = $(this)
+     url = $this.attr('action')
+     $.post(url , $this.serialize(), function(response){
+         if(response.error){
+           $(".error").remove();
+           $.each(response.case_errors,
+             function(field_name, error){
+               case_error = '<span class="error" style="color:red;">' + error + '</span>'
+               if(field_name == "closed_on"){
+                 $('.closed_on_error').html(case_error)
+               }
+               else{
+                 $this.find("[name=" + field_name + "]").after(case_error); 
+               }
+             }
+           )
+         }
+         else {
+           window.location = "";
+         }
+     })
+   });
+   
+   $("body").on("click",".case_remove",function(e){
+     href=$(this).attr("data-href")
+     id=$(this).attr("id")
+       window.location = "";
+     $.get(href,{}, function(data){
+     },'json');
+   });
+   
+   $(function () {
+     $('#datetimepicker1, #datetimepicker2').datetimepicker({
+       'format': 'YYYY-MM-DD'
+     });
+   });
+   
+   $('#remove_account').click(function(e){
+     var result = confirm("Are You Sure You Want to delete?");
+     if (result==false) {
+       e.preventDefault()
+     }
+   });
+   
+   function oppForm() {
+     $('.error').hide()
+     document.getElementById("form_opp").reset();
+   }
+   
+   function conForm() {
+     $('.error').hide()
+     document.getElementById("form_con").reset();
+   }
+   
+   function caseForm() {
+     $('.error').hide()
+     document.getElementById("form_case").reset();
+   }
+   $('.remove_contact, .remove_opportunity, .remove_case').click(function(e){
+     e.preventDefault()
+     url = $(this).attr('href')
+     if (!confirm('Are you sure you want to delete?'))
+       return;
+       $.ajax({
+            type:"POST",
+            url: url,
+            success: function(){
+               location.reload(true);
+            }
+       });
+   });
+</script>
+<script type="text/javascript">
+   /*Comment Add Js Start*/
+   $("#comment_form").submit(function(e){
+   e.preventDefault()
+   var formData = new FormData($("#comment_form")[0]);
+   $.ajax({
+     url : "{% url 'accounts:add_comment' %}",
+     type : "POST",
+     data : formData,
+     cache: false,
+     contentType: false,
+     processData: false,
+     success: function(data){
+       if(data.error){
+         $("#CommentError").html(data.error).show()
+       } else {
+         d = new Date(data.commented_on);
+         $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.comment_id+"'>"+
+                              "<div class='float-right right-container'>"+
+                              "<div class='list-row-buttons btn-group float-right'>"+
+                              "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>"+
+                              "<ul class='dropdown-menu text-center'>"+
+                              "<li><a class='action' onclick='edit_comment("+data.comment_id+")'>Edit</a></li>"+
+                              "<li><a class='action' onclick='remove_comment("+data.comment_id+")''>Remove</a></li></ul></div></div>"+
+                              "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
+                              "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toGMTString()+"</pre></div>"
+                              )
+         $("#id_comments").val("")
+         alert("Comment Submitted")
+         $("#CommentError").html("")
+       }
+     }
+   });
+   });
+   
+   /*Comment Add Js Ends*/
+   
+   /*Comment Edit Js Start*/
+   
+   function edit_comment(x) {
+   $('#Comments_Accounts_Modal').modal('show');
+   comment = $("#comment_name" + x).text()
+   $("#commentid").val(x)
+   $("#id_editcomment").val(comment)
+   $("#edit_file_field").html($("#comment_file_div" + x).clone())
+   }
+   
+   $("#comment_edit").click(function (e) {
+   e.preventDefault()
+   var formData = new FormData($("#comment_edit_form")[0]);
+   $.ajax({
+     url: "{% url 'accounts:edit_comment' %}",
+     type: "POST",
+     data: formData,
+     cache: false,
+     contentType: false,
+     processData: false,
+     success: function (data) {
+       if (data.error) {
+         $("#CommentEditError").html(data.error).show()
+       } else {
+         console.log($("#comment_name" + data.comment_id))
+         $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
+         $('#Comments_Accounts_Modal').modal('hide');
+         $("#id_editcomment").val("")
+         $("#CommentEditError").html('')
+       }
+     }
+   })
+   })
+   
+   /*Comment Edit Js Ends*/
+   
+   function HideError(e) {
+   $("#CommentError").hide()
+   $("#CommentEditError").hide()
+   }
+   
+   /*Comment Remove Js Start*/
+   
+   function remove_comment(x) {
+   var con = confirm("Do you want to Delete it for Sure!?")
+   if (con == true) {
+     $.post('{% url "accounts:remove_comment" %}', {
+       "comment_id": x
+     }, function (data) {
+       if (data.error) {
+         alert(data.error)
+       } else {
+         $("#comment" + data.cid).remove()
+       }
+     })
+   }
+   }
+   
+   $(function () {
+    var date = new Date();
+    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+     $('#opp_closed_on, #case_closed_on, #opp_closedon, #case_closedon').datetimepicker({
+         'format': 'YYYY-MM-DD',
+         minDate: today
+     })
+   });
+   /*Comment Remove Js Ends*/
+   
+   function remove_attachment(x) {
+   const con = confirm("Do you want to Delete it for Sure!?");
+   if (con == true) {
+   $.post('{% url "leads:remove_attachment" %}', {
+     "attachment_id": x
+   }, function (data) {
+     if (data.error) {
+       alert(data.error)
+     } else {
+       $("#attachment" + data.aid).remove()
+     }
+   })
+   }
+   }
+   
+   $("#attachment_form").submit(function (e) {
+   e.preventDefault()
+   const formData = new FormData($("#attachment_form")[0]);
+   $.ajax({
+   url: "{% url 'accounts:add_attachment' %}",
+   type: "POST",
+   data: formData,
+   cache: false,
+   contentType: false,
+   processData: false,
+   success: function (data) {
+     if (data.error) {
+       $("#AttachmentError").html(data.error).show()
+     } else {
+       $("#attachment_div").prepend(
+           "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+             "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn btn-danger' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
+             "<div class='stream-post-container' id='comment_name"+data.attachment_id+"'><pre><a href='"+data.attachment_url+"'>"+data.attachment+"</a></pre></div>"+
+             "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+data.created_on+"</pre></div>" +
+           "</li>"
+       )
+   
+       $("#AttachmentError").html("")
+       $("#id_attachments").val("")
+         alert("Attachment Saved")
+     }
+   }
+   })
+   })
+   
+   
+   
+</script>
+{% endblock js_block %}

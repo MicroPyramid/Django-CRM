@@ -12,6 +12,10 @@ from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetE
 from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
 from django.conf import settings
+from opportunity.models import Opportunity
+from cases.models import Case
+from contacts.models import Contact
+from accounts.models import Account
 from django.template.loader import render_to_string
 
 
@@ -192,15 +196,17 @@ class CreateUserView(AdminRequiredMixin, CreateView):
 class UserDetailView(AdminRequiredMixin, DetailView):
     model = User
     context_object_name = "users"
-    template_name = "list.html"
+    template_name = "user_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super(UserDetailView, self).get_context_data(**kwargs)
-        users_list = User.objects.all()
+        user_obj = self.object
         context.update({
-            "users": users_list, "user_obj": self.object,
-            "active_users": users_list.filter(is_active=True),
-            "inactive_users": users_list.filter(is_active=False)
+            "user_obj": user_obj,
+            "opportunity_list": Opportunity.objects.filter(assigned_to=user_obj.id),
+            "contacts": Contact.objects.filter(assigned_to=user_obj.id),
+            "cases": Case.objects.filter(assigned_to=user_obj.id),
+            "accounts": Account.objects.filter(assigned_to=user_obj.id),
         })
         return context
 
