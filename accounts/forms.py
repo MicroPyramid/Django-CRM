@@ -12,6 +12,8 @@ class AccountForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
         self.fields['description'].widget.attrs.update({'rows': '8'})
         self.fields['assigned_to'].queryset = assigned_users
+        self.fields['status'].choices = [(each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE]
+        self.fields['status'].required = False
         self.fields['assigned_to'].required = False
         self.fields['teams'].required = False
         for key, value in self.fields.items():
@@ -23,7 +25,7 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
         fields = ('assigned_to', 'teams', 'name', 'phone', 'email', 'website', 'industry',
-                  'billing_address', 'shipping_address', 'description')
+                  'billing_address', 'shipping_address', 'description', 'status')
 
 
 class AccountCommentForm(forms.ModelForm):

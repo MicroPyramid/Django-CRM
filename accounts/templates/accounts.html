@@ -73,74 +73,150 @@
       </div>
     </div>
     <div class="col-md-9 col-lg-10 col-xl-10">
-       <div class="table_container_row row marl no-gutters">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-         <div class="panel-heading-list card-title">
-         List of Accounts
-          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Accounts {{accounts_list|length}}{% endif %}</span>
-        </div>
-          <div class="table-responsive">
-          <table class="table ">
-            <thead>
-            {% if accounts_list|length > 0 %}
-              <tr>
-                <th width="5%">ID</th>
-                <th width="20%">Name</th>
-                <th width="15%">City</th>
-                <th width="15%">State</th>
-                <th width="20%">Industry</th>
-                <th width="15%">Tags</th>
-                <th width="10%">Actions</th>
-              </tr>
-            {% endif %}
-            </thead>
-            <tbody>
-              {% if per_page %}
-                {% paginate per_page accounts_list %}
-              {% else%}
-                {% paginate 10 accounts_list %}
-              {% endif %}
-              {% for each_account in accounts_list %}
-              <tr id="account_details{{each_account.id}}" class="text-center">
-                <td scope="row">{{ forloop.counter }}</td>
-                <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
-                <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
-                <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
-                <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
-                <td style="display: block;">
-                  {% with tags=each_account.tags.all %}
-                    {% if tags %}
-                      {% for tag in tags %}
-                        <span class="text-left" id="list_tag">{{ tag.name }}</span>
-                      {% endfor %}
-                    {% else %}
-                      No Tags
-                    {% endif %}
-                  {% endwith %}
-                </td>
-                <td class="actions">
-                 {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
-                  <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <div class="table_container_row row marl no-gutters">
+        <div class="col-md-12">
+          <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open" aria-selected="true">Open</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Close</a>
+            </li>
+          </ul>
+          <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title">
+                   List of Open Accounts
+                    <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Open Accounts {{open_accounts|length}}{% endif %}</span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table ">
+                      <thead>
+                      {% if open_accounts|length > 0 %}
+                        <tr>
+                          <th width="5%">ID</th>
+                          <th width="25%">Name</th>
+                          <th width="15%">City</th>
+                          <th width="15%">State</th>
+                          <th width="20%">Industry</th>
+                          <th width="10%">Tags</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                      {% endif %}
+                      </thead>
+                      <tbody>
+                        {% if per_page %}
+                          {% paginate per_page open_accounts %}
+                        {% else%}
+                          {% paginate 10 open_accounts %}
+                        {% endif %}
+                        {% for each_account in open_accounts %}
+                        <tr id="account_details{{each_account.id}}" class="text-center">
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
+                          <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                          <td style="display: block;">
+                            {% with tags=each_account.tags.all %}
+                              {% if tags %}
+                                {% for tag in tags %}
+                                  <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                                {% endfor %}
+                              {% else %}
+                                No Tags
+                              {% endif %}
+                            {% endwith %}
+                          </td>
+                          <td class="actions">
+                           {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                            <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {% ifequal open_accounts|length 0 %}
+                    <h6 class="text-center">No Acccount Records Found</h6>
+                  {% endifequal %}
+                  <div class="text-center row marl">
+                    {% show_pages %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="close" role="tabpanel" aria-labelledby="close">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title">
+                   List of Closed Accounts
+                    <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Closed Accounts {{close_accounts|length}}{% endif %}</span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table">
+                      <thead>
+                      {% if close_accounts|length > 0 %}
+                        <tr>
+                          <th width="5%">ID</th>
+                          <th width="25%">Name</th>
+                          <th width="15%">City</th>
+                          <th width="15%">State</th>
+                          <th width="20%">Industry</th>
+                          <th width="10%">Tags</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                      {% endif %}
+                      </thead>
+                      <tbody>
+                        {% if per_page %}
+                          {% paginate per_page close_accounts %}
+                        {% else%}
+                          {% paginate 10 close_accounts %}
+                        {% endif %}
+                        {% for each_account in close_accounts %}
+                        <tr id="account_details{{each_account.id}}" class="text-center">
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
+                          <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                          <td style="display: block;">
+                            {% with tags=each_account.tags.all %}
+                              {% if tags %}
+                                {% for tag in tags %}
+                                  <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                                {% endfor %}
+                              {% else %}
+                                No Tags
+                              {% endif %}
+                            {% endwith %}
+                          </td>
+                          <td class="actions">
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                            <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {% ifequal close_accounts|length 0 %}
+                    <h6 class="text-center">No Closed Acccount Records Found</h6>
+                  {% endifequal %}
+                  <div class="text-center row marl">
+                    {% show_pages %}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          {% ifequal accounts_list|length 0 %}
-            <h6 class="text-center">No Acccount Records Found</h6>
-          {% endifequal %}
-          <div class="text-center row marl">
-            {% show_pages %}
-          </div>
+          <br clear="all">
         </div>
-      </div>
-      <br clear="all">
-    </div>
-  </div>
+     </div>
     </div>
   </div>
   <!-- filter_row ends here -->

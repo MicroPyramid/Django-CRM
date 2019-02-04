@@ -19,6 +19,12 @@ class Tags(models.Model):
 
 
 class Account(models.Model):
+
+    ACCOUNT_STATUS_CHOICE = (
+        ("open", "Open"),
+        ('close', 'Close')
+    )
+
     name = models.CharField(pgettext_lazy("Name of Account", "Name"), max_length=64)
     email = models.EmailField()
     phone = PhoneNumberField(null=True)
@@ -33,6 +39,7 @@ class Account(models.Model):
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
+    status = models.CharField(choices=ACCOUNT_STATUS_CHOICE, max_length=64, default='open')
 
     def __str__(self):
         return self.name

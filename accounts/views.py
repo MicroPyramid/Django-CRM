@@ -40,7 +40,11 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(AccountsListView, self).get_context_data(**kwargs)
+        open_accounts = self.get_queryset().filter(status='open')
+        close_accounts = self.get_queryset().filter(status='close')
         context["accounts_list"] = self.get_queryset()
+        context['open_accounts'] = open_accounts
+        context['close_accounts'] = close_accounts
         context["industries"] = INDCHOICES
         context["per_page"] = self.request.POST.get('per_page')
         context['tags'] = Tags.objects.all()
@@ -190,7 +194,7 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
             "case_priority": PRIORITY_CHOICE,
             "case_status": STATUS_CHOICE,
             'comment_permission': comment_permission,
-            "assigned_data": json.dumps(assigned_data)
+            "assigned_data": json.dumps(assigned_data),
         })
         return context
 
