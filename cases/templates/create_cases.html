@@ -79,7 +79,7 @@
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="id_account">Account{% if case_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ case_form.account }}
+                    <input type="text" name="account" class="form-control" readonly="">
                     <span class="error">{{case_form.account.errors}}</span>
                   </div>
                 </div>

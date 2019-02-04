@@ -190,22 +190,17 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
     def form_valid(self, form):
+        assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
+
         contact_obj = form.save(commit=False)
-
-        assigned_to_ids = contact_obj.assigned_to.all().values_list('id', flat=True)
-
-        contact_obj.assigned_to.clear()
         contact_obj.teams.clear()
         all_members_list = []
         if self.request.POST.getlist('assigned_to', []):
-            contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
-            assigned_to_list = self.request.POST.getlist('assigned_to')
             current_site = get_current_site(self.request)
-
             assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
             all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
             if len(all_members_list):
-                for assigned_to_user in assigned_to_list:
+                for assigned_to_user in all_members_list:
                     user = get_object_or_404(User, pk=assigned_to_user)
                     mail_subject = 'Assigned to contact.'
                     message = render_to_string('assigned_to/contact_assigned.html', {
@@ -216,6 +211,10 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
                     email.send()
+
+            contact_obj.assigned_to.clear()
+            contact_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.is_ajax():
@@ -283,7 +282,8 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         self.contact = get_object_or_404(Contact, id=request.POST.get('contactid'))
         if (
             request.user in self.contact.assigned_to.all() or
-            request.user == self.contact.created_by
+            request.user == self.contact.created_by or request.user.is_superuser or
+            request.user.role == 'ADMIN'
         ):
             form = self.get_form()
             if form.is_valid():
@@ -370,7 +370,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
         self.contact = get_object_or_404(Contact, id=request.POST.get('contactid'))
         if (
                 request.user in self.contact.assigned_to.all() or
-                request.user == self.contact.created_by
+                request.user == self.contact.created_by or request.user.is_superuser or
+                request.user.role == 'ADMIN'
         ):
             form = self.get_form()
             if form.is_valid():
@@ -403,7 +404,8 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
-        if request.user == self.object.created_by:
+        if (request.user == self.object.created_by or request.user.is_superuser or
+            request.user.role == 'ADMIN'):
             self.object.delete()
             data = {"aid": request.POST.get("attachment_id")}
             return JsonResponse(data)

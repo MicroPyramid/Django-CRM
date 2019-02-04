@@ -1,5 +1,6 @@
 import os
 from django.contrib.auth import logout, authenticate, login
+from django.core.mail import EmailMessage
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404
@@ -11,6 +12,7 @@ from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetE
 from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
 from django.conf import settings
+from django.template.loader import render_to_string
 
 
 def handler404(request, exception):
@@ -157,6 +159,16 @@ class CreateUserView(AdminRequiredMixin, CreateView):
         if form.cleaned_data.get("password"):
             user.set_password(form.cleaned_data.get("password"))
         user.save()
+
+        mail_subject = 'Created account in CRM'
+        message = render_to_string('new_user.html', {
+            'user': user,
+            'created_by':self.request.user
+
+        })
+        email = EmailMessage(mail_subject, message, to=[user.email])
+        email.send()
+
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy('common:users_list'), 'error': False}
             return JsonResponse(data)

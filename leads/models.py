@@ -6,6 +6,7 @@ from accounts.models import Account
 from common.models import User, Address, Team
 from common.utils import LEAD_STATUS, LEAD_SOURCE
 from phonenumber_field.modelfields import PhoneNumberField
+from accounts.models import Tags
 
 
 class Lead(models.Model):
@@ -34,6 +35,7 @@ class Lead(models.Model):
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     enquery_type = models.CharField(max_length=255, blank=True, null=True)
+    tags = models.ManyToManyField(Tags, blank=True)
 
     class Meta:
         ordering =['-created_on']
