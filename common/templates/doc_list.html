@@ -33,6 +33,17 @@
                   <input type="text" class="form-control" placeholder="Document Title" name="doc_name" {% if request.POST.doc_name %} value="{{request.POST.doc_name}}" {%endif%}/>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Status</label>
+                  <select class="form-control" id="id_status" name="status">
+                    <option value="">--Status--</option>
+                    {% for each_status in status_choices %}
+                    <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                    {% endfor%}
+                  </select>
+                </div>
+              </div>     
               <div class="filter_col text-center col-12">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
@@ -61,6 +72,7 @@
                 <th>S.No</th>
                 <th>Title</th>
                 <th>Created By</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             {% endif %}
@@ -76,6 +88,7 @@
                 <td scope="row">{{ forloop.counter }}</td>
                 <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
                 <td>{{document.created_by}}</td>
+                <td>{{document.status}}</td>
                 <td class="actions">
                   <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
                   <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>

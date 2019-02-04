@@ -21,7 +21,15 @@
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_title" data-name="title">Title</label>
-                    <div class="contact_field" id="contact_name" data-name="name">{{ doc_obj.title }} </div>
+                    <div class="contact_field" id="doc_title" data-name="name">{{ doc_obj.title }} </div>
+                  </div>
+                </div>
+                {% endif %}
+                {% if doc_obj.status %}
+                <div class="filter_col col-md-12">
+                  <div class="form-group">
+                    <label class="contact_field_label" for="id_status" data-name="status">Status</label>
+                    <div class="contact_field" id="doc_status" data-name="status">{{ doc_obj.status }} </div>
                   </div>
                 </div>
                 {% endif %}
