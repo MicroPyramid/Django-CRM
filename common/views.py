@@ -303,11 +303,14 @@ class DocumentListView(LoginRequiredMixin, TemplateView):
         if request_post:
             if request_post.get('doc_name'):
                 queryset = queryset.filter(title__icontains=request_post.get('doc_name'))
+            if request_post.get('status'):
+                queryset = queryset.filter(status=request_post.get('status'))
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super(DocumentListView, self).get_context_data(**kwargs)
         context["documents"] = self.get_queryset()
+        context["status_choices"] = Document.DOCUMENT_STATUS_CHOICE
         context["per_page"] = self.request.POST.get('per_page')
         return context
 

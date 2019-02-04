@@ -138,10 +138,17 @@ def document_path(self, filename):
     return "%s/%s/%s" % ("docs", hash_, filename)
 
 class Document(models.Model):
+
+    DOCUMENT_STATUS_CHOICE = (
+        ("active", "active"),
+        ('inactive', 'inactive')
+    )
+
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
     created_by = models.ForeignKey(User, related_name='document_uploaded', on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
 
     def is_document_file_image(self, ext):
         image_ext_list = ['bmp', 'dds', 'gif', 'jpg', 'jpeg', 'png', 'psd', 'pspimage',

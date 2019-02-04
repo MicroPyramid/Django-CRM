@@ -147,6 +147,15 @@ class PasswordResetEmailForm(PasswordResetForm):
 
 class DocumentForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super(DocumentForm, self).__init__(*args, **kwargs)
+
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+
+        self.fields['status'].choices = [(each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
+        self.fields['status'].required = False
+
     class Meta:
         model = Document
-        fields = ['title', 'document_file']
+        fields = ['title', 'document_file', 'status']
