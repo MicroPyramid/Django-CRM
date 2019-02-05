@@ -3,40 +3,39 @@
 {% load paginate %}
 {% block content %}
   <!-- main_container starts here -->
-  <div class="main_container">
-    <!-- heading_create starts here -->
-    <div class="row marl heading_create">
-      <div class="heading col-md-12">
-        <div class="no-gutters row">
-        <div class="col-md-6">
-        </div>
-        <div class="col-md-6">
-          <div class="create_new text-right">
-            <a href="{% url 'common:create_user'%}"><i class="fa fa-plus"></i> Add New User</a>
-          </div>
-        </div>
-        </div>
+  <div class="main_container">   
+    <!-- filter_row starts here -->
+    <div class="row marl">
+      <div class="col-lg-12 text-right">
+         <span class="d-inline"><a href="{% url 'common:create_user'%}" class="btn primary_btn"><i class="fa fa-plus"></i> Add New User</a></span>
       </div>
     </div>
-    <!-- heading_create ends here -->
-    <!-- filter_row starts here -->
-    <div class="filter_row row marl">
+    <div class="filter_row list_filter_row row marl">
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
           <div class="card-title">Filters</div>
           <form id="users_filter" action="" method="POST">
             <div class="row marl">
-              <div class="filter_col col-3">
+              <div class="filter_col col-2">
                 <div class="form-group">
                   <label for="exampleInputEmail1">User Name</label>
                   <input type="text" class="form-control" placeholder="Username" name="username" value="{{request.POST.username}}">
                 </div>
               </div> 
-              <div class="filter_col col-3">
+              <div class="filter_col col-2">
                 <div class="form-group">
                   <label for="exampleInputEmail1">First Name</label>
                   <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+                </div>
+              </div>
+              <div class="filter_col col-2">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Status</label>
+                  <select class="form-control" name="status">
+                    <option value="True" {% if request.POST.status == "True"%}selected{% endif %}>Active</option>
+                    <option value="False" {% if request.POST.status == "False"%}selected{% endif %}>InActive</option>
+                  </select>
                 </div>
               </div>
               <div class="filter_col col-3">
@@ -46,15 +45,6 @@
                 </div>
               </div>
               <div class="filter_col col-3">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Status</label>
-                  <select class="form-control" name="status">
-                    <option value="True" {% if request.POST.status == "True"%}selected{% endif %}>Active</option>
-                    <option value="False" {% if request.POST.status == "False"%}selected{% endif %}>InActive</option>
-                  </select>
-                </div>
-              </div>
-              <div class="filter_col text-center col-12">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
                   <a href="{% url 'common:users_list' %}" class="btn btn-default clear">Clear</a>
@@ -72,23 +62,25 @@
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
-            <div class="card-title list">
-              List of Users
-              <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Users {{ users|length }}{% endif %}</span>
+            <div class="card-title list text-right">
+              <span class="float-left">Users - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
+             
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
             </div>
             <div class="table-responsive ">
               <table class="table table-bordered table-striped table-condensed">
                 <thead>
                   {% if users|length > 0 %}
-
                     <tr>
-                      <th width="5%" style="text-align:center;">S.No</th>
-                      <th width="20%" style="text-align:center;">First Name</th>
-                      <th width="20%" style="text-align:center;">Username</th>
-                      <th width="20%" style="text-align:center;">Email Address</th>
-                      <th width="8%" style="text-align:center;">User Role</th>
-                      <th width="15%" style="text-align:center;">Status</th>
-                      <th width="20%" style="text-align:center;">Actions</th>
+                      <th width="5%">S.No</th>
+                      <th width="20%">First Name</th>
+                      <th width="20%">Username</th>
+                      <th width="20%">Email Address</th>
+                      <th width="8%">User Role</th>
+                      <th width="15%">Status</th>
+                      <th width="20%">Actions</th>
                     </tr>
                   {% endif %}
                 </thead>
@@ -104,7 +96,8 @@
                     <td>{{ user.first_name }}</td>
                     <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
                     <td>{{ user.email }}</td>
-                    <td>{% if user.is_superuser %} ADMIN {% else %} {{user.role}} {% endif %}</td>
+
+                    <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}</td>
                     <td><a href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
                       {% if user.is_active == True %}
                         <i class="fa fa-toggle-on"></i> Active
@@ -116,9 +109,9 @@
                     <td class="actions">
                       <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
                       {% if user.email != admin_email  or request.user.email == admin_email %}
-                      <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i>Edit</a>
+                      <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
                       {% endif %}
-                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -140,6 +133,16 @@
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
+
+
+  $(document).ready(function(){    
+    $(".filter_toggle").click(function(){    
+        $(".list_filter_row").toggle();    
+    });    
+  });    
+
+
+
   $('.trash').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')

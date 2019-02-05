@@ -30,6 +30,8 @@ class LeadForm(forms.ModelForm):
             'placeholder': 'Account Name'})
         self.fields['phone'].widget.attrs.update({
             'placeholder': '+91-123-456-7890'})
+        self.fields['description'].widget.attrs.update({
+            'rows': '6'})
 
     class Meta:
         model = Lead

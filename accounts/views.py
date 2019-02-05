@@ -15,6 +15,7 @@ from contacts.models import Contact
 from opportunity.models import Opportunity, STAGES, SOURCES
 from cases.models import Case
 from common.forms import BillingAddressForm, ShippingAddressForm
+from django.urls import reverse
 
 
 class AccountsListView(LoginRequiredMixin, TemplateView):
@@ -432,6 +433,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             "attachment_id": attachment.id,
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
+            "download_url": reverse('common:download_attachment', kwargs={'pk':attachment.id}),
+            "attachment_display": attachment.get_file_type_display(),
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email
         })

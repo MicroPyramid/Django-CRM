@@ -24,5 +24,4 @@ class Contact(models.Model):
         return self.first_name
 
     class Meta:
-        unique_together = (("email", ),)
         ordering = ['-created_on']

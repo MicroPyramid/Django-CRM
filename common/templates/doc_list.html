@@ -5,35 +5,27 @@
 <!-- main_container starts here -->
 <div class="main_container">
   <!-- heading_create starts here -->
-  <div class="row marl heading_create">
-    <div class="heading col-md-12">
-     <div class="no-gutters row">
-      <div class="col-md-6">
-      </div>
-      <div class="col-md-6">
-        <div class="create_new text-right">
-          <a href="{% url 'common:create_doc' %}"><i class="fa fa-plus"></i> Add New Document</a>
-        </div>
-      </div>
-      </div>
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn" href="{% url 'common:create_doc' %}"><i class="fa fa-plus"></i> Add New Document</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
-  <div class="filter_row row marl">
-    <div class="col-md-3 col-lg-2 col-xl-2">
+
+<div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
       <div class="card">
-        <form id="docs_filter" method="POST" action="">
+        <div class="card-body">
+           <form id="docs_filter" method="POST" action="">
           <div class="card-body">
             <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-4">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Title</label>
                   <input type="text" class="form-control" placeholder="Document Title" name="doc_name" {% if request.POST.doc_name %} value="{{request.POST.doc_name}}" {%endif%}/>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-4">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Status</label>
                   <select class="form-control" id="id_status" name="status">
@@ -44,7 +36,7 @@
                   </select>
                 </div>
               </div>     
-              <div class="filter_col text-center col-12">
+              <div class="filter_col col-3">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
                   <a href="{% url 'common:doc_list' %}" class="btn btn-default clear">Clear</a>
@@ -53,16 +45,21 @@
             </div>
           </div>
         </form>
+        </div>
       </div>
     </div>
-    <div class="col-md-9 col-lg-10 col-xl-10">
-       <div class="table_container_row row marl no-gutters">
+  </div>
+  <!-- heading_create ends here -->
+   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-         <div class="panel-heading-list card-title">
-         List of Documents
-          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Documents {{documents|length}}{% endif %}</span>
+         <div class="panel-heading-list card-title text-right">
+          <span class="total_count float-left">Documents :{% if show_pageitems %} {% show_pageitems %}{% else %}Total Documents {{documents|length}}{% endif %}</span>
+            <span class="filter_toggle ">
+            <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+            </span>
+         
         </div>
           <div class="table-responsive">
           <table class="table ">
@@ -109,9 +106,6 @@
       <br clear="all">
     </div>
   </div>
-    </div>
-  </div>
-  <!-- filter_row ends here -->
   <!-- accounts list start -->
  
   <!-- accounts list end -->
@@ -120,6 +114,13 @@
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
+
+  $(document).ready(function(){ 
+    $(".filter_toggle").click(function(){ 
+      $(".list_filter_row").toggle(); 
+      }); 
+  });
+  
   $('.remove_document').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -128,6 +129,11 @@
     window.location = $(this).attr('href')
   });
 
+$(document).ready(function(){    
+    $(".filter_toggle").click(function(){    
+        $(".list_filter_row").toggle();    
+    });    
+  });  
   $(".reset").click(function(e){
     window.location = "{% url 'common:doc_list'%}"
   });

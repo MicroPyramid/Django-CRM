@@ -15,6 +15,7 @@ from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
 from contacts.forms import ContactForm, ContactCommentForm, ContactAttachmentForm
+from django.urls import reverse
 
 
 class ContactsListView(LoginRequiredMixin, TemplateView):
@@ -102,6 +103,9 @@ class CreateContactView(LoginRequiredMixin, CreateView):
             return JsonResponse({'error': False})
         if self.request.POST.get("savenewform"):
             return redirect("contacts:add_contact")
+        elif self.request.POST.get('from_account'):
+            from_account = self.request.POST.get('from_account')
+            return redirect("accounts:view_account", pk=from_account)
         else:
             return redirect('contacts:list')
 
@@ -217,6 +221,10 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
 
         if self.request.POST.getlist('teams', []):
             contact_obj.teams.add(*self.request.POST.getlist('teams'))
+
+        if self.request.POST.get('from_account'):
+            from_account = self.request.POST.get('from_account')
+            return redirect("accounts:view_account", pk=from_account)
         if self.request.is_ajax():
             return JsonResponse({'error': False})
         return redirect("contacts:list")
@@ -269,7 +277,11 @@ class RemoveContactView(LoginRequiredMixin, View):
         if self.request.is_ajax():
             return JsonResponse({'error': False})
         else:
-            return redirect("contacts:list")
+            if request.GET.get('view_account'):
+                account = request.GET.get('view_account')
+                return redirect("accounts:view_account", pk=account)
+            else:
+                return redirect("contacts:list")
 
 
 class AddCommentView(LoginRequiredMixin, CreateView):
@@ -393,6 +405,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
             "created_on": attachment.created_on,
+            "download_url": reverse('common:download_attachment', kwargs={'pk':attachment.id}),
+            "attachment_display": attachment.get_file_type_display(),
             "created_by": attachment.created_by.email
         })
 

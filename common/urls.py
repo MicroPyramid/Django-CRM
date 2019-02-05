@@ -5,7 +5,7 @@ from common.views import (
     HomeView, LoginView, ForgotPasswordView, LogoutView, ChangePasswordView, ProfileView,
     UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView, PasswordResetView,
     DocumentListView, DocumentCreateView, UpdateDocumentView, DocumentDetailView, DocumentDeleteView, 
-    download_document, change_user_status)
+    download_document, change_user_status, download_attachment)
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -44,6 +44,9 @@ urlpatterns = [
 
     # download
     path('documents/<int:pk>/download/', download_document, name='download_document'),
+
+    # download_attachment
+     path('attachments/<int:pk>/download/', download_attachment, name='download_attachment'),
 
     path('user/status/<int:pk>/', change_user_status, name='change_user_status'),
 

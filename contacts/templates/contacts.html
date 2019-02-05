@@ -5,80 +5,74 @@
 <!-- main_container starts here -->
 <div class="main_container">
   <!-- heading_create starts here -->
-  <div class="row marl heading_create">
-    <div class="heading col-md-12">
-      <div class="no-gutters row">
-        <div class="col-md-6">
-        </div>
-        <div class="col-md-6">
-          <div class="create_new text-right">
-            <a href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i> Add New Contact</a>
-          </div>
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn"  href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i> Add New Contact</a></span>
+    </div>
+  </div>
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="contacts_filter" action="" method="POST">
+            <div class="card-body">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">ACCOUNTS</label>
+                    <select class="form-control" id="id_account" name="account">
+                      <option value="" selected="selected">--Select an Account--</option>
+                      {% for account in accounts %}
+                      <option value="{{account.id}}" {%ifequal account.id request.POST.account|add:"0"%} selected {%endifequal%}>{{ account.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">NAME</label>
+                    <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
+                  </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">CITY</label>
+                    <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
+                  </div>
+                </div>
+                <div class="filter_col text-center col-3">
+                  <div class="form-group buttons_row">
+                    <button  class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'contacts:list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
-  <div class="filter_row row marl">
-    <div class="col-md-3 col-xl-2 ">
-      <div class="card">
-       
-        <form id="contacts_filter" action="" method="POST">
-          <div class="card-body">
-            <div class="card-title">Filters</div>
-            <div class="row marl">
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">ACCOUNTS</label>
-                  <select class="form-control" id="id_account" name="account">
-                    <option value="" selected="selected">--Select an Account--</option>
-                    {% for account in accounts %}
-                    <option value="{{account.id}}" {%ifequal account.id request.POST.account|add:"0"%} selected {%endifequal%}>{{ account.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">NAME</label>
-                  <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">CITY</label>
-                  <input type="text" class="form-control" placeholder="City" name="city" value="{{request.POST.city}}">
-                </div>
-              </div>
-              <div class="filter_col text-center col-12">
-                <div class="form-group buttons_row">
-                  <button  class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'contacts:list' %}" class="btn btn-default clear">Clear</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-        <br clear="all">
-      </div>
-    </div>
-    <div class="col-xl-10 col-md-9">
-    <!-- contacts list start -->
-  <div class="table_container_row row marl no-gutters">
+  <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
-        
         <div class="card-body">
-        <div class="card-title">
-          List of Contacts
-          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Contacts {{contact_obj_list|length}}{% endif %}</span>
-        </div>
-        <div class="table-responsive">
-          <table class="table">
-            <thead>
+          <div class="card-title text-right">
 
-              {% if contact_obj_list|length > 0 %}
+             <span class="float-left">Contacts - {% if show_pageitems %} {% show_pageitems %}{% else %} {{contact_obj_list|length}}{% endif %}</span>
+             
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
+
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                {% if contact_obj_list|length > 0 %}
                 <tr>
                   <th width="5%" >S.no</th>
                   <th width="20%" >Name</th>
@@ -87,51 +81,51 @@
                   <th width="15%" >State</th>
                   <th width="15%" >Actions</th>
                 </tr>
-              {% endif %}
-            </thead>
-            <tbody>
-              {% if per_page %}
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
                 {% paginate per_page contact_obj_list %}
-              {% else%}
+                {% else%}
                 {% paginate 10 contact_obj_list %}
-              {% endif %}
-              {% for contact in contact_obj_list %}
-              <tr style="text-align:center;">
-                <td scope="row">{{ forloop.counter }}</td>
-                <td><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}}</a></td>
-                <td>
-                  {% if contact.account %}
+                {% endif %}
+                {% for contact in contact_obj_list %}
+                <tr style="text-align:center;">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}}</a></td>
+                  <td>
+                    {% if contact.account %}
                     <a href="{% url 'accounts:view_account' contact.account.id %}">{{contact.account}}</a>
-                  {% else %}
+                    {% else %}
                     No Related Account
-                  {% endif %}
-                </td>
-                <td>
-                  {% if contact.address.city %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if contact.address.city %}
                     {{contact.address.city}}
-                  {% else %}
+                    {% else %}
                     Not Specified
-                  {% endif %}
-                </td>
-                <td>
-                  {% if contact.address.state %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if contact.address.state %}
                     {{contact.address.state}}
-                  {% else %}
+                    {% else %}
                     Not Specified
-                  {% endif %}
-                </td>
-                <td class="actions">
-                 {#  <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
-                  <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
-                </td>
-              </tr>
-              {% endfor%}
-            </tbody>
-          </table>
+                    {% endif %}
+                  </td>
+                  <td class="actions">
+                    {#  <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                    <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'contacts:remove_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                  </td>
+                </tr>
+                {% endfor%}
+              </tbody>
+            </table>
           </div>
           {%ifequal contact_obj_list|length 0 %}
-            <h6 class="text-center">No Contact Records Found</h6>
+          <h6 class="text-center">No Contact Records Found</h6>
           {%endifequal%}
           <div class="marl row text-center">
             {% show_pages %}
@@ -141,16 +135,18 @@
     </div>
     <br clear="all">
   </div>
-  <!-- contacts list end -->
-    </div>
-  </div>
   <!-- filter_row ends here -->
-  
 </div>
 <!-- main_container ends here -->
 {%endblock%}
 {% block js_block %}
 <script type="text/javascript">
+$(document).ready(function(){    
+  $(".filter_toggle").click(function(){    
+      $(".list_filter_row").toggle();    
+  });    
+});    
+
   $('.delete').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -158,7 +154,7 @@
       return;
     window.location = $(this).attr('href')
   });
-
+  
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#contacts_filter').attr("action", $(this).attr("href"));
