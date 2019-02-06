@@ -130,6 +130,18 @@
                 </div>
               </div>
               {% endif %}
+              {% if account_record.tags.all %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_tags" data-name="name">Tags</label>
+                  <div class="account_field" id="account_tags" data-name="name">
+                    {% for tag in account_record.tags.all %}
+                    <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
             </div>
             <div class="col-md-12">
               <div class="created_information">

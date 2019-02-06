@@ -72,7 +72,7 @@
        
         <div class="card-body">
           <div class="card-title text-right">
-            <span class="float-left">Contacts - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ lead_obj|length }}{% endif %}</span>
+            <span class="float-left">Leads - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ lead_obj|length }}{% endif %}</span>
               <span class="filter_toggle">
                 <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
               </span>
@@ -83,12 +83,12 @@
                 {% if lead_obj|length > 0 %}
                  <tr>
                     <th width="5%">ID</th>
-                    <th width="20%" >Name</th>
-                    <th width="5%" >Status</th>
-                    <th width="20%" >Assigned User</th>
-                    <th width="25%" >Tags</th>
-                    <th width="15%" >Created On</th>
-                    <th width="10%" >Actions</th>
+                    <th width="10%">Name</th>
+                    <th width="10%">Status</th>
+                    <th width="20%">Assigned User</th>
+                    <th width="20%">Tags</th>
+                    <th width="15%">Created On</th>
+                    <th width="10%">Actions</th>
                   </tr>
                 {% endif %}
                 </thead>

@@ -34,7 +34,8 @@ class CaseForm(forms.ModelForm):
         case = Case.objects.filter(name__iexact=name).exclude(id=self.instance.id)
         if case:
             raise forms.ValidationError("Case Already Exists with this Name")
-        return name
+        else:
+            return name
 
 
 class CaseCommentForm(forms.ModelForm):

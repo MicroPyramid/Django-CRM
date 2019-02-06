@@ -16,6 +16,7 @@ from opportunity.models import Opportunity
 from cases.models import Case
 from contacts.models import Contact
 from accounts.models import Account
+from leads.models import Lead
 from django.template.loader import render_to_string
 
 
@@ -41,6 +42,15 @@ class AdminRequiredMixin(AccessMixin):
 
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "index.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(HomeView, self).get_context_data(**kwargs)
+        context["accounts"] = Account.objects.filter(status="open")
+        context["contacts_count"] = Contact.objects.count()
+        context["leads_count"] = Lead.objects.count()
+        context["opportunities"] = Opportunity.objects.all()
+        return context
+
 
 
 class ChangePasswordView(LoginRequiredMixin, TemplateView):
@@ -88,21 +98,19 @@ class LoginView(TemplateView):
                 if user.is_active:
                     login(request, user)
                     return HttpResponseRedirect('/')
-                else:
-                    return render(request, "login.html", {
-                        "error": True,
-                        "message": "Your Account is InActive. Please Contact Administrator"
-                    })
-            else:
+                
                 return render(request, "login.html", {
                     "error": True,
-                    "message": "Your Account is not Found. Please Contact Administrator"
+                    "message": "Your Account is InActive. Please Contact Administrator"
                 })
-        else:
             return render(request, "login.html", {
                 "error": True,
-                "message": "Your username and password didn't match. Please try again."
+                "message": "Your Account is not Found. Please Contact Administrator"
             })
+        return render(request, "login.html", {
+            "error": True,
+            "message": "Your username and password didn't match. Please try again."
+        })
 
 
 class ForgotPasswordView(TemplateView):
@@ -260,7 +268,6 @@ class PasswordResetView(PasswordResetView):
     email_template_name = 'registration/password_reset_email.html'
 
 
-
 class DocumentCreateView(LoginRequiredMixin, CreateView):
     model = Document
     form_class = DocumentForm
@@ -362,7 +369,7 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(DocumentDetailView, self).get_context_data(**kwargs)
-        documents = Document.objects.all()
+        # documents = Document.objects.all()
         context.update({
             "file_type_code": self.object.file_type()[1],
             "doc_obj": self.object,

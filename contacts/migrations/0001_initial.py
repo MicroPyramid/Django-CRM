@@ -35,8 +35,8 @@ class Migration(migrations.Migration):
                 ('teams', models.ManyToManyField(to='common.Team')),
             ],
         ),
-        migrations.AlterUniqueTogether(
-            name='contact',
-            unique_together={('email',)},
-        ),
+        # migrations.AlterUniqueTogether(
+        #     name='contact',
+        #     unique_together={('email',)},
+        # ),
     ]

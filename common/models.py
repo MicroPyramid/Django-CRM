@@ -1,10 +1,9 @@
 from django.db import models
-from datetime import datetime
-from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
-from common.templatetags.common_tags import *
-
+from common.templatetags.common_tags import (is_document_file_image,is_document_file_audio, 
+is_document_file_video,is_document_file_pdf,is_document_file_code,is_document_file_text, 
+is_document_file_sheet,is_document_file_zip)
 from common.utils import COUNTRIES, ROLES
 import time
 
@@ -118,8 +117,8 @@ class Comment_Files(models.Model):
     def get_file_name(self):
         if self.comment_file:
             return self.comment_file.path.split('/')[-1]
-        else:
-            return None
+        
+        return None
 
 
 class Attachments(models.Model):
@@ -140,19 +139,19 @@ class Attachments(models.Model):
             ext = name_ext_list[int(len(name_ext_list) - 1)]
             if is_document_file_audio(ext):
                 return ("audio", "fa fa-file-audio")
-            elif is_document_file_video(ext):
+            if is_document_file_video(ext):
                 return ("video", "fa fa-file-video")
-            elif is_document_file_image(ext):
+            if is_document_file_image(ext):
                 return ("image", "fa fa-file-image")
-            elif is_document_file_pdf(ext):
+            if is_document_file_pdf(ext):
                 return ("pdf", "fa fa-file-pdf")
-            elif is_document_file_code(ext):
+            if is_document_file_code(ext):
                 return ("code", "fa fa-file-code")
-            elif is_document_file_text(ext):
+            if is_document_file_text(ext):
                 return ("text", "fa fa-file-alt")
-            elif is_document_file_sheet(ext):
+            if is_document_file_sheet(ext):
                 return ("sheet", "fa fa-file-excel")
-            elif is_document_file_zip(ext):
+            if is_document_file_zip(ext):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
@@ -189,19 +188,19 @@ class Document(models.Model):
             ext = name_ext_list[int(len(name_ext_list) - 1)]
             if is_document_file_audio(ext):
                 return ("audio", "fa fa-file-audio")
-            elif is_document_file_video(ext):
+            if is_document_file_video(ext):
                 return ("video", "fa fa-file-video")
-            elif is_document_file_image(ext):
+            if is_document_file_image(ext):
                 return ("image", "fa fa-file-image")
-            elif is_document_file_pdf(ext):
+            if is_document_file_pdf(ext):
                 return ("pdf", "fa fa-file-pdf")
-            elif is_document_file_code(ext):
+            if is_document_file_code(ext):
                 return ("code", "fa fa-file-code")
-            elif is_document_file_text(ext):
+            if is_document_file_text(ext):
                 return ("text", "fa fa-file-alt")
-            elif is_document_file_sheet(ext):
+            if is_document_file_sheet(ext):
                 return ("sheet", "fa fa-file-excel")
-            elif is_document_file_zip(ext):
+            if is_document_file_zip(ext):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")

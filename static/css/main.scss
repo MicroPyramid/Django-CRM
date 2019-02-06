@@ -72,6 +72,7 @@ a{
   }
   .errorlist li{
     color: red;
+    font-size: 0.83rem;
   }
   label {
     font-size: 14px;
@@ -864,8 +865,9 @@ padding:0px !important;
 }
 
 #list_tag{
-  background: #e5e5e5;
-  color: #555;
+  color: #fff;
+  border: none;
+  background: #333;
   font-weight: 500;
   padding: 1px 5px;
   margin-right: 5px;
@@ -873,7 +875,21 @@ padding:0px !important;
   display: inline-block;
   margin-bottom: 5px;
   border-radius: 2px;
-  border: 1px solid #bbb;
+  &.color1{
+    background: darken($dark_sky, 5%);
+  }
+  &.red{
+    background: darken($color_cerise_red_approx, 5%);
+  }
+  &.green{
+    background: darken($green, 5%);
+  }
+  &.color2{
+    background: darken($dark_yellow, 10%);
+  }
+  &.color3{
+    background: darken($color_apricot_peach_approx, 40%);
+  }
 }
 .nav-tabs{
   li{
@@ -973,20 +989,24 @@ pre{
   .item{
     background: #fff;
     border-radius: 0;
-    border: 1px solid #dedede;
     padding:0;
+    border: none;
     text-align: center;
     .title{
-      background: #dedede;
       line-height: 2.5rem;
       font-weight: 600;
       font-size: 0.85rem;
+      color: #fff;
       text-transform: uppercase;
+      a{
+        color: #fff;
+      }
     }
     .count{
       font-size: 2rem;
       font-weight: 600;
       padding: 0.5rem 0;
+      color: #fff;
     }
     .more{
       font-size: 0.85rem;
@@ -1013,6 +1033,18 @@ pre{
         }
       }
     }
+    &.sky_blue{
+      background: darken($dark_sky, 10%);
+    }
+    &.red{
+      background: darken($color_cerise_red_approx, 10%);
+    }
+    &.green{
+      background: darken($green, 5%);
+    }
+    &.yellow{
+      background: darken($dark_yellow, 10%);
+    }
   }
 }
 /* open_sections */
@@ -1021,6 +1053,21 @@ pre{
   .table_container_row{
     .table{
       margin-bottom: 0;
+      tbody{
+        tr{
+          td{
+            a{
+              color: #333;
+              font-weight: 600;
+            }
+          }
+        }
+      }
     }
+  }
+}
+.errorlist{
+  li{
+    font-size: 0.83rem;
   }
 }

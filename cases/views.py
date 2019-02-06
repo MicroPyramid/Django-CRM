@@ -77,8 +77,8 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        
+        return self.form_invalid(form)
 
     def form_valid(self, form):
         case = form.save(commit=False)
@@ -110,8 +110,8 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
         if self.request.POST.get('from_account'):
             from_account = self.request.POST.get('from_account')
             return redirect("accounts:view_account", pk=from_account)
-        else:
-            return redirect('cases:list')
+        
+        return redirect('cases:list')
 
     def form_invalid(self, form):
         if self.request.is_ajax():
@@ -183,8 +183,8 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        
+        return self.form_invalid(form)
 
     def form_valid(self, form):
         assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
@@ -263,8 +263,8 @@ class RemoveCaseView(LoginRequiredMixin, View):
         if request.GET.get('view_account'):
             account = request.GET.get('view_account')
             return redirect("accounts:view_account", pk=account)
-        else:
-            return redirect("cases:list")
+        
+        return redirect("cases:list")
 
     def post(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
@@ -324,11 +324,11 @@ class AddCommentView(LoginRequiredMixin, CreateView):
             form = self.get_form()
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {'error': "You don't have permission to comment."}
-            return JsonResponse(data)
+            
+            return self.form_invalid(form)
+        
+        data = {'error': "You don't have permission to comment."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         comment = form.save(commit=False)
@@ -350,16 +350,18 @@ class UpdateCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.comment_obj = get_object_or_404(Comment, id=request.POST.get("commentid"))
-        if (request.user == self.comment_obj.commented_by or request.user.is_superuser or
-            request.user.role == 'ADMIN'):
+        if (
+            request.user == self.comment_obj.commented_by or request.user.is_superuser or
+            request.user.role == 'ADMIN'
+        ):
             form = CaseCommentForm(request.POST, instance=self.comment_obj)
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {'error': "You don't have permission to edit this comment."}
-            return JsonResponse(data)
+            
+            return self.form_invalid(form)
+        
+        data = {'error': "You don't have permission to edit this comment."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
@@ -377,14 +379,16 @@ class DeleteCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Comment, id=request.POST.get("comment_id"))
-        if (request.user == self.object.commented_by or request.user.is_superuser or
-            request.user.role == 'ADMIN'):
+        if (
+            request.user == self.object.commented_by or request.user.is_superuser or
+            request.user.role == 'ADMIN'
+        ):
             self.object.delete()
             data = {"cid": request.POST.get("comment_id")}
             return JsonResponse(data)
-        else:
-            data = {'error': "You don't have permission to delete this comment."}
-            return JsonResponse(data)
+        
+        data = {'error': "You don't have permission to delete this comment."}
+        return JsonResponse(data)
 
 
 class AddAttachmentView(LoginRequiredMixin, CreateView):
@@ -403,11 +407,11 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             form = self.get_form()
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {"error":True, "errors": "You don't have permission to add attachment for this case."}
-            return JsonResponse(data)
+        
+            return self.form_invalid(form)
+        
+        data = {"error":True, "errors": "You don't have permission to add attachment for this case."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         attachment = form.save(commit=False)
@@ -437,11 +441,13 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
-        if (request.user == self.object.created_by or request.user.is_superuser or
-            request.user.role == 'ADMIN'):
+        if (
+            request.user == self.object.created_by or request.user.is_superuser or 
+            request.user.role == 'ADMIN'
+        ):
             self.object.delete()
             data = {"attachment_object": request.POST.get("attachment_id"), "error": False}
             return JsonResponse(data)
-        else:
-            data = {"error":True, "errors": "You don't have permission to delete this attachment."}
-            return JsonResponse(data)
+        
+        data = {"error":True, "errors": "You don't have permission to delete this attachment."}
+        return JsonResponse(data)

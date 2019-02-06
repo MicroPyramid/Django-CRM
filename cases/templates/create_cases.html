@@ -111,7 +111,7 @@
                 {% if not case_obj %}
                 <button class="btn btn-success save savenew" type="submit">Save & New</button>
                 {% endif %}
-                <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}" {% else %} href="{% url 'contacts:list' %}" {% endif %} class="btn btn-default clear">Cancel</a>
+                <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}" {% else %} href="{% url 'cases:list' %}" {% endif %} class="btn btn-default clear">Cancel</a>
               </div>
             </div>
           </div>
