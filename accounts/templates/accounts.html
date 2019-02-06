@@ -5,74 +5,83 @@
 <!-- main_container starts here -->
 <div class="main_container">
   <!-- heading_create starts here -->
-  <div class="row marl heading_create">
-    <div class="heading col-md-12">
-     <div class="no-gutters row">
-      <div class="col-md-6">
-      </div>
-      <div class="col-md-6">
-        <div class="create_new text-right">
-          <a href="{% url 'accounts:new_account' %}"><i class="fa fa-plus"></i> Add New Account</a>
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn" href="{% url 'accounts:new_account' %}"><i class="fa fa-plus"></i> Add New Account</a></span>
+    </div>
+  </div>
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="accounts_filter" method="POST" action="">
+            <div class="card-body">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label>
+                    <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %} value="{{request.POST.name}}" {%endif%}/>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">City</label>
+                    <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    {{request.POST.assigned_to}}
+                    <select class="assigned_users1 form-control" name="assigned_to" multiple="multiple">
+                    {% for user in users %}
+                    <option value="{{user.id}}" {% if user in account_obj.assigned_to.all  or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                    {% endfor %}
+                    </select>
+                    {{ account_form.assigned_to.errors }}
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Industry</label>
+                    <select class="form-control" id="id_industry" name="industry" >
+                      <option value="">--Select Type of Industry--</option>
+                      {% for each_industry in industries %}
+                      <option value="{{each_industry.0}}" {% if request.POST.industry %} {% ifequal each_industry.0 request.POST.industry %}selected{% endifequal %}{% endif %} >{{each_industry.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Tags</label>
+                    <select class="form-control" id="id_tag" name="tag" >
+                      <option value="">--Select Tags--</option>
+                      {% for tag in tags %}
+                      <option value="{{tag.id}}" {% if request.POST.tag %} {% ifequal tag.id request.POST.tag|add:"0" %}selected{% endifequal %}{% endif %} >{{ tag.name }} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-lg-2">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'accounts:list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
-      </div>
       </div>
     </div>
   </div>
   <!-- heading_create ends here -->
   <!-- filter_row starts here -->
   <div class="filter_row row marl">
-    <div class="col-md-3 col-lg-2 col-xl-2">
-      <div class="card">
-        <form id="accounts_filter" method="POST" action="">
-          <div class="card-body">
-            <div class="card-title">Filters</div>
-            <div class="row marl">
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Name</label>
-                  <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %} value="{{request.POST.name}}" {%endif%}/>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">City</label>
-                  <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Industry</label>
-                  <select class="form-control" id="id_industry" name="industry" >
-                    <option value="">--Select Type of Industry--</option>
-                    {% for each_industry in industries %}
-                    <option value="{{each_industry.0}}" {% if request.POST.industry %} {% ifequal each_industry.0 request.POST.industry %}selected{% endifequal %}{% endif %} >{{each_industry.1}} </option>
-                    {% endfor%}
-                  </select>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Tags</label>
-                  <select class="form-control" id="id_tag" name="tag" >
-                    <option value="">--Select Tags--</option>
-                    {% for tag in tags %}
-                    <option value="{{tag.id}}" {% if request.POST.tag %} {% ifequal tag.id request.POST.tag|add:"0" %}selected{% endifequal %}{% endif %} >{{ tag.name }} </option>
-                    {% endfor%}
-                  </select>
-                </div>
-              </div>
-              <div class="filter_col text-center col-12">
-                <div class="form-group buttons_row">
-                  <button class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'accounts:list' %}" class="btn btn-default clear">Clear</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div class="col-md-9 col-lg-10 col-xl-10">
+    
+    <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
         <div class="col-md-12">
           <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -87,30 +96,34 @@
             <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
               <div class="card">
                 <div class="card-body">
-                  <div class="panel-heading-list card-title">
-                   List of Open Accounts
-                    <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Open Accounts {{open_accounts|length}}{% endif %}</span>
+                  <div class="panel-heading-list card-title text-right">
+                    
+                    <span class="total_count float-left">List of Open Accounts :{% if show_pageitems %} {% show_pageitems %}{% else %}{{open_accounts|length}}{% endif %}</span>
+                    <span class="filter_toggle ">
+                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
                   </div>
                   <div class="table-responsive">
                     <table class="table ">
                       <thead>
-                      {% if open_accounts|length > 0 %}
+                        {% if open_accounts|length > 0 %}
                         <tr>
                           <th width="5%">ID</th>
-                          <th width="25%">Name</th>
+                          <th width="15%">Name</th>
                           <th width="15%">City</th>
                           <th width="15%">State</th>
-                          <th width="20%">Industry</th>
+                          <th width="15%">Assigned To</th>
+                          <th width="15%">Industry</th>
                           <th width="10%">Tags</th>
                           <th width="10%">Actions</th>
                         </tr>
-                      {% endif %}
+                        {% endif %}
                       </thead>
                       <tbody>
                         {% if per_page %}
-                          {% paginate per_page open_accounts %}
+                        {% paginate per_page open_accounts %}
                         {% else%}
-                          {% paginate 10 open_accounts %}
+                        {% paginate 10 open_accounts %}
                         {% endif %}
                         {% for each_account in open_accounts %}
                         <tr id="account_details{{each_account.id}}" class="text-center">
@@ -118,20 +131,21 @@
                           <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
                           <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
                           <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
+                          <td>santro@mp.com</td>
                           <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
-                              {% if tags %}
-                                {% for tag in tags %}
-                                  <span class="text-left" id="list_tag">{{ tag.name }}</span>
-                                {% endfor %}
-                              {% else %}
-                                No Tags
-                              {% endif %}
+                            {% if tags %}
+                            {% for tag in tags %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            {% endfor %}
+                            {% else %}
+                            No Tags
+                            {% endif %}
                             {% endwith %}
                           </td>
                           <td class="actions">
-                           {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                            {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
                             <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                           </td>
@@ -141,7 +155,7 @@
                     </table>
                   </div>
                   {% ifequal open_accounts|length 0 %}
-                    <h6 class="text-center">No Acccount Records Found</h6>
+                  <h6 class="text-center">No Acccount Records Found</h6>
                   {% endifequal %}
                   <div class="text-center row marl">
                     {% show_pages %}
@@ -153,46 +167,48 @@
               <div class="card">
                 <div class="card-body">
                   <div class="panel-heading-list card-title">
-                   List of Closed Accounts
+                    List of Closed Accounts
                     <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Closed Accounts {{close_accounts|length}}{% endif %}</span>
                   </div>
                   <div class="table-responsive">
                     <table class="table">
                       <thead>
-                      {% if close_accounts|length > 0 %}
+                        {% if close_accounts|length > 0 %}
                         <tr>
                           <th width="5%">ID</th>
-                          <th width="25%">Name</th>
+                          <th width="15%">Name</th>
                           <th width="15%">City</th>
                           <th width="15%">State</th>
-                          <th width="20%">Industry</th>
+                          <th width="15%">Assigned To</th>
+                          <th width="15%">Industry</th>
                           <th width="10%">Tags</th>
                           <th width="10%">Actions</th>
                         </tr>
-                      {% endif %}
+                        {% endif %}
                       </thead>
                       <tbody>
                         {% if per_page %}
-                          {% paginate per_page close_accounts %}
+                        {% paginate per_page close_accounts %}
                         {% else%}
-                          {% paginate 10 close_accounts %}
+                        {% paginate 10 close_accounts %}
                         {% endif %}
                         {% for each_account in close_accounts %}
-                        <tr id="account_details{{each_account.id}}" class="text-center">
+                        <tr id="account_details{{each_account.id}}" >
                           <td scope="row">{{ forloop.counter }}</td>
                           <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
                           <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
                           <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
+                          <td>santro@mp.com</td>
                           <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
-                              {% if tags %}
-                                {% for tag in tags %}
-                                  <span class="text-left" id="list_tag">{{ tag.name }}</span>
-                                {% endfor %}
-                              {% else %}
-                                No Tags
-                              {% endif %}
+                            {% if tags %}
+                            {% for tag in tags %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            {% endfor %}
+                            {% else %}
+                            No Tags
+                            {% endif %}
                             {% endwith %}
                           </td>
                           <td class="actions">
@@ -205,7 +221,7 @@
                     </table>
                   </div>
                   {% ifequal close_accounts|length 0 %}
-                    <h6 class="text-center">No Closed Acccount Records Found</h6>
+                  <h6 class="text-center">No Closed Acccount Records Found</h6>
                   {% endifequal %}
                   <div class="text-center row marl">
                     {% show_pages %}
@@ -216,12 +232,11 @@
           </div>
           <br clear="all">
         </div>
-     </div>
+      </div>
     </div>
   </div>
   <!-- filter_row ends here -->
   <!-- accounts list start -->
- 
   <!-- accounts list end -->
 </div>
 <!-- main_container ends here -->
@@ -235,11 +250,18 @@
       return;
     window.location = $(this).attr('href')
   });
-
+  
   $(".reset").click(function(e){
     window.location = "{% url 'accounts:list'%}"
   });
-
+  
+  $(document).ready(function(){    
+    $(".filter_toggle").click(function(){    
+        $(".list_filter_row").toggle();    
+    });    
+    $('.assigned_users1').select2();
+  });  
+  
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#accounts_filter').attr("action", $(this).attr("href"));

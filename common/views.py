@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http40
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
-from common.models import User, Document
+from common.models import User, Document, Attachments
 from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm,DocumentForm
 from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
@@ -159,7 +159,6 @@ class CreateUserView(AdminRequiredMixin, CreateView):
 
     def form_valid(self, form):
         user = form.save(commit=False)
-        print(form.errors)
         if form.cleaned_data.get("password"):
             user.set_password(form.cleaned_data.get("password"))
         user.save()
@@ -374,6 +373,18 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
 def download_document(request, pk):
     doc_obj = Document.objects.filter(id=pk).last()
     path = doc_obj.document_file.path
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+            return response
+    raise Http404
+
+
+def download_attachment(request, pk):
+    attachment_obj = Attachments.objects.filter(id=pk).last()
+    path = attachment_obj.attachment.path
     file_path = os.path.join(settings.MEDIA_ROOT, path)
     if os.path.exists(file_path):
         with open(file_path, 'rb') as fh:

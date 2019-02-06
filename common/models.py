@@ -3,6 +3,7 @@ from datetime import datetime
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from common.templatetags.common_tags import *
 
 from common.utils import COUNTRIES, ROLES
 import time
@@ -133,6 +134,37 @@ class Attachments(models.Model):
     case = models.ForeignKey('cases.Case',blank=True,null=True,on_delete=models.CASCADE,related_name='case_attachment')
 
 
+    def file_type(self):
+        name_ext_list = self.attachment.url.split(".")
+        if (len(name_ext_list) > 1):
+            ext = name_ext_list[int(len(name_ext_list) - 1)]
+            if is_document_file_audio(ext):
+                return ("audio", "fa fa-file-audio")
+            elif is_document_file_video(ext):
+                return ("video", "fa fa-file-video")
+            elif is_document_file_image(ext):
+                return ("image", "fa fa-file-image")
+            elif is_document_file_pdf(ext):
+                return ("pdf", "fa fa-file-pdf")
+            elif is_document_file_code(ext):
+                return ("code", "fa fa-file-code")
+            elif is_document_file_text(ext):
+                return ("text", "fa fa-file-alt")
+            elif is_document_file_sheet(ext):
+                return ("sheet", "fa fa-file-excel")
+            elif is_document_file_zip(ext):
+                return ("zip", "fa fa-file-archive")
+            return ("file", "fa fa-file")
+        return ("file", "fa fa-file")
+
+
+    def get_file_type_display(self):
+        if self.attachment:
+            return self.file_type()[1]
+        else:
+            return None
+
+
 def document_path(self, filename):
     hash_ = int(time.time())
     return "%s/%s/%s" % ("docs", hash_, filename)
@@ -150,133 +182,26 @@ class Document(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
 
-    def is_document_file_image(self, ext):
-        image_ext_list = ['bmp', 'dds', 'gif', 'jpg', 'jpeg', 'png', 'psd', 'pspimage',
-                          'tga', 'thm', 'tif', 'tiff', 'yuv']
-        return ext.lower() in image_ext_list
-
-    def is_document_file_audio(self, ext):
-        audio_ext_list = ['aif', 'iff', 'm3u', 'm4a', 'mid', 'mp3',
-                          'mpa', 'wav', 'wma']
-        return ext.lower() in audio_ext_list
-
-    def is_document_file_video(self, ext):
-        video_ext_list = ['3g2', '3gp', 'asf', 'avi', 'flv', 'm4v', 'mov',
-                          'mp4', 'mpg', 'rm', 'srt', 'swf', 'vob', 'wmv']
-        return ext.lower() in video_ext_list
-
-    def is_document_file_pdf(self, ext):
-        pdf_ext_list = ['indd', 'pct', 'pdf']
-        return ext.lower() in pdf_ext_list
-
-    def is_document_file_code(self, ext):
-        code_ext_list = ['aspx', 'json', 'jsp', 'do', 'htm', 'html', 'ser',
-                         'php', 'jad', 'cfm', 'xml', 'js', 'pod', 'asp',
-                         'atomsvc', 'rdf', 'pou', 'jsf', 'abs', 'pl', 'asm',
-                         'srz', 'luac', 'cod', 'lib', 'arxml', 'bas', 'ejs',
-                         'fs', 'hbs', 's', 'ss', 'cms', 'pyc', 'vcxproj',
-                         'jse', 'smali', 'xla', 'lxk', 'pdb', 'src', 'cs',
-                         'ipb', 'ave', 'mst', 'vls', 'rcc', 'sax', 'scr',
-                         'dtd', 'axd', 'mrl', 'xsl', 'ino', 'spr', 'xsd',
-                         'cgi', 'isa', 'ws', 'rss', 'dvb', 'nupkg', 'xlm',
-                         'v4e', 'rss', 'prg', 'form', 'bat', 'mrc', 'asi',
-                         'jdp', 'fmb', 'graphml', 'gcode', 'aia', 'py', 'atp',
-                         'mzp', 'o', 'scs', 'mm', 'cpp', 'java', 'gypi', 'idb',
-                         'txml', 'c', 'vip', 'tra', 'rc', 'action', 'vlx',
-                         'asta', 'pyo', 'lua', 'gml', 'prl', 'rfs', 'cpb',
-                         'sh', 'rbf', 'gp', 'phtml', 'bp', 'scb', 'sln', 'vbp',
-                         'wbf', 'bdt', 'mac', 'rpy', 'eaf', 'mc', 'mwp', 'gnt',
-                         'h', 'swift', 'e', 'styl', 'cxx', 'as', 'liquid',
-                         'dep', 'fas', 'vbs', 'aps', 'vbe', 'lss', 'cmake',
-                         'resx', 'csb', 'dpk', 'pdml', 'txx', 'dbg', 'jsa',
-                         'sxs', 'sasf', 'pm', 'csx', 'r', 'wml', 'au3', 'stm',
-                         'cls', 'cc', 'ins', 'jsc', 'dwp', 'rpg', 'arb', 'bml',
-                         'inc', 'eld', 'sct', 'sm', 'wbt', 'csproj', 'tcz',
-                         'html5', 'gbl', 'cmd', 'dlg', 'tpl', 'rbt', 'xcp',
-                         'tpm', 'qry', 'mfa', 'ptx', 'lsp', 'pag', 'ebc',
-                         'php3', 'cob', 'csc', 'pyt', 'dwt', 'rb', 'wsdl',
-                         'lap', 'textile', 'sfx', 'x', 'a5r', 'dbp', 'pmp',
-                         'ipr', 'fwx', 'pbl', 'vbw', 'phl', 'cbl', 'pas',
-                         'mom', 'dbmdl', 'lol', 'wdl', 'ppam', 'plx', 'vb',
-                         'cgx', 'lst', 'lmp', 'vd', 'bcp', 'thtml', 'scpt',
-                         'isu', 'mrd', 'perl', 'dtx', 'f', 'wpk', 'ipf', 'ptl',
-                         'luca', 'hx', 'uvproj', 'qvs', 'vba', 'xjb',
-                         'appxupload', 'ti', 'svn-base', 'bsc', 'mak',
-                         'vcproj', 'dsd', 'ksh', 'pyw', 'bxml', 'mo', 'irc',
-                         'gcl', 'dbml', 'mlv', 'wsf', 'tcl', 'dqy', 'ssi',
-                         'pbxproj', 'bal', 'trt', 'sal', 'hkp', 'vbi', 'dob',
-                         'htc', 'p', 'ats', 'seam', 'loc', 'pli', 'rptproj',
-                         'pxml', 'pkb', 'dpr', 'scss', 'dsb', 'bb', 'vbproj',
-                         'ash', 'rml', 'nbk', 'nvi', 'lmv', 'mw', 'jl', 'dso',
-                         'cba', 'jks', 'ary', 'run', 'vps', 'clm', 'brml',
-                         'msha', 'mdp', 'tmh', 'rdf', 'jsx', 'sdl', 'ptxml',
-                         'fxl', 'wmw', 'dcr', 'bcc', 'cbp', 'bmo', 'bsv',
-                         'less', 'gss', 'ctl', 'rpyc', 'ascx', 'odc', 'wiki',
-                         'obr', 'l', 'axs', 'bpr', 'ppa', 'rpo', 'sqlproj',
-                         'smm', 'dsr', 'arq', 'din', 'jml', 'jsonp', 'ml',
-                         'rc2', 'myapp', 'cla', 'xme', 'obj', 'jsdtscope',
-                         'gyp', 'datasource', 'cp', 'rh', 'lpx', 'a2w', 'ctp',
-                         'ulp', 'nt', 'script', 'bxl', 'gs', 'xslt', 'mg',
-                         'pch', 'mhl', 'zpd', 'psm1', 'asz', 'm', 'jacl',
-                         'pym', 'rws', 'acu', 'ssq', 'wxs', 'coffee', 'ncb',
-                         'akt', 'pyx', 'zero', 'hs', 'mkb', 'tru', 'xul',
-                         'mfl', 'sca', 'sbr', 'master', 'opv', 'matlab',
-                         'sami', 'agc', 'slim', 'tea', 'pbl', 'm51', 'mec',
-                         'asc', 'gch', 'enml', 'ino', 'kst', 'jade', 'dfb',
-                         'ips', 'rgs', 'vbx', 'cspkg', 'ncx', 'brs', 'wfs',
-                         'ifp', 'nse', 'xtx', 'j', 'cx', 'ps1', 'nas', 'mk',
-                         'ccs', 'vrp', 'lnp', 'cml', 'c#', 'idl', 'exp', 'apb',
-                         'nsi', 'asmx', 'tdo', 'pjt', 'fdt', 's5d', 'mvba',
-                         'mf', 'odl', 'bzs', 'jardesc', 'tgml', 'moc', 'wxi',
-                         'cpz', 'fsx', 'jav', 'ocb', 'agi', 'tec', 'txl',
-                         'amw', 'mscr', 'dfd', 'dpd', 'pun', 'f95', 'vdproj',
-                         'xsc', 'diff', 'wxl', 'dgml', 'airi', 'kmt', 'ksc',
-                         'io', 'rbw', 'sas', 'vcp', 'resources', 'param',
-                         'cg', 'hlsl', 'vssscc', 'bgm', 'xn', 'targets', 'sl',
-                         'gsc', 'qs', 'owl', 'devpak', 'phps', 'hdf', 'pri',
-                         'nbin', 'xaml', 's4e', 'scm', 'tk', 'poc', 'uix',
-                         'clw', 'factorypath', 's43', 'awd', 'htr', 'php2',
-                         'classpath', 'pickle', 'rob', 'msil', 'ebx', 'tsq',
-                         'lml', 'f90', 'lds', 'vup', 'pbi', 'swt', 'vap', 'ig',
-                         'pdo', 'frt', 'fcg', 'c++', 'xcl', 'dfn', 'aar',
-                         'for', 're', 'twig', 'ebm', 'dhtml', 'hc', 'pro',
-                         'ahk', 'rule', 'bsh', 'jcs', 'zrx', 'wsdd', 'csp',
-                         'drc', 'appxsym']
-        return ext.lower() in code_ext_list
-
-    def is_document_file_text(self, ext):
-        text_ext_list = ['doc', 'docx', 'log', 'msg', 'odt', 'pages', 'rtf',
-                         'tex', 'txt', 'wpd', 'wps']
-        return ext.lower() in text_ext_list
-
-    def is_document_file_sheet(self, ext):
-        sheet_ext_list = ['csv', 'xls', 'xlsx',
-                          'xlsm', 'xlsb', 'xltx', 'xltm', 'xlt']
-        return ext.lower() in sheet_ext_list
-
-    def is_document_file_zip(self, ext):
-        ext_list = ['zip', '7Z', 'gz', 'rar', 'ZIPX', 'ACE', 'tar', ]
-        return ext.lower() in ext_list
 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
         if (len(name_ext_list) > 1):
             ext = name_ext_list[int(len(name_ext_list) - 1)]
-            if self.is_document_file_audio(ext):
+            if is_document_file_audio(ext):
                 return ("audio", "fa fa-file-audio")
-            elif self.is_document_file_video(ext):
+            elif is_document_file_video(ext):
                 return ("video", "fa fa-file-video")
-            elif self.is_document_file_image(ext):
+            elif is_document_file_image(ext):
                 return ("image", "fa fa-file-image")
-            elif self.is_document_file_pdf(ext):
+            elif is_document_file_pdf(ext):
                 return ("pdf", "fa fa-file-pdf")
-            elif self.is_document_file_code(ext):
+            elif is_document_file_code(ext):
                 return ("code", "fa fa-file-code")
-            elif self.is_document_file_text(ext):
+            elif is_document_file_text(ext):
                 return ("text", "fa fa-file-alt")
-            elif self.is_document_file_sheet(ext):
+            elif is_document_file_sheet(ext):
                 return ("sheet", "fa fa-file-excel")
-            elif self.is_document_file_zip(ext):
+            elif is_document_file_zip(ext):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")

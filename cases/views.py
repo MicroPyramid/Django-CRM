@@ -14,6 +14,7 @@ from common.models import Team, User, Comment, Attachments
 from accounts.models import Account
 from contacts.models import Contact
 from common.utils import PRIORITY_CHOICE, STATUS_CHOICE, CASE_TYPE
+from django.urls import reverse
 
 
 class CasesListView(LoginRequiredMixin, TemplateView):
@@ -106,6 +107,9 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
             return JsonResponse({'error': False})
         if self.request.POST.get("savenewform"):
             return redirect("cases:add_case")
+        if self.request.POST.get('from_account'):
+            from_account = self.request.POST.get('from_account')
+            return redirect("accounts:view_account", pk=from_account)
         else:
             return redirect('cases:list')
 
@@ -184,8 +188,6 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
-        print(assigned_to_ids, 'aaaa')
-        print(assigned_to_ids, 'asso')
         case_obj = form.save(commit=False)
         case_obj.teams.clear()
         case_obj.contacts.clear()
@@ -196,9 +198,7 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
             current_site = get_current_site(self.request)
 
             assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
-            print(assigned_form_users, 'assigned_form_users')
             all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
-            print(all_members_list, 'alll')
 
             if len(all_members_list):
                 for assigned_to_user in all_members_list:
@@ -211,7 +211,6 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
                         'case': case_obj
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
-                    print(email.to, 'emmmm')
                     email.send()
 
             case_obj.assigned_to.clear()
@@ -221,6 +220,11 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
             case_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
             case_obj.contacts.add(*self.request.POST.getlist('contacts'))
+
+        if self.request.POST.get('from_account'):
+            from_account = self.request.POST.get('from_account')
+            return redirect("accounts:view_account", pk=from_account)
+
         if self.request.is_ajax():
             return JsonResponse({'error': False})
         return redirect("cases:list")
@@ -256,7 +260,11 @@ class RemoveCaseView(LoginRequiredMixin, View):
         case_id = kwargs.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
         self.object.delete()
-        return redirect("cases:list")
+        if request.GET.get('view_account'):
+            account = request.GET.get('view_account')
+            return redirect("accounts:view_account", pk=account)
+        else:
+            return redirect("cases:list")
 
     def post(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
@@ -413,9 +421,11 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             "attachment_id": attachment.id,
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
+            "download_url": reverse('common:download_attachment', kwargs={'pk':attachment.id}),
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email,
             "message": "attachment Created",
+            "attachment_display": attachment.get_file_type_display(),
             "error": False
         })
 

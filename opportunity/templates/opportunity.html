@@ -5,35 +5,27 @@
 <!-- main_container starts here -->
 <div class="main_container">
   <!-- heading_create starts here -->
-  <div class="row marl heading_create">
-    <div class="heading col-md-12">
-      <div class="row marl no-gutters">
-        <div class="col-md-6">
-        </div>
-        <div class="col-md-6">
-          <div class="create_new text-right">
-            <a href="{% url 'opportunities:save' %}"><i class="fa fa-plus"></i> Add New Opportunity</a>
-          </div>
-        </div>
-      </div>
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn"  href="{% url 'opportunities:save'%}"><i class="fa fa-plus"></i> Add New Opportunity</a></span>
     </div>
   </div>
   <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
-  <div class="filter_row row marl">
-    <div class="col-md-3 col-lg-2">
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
       <div class="card">
-        <form id="opportunity_filter" method="POST" action="">
+        <div class="card-body">
+            <form id="opportunity_filter" method="POST" action="">
           <div class="card-body ">
            <div class="card-title">Filters</div>
             <div class="row marl">
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-2">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Name</label>
                   <input type="text" class="form-control" placeholder="Name" id="id_name" name="name" {% if request.POST %} value="{{request.POST.name}}" {% endif %}>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-2">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Account</label>
                   <select class="form-control" id="id_account" name="account">
@@ -44,7 +36,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-2">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Stage</label>
                   <select class="form-control" id="id_stage" name="stage" >
@@ -55,7 +47,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-3">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Lead Source</label>
                   <select class="form-control" id="id_lead_source" name="lead_source" >
@@ -66,7 +58,7 @@
                   </select>
                 </div>
               </div>
-              <div class="filter_col text-center col-12">
+              <div class="filter_col text-left col-2">
                 <div class="form-group buttons_row">
                   <button class="btn btn-primary save" type="submit">Search</button>
                   <a href="{% url 'opportunities:list' %}" class="btn btn-default clear">Clear</a>
@@ -75,20 +67,21 @@
             </div>
           </div>
         </form>
-        <br clear="all">
+        </div>
       </div>
     </div>
-
-    <div class="col-md-9 col-lg-10">
-    <!-- opportunities list start-->
-  <div class="table_container_row row marl no-gutters">
+  </div>
+   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
        
         <div class="card-body">
-         <div class="panel-heading-list card-title ">
-         List of Opportunities
-          <span class="float-right total_count">{% if show_pageitems %} {% show_pageitems %}{% else %}Total Opportunities {{ opportunity_list|length }}{% endif %}</span>
+         <div class="panel-heading-list card-title text-right">
+           <span class="float-left">Opportunities - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ opportunity_list|length }}{% endif %}</span>
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
+         
         </div>
         <div class="table-responsive">
           <table class="table ">
@@ -158,17 +151,18 @@
     </div>
     <br clear="all">
   </div>
-  <!-- opportunities list end-->
-    </div>
-
-  </div>
-  <!-- filter_row ends here -->
-  
+  <!-- filter_row starts here -->
+ 
 </div>
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
+  $(document).ready(function(){    
+    $(".filter_toggle").click(function(){    
+      $(".list_filter_row").toggle();    
+    });    
+  });  
   $('.delete').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')

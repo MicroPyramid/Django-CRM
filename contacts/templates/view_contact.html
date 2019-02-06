@@ -8,8 +8,8 @@
   <li class="breadcrumb-item active">view</li>
 </ol>
 </nav>
-{%endblock%}
-{%block content%}
+{% endblock %}
+{% block content %}
 <!-- CONTACTS VIEW STARTS -->
   <div class="main_container" id="maincontainer">
     <div class="overview_form_block row marl justify-content-center">
@@ -18,12 +18,12 @@
           
           <div class="card-body" id="datashow">
 
-           <div class="card-title">
+           <div class="card-title text-right">
             <h5>
-              Overview
-              <span class="float-right" style="margin-top: 0px">
+              <span class="float-left title">Overview</span>
+              <span class="" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
-                  <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
+                  <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
                   <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'contacts:edit_contact' contact_record.id %}">Edit</a></li>
@@ -34,7 +34,7 @@
           </div>
 
             <div class="row marl">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="filter_col col-md-12" id="iname">
                   <div class="form-group" >
                     <label class="contact_field_label" for="id_name" data-name="name">Name</label>
@@ -53,6 +53,9 @@
                     <div class="contact_field" id="contact_phone" data-name="name">{{ contact_record.phone }}</div>
                   </div>
                 </div>
+                
+              </div>
+              <div class="col-md-4">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label class="contact_field_label" for="id_email" data-name="name">Email</label>
@@ -60,7 +63,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     {% if contact_record.address.address_line or contact_record.address.street or contact_record.address.city or  contact_record.address.state or contact_record.address.postcode or contact_record.address.country %}
@@ -108,17 +111,21 @@
                       <input type="hidden" value="{{contact_record.id}}" name="contactid">
                   </form>
                   <ul class="list-group" id="attachment_div">
-                      {% for attachemnt in attachments %}
-                          <li class="list-group-item list-row" id="attachment{{attachemnt.id}}">
+                      {% for attachment in attachments %}
+                          <li class="list-group-item list-row" id="attachment{{attachment.id}}">
                               <div class="float-right right-container">
                                 <div class="list-row-buttons btn-group float-right">
-                                  <button  class="action btn btn-danger" onclick="remove_attachment({{attachemnt.id}})">Remove</button>
+                                  <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
                                 </div>
                               </div>
-                                <div class="stream-post-container" id="attachment_name{{attachemnt.id}}"><pre><a href="{{ attachemnt.attachment.url }}">{{ attachemnt.file_name }}</a></pre></div>
+
+                              <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                                <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                              </div>
+
                               <div class="stream-container">
-                                <pre class="float-left">{{ attachemnt.created_by }}</pre>
-                                <pre class="float-right">{{ attachemnt.created_on|date:'m/d/Y,  H:i:s A' }}</pre>
+                                <pre class="float-left">{{ attachment.created_by }}</pre>
+                                <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
                               </div>
                           </li>
                       {% endfor %}
@@ -151,7 +158,7 @@
                   <li class="list-group-item list-row" id="comment{{comment.id}}">
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions <span class="caret"></span></button>
                         <ul class="dropdown-menu text-center">
                           <li>
                             <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
@@ -165,7 +172,7 @@
                     <div class="stream-post-container" id="comment_name{{comment.id}}"><pre>{{ comment.comment }}</pre></div>
                     <div class="stream-container">
                       <pre class="float-left">{{ comment.commented_by }}</pre>
-                      <pre class="float-right">{{ comment.commented_on|date:'m/d/Y,  H:i:s A' }}</pre>
+                      <pre class="float-right">{{ comment.commented_on|date:'m/d/Y,  h:i:s A' }}</pre>
                     </div>
                   </li>
                   {% endfor %}
@@ -322,11 +329,12 @@ $("#attachment_form").submit(function (e) {
       } else {
         d = new Date(data.created_on)
         $("#attachment_div").prepend(
-            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
-              "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn btn-danger' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
-              "<div class='stream-post-container' id='comment_name"+data.attachment_id+"'><pre><a href='"+data.attachment_url+"'>"+data.attachment+"</a></pre></div>"+
-              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>" +
-            "</li>"
+              "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+                "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
+                "<div class='stream-post-container' id='attachment_name"+data.attachment_id+"'>"+
+                "<pre><span class='icon'><i style='font-size:1.5rem;' class='"+data.attachment_display+"'></i>&nbsp;&nbsp;</span><a href='"+data.download_url+"'>Download</a></pre></div>"+
+                "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right date'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>" +
+              "</li>"
         )
         $("#id_attachments").val("")
         alert("Attachment Saved")

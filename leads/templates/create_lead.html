@@ -83,6 +83,13 @@
                     <span class="error">{{ lead_form.website.errors }}</span>
                   </div>
                 </div>
+                <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" >Description{% if lead_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
+                  {{ lead_form.description }}
+                  <span class="error">{{ lead_form.description.errors }}</span>
+                </div>
+              </div>
               </div>
               <div class="col-md-6">
                 <div class="filter_col col-md-12">
@@ -138,19 +145,13 @@
                     </div>
                   </div>
                 </div>
+                <br>
                 <div class="filter_col col-12">
                   <div class="form-group">
                     <label>Tags</label>
                      <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1" value="{% for t in lead_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags"/>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div class="filter_col col-md-6">
-                <div class="form-group col-md-12">
-                  <label for="exampleInputEmail1" >Description{% if lead_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
-                  {{ lead_form.description }}
-                  <span class="error">{{ lead_form.description.errors }}</span>
                 </div>
               </div>
             </div>

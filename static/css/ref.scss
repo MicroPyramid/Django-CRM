@@ -38,11 +38,11 @@ $mob_min:240px;
   border:1px solid #ccc;
 }
 .buttons_row{
-  margin-top: 10px;
-  margin-bottom: 10px;
+/*  margin-top: 10px;
+  margin-bottom: 10px;*/
   button{
     border-radius: 0;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     &.save{
       background: $dark_sky;
@@ -54,7 +54,7 @@ $mob_min:240px;
     	border:1px solid $dark_sky;
     	border-radius: 0;
     	color: $dark_sky;
-    	font-size: 1rem;
+    	font-size: 0.85rem;
     }
   &.form_btn_row{
   	display: block;
@@ -65,10 +65,35 @@ $mob_min:240px;
 }
 select{
 	&.form-control{
-		height: 32px ;
+		font-size: 0.85rem;
 	}
 }
 
 .mar-top{
 	margin-top: 15px;
+}
+
+.table{
+  tbody{
+    tr{
+      td{
+        &.user_role{
+          text-transform: capitalize;
+        }
+      }
+    }
+  }
+}
+.dropdown{
+  .dropdown-menu{
+    padding: 0;
+    border-radius: 0;
+    li{
+      a{
+        padding: 8px 8px;
+        display: block;
+        border-bottom: 1px solid #dedede; 
+      }
+    }
+  }
 }

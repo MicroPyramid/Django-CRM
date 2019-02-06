@@ -10,21 +10,19 @@
 </nav>
 <!-- Breadcrumb Ends Here -->
 {% endblock%}
-
 {% block content%}
 <!-- OPPORTUNITY VIEW STARTS -->
-  <div class="main_container" id="maincontainer">
-    <div class="overview_form_block row marl justify-content-center">
-      <div class="col-md-8">
-        <div class="card">
-          
-          <div class="card-body" id="datashow">
-         <div class="card-title">
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="card-title text-right">
             <h5>
-              OVERVIEW
+              <span class="float-left">OVERVIEW</span>
               <span class="float-right" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
-                  <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
+                  <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
                   <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}" >Edit</a></li>
@@ -33,145 +31,149 @@
               </span>
             </h5>
           </div>
-            <div class="row marl">
-              <div class="col-md-6">
-                <div class="filter_col col-md-12" id="iname">
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_name" data-name="name">Name</label>
-                    <div class="opportunity_field" id="opportunity_name" data-name="name">{{ opportunity_record.name }}</div>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_opportunity_account" data-name="name">Account</label>
-                    <div class="opportunity_field" id ="opportunity_account" data-name="name">{{ opportunity_record.account }}</div>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.contacts.all %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_contact" data-name="name">Contact(s)</label>
-                    <div class="opportunity_field" id="opportunity_contact" data-name="name">
-                      {% for contact in opportunity_record.contacts.all %}
-                        <li>{{ contact }}</li>
-                      {% endfor %}
-                    </div>
-                  </div>
-                  {% endif %}
-                </div>
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.amount %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_amount" data-name="name">Amount</label>
-                    <div class="opportunity_field" id="opportunity_amount" data-name="name">{{ opportunity_record.currency }} {{ opportunity_record.amount }}</div>
-                  </div>
-                  {% endif %}
+          <div class="row marl">
+            <div class="col-md-4">
+              <div class="filter_col col-md-12" id="iname">
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_name" data-name="name">Name</label>
+                  <div class="opportunity_field" id="opportunity_name" data-name="name">{{ opportunity_record.name }}</div>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.stage %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_stage" data-name="name">Stage</label>
-                    <div class="opportunity_field" id="opportunity_stage" data-name="name">{{ opportunity_record.stage }}</div>
-                  </div>
-                  {% endif %}
-                </div>
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.lead_source %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_lead_source" data-name="name">Lead Source</label>
-                    <div class="opportunity_field" id="opportunity_lead_source" data-name="name">{{ opportunity_record.lead_source }}</div>
-                  </div>
-                  {% endif %}
-                </div>
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.probability %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_probability" data-name="name">Probability</label>
-                    <div class="opportunity_field" id="opportunity_probability" data-name="name">{{opportunity_record.probability}} %</div>
-                  </div>
-                  {% endif %}
-                </div>
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.closed_on %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_close_date" data-name="name">Close Date</label>
-                    <div class="opportunity_field" id="opportunity_close_date" data-name="name">{{opportunity_record.closed_on|date}}</div>
-                  </div>
-                  {% endif %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_opportunity_account" data-name="name">Account</label>
+                  <div class="opportunity_field" id ="opportunity_account" data-name="name">{{ opportunity_record.account }}</div>
                 </div>
               </div>
-              <div class="col-md-12">
-                <div class="filter_col col-md-12">
-                  {% if opportunity_record.description %}
-                  <div class="form-group">
-                    <label class="opportunity_field_label" for="id_description" data-name="name">Description</label>
-                    <div class="opportunity_field" id="opportunity_description" data-name="name">{{opportunity_record.description}}</div>
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.contacts.all %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_contact" data-name="name">Contact(s)</label>
+                  <div class="opportunity_field" id="opportunity_contact" data-name="name">
+                    {% for contact in opportunity_record.contacts.all %}
+                    <li>{{ contact }}</li>
+                    {% endfor %}
                   </div>
-                  {% endif %}
                 </div>
+                {% endif %}
               </div>
-              <div class="col-md-12">
-                <div class="created_information">
-                  Created by <b>{{ opportunity_record.created_by }}</b> created on <i><b>{{ opportunity_record.created_on }}</b></i> 
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.amount %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_amount" data-name="name">Amount</label>
+                  <div class="opportunity_field" id="opportunity_amount" data-name="name">{{ opportunity_record.currency }} {{ opportunity_record.amount }}</div>
                 </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.stage %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_stage" data-name="name">Stage</label>
+                  <div class="opportunity_field" id="opportunity_stage" data-name="name">{{ opportunity_record.stage }}</div>
+                </div>
+                {% endif %}
+              </div>
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.lead_source %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_lead_source" data-name="name">Lead Source</label>
+                  <div class="opportunity_field" id="opportunity_lead_source" data-name="name">{{ opportunity_record.lead_source }}</div>
+                </div>
+                {% endif %}
+              </div>
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.probability %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_probability" data-name="name">Probability</label>
+                  <div class="opportunity_field" id="opportunity_probability" data-name="name">{{opportunity_record.probability}} %</div>
+                </div>
+                {% endif %}
+              </div>
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.closed_on %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_close_date" data-name="name">Close Date</label>
+                  <div class="opportunity_field" id="opportunity_close_date" data-name="name">{{opportunity_record.closed_on|date}}</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                {% if opportunity_record.description %}
+                <div class="form-group">
+                  <label class="opportunity_field_label" for="id_description" data-name="name">Description</label>
+                  <div class="opportunity_field" id="opportunity_description" data-name="name">{{opportunity_record.description}}</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="created_information">
+                Created by <b>{{ opportunity_record.created_by }}</b> created on <i><b>{{ opportunity_record.created_on }}</b></i> 
               </div>
             </div>
           </div>
-          <!-- Attachment Section start -->
-      <div>
-      <div class="card-body mar-top" id="datashow">
-          <div class="card-title view-pad">
+        </div>
+        <!-- Attachment Section start -->
+        <div>
+          <div class="card-body mar-top" id="datashow">
+            <div class="card-title view-pad">
               <h5>Attachments</h5>
-         </div>
-          <div class="row marl">
+            </div>
+            <div class="row marl">
               <div class="col-md-12">
-                  <form id="attachment_form" method="POST" enctype="multipart/form-data">
-                      <div class="form-group ">
-                        <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
-                          <div><i id="AttachmentError" style="display:none; color:red"></i></div>
-                          <br>
-                          <div class="buttons_row">
-                              <button class="btn btn-default save" style="text-align: center;" id="attachment_submit">Save</button>
-                          </div>
+                <form id="attachment_form" method="POST" enctype="multipart/form-data">
+                  <div class="form-group ">
+                    <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
+                    <div><i id="AttachmentError" style="display:none; color:red"></i></div>
+                    <br>
+                    <div class="buttons_row">
+                      <button class="btn btn-default save" style="text-align: center;" id="attachment_submit">Save</button>
+                    </div>
+                  </div>
+                  <input type="hidden" value="{{opportunity_record.id}}" name="opportunityid">
+                </form>
+                <ul class="list-group" id="attachment_div">
+                  {% for attachment in attachments %}
+                  <li class="list-group-item list-row" id="attachment{{attachment.id}}">
+                    <div class="float-right right-container">
+                      <div class="list-row-buttons btn-group float-right">
+                        <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
                       </div>
-                      <input type="hidden" value="{{opportunity_record.id}}" name="opportunityid">
-                  </form>
-                  <ul class="list-group" id="attachment_div">
-                      {% for attachemnt in attachments %}
-                          <li class="list-group-item list-row" id="attachment{{attachemnt.id}}">
-                              <div class="float-right right-container">
-                                <div class="list-row-buttons btn-group float-right">
-                                  <button  class="action btn btn-danger" onclick="remove_attachment({{attachemnt.id}})">Remove</button>
-                                </div>
-                              </div>
-                                <div class="stream-post-container" id="attachment_name{{attachemnt.id}}"><pre><a href="{{ attachemnt.attachment.url }}">{{ attachemnt.file_name }}</a></pre></div>
-                              <div class="stream-container">
-                                <pre class="float-left">{{ attachemnt.created_by }}</pre>
-                                <pre class="float-right">{{ attachemnt.created_on|date:'m/d/Y,  H:i:s A' }}</pre>
-                              </div>
-                          </li>
-                      {% endfor %}
-                  </ul>
+                    </div>
+
+                    <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                      <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                    </div>
+
+                    <div class="stream-container">
+                      <pre class="float-left">{{ attachment.created_by }}</pre>
+                      <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                    </div>
+                  </li>
+                  {% endfor %}
+                </ul>
               </div>
+            </div>
           </div>
-      </div>
-        <!-- Attachment Section end -->
+          <!-- Attachment Section end -->
           <!-- Comments Section starts-->
-          
           <div class="card-body" id="datashow">
-          <div class="card-title view-pad">
-            <h5>Comments</h5>
-          </div>
+            <div class="card-title view-pad">
+              <h5>Comments</h5>
+            </div>
             <div class="row marl">
               <div class="col-md-12">
                 <form id="comment_form" method="POST" enctype="multipart/form-data">
                   <div class="form-group">
-                    <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea><div><i id="CommentError" style="display:none; color:red"></i></div>
+                    <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea>
+                    <div><i id="CommentError" style="display:none; color:red"></i></div>
                     </br>
-                      <div class="buttons_row">
-                    <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                    <div class="buttons_row">
+                      <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
                     </div>
                   </div>
                   <input type="hidden" value="{{ opportunity_record.id }}" name="opportunityid">
@@ -181,7 +183,7 @@
                   <li class="list-group-item list-row" id="comment{{comment.id}}">
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button"><span class="caret"></span></button>
+                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions <span class="caret"></span></button>
                         <ul class="dropdown-menu text-center">
                           <li>
                             <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
@@ -192,10 +194,12 @@
                         </ul>
                       </div>
                     </div>
-                    <div class="stream-post-container" id="comment_name{{comment.id}}"><pre>{{ comment.comment }}</pre></div>
+                    <div class="stream-post-container" id="comment_name{{comment.id}}">
+                      <pre>{{ comment.comment }}</pre>
+                    </div>
                     <div class="stream-container">
                       <pre class="float-left">{{ comment.commented_by }}</pre>
-                      <pre class="float-right">{{ comment.commented_on|date:'m/d/Y,  H:i:s A' }}</pre>
+                      <pre class="float-right date">{{ comment.commented_on|date:'m/d/Y,  h:i:s A' }}</pre>
                     </div>
                   </li>
                   {% endfor %}
@@ -208,7 +212,6 @@
                   <div class="modal-header">
                     <h4 class="modal-title">Update Your Comment</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
-
                   </div>
                   <form id="comment_edit_form" method="POST" >
                     <div class="modal-body">
@@ -229,23 +232,25 @@
           <!-- Comments Section Ends-->
         </div>
       </div>
-      </div>
     </div>
   </div>
+</div>
 <!-- OPPORTUNITY VIEW ENDS -->
 {% endblock %}
+
 {% block js_block %}
+
 <script type="text/javascript">
 
-var assigned_to_list = "{{ assigned_data }}";
-assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
-         return {
-              l   : '<',
-              g   : '>',
-              quo : '"'
-          }[b];
-      }));
-
+  var assigned_to_list = "{{ assigned_data }}";
+  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
+           return {
+                l   : '<',
+                g   : '>',
+                quo : '"'
+            }[b];
+        }));
+  
   $(function () {
       $('#datetimepicker1').datetimepicker({
           'format': 'YYYY-MM-DD',
@@ -291,8 +296,8 @@ assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function
       }
     })
   });
-
-
+  
+  
   function edit_comment(x) {
     $('#Comments_Opportunity_Modal').modal('show');
     comment = $("#comment_name" + x).text()
@@ -322,12 +327,12 @@ assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function
       }
     })
   });
-
-function HideError(e) {
+  
+  function HideError(e) {
     $("#CommentError").hide()
-  $("#AttachmentError").hide()
-}
-
+    $("#AttachmentError").hide()
+  }
+  
   function remove_comment(x) {
     var con = confirm("Do you want to Delete it for Sure!?")
     if (con == true) {
@@ -345,52 +350,52 @@ function HideError(e) {
 
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
-    if (con == true) {
-    $.post('{% url "leads:remove_attachment" %}', {
-      "attachment_id": x
-    }, function (data) {
-      if (data.error) {
-        alert(data.error)
-      } else {
-        $("#attachment" + data.aid).remove()
+      if (con == true) {
+      $.post('{% url "leads:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#attachment" + data.aid).remove()
+        }
+      })
+    }
+  }
+  
+  $("#attachment_form").submit(function (e) {
+    e.preventDefault()
+      const formData = new FormData($("#attachment_form")[0]);
+      $.ajax({
+      url: "{% url 'opportunities:add_attachment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.error) {
+          $("#AttachmentError").html(data.error).show()
+        } else {
+          d = new Date(data.created_on)
+          $("#attachment_div").prepend(
+              "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+                "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
+                "<div class='stream-post-container' id='attachment_name"+data.attachment_id+"'>"+
+                "<pre><span class='icon'><i style='font-size:1.5rem;' class='"+data.attachment_display+"'></i>&nbsp;&nbsp;</span><a href='"+data.download_url+"'>Download</a></pre></div>"+
+                "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right date'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>" +
+              "</li>"
+          )
+          $("#id_attachments").val("")
+          alert("Attachment Saved")
+          $("#AttachmentError").html("")
+        }
       }
     })
-  }
-}
-
-$("#attachment_form").submit(function (e) {
-  e.preventDefault()
-    const formData = new FormData($("#attachment_form")[0]);
-    $.ajax({
-    url: "{% url 'opportunities:add_attachment' %}",
-    type: "POST",
-    data: formData,
-    cache: false,
-    contentType: false,
-    processData: false,
-    success: function (data) {
-      if (data.error) {
-        $("#AttachmentError").html(data.error).show()
-      } else {
-        d = new Date(data.created_on)
-        $("#attachment_div").prepend(
-            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
-              "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn btn-danger' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
-              "<div class='stream-post-container' id='comment_name"+data.attachment_id+"'><pre><a href='"+data.attachment_url+"'>"+data.attachment+"</a></pre></div>"+
-              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right'>"+d.toLocaleString('en-US', { hour12: true})+"</pre></div>" +
-            "</li>"
-        )
-        $("#id_attachments").val("")
-        alert("Attachment Saved")
-        $("#AttachmentError").html("")
-      }
-    }
-  })
-});
-
-
+  });
 
 </script>
-<script src="{% static 'js/mention.js' %}"></script>
-{% endblock js_block %}
 
+<script src="{% static 'js/mention.js' %}"></script>
+
+{% endblock js_block %}
