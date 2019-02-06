@@ -31,6 +31,7 @@
   {% if request.user.is_authenticated %}
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
    <ul class="navbar-nav mr-auto">
+    <li class="nav-item"><a class="nav-link" id="dashboard" href="{% url 'common:home' %}">Dashboard</a></li>
        {% if request.user.role == "ADMIN"  or request.user.is_superuser %}
         <li class="nav-item"><a class="nav-link" id="users" href="{% url 'common:users_list' %}">Users</a></li>
        {% endif %}
@@ -94,7 +95,12 @@
 <script type="text/javascript">
     $(document).ready(function(){
         word = window.location.pathname.split('/')[1]
-        $('#' + word).addClass('active')
+        if(word == ""){
+          $("#dashboard").addClass('active')
+        }
+        else{
+          $('#' + word).addClass('active')
+        }
     })
 </script>
 </body>

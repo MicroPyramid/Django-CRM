@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
-from accounts.models import Account
+from accounts.models import Account, Tags
 from common.models import User, Comment, Team, Attachments
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
 from contacts.models import Contact
@@ -73,8 +73,7 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        return self.form_invalid(form)
 
     def form_valid(self, form):
         opportunity_obj = form.save(commit=False)
@@ -101,6 +100,16 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
             opportunity_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
             opportunity_obj.contacts.add(*self.request.POST.getlist('contacts'))
+        if self.request.POST.get('tags', ''):
+                tags = self.request.POST.get("tags")
+                splitted_tags = tags.split(",")
+                for t in splitted_tags:
+                    tag = Tags.objects.filter(name=t.lower())
+                    if tag:
+                        tag = tag[0]
+                    else:
+                        tag = Tags.objects.create(name=t.lower())
+                    opportunity_obj.tags.add(tag)
         if self.request.is_ajax():
             return JsonResponse({'error': False})
         if self.request.POST.get("savenewform"):
@@ -108,8 +117,7 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
         if self.request.POST.get('from_account'):
             from_account = self.request.POST.get('from_account')
             return redirect("accounts:view_account", pk=from_account)
-        else:
-            return redirect('opportunities:list')
+        return redirect('opportunities:list')
 
     def form_invalid(self, form):
         if self.request.is_ajax():
@@ -185,8 +193,7 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        return self.form_invalid(form)
 
     def form_valid(self, form):
         assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
@@ -221,7 +228,17 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
             opportunity_obj.teams.add(*self.request.POST.getlist('teams'))
         if self.request.POST.getlist('contacts', []):
             opportunity_obj.contacts.add(*self.request.POST.getlist('contacts'))
-
+        opportunity_obj.tags.clear()
+        if self.request.POST.get('tags', ''):
+            tags = self.request.POST.get("tags")
+            splitted_tags = tags.split(",")
+            for t in splitted_tags:
+                tag = Tags.objects.filter(name=t.lower())
+                if tag:
+                    tag = tag[0]
+                else:
+                    tag = Tags.objects.create(name=t.lower())
+                opportunity_obj.tags.add(tag)
         if self.request.POST.get('from_account'):
             from_account = self.request.POST.get('from_account')
             return redirect("accounts:view_account", pk=from_account)
@@ -265,12 +282,12 @@ class DeleteOpportunityView(LoginRequiredMixin, View):
         self.object.delete()
         if request.is_ajax():
             return JsonResponse({'error': False})
-        else:
-            if request.GET.get('view_account'):
-                account = request.GET.get('view_account')
-                return redirect("accounts:view_account", pk=account)
-            else:
-                return redirect("opportunities:list")
+    
+        if request.GET.get('view_account'):
+            account = request.GET.get('view_account')
+            return redirect("accounts:view_account", pk=account)
+        
+        return redirect("opportunities:list")
 
 
 class GetContactView(LoginRequiredMixin, View):
@@ -302,11 +319,10 @@ class AddCommentView(LoginRequiredMixin, CreateView):
             form = self.get_form()
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {'error': "You don't have permission to comment."}
-            return JsonResponse(data)
+            return self.form_invalid(form)
+ 
+        data = {'error': "You don't have permission to comment."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         comment = form.save(commit=False)
@@ -332,11 +348,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             form = OpportunityCommentForm(request.POST, instance=self.comment_obj)
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {'error': "You don't have permission to edit this comment."}
-            return JsonResponse(data)
+            return self.form_invalid(form)
+
+        data = {'error': "You don't have permission to edit this comment."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
@@ -358,9 +373,9 @@ class DeleteCommentView(LoginRequiredMixin, View):
             self.object.delete()
             data = {"cid": request.POST.get("comment_id")}
             return JsonResponse(data)
-        else:
-            data = {'error': "You don't have permission to delete this comment."}
-            return JsonResponse(data)
+    
+        data = {'error': "You don't have permission to delete this comment."}
+        return JsonResponse(data)
 
 
 class GetOpportunitiesView(LoginRequiredMixin, ListView):
@@ -390,11 +405,10 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             form = self.get_form()
             if form.is_valid():
                 return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
-        else:
-            data = {'error': "You don't have permission to add attachment."}
-            return JsonResponse(data)
+            return self.form_invalid(form)
+        
+        data = {'error': "You don't have permission to add attachment."}
+        return JsonResponse(data)
 
     def form_valid(self, form):
         attachment = form.save(commit=False)
@@ -420,11 +434,10 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
-        if (request.user == self.object.created_by or request.user.is_superuser or
-            request.user.role == 'ADMIN'):
+        if (request.user == self.object.created_by or request.user.is_superuser or request.user.role == 'ADMIN'):
             self.object.delete()
             data = {"aid": request.POST.get("attachment_id")}
             return JsonResponse(data)
-        else:
-            data = {'error': "You don't have permission to delete this attachment."}
-            return JsonResponse(data)
+
+        data = {'error': "You don't have permission to delete this attachment."}
+        return JsonResponse(data)

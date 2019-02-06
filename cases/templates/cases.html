@@ -81,7 +81,7 @@
         <div class="card-body">
         <div class="panel-heading-list card-title text-right">
 
-           <span class="total_count float-left">Total Cases :{% if show_pageitems %} {% show_pageitems %}{% else %}Total Cases {{ cases|length }}{% endif %}</span>
+           <span class="total_count float-left">Cases - {% if show_pageitems %} {% show_pageitems %}{% else %}{{ cases|length }}{% endif %}</span>
             <span class="filter_toggle ">
             <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
             </span>

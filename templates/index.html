@@ -1,37 +1,46 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block content %}
+{% load common_tags %}
 <!-- <a href="{% url "common:logout" %}"><button class="btn btn-primary" type="button">Logout</button></a> -->
 <div class="row marl justify-content-center">
   <div class="col-md-9">
     <!-- count_blocks_row starts here -->
     <div class="row count_blocks_row">
       <div class="col-md-3">
-        <div class="item">
-          <div class="title">Accounts</div>
-          <div class="count">100</div>
-          <div class="more"><a href="#">Go Live</a></div>
+        <div class="item sky_blue">
+          <a href="{% url 'accounts:list'%}">
+            <div class="title">Accounts</div>
+            <div class="count">{{accounts|length}}</div>
+            <!-- <div class="more"><a href="#">Go Live</a></div> -->
+          </a>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="item">
-          <div class="title">Contacts</div>
-          <div class="count">3520</div>
-          <div class="more "><a href="#">Go Live</a></div>
+        <div class="item green">
+          <a href="{% url 'contacts:list' %}">
+            <div class="title">Contacts</div>
+            <div class="count">{{contacts_count}}</div>
+          </a>
+          <!-- <div class="more"><a href="#">Go Live</a></div> -->
         </div>
       </div>
       <div class="col-md-3">
-        <div class="item">
-          <div class="title">Leads</div>
-          <div class="count">47</div>
-          <div class="more "><a href="#">Go Live</a></div>
+        <div class="item red">
+          <a href="{% url 'leads:list' %}">
+            <div class="title">Leads</div>
+            <div class="count">{{leads_count}}</div>
+            <!-- <div class="more"><a href="#">Go Live</a></div> -->
+          </a>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="item">
-          <div class="title">Opportunities</div>
-          <div class="count">80</div>
-          <div class="more "><a href="#">Go Live</a></div>
+        <div class="item yellow">
+          <a href="{% url 'opportunity:list' %}">
+            <div class="title">Opportunities</div>
+            <div class="count">{{opportunities|length}}</div>
+            <!-- <div class="more"><a href="#">Go Live</a></div> -->
+          </a>
         </div>
       </div>
     </div>
@@ -52,48 +61,21 @@
                   </tr>
                 </thead>
                 <tbody>
+                  {% for account in accounts|slice:"15" %}
                   <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
+                    <td><a href="{% url 'accounts:view_account' account.id %}">{{account.name}}</a></td>
                     <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
+                    {% for tag in account.tags.all|slice:'3' %}
+                      <span class="text-left color{{forloop.counter}}" id="list_tag">{{tag.name}}</span>
+                    {% empty %}
+                      <span class="text-left">No Tags</span>
+                    {% endfor %}
+                    {% if account.tags.all|length > 3 %}
+                    <span class="text-left" id="list_tag">{{account.tags.all|length|subtract:'3'}}<span>+</span></span>
+                    {% endif %}
                     </td>
                   </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">santharao</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">design</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
+                  {% endfor %}
                 </tbody>
               </table>
             </div>
@@ -115,48 +97,21 @@
                   </tr>
                 </thead>
                 <tbody>
+                  {% for opportunity in opportunities|slice:"15" %}
                   <tr>
-                    <td><a href="/contacts/1/view/">Opportunity1</a></td>
+                    <td><a href="{% url 'opportunity:opp_view' opportunity.id %}">{{opportunity.name}}</a></td>
                     <td style="display: block;">
-                      <span class="text-left" id="list_tag">test</span>
-                      <span class="text-left" id="list_tag">test2</span>
+                      {% for tag in opportunity.tags.all|slice:'3' %}
+                      <span class="text-left color{{forloop.counter}}" id="list_tag">{{tag.name}}</span>
+                      {% empty %}
+                      <span class="text-left">No Tags</span>
+                      {% endfor %}
+                      {% if opportunity.tags.all|length > 3 %}
+                      {{opportunity.tags.all|length|subtract:'3'}}<span>+</span>
+                      {% endif %}
                     </td>
                   </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">Opportunity2</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">test2</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">Opportunity5</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">tst3</span>
-                      <span class="text-left" id="list_tag">device</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">Opportunity3</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">bug</span>
-                      <span class="text-left" id="list_tag">bugs</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">Opportunity5</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">edit</span>
-                      <span class="text-left" id="list_tag">delete</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><a href="/contacts/1/view/">Opportunity5</a></td>
-                    <td style="display: block;">
-                      <span class="text-left" id="list_tag">webdesign</span>
-                      <span class="text-left" id="list_tag">testing</span>
-                    </td>
-                  </tr>
+                  {% endfor %}
                 </tbody>
               </table>
             </div>

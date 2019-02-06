@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 
-from accounts.models import Account
+from accounts.models import Account, Tags
 from contacts.models import Contact
 from common.models import User, Team
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
@@ -27,6 +27,7 @@ class Opportunity(models.Model):
     created_by = models.ForeignKey(User, related_name='opportunity_created_by', on_delete=models.CASCADE)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
+    tags = models.ManyToManyField(Tags, blank=True)
 
     class Meta:
         ordering = ['-created_on']

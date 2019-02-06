@@ -2,7 +2,7 @@ from django.urls import path
 from opportunity.views import (
     OpportunityListView, CreateOpportunityView, OpportunityDetailView, UpdateOpportunityView,
     DeleteOpportunityView, GetContactView, GetOpportunitiesView, AddCommentView,
-    UpdateCommentView, DeleteCommentView,AddAttachmentsView,DeleteAttachmentsView)
+    UpdateCommentView, DeleteCommentView,AddAttachmentsView)
 
 
 app_name = 'opportunity'
