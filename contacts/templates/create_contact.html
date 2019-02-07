@@ -40,7 +40,13 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Account{% if contact_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
-                  <input type="text" name="account" class="form-control" readonly="">
+                  {% if account %}
+                  <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
+                      <option value="{{account.id}}" selected="">{{account.name}}</option>
+                  </select>
+                  {% else %}
+                  {{contact_form.account}}
+                  {% endif %}
                   <span class="error">{{ contact_form.account.errors }}</span>
                 </div>
               </div>

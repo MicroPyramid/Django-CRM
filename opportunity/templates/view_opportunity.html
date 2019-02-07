@@ -151,11 +151,13 @@
                 <ul class="list-group" id="attachment_div">
                   {% for attachment in attachments %}
                   <li class="list-group-item list-row" id="attachment{{attachment.id}}">
+                    {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
                         <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
                       </div>
                     </div>
+                    {% endif %}
 
                     <div class="stream-post-container" id="attachment_name{{attachment.id}}">
                       <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
@@ -193,6 +195,7 @@
                 <ul class="list-group" id="comments_div">
                   {% for comment in comments %}
                   <li class="list-group-item list-row" id="comment{{comment.id}}">
+                    {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
                         <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions <span class="caret"></span></button>
@@ -206,6 +209,7 @@
                         </ul>
                       </div>
                     </div>
+                    {% endif %}
                     <div class="stream-post-container" id="comment_name{{comment.id}}">
                       <pre>{{ comment.comment }}</pre>
                     </div>

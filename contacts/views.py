@@ -120,6 +120,9 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         context["contact_form"] = context["form"]
         context["teams"] = Team.objects.all()
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["assignedto_list"] = [
@@ -242,6 +245,9 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         context["contact_form"] = context["form"]
         context["teams"] = Team.objects.all()
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["assignedto_list"] = [

@@ -130,6 +130,9 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
         context["opportunity_form"] = context["form"]
         context["teams"] = Team.objects.all()
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["contacts"] = self.contacts
         context["users"] = self.users
         context["currencies"] = CURRENCY_CODES
@@ -258,6 +261,9 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
         context["opportunity_form"] = context["form"]
         context["teams"] = Team.objects.all()
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["contacts"] = self.contacts
         context["users"] = self.users
         context["currencies"] = CURRENCY_CODES

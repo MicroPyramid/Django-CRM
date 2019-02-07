@@ -37,6 +37,8 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
                 queryset = queryset.filter(industry__icontains=request_post.get('industry'))
             if request_post.get('tag'):
                 queryset = queryset.filter(tags__in=request_post.get('tag'))
+            if request_post.get('assigned_to'):
+                queryset = queryset.filter(assigned_to__id__in=request_post.get('assigned_to'))
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -167,7 +169,8 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
         account_record = context["account_record"]
         if (
             self.request.user in account_record.assigned_to.all() or
-            self.request.user == account_record.created_by
+            self.request.user == account_record.created_by or
+            self.request.user.is_superuser or self.request.user.role == 'ADMIN'
         ):
             comment_permission = True
         else:
