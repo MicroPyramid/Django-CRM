@@ -123,6 +123,9 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
         context["teams"] = Team.objects.all()
         context["case_form"] = context["form"]
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["contacts"] = self.contacts
         context["users"] = self.users
         context["case_types"] = CASE_TYPE
@@ -240,6 +243,9 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
         context["teams"] = Team.objects.all()
         context["case_form"] = context["form"]
         context["accounts"] = self.accounts
+        if self.request.GET.get('view_account'):
+            context['account'] = get_object_or_404(
+                Account, id=self.request.GET.get('view_account'))
         context["contacts"] = self.contacts
         context["users"] = self.users
         context["case_types"] = CASE_TYPE

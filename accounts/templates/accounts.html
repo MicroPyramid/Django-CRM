@@ -91,7 +91,7 @@
               <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open" aria-selected="true">Open</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Close</a>
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Closed</a>
             </li>
           </ul>
           <div class="tab-content" id="myTabContent">
@@ -179,7 +179,7 @@
               <div class="card">
                 <div class="card-body">
                   <div class="panel-heading-list card-title text-right">
-                    <span class="total_count float-left">Close Accounts - {% if show_pageitems %} {% show_pageitems %}{% else %}{{close_accounts|length}}{% endif %}</span>
+                    <span class="total_count float-left">Closed Accounts - {% if show_pageitems %} {% show_pageitems %}{% else %}{{close_accounts|length}}{% endif %}</span>
                     <span class="filter_toggle ">
                         <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>                  
@@ -193,10 +193,10 @@
                           <th width="15%">Name</th>
                           <th width="10%">City</th>
                           <th width="10%">State</th>
-                          <th width="25%">Assigned To</th>
+                          <th width="22%">Assigned To</th>
                           <th width="10%">Industry</th>
-                          <th width="20%">Tags</th>
-                          <th width="10%">Actions</th>
+                          <th width="18%">Tags</th>
+                          <th width="15%">Actions</th>
                         </tr>
                         {% endif %}
                       </thead>
