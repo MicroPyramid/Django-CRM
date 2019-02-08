@@ -29,7 +29,7 @@
         <div class="item red">
           <a href="{% url 'leads:list' %}">
             <div class="title">Leads</div>
-            <div class="count">{{leads_count}}</div>
+            <div class="count">{{leads_count|length}}</div>
             <!-- <div class="more"><a href="#">Go Live</a></div> -->
           </a>
         </div>

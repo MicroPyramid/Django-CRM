@@ -102,7 +102,7 @@
                   <tr class="text-center">
                     <td scope="row">{{ forloop.counter }}</td>
                     <td><a href="{% url 'leads:view_lead' lead.id %}">{{ lead.first_name }} {{ lead.last_name }}</a></td>
-                    <td>{{ lead.status }}</td>
+                    <td>{{ lead.get_status_display }}</td>
                     <td>
                       {% with lead_users=lead.assigned_to.all %}
                         {% if lead_users %}

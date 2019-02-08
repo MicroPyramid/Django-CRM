@@ -1,4 +1,5 @@
 import os
+import json
 from django.contrib.auth import logout, authenticate, login
 from django.core.mail import EmailMessage
 from django.contrib.auth.hashers import check_password
@@ -7,8 +8,8 @@ from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http40
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
-from common.models import User, Document, Attachments
-from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm,DocumentForm
+from common.models import User, Document, Attachments, Comment
+from common.forms import UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm,DocumentForm, UserCommentForm
 from django.contrib.auth.views import PasswordResetView
 from django.urls import reverse_lazy
 from django.conf import settings
@@ -47,7 +48,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         context["accounts"] = Account.objects.filter(status="open")
         context["contacts_count"] = Contact.objects.count()
-        context["leads_count"] = Lead.objects.count()
+        context["leads_count"] = Lead.objects.exclude(status='converted')
         context["opportunities"] = Opportunity.objects.all()
         return context
 
@@ -208,12 +209,20 @@ class UserDetailView(AdminRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(UserDetailView, self).get_context_data(**kwargs)
         user_obj = self.object
+        users_data = []
+        for each in User.objects.all():
+            assigned_dict = {}
+            assigned_dict['id'] = each.id
+            assigned_dict['name'] =  each.username
+            users_data.append(assigned_dict)
         context.update({
             "user_obj": user_obj,
             "opportunity_list": Opportunity.objects.filter(assigned_to=user_obj.id),
             "contacts": Contact.objects.filter(assigned_to=user_obj.id),
             "cases": Case.objects.filter(assigned_to=user_obj.id),
             "accounts": Account.objects.filter(assigned_to=user_obj.id),
+            "assigned_data": json.dumps(users_data),
+            "comments": user_obj.user_comments.all(),
         })
         return context
 
@@ -409,3 +418,50 @@ def change_user_status(request, pk):
         user.is_active = True
     user.save()
     return HttpResponseRedirect('/users/list/')
+
+
+def add_comment(request):
+    if request.method == "POST":
+        user = get_object_or_404(User, id=request.POST.get('userid'))
+        form = UserCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.commented_by = request.user
+            comment.user = user
+            comment.save()
+            return JsonResponse({
+                "comment_id": comment.id, "comment": comment.comment,
+                "commented_on": comment.commented_on,
+                "commented_by": comment.commented_by.email
+            })
+        else:
+            return JsonResponse({"error": form.errors})
+
+
+def edit_comment(request, pk):
+    if request.method == "POST":
+        comment_obj = get_object_or_404(Comment, id=pk)
+        if request.user == comment_obj.commented_by:
+            form = UserCommentForm(request.POST, instance=comment_obj)
+            if form.is_valid():
+                comment_obj.comment = form.cleaned_data.get("comment")
+                comment_obj.save(update_fields=["comment"])
+                return JsonResponse({
+                    "comment_id": comment_obj.id,
+                    "comment": comment_obj.comment,
+                })
+            else:
+                return JsonResponse({"error": form['comment'].errors})
+        data = {'error': "You don't have permission to edit this comment."}
+        return JsonResponse(data)
+
+
+def remove_comment(request):
+    if request.method == "POST":
+        comment_obj = get_object_or_404(Comment, id=request.POST.get('comment_id'))
+        if request.user == comment_obj.commented_by:
+            comment_obj.delete()
+            data = {"cid": request.POST.get("comment_id")}
+            return JsonResponse(data)
+        data = {'error': "You don't have permission to delete this comment."}
+        return JsonResponse(data)

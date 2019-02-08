@@ -55,6 +55,7 @@
                     </select>
                   </div>
                 </div>
+                <input type="hidden" name="tab_status" id="tab_status">
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Tags</label>
@@ -271,6 +272,22 @@
   $(document).ready(function() {
     $('.assigned_users').select2();
   });
+
+  $("#close-tab").click(function(e){
+    $("#tab_status").val('Closed')
+  })
+
+  $("#open-tab").click(function(e){
+    $("#tab_status").val('Open')
+  })
+
+  tab_status = "{{tab_status}}"
+  if(tab_status == 'Closed'){
+    $("#close-tab").click()
+  }else{
+    $("#open-tab").click()
+  }
+
 
   $('.remove_account').click(function(e){
     e.preventDefault()

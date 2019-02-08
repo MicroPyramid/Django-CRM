@@ -52,6 +52,11 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
         context["industries"] = INDCHOICES
         context["per_page"] = self.request.POST.get('per_page')
         context['tags'] = Tags.objects.all()
+
+        tab_status = 'Open'
+        if self.request.POST.get('tab_status'):
+            tab_status = self.request.POST.get('tab_status')
+        context['tab_status'] = tab_status
         return context
 
     def get(self, request, *args, **kwargs):

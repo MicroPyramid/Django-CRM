@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
-from common.models import Address, User, Document
+from common.models import Address, User, Document, Comment
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -153,7 +153,16 @@ class DocumentForm(forms.ModelForm):
 
         self.fields['status'].choices = [(each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
         self.fields['status'].required = False
+        self.fields['title'].required = True
 
     class Meta:
         model = Document
         fields = ['title', 'document_file', 'status']
+
+
+class UserCommentForm(forms.ModelForm):
+    comment = forms.CharField(max_length=64, required=True)
+
+    class Meta:
+        model = Comment
+        fields = ('comment', 'user', 'commented_by')

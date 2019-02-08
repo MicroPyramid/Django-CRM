@@ -16,9 +16,8 @@ $("#comment_form").submit(function (e) {
         d = new Date(data.commented_on);
         $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
           "<div class='float-right right-container'>" +
-          "<div class='list-row-buttons btn-group float-right'>" +
-          "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>" +
-          "<ul class='dropdown-menu text-center'>" +
+          "<div class='list-row-buttons btn-group float-right'>"+
+          "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>"+          "<ul class='dropdown-menu text-center'>" +
           "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
           "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
           "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
