@@ -11,6 +11,8 @@ class BillingAddressForm(forms.ModelForm):
         fields = ('address_line', 'street', 'city', 'state', 'postcode', 'country')
 
     def __init__(self, *args, **kwargs):
+        account_view = kwargs.pop('account', False)
+
         super(BillingAddressForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
@@ -25,6 +27,14 @@ class BillingAddressForm(forms.ModelForm):
         self.fields['postcode'].widget.attrs.update({
             'placeholder': 'Postcode'})
         self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+
+        if account_view:
+            self.fields['address_line'].required = True
+            self.fields['street'].required = True
+            self.fields['city'].required = True
+            self.fields['state'].required = True
+            self.fields['postcode'].required = True
+            self.fields['country'].required = True
 
 
 class ShippingAddressForm(forms.ModelForm):
@@ -107,12 +117,14 @@ class LoginForm(forms.ModelForm):
         password = self.cleaned_data.get("password")
 
         if email and password:
-            self.user = authenticate(email=email, password=password)
+            self.user = authenticate(username=email, password=password)
             if self.user:
                 if not self.user.is_active:
-                    raise forms.ValidationError("User is Inactive")
+                    pass
+                    # raise forms.ValidationError("User is Inactive")
             else:
-                raise forms.ValidationError("Invalid email and password")
+                pass
+                # raise forms.ValidationError("Invalid email and password")
         return self.cleaned_data
 
 

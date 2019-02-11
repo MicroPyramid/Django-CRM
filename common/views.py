@@ -94,24 +94,37 @@ class LoginView(TemplateView):
     def post(self, request, *args, **kwargs):
         form = LoginForm(request.POST, request=request)
         if form.is_valid():
-            user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
+            user = User.objects.filter(email=request.POST.get('email')).first()
+            # user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
             if user is not None:
                 if user.is_active:
-                    login(request, user)
-                    return HttpResponseRedirect('/')
-                
+                    user = authenticate(username=request.POST.get('email'),
+                        password=request.POST.get('password'))
+                    if user is not None:
+                        login(request, user)
+                        return HttpResponseRedirect('/')
+                    else:
+                        return render(request, "login.html", {
+                            "error": True,
+                            "message": "Your username and password didn't match. Please try again."
+                            })
+                else:
+                    return render(request, "login.html", {
+                        "error": True,
+                        "message": "Your Account is inactive. Please Contact Administrator"
+                        })
+            else:
                 return render(request, "login.html", {
                     "error": True,
-                    "message": "Your Account is InActive. Please Contact Administrator"
-                })
+                    "message": "Your Account is not Found. Please Contact Administrator"
+                    })
+
+        else:
             return render(request, "login.html", {
                 "error": True,
-                "message": "Your Account is not Found. Please Contact Administrator"
-            })
-        return render(request, "login.html", {
-            "error": True,
-            "message": "Your username and password didn't match. Please try again."
-        })
+                "message": "Your username and password didn't match. Please try again."
+                })
+
 
 
 class ForgotPasswordView(TemplateView):
@@ -133,25 +146,11 @@ class UsersListView(AdminRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all()
-        request_post = self.request.POST
-        if request_post:
-            if request_post.get('first_name'):
-                queryset = queryset.filter(first_name__icontains=request_post.get('first_name'))
-            if request_post.get('last_name'):
-                queryset = queryset.filter(last_name_id=request_post.get('last_name'))
-            if request_post.get('username'):
-                queryset = queryset.filter(username__icontains=request_post.get('username'))
-            if request_post.get('email'):
-                queryset = queryset.filter(email__icontains=request_post.get('email'))
-            if request_post.get('status'):
-                queryset = queryset.filter(is_active=request_post.get('status'))
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super(UsersListView, self).get_context_data(**kwargs)
         context["users"] = self.get_queryset()
-        context["active_users"] = self.get_queryset().filter(is_active=True)
-        context["inactive_users"] = self.get_queryset().filter(is_active=False)
         context["per_page"] = self.request.POST.get('per_page')
         context['admin_email'] = settings.ADMIN_EMAIL
         return context

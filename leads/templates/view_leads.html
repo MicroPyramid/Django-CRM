@@ -41,59 +41,78 @@
                 </div>
               </div>
               <div class="filter_col col-md-12">
-                {% if lead_record.account_name %}
+                
                 <div class="form-group">
                   <label class="lead_field_label" for="id_contact_account" data-name="name">Account Name</label>
+                  {% if lead_record.account_name %}
                   <div class="lead_field" id ="contact_account" data-name="name">{{ lead_record.account_name }}</div>
+                  {% else %}
+                     <div class="lead_field">Not Specified</div>
+                  {% endif %}
                 </div>
-                {% endif %}
               </div>
               <div class="filter_col col-md-12">
-                {% if lead_record.title %}
                 <div class="form-group">
                   <label class="lead_field_label" for="id_title" data-name="name">Title</label>
-                  <div class="lead_field" id="lead_title" data-name="name">{{ lead_record.title }}</div>
+                  {% if lead_record.title %}
+                    <div class="lead_field" id="lead_title" data-name="name">{{ lead_record.title }}</div>
+                  {% else %}
+                      <div class="lead_field">Not Specified</div>
+                  {% endif %}
                 </div>
-                {% endif %}
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
+                  {% if lead_record.phone %}
+                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
+                  {% else %}
+                    <div class="lead_field">Not specified</div>
+                  {% endif %}
+                </div>
               </div>
              
             </div>
             <div class="col-md-4">
-               <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
-                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
-                </div>
-              </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="lead_field_label" for="id_email" data-name="name">Email</label>
+                  {% if lead_record.email %}
                   <div class="lead_field" id="lead_email" data-name="name">{{ lead_record.email }}</div>
+                  {% else %}
+                  <div class="lead_field">Not Specified</div>
+                  {% endif %}
                 </div>
               </div>
               <div class="filter_col col-md-12">
-                {% if lead_record.status %}
                 <div class="form-group">
                   <label class="lead_field_label" for="id_status" data-name="name">Status</label>
-                  <div class="lead_field" id="lead_status" data-name="name">{{ lead_record.status }}</div>
+                  {% if lead_record.status %}
+                    <div class="lead_field" id="lead_status" data-name="name">{{ lead_record.status }}</div>
+                  {% else %}
+                    <div class="lead_field">Not Specified</div>
+                  {% endif %}
                 </div>
-                {% endif %}
               </div>
               <div class="filter_col col-md-12">
-                {% if lead_record.source %}
                 <div class="form-group">
                   <label class="lead_field_label" for="id_source" data-name="name">Source</label>
+                {% if lead_record.source %}
                   <div class="lead_field" id="lead_source" data-name="name">{{ lead_record.source }}</div>
-                </div>
+                {% else %}
+                  <div class="lead_field">Not Specified</div>
                 {% endif %}
+                </div>
               </div>
               <div class="filter_col col-md-12">
-                {% if lead_record.website %}
                 <div class="form-group">
                   <label class="lead_field_label" for="id_website" data-name="name">Website</label>
+                {% if lead_record.website %}
                   <div class="lead_field" id="lead_website" data-name="name">{{ lead_record.website }}</div>
-                </div>
+                {% else %}
+                  <div class="lead_field">Not Specified</div>
                 {% endif %}
+                </div>
               </div>
             </div>
             <div class="col-md-4">

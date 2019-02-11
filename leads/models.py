@@ -13,7 +13,7 @@ class Lead(models.Model):
     title = models.CharField(pgettext_lazy("Treatment Pronouns for the customer", "Title"), max_length=64, blank=True, null=True)
     first_name = models.CharField(("First name"), max_length=255)
     last_name = models.CharField(("Last name"), max_length=255)
-    email = models.EmailField()
+    email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
     account = models.ForeignKey(Account, related_name='Leads', on_delete=models.CASCADE, blank=True, null=True)
     status = models.CharField(_("Status of Lead"), max_length=255, blank=True, null=True, choices=LEAD_STATUS)

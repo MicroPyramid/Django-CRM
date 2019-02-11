@@ -32,13 +32,15 @@
               <div class="col-md-4">
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label for="exampleInputEmail1" class="name" >Name{% if lead_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                     <div class="row">
                       <div class="filter_col col-md-6">
+                        <label for="exampleInputEmail1" class="name" >First Name{% if lead_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                         {{ lead_form.first_name }}
                         <span class="error">{{ lead_form.first_name.errors }}</span>
                       </div>
+
                       <div class="filter_col col-md-6">
+                        <label for="exampleInputEmail1" class="name" >Last Name{% if lead_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
                         {{ lead_form.last_name }}
                         <span class="error">{{ lead_form.last_name.errors }}</span>
                       </div>

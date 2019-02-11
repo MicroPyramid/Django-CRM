@@ -1,8 +1,8 @@
 {% autoescape off %}
-Hello {{ user.get_username }},
-you was assigned to contact {{ contact.first_name }} {{ contact.last_name }}
-click the link below:
-{{ protocol }}://{{ domain }}{% url 'contacts:view_contact' pk=contact.id %}
-Sincerely,
-The Django-CRM Team
+Hello {{ user.get_username }},<br>
+you are assigned to contact {{ contact.first_name }} {{ contact.last_name }}<br>
+click the link below to access:<br>
+{{ protocol }}://{{ domain }}{% url 'contacts:view_contact' pk=contact.id %}<br>
+<br>
+Django-CRM
 {% endautoescape %}

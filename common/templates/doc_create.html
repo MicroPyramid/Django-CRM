@@ -36,6 +36,7 @@
                 <span class="error" id="id_document_file">{{ errors.document_file }}</span>
               </div>
               <p></p>
+              {% if doc_obj %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="id_status">Status{% if doc_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
@@ -43,6 +44,7 @@
                   <span class="error">{{ doc_form.status.errors }}</span>
                 </div>
               </div>
+              {% endif %}
             </div>
           </div>
           <div class="row marl buttons_row form_btn_row text-center">
