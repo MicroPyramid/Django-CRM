@@ -44,7 +44,7 @@
               {% if user_obj.last_name %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label class="acc_field_label" for="id_phone" data-name="name">Last Nmae</label>
+                  <label class="acc_field_label" for="id_phone" data-name="name">Last Name</label>
                   <div class="account_field" id="account_phone" data-name="name">{{ user_obj.last_name }}</div>
                 </div>
               </div>
@@ -95,6 +95,7 @@
       </div>
       <!-- CONTACTS LIST STARTS -->
       <br>
+      <div class="row no-gutters" style="margin-bottom: 1.5rem;">
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
@@ -168,6 +169,7 @@
           </div>
         </div>
       </div>
+    </div>
       <form method='GET' class="accountdetails_row">
         <div class="table_container_row row marl no-gutters">
           <div class="col-md-12">
@@ -282,7 +284,7 @@
                     </tbody>
                   </table>
                 </div>
-                `{% ifequal contacts|length 0 %}
+                `{% ifequal opportunity_list|length 0 %}
                 <h6 class="text-center">No Opportunity Records Found</h6>
                 {% endifequal %}
               </div>
@@ -368,8 +370,8 @@
           d = new Date(data.commented_on);
           $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.comment_id+"'>"+
                                "<div class='float-right right-container'>"+
-                               "<div class='list-row-buttons dropdown btn-group float-right'>"+
-                               "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>"+
+                               "<div class='list-row-buttons btn-group float-right'>"+
+                               "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>"+
                                "<ul class='dropdown-menu text-center'>"+
                                "<li><a class='action' onclick='edit_comment("+data.comment_id+")'>Edit</a></li>"+
                                "<li><a class='action' onclick='remove_comment("+data.comment_id+")''>Remove</a></li></ul></div></div>"+

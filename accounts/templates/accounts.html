@@ -38,10 +38,9 @@
                     <label for="exampleInputEmail1">Assigned Users</label>
                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                     {% for user in users %}
-                    <option value="{{user.id}}" {% if user in account_obj.assigned_to.all or user.id in assignedto_list or user.id in request.POST.assigned_to %} selected="" {% endif %}>{{user.email}}</option>
+                    <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
                     {% endfor %}
                     </select>
-                    {{ account_form.assigned_to.errors }}
                   </div>
                 </div>
                 <div class="filter_col col-md-2">

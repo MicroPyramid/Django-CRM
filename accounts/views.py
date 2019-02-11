@@ -37,8 +37,8 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
                 queryset = queryset.filter(industry__icontains=request_post.get('industry'))
             if request_post.get('tag'):
                 queryset = queryset.filter(tags__in=request_post.get('tag'))
-            if request_post.get('assigned_to'):
-                queryset = queryset.filter(assigned_to__id__in=request_post.get('assigned_to'))
+            if request_post.getlist('assigned_to'):
+                queryset = queryset.filter(assigned_to__id__in=request_post.getlist('assigned_to'))
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -51,6 +51,8 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
         context['close_accounts'] = close_accounts
         context["industries"] = INDCHOICES
         context["per_page"] = self.request.POST.get('per_page')
+        context["assignedto_list"] = [
+            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         context['tags'] = Tags.objects.all()
 
         tab_status = 'Open'
@@ -85,7 +87,7 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        billing_form = BillingAddressForm(request.POST)
+        billing_form = BillingAddressForm(request.POST, account=True)
         shipping_form = ShippingAddressForm(request.POST, prefix='ship')
         if form.is_valid() and billing_form.is_valid() and shipping_form.is_valid():
             return self.form_valid(form, billing_form, shipping_form)
@@ -152,10 +154,10 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
             context["shipping_form"] = kwargs["shipping_form"]
         else:
             if self.request.POST:
-                context["billing_form"] = BillingAddressForm(self.request.POST)
+                context["billing_form"] = BillingAddressForm(self.request.POST, account=True)
                 context["shipping_form"] = ShippingAddressForm(self.request.POST, prefix='ship')
             else:
-                context["billing_form"] = BillingAddressForm()
+                context["billing_form"] = BillingAddressForm(account=True)
                 context["shipping_form"] = ShippingAddressForm(prefix='ship')
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
@@ -226,7 +228,7 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        billing_form = BillingAddressForm(request.POST, instance=self.object.billing_address)
+        billing_form = BillingAddressForm(request.POST, instance=self.object.billing_address, account=True)
         shipping_form = ShippingAddressForm(
             request.POST, instance=self.object.shipping_address, prefix='ship')
         if form.is_valid() and billing_form.is_valid() and shipping_form.is_valid():
@@ -304,12 +306,12 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         else:
             if self.request.POST:
                 context["billing_form"] = BillingAddressForm(
-                    self.request.POST, instance=self.object.billing_address)
+                    self.request.POST, instance=self.object.billing_address, account=True)
                 context["shipping_form"] = ShippingAddressForm(
                     self.request.POST, instance=self.object.shipping_address, prefix='ship')
             else:
                 context["billing_form"] = BillingAddressForm(
-                    instance=self.object.billing_address)
+                    instance=self.object.billing_address, account=True)
                 context["shipping_form"] = ShippingAddressForm(
                     instance=self.object.shipping_address, prefix='ship')
         context["assignedto_list"] = [

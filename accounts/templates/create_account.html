@@ -58,6 +58,56 @@
               </div>
             </div>
             <div class="col-md-4">
+              <div class="filter_col billing_block col-md-12" style="padding: 0px;">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Billing Address {% if billing_form.address_line.field.required %}<span class="error">*</span>{% endif %}</label>
+                  {{ billing_form.address_line }}
+                  <span class="error">{{ billing_form.address_line.errors }}</span>
+                </div>
+               
+                <div class="row" style="margin-top: 10px;">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Street {% if billing_form.street.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ billing_form.street }}
+                      <span class="error">{{ billing_form.street.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">PostCode {% if billing_form.postcode.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ billing_form.postcode }}
+                      <span class="error">{{ billing_form.postcode.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">City {% if billing_form.city.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ billing_form.city }}
+                      <span class="error">{{ billing_form.city.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">State {% if billing_form.state.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ billing_form.state }}
+                      <span class="error">{{ billing_form.state.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="col-md-12" style="margin-top: 10px;">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Country {% if billing_form.country.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ billing_form.country }}
+                      <span class="error">{{ billing_form.country.errors }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h6 style="color:white;">Copy Address</h6>
+              </div>
+            </div>
+            <div class="col-md-4">
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
@@ -70,38 +120,6 @@
                   {{ account_form.assigned_to.errors }}
                 </div>
               </div>
-              <div class="filter_col billing_block col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Billing Address</label>
-                  {{ billing_form.address_line }}
-                  <span class="error">{{ billing_form.address_line.errors }}</span>
-                </div>
-                {{ billing_form.street }}
-                <span class="error">{{ billing_form.street.errors }}</span>
-                <div class="row" style="margin-top: 10px;">
-                  <div class="col-md-4">
-                    {{ billing_form.city }}
-                    <span class="error">{{ billing_form.city.errors }}</span>
-                  </div>
-                  <div class="col-md-4">
-                    {{ billing_form.state }}
-                    <span class="error">{{ billing_form.state.errors }}</span>
-                  </div>
-                  <div class="col-md-4">
-                    {{ billing_form.postcode }}
-                    <span class="error">{{ billing_form.postcode.errors }}</span>
-                  </div>
-                  <div class="col-md-12" style="margin-top: 10px;">
-                    {{ billing_form.country }}
-                    <span class="error">{{ billing_form.country.errors }}</span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h6 style="color:white;">Copy Address</h6>
-              </div>
-            </div>
-            <div class="col-md-4">
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="id_sattus">Status{% if account_form.status.field.required %}<span class="error">*</span>{% endif %}</label>

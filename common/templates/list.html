@@ -10,53 +10,6 @@
          <span class="d-inline"><a href="{% url 'common:create_user'%}" class="btn primary_btn"><i class="fa fa-plus"></i> Add New User</a></span>
       </div>
     </div>
-    <div class="filter_row list_filter_row row marl">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-body">
-          <div class="card-title">Filters</div>
-          <form id="users_filter" action="" method="POST">
-            <div class="row marl">
-              <div class="filter_col col-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">User Name</label>
-                  <input type="text" class="form-control" placeholder="Username" name="username" value="{{request.POST.username}}">
-                </div>
-              </div> 
-              <div class="filter_col col-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">First Name</label>
-                  <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
-                </div>
-              </div>
-              <div class="filter_col col-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Status</label>
-                  <select class="form-control" name="status">
-                    <option value="True" {% if request.POST.status == "True"%}selected{% endif %}>Active</option>
-                    <option value="False" {% if request.POST.status == "False"%}selected{% endif %}>InActive</option>
-                  </select>
-                </div>
-              </div>
-              <div class="filter_col col-3">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Email</label>
-                  <input type="text" class="form-control" placeholder="Email" name="email" value="{{request.POST.email}}">
-                </div>
-              </div>
-              <div class="filter_col col-3">
-                <div class="form-group buttons_row">
-                  <button class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'common:users_list' %}" class="btn btn-default clear">Clear</a>
-                </div>
-              </div>
-              <br clear="all">
-            </div>
-          </form>
-          </div>
-        </div>
-      </div>
-    </div>
     <!-- filter_row ends here -->
     <div class="table_container_row row marl">
       <div class="col-md-12">
@@ -66,7 +19,7 @@
               <span class="float-left">Users - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
              
               <span class="filter_toggle">
-                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                <a href="#" class="primary_btn"></a>
               </span>
             </div>
             <div class="table-responsive ">
@@ -74,7 +27,6 @@
                 <thead>
                   {% if users|length > 0 %}
                     <tr>
-                      <th width="5%">S.No</th>
                       <th width="20%">First Name</th>
                       <th width="20%">Username</th>
                       <th width="20%">Email Address</th>
@@ -92,13 +44,12 @@
                   {% endif %}
                   {% for user in users %}
                   <tr class="text-center">
-                    <td scope="row">{{ forloop.counter }}</td>
                     <td>{{ user.first_name }}</td>
                     <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
                     <td>{{ user.email }}</td>
 
                     <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}</td>
-                    <td><a href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
+                    <td><a {% if user.is_active %} onclick="return confirm('Are you sure you want to deactivate this user?')" {% else %} onclick="return confirm('Are you sure you want to activate this user?')" {% endif %} href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
                       {% if user.is_active == True %}
                         <i class="fa fa-toggle-on"></i> Active
                       {% else %}
@@ -134,27 +85,12 @@
 {% block js_block %}
 <script type="text/javascript">
 
-
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-        $(".list_filter_row").toggle();    
-    });    
-  });    
-
-
-
   $('.trash').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
       return;
     window.location = $(this).attr('href')
-  });
-
-  $("a[rel='page']").click(function(e){
-    e.preventDefault();
-    $('#users_filter').attr("action", $(this).attr("href"));
-    $('#users_filter').submit();
   });
 </script>
 {% endblock js_block %}

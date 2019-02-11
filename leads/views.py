@@ -30,10 +30,10 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         queryset = self.model.objects.all().exclude(status='converted')
         request_post = self.request.POST
         if request_post:
-            if request_post.get('first_name'):
-                queryset = queryset.filter(first_name__icontains=request_post.get('first_name'))
-            if request_post.get('last_name'):
-                queryset = queryset.filter(last_name__icontains=request_post.get('last_name'))
+            if request_post.get('name'):
+                queryset = queryset.filter(
+                    Q(first_name__icontains=request_post.get('name')) & 
+                    Q(last_name__icontains=request_post.get('name')))
             if request_post.get('city'):
                 queryset = queryset.filter(address__city__icontains=request_post.get('city'))
             if request_post.get('email'):
@@ -42,14 +42,33 @@ class LeadListView(LoginRequiredMixin, TemplateView):
                 queryset = queryset.filter(status=request_post.get('status'))
             if request_post.get('tag'):
                 queryset = queryset.filter(tags__in=request_post.get('tag'))
+            if request_post.get('source'):
+                queryset = queryset.filter(source=request_post.get('source'))
+            if request_post.getlist('assigned_to'):
+                queryset = queryset.filter(assigned_to__id__in=request_post.getlist('assigned_to'))
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super(LeadListView, self).get_context_data(**kwargs)
-        context["lead_obj"] = self.get_queryset()
+        # context["lead_obj"] = self.get_queryset()
+        open_leads = self.get_queryset().exclude(status='dead')
+        close_leads = self.get_queryset().filter(status='dead')
         context["status"] = LEAD_STATUS
+        context["open_leads"] = open_leads
+        context["close_leads"] = close_leads
         context["per_page"] = self.request.POST.get('per_page')
+        context["source"] = LEAD_SOURCE
+        context["users"] = User.objects.filter(is_active=True).order_by('email')
+        context["assignedto_list"] = [
+            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+
         context['tags'] = Tags.objects.all()
+
+        tab_status = 'Open'
+        if self.request.POST.get('tab_status'):
+            tab_status = self.request.POST.get('tab_status')
+        context['tab_status'] = tab_status
+
         return context
 
     def post(self, request, *args, **kwargs):
