@@ -119,7 +119,7 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
             '/accounts/' + str(self.account.id) + '/edit/')
         self.assertEqual(response.status_code, 200)
 
-    def tst_accounts_update_html(self):
+    def test_accounts_update_html(self):
         response = self.client.get(
             '/accounts/' + str(self.account.id) + '/edit/')
         self.assertTemplateUsed(response, 'create_account.html')

@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.test import Client
 
 from common.models import User, Team, Document
+from common.forms import *
 
 
 class ObjectsCreation(object):
@@ -11,9 +12,15 @@ class ObjectsCreation(object):
                                         is_staff=True, is_admin=True, is_superuser=True, is_active=True)
         self.user.set_password('admin123')
         self.user.save()
+        self.user = User.objects.create(first_name="pavan", username='pavan', email='pavan@micropyramid.com',
+                                        is_staff=True, is_admin=True, is_superuser=True, is_active=False)
+        self.user.set_password('pavan123')
+        self.user.save()
+        # self.user
         user_login = self.client.login(
             username='admin@micropyramid.com', password='admin123')
-        self.document = Document.objects.create(title="abc",document_file="1.png",created_by=self.user)
+        self.document = Document.objects.create(
+            title="abc", document_file="1.png", created_by=self.user)
 
 
 class TestHomePage(ObjectsCreation, TestCase):
@@ -22,6 +29,12 @@ class TestHomePage(ObjectsCreation, TestCase):
         self.assertEqual(response.status_code, 200)
         if response.status_code == 200:
             self.assertIn("Micro", str(response.content))
+
+    # def test_404_page(self):
+    #     # print("34792837471239407123742374")
+    #     response = self.client.get('/sldkf')
+    #     # print(response)
+    #     self.assertEqual(response.status_code, 404)
 
 
 class CommonModelTest(ObjectsCreation, TestCase):
@@ -44,10 +57,14 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
     #     self.assertEqual(response.status_code,200)
 
     def test_user_create_invalid(self):
-        response = self.client.post('/users/create/',{'email': 'admin@micropyramid.com', 'first_name': '',
-                                                      'last_name': '', 'username': '', 'role': 'r',
-                                                      'profile_pic': None})
-        self.assertEqual(response.status_code,200)
+        response = self.client.post('/users/create/', {
+            'email': 'admin@micropyramid.com',
+            'first_name': '',
+            'last_name': '',
+            'username': '',
+            'role': 'r',
+            'profile_pic': None})
+        self.assertEqual(response.status_code, 200)
 
 
 class PasswordChangeTestCase(ObjectsCreation, TestCase):
@@ -79,7 +96,8 @@ class ForgotPasswordViewTestCase(ObjectsCreation, TestCase):
 
 
 class LoginViewTestCase(ObjectsCreation, TestCase):
-
+    # user2 = User.objects.create(first_name="pavan", username='pavan', email='pavan@micropyramid.com',
+    #                                     is_staff=True, is_admin=True, is_superuser=True, is_active=False)
     def test_login_post(self):
         self.client.logout()
         data = {"email": "admin@micropyramid.com", "password": "admin123"}
@@ -94,7 +112,11 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 
     def test_login_inactive(self):
         self.client.logout()
-        data = {"email": "admin@micropyramid.com", "password": "admin123",'is_active':False}
+        data = {
+            "email": "admin@micropyramid.com",
+            "password": "admin123",
+            'is_active': False
+        }
         response = self.client.post('/login/', data)
         self.assertEqual(response.status_code, 302)
 
@@ -102,8 +124,7 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
         self.client.logout()
         data = {"email": "abc@abc.com", "password": "123"}
         response = self.client.post('/login/', data)
-        self.assertEqual(response.status_code,200)
-
+        self.assertEqual(response.status_code, 200)
 
     def test_logout(self):
         self.client = Client()
@@ -115,11 +136,21 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 
 class UserTestCase(ObjectsCreation, TestCase):
     def test_user_create_url(self):
-        response = self.client.get('/users/create/', {'first_name': 'meghana', 'last_name': "reddy", 'username': 'meghana', 'email': 'meghana@micropyramid.com','password':'meghana123'})
+        response = self.client.get('/users/create/', {
+            'first_name': 'meghana',
+            'last_name': "reddy",
+            'username': 'meghana',
+            'email': 'meghana@micropyramid.com',
+            'password': 'meghana123'})
         self.assertEqual(response.status_code, 200)
 
     def test_user_create_html(self):
-        response = self.client.get('/users/create/', {'first_name': 'meghana', 'last_name': "", 'username': 'meghana', 'email': '','password':'meghana123'})
+        response = self.client.get('/users/create/', {
+            'first_name': 'meghana',
+            'last_name': "",
+            'username': 'meghana',
+            'email': '',
+            'password': 'meghana123'})
 
         self.assertTemplateUsed(response, 'create.html')
 
@@ -129,6 +160,9 @@ class UserListTestCase(ObjectsCreation, TestCase):
     def test_users_list(self):
         self.users = User.objects.all()
         response = self.client.get('/users/list/')
+        # get_img_url = self.users.filter()
+        get_user = User.objects.get(email='admin@micropyramid.com')
+        self.assertEqual(get_user.email, get_user.__unicode__())
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
 
@@ -140,6 +174,7 @@ class UserListTestCase(ObjectsCreation, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
 
+
 class UserRemoveTestCase(ObjectsCreation, TestCase):
     def test_users_remove(self):
         response = self.client.get('/users/' + str(self.user.id) + '/delete/')
@@ -150,15 +185,21 @@ class UserRemoveTestCase(ObjectsCreation, TestCase):
     #     response = self.client.get('/users/list/')
     #     self.assertEqual(response.status_code, 302)
 
-class UserUpdateTestCase(ObjectsCreation,TestCase):
+
+class UserUpdateTestCase(ObjectsCreation, TestCase):
     def test_users_update(self):
         response = self.client.get('/users/' + str(self.user.id) + '/edit/', {
-            'first_name': "admin",'user_name':'admin', 'email': "admin@micropyramid" })
+            'first_name': "admin",
+            'user_name': 'admin',
+            'email': "admin@micropyramid"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create.html')
 
     def test_accounts_update_post(self):
-        response = self.client.post('/users/' + str(self.user.id) + '/edit/', {'first_name': "meghana",'user_name':'meghana', 'email': "abc@micropyramid", 'role':"USER",'is_superuser':False })
+        response = self.client.post('/users/' + str(self.user.id) + '/edit/',
+                                    {'first_name': "meghana", 'user_name': 'meghana',
+                                     'email': "abc@micropyramid",
+                                     'role': "USER", 'is_superuser': False})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create.html')
 
@@ -182,20 +223,50 @@ class UserUpdateTestCase(ObjectsCreation,TestCase):
 #         repsonse = self.client.post(url,data)
 #         self.assertEqual(response.status_code,200)
 
-class ProfileViewTestCase(ObjectsCreation,TestCase):
+
+class ProfileViewTestCase(ObjectsCreation, TestCase):
     def test_profile_view(self):
         url = "/profile/"
         response = self.client.get(url)
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
 
-class UserDetailView(ObjectsCreation,TestCase):
+
+class UserDetailView(ObjectsCreation, TestCase):
     def test_user_detail(self):
-        url = "/users/"+str(self.user.id)+"/view/"
+        url = "/users/" + str(self.user.id) + "/view/"
         response = self.client.get(url)
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
 
-class DocumentDetailView(ObjectsCreation,TestCase):
+
+class DocumentDetailView(ObjectsCreation, TestCase):
     def test_document_detail(self):
-        url = "/documents/"+str(self.document.id)+"/view/"
+        url = "/documents/" + str(self.document.id) + "/view/"
         repsonse = self.client.get(url)
-        self.assertEqual(repsonse.status_code,200)
+        get_title = Document.objects.get(title='abc')
+        self.assertEqual(get_title.title, str(self.document))
+        # print('-----------------',self.document.title)
+        self.assertEqual(repsonse.status_code, 200)
+
+
+class CreateCommentFile(TestCase):
+    def test_invalid_user_form(self):
+        fields = ['email', 'first_name', 'last_name',
+                  'username', 'role', 'profile_pic']
+        user1 = User.objects.create(username='teja',
+                                    first_name='teja',
+                                    last_name='reddy',
+                                    email='tr@mp.com',
+                                    role='USER',
+                                    profile_pic="",
+                                    password='123')
+        data = {'email': user1.email, 'first_name': user1.first_name,
+                'last_name': user1.last_name,
+                'username': user1.username, 'role': user1.role,
+                'profile_pic': user1.profile_pic,
+                'password': user1.password}
+        form = UserForm(data=data)
+        userr = User.objects.get(username='teja')
+        # print(userr)
+        self.assertEqual(len(userr.password), 3)
+        self.assertFalse(form.is_valid())
+        # self.assertTrue(form.)

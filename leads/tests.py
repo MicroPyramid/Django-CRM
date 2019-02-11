@@ -84,6 +84,9 @@ class LeadsPostrequestTestCase(TestLeadModel, TestCase):
 
     def test_leads_list(self):
         self.lead = Lead.objects.all()
+        get_name = Lead.objects.get(first_name='anjali')
+        # print(get_name.first_name+get_name.last_name,str(get_name))
+        self.assertEqual(get_name.first_name + get_name.last_name, str(get_name))
         response = self.client.get('/leads/list/')
         self.assertEqual(response.status_code, 200)
 
