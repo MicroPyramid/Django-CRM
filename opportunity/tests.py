@@ -129,6 +129,12 @@ class OpportunityListView(OpportunityModel,TestCase):
         data = {'name': 'madhurima','stage': 'city',
                 'lead_source': 'Call', 'accounts':self.account}
         response = self.client.post('/opportunities/list/', data)
+        get_opp_val = Opportunity.objects.get(lead_source='Call')
+        self.assertEqual(get_opp_val.lead_source,'Call')
+        self.assertEqual(get_opp_val.name,str(get_opp_val))
+        get_contact = Contact.objects.get(last_name="s")
+        self.assertEqual(get_contact.last_name,"s")
+        # self.assertEqual(get_opp_val.lead_source,'call')  
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'opportunity.html')
 
@@ -136,6 +142,8 @@ class ContactGetViewTestCase(OpportunityModel,TestCase):
     def test_get_contact(self):
         url = '/opportunities/contacts/'
         response = self.client.get(url)
+        get_contact = Contact.objects.get(last_name="s")
+        self.assertEqual(get_contact.last_name,"s")
         self.assertEqual(response.status_code,200)
 
 class CommentTestCase(OpportunityModel, TestCase):
