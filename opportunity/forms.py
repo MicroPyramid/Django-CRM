@@ -23,6 +23,10 @@ class OpportunityForm(forms.ModelForm):
         self.fields['contacts'].required = False
         for key, value in self.fields.items():
             value.widget.attrs['placeholder'] = value.label
+
+        self.fields['closed_on'].widget.attrs.update({
+            'placeholder': 'Due Date'})
+
         self.fields['probability'].widget.attrs.update({
             'placeholder': 'Probability'})
 

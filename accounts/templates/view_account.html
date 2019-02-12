@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-
 {% block breadcrumb %}
 <!-- breadcrumb starts here -->
 <nav aria-label="breadcrumb">
@@ -166,26 +165,25 @@
                         </div>
                       </div>
                       <input type="hidden" value="{{account_record.id}}" name="accountid">
-                  </form>
-                  <ul class="list-group" id="attachment_div">
+                    </form>
+                    <ul class="list-group" id="attachment_div">
                       {% for attachment in attachments %}
-                          <li class="list-group-item list-row" id="attachment{{attachment.id}}">
-                            {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
-                              <div class="float-right right-container">
-                                <div class="list-row-buttons btn-group float-right">
-                                  <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
-                                </div>
-                              </div>
-                            {% endif %}
-
-                              <div class="stream-post-container" id="attachment_name{{attachment.id}}">
-                                <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
-                              </div>
-                              <div class="stream-container">
-                                <pre class="float-left">{{ attachment.created_by }}</pre>
-                                <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
-                              </div>
-                          </li>
+                      <li class="list-group-item list-row" id="attachment{{attachment.id}}">
+                        {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
+                        <div class="float-right right-container">
+                          <div class="list-row-buttons btn-group float-right">
+                            <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
+                          </div>
+                        </div>
+                        {% endif %}
+                        <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                          <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                        </div>
+                        <div class="stream-container">
+                          <pre class="float-left">{{ attachment.created_by }}</pre>
+                          <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                        </div>
+                      </li>
                       {% endfor %}
                     </ul>
                   </div>
@@ -215,7 +213,6 @@
                     <ul class="list-group" id="comments_div">
                       {% for comment in comments %}
                       <li class="list-group-item list-row" id="comment{{comment.id}}">
-
                         {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
                         <div class="list-row-buttons btn-group float-right">
                           <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions<span class="caret"></span></button>
@@ -275,42 +272,42 @@
           <div class="col-md-12">
             <div class="card">
               <div class="card-body">
-              <div class="panel-heading-list card-title view-pad">
-                Contacts
-                <a href="{% url 'contacts:add_contact' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
+                <div class="panel-heading-list card-title view-pad">
+                  Contacts
+                  <a href="{% url 'contacts:add_contact' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
                 </div>
                 <div class="table-responsive">
-                <table class="table table-bordered table-striped table-condensed">
-                  {% if contacts|length > 0 %}
-                  <thead>
-                    <tr>
-                      <th width="5%" style="text-align:center;">S.No</th>
-                      <th width="25%" style="text-align:center;">Contact Name</th>
-                      <th width="20%" style="text-align:center;">Phone</th>
-                      <th width="25%" style="text-align:center;">Email</th>
-                      <th width="25%" style="text-align:center;">Actions</th>
-                    </tr>
-                  </thead>
-                  {% endif %}
-                  <tbody>
-                    {% for contact in contacts %}
-                    <tr id="contacts_details{{contact.id}}" class="text-center">
-                      <td scope="row">{{ forloop.counter }}</td>
-                      <td>{{ contact.first_name }} {{ contact.last_name }}</td>
-                      <td>{{ contact.phone }}</td>
-                      <td>{{ contact.email }}</td>
-                      <td class="actions">
-                        <a href="{% url 'contacts:view_contact' pk=contact.id %}" class="btn btn-primary">View</a>
-                        <a href="{% url 'contacts:edit_contact' pk=contact.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
-                        <a href="{% url 'contacts:remove_contact' pk=contact.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+                  <table class="table table-bordered table-striped table-condensed">
+                    {% if contacts|length > 0 %}
+                    <thead>
+                      <tr>
+                        <th width="5%" style="text-align:center;">S.No</th>
+                        <th width="25%" style="text-align:center;">Contact Name</th>
+                        <th width="20%" style="text-align:center;">Phone</th>
+                        <th width="25%" style="text-align:center;">Email</th>
+                        <th width="25%" style="text-align:center;">Actions</th>
+                      </tr>
+                    </thead>
+                    {% endif %}
+                    <tbody>
+                      {% for contact in contacts %}
+                      <tr id="contacts_details{{contact.id}}" class="text-center">
+                        <td scope="row">{{ forloop.counter }}</td>
+                        <td>{{ contact.first_name }} {{ contact.last_name }}</td>
+                        <td>{{ contact.phone }}</td>
+                        <td>{{ contact.email }}</td>
+                        <td class="actions">
+                          <a href="{% url 'contacts:view_contact' pk=contact.id %}" class="btn btn-primary">View</a>
+                          <a href="{% url 'contacts:edit_contact' pk=contact.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
+                          <a href="{% url 'contacts:remove_contact' pk=contact.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
                 {% ifequal contacts|length 0 %}
-                  <h6 class="text-center">No Contact Records Found</h6>
+                <h6 class="text-center">No Contact Records Found</h6>
                 {% endifequal %}
               </div>
             </div>
@@ -322,45 +319,44 @@
         <div class="table_container_row row marl no-gutters">
           <div class="col-md-12">
             <div class="card">
-             
               <div class="card-body">
-               <div class="panel-heading-list card-title view-pad">
-              Opportunities
-              <a href="{% url 'opportunity:save' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-bordered table-striped table-condensed">
-                  {% if opportunity_list|length > 0 %}
-                  <thead>
-                    <tr>
-                      <th width="5%" style="text-align:center;">S.No</th>
-                      <th width="30%" style="text-align:center;">Name</th>
-                      <th width="20%" style="text-align:center;">Stage</th>
-                      <th width="20%" style="text-align:center;">Probability</th>
-                      <th width="25%" style="text-align:center;">Actions </th>
-                    </tr>
-                  </thead>
-                  {% endif %}
-                  <tbody>
-                    {% for opportunity in opportunity_list %}
-                    <tr id="opp_details{{opportunity.id}}" class="text-center">
-                      <td scope="row">{{ forloop.counter }}</td>
-                      <td>{{opportunity.name}}</td>
-                      <td>{{opportunity.stage}}</td>
-                      <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
-                      <td class="actions"> 
-                        <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}" class="btn btn-primary">View</a>
-                        <a href="{% url 'opportunities:opp_edit' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
-                        <a href="{% url 'opportunities:opp_remove' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              {% ifequal opportunity_list|length 0 %}
-                  <h6 class="text-center">No Opportunity Records Found</h6>
-               {% endifequal %}
+                <div class="panel-heading-list card-title view-pad">
+                  Opportunities
+                  <a href="{% url 'opportunity:save' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-condensed">
+                    {% if opportunity_list|length > 0 %}
+                    <thead>
+                      <tr>
+                        <th width="5%" style="text-align:center;">S.No</th>
+                        <th width="30%" style="text-align:center;">Name</th>
+                        <th width="20%" style="text-align:center;">Stage</th>
+                        <th width="20%" style="text-align:center;">Probability</th>
+                        <th width="25%" style="text-align:center;">Actions </th>
+                      </tr>
+                    </thead>
+                    {% endif %}
+                    <tbody>
+                      {% for opportunity in opportunity_list %}
+                      <tr id="opp_details{{opportunity.id}}" class="text-center">
+                        <td scope="row">{{ forloop.counter }}</td>
+                        <td>{{opportunity.name}}</td>
+                        <td>{{opportunity.stage}}</td>
+                        <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
+                        <td class="actions"> 
+                          <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}" class="btn btn-primary">View</a>
+                          <a href="{% url 'opportunities:opp_edit' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
+                          <a href="{% url 'opportunities:opp_remove' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% ifequal opportunity_list|length 0 %}
+                <h6 class="text-center">No Opportunity Records Found</h6>
+                {% endifequal %}
               </div>
             </div>
             <br clear="all">
@@ -371,41 +367,40 @@
         <div class="table_container_row row marl no-gutters">
           <div class="col-md-12">
             <div class="card">
-             
               <div class="card-body">
-               <div class="panel-heading-list card-title view-pad ">
-                Cases
-                <a href="{% url 'cases:add_case' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-bordered table-striped table-condensed">
-                  {% if cases|length > 0 %}
-                  <thead>
-                    <tr>
-                      <th width="5%" style="text-align:center;">S.No</th>
-                      <th width="30%" style="text-align:center;">Name</th>
-                      <th width="20%" style="text-align:center;">Status</th>
-                      <th width="20%" style="text-align:center;">Priority</th>
-                      <th width="25%" style="text-align:center;">Actions</th>
-                    </tr>
-                  </thead>
-                  {% endif %}
-                  <tbody>
-                    {% for case in cases %}
-                    <tr id="cases_details{{case.id}}" class="text-center">
-                      <td scope="row">{{ forloop.counter }}</td>
-                      <td>{{ case.name }}</td>
-                      <td>{{ case.status }}</td>
-                      <td>{{ case.priority }}</td>
-                      <td class="actions"> 
-                        <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary">View</a>
-                        <a href="{% url 'cases:edit_case' pk=case.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
-                        <a href="{% url 'cases:remove_case' case_id=case.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+                <div class="panel-heading-list card-title view-pad ">
+                  Cases
+                  <a href="{% url 'cases:add_case' %}?view_account={{account_record.id}}"><span class="fa fa-plus pull-right" style="color:black;"></span></a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-condensed">
+                    {% if cases|length > 0 %}
+                    <thead>
+                      <tr>
+                        <th width="5%" style="text-align:center;">S.No</th>
+                        <th width="30%" style="text-align:center;">Name</th>
+                        <th width="20%" style="text-align:center;">Status</th>
+                        <th width="20%" style="text-align:center;">Priority</th>
+                        <th width="25%" style="text-align:center;">Actions</th>
+                      </tr>
+                    </thead>
+                    {% endif %}
+                    <tbody>
+                      {% for case in cases %}
+                      <tr id="cases_details{{case.id}}" class="text-center">
+                        <td scope="row">{{ forloop.counter }}</td>
+                        <td>{{ case.name }}</td>
+                        <td>{{ case.status }}</td>
+                        <td>{{ case.priority }}</td>
+                        <td class="actions"> 
+                          <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary">View</a>
+                          <a href="{% url 'cases:edit_case' pk=case.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
+                          <a href="{% url 'cases:remove_case' case_id=case.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
                 {% ifequal cases|length 0 %}
                 <h6 class="text-center">No Case Records Found</h6>
@@ -423,7 +418,6 @@
 {% endblock content %}
 {% block js_block %}
 <script type="text/javascript">
- 
   var assigned_to_list = "{{ assigned_data }}";
   assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
          return {
@@ -467,7 +461,7 @@
     });
   });
   
-
+  
   function edit_comment(x) {
     $('#Comments_Accounts_Modal').modal('show');
     comment = $("#comment_name" + x).text()
@@ -524,7 +518,7 @@
     }
   }
   
-
+  
   
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
@@ -540,7 +534,7 @@
       })
     }
   }
-
+  
   $("#attachment_form").submit(function (e) {
     e.preventDefault()
       const formData = new FormData($("#attachment_form")[0]);
@@ -570,10 +564,8 @@
         }
       }
     })
-  })
-
+  });
+  
 </script>
-
 <script src="{% static 'js/mention.js' %}"></script>
-
 {% endblock js_block %}

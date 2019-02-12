@@ -3,11 +3,10 @@
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'common:doc_list' %}">Documents</a></li>
-      <li class="breadcrumb-item">{% if doc_obj %}Edit{% else %}Create{% endif %}</li>
+    <li class="breadcrumb-item"><a href="{% url 'common:doc_list' %}">Documents</a></li>
+    <li class="breadcrumb-item">{% if doc_obj %}Edit{% else %}Create{% endif %}</li>
   </ol>
 </nav>
-
 {% endblock breadcrumb %}
 {% block content %}
 <form id="add_form" method="POST" enctype="multipart/form-data" action="" novalidate>
@@ -15,9 +14,9 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-body">
-         <div class="card-title text-center">
-          {% if doc_obj %}EDIT{% else %}CREATE{% endif %} DOCUMENT
-        </div>
+          <div class="card-title text-center">
+            {% if doc_obj %}EDIT{% else %}CREATE{% endif %} DOCUMENT
+          </div>
           <div class="row marl">
             <div class="col-md-12">
               <div class="filter_col col-md-12">
@@ -60,23 +59,23 @@
 {% block js_block %}
 <script src="https://malsup.github.io/jquery.form.js"></script>
 <script type="text/javascript">
- $('form#add_form').ajaxForm({
-    type:'POST',
-    dataType:'json',
-    url: ".",
-    data:$('#add_form').serialize(),
-    success: function(data) {
-      if(data.error){
-        $('.error').html('')
-        for (var key in data.errors) {
-          $('#id_'+key).html("<p>" + data.errors[key][0] + "</p>");
-        };
-      }
-        else{
-          window.location = data.success_url;
-        }
-    }
-  });
-
+  $('form#add_form').ajaxForm({
+     type:'POST',
+     dataType:'json',
+     url: ".",
+     data:$('#add_form').serialize(),
+     success: function(data) {
+       if(data.error){
+         $('.error').html('')
+         for (var key in data.errors) {
+           $('#id_'+key).html("<p>" + data.errors[key][0] + "</p>");
+         };
+       }
+         else{
+           window.location = data.success_url;
+         }
+     }
+   });
+  
 </script>
 {% endblock js_block %}

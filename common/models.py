@@ -1,9 +1,9 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
-from common.templatetags.common_tags import (is_document_file_image,is_document_file_audio, 
-is_document_file_video,is_document_file_pdf,is_document_file_code,is_document_file_text, 
-is_document_file_sheet,is_document_file_zip)
+from common.templatetags.common_tags import (is_document_file_image, is_document_file_audio,
+                                             is_document_file_video, is_document_file_pdf, is_document_file_code, is_document_file_text,
+                                             is_document_file_sheet, is_document_file_zip)
 from common.utils import COUNTRIES, ROLES
 import time
 
@@ -24,7 +24,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(('date joined'), auto_now_add=True)
     role = models.CharField(max_length=50, choices=ROLES)
-    profile_pic = models.FileField(max_length=1000, upload_to=img_url, null=True, blank=True)
+    profile_pic = models.FileField(
+        max_length=1000, upload_to=img_url, null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]
@@ -42,12 +43,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Address(models.Model):
-    address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
-    street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
+    address_line = models.CharField(
+        _("Address"), max_length=255, blank=True, null=True)
+    street = models.CharField(
+        _("Street"), max_length=55, blank=True, null=True)
     city = models.CharField(_("City"), max_length=255, blank=True, null=True)
     state = models.CharField(_("State"), max_length=255, blank=True, null=True)
-    postcode = models.CharField(_("Post/Zip-code"), max_length=64, blank=True, null=True)
-    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
+    postcode = models.CharField(
+        _("Post/Zip-code"), max_length=64, blank=True, null=True)
+    country = models.CharField(
+        max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
         return self.city if self.city else ""
@@ -93,13 +98,16 @@ class Team(models.Model):
 
 
 class Comment(models.Model):
-    case = models.ForeignKey('cases.Case', blank=True, null=True, related_name="cases", on_delete=models.CASCADE)
+    case = models.ForeignKey('cases.Case', blank=True, null=True,
+                             related_name="cases", on_delete=models.CASCADE)
     comment = models.CharField(max_length=255)
     commented_on = models.DateTimeField(auto_now_add=True)
-    commented_by = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    commented_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, blank=True, null=True)
     account = models.ForeignKey(
         'accounts.Account', blank=True, null=True, related_name="accounts_comments", on_delete=models.CASCADE)
-    lead = models.ForeignKey('leads.Lead', blank=True, null=True, related_name="leads", on_delete=models.CASCADE)
+    lead = models.ForeignKey('leads.Lead', blank=True, null=True,
+                             related_name="leads", on_delete=models.CASCADE)
     opportunity = models.ForeignKey(
         'opportunity.Opportunity', blank=True, null=True, related_name="opportunity_comments", on_delete=models.CASCADE)
     contact = models.ForeignKey(
@@ -114,26 +122,33 @@ class Comment(models.Model):
 class Comment_Files(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     updated_on = models.DateTimeField(auto_now_add=True)
-    comment_file = models.FileField("File", upload_to="comment_files", default='')
+    comment_file = models.FileField(
+        "File", upload_to="comment_files", default='')
 
     def get_file_name(self):
         if self.comment_file:
             return self.comment_file.path.split('/')[-1]
-        
+
         return None
 
 
 class Attachments(models.Model):
-    created_by = models.ForeignKey(User, related_name='attachment_created_by', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        User, related_name='attachment_created_by', on_delete=models.CASCADE)
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    attachment = models.FileField(max_length=1001, upload_to='attachments/%Y/%m/')
-    lead = models.ForeignKey('leads.Lead', null=True, blank=True, related_name='lead_attachment', on_delete=models.CASCADE)
-    account = models.ForeignKey('accounts.Account', null=True, blank=True, related_name='account_attachment', on_delete=models.CASCADE)
-    contact = models.ForeignKey('contacts.Contact', on_delete=models.CASCADE, related_name='contact_attachment', blank=True, null=True)
-    opportunity = models.ForeignKey('opportunity.Opportunity',blank=True,null=True,on_delete=models.CASCADE,related_name='opportunity_attachment')
-    case = models.ForeignKey('cases.Case',blank=True,null=True,on_delete=models.CASCADE,related_name='case_attachment')
-
+    attachment = models.FileField(
+        max_length=1001, upload_to='attachments/%Y/%m/')
+    lead = models.ForeignKey('leads.Lead', null=True, blank=True,
+                             related_name='lead_attachment', on_delete=models.CASCADE)
+    account = models.ForeignKey('accounts.Account', null=True, blank=True,
+                                related_name='account_attachment', on_delete=models.CASCADE)
+    contact = models.ForeignKey('contacts.Contact', on_delete=models.CASCADE,
+                                related_name='contact_attachment', blank=True, null=True)
+    opportunity = models.ForeignKey('opportunity.Opportunity', blank=True,
+                                    null=True, on_delete=models.CASCADE, related_name='opportunity_attachment')
+    case = models.ForeignKey('cases.Case', blank=True, null=True,
+                             on_delete=models.CASCADE, related_name='case_attachment')
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
@@ -158,7 +173,6 @@ class Attachments(models.Model):
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
 
-
     def get_file_type_display(self):
         if self.attachment:
             return self.file_type()[1]
@@ -170,6 +184,7 @@ def document_path(self, filename):
     hash_ = int(time.time())
     return "%s/%s/%s" % ("docs", hash_, filename)
 
+
 class Document(models.Model):
 
     DOCUMENT_STATUS_CHOICE = (
@@ -179,10 +194,11 @@ class Document(models.Model):
 
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
-    created_by = models.ForeignKey(User, related_name='document_uploaded', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        User, related_name='document_uploaded', on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
-
+    status = models.CharField(
+        choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
@@ -207,6 +223,5 @@ class Document(models.Model):
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
 
-    
     def __str__(self):
         return self.title

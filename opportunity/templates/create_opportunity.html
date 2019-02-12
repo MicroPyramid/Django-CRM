@@ -2,346 +2,345 @@
 {% load staticfiles %}
 {% block breadcrumb %}
 {% block extralinks %}
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'opportunities:list' %}">Opportunities</a></li>
-    <li class="breadcrumb-item active">{% if opportunity_obj %}Edit{% else %}Create{% endif %}</li>
-  </ol>
+   <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'opportunities:list' %}">Opportunities</a></li>
+      <li class="breadcrumb-item active">{% if opportunity_obj %}Edit{% else %}Create{% endif %}</li>
+   </ol>
 </nav>
 {% endblock %}
 {% block content %}
 <head>
-  <link rel="stylesheet" type="text/css" href="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.css" />
-  <script type="text/javascript" src="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.js"></script>
-  <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
+   <link rel="stylesheet" type="text/css" href="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.css" />
+   <script type="text/javascript" src="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.js"></script>
+   <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
+   <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 </head>
-  <form class= "form_user" method="POST" action="" novalidate>
-    <div class="overview_form_block row marl justify-content-center">
+<form class= "form_user" method="POST" action="" novalidate>
+   <div class="overview_form_block row marl justify-content-center">
       <div class="col-md-9">
-        <div class="card">
-          <div class="card-body">
-          <div class="card-title text-center">
-            {% if opportunity_obj %}EDIT{% else %}CREATE{% endif %} OPPORTUNITY
-          </div>
-            <div class="row marl no-gutters">
-              <div class="col-md-4">
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1" class="required">Name{% if opportunity_form.name.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ opportunity_form.name }}
-                    <span class="error">{{opportunity_form.name.errors}}</span>
+         <div class="card">
+            <div class="card-body">
+               <div class="card-title text-center">
+                  {% if opportunity_obj %}EDIT{% else %}CREATE{% endif %} OPPORTUNITY
+               </div>
+               <div class="row marl no-gutters">
+                  <div class="col-md-4">
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1" class="required">Name{% if opportunity_form.name.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {{ opportunity_form.name }}
+                           <span class="error">{{opportunity_form.name.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Account{% if opportunity_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {% if account %}
+                           <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
+                              <option value="{{account.id}}" selected="">{{account.name}}</option>
+                           </select>
+                           {% else %}
+                           {{opportunity_form.account}}
+                           {% endif %}
+                           <span class="error">{{opportunity_form.account.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Amount</label>
+                           {{ opportunity_form.amount }}
+                           <span class="error">{{opportunity_form.amount.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Currency</label>
+                           {{ opportunity_form.currency }}
+                           <span class="error">{{opportunity_form.currency.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1" class="required">Stage{% if opportunity_form.stage.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {{ opportunity_form.stage }}
+                           <span class="error">{{opportunity_form.stage.errors}}</span>
+                        </div>
+                     </div>
                   </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Account{% if opportunity_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {% if account %}
-                    <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
-                        <option value="{{account.id}}" selected="">{{account.name}}</option>
-                    </select>
-                    {% else %}
-                    {{opportunity_form.account}}
-                    {% endif %}
-                    <span class="error">{{opportunity_form.account.errors}}</span>
+                  <div class="col-md-4">
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Lead Source{% if opportunity_form.lead_source.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {{ opportunity_form.lead_source }}
+                           <span class="error">{{opportunity_form.lead_source.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Probability %{% if opportunity_form.probability.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {{ opportunity_form.probability }}
+                           <span class="error">{{opportunity_form.probability.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Assigned Users</label>
+                           <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                           {% for user in users %}
+                           <option value="{{user.id}}" {% if user in opportunity_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                           {% endfor %}
+                           </select>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Contacts{% if opportunity_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
+                           {{ opportunity_form.contacts }}
+                           <span class="error">{{opportunity_form.contacts.errors}}</span>
+                        </div>
+                     </div>
+                     <div class="filter_col col-md-12">
+                        <div class="form-group">
+                           <label for="exampleInputEmail1">Due Date{% if opportunity_form.closed_on.field.required %}<span class="error">*</span>{% endif %}</label>
+                           <div class='input-group date' id='datepicker1'>
+                              {{ opportunity_form.closed_on }}
+                              <span class="input-group-addon">
+                              <span class="glyphicon glyphicon-calendar"></span>
+                              </span>
+                           </div>
+                           <span class="error">{{opportunity_form.closed_on.errors}}</span>
+                        </div>
+                     </div>
                   </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Amount</label>
-                    {{ opportunity_form.amount }}
-                      <span class="error">{{opportunity_form.amount.errors}}</span>
+                  <div class="col-md-4">
+                     <div class="filter_col col-12">
+                        <div class="form-group">
+                           <label>Tags</label>
+                           <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1" value="{% for t in opportunity_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags"/>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="form-group col-md-12">
+                        <label for="exampleInputEmail1" >Description{% if opportunity_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
+                        {{ opportunity_form.description }}
+                        <span class="error">{{opportunity_form.description.errors}}</span>
+                     </div>
                   </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Currency</label>
-                    {{ opportunity_form.currency }}
-                    <span class="error">{{opportunity_form.currency.errors}}</span>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1" class="required">Stage{% if opportunity_form.stage.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ opportunity_form.stage }}
-                    <span class="error">{{opportunity_form.stage.errors}}</span>
-                  </div>
-                </div>
-                
-              </div>
-              <div class="col-md-4">
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Lead Source{% if opportunity_form.lead_source.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ opportunity_form.lead_source }}
-                    <span class="error">{{opportunity_form.lead_source.errors}}</span>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Probability %{% if opportunity_form.probability.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ opportunity_form.probability }}
-                    <span class="error">{{opportunity_form.probability.errors}}</span>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Assigned Users</label>
-                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                      {% for user in users %}
-                        <option value="{{user.id}}" {% if user in opportunity_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Contacts{% if opportunity_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
-                    {{ opportunity_form.contacts }}
-                    <span class="error">{{opportunity_form.contacts.errors}}</span>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Close Date{% if opportunity_form.closed_on.field.required %}<span class="error">*</span>{% endif %}</label>
-                    <div class='input-group date' id='datepicker1'>
-                      {{ opportunity_form.closed_on }}
-                      <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                      </span>
-                    </div>
-                    <span class="error">{{opportunity_form.closed_on.errors}}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="filter_col col-12">
-                  <div class="form-group">
-                    <label>Tags</label>
-                    <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1" value="{% for t in opportunity_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags"/>
-                    </div>
-                  </div>
-                </div>
-                <div class="form-group col-md-12">
-                  <label for="exampleInputEmail1" >Description{% if opportunity_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
-                  {{ opportunity_form.description }}
-                  <span class="error">{{opportunity_form.description.errors}}</span>
-                </div>
-              </div>
+               </div>
+               <br clear="all">
+               <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
+               {% if request.GET.view_account %}
+               <input type="hidden" name="account" value="{{request.GET.view_account}}">
+               {% endif %}
+               <input type="hidden" id="save_new_form" name="savenewform">
             </div>
-            <br clear="all">
-            <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
-            {% if request.GET.view_account %}
-              <input type="hidden" name="account" value="{{request.GET.view_account}}">
-            {% endif %}
-            <input type="hidden" id="save_new_form" name="savenewform">
-          </div>
-          <!-- overview ends here -->
-          <div class="row marl buttons_row text-center form_btn_row">
-            <button class=" btn btn-default save" type="submit" id="saveform">Save</button>
-            {% if not opportunity_obj %}
-              <button class="btn btn-success save savenew" type="submit">Save & New</button>
-            {% endif %}
-            <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}" {% else %} href="{% url 'opportunities:list' %}" {% endif %} class="btn btn-default clear">Cancel</a>
-          </div>
-        </div>
+            <!-- overview ends here -->
+            <div class="row marl buttons_row text-center form_btn_row">
+               <button class=" btn btn-default save" type="submit" id="saveform">Save</button>
+               {% if not opportunity_obj %}
+               <button class="btn btn-success save savenew" type="submit">Save & New</button>
+               {% endif %}
+               <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}" {% else %} href="{% url 'opportunities:list' %}" {% endif %} class="btn btn-default clear">Cancel</a>
+            </div>
+         </div>
       </div>
-    </div>
-  </form>
+   </div>
+</form>
 {% endblock %}
 {% block js_block %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-  <script type="text/javascript">
-    $(function () {
-       var date = new Date();
-       var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        $('#id_closed_on').datetimepicker({
-            'format': 'YYYY-MM-DD',
-            minDate:today
-        })
-    });
-
-    $(".savenew").on('click', function(e){
-      e.preventDefault()
-      $("#save_new_form").val('true')
-      $('.form_user').submit()
-    });
-    $(document).ready(function() {
-      $('.assigned_users').select2();
-      $("#id_contacts").select2();
-    });
-
-    $('#id_account').change(function(){
-        var Account= $("#id_account").val()
-            $.get("{% url 'opportunities:contacts' %}", {"Account":Account}, function(data){
-              $("#id_contacts").html("")
-              $.each(data, function (index, value) {
-                    $("#id_contacts").append("<option value="+index+">"+value+"</option>")
-              });
-            })
-    });
-
-  $("#comment_form").submit(function(e){
-      e.preventDefault()
-      var formData = new FormData($("#comment_form")[0]);
-      $.ajax({
-          url : "{% url 'opportunities:add_comment' %}",
-          type : "POST",
-          data : formData,
-          cache: false,
-          contentType: false,
-          processData: false,
-          success: function(data){
-              if(data.error){
-                  $("#CommentError").html(data.error).show()
-              }
-              else {
-                  $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.com_id+"'>"+
-                                     "<div class='pull-right right-container'>"+
-                                     "<div class='list-row-buttons btn-group pull-right'>"+
-                                     "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>"+
-                                     "<ul class='dropdown-menu pull-right'>"+
-                                     "<li><a class='action' onclick='edit_comment("+data.com_id+")'>Edit</a></li>"+
-                                     "<li><a class='action' onclick='remove_comment("+data.com_id+")''>Remove</a></li></ul></div></div>"+
-                                     "<div class='stream-head-container'> "+data.com_user+" Commented</div>"+
-                                     "<div class='stream-post-container' id='comment_name"+data.com_id+"'>"+data.comment+"</div>"+
-                                     "<div class='stream-date-container"+data.com_id+"'>"+data.comment_time+"</div></div><div class='stream-date-container' id='comment_file_div"+data.com_id+"'><div id='new_comment"+data.com_id+"'</div></div></li>"
-                                     )
-                  $("#id_comments").val("")
-                  alert("Comment Submitted")
-              }
-          }
-      });
-  });
-
-
-  function edit_comment(x){
-      $('#myModal_comment').modal('show');
-      comment = $("#comment_name"+x).text()
-      $("#commentid").val(x)
-      $("#id_editcomment").val(comment)
-  }
-
-  $("#comment_edit").click(function(e){
-      alert("Heyyyyyyyyyyy")
-      e.preventDefault()
-      var formData = new FormData($("#comment_edit_form")[0]);
-      $.ajax({
-          url : "{% url 'opportunities:edit_comment' %}",
-          type : "POST",
-          data : formData,
-          cache: false,
-          contentType: false,
-          processData: false,
-          success:function(data){
-              if(data.error) {
-                  alert(data.error)
-              } else {
-                  $("#comment_name"+data.commentid).text(data.comment)
-                  $('#myModal_comment').modal('hide');
-                  $("#id_editcomment").val("")
-              }
-          }
-      })
-  });
-
-  function remove_comment(x){
-    var warn = confirm("Are You Sure, you Want to Delete this Comment!?")
-    if (warn == true){
-      $.post('{% url "opportunities:remove_comment" %}', {"comment_id":x}, function(data){
-        if(data.error){
-          alert(data.error)
-        } else {
-          $("#comment"+data.oid).remove()
-        }
-      })
-    }
-  }
-
-  function editFun(x) {
-      $.ajax({
-          type: "POST",
-          url: "/opportunities/editdetails/",
-          data: {tid: x},
-          success: function(data) {
-              $("#viewdiv").hide()
-              $("#editdiv").show()
-              $("#id_name").val(data.name)
-              $("#id_stage").val(data.stage)
-              $("#id_amount").val(data.amount)
-              $("#id_account").val(data.account)
-              $("#id_probability").val(data.probability)
-              $("#id_close_date").val(data.close_date)
-              $("#hiddenval").val(data.eid)
-              $("#id_lead_source").val(data.sources)
-              $("#id_description").val(data.description)
-              contacts = data.contacts.replace("b'", "")
-              contacts = contacts.replace(/\\n/g, '')
-              contacts = contacts.replace(/\\t/g, '')
-              contacts = contacts.replace(/'/g, '')
-              contacts = contacts.replace(/}/g, '')
-              $("#id_contacts").html(contacts)
-          }
-      })
-
-
-      $('#id_account').change(function() {
-          var Account = $("#id_account").val()
-          $.get("{% url 'opportunities:contacts' %}", {
-              "Account": Account
-          }, function(data) {
-              $("#id_contacts").html("")
-              $.each(data, function(index, value) {
-                  // console.log(index, value)
-                  $("#id_contacts").append("<option value=" + index + ">" + value + "</option>")
-              });
-          })
-      });
-
-  }
-  function onAddTag(tag) {
-    alert("Added a tag: " + tag);
-  }
-  function onRemoveTag(tag) {
-    alert("Removed a tag: " + tag);
-  }
-  
-  function onChangeTag(input,tag) {
-    alert("Changed a tag: " + tag);
-  }
-  
-  $(function() {
-  
-    $('#tags_1').tagsInput({width:'auto'});
-    $('#tags_2').tagsInput({
-      width: 'auto',
-      onChange: function(elem, elem_tags)
-      {
-        var languages = ['php','ruby','javascript'];
-        $('.tag', elem_tags).each(function()
-        {
-          if($(this).text().search(new RegExp('\\b(' + languages.join('|') + ')\\b')) >= 0)
-            $(this).css('background-color', 'yellow');
-        });
-      }
-    });
-    $('#tags_3').tagsInput({
-      width: 'auto',
-  
-      //autocomplete_url:'test/fake_plaintext_endpoint.html' //jquery.autocomplete (not jquery ui)
-      autocomplete_url:'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
-    });
-    
-  
-  // Uncomment this line to see the callback functions in action
-  //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
-  
-  // Uncomment this line to see an input with no interface for adding new tags.
-  //      $('input.tags').tagsInput({interactive:false});
-  });
-  </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script type="text/javascript">
+   $(function () {
+      var date = new Date();
+      var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+       $('#id_closed_on').datetimepicker({
+           'format': 'YYYY-MM-DD',
+           minDate:today
+       })
+   });
+   
+   $(".savenew").on('click', function(e){
+     e.preventDefault()
+     $("#save_new_form").val('true')
+     $('.form_user').submit()
+   });
+   $(document).ready(function() {
+     $('.assigned_users').select2();
+     $("#id_contacts").select2();
+   });
+   
+   $('#id_account').change(function(){
+       var Account= $("#id_account").val()
+           $.get("{% url 'opportunities:contacts' %}", {"Account":Account}, function(data){
+             $("#id_contacts").html("")
+             $.each(data, function (index, value) {
+                   $("#id_contacts").append("<option value="+index+">"+value+"</option>")
+             });
+           })
+   });
+   
+   $("#comment_form").submit(function(e){
+     e.preventDefault()
+     var formData = new FormData($("#comment_form")[0]);
+     $.ajax({
+         url : "{% url 'opportunities:add_comment' %}",
+         type : "POST",
+         data : formData,
+         cache: false,
+         contentType: false,
+         processData: false,
+         success: function(data){
+             if(data.error){
+                 $("#CommentError").html(data.error).show()
+             }
+             else {
+                 $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.com_id+"'>"+
+                                    "<div class='pull-right right-container'>"+
+                                    "<div class='list-row-buttons btn-group pull-right'>"+
+                                    "<button class='btn btn-link btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span></button>"+
+                                    "<ul class='dropdown-menu pull-right'>"+
+                                    "<li><a class='action' onclick='edit_comment("+data.com_id+")'>Edit</a></li>"+
+                                    "<li><a class='action' onclick='remove_comment("+data.com_id+")''>Remove</a></li></ul></div></div>"+
+                                    "<div class='stream-head-container'> "+data.com_user+" Commented</div>"+
+                                    "<div class='stream-post-container' id='comment_name"+data.com_id+"'>"+data.comment+"</div>"+
+                                    "<div class='stream-date-container"+data.com_id+"'>"+data.comment_time+"</div></div><div class='stream-date-container' id='comment_file_div"+data.com_id+"'><div id='new_comment"+data.com_id+"'</div></div></li>"
+                                    )
+                 $("#id_comments").val("")
+                 alert("Comment Submitted")
+             }
+         }
+     });
+   });
+   
+   
+   function edit_comment(x){
+     $('#myModal_comment').modal('show');
+     comment = $("#comment_name"+x).text()
+     $("#commentid").val(x)
+     $("#id_editcomment").val(comment)
+   }
+   
+   $("#comment_edit").click(function(e){
+     alert("Heyyyyyyyyyyy")
+     e.preventDefault()
+     var formData = new FormData($("#comment_edit_form")[0]);
+     $.ajax({
+         url : "{% url 'opportunities:edit_comment' %}",
+         type : "POST",
+         data : formData,
+         cache: false,
+         contentType: false,
+         processData: false,
+         success:function(data){
+             if(data.error) {
+                 alert(data.error)
+             } else {
+                 $("#comment_name"+data.commentid).text(data.comment)
+                 $('#myModal_comment').modal('hide');
+                 $("#id_editcomment").val("")
+             }
+         }
+     })
+   });
+   
+   function remove_comment(x){
+   var warn = confirm("Are You Sure, you Want to Delete this Comment!?")
+   if (warn == true){
+     $.post('{% url "opportunities:remove_comment" %}', {"comment_id":x}, function(data){
+       if(data.error){
+         alert(data.error)
+       } else {
+         $("#comment"+data.oid).remove()
+       }
+     })
+   }
+   }
+   
+   function editFun(x) {
+     $.ajax({
+         type: "POST",
+         url: "/opportunities/editdetails/",
+         data: {tid: x},
+         success: function(data) {
+             $("#viewdiv").hide()
+             $("#editdiv").show()
+             $("#id_name").val(data.name)
+             $("#id_stage").val(data.stage)
+             $("#id_amount").val(data.amount)
+             $("#id_account").val(data.account)
+             $("#id_probability").val(data.probability)
+             $("#id_close_date").val(data.close_date)
+             $("#hiddenval").val(data.eid)
+             $("#id_lead_source").val(data.sources)
+             $("#id_description").val(data.description)
+             contacts = data.contacts.replace("b'", "")
+             contacts = contacts.replace(/\\n/g, '')
+             contacts = contacts.replace(/\\t/g, '')
+             contacts = contacts.replace(/'/g, '')
+             contacts = contacts.replace(/}/g, '')
+             $("#id_contacts").html(contacts)
+         }
+     })
+   
+   
+     $('#id_account').change(function() {
+         var Account = $("#id_account").val()
+         $.get("{% url 'opportunities:contacts' %}", {
+             "Account": Account
+         }, function(data) {
+             $("#id_contacts").html("")
+             $.each(data, function(index, value) {
+                 // console.log(index, value)
+                 $("#id_contacts").append("<option value=" + index + ">" + value + "</option>")
+             });
+         })
+     });
+   
+   }
+   function onAddTag(tag) {
+   alert("Added a tag: " + tag);
+   }
+   function onRemoveTag(tag) {
+   alert("Removed a tag: " + tag);
+   }
+   
+   function onChangeTag(input,tag) {
+   alert("Changed a tag: " + tag);
+   }
+   
+   $(function() {
+   
+   $('#tags_1').tagsInput({width:'auto'});
+   $('#tags_2').tagsInput({
+     width: 'auto',
+     onChange: function(elem, elem_tags)
+     {
+       var languages = ['php','ruby','javascript'];
+       $('.tag', elem_tags).each(function()
+       {
+         if($(this).text().search(new RegExp('\\b(' + languages.join('|') + ')\\b')) >= 0)
+           $(this).css('background-color', 'yellow');
+       });
+     }
+   });
+   $('#tags_3').tagsInput({
+     width: 'auto',
+   
+     //autocomplete_url:'test/fake_plaintext_endpoint.html' //jquery.autocomplete (not jquery ui)
+     autocomplete_url:'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
+   });
+   
+   
+   // Uncomment this line to see the callback functions in action
+   //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
+   
+   // Uncomment this line to see an input with no interface for adding new tags.
+   //      $('input.tags').tagsInput({interactive:false});
+   });
+</script>
 {% endblock js_block %}

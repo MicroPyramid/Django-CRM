@@ -64,7 +64,6 @@
                   {{ billing_form.address_line }}
                   <span class="error">{{ billing_form.address_line.errors }}</span>
                 </div>
-               
                 <div class="row" style="margin-top: 10px;">
                   <div class="col-md-6">
                     <div class="form-group">
@@ -135,14 +134,12 @@
                 </div>
               </div>
             </div>
-
             <div class="col-md-12">
               <div class="row marl buttons_row form_btn_row text-center">
                 <button class="btn btn-default save" type="submit">Save</button>
                 <a href="{% url 'accounts:list' %}" class="btn btn-default clear" id="create_user_cancel">Cancel</a>
               </div>
             </div>
-
           </div>
         </div>
       </div>

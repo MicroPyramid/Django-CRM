@@ -1,8 +1,8 @@
 <select>
 {% for con in con %}
-	<option value="{{con.id}}" {% for sel in selcon %}
-		{% ifequal con.id sel.id %}
-		selected {% endifequal%}{% endfor %}>{{con.name}}</option>
-		}
-	{% endfor %}
+<option value="{{con.id}}" {% for sel in selcon %}
+{% ifequal con.id sel.id %}
+selected {% endifequal%}{% endfor %}>{{con.name}}</option>
+}
+{% endfor %}
 </select>
