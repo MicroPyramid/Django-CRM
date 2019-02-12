@@ -2,58 +2,56 @@
 {% load staticfiles %}
 {% load thumbnail %}
 {% block content%}
-
 <!-- OPPORTUNITY VIEW STARTS -->
-  <div class="main_container" id="maincontainer">
-    <div class="overview_form_block row marl justify-content-center">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body" id="datashow">
-            <div class="panel-heading card-title view-pad text-center">
-              <h5>
-                Document
-              </h5>
-              <a href="{% url 'common:edit_doc' doc_obj.id %}" class="btn btn-success edit">Edit</a>
-            </div>
-            <div class="row marl no-gutters">
-              <div class="col-md-8">
-                {% if doc_obj.title %}
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_title" data-name="title">Title</label>
-                    <div class="contact_field" id="doc_title" data-name="name">{{ doc_obj.title }} </div>
-                  </div>
-                </div>
-                {% endif %}
-                {% if doc_obj.status %}
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_status" data-name="status">Status</label>
-                    <div class="contact_field" id="doc_status" data-name="status">{{ doc_obj.status }} </div>
-                  </div>
-                </div>
-                {% endif %}
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_created_by" data-name="created_by">Created By</label>
-                    <div class="contact_field" id="created_by" data-name="created_by">{{ doc_obj.created_by }}</div>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_created_on" data-name="created_on">Created On</label>
-                    <div class="contact_field" id="created_on" data-name="created_on">{{ doc_obj.created_on }}</div>
-                  </div>
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="panel-heading card-title view-pad text-center">
+            <h5>
+              Document
+            </h5>
+            <a href="{% url 'common:edit_doc' doc_obj.id %}" class="btn btn-success edit">Edit</a>
+          </div>
+          <div class="row marl no-gutters">
+            <div class="col-md-8">
+              {% if doc_obj.title %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_title" data-name="title">Title</label>
+                  <div class="contact_field" id="doc_title" data-name="name">{{ doc_obj.title }} </div>
                 </div>
               </div>
-              <div class="col-md-4">
-                <div class="profile_pic">
-                  {% if doc_obj.document_file %}
-                    <i class="{{file_type_code}}" aria-hidden="true" style="font-size:3rem;"></i>
-                    <!-- <a href="{{doc_obj.document_file.url}}" target="_blank">Download</a> -->
-                    <a style="display:block;" href="{% url 'common:download_document' doc_obj.id %}">Download</a></td>
-                  {% endif %}
+              {% endif %}
+              {% if doc_obj.status %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_status" data-name="status">Status</label>
+                  <div class="contact_field" id="doc_status" data-name="status">{{ doc_obj.status }} </div>
                 </div>
+              </div>
+              {% endif %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_created_by" data-name="created_by">Created By</label>
+                  <div class="contact_field" id="created_by" data-name="created_by">{{ doc_obj.created_by }}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_created_on" data-name="created_on">Created On</label>
+                  <div class="contact_field" id="created_on" data-name="created_on">{{ doc_obj.created_on }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="profile_pic">
+                {% if doc_obj.document_file %}
+                <i class="{{file_type_code}}" aria-hidden="true" style="font-size:3rem;"></i>
+                <!-- <a href="{{doc_obj.document_file.url}}" target="_blank">Download</a> -->
+                <a style="display:block;" href="{% url 'common:download_document' doc_obj.id %}">Download</a></td>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -61,5 +59,6 @@
       </div>
     </div>
   </div>
+</div>
 <!-- OPPORTUNITY VIEW ENDS -->
 {% endblock %}

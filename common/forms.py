@@ -8,7 +8,8 @@ class BillingAddressForm(forms.ModelForm):
 
     class Meta:
         model = Address
-        fields = ('address_line', 'street', 'city', 'state', 'postcode', 'country')
+        fields = ('address_line', 'street', 'city',
+                  'state', 'postcode', 'country')
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop('account', False)
@@ -26,7 +27,8 @@ class BillingAddressForm(forms.ModelForm):
             'placeholder': 'State'})
         self.fields['postcode'].widget.attrs.update({
             'placeholder': 'Postcode'})
-        self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+        self.fields["country"].choices = [
+            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
 
         if account_view:
             self.fields['address_line'].required = True
@@ -40,7 +42,8 @@ class BillingAddressForm(forms.ModelForm):
 class ShippingAddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        fields = ('address_line', 'street', 'city', 'state', 'postcode', 'country')
+        fields = ('address_line', 'street', 'city',
+                  'state', 'postcode', 'country')
 
     def __init__(self, *args, **kwargs):
         super(ShippingAddressForm, self).__init__(*args, **kwargs)
@@ -56,7 +59,8 @@ class ShippingAddressForm(forms.ModelForm):
             'placeholder': 'State'})
         self.fields['postcode'].widget.attrs.update({
             'placeholder': 'Postcode'})
-        self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+        self.fields["country"].choices = [
+            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
 
 
 class UserForm(forms.ModelForm):
@@ -65,8 +69,15 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'username', 'role', 'profile_pic']
-    #
+        fields = ['email', 'first_name', 'last_name',
+                  'username', 'role', 'profile_pic']
+
+    def __init__(self, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
+
+        self.fields['first_name'].required = True
+        self.fields['password'].required = True
+
     # def __init__(self, args: object, kwargs: object) -> object:
     #     super(UserForm, self).__init__(*args, **kwargs)
     #
@@ -163,7 +174,8 @@ class DocumentForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
 
-        self.fields['status'].choices = [(each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
+        self.fields['status'].choices = [
+            (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
         self.fields['status'].required = False
         self.fields['title'].required = True
 

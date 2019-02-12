@@ -1,38 +1,38 @@
 <table class="table">
-    <thead>
+  <thead>
     <tr>
-        <th width="50%">
-            <a href='#'>
-                Name
-            </a>
-            <span class="caret"></span>
-        </th>
-        <th>
-            <a href="#">
-                Email
-            </a>
-        </th>
+      <th width="50%">
+        <a href='#'>
+        Name
+        </a>
+        <span class="caret"></span>
+      </th>
+      <th>
+        <a href="#">
+        Email
+        </a>
+      </th>
     </tr>
-    </thead>
-    <tbody>
+  </thead>
+  <tbody>
     {% ifequal contacts|length  0 %}
-     <tr>
-         <td class="cell">
-         NO CONTACTS FOUND!!
-         </td>
-     </tr>
+    <tr>
+      <td class="cell">
+        NO CONTACTS FOUND!!
+      </td>
+    </tr>
     {% endifequal %}
     {% for contact in contacts %}
     <tr>
-        <td class="cell">
-            <a class="cell parentname" id="{{ contact.id }}">
-                {{ contact.name }}
-            </a>
-        </td>
-        <td class="cell parentemail">
-            {{ contact.email }}
-        </td>
+      <td class="cell">
+        <a class="cell parentname" id="{{ contact.id }}">
+        {{ contact.name }}
+        </a>
+      </td>
+      <td class="cell parentemail">
+        {{ contact.email }}
+      </td>
     </tr>
     {% endfor %}
-    </tbody>
+  </tbody>
 </table>

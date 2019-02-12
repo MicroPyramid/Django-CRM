@@ -1,9 +1,8 @@
 {% load staticfiles %}
 {% load compress %}
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <!-- Meta, title, CSS, favicons, etc. -->
     <meta charset="utf-8">
@@ -17,39 +16,39 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
     <!-- Custom styling plus plugins -->
     {% compress css %}
-      <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
+    <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
     {% endcompress %}
     {% block extralinks %}{% endblock %}
-</head>
-<body class="login_register_body">
-<div class="container">
-    <div class="row marl justify-content-center login_row">
+  </head>
+  <body class="login_register_body">
+    <div class="container">
+      <div class="row marl justify-content-center login_row">
         <div class="col-md-6 col-lg-6 col-xl-4">
-            <div class="login_block">
-                <div class="login_form_block">
-                    <div class="welcome">Django CRM</div>
-                    <form method="POST" action="">
-                        <div class="form-group">
-                            <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
-                        </div>
-                        <div class="form-group">
-                            <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
-                        </div>
-                        <div class="forgot">Forgot Password <a href="{% url "common:password_reset" %}">Click Here?</a></div>
-                        {% if error %}
-                            <p class="error">{{ message }}</p>
-                        {% endif %}
-                        <button type="submit" class="btn btn-danger">Login</button>
-                    </form>
-                    <div class="credentials">
-                        <span class="heading">Test credentials to Login</span>
-                        <span>Email: <b>admin@micropyramid.com</b></span><br>
-                        <span>Password:<b> admin</b>
-                    </div>
+          <div class="login_block">
+            <div class="login_form_block">
+              <div class="welcome">Django CRM</div>
+              <form method="POST" action="">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
                 </div>
+                <div class="form-group">
+                  <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
+                </div>
+                <div class="forgot">Forgot Password <a href="{% url "common:password_reset" %}">Click Here?</a></div>
+                {% if error %}
+                <p class="error">{{ message }}</p>
+                {% endif %}
+                <button type="submit" class="btn btn-danger">Login</button>
+              </form>
+              <div class="credentials">
+                <span class="heading">Test credentials to Login</span>
+                <span>Email: <b>admin@micropyramid.com</b></span><br>
+                <span>Password:<b> admin</b>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-</body>
+  </body>
 </html>

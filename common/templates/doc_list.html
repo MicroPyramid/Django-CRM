@@ -10,93 +10,91 @@
       <span class="d-inline"><a class="primary_btn" href="{% url 'common:create_doc' %}"><i class="fa fa-plus"></i> Add New Document</a></span>
     </div>
   </div>
-
-<div class="filter_row list_filter_row row marl">
+  <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-           <form id="docs_filter" method="POST" action="">
-          <div class="card-body">
-            <div class="card-title">Filters</div>
-            <div class="row marl">
-              <div class="filter_col col-md-4">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Title</label>
-                  <input type="text" class="form-control" placeholder="Document Title" name="doc_name" {% if request.POST.doc_name %} value="{{request.POST.doc_name}}" {%endif%}/>
+          <form id="docs_filter" method="POST" action="">
+            <div class="card-body">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-4">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Title</label>
+                    <input type="text" class="form-control" placeholder="Document Title" name="doc_name" {% if request.POST.doc_name %} value="{{request.POST.doc_name}}" {%endif%}/>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-4">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Status</label>
-                  <select class="form-control" id="id_status" name="status">
-                    <option value="">--Status--</option>
-                    {% for each_status in status_choices %}
-                    <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
-                    {% endfor%}
-                  </select>
+                <div class="filter_col col-md-4">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Status</label>
+                    <select class="form-control" id="id_status" name="status">
+                      <option value="">--Status--</option>
+                      {% for each_status in status_choices %}
+                      <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
                 </div>
-              </div>     
-              <div class="filter_col col-3">
-                <div class="form-group buttons_row">
-                  <button class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'common:doc_list' %}" class="btn btn-default clear">Clear</a>
+                <div class="filter_col col-3">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'common:doc_list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
         </div>
       </div>
     </div>
   </div>
   <!-- heading_create ends here -->
-   <div class="table_container_row row marl ">
+  <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-         <div class="panel-heading-list card-title text-right">
-          <span class="total_count float-left">Documents - {% if show_pageitems %} {% show_pageitems %}{% else %} {{documents|length}}{% endif %}</span>
+          <div class="panel-heading-list card-title text-right">
+            <span class="total_count float-left">Documents - {% if show_pageitems %} {% show_pageitems %}{% else %} {{documents|length}}{% endif %}</span>
             <span class="filter_toggle ">
             <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
             </span>
-         
-        </div>
+          </div>
           <div class="table-responsive">
-          <table class="table ">
-            <thead>
-            {% if documents|length > 0 %}
-              <tr>
-                <th>S.No</th>
-                <th>Title</th>
-                <th>Created By</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            {% endif %}
-            </thead>
-            <tbody>
-              {% if per_page %}
+            <table class="table ">
+              <thead>
+                {% if documents|length > 0 %}
+                <tr>
+                  <th>S.No</th>
+                  <th>Title</th>
+                  <th>Created By</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
                 {% paginate per_page documents %}
-              {% else%}
+                {% else%}
                 {% paginate 10 documents %}
-              {% endif %}
-              {% for document in documents %}
-              <tr id="account_details{{each_account.id}}" class="text-center">
-                <td scope="row">{{ forloop.counter }}</td>
-                <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
-                <td>{{document.created_by}}</td>
-                <td>{{document.status}}</td>
-                <td class="actions">
-                  <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                {% endif %}
+                {% for document in documents %}
+                <tr id="account_details{{each_account.id}}" class="text-center">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
+                  <td>{{document.created_by}}</td>
+                  <td>{{document.status}}</td>
+                  <td class="actions">
+                    <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
           {% ifequal documents|length 0 %}
-            <h6 class="text-center">No Documents Found</h6>
+          <h6 class="text-center">No Documents Found</h6>
           {% endifequal %}
           <div class="text-center row marl">
             {% show_pages %}
@@ -107,14 +105,12 @@
     </div>
   </div>
   <!-- accounts list start -->
- 
   <!-- accounts list end -->
 </div>
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
-
   $(document).ready(function(){ 
     $(".filter_toggle").click(function(){
       $(".list_filter_row").toggle(); 
@@ -128,11 +124,11 @@
       return;
     window.location = $(this).attr('href')
   });
-
+  
   $(".reset").click(function(e){
     window.location = "{% url 'common:doc_list'%}"
   });
-
+  
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#docs_filter').attr("action", $(this).attr("href"));

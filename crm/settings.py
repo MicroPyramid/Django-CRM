@@ -149,7 +149,8 @@ COMPRESS_ROOT = BASE_DIR + '/static/'
 COMPRESS_URL = STATIC_URL
 COMPRESS_ENABLED = True
 
-COMPRESS_CSS_FILTERS = ['compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
+COMPRESS_CSS_FILTERS = [
+    'compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
 COMPRESS_REBUILD_TIMEOUT = 5400
 
 COMPRESS_OUTPUT_DIR = 'CACHE'

@@ -14,60 +14,60 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-           <form id="cases_filter" method="POST" action="" >
-          <div class="card-body">
-            <div class="card-title">Filters</div>
-            <div class="row marl">
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Name</label>
-                  <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+          <form id="cases_filter" method="POST" action="" >
+            <div class="card-body">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label>
+                    <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Status</label>
-                  <select class="form-control" id="id_status" name="status" >
-                    <option value="">--Status--</option>
-                    {% for each_status in case_status %}
-                    <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
-                    {% endfor%}
-                  </select>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Status</label>
+                    <select class="form-control" id="id_status" name="status" >
+                      <option value="">--Status--</option>
+                      {% for each_status in case_status %}
+                      <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Priority</label>
-                  <select class="form-control" id="id_priority" name="priority" >
-                    <option value="">--Priority--</option>
-                    {% for each_priority in case_priority %}
-                    <option value="{{each_priority.0}}" {% if request.POST.priority %} {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>{{each_priority.1}} </option>
-                    {% endfor%}
-                  </select>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Priority</label>
+                    <select class="form-control" id="id_priority" name="priority" >
+                      <option value="">--Priority--</option>
+                      {% for each_priority in case_priority %}
+                      <option value="{{each_priority.0}}" {% if request.POST.priority %} {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>{{each_priority.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-3">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Account</label>
-                  <select class="form-control" id="id_account" name="account">
-                    <option value="">--Select Account--</option>
-                    {% for ac in accounts %}
-                    <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
-                    {% endfor %}
-                  </select>
-                  </select>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Account</label>
+                    <select class="form-control" id="id_account" name="account">
+                      <option value="">--Select Account--</option>
+                      {% for ac in accounts %}
+                      <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
+                      {% endfor %}
+                    </select>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <input type="hidden" id="per_page_field" name="per_page">
-              <div class="filter_col text-left col-2">
-                <div class="form-group buttons_row text-center">
-                  <button class="btn btn-primary save" id="filter_click" type="submit">Search</button>
-                  <a href="{% url 'cases:list' %}" id="filter_clear" class="btn btn-default clear">Clear</a>
+                <input type="hidden" id="per_page_field" name="per_page">
+                <div class="filter_col text-left col-2">
+                  <div class="form-group buttons_row text-center">
+                    <button class="btn btn-primary save" id="filter_click" type="submit">Search</button>
+                    <a href="{% url 'cases:list' %}" id="filter_clear" class="btn btn-default clear">Clear</a>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
         </div>
       </div>
     </div>
@@ -77,20 +77,17 @@
   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
-        
         <div class="card-body">
-        <div class="panel-heading-list card-title text-right">
-
-           <span class="total_count float-left">Cases - {% if show_pageitems %} {% show_pageitems %}{% else %}{{ cases|length }}{% endif %}</span>
+          <div class="panel-heading-list card-title text-right">
+            <span class="total_count float-left">Cases - {% if show_pageitems %} {% show_pageitems %}{% else %}{{ cases|length }}{% endif %}</span>
             <span class="filter_toggle ">
             <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
             </span>
-        </div>
-        <div class="table-responsive">
-          <table class="table " id="multiselect">
-            <thead>
-              {% if cases|length > 0 %}
-
+          </div>
+          <div class="table-responsive">
+            <table class="table " id="multiselect">
+              <thead>
+                {% if cases|length > 0 %}
                 <tr>
                   <th width="5%">S.No</th>
                   <th width="20%">Name</th>
@@ -99,42 +96,42 @@
                   <th width="15%">Priority</th>
                   <th width="15%">Actions</th>
                 </tr>
-              {% endif %}
-            </thead>
-            <tbody>
-              {% if per_page %}
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
                 {% paginate per_page cases %}
-              {% else%}
+                {% else%}
                 {% paginate 10 cases%}
-              {% endif %}
-              {% for case in cases %}
-              <tr class="case_row{{case.id}}" style="text-align:center;">
-                <td scope="row">{{ forloop.counter }}</td>
-                <td><a href="{% url 'cases:view_case' case.id %}">{{ case.name }}</a></td>
-                <td>
-                  {% if case.account %}
+                {% endif %}
+                {% for case in cases %}
+                <tr class="case_row{{case.id}}" style="text-align:center;">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td><a href="{% url 'cases:view_case' case.id %}">{{ case.name }}</a></td>
+                  <td>
+                    {% if case.account %}
                     <a href="{% url  'accounts:view_account' case.account.id %}">{{ case.account }}</a>
-                  {% else %}
+                    {% else %}
                     No Related Account
-                  {% endif %}
-                </td>
-                <td id="status_id{{case.id}}" status="{{case.status}}">{{ case.status }}</td>
-                <td>{{ case.priority }}</td>
-                <td class="actions">
-                 {#  <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
-                  <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
-                  {% if case.status != 'Closed' %}
-                  <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> </a>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                    {% endif %}
+                  </td>
+                  <td id="status_id{{case.id}}" status="{{case.status}}">{{ case.status }}</td>
+                  <td>{{ case.priority }}</td>
+                  <td class="actions">
+                    {#  <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                    <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
+                    {% if case.status != 'Closed' %}
+                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> </a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
           {% ifequal cases|length 0 %}
-            <h6 class="text-center">No Cases Records Found</h6>
+          <h6 class="text-center">No Cases Records Found</h6>
           {% endifequal %}
           <div class="marl row text-center">
             {% show_pages %}
@@ -143,7 +140,6 @@
       </div>
     </div>
   </div>
- 
 </div>
 <!-- main_container ends here -->
 {% endblock %}
@@ -162,13 +158,13 @@
       })
     }
   }
-
+  
   $(document).ready(function(){    
     $(".filter_toggle").click(function(){    
         $(".list_filter_row").toggle();    
     });    
   });  
-
+  
   $('.remove_case').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -176,7 +172,7 @@
       return;
     window.location = $(this).attr('href')
   });
-
+  
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#cases_filter').attr("action", $(this).attr("href"));

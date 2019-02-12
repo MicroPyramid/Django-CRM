@@ -1,4 +1,3 @@
-
 {% for comment in comments %}
 <li class="list-group-item list-row" id="comment{{comment.id}}">
   <div class="pull-right right-container">
@@ -16,5 +15,6 @@
   </div>
   <div class="stream-head-container">{{comment.comment_user}} Commented</div>
   <div class="stream-post-container" id="comment_name{{comment.id}}">{{comment.comment}}</div>
-  <div class="stream-date-container">{{comment.comment_time}}</div><span>{%if comment.get_file%}<a href="file:////home/raghu/Documents/Jango/CRM/crm_proj/media/{{comment.comment_file}}">{{comment.get_file}}</a>{% endif %}</span>
+  <div class="stream-date-container">{{comment.comment_time}}</div>
+  <span>{%if comment.get_file%}<a href="file:////home/raghu/Documents/Jango/CRM/crm_proj/media/{{comment.comment_file}}">{{comment.get_file}}</a>{% endif %}</span>
   {% endfor %}

@@ -38,6 +38,7 @@ def email(request):
             file = request.FILES.get('files', None)
             status = request.POST.get('email_draft', '')
             email = EmailMessage(subject, message, from_email, [to_email])
+            email.content_subtype = "html"
             f = form.save()
             if file is not None:
                 email.attach(file.name, file.read(), file.content_type)
@@ -168,6 +169,7 @@ def email_sent_edit(request, pk):
             file = request.FILES.get('files', None)
             status = request.POST.get('email_draft', '')
             email = EmailMessage(subject, message, from_email, [to_email])
+            email.content_subtype = "html"
             f = form.save()
             if file is not None:
                 email.attach(file.name, file.read(), file.content_type)

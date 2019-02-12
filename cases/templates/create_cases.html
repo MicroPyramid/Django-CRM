@@ -79,9 +79,9 @@
                 <div class="form-group">
                   <label for="id_account">Account{% if case_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
                   {% if account %}
-                    <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
-                        <option value="{{account.id}}" selected="">{{account.name}}</option>
-                    </select>
+                  <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
+                    <option value="{{account.id}}" selected="">{{account.name}}</option>
+                  </select>
                   {% else %}
                   {{case_form.account}}
                   {% endif %}
@@ -105,12 +105,10 @@
               </div>
             </div>
             <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
-              {% if request.GET.view_account %}
-                <input type="hidden" name="account" value="{{request.GET.view_account}}">
-              {% endif %}
-
+            {% if request.GET.view_account %}
+            <input type="hidden" name="account" value="{{request.GET.view_account}}">
+            {% endif %}
             <input type="hidden" id="save_new_form" name="savenewform">
-
             <div class="col-md-12">
               <div class="row marl buttons_row text-center form_btn_row">
                 <button class="btn btn-default save" type="submit">Save</button>

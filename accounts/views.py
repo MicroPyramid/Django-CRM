@@ -118,6 +118,7 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
                     'account': account_object
                 })
                 email = EmailMessage(mail_subject, message, to=[user.email])
+                email.content_subtype = "html"
                 email.send()
         if self.request.POST.getlist('teams', []):
             account_object.teams.add(*self.request.POST.getlist('teams'))
@@ -249,6 +250,7 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         account_object.save()
         account_object.teams.clear()
         all_members_list = []
+
         if self.request.POST.getlist('assigned_to', []):
             current_site = get_current_site(self.request)
             assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
@@ -265,10 +267,14 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
                         'account': account_object
                     })
                     email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.content_subtype = "html"
                     email.send()
 
             account_object.assigned_to.clear()
             account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+        else:
+            account_object.assigned_to.clear()
+
         if self.request.POST.getlist('teams', []):
             account_object.teams.add(*self.request.POST.getlist('teams'))
         account_object.tags.clear()

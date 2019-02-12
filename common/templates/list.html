@@ -2,89 +2,84 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
-  <!-- main_container starts here -->
-  <div class="main_container">   
-    <!-- filter_row starts here -->
-    <div class="row marl">
-      <div class="col-lg-12 text-right">
-         <span class="d-inline"><a href="{% url 'common:create_user'%}" class="btn primary_btn"><i class="fa fa-plus"></i> Add New User</a></span>
-      </div>
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- filter_row starts here -->
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a href="{% url 'common:create_user'%}" class="btn primary_btn"><i class="fa fa-plus"></i> Add New User</a></span>
     </div>
-    <!-- filter_row ends here -->
-    <div class="table_container_row row marl">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-body">
-            <div class="card-title list text-right">
-              <span class="float-left">Users - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
-             
-              <span class="filter_toggle">
-                <a href="#" class="primary_btn"></a>
-              </span>
-            </div>
-            <div class="table-responsive ">
-              <table class="table table-bordered table-striped table-condensed">
-                <thead>
-                  {% if users|length > 0 %}
-                    <tr>
-                      <th width="20%">First Name</th>
-                      <th width="20%">Username</th>
-                      <th width="20%">Email Address</th>
-                      <th width="8%">User Role</th>
-                      <th width="15%">Status</th>
-                      <th width="20%">Actions</th>
-                    </tr>
-                  {% endif %}
-                </thead>
-                <tbody>
-                  {% if per_page %}
-                    {% paginate per_page users %}
-                  {% else %}
-                    {% paginate 10 users %}
-                  {% endif %}
-                  {% for user in users %}
-                  <tr class="text-center">
-                    <td>{{ user.first_name }}</td>
-                    <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
-                    <td>{{ user.email }}</td>
-
-                    <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}</td>
-                    <td><a {% if user.is_active %} onclick="return confirm('Are you sure you want to deactivate this user?')" {% else %} onclick="return confirm('Are you sure you want to activate this user?')" {% endif %} href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
-                      {% if user.is_active == True %}
-                        <i class="fa fa-toggle-on"></i> Active
-                      {% else %}
-                        <i class="fa fa-toggle-off"></i> InActive
-                      {% endif %}
+  </div>
+  <!-- filter_row ends here -->
+  <div class="table_container_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title list text-right">
+            <span class="float-left">Users - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
+            <span class="filter_toggle">
+            <a href="#" class="primary_btn"></a>
+            </span>
+          </div>
+          <div class="table-responsive ">
+            <table class="table table-bordered table-striped table-condensed">
+              <thead>
+                {% if users|length > 0 %}
+                <tr>
+                  <th width="20%">Username</th>
+                  <th width="20%">Email Address</th>
+                  <th width="8%">User Role</th>
+                  <th width="15%">Status</th>
+                  <th width="20%">Actions</th>
+                </tr>
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
+                {% paginate per_page users %}
+                {% else %}
+                {% paginate 10 users %}
+                {% endif %}
+                {% for user in users %}
+                <tr class="text-center">
+                  <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
+                  <td>{{ user.email }}</td>
+                  <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}</td>
+                  <td><a {% if user.is_active %} onclick="return confirm('Are you sure you want to deactivate this user?')" {% else %} onclick="return confirm('Are you sure you want to activate this user?')" {% endif %} href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
+                    {% if user.is_active == True %}
+                    <i class="fa fa-toggle-on"></i> Active
+                    {% else %}
+                    <i class="fa fa-toggle-off"></i> InActive
+                    {% endif %}
                     </a>
-                    </td>
-                    <td class="actions">
-                      <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
-                      {% if user.email != admin_email  or request.user.email == admin_email %}
-                      <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
-                      {% endif %}
-                      <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% ifequal users|length 0 %}
-              <h6 class="text-center">No User Records Found</h6>
-            {% endifequal %}
-            <div class="marl row text-center">
-              {% show_pages %}
-            </div>
+                  </td>
+                  <td class="actions">
+                    <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                    {% if user.email != admin_email  or request.user.email == admin_email %}
+                    <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
+                    {% endif %}
+                    <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% ifequal users|length 0 %}
+          <h6 class="text-center">No User Records Found</h6>
+          {% endifequal %}
+          <div class="marl row text-center">
+            {% show_pages %}
           </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- main_container ends here -->
+</div>
+<!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
-
   $('.trash').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
