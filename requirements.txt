@@ -13,3 +13,8 @@ sorl-thumbnail==12.5.0
 Pillow==5.4.1
 phonenumbers==8.10.4
 django-phonenumber-field==2.2.0
+amqp==2.4.1
+billiard==3.5.0.5
+celery==4.2.1
+kombu==4.3.0
+vine==1.2.0

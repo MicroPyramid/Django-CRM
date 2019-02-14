@@ -9,29 +9,25 @@
       <form id="filter-form" method="get">
         <div class="form-group col-md-8 col-sm-8">
           <div class="input-group">
-            <input placeholder="Search Tasks" type="text" class="form-control text-filter"
-              name="event_name" value="" tabindex="1">
+            <input placeholder="Search Tasks" type="text" class="form-control text-filter" name="event_name" value="" tabindex="1">
             <div class="input-group-btn">
-              <button type="button" class="btn btn-primary search searchmeetings btn-icon"
-                data-action="search">
+              <button type="button" class="btn btn-primary search searchmeetings btn-icon" data-action="search">
               <span class="glyphicon glyphicon-search"></span>
               </button>
             </div>
           </div>
-          <input type="hidden" name="event_type" value="Task"/>
+          <input type="hidden" name="event_type" value="Task" />
           <div class="addedFilters">
             <div class="input-group parent-filter">
               <span class="input-group-btn">
-                <select class="form-control input-sm" id="parent_type-filter" name="parent_type"
-                  style="width:100px">
+                <select class="form-control input-sm" id="parent_type-filter" name="parent_type" style="width:100px">
                   <option value="Account">Account</option>
                   <option value="Lead">Lead</option>
                   <option value="Opportunity">Opportunity</option>
                   <option value="Case">Case</option>
                 </select>
               </span>
-              <input placeholder="Select" autocomplete="off" value="" name="parent_name"
-                class="main-element form-control input-sm parent_name" type="text">
+              <input placeholder="Select" autocomplete="off" value="" name="parent_name" class="main-element form-control input-sm parent_name" type="text">
               <span class="input-group-addon">
               <span title="Select" id="selectparent">
               <i class="glyphicon glyphicon-arrow-up"></i>
@@ -44,10 +40,7 @@
             </div>
             <div>
               <div class="input-group assigned-user-filter">
-                <input placeholder="Select Assigned User" autocomplete="off"
-                  id="assigned_username-filter"
-                  value=""
-                  name="username" class="main-element form-control input-sm" type="text">
+                <input placeholder="Select Assigned User" autocomplete="off" id="assigned_username-filter" value="" name="username" class="main-element form-control input-sm" type="text">
                 <span class="input-group-addon">
                 <span title="Select" id="assign-user">
                 <i class="glyphicon glyphicon-arrow-up"></i>
@@ -61,8 +54,7 @@
               <i class="assigned_users_error"></i>
             </div>
             <div class="input-group date startdatepicker created_at-filter">
-              <input name="created_at" class="form-control"
-                placeholder="Created Time MM/DD/YYYY HH:MM:SS" required="" type="text">
+              <input name="created_at" class="form-control" placeholder="Created Time MM/DD/YYYY HH:MM:SS" required="" type="text">
               <span class="input-group-addon">
               <span class="glyphicon glyphicon-calendar">
               </span> &nbsp;
@@ -72,8 +64,7 @@
             </div>
             <i id="start_date_error"></i>
             <div class="input-group date startdatepicker updated_at-filter">
-              <input name="updated_at" class="form-control"
-                placeholder="Modified Time MM/DD/YYYY HH:MM:SS" required="" type="text">
+              <input name="updated_at" class="form-control" placeholder="Modified Time MM/DD/YYYY HH:MM:SS" required="" type="text">
               <span class="input-group-addon">
               <span class="glyphicon glyphicon-calendar">
               </span>&nbsp;
@@ -83,8 +74,7 @@
             </div>
             <i id="updated_at_error"></i>
             <div class="input-group date startdatepicker start_date-filter">
-              <input name="start_date" class="form-control"
-                placeholder="Start Date MM/DD/YYYY HH:MM:SS" required="" type="text">
+              <input name="start_date" class="form-control" placeholder="Start Date MM/DD/YYYY HH:MM:SS" required="" type="text">
               <span class="input-group-addon">
               <span class="glyphicon glyphicon-calendar">
               </span> &nbsp;
@@ -94,9 +84,7 @@
             </div>
             <i id="created_at_error"></i>
             <div class="input-group created_user-filter">
-              <input placeholder="Select Created User" autocomplete="off" id="created_user_username"
-                value=""
-                name="username" class="main-element form-control input-sm" type="text">
+              <input placeholder="Select Created User" autocomplete="off" id="created_user_username" value="" name="username" class="main-element form-control input-sm" type="text">
               <span class="input-group-addon">
               <span title="Select" id="created-user">
               <i class="glyphicon glyphicon-arrow-up"></i>
@@ -108,17 +96,6 @@
               <div class="selected-created-user"></div>
             </div>
             <div>
-            </div>
-            <div class="input-group teams-filter">
-              <select class="form-control" id="teams" name="teams">
-                <option></option>
-                <option value="Sales Department">Sales Department</option>
-                <option value="Support">Support</option>
-                <option value="Top Management">Top Management</option>
-              </select>
-              <span class="input-group-addon remove-this-filter">
-              <i class="glyphicon glyphicon-remove"></i>
-              </span>
             </div>
             <div class="input-group status-filter">
               <select class="form-control main-element input-sm" id="status" name="status">
@@ -134,13 +111,10 @@
         </div>
         <div class="form-group col-md-4 col-sm-4">
           <div class="btn-group">
-            {#                            <button type="button" class="btn btn-default extra_option_btn reset-filters"#}
-            {#                                    data-action="reset">#}
-            {#                                <span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset#}
-            {#                            </button>#}
-            <button type="button"
-              class="btn btn-default dropdown-toggle extra_option_btn add-filter-button"
-              data-toggle="dropdown" tabindex="-1">
+            {# <button type="button" class="btn btn-default extra_option_btn reset-filters" #} {# data-action="reset">#}
+            {# <span class="glyphicon glyphicon-repeat"></span>&nbsp;Reset#}
+            {# </button>#}
+            <button type="button" class="btn btn-default dropdown-toggle extra_option_btn add-filter-button" data-toggle="dropdown" tabindex="-1">
             Add Field <span class="caret"></span>
             </button>
             <ul class="dropdown-menu pull-right filter-list">
@@ -161,7 +135,6 @@
                 At</a>
               </li>
               <li class="filterfield" id="fstatus"><a class="status-filter" href="#">Status</a></li>
-              <li class="filterfield" id="fteams"><a class="teams-filter" href="#">Teams</a></li>
             </ul>
           </div>
         </div>
@@ -198,14 +171,6 @@
           <div class="form-group">
             <label for="exampleInputEmail1">Phone</label>
             <input type="text" class="form-control" placeholder="Phone">
-          </div>
-        </div>
-        <div class="filter_col col-md-3">
-          <div class="form-group">
-            <label for="exampleInputEmail1">Teams</label>
-            <select class="form-control">
-              <option>1</option>
-            </select>
           </div>
         </div>
         <div class="filter_col col-md-3">
@@ -255,8 +220,7 @@
       </div>
       <!-- CREATE TASK MODEL -->
       <form id="model-form" method="post">
-        <div class="modal fade" id="task-create-model" role="dialog" data-keyboard="false"
-          data-backdrop="static">
+        <div class="modal fade" id="task-create-model" role="dialog" data-keyboard="false" data-backdrop="static">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
               <div class="modal-header">
@@ -270,10 +234,8 @@
                       Name *
                       </label>
                       <div class="field" data-name="name">
-                        <input type="hidden" name="event_type" value="Task"/>
-                        <input id="name" class="main-element form-control" type="text"
-                          autocomplete="off"
-                          name="name" required/>
+                        <input type="hidden" name="event_type" value="Task" />
+                        <input id="name" class="main-element form-control" type="text" autocomplete="off" name="name" required />
                       </div>
                       <i id="name_error"></i>
                     </div>
@@ -291,9 +253,7 @@
                                 <option value="Case">Case</option>
                               </select>
                             </span>
-                            <input type="text" placeholder="Select" autocomplete="off"
-                              value="" name="parent_name"
-                              class=" parent_name main-element form-control">
+                            <input type="text" placeholder="Select" autocomplete="off" value="" name="parent_name" class=" parent_name main-element form-control">
                             <span class="input-group-btn">
                             <button title="Select" tabindex="-1" type="button" class="btn btn-default" id="selectparent"><i
                               class="glyphicon glyphicon-arrow-up"></i></button>
@@ -311,8 +271,7 @@
                     <div class="cell col-sm-6 form-group" data-name="status">
                       <label class="control-label" data-name="status"> Status</label>
                       <div class="field" data-name="status">
-                        <select class="form-control main-element" id="status"
-                          name="status">
+                        <select class="form-control main-element" id="status" name="status">
                           <option selected="" value="Planned">Planned</option>
                           <option value="Held">Held</option>
                           <option value="Not Held">Not Held</option>
@@ -323,8 +282,7 @@
                     <div class="cell col-sm-6 form-group" data-name="priority">
                       <label class="control-label" data-name="priority"> Priority </label>
                       <div class="field" data-name="duration">
-                        <select class="form-control main-element" id="priority"
-                          name="priority">
+                        <select class="form-control main-element" id="priority" name="priority">
                           <option value="Low">Low</option>
                           <option value="Normal">Normal</option>
                           <option value="High">High</option>
@@ -340,9 +298,7 @@
                       * </label>
                       <div class="form-group">
                         <div class='input-group date startdatepicker'>
-                          <input type='text' name="start_date" class="form-control"
-                            id="start_date"
-                            placeholder="MM/DD/YYYY HH:MM:SS" required/>
+                          <input type='text' name="start_date" class="form-control" id="start_date" placeholder="MM/DD/YYYY HH:MM:SS" required />
                           <span class="input-group-addon">
                           <span class="glyphicon glyphicon-calendar"></span>
                           </span>
@@ -354,9 +310,7 @@
                       <label class="control-label" data-name="dateEnd"> Date End *</label>
                       <div class="form-group">
                         <div class='input-group date enddatepicker'>
-                          <input type='text' id="close_date" name="close_date"
-                            class="form-control"
-                            placeholder="MM/DD/YYYY HH:MM:SS" required/>
+                          <input type='text' id="close_date" name="close_date" class="form-control" placeholder="MM/DD/YYYY HH:MM:SS" required />
                           <span class="input-group-addon">
                           <span class="glyphicon glyphicon-calendar"></span>
                           </span>
@@ -371,10 +325,7 @@
                         <label for="assigned_user">Assigned User </label>
                         <div class="form-group" data-name="assigned_user">
                           <div class="input-group">
-                            <input placeholder="Select" autocomplete="off"
-                              id="assigned_username" value="" name="username"
-                              class="main-element form-control input-sm"
-                              type="text">
+                            <input placeholder="Select" autocomplete="off" id="assigned_username" value="" name="username" class="main-element form-control input-sm" type="text">
                             <span class="input-group-btn">
                             <button title="Select" tabindex="-1" type="button" class="btn btn-default input-sm" id="assign-user"><i
                               class="glyphicon glyphicon-arrow-up"></i></button>
@@ -385,25 +336,13 @@
                         </div>
                       </div>
                     </div>
-                    <div class="cell col-sm-6 form-group">
-                      <div class="field" data-name="teams">
-                        <label for="teams">Teams</label>
-                        <select class="form-control input-sm" id="teams" name="teams">
-                          <option></option>
-                          <option value="Sales Department">Sales Department</option>
-                          <option value="Support">Support</option>
-                          <option value="Top Management">Top Management</option>
-                        </select>
-                      </div>
-                    </div>
                   </div>
                   <div class="row">
                     <div class="cell col-sm-12 form-group" data-name="description">
                       <label class="control-label" data-name="description">
                       Description </label>
                       <div class="field" data-name="description">
-                        <textarea id="description" class="main-element form-control" rows="4" name="description"
-                          required></textarea>
+                        <textarea id="description" class="main-element form-control" rows="4" name="description" required></textarea>
                         <i id="description_error"></i>
                       </div>
                     </div>
@@ -443,8 +382,7 @@
 </div>
 <!--END SUCCESS TASK MODEL-->
 <!--SELECT PARENT MODEL-->
-<div class="modal fade model-sm" id="selectparentmodel" role="dialog" data-keyboard="false"
-  data-backdrop="static">
+<div class="modal fade model-sm" id="selectparentmodel" role="dialog" data-keyboard="false" data-backdrop="static">
   <div class="modal-dialog">
     <!-- Modal content-->
     <div class="modal-content">

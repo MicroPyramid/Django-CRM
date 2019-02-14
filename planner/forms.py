@@ -5,7 +5,7 @@ from planner.models import Reminder
 # class EventForm(forms.ModelForm):
 #     class Meta:
 #         model = Event
-#         fields = ['name', 'status', 'start_date', 'description', 'teams', 'assigned_to', 'attendees_user',
+#         fields = ['name', 'status', 'start_date', 'description', 'assigned_to', 'attendees_user',
 #                   'attendees_contacts', 'attendees_leads']
 
 #     start_date = forms.DateTimeField(input_formats=['%m/%d/%Y %H:%M:%S'], error_messages={

@@ -1,11 +1,12 @@
+import time
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
-from common.templatetags.common_tags import (is_document_file_image, is_document_file_audio,
-                                             is_document_file_video, is_document_file_pdf, is_document_file_code, is_document_file_text,
-                                             is_document_file_sheet, is_document_file_zip)
+from common.templatetags.common_tags import (
+    is_document_file_image, is_document_file_audio, is_document_file_video, is_document_file_pdf,
+    is_document_file_code, is_document_file_text, is_document_file_sheet, is_document_file_zip
+)
 from common.utils import COUNTRIES, ROLES
-import time
 
 
 def img_url(self, filename):
@@ -34,6 +35,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.username
+
+    def get_full_name(self):
+        full_name = None
+        if self.first_name or self.last_name:
+            full_name = self.first_name + " " + self.last_name
+        elif self.username:
+            full_name = self.username
+        else:
+            full_name = self.email
+        return full_name
 
     def __unicode__(self):
         return self.email
@@ -89,14 +100,6 @@ class Address(models.Model):
         return address
 
 
-class Team(models.Model):
-    name = models.CharField(max_length=55)
-    members = models.ManyToManyField(User)
-
-    def __str__(self):
-        return self.name
-
-
 class Comment(models.Model):
     case = models.ForeignKey('cases.Case', blank=True, null=True,
                              related_name="cases", on_delete=models.CASCADE)
@@ -134,21 +137,21 @@ class Comment_Files(models.Model):
 
 class Attachments(models.Model):
     created_by = models.ForeignKey(
-        User, related_name='attachment_created_by', on_delete=models.CASCADE)
+        User, related_name='attachment_created_by', on_delete=models.SET_NULL, null=True)
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    attachment = models.FileField(
-        max_length=1001, upload_to='attachments/%Y/%m/')
-    lead = models.ForeignKey('leads.Lead', null=True, blank=True,
-                             related_name='lead_attachment', on_delete=models.CASCADE)
-    account = models.ForeignKey('accounts.Account', null=True, blank=True,
-                                related_name='account_attachment', on_delete=models.CASCADE)
-    contact = models.ForeignKey('contacts.Contact', on_delete=models.CASCADE,
-                                related_name='contact_attachment', blank=True, null=True)
-    opportunity = models.ForeignKey('opportunity.Opportunity', blank=True,
-                                    null=True, on_delete=models.CASCADE, related_name='opportunity_attachment')
-    case = models.ForeignKey('cases.Case', blank=True, null=True,
-                             on_delete=models.CASCADE, related_name='case_attachment')
+    attachment = models.FileField(max_length=1001, upload_to='attachments/%Y/%m/')
+    lead = models.ForeignKey(
+        'leads.Lead', null=True, blank=True, related_name='lead_attachment', on_delete=models.CASCADE)
+    account = models.ForeignKey(
+        'accounts.Account', null=True, blank=True, related_name='account_attachment', on_delete=models.CASCADE)
+    contact = models.ForeignKey(
+        'contacts.Contact', on_delete=models.CASCADE, related_name='contact_attachment', blank=True, null=True)
+    opportunity = models.ForeignKey(
+        'opportunity.Opportunity', blank=True, null=True, on_delete=models.CASCADE,
+        related_name='opportunity_attachment')
+    case = models.ForeignKey(
+        'cases.Case', blank=True, null=True, on_delete=models.CASCADE, related_name='case_attachment')
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
@@ -194,11 +197,9 @@ class Document(models.Model):
 
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
-    created_by = models.ForeignKey(
-        User, related_name='document_uploaded', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, related_name='document_uploaded', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(
-        choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
+    status = models.CharField(choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
@@ -225,3 +226,16 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Google(models.Model):
+    user = models.ForeignKey(User, related_name='google', on_delete=models.CASCADE)
+    google_id = models.CharField(max_length=200, default='')
+    google_url = models.CharField(max_length=1000, default='')
+    verified_email = models.CharField(max_length=200, default='')
+    family_name = models.CharField(max_length=200, default='')
+    name = models.CharField(max_length=200, default='')
+    gender = models.CharField(max_length=10, default='')
+    dob = models.CharField(max_length=50, default='')
+    given_name = models.CharField(max_length=200, default='')
+    email = models.CharField(max_length=200, default='', db_index=True)

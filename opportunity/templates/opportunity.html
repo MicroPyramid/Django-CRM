@@ -90,9 +90,11 @@
 
                 <tr>
                   <th width="5%">S.No</th>
-                  <th width="15%">Name</th>
+                  <th width="10%">Name</th>
+                  <th width="15%">Assigned User</th>
+                  <th width="15%">Tags</th>
                   <th width="15%">Account</th>
-                  <th width="15%">Contact(s)</th>
+                  <!--<th width="15%">Contact(s)</th>-->
                   <th width="15%">Stage</th>
                   <th width="10%">Lead Source</th>
                   <th width="15%">Actions</th>
@@ -110,13 +112,35 @@
                 <td scope="row">{{ forloop.counter }}</td>
                 <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
                 <td>
+                  {% with opportunity_users=opportunity.assigned_to.all %}
+                  {% if opportunity_users %}
+                  {% for user in opportunity_users %}
+                  <span class="text-left">{{ user.email }}</span><br>
+                  {% endfor %}
+                  {% else %}
+                  Not Assigned to Any
+                  {% endif %}
+                  {% endwith %}
+                </td>
+                <td >
+                  {% with tags=opportunity.tags.all %}
+                  {% if tags %}
+                  {% for tag in tags %}
+                  <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                  {% endfor %}
+                  {% else %}
+                  No Tags
+                  {% endif %}
+                  {% endwith %}
+                </td>
+                <td>
                   {% if opportunity.account %}
                     <a href="{% url  'accounts:view_account' opportunity.account.id %}">{{ opportunity.account }}</a>
                   {% else %}
                     No Related Account
                   {% endif %}
                 </td>
-                <td>
+                <!--<td>
                   {% with opp_contacts=opportunity.contacts.all %}
                     {% if opp_contacts %}
                       {% for contact in opp_contacts %}
@@ -126,7 +150,7 @@
                       No Related Contact
                     {% endif %}
                   {% endwith %}
-                </td>
+                </td>-->
                 <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
                 <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}</td>
                 <td class="actions">

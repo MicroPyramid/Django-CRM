@@ -20,17 +20,6 @@
               <div class="row marl">
                 <div class="filter_col col-md-3">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">ACCOUNTS</label>
-                    <select class="form-control" id="id_account" name="account">
-                      <option value="" selected="selected">--Select an Account--</option>
-                      {% for account in accounts %}
-                      <option value="{{account.id}}" {%ifequal account.id request.POST.account|add:"0"%} selected {%endifequal%}>{{ account.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="filter_col col-md-3">
-                  <div class="form-group">
                     <label for="exampleInputEmail1">NAME</label>
                     <input type="text" class="form-control" placeholder="First Name" name="first_name" value="{{request.POST.first_name}}">
                   </div>
@@ -76,7 +65,6 @@
                 <tr>
                   <th width="5%" >S.no</th>
                   <th width="20%" >Name</th>
-                  <th width="20%" >Account</th>
                   <th width="15%" >City</th>
                   <th width="15%" >State</th>
                   <th width="15%" >Actions</th>
@@ -93,13 +81,6 @@
                 <tr style="text-align:center;">
                   <td scope="row">{{ forloop.counter }}</td>
                   <td><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}}</a></td>
-                  <td>
-                    {% if contact.account %}
-                    <a href="{% url 'accounts:view_account' contact.account.id %}">{{contact.account}}</a>
-                    {% else %}
-                    No Related Account
-                    {% endif %}
-                  </td>
                   <td>
                     {% if contact.address.city %}
                     {{contact.address.city}}

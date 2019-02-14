@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import Account, Tags
 from contacts.models import Contact
-from common.models import User, Team
+from common.models import User
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
 
 
@@ -18,13 +18,12 @@ class Opportunity(models.Model):
     lead_source = models.CharField(_("Source of Lead"), max_length=255, choices=SOURCES, blank=True, null=True)
     probability = models.IntegerField(default=0, blank=True, null=True)
     contacts = models.ManyToManyField(Contact)
-    closed_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    closed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     # closed_on = models.DateTimeField(blank=True, null=True)
     closed_on = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     assigned_to = models.ManyToManyField(User, related_name='opportunity_assigned_to')
-    teams = models.ManyToManyField(Team)
-    created_by = models.ForeignKey(User, related_name='opportunity_created_by', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, related_name='opportunity_created_by', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)

@@ -144,7 +144,6 @@ $("body").on("click", ".viewthis", function (e) {
                     $("#parent_name").val(data["parent_name"]);
                     $("#parent_id").val(data["parent_id"]);
                     $("#parent_type").val(data["parent_type"]);
-                    $("#teams").val(data["task"]["teams"]);
                     ///////////////////ASSGNED USERS////////////////////////////////////////////
                     $("#selected-assignee-users").html("");
                     $("#assigned_user_error").before("<div id="selected-assignee-users"></div>");

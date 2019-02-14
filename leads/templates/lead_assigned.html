@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Django CRM</title>
+    <link href='https://fonts.googleapis.com/css?family=Karla:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+  </head>
+  <body style="width:100% !important; margin:0 !important; padding:0 !important; -webkit-text-size-adjust:none; -ms-text-size-adjust:none;font-size:13px; font-family: 'Karla', sans-serif;color: #73879C; background: #e8edf2; ">
+    <table cellpadding="0" cellspacing="0" border="0" id="backgroundTable" style="height:auto !important; margin:0; padding:0; width:100% !important; font-family: 'Karla', sans-serif;color: #73879C; background: #e8edf2;">
+      <tbody>
+        <tr>
+          <td>
+            <table id="contenttable" width="800" align="center" cellpadding="0" cellspacing="0" border="0" style="font-family: 'Karla', sans-serif;color: #73879C; background: #fff; text-align:center !important; margin-top:0 !important; margin-right: auto !important; margin-bottom:0 !important; margin-left: auto !important; border:none; width: 100% !important; max-width:800px !important;border: 1px solid #ddd !important;">
+              <tbody>
+                <tr>
+                  <td>
+                    <table style="width:800px;background:#fff;padding:0;" cellpadding="0" cellspacing="0">
+                      <tbody>
+                        <tr>
+                          <td style="background: #2A3F54;height:50px;">
+                            <a href="#" style="text-overflow: ellipsis;overflow: hidden;width: 100%;color: #c4d0d9 !important;margin-left: 0 !important;display: block;margin: 0; padding:0;font-weight: bold;text-transform: uppercase;font-size: 18px;text-decoration:none;"><i class="fas fa-chart-line" aria-hidden="true"></i>
+                            Django - CRM</a>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="text-transform: uppercase;font-weight: bold;letter-spacing: 1px;color: #fff !important;text-decoration: none;background: #f43d53;padding: 8px 10px;">
+                            Dear {{ user.get_full_name }} !!!
+                          </td>
+                        </tr>
+                        <tr style="background:#fff;">
+                          <td style="text-align:left;padding-top:20px;padding-left:20px;color: #131e26;font-size: 17px;">
+                            <div><b>Here are the Lead details:</b></div><br/>
+                            <div>Title: {{ lead_instance.title }}</div><br/>
+                            <div>Email: {{ lead_instance.email }}</div><br/>
+                            <div>Source: {{ lead_instance.source }}</div><br/>
+                            <div>Status: {{ lead_instance.status }}</div><br/>
+                            <div>Description: {{ lead_instance.description }}</div><br/>
+                            <div>
+                              <a target="_blank" href="{{ lead_detail_url }}">Click Here</a> to view '{{ lead_instance.title }}' details
+                            </div>
+                            <br/><br/>
+                            <br/><br/>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold;padding:12px 0;color: #333 !important;text-decoration: none;background: #e8edf2;">
+                            Yours sincerely, Administration of the service, Django-CRM.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

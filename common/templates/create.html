@@ -25,28 +25,28 @@
                 <label for="id_firstname">First Name{% if user_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                 <input type="text" class="form-control" name="first_name" value="{% if user_obj %}{{ user_obj.first_name }}{% else %}{{request.POST.first_name}}{% endif %}" placeholder="First Name">
               </div>
-              <span class="error" id="id_first_name">{{ errors.first_name }}</span>
+              <span class="error_ajax" id="id_first_name" style="color:red">{{ errors.first_name }}</span>
             </div>
             <div class="filter_col col-md-4">
               <div class="form-group">
                 <label for="id_lastname">Last Name{% if user_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
                 <input type="text" class="form-control" name="last_name" value="{% if user_obj %}{{ user_obj.last_name }}{% else %}{{request.POST.last_name}}{% endif %}" placeholder="Last Name">
               </div>
-              <span class="error" id="id_last_name">{{ errors.last_name }}</span>
+              <span class="error_ajax" id="id_last_name" style="color:red">{{ errors.last_name }}</span>
             </div>
             <div class="filter_col col-md-4">
               <div class="form-group">
                 <label for="id_username">Username{% if user_form.username.field.required %}<span class="error">*</span>{% endif %}</label>
                 <input type="text" class="form-control" name="username" value="{% if user_obj %}{{ user_obj.username }}{% else %}{{request.POST.username}}{% endif %}" placeholder="Username">
               </div>
-              <span class="error" id="id_username">{{ errors.username }}</span>
+              <span class="error_ajax" id="id_username" style="color:red">{{ errors.username }}</span>
             </div>
             <div class="filter_col col-md-6" {% if user_obj %} style="display: none;" {% endif %}>
             <div class="form-group">
               <label for="id_email">Email Address{% if user_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
               <input type="text" class="form-control" name="email" value="{% if user_obj %}{{ user_obj.email }}{% else %}{{request.POST.email}}{% endif %}" {% if user_obj %} readonly=""{% endif %} placeholder="Email">
             </div>
-            <span class="error" id="id_email">{{ errors.email }}</span>
+            <span class="error_ajax" id="id_email" style="color:red">{{ errors.email }}</span>
           </div>
           <div class="filter_col col-md-6" {% if request.user.role != 'ADMIN' and not request.user.is_superuser or request.user.id == user_obj.id %}style="display:none;"{% endif %}>
           <div class="form-group">
@@ -62,23 +62,27 @@
               <option value="{{user_obj.role}}">{{user_obj.role}}</option>
             </select>
             {% endif %}
-            <span class="error" id="id_role">{{ user_form.role.errors }}</span>
+            <span class="error_ajax" id="id_role" style="color:red">{{ user_form.role.errors }}</span>
           </div>
         </div>
+        {% if not user_obj %}
         <div class="filter_col col-md-6">
           <div class="form-group">
             <label for="exampleInputEmail1">Password{% if user_form.password.field.required %}<span class="error">*</span>{% endif %}</label>
             <input type="password" class="form-control" name="password" value="{{request.POST.password}}" placeholder="Password">
           </div>
-          <span class="error" id="id_password">{{ errors.password }}</span>
+          <span class="error_ajax" id="id_password" style="color:red">{{ errors.password }}</span>
         </div>
+        {% endif %}
         <div class="filter_col col-md-6">
           <div class="form-group">
             <label for="exampleInputEmail1">Upload Profile Picture{% if user_form.profile_pic.field.required %}<span class="error">*</span>{% endif %}</label>
             <input type="file" name="profile_pic" accept="image/*" class="form-control" />
           </div>
-          {% if user_obj %}<span>{{user_obj.profile_pic }}</span>{% endif %}
+
+          {% if user_obj %}<span>{{user_profile_name }}</span>{% endif %}
           <span class="error" id="id_profile_pic">{{ errors.profile_pic }}</span>
+
         </div>
       </div>
     </div>
@@ -106,7 +110,7 @@
            $("#forbiden_error").text(" *You Don't have permission to edit this user ");
          }
        if(data.errors){
-         $('.error').html('')
+         $('.error_ajax').html('')
          for (var key in data.errors) {
            $('#id_'+key).html("<p>" + data.errors[key][0] + "</p>");
          };

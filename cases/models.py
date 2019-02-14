@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import Account
 from contacts.models import Contact
-from common.models import User, Team
+from common.models import User
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from planner.models import Event
 
@@ -22,8 +22,7 @@ class Case(models.Model):
     closed_on = models.DateField()
     description = models.TextField(blank=True, null=True)
     assigned_to = models.ManyToManyField(User, related_name='case_assigned_users')
-    teams = models.ManyToManyField(Team)
-    created_by = models.ForeignKey(User, related_name='case_created_by', on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, related_name='case_created_by', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
 

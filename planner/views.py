@@ -494,8 +494,6 @@
 #                 updated_at = datetime.datetime.strptime(request.GET.get('updated_at'), '%m/%d/%Y %H:%M:%S')
 #                 event = event.filter(updated_at=updated_at) or event
 
-#             if request.GET.get('teams'):
-#                 event = event.filter(teams=request.GET.get('teams')) or event
 #             if request.GET.get('status'):
 #                 event = event.filter(status=request.GET.get('status')) or event
 

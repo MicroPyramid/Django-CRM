@@ -19,7 +19,6 @@ class OpportunityForm(forms.ModelForm):
         self.fields['account'].queryset = opp_accounts
         self.fields['contacts'].queryset = opp_contacts
         self.fields['assigned_to'].required = False
-        self.fields['teams'].required = False
         self.fields['contacts'].required = False
         for key, value in self.fields.items():
             value.widget.attrs['placeholder'] = value.label
@@ -34,7 +33,7 @@ class OpportunityForm(forms.ModelForm):
         model = Opportunity
         fields = (
             'name', 'amount', 'account', 'contacts', 'assigned_to', 'currency',
-            'probability', 'teams', 'closed_on', 'lead_source', 'description', 'stage',
+            'probability', 'closed_on', 'lead_source', 'description', 'stage',
         )
 
 

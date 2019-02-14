@@ -2,7 +2,7 @@ from django.urls import path
 from leads.views import (
     LeadListView, CreateLeadView, LeadDetailView, UpdateLeadView, DeleteLeadView, ConvertLeadView,
     GetLeadsView, AddCommentView, UpdateCommentView, DeleteCommentView,
-    AddAttachmentsView,DeleteAttachmentsView
+    AddAttachmentsView, DeleteAttachmentsView
 )
 
 

@@ -56,48 +56,62 @@
                   <span class="error">{{ account_form.email.errors }}</span>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group ">
+                  <label for="exampleInputEmail1" class="required">Leads{% if account_form.lead.field.required %}<span class="error">*</span>{% endif %}</label>
+                  {{ account_form.lead }}
+                  <span class="error">{{ account_form.lead.errors }}</span>
+                </div>
+              </div>
             </div>
             <div class="col-md-4">
               <div class="filter_col billing_block col-md-12" style="padding: 0px;">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Billing Address {% if billing_form.address_line.field.required %}<span class="error">*</span>{% endif %}</label>
-                  {{ billing_form.address_line }}
-                  <span class="error">{{ billing_form.address_line.errors }}</span>
+                  <label for="exampleInputEmail1">Billing Address {% if account_form.billing_address_line.field.required %}<span class="error">*</span>{% endif %}</label>
+                  {{ account_form.billing_address_line }}
+                  <span class="error">{{ account_form.billing_address_line.errors }}</span>
                 </div>
                 <div class="row" style="margin-top: 10px;">
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Street {% if billing_form.street.field.required %}<span class="error">*</span>{% endif %}</label>
-                      {{ billing_form.street }}
-                      <span class="error">{{ billing_form.street.errors }}</span>
+                      <label for="exampleInputEmail1">Street {% if account_form.billing_street.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.billing_street }}
+                      <span class="error">{{ account_form.billing_street.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">PostCode {% if billing_form.postcode.field.required %}<span class="error">*</span>{% endif %}</label>
-                      {{ billing_form.postcode }}
-                      <span class="error">{{ billing_form.postcode.errors }}</span>
+                      <label for="exampleInputEmail1">PostCode {% if account_form.billing_postcode.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.billing_postcode }}
+                      <span class="error">{{ account_form.billing_postcode.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">City {% if billing_form.city.field.required %}<span class="error">*</span>{% endif %}</label>
-                      {{ billing_form.city }}
-                      <span class="error">{{ billing_form.city.errors }}</span>
+                      <label for="exampleInputEmail1">City {% if account_form.billing_city.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.billing_city }}
+                      <span class="error">{{ account_form.billing_city.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">State {% if billing_form.state.field.required %}<span class="error">*</span>{% endif %}</label>
-                      {{ billing_form.state }}
-                      <span class="error">{{ billing_form.state.errors }}</span>
+                      <label for="exampleInputEmail1">State {% if account_form.billing_state.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.billing_state }}
+                      <span class="error">{{ account_form.billing_state.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-12" style="margin-top: 10px;">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Country {% if billing_form.country.field.required %}<span class="error">*</span>{% endif %}</label>
-                      {{ billing_form.country }}
-                      <span class="error">{{ billing_form.country.errors }}</span>
+                      <label for="exampleInputEmail1">Country {% if account_form.billing_country.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.billing_country }}
+                      <span class="error">{{ account_form.billing_country.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-12">
+                    <div class="form-group ">
+                      <label for="exampleInputEmail1" class="required">Contacts{% if account_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
+                      {{ account_form.contacts }}
+                      <span class="error">{{ account_form.contacts.errors }}</span>
                     </div>
                   </div>
                 </div>
@@ -107,18 +121,6 @@
               </div>
             </div>
             <div class="col-md-4">
-              <div class="filter_col col-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Assigned Users</label>
-                  {{request.POST.assigned_to}}
-                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                  {% for user in users %}
-                  <option value="{{user.id}}" {% if user in account_obj.assigned_to.all  or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                  {% endfor %}
-                  </select>
-                  {{ account_form.assigned_to.errors }}
-                </div>
-              </div>
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="id_sattus">Status{% if account_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
@@ -131,6 +133,21 @@
                   <label>Tags</label>
                   <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1" value="{% for t in account_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags"/>
                   </div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Attachment</label>
+                  <input type="file" name="account_attachment">
+                  {% if case_obj.account_attachment.count %}
+                    {% for i in case_obj.account_attachment.all %}
+                    <span id="attachment{{i.id}}">
+                      <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
+                      <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
+                    </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="error"></span>
                 </div>
               </div>
             </div>
@@ -155,27 +172,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
 <script type="text/javascript">
   $("#copy_billing_btn").click(function(){
-    var address_line = $("#id_address_line").val()
-    var street = $("#id_street").val()
-    var city = $("#id_city").val()
-    var state = $("#id_state").val()
-    var postcode = $("#id_postcode").val()
-    var country = $("#id_country").val()
-    $("#id_ship-address_line").val(address_line)
-    $("#id_ship-street").val(street)
-    $("#id_ship-city").val(city)
-    $("#id_ship-state").val(state)
-    $("#id_ship-postcode").val(postcode)
-    $("#id_ship-country").val(country)
+    var address_line = $("#id_address_line").val();
+    var street = $("#id_street").val();
+    var city = $("#id_city").val();
+    var state = $("#id_state").val();
+    var postcode = $("#id_postcode").val();
+    var country = $("#id_country").val();
   });
   
   $(".savenew").on('click', function(e){
     e.preventDefault()
     $("#save_new_form").val('true')
     $('#formid').submit()
-  });
-  $(document).ready(function() {
-    $('.assigned_users').select2();
   });
   
   function onAddTag(tag) {
@@ -218,6 +226,19 @@
   // Uncomment this line to see an input with no interface for adding new tags.
   //      $('input.tags').tagsInput({interactive:false});
   });
-  
+  function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "cases:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.errors)
+        } else {
+          $("#attachment" + data.attachment_object).remove()
+        }
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

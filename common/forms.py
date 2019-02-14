@@ -76,7 +76,10 @@ class UserForm(forms.ModelForm):
         super(UserForm, self).__init__(*args, **kwargs)
 
         self.fields['first_name'].required = True
-        self.fields['password'].required = True
+        if not self.instance.pk:
+            self.fields['password'].required = True
+
+        # self.fields['password'].required = True
 
     # def __init__(self, args: object, kwargs: object) -> object:
     #     super(UserForm, self).__init__(*args, **kwargs)
@@ -85,8 +88,8 @@ class UserForm(forms.ModelForm):
     #     self.fields['username'].required = True
     #     self.fields['email'].required = True
     #
-    #     if not self.instance.pk:
-    #         self.fields['password'].required = True
+        # if not self.instance.pk:
+        #     self.fields['password'].required = True
 
     def clean_password(self):
         password = self.cleaned_data.get('password')

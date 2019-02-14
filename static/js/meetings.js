@@ -199,7 +199,6 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
                     $("#meeting-create-model .parent_name").val(data["parent_name"])
                     $("#meeting-create-model .parent_id").val(data["parent_id"])
                     $("#meeting-create-model .parent_type").val(data["parent_type"])
-                    $("#teams").val(data["meeting"]["teams"])
                     getOtherFields(data)
 
                     remindersHTML = data.remindersHTML.replace("b'", "")

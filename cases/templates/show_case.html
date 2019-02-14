@@ -164,7 +164,7 @@
   <div class="col-md-4">
     <div class="panel panel-default">
       <div class="panel-heading text-center">
-        <h6>Users&Teams</h6>
+        <h6>Users</h6>
       </div>
       <div class="panel-content" id="datashow">
         <div class="row marl">
@@ -174,345 +174,338 @@
               <div class="field" id="case_assigned_user" data-name="name">{{ a_user.username }}{% ifequal a_user "None" %}Not Specified{% endifequal %}</div>
             </div>
           </div>
-          <div class="filter_col col-md-12">
-            <div class="form-group">
-              <label for="id_name" data-name="name" >Assigned Teams</label>
-              <div class="field" id="case_teams" data-name="name">{% ifequal case.teams None%}Not Specified
-                {% else %}{{case.teams}}{% endifequal %}
-              </div>
-            </div>
-          </div>
-          <div class="filter_col col-md-12">
-            <div class="form-group">
-              <label for="id_name" data-name="name" >Created On</label>
-              <div class="field" id ="case_description" data-name="name">{{case.created}}</div>
-            </div>
-          </div>
-          <div class="filter_col col-md-12">
-            <div class="form-group">
-              <label for="id_name" data-name="name" >Created by</label>
-              <div class="field" id ="case_description" data-name="name">{{case.userid}}</div>
-            </div>
+        </div>
+        <div class="filter_col col-md-12">
+          <div class="form-group">
+            <label for="id_name" data-name="name" >Created On</label>
+            <div class="field" id ="case_description" data-name="name">{{case.created}}</div>
           </div>
         </div>
-      </div>
-    </div>
-    <!-- Activities block Starts here-->
-    <div class="panel panel-default panel-activities" data-name="activities">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> Activities </span>
-        </h4>
-      </div>
-      <div class="panel-body" data-name="activities">
-        <div class="btn-group button-container nav nav-tabs">
-          <a data-toggle="tab" href="#show_meets"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
-          <a data-toggle="tab" href="#tasks_list"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
-          <a data-toggle="tab" href="#calls_list"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
-        </div>
-        <div class="list-container">
-          <div class="list list-expanded">
-            <div class="tab-content">
-              <div id="show_meets" class="tab-pane fade in active">
-                <ul class="list-group">
-                  {% ifequal case.get_meetings|length 0 %}
-                  <li class="list-group-item list-row" > No Meetings </li>
-                  {% else %}
-                  {% for meet in case.get_meetings %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="meetings_activity{{meet.id}}">
-                          <li>
-                            <a class="action display_event"  href="">view</a>
-                          </li>
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}}</a>
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-              <!-- Tasks Tab Division starts-->
-              <div id="tasks_list" class="tab-pane fade">
-                <ul class="list-group">
-                  {% ifequal case.get_tasks|length 0 %}
-                  <li class="list-group-item list-row" > No Tasks </li>
-                  {% else %}
-                  {% for meet in case.get_tasks %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="tasks_activity{{meet.id}}">
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" title="Discuss pricing" data-id="" href="/planner/tasks/list">{{meet.name}}</a>
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-              <!-- Tasks Tab Division ends here-->
-              <!-- Calls Tab Division Starts here-->
-              <div id="calls_list" class="tab-pane fade">
-                <ul class="list-group">
-                  {% ifequal case.get_calls|length 0 %}
-                  <li class="list-group-item list-row" > No Calls </li>
-                  {% else %}
-                  {% for call in case.get_calls %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="calls_activities{{call.id}}">
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{call.name}}</a>
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <!--<span class="cell" data-name="assignedUser">
-                        <a href="#User/view/52eb7b4ba5500">Raghu</a>
-                        </span>-->
-                      <span class="cell" data-name="dateStart">{{call.start_date}}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-            </div>
-            <!-- Calls Tab Division ends here-->
-          </div>
-          </ul>
-          <div class="show-more hide">
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--Activities block ends here-->
-    <!-- History block starts here-->
-    <div class="panel panel-default panel-activities" data-name="activities">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> History </span>
-        </h4>
-      </div>
-      <div class="panel-body" data-name="activities">
-        <div class="btn-group button-container nav nav-tabs">
-          <a data-toggle="tab" href="#show_meets_completed"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
-          <a data-toggle="tab" href="#tasks_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
-          <a data-toggle="tab" href="#calls_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
-        </div>
-        <div class="list-container">
-          <div class="list list-expanded">
-            <div class="tab-content">
-              <div id="show_meets_completed" class="tab-pane fade in active">
-                <ul class="list-group">
-                  {% ifequal case.get_completed_meetings|length 0 %}
-                  <li class="list-group-item list-row" > No Data </li>
-                  {% else %}
-                  {% for meet in case.get_completed_meetings %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="meeting_history{{meet.id}}">
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}} </a>| {{ meet.status }}
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-              <!-- Tasks Tab Division starts-->
-              <div id="tasks_list_completed" class="tab-pane fade">
-                <ul class="list-group">
-                  {% ifequal case.get_completed_tasks|length 0 %}
-                  <li class="list-group-item list-row" > No Tasks </li>
-                  {% else %}
-                  {% for meet in case.get_completed_tasks %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="tasks_history{{meet.id}}">
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" data-id="" href="/planner/tasks/list">{{meet.name}} </a>| {{meet.status }}
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-              <!-- Tasks Tab Division ends here-->
-              <!-- Calls Tab Division Starts here-->
-              <div id="calls_list_completed" class="tab-pane fade">
-                <ul class="list-group">
-                  {% ifequal case.get_completed_calls|length 0 %}
-                  <li class="list-group-item list-row" > No Calls </li>
-                  {% else %}
-                  {% for call in case.get_completed_calls %}
-                  <li class="list-group-item list-row" >
-                    <div class="pull-right right cell" data-name="buttons">
-                      <div class="list-row-buttons btn-group pull-right">
-                        <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
-                        <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu pull-right" id="calls_history{{call.id}}">
-                          <li>
-                            <a class="action remove_event"  href="">Remove</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setHeld" href="">Set Held</a>
-                          </li>
-                          <li>
-                            <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <div class="expanded-row">
-                      <span class="cell" data-name="ico">
-                      <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
-                      </span>
-                      <span class="cell" data-name="name">
-                      <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{ call.name }}</a> | {{ call.status }}
-                      </span>
-                    </div>
-                    <div class="expanded-row">
-                      <!--<span class="cell" data-name="assignedUser">
-                        <a href="#User/view/52eb7b4ba5500">Raghu</a>
-                        </span>-->
-                      <span class="cell" data-name="dateStart">{{ call.start_date }}</span>
-                    </div>
-                  </li>
-                  {% endfor %}
-                  {% endifequal %}
-                </ul>
-              </div>
-            </div>
-            <!-- Calls Tab Division ends here-->
-          </div>
-          </ul>
-          <div class="show-more hide">
+        <div class="filter_col col-md-12">
+          <div class="form-group">
+            <label for="id_name" data-name="name" >Created by</label>
+            <div class="field" id ="case_description" data-name="name">{{case.userid}}</div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- History block ends here-->
+  <!-- Activities block Starts here-->
+  <div class="panel panel-default panel-activities" data-name="activities">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> Activities </span>
+      </h4>
+    </div>
+    <div class="panel-body" data-name="activities">
+      <div class="btn-group button-container nav nav-tabs">
+        <a data-toggle="tab" href="#show_meets"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
+        <a data-toggle="tab" href="#tasks_list"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
+        <a data-toggle="tab" href="#calls_list"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
+      </div>
+      <div class="list-container">
+        <div class="list list-expanded">
+          <div class="tab-content">
+            <div id="show_meets" class="tab-pane fade in active">
+              <ul class="list-group">
+                {% ifequal case.get_meetings|length 0 %}
+                <li class="list-group-item list-row" > No Meetings </li>
+                {% else %}
+                {% for meet in case.get_meetings %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="meetings_activity{{meet.id}}">
+                        <li>
+                          <a class="action display_event"  href="">view</a>
+                        </li>
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}}</a>
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+            <!-- Tasks Tab Division starts-->
+            <div id="tasks_list" class="tab-pane fade">
+              <ul class="list-group">
+                {% ifequal case.get_tasks|length 0 %}
+                <li class="list-group-item list-row" > No Tasks </li>
+                {% else %}
+                {% for meet in case.get_tasks %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="tasks_activity{{meet.id}}">
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" title="Discuss pricing" data-id="" href="/planner/tasks/list">{{meet.name}}</a>
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+            <!-- Tasks Tab Division ends here-->
+            <!-- Calls Tab Division Starts here-->
+            <div id="calls_list" class="tab-pane fade">
+              <ul class="list-group">
+                {% ifequal case.get_calls|length 0 %}
+                <li class="list-group-item list-row" > No Calls </li>
+                {% else %}
+                {% for call in case.get_calls %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="calls_activities{{call.id}}">
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{call.name}}</a>
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <!--<span class="cell" data-name="assignedUser">
+                      <a href="#User/view/52eb7b4ba5500">Raghu</a>
+                      </span>-->
+                    <span class="cell" data-name="dateStart">{{call.start_date}}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+            <!-- Calls Tab Division ends here-->
+          </div>
+          <!-- Calls Tab Division ends here-->
+        </div>
+        </ul>
+        <div class="show-more hide">
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--Activities block ends here-->
+  <!-- History block starts here-->
+  <div class="panel panel-default panel-activities" data-name="activities">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <span class="action" data-panel="activities" data-action="refresh" title="Click to refresh" style="cursor: pointer;"> History </span>
+      </h4>
+    </div>
+    <div class="panel-body" data-name="activities">
+      <div class="btn-group button-container nav nav-tabs">
+        <a data-toggle="tab" href="#show_meets_completed"><button class="btn btn-default all scope-switcher" data-scope="Meeting">Meetings</button></a>
+        <a data-toggle="tab" href="#tasks_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Task">Tasks</button></a>
+        <a data-toggle="tab" href="#calls_list_completed"><button class="btn btn-default all scope-switcher" data-scope="Call">Calls</button></a>
+      </div>
+      <div class="list-container">
+        <div class="list list-expanded">
+          <div class="tab-content">
+            <div id="show_meets_completed" class="tab-pane fade in active">
+              <ul class="list-group">
+                {% ifequal case.get_completed_meetings|length 0 %}
+                <li class="list-group-item list-row" > No Data </li>
+                {% else %}
+                {% for meet in case.get_completed_meetings %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="meeting_history{{meet.id}}">
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" title="Discuss pricing" data-id="" href="/planner/meetings/list">{{meet.name}} </a>| {{ meet.status }}
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+            <!-- Tasks Tab Division starts-->
+            <div id="tasks_list_completed" class="tab-pane fade">
+              <ul class="list-group">
+                {% ifequal case.get_completed_tasks|length 0 %}
+                <li class="list-group-item list-row" > No Tasks </li>
+                {% else %}
+                {% for meet in case.get_completed_tasks %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="tasks_history{{meet.id}}">
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-briefcase text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" data-id="" href="/planner/tasks/list">{{meet.name}} </a>| {{meet.status }}
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="dateStart">{{meet.start_date}}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+            <!-- Tasks Tab Division ends here-->
+            <!-- Calls Tab Division Starts here-->
+            <div id="calls_list_completed" class="tab-pane fade">
+              <ul class="list-group">
+                {% ifequal case.get_completed_calls|length 0 %}
+                <li class="list-group-item list-row" > No Calls </li>
+                {% else %}
+                {% for call in case.get_completed_calls %}
+                <li class="list-group-item list-row" >
+                  <div class="pull-right right cell" data-name="buttons">
+                    <div class="list-row-buttons btn-group pull-right">
+                      <button class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">
+                      <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu pull-right" id="calls_history{{call.id}}">
+                        <li>
+                          <a class="action remove_event"  href="">Remove</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setHeld" href="">Set Held</a>
+                        </li>
+                        <li>
+                          <a class="action status_set" data-action="setNotHeld" href="">Set Not Held</a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="expanded-row">
+                    <span class="cell" data-name="ico">
+                    <span class="glyphicon glyphicon-earphone text-muted action"  data-action="quickView" title="View" style="cursor: pointer"></span>
+                    </span>
+                    <span class="cell" data-name="name">
+                    <a class="link" title="Discuss pricing" data-id="" href="/planner/calls/list">{{ call.name }}</a> | {{ call.status }}
+                    </span>
+                  </div>
+                  <div class="expanded-row">
+                    <!--<span class="cell" data-name="assignedUser">
+                      <a href="#User/view/52eb7b4ba5500">Raghu</a>
+                      </span>-->
+                    <span class="cell" data-name="dateStart">{{ call.start_date }}</span>
+                  </div>
+                </li>
+                {% endfor %}
+                {% endifequal %}
+              </ul>
+            </div>
+          </div>
+          <!-- Calls Tab Division ends here-->
+        </div>
+        </ul>
+        <div class="show-more hide">
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-</div>
+<!-- History block ends here-->
+</div></div>
 </div>
 </div>
 <!-- Assigned users and teams sends-->
@@ -757,20 +750,6 @@
                 {% for user in users %}
                 <option value="{{user.id}}" {% ifequal a_user.id user.id %} selected{% endifequal%}>{{user.username}}</option>
                 {% endfor %}
-              </select>
-              </select>
-            </div>
-          </div>
-          <div class="filter_col col-md-6">
-            <div class="form-group">
-              <label for="id_teams">Teams</label>
-              <select class="form-control" id="id_teams" name="teams">
-                {% ifequal case.teams None%}
-                <option value="" selected>--Select Support--</option>
-                {% endifequal %}
-                <option value="Sales" {% ifequal case.teams "Sales"%} selected{% endifequal%}>Sales</option>
-                <option value="Support" {% ifequal case.teams "Support"%} selected{% endifequal%}>Support</option>
-                <option value="TopManagement" {% ifequal case.teams "TopManagement"%} selected{% endifequal%}>TopManagement</option>
               </select>
             </div>
           </div>

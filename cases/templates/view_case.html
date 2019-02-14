@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cases:list' %}">Cases</a></li>
+    <li class="breadcrumb-item active">View</li>
+  </ol>
+</nav>
 <!-- CASE VIEW STARTS -->
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
@@ -196,7 +202,7 @@
                 <form id="comment_edit_form" method="POST" >
                   <div class="modal-body">
                     <div class="form-group">
-                      <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                      <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea>
                       <input type="hidden" value="{{ case.id }}" name="caseid">
                       <input type="hidden" value="" name="commentid" id="commentid">
                     </div>

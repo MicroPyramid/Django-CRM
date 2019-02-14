@@ -11,7 +11,6 @@
       <a href="{% url 'leads:leads_convert' post.id %}">Convert</a>
     </h3>
   </div>
-  </div>
   <input class="check-scope" id = "accountid"  name="accountname" data-scope="Account" type="checkbox"/>Account</br>
   <input class="check-scope"  id = "contactid"  name="contactname" data-scope="Contact" type="checkbox"/>Contact</br>
   <input class="check-scope" id = "opportunityid"  name="opportunityname" data-scope="Opportunity" type="checkbox"/>Opportunity</br>
@@ -20,7 +19,7 @@
       <div class="col-md-12">
         <div class="panel panel-default">
           <div class="panel-heading">
-            Assigned Users & Teams
+            Assigned Users
           </div>
           <div class="panel-content">
             <div class="filter_col col-md-6">
@@ -31,17 +30,6 @@
                   {%for u in assigned_user%}
                   <option value="{{u.id}}" {% ifequal u.id post.assigned_user_id %}selected{% endifequal %} {%ifequal u.id request.POST.assigned_user|add:"0"%}selected{%endifequal%}>{{u.username}}</option>
                   {%endfor%}
-                </select>
-              </div>
-            </div>
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Teams</label>
-                <select class="form-control" id="id_teams" name="teams">
-                  <option value="" selected="selected">---------</option>
-                  {% for k in teams %}
-                  <option value="{{ k.0 }}" {%ifequal k.0 post.teams %}selected {% endifequal %} {%ifequal k.0 request.POST.teams%}selected{%endifequal%}>{{ k.1 }}</option>
-                  {% endfor %}
                 </select>
               </div>
             </div>
@@ -222,15 +210,12 @@
       <a href="{% url 'leads:view_lead' post.id %}"<button type="button" class="btn btn-default">CANCEL</button></a>
     </div>
   </div>
-  </div>
-  </body>
-  </html>
   <div class="contactconvert" style="display:none;">
     <div class="assigned_teams row marl">
       <div class="col-md-12">
         <div class="panel panel-default">
           <div class="panel-heading" >
-            Assigned Users & Teams
+            Assigned Users
           </div>
           <div class="panel-content">
             <div class="filter_col col-md-6">
@@ -245,136 +230,123 @@
                 </select>
               </div>
             </div>
-            <div class="filter_col col-md-6">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Teams</label>
-                <select class="form-control" id="id_teams" name="teams" value="{{edit_obj.teams }}">
-                  <option value="" selected="selected">---------</option>
-                  {% for i in teams%}
-                  <option value="{{i.0}}" {% ifequal i.0 edit_obj.teams %}selected{% endifequal %} {%ifequal i.0 request.POST.teams%}selected{%endifequal%}>{{i.1}}</option>
-                  {% endfor%}
-                </select>
-              </div>
-            </div>
-            <br clear="all">
           </div>
+          <br clear="all">
         </div>
       </div>
-      <br clear="all">
     </div>
-    <div class="overview_form_block row marl">
-      <div class="col-md-12">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            Overview
-          </div>
-          <div class="panel-content">
-            <div class="row marl">
-              <div class="col-md-6">
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Name</label> *
-                    <div class="row">
-                      <div class="filter_col col-md-12">
-                        <input type="text" class="form-control" placeholder=" Name" id="id_name" name="name"  value={%if post%}"{{post.name}}" {% else %}"{{request.POST.name}}"{%endif%}></br>
-                      </div>
-                    </div>
-                    <p></p>
-                    {% if error_lead_form.name%}
-                    {{error_lead_form.name}}
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Accounts</label> *
-                    <select class="form-control" id="id_account" name="account">
-                      <option value="" selected="selected">---------</option>
-                      {% for i in acount %}
-                      <option value="{{i.id}}" {%ifequal i.id post.account_id %}selected {% endifequal %}  {%ifequal i.id request.POST.account|add:"0"%}selected{%endifequal%}>{{ i.name }}</option>
-                      {% endfor %}
-                    </select>
-                    {% if err_contct_form.account %}
-                    <p>{{err_contct_form.account}}</p>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group ">
-                    <label for="exampleInputEmail1" >Phone</label> *
-                    <input type="text" class="form-control text-filter" id="id_phone"  name="phone"
-                    value={%if post%}"{{post.phone}}" {% else %}"{{request.POST.phone}}"{%endif%}>
-                    {% if error_lead_form.phone %}
-                    <p>{{error_lead_form.phone}}</p>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group ">
-                    <label for="exampleInputEmail1" >Email Address</label> *
-                    <input type="text" class="form-control text-filter" id="id_email" name="email"  {% if error_lead_form.email %} value="" {%endif%} value={%if post%}"{{post.email}}" {% else %}"{{request.POST.email}}"{%endif%}>
-                    {% if error_lead_form %}
-                    <p>{{error_lead_form.email}}</p>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
+    <br clear="all">
+  </div>
+  <div class="overview_form_block row marl">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          Overview
+        </div>
+        <div class="panel-content">
+          <div class="row marl">
             <div class="col-md-6">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" >address</label>
-                  <input type="text" class="form-control" placeholder="Street" name = "street" value = "{{post.address.street}}" id="id_street"/>
-                  {% if error_address_form%}
-                  <p>{{error_address_form.street}}</p>
-                  {% endif %}
-                  <div class="row lead_address_col" style="margin-top:10px;">
-                    <div class="col-md-4">
-                      <input type="text" class="form-control" placeholder="City" name="city"  value = "{{post.address.city}}"   id="id_city" />
-                    </div>
-                    <div class="col-md-4">
-                      <input type="text" class="form-control" placeholder="State" name="state" value= "{{post.address.state}}"   id="id_state"/>
-                    </div>
-                    <div class="col-md-4">
-                      <input type="text" class="form-control" placeholder="Postcal Code" name="postcode" value="{{post.address.postcode}}"   id="id_postcode" /></br>
+                  <label for="exampleInputEmail1">Name</label> *
+                  <div class="row">
+                    <div class="filter_col col-md-12">
+                      <input type="text" class="form-control" placeholder=" Name" id="id_name" name="name"  value={%if post%}"{{post.name}}" {% else %}"{{request.POST.name}}"{%endif%}></br>
                     </div>
                   </div>
-                </div>
-                <div class="form-group">
-                  <label>country</label>
-                  <select class="form-control" name = "country"   value="{{ ss.address.country}} "id = "id_country" />
-                  {% for k in countries%}
-                  <option required="required" value="{{ k.id }}" {%ifequal k.id ss.country %}selected {% endifequal %}>{{ k.name }}</option>
-                  {% endfor %}
-                  {% for k in countries%}
-                  <option required="required" value="{{ k.id }}" {%ifequal k.id post.address.country %}selected {% endifequal %}>{{ k.name }}</option>
-                  {% endfor %}
-                  </select>
+                  <p></p>
+                  {% if error_lead_form.name%}
+                  {{error_lead_form.name}}
+                  {% endif %}
                 </div>
               </div>
-              <div class="filter_col shiiping_block col-md-12">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Accounts</label> *
+                  <select class="form-control" id="id_account" name="account">
+                    <option value="" selected="selected">---------</option>
+                    {% for i in acount %}
+                    <option value="{{i.id}}" {%ifequal i.id post.account_id %}selected {% endifequal %}  {%ifequal i.id request.POST.account|add:"0"%}selected{%endifequal%}>{{ i.name }}</option>
+                    {% endfor %}
+                  </select>
+                  {% if err_contct_form.account %}
+                  <p>{{err_contct_form.account}}</p>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group ">
+                  <label for="exampleInputEmail1" >Phone</label> *
+                  <input type="text" class="form-control text-filter" id="id_phone"  name="phone"
+                  value={%if post%}"{{post.phone}}" {% else %}"{{request.POST.phone}}"{%endif%}>
+                  {% if error_lead_form.phone %}
+                  <p>{{error_lead_form.phone}}</p>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group ">
+                  <label for="exampleInputEmail1" >Email Address</label> *
+                  <input type="text" class="form-control text-filter" id="id_email" name="email"  {% if error_lead_form.email %} value="" {%endif%} value={%if post%}"{{post.email}}" {% else %}"{{request.POST.email}}"{%endif%}>
+                  {% if error_lead_form %}
+                  <p>{{error_lead_form.email}}</p>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
-          <div class="filter_col col-md-12">
-            <div class="form-group col-md-12">
-              <label for="exampleInputEmail1" >Description</label>
-              <textarea class="form-control" rows="3"  id="id_description" name="description">{%if post%}{{post.description}} {% else %}{{request.POST.description}}{%endif%}</textarea>
+          <div class="col-md-6">
+            <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="exampleInputEmail1" >address</label>
+                <input type="text" class="form-control" placeholder="Street" name = "street" value = "{{post.address.street}}" id="id_street"/>
+                {% if error_address_form%}
+                <p>{{error_address_form.street}}</p>
+                {% endif %}
+                <div class="row lead_address_col" style="margin-top:10px;">
+                  <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="City" name="city"  value = "{{post.address.city}}"   id="id_city" />
+                  </div>
+                  <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="State" name="state" value= "{{post.address.state}}"   id="id_state"/>
+                  </div>
+                  <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Postcal Code" name="postcode" value="{{post.address.postcode}}"   id="id_postcode" /></br>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>country</label>
+                <select class="form-control" name = "country"   value="{{ ss.address.country}} "id = "id_country" />
+                {% for k in countries%}
+                <option required="required" value="{{ k.id }}" {%ifequal k.id ss.country %}selected {% endifequal %}>{{ k.name }}</option>
+                {% endfor %}
+                {% for k in countries%}
+                <option required="required" value="{{ k.id }}" {%ifequal k.id post.address.country %}selected {% endifequal %}>{{ k.name }}</option>
+                {% endfor %}
+                </select>
+              </div>
             </div>
+            <div class="filter_col shiiping_block col-md-12">
+            </div>
+          </div>
+        </div>
+        <div class="filter_col col-md-12">
+          <div class="form-group col-md-12">
+            <label for="exampleInputEmail1" >Description</label>
+            <textarea class="form-control" rows="3"  id="id_description" name="description">{%if post%}{{post.description}} {% else %}{{request.POST.description}}{%endif%}</textarea>
           </div>
         </div>
         <br clear="all">
       </div>
-      <div class="row marl buttons_row text-center">
-        <a><button  class="btn btn-default save" type="submit">Convert</button></a>
-        <a href="{% url 'leads:view_lead' post.id %}"<button type="button" class="btn btn-default">CANCEL</button></a>
-      </div>
+      <br clear="all">
+    </div>
+    <div class="row marl buttons_row text-center">
+      <a><button  class="btn btn-default save" type="submit">Convert</button></a>
+      <a href="{% url 'leads:view_lead' post.id %}"<button type="button" class="btn btn-default">CANCEL</button></a>
+    </div>
+  </div>
 </form>
-</div>
-</div>
-</div>
-<br clear="all">
-</div>
 {% endblock %}
 {# {% endblock %} #}
 {% block js_block %}
@@ -428,6 +400,3 @@
   
 </script>
 {% endblock js_block %}
-</head>
-</body>
-</html>
