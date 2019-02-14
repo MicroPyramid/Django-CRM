@@ -39,6 +39,10 @@
                 <p class="error">{{ message }}</p>
                 {% endif %}
                 <button type="submit" class="btn btn-danger">Login</button>
+                &nbsp;
+                {% if ENABLE_GOOGLE_LOGIN and GP_CLIENT_SECRET and GP_CLIENT_ID %}
+                <a href="{% url 'common:google_login' %}" class="btn btn-primary">Google Login</a>
+                {% endif %}
               </form>
               <div class="credentials">
                 <span class="heading">Test credentials to Login</span>

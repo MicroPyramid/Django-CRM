@@ -12,7 +12,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-<form id="submitForm" method="POST" action="" novalidate>
+<form id="submitForm" method="POST" action="" novalidate enctype="multipart/form-data">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">
@@ -88,6 +88,21 @@
                   <span class="error">{{case_form.account.errors}}</span>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Attachment</label>
+                  <input type="file" name="case_attachment">
+                  {% if case_obj.case_attachment.count %}
+                    {% for i in case_obj.case_attachment.all %}
+                    <span id="attachment{{i.id}}">
+                      <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
+                      <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
+                    </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="error"></span>
+                </div>
+              </div>
             </div>
             <div class="col-md-4">
               <div class="filter_col col-md-12">
@@ -156,5 +171,21 @@
     });
   })
   });
+</script>
+<script>
+  function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "cases:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.errors)
+        } else {
+          $("#attachment" + data.attachment_object).remove()
+        }
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

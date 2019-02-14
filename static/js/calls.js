@@ -180,7 +180,6 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
                     $("#parent_name").val(data["parent_name"]);
                     $("#parent_id").val(data["parent_id"]);
                     $("#parent_type").val(data["parent_type"]);
-                    $("#teams").val(data["call"]["teams"]);
                     getOtherFields(data);
                     // reminders = JSON.parse(data['reminders'])
                     remindersHTML = data.remindersHTML.replace("b'", "");

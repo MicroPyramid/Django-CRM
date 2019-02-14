@@ -12,7 +12,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-<form id="add_form" method="POST" action='' novalidate>
+<form id="add_form" method="POST" action='' novalidate enctype="multipart/form-data">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">
@@ -35,19 +35,6 @@
                       <span class="error">{{ contact_form.last_name.errors }}</span>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Account{% if contact_form.account.field.required %}<span class="error">*</span>{% endif %}</label>
-                  {% if account %}
-                  <select name="account" placeholder="Account" class="form-control" id="id_account" readonly>
-                      <option value="{{account.id}}" selected="">{{account.name}}</option>
-                  </select>
-                  {% else %}
-                  {{contact_form.account}}
-                  {% endif %}
-                  <span class="error">{{ contact_form.account.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
@@ -115,11 +102,22 @@
                   <span class="error">{{ contact_form.description.errors }}</span>
                 </div>
               </div>
+              <div class="filter_col col-md-12">
+              <div class="form-group">
+                <label for="exampleInputEmail1">Attachment</label>
+                  <input type="file" name="contact_attachment">
+                  {% if contact_obj.contact_attachment.count %}
+                    {% for i in contact_obj.contact_attachment.all %}
+                    <span id="attachment{{i.id}}">
+                      <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
+                      <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
+                    </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="error"></span>
+                </div>
+              </div>
             </div>
-            <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
-              {% if request.GET.view_account %}
-                <input type="hidden" name="account" value="{{request.GET.view_account}}">
-              {% endif %}
 
             <input type="hidden" id="save_new_form" name="savenewform">
             <div class="col-md-12">
@@ -149,5 +147,19 @@
   $(document).ready(function() {
     $('.assigned_users').select2();
   });
+  function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "cases:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.errors)
+        } else {
+          $("#attachment" + data.attachment_object).remove()
+        }
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

@@ -168,6 +168,11 @@ COMPRESS_OFFLINE_CONTEXT = {
 }
 
 DEFAULT_FROM_EMAIL = 'no-reply@django-crm.micropyramid.com'
+
+# celery Tasks
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+
 MAIL_SENDER = 'AMAZON'
 INACTIVE_MAIL_SENDER = 'MANDRILL'
 
@@ -189,3 +194,8 @@ try:
     from .dev_settings import *
 except ImportError:
     pass
+
+
+GP_CLIENT_ID = os.getenv('GP_CLIENT_ID', False)
+GP_CLIENT_SECRET = os.getenv('GP_CLIENT_SECRET', False)
+ENABLE_GOOGLE_LOGIN = os.getenv('ENABLE_GOOGLE_LOGIN', False)

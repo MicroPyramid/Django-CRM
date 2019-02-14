@@ -2,6 +2,12 @@
 {% load staticfiles %}
 {% load thumbnail %}
 {% block content%}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'common:doc_list' %}">Documents</a></li>
+    <li class="breadcrumb-item" active >View</li>
+  </ol>
+</nav>
 <!-- OPPORTUNITY VIEW STARTS -->
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">

@@ -28,14 +28,19 @@ class CaseCreation(object):
         self.account = Account.objects.create(
             name="account",
             email="account@gmail.com", phone="12345",
-            billing_address=self.address, shipping_address=self.address,
-            website="www.account.com", industry="IT", description="account",
+            billing_address_line="",
+            billing_street="6th phase",
+            billing_city="hyderabad",
+            billing_postcode="506344",
+            billing_country='IN',
+            website="www.account.com", description="account",
             created_by=self.user)
 
         self.contacts = Contact.objects.create(
             first_name="contact", email="contact@gmail.com", phone="12345",
-            account=self.account, description="contact",
-            address=self.address, created_by=self.user
+            description="contact",
+            created_by=self.user,
+            address=self.address
         )
 
         self.case = Case.objects.create(

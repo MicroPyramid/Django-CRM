@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.test import Client
 
-from common.models import User, Team, Document
+from common.models import User, Document
 from common.forms import *
 
 
@@ -42,10 +42,6 @@ class CommonModelTest(ObjectsCreation, TestCase):
     def test_string_representation_user(self):
         user = self.user
         self.assertEqual(str(user.get_short_name()), user.username)
-
-    def test_string_representation_team(self):
-        team = Team(name='Ajjoj')
-        self.assertEqual(str(team), team.name)
 
 
 class UserCreateTestCase(ObjectsCreation, TestCase):

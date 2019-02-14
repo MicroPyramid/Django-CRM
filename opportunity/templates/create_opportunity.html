@@ -18,7 +18,7 @@
    <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
    <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 </head>
-<form class= "form_user" method="POST" action="" novalidate>
+<form class= "form_user" method="POST" action="" novalidate enctype="multipart/form-data">
    <div class="overview_form_block row marl justify-content-center">
       <div class="col-md-9">
          <div class="card">
@@ -128,6 +128,21 @@
                         {{ opportunity_form.description }}
                         <span class="error">{{opportunity_form.description.errors}}</span>
                      </div>
+                     <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Attachment</label>
+                          <input type="file" name="oppurtunity_attachment">
+                          {% if opportunity_obj.opportunity_attachment.count %}
+                            {% for i in opportunity_obj.opportunity_attachment.all %}
+                            <span id="attachment{{i.id}}">
+                              <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
+                              <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
+                            </span>
+                            {% endfor %}
+                          {% endif %}
+                          <span class="error"></span>
+                        </div>
+                      </div>
                   </div>
                </div>
                <br clear="all">
@@ -342,5 +357,20 @@
    // Uncomment this line to see an input with no interface for adding new tags.
    //      $('input.tags').tagsInput({interactive:false});
    });
+
+   function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "cases:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.errors)
+        } else {
+          $("#attachment" + data.attachment_object).remove()
+        }
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

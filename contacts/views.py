@@ -8,8 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View)
-from accounts.models import Account
-from common.models import User, Comment, Team, Attachments
+from common.models import User, Comment, Attachments
 from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
@@ -22,13 +21,11 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
     template_name = "contacts.html"
 
     def get_queryset(self):
-        queryset = self.model.objects.all().select_related("account")
+        queryset = self.model.objects.all()
         request_post = self.request.POST
         if request_post:
             if request_post.get('first_name'):
                 queryset = queryset.filter(first_name__icontains=request_post.get('first_name'))
-            if request_post.get('account'):
-                queryset = queryset.filter(account_id=request_post.get('account'))
             if request_post.get('city'):
                 queryset = queryset.filter(address__city__icontains=request_post.get('city'))
             if request_post.get('phone'):
@@ -40,7 +37,6 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(ContactsListView, self).get_context_data(**kwargs)
         context["contact_obj_list"] = self.get_queryset()
-        context["accounts"] = Account.objects.all()
         context["per_page"] = self.request.POST.get('per_page')
         return context
 
@@ -56,12 +52,11 @@ class CreateContactView(LoginRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
         return super(CreateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(CreateContactView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts})
+        kwargs.update({"assigned_to": self.users})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -96,16 +91,20 @@ class CreateContactView(LoginRequiredMixin, CreateView):
                 email = EmailMessage(mail_subject, message, to=[user.email])
                 email.content_subtype = "html"
                 email.send()
-        if self.request.POST.getlist('teams', []):
-            contact_obj.teams.add(*self.request.POST.getlist('teams'))
+
+        if self.request.FILES.get('contact_attachment'):
+            attachment = Attachments()
+            attachment.created_by = self.request.user
+            attachment.file_name = self.request.FILES.get('contact_attachment').name
+            attachment.contact = contact_obj
+            attachment.attachment = self.request.FILES.get('contact_attachment')
+            attachment.save()
+
         if self.request.is_ajax():
             return JsonResponse({'error': False})
         if self.request.POST.get("savenewform"):
             return redirect("contacts:add_contact")
-        if self.request.POST.get('from_account'):
-            from_account = self.request.POST.get('from_account')
-            return redirect("accounts:view_account", pk=from_account)
-        
+
         return redirect('contacts:list')
 
     def form_invalid(self, form):
@@ -119,17 +118,10 @@ class CreateContactView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super(CreateContactView, self).get_context_data(**kwargs)
         context["contact_form"] = context["form"]
-        context["teams"] = Team.objects.all()
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
-            context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
-        context["teams_list"] = [
-            int(i) for i in self.request.POST.getlist('teams', []) if i]
         if "address_form" in kwargs:
             context["address_form"] = kwargs["address_form"]
         else:
@@ -173,12 +165,11 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
         return super(UpdateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(UpdateContactView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts})
+        kwargs.update({"assigned_to": self.users})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -198,7 +189,6 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
 
         contact_obj = form.save(commit=False)
-        contact_obj.teams.clear()
         all_members_list = []
         if self.request.POST.getlist('assigned_to', []):
             current_site = get_current_site(self.request)
@@ -223,9 +213,14 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         else:
             contact_obj.assigned_to.clear()
 
-        if self.request.POST.getlist('teams', []):
-            contact_obj.teams.add(*self.request.POST.getlist('teams'))
 
+        if self.request.FILES.get('contact_attachment'):
+            attachment = Attachments()
+            attachment.created_by = self.request.user
+            attachment.file_name = self.request.FILES.get('contact_attachment').name
+            attachment.contact = contact_obj
+            attachment.attachment = self.request.FILES.get('contact_attachment')
+            attachment.save()
         if self.request.POST.get('from_account'):
             from_account = self.request.POST.get('from_account')
             return redirect("accounts:view_account", pk=from_account)
@@ -247,17 +242,10 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         context["contact_obj"] = self.object
         context["address_obj"] = self.object.address
         context["contact_form"] = context["form"]
-        context["teams"] = Team.objects.all()
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
-            context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
-        context["teams_list"] = [
-            int(i) for i in self.request.POST.getlist('teams', []) if i]
         if "address_form" in kwargs:
             context["address_form"] = kwargs["address_form"]
         else:
@@ -284,9 +272,6 @@ class RemoveContactView(LoginRequiredMixin, View):
         if self.request.is_ajax():
             return JsonResponse({'error': False})
 
-        if request.GET.get('view_account'):
-            account = request.GET.get('view_account')
-            return redirect("accounts:view_account", pk=account)
         return redirect("contacts:list")
 
 

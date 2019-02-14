@@ -33,27 +33,6 @@
                     <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
                   </div>
                 </div>
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Assigned Users</label>
-                    <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                    {% for user in users %}
-                    <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                    {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Industry</label>
-                    <select class="form-control" id="id_industry" name="industry" >
-                      <option value="">--Select Type of Industry--</option>
-                      {% for each_industry in industries %}
-                      <option value="{{each_industry.0}}" {% if request.POST.industry %} {% ifequal each_industry.0 request.POST.industry %}selected{% endifequal %}{% endif %} >{{each_industry.1}} </option>
-                      {% endfor%}
-                    </select>
-                  </div>
-                </div>
                 <input type="hidden" name="tab_status" id="tab_status">
                 <div class="filter_col col-md-2">
                   <div class="form-group">
@@ -112,8 +91,6 @@
                           <th width="15%">Name</th>
                           <th width="15%">City</th>
                           <th width="15%">State</th>
-                          <th width="15%">Assigned To</th>
-                          <th width="15%">Industry</th>
                           <th width="10%">Tags</th>
                           <th width="10%">Actions</th>
                         </tr>
@@ -129,25 +106,13 @@
                         <tr id="account_details{{each_account.id}}" class="text-center">
                           <td scope="row">{{ forloop.counter }}</td>
                           <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
-                          <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
-                          <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
-                          <td>
-                            {% with assigned_users=each_account.assigned_to.all %}
-                            {% if assigned_users %}
-                            {% for user in assigned_users %}
-                            <span class="text-left">{{ user.email }}</span><br>
-                            {% endfor %}
-                            {% else %}
-                            Not Assigned
-                            {% endif %}
-                            {% endwith %}
-                          </td>
-                          <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
-                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
                             {% endfor %}
                             {% else %}
                             No Tags
@@ -191,8 +156,6 @@
                           <th width="15%">Name</th>
                           <th width="10%">City</th>
                           <th width="10%">State</th>
-                          <th width="22%">Assigned To</th>
-                          <th width="10%">Industry</th>
                           <th width="18%">Tags</th>
                           <th width="15%">Actions</th>
                         </tr>
@@ -208,25 +171,13 @@
                         <tr id="account_details{{each_account.id}}" >
                           <td scope="row">{{ forloop.counter }}</td>
                           <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
-                          <td>{% if each_account.billing_address.city %}{{ each_account.billing_address.city }} {% else %} Not specified {% endif %}</td>
-                          <td>{% if each_account.billing_address.state %}{{ each_account.billing_address.state }} {% else %} Not specified {% endif %}</td>
-                          <td>
-                            {% with assigned_users=each_account.assigned_to.all %}
-                            {% if assigned_users %}
-                            {% for user in assigned_users %}
-                            <span class="text-left">{{ user.email }}</span><br>
-                            {% endfor %}
-                            {% else %}
-                            Not Assigned
-                            {% endif %}
-                            {% endwith %}
-                          </td>
-                          <td>{% if each_account.industry %}{{ each_account.industry }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
-                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
                             {% endfor %}
                             {% else %}
                             No Tags
@@ -266,12 +217,8 @@
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('.assigned_users').select2();
-  });
-  
   $("#close-tab").click(function(e){
-    $("#tab_status").val('Closed')
+    $("#tab_status").val('Closed');
   })
   
   $("#open-tab").click(function(e){

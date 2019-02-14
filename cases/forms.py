@@ -18,14 +18,13 @@ class CaseForm(forms.ModelForm):
         self.fields['account'].queryset = case_accounts
         self.fields['contacts'].queryset = case_contacts
         self.fields['assigned_to'].required = False
-        self.fields['teams'].required = False
         self.fields['contacts'].required = False
         for key, value in self.fields.items():
             value.widget.attrs['placeholder'] = value.label
 
     class Meta:
         model = Case
-        fields = ('assigned_to', 'teams', 'name', 'status',
+        fields = ('assigned_to', 'name', 'status',
                   'priority', 'case_type', 'account',
                   'contacts', 'closed_on', 'description')
 

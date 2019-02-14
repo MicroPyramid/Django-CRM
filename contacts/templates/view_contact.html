@@ -43,12 +43,6 @@
                 </div>
                 <div class="filter_col col-md-12">
                   <div class="form-group">
-                    <label class="contact_field_label" for="id_contact_account" data-name="name">Account</label>
-                    <div class="contact_field" id ="contact_account" data-name="name">{{ contact_record.account }}</div>
-                  </div>
-                </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
                     <label class="contact_field_label" for="id_phone" data-name="name">Phone</label>
                     <div class="contact_field" id="contact_phone" data-name="name">{{ contact_record.phone }}</div>
                   </div>
@@ -193,7 +187,7 @@
                   <form id="comment_edit_form" method="POST" >
                     <div class="modal-body">
                       <div class="form-group">
-                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea>
+                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea>
                         <input type="hidden" value="{{ contact.id }}" name="contactid">
                         <input type="hidden" value="" name="commentid" id="commentid">
                       </div>

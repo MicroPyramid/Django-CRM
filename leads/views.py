@@ -12,13 +12,15 @@ from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View)
 
 from accounts.models import Account, Tags
-from common.forms import BillingAddressForm
-from common.models import User, Comment, Team, Attachments
+from common.models import User, Comment, Attachments
 from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
+from common import status
+from contacts.models import Contact
 from leads.models import Lead
 from leads.forms import LeadCommentForm, LeadForm, LeadAttachmentForm
 from planner.models import Event, Reminder
 from planner.forms import ReminderForm
+from leads.tasks import send_lead_assigned_emails
 
 
 class LeadListView(LoginRequiredMixin, TemplateView):
@@ -32,10 +34,10 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         if request_post:
             if request_post.get('name'):
                 queryset = queryset.filter(
-                    Q(first_name__icontains=request_post.get('name')) & 
+                    Q(first_name__icontains=request_post.get('name')) &
                     Q(last_name__icontains=request_post.get('name')))
             if request_post.get('city'):
-                queryset = queryset.filter(address__city__icontains=request_post.get('city'))
+                queryset = queryset.filter(city__icontains=request_post.get('city'))
             if request_post.get('email'):
                 queryset = queryset.filter(email__icontains=request_post.get('email'))
             if request_post.get('status'):
@@ -93,16 +95,14 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        address_form = BillingAddressForm(request.POST)
-        if form.is_valid() and address_form.is_valid():
-            return self.form_valid(form, address_form)
+        if form.is_valid():
+            return self.form_valid(form)
 
-        return self.form_invalid(form, address_form)
+        return self.form_invalid(form)
 
-    def form_valid(self, form, address_form):
-        address_object = address_form.save()
+    def form_valid(self, form):
+
         lead_obj = form.save(commit=False)
-        lead_obj.address = address_object
         lead_obj.created_by = self.request.user
         lead_obj.save()
         if self.request.POST.get('tags', ''):
@@ -131,8 +131,15 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                 email = EmailMessage(mail_subject, message, to=[user.email])
                 email.content_subtype = "html"
                 email.send()
-        if self.request.POST.getlist('teams', []):
-            lead_obj.teams.add(*self.request.POST.getlist('teams'))
+
+        if self.request.FILES.get('lead_attachment'):
+            attachment = Attachments()
+            attachment.created_by = self.request.user
+            attachment.file_name = self.request.FILES.get('lead_attachment').name
+            attachment.lead = lead_obj
+            attachment.attachment = self.request.FILES.get('lead_attachment')
+            attachment.save()
+
         if self.request.POST.get('status') == "converted":
             account_object = Account.objects.create(
                 created_by=self.request.user, name=lead_obj.account_name,
@@ -140,10 +147,15 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                 description=self.request.POST.get('description'),
                 website=self.request.POST.get('website'),
             )
-            account_object.billing_address = address_object
+            account_object.billing_address_line = lead_obj.address_line
+            account_object.billing_street = lead_obj.street
+            account_object.billing_city = lead_obj.city
+            account_object.billing_state = lead_obj.state
+            account_object.billing_postcode = lead_obj.postcode
+            account_object.billing_country = lead_obj.country
             for tag in lead_obj.tags.all():
                 account_object.tags.add(tag)
-            account_object.tags.add(address_object)
+
             if self.request.POST.getlist('assigned_to', []):
                 account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
                 assigned_to_list = self.request.POST.getlist('assigned_to')
@@ -160,21 +172,19 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                     email = EmailMessage(mail_subject, message, to=[user.email])
                     email.content_subtype = "html"
                     email.send()
-            if self.request.POST.getlist('teams', []):
-                account_object.teams.add(*self.request.POST.getlist('teams'))
+
             account_object.save()
         if self.request.POST.get("savenewform"):
             return redirect("leads:add_lead")
         return redirect('leads:list')
 
-    def form_invalid(self, form, address_form):
+    def form_invalid(self, form):
         return self.render_to_response(
-            self.get_context_data(form=form, address_form=address_form))
+            self.get_context_data(form=form))
 
     def get_context_data(self, **kwargs):
         context = super(CreateLeadView, self).get_context_data(**kwargs)
         context["lead_form"] = context["form"]
-        context["teams"] = Team.objects.all()
         context["accounts"] = Account.objects.all()
         context["users"] = self.users
         context["countries"] = COUNTRIES
@@ -182,15 +192,7 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
         context["source"] = LEAD_SOURCE
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
-        context["teams_list"] = [
-            int(i) for i in self.request.POST.getlist('teams', []) if i]
-        if "address_form" in kwargs:
-            context["address_form"] = kwargs["address_form"]
-        else:
-            if self.request.POST:
-                context["address_form"] = BillingAddressForm(self.request.POST)
-            else:
-                context["address_form"] = BillingAddressForm()
+
         return context
 
 
@@ -219,7 +221,7 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
         for each in context['lead_record'].assigned_to.all():
             assigned_dict = {}
             assigned_dict['id'] = each.id
-            assigned_dict['name'] =  each.email
+            assigned_dict['name'] = each.email
             assigned_data.append(assigned_dict)
 
         context.update({
@@ -261,25 +263,21 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        address_obj = self.object.address
         form = self.get_form()
-        address_form = BillingAddressForm(request.POST, instance=address_obj)
+
         if request.POST.get('status') == "converted":
             form.fields['account_name'].required = True
         else:
             form.fields['account_name'].required = False
-        if form.is_valid() and address_form.is_valid():
-            return self.form_valid(form, address_form)
+        if form.is_valid():
+            return self.form_valid(form)
     
-        return self.form_invalid(form, address_form)
+        return self.form_invalid(form)
 
-    def form_valid(self, form, address_form):
+    def form_valid(self, form):
         assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
-        address_obj = address_form.save()
         lead_obj = form.save(commit=False)
-        lead_obj.address = address_obj
         lead_obj.save()
-        lead_obj.teams.clear()
         lead_obj.tags.clear()
         all_members_list = []
         if self.request.POST.get('tags', ''):
@@ -318,8 +316,15 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
         else:
             lead_obj.assigned_to.clear()
 
-        if self.request.POST.getlist('teams', []):
-            lead_obj.teams.add(*self.request.POST.getlist('teams'))
+
+        if self.request.FILES.get('lead_attachment'):
+            attachment = Attachments()
+            attachment.created_by = self.request.user
+            attachment.file_name = self.request.FILES.get('lead_attachment').name
+            attachment.lead = lead_obj
+            attachment.attachment = self.request.FILES.get('lead_attachment')
+            attachment.save()
+
         if self.request.POST.get('status') == "converted":
             account_object = Account.objects.create(
                 created_by=self.request.user, name=lead_obj.account_name,
@@ -327,7 +332,12 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                 description=self.request.POST.get('description'),
                 website=self.request.POST.get('website')
             )
-            account_object.billing_address = address_obj
+            account_object.billing_address_line = lead_obj.address_line
+            account_object.billing_street = lead_obj.street
+            account_object.billing_city = lead_obj.city
+            account_object.billing_state = lead_obj.state
+            account_object.billing_postcode = lead_obj.postcode
+            account_object.billing_country = lead_obj.country
             for tag in lead_obj.tags.all():
                 account_object.tags.add(tag)
             if self.request.POST.getlist('assigned_to', []):
@@ -346,8 +356,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                     email = EmailMessage(mail_subject, message, to=[user.email])
                     email.content_subtype = "html"
                     email.send()
-            if self.request.POST.getlist('teams', []):
-                account_object.teams.add(*self.request.POST.getlist('teams'))
+
             account_object.save()
         status = self.request.GET.get('status', None)
         if status:
@@ -355,16 +364,14 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
 
         return redirect('leads:list')
 
-    def form_invalid(self, form, address_form):
+    def form_invalid(self, form):
         return self.render_to_response(
-            self.get_context_data(form=form, address_form=address_form))
+            self.get_context_data(form=form))
 
     def get_context_data(self, **kwargs):
         context = super(UpdateLeadView, self).get_context_data(**kwargs)
         context["lead_obj"] = self.object
-        context["address_obj"] = self.object.address
         context["lead_form"] = context["form"]
-        context["teams"] = Team.objects.all()
         context["accounts"] = Account.objects.all()
         context["users"] = self.users
         context["countries"] = COUNTRIES
@@ -373,17 +380,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
         context["error"] = self.error
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
-        context["teams_list"] = [
-            int(i) for i in self.request.POST.getlist('teams', []) if i]
-        if "address_form" in kwargs:
-            context["address_form"] = kwargs["address_form"]
-        else:
-            if self.request.POST:
-                context["address_form"] = BillingAddressForm(
-                    self.request.POST, instance=context["address_obj"])
-            else:
-                context["address_form"] = BillingAddressForm(
-                    instance=context["address_obj"])
+
         return context
 
 
@@ -394,8 +391,6 @@ class DeleteLeadView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Lead, id=kwargs.get("pk"))
-        if self.object.address_id:
-            self.object.address.delete()
         self.object.delete()
         return redirect("leads:list")
 
@@ -411,7 +406,13 @@ class ConvertLeadView(LoginRequiredMixin, View):
                 created_by=request.user, name=lead_obj.account_name,
                 email=lead_obj.email, phone=lead_obj.phone,
                 description=lead_obj.description,
-                website=lead_obj.website, billing_address=lead_obj.address
+                website=lead_obj.website,
+                billing_address_line=lead_obj.address_line,
+                billing_street=lead_obj.street,
+                billing_city=lead_obj.city,
+                billing_state=lead_obj.state,
+                billing_postcode=lead_obj.postcode,
+                billing_country=lead_obj.country
             )
             assignedto_list = lead_obj.assigned_to.all().values_list('id', flat=True)
             account_object.assigned_to.add(*assignedto_list)
@@ -578,3 +579,33 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
         data = {'error': "You don't have permission to delete this attachment."}
         return JsonResponse(data)
+
+
+def create_lead_from_site(request):
+
+    if request.POST.get("email") and request.POST.get("full_name"):
+        user = User.objects.filter(is_admin=True, is_active=True).first()
+        lead = Lead.objects.create(
+            title=request.POST.get("full_name"),
+            status="assigned", source="micropyramid.com",
+            description=request.POST.get("message"),
+            email=request.POST.get("email"), phone=request.POST.get("phone"),
+            is_active=True, created_by=user)
+        lead.assigned_to.add(user)
+        # Send Email to Assigned Users
+        site_address = request.scheme + '://' + request.META['HTTP_HOST']
+        send_lead_assigned_emails.delay(lead.id, [user.id], site_address)
+        # Create Contact
+        contact = Contact.objects.create(
+            first_name=request.POST.get("full_name"),
+            email=request.POST.get("email"), phone=request.POST.get("phone"),
+            description=request.POST.get("message"), created_by=user,
+            is_active=True)
+        contact.assigned_to.add(user)
+
+        lead.contacts.add(contact)
+
+        return JsonResponse({'error': False, 'message': "Lead Created sucessfully."},
+                            status=status.HTTP_201_CREATED)
+    return JsonResponse({'error': True, 'message': "In-valid data."},
+                        status=status.HTTP_400_BAD_REQUEST)
