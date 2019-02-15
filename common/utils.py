@@ -51,7 +51,7 @@ LEAD_STATUS = (
     ('in process', 'In Process'),
     ('converted', 'Converted'),
     ('recycled', 'Recycled'),
-    ('dead', 'Dead')
+    ('dead', 'Dead'),
 )
 
 
@@ -66,7 +66,7 @@ LEAD_SOURCE = (
 )
 
 STATUS_CHOICE = (
-    ("New", "New"),
+    ('New', 'New'),
     ('Assigned', 'Assigned'),
     ('Pending', 'Pending'),
     ('Closed', 'Closed'),
@@ -75,16 +75,16 @@ STATUS_CHOICE = (
 )
 
 PRIORITY_CHOICE = (
-    ("Low", "Low"),
+    ('Low', 'Low'),
     ('Normal', 'Normal'),
     ('High', 'High'),
-    ('Urgent', 'Urgent')
+    ('Urgent', 'Urgent'),
 )
 
 CASE_TYPE = (
-    ("Question", "Question"),
+    ('Question', 'Question'),
     ('Incident', 'Incident'),
-    ('Problem', 'Problem')
+    ('Problem', 'Problem'),
 )
 
 STAGES = (
@@ -115,7 +115,7 @@ EVENT_PARENT_TYPE = (
     (10, 'Account'),
     (13, 'Lead'),
     (14, 'Opportunity'),
-    (11, 'Case')
+    (11, 'Case'),
 )
 
 EVENT_STATUS = (
@@ -126,7 +126,7 @@ EVENT_STATUS = (
     ('Started', 'Started'),
     ('Completed', 'Completed'),
     ('Canceled', 'Canceled'),
-    ('Deferred', 'Deferred')
+    ('Deferred', 'Deferred'),
 )
 
 
@@ -541,32 +541,32 @@ CURRENCY_CODES = (
 
 
 def return_complete_address(self):
-    address = ""
+    address = ''
     if self.address_line:
         address += self.address_line
     if self.street:
         if address:
-            address += ", " + self.street
+            address += ', ' + self.street
         else:
             address += self.street
     if self.city:
         if address:
-            address += ", " + self.city
+            address += ', ' + self.city
         else:
             address += self.city
     if self.state:
         if address:
-            address += ", " + self.state
+            address += ', ' + self.state
         else:
             address += self.state
     if self.postcode:
         if address:
-            address += ", " + self.postcode
+            address += ', ' + self.postcode
         else:
             address += self.postcode
     if self.country:
         if address:
-            address += ", " + self.get_country_display()
+            address += ', ' + self.get_country_display()
         else:
             address += self.get_country_display()
     return address

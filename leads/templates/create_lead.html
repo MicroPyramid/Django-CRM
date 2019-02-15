@@ -200,7 +200,7 @@
     $('.assigned_users').select2();
   });
   $(function() {
-  
+
     $('#tags_1').tagsInput({width:'auto'});
     $('#tags_2').tagsInput({
       width: 'auto',
@@ -216,19 +216,19 @@
     });
     $('#tags_3').tagsInput({
       width: 'auto',
-  
+
       //autocomplete_url:'test/fake_plaintext_endpoint.html' //jquery.autocomplete (not jquery ui)
       autocomplete_url:'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
     });
-    
-  
+
+
   // Uncomment this line to see the callback functions in action
-  //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
-  
+  //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});
+
   // Uncomment this line to see an input with no interface for adding new tags.
   //      $('input.tags').tagsInput({interactive:false});
   });
-  
+
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {

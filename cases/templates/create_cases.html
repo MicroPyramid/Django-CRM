@@ -152,7 +152,7 @@
         minDate: today
     })
   });
-  
+
   $(".savenew").on('click', function(e){
     e.preventDefault()
     $("#save_new_form").val('true')
@@ -161,7 +161,7 @@
   $(document).ready(function() {
     $('.assigned_users').select2();
   });
-  
+
   $('#id_account').change(function(){
   var account = $("#id_account").val()
   $.get("{% url 'cases:select_contacts' %}", {"account":account}, function(data){

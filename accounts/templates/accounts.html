@@ -145,7 +145,7 @@
                     <span class="total_count float-left">Closed Accounts - {% if show_pageitems %} {% show_pageitems %}{% else %}{{close_accounts|length}}{% endif %}</span>
                     <span class="filter_toggle ">
                     <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-                    </span>                  
+                    </span>
                   </div>
                   <div class="table-responsive">
                     <table class="table">
@@ -220,19 +220,19 @@
   $("#close-tab").click(function(e){
     $("#tab_status").val('Closed');
   })
-  
+
   $("#open-tab").click(function(e){
     $("#tab_status").val('Open')
   })
-  
+
   tab_status = "{{tab_status}}"
   if(tab_status == 'Closed'){
     $("#close-tab").click()
   }else{
     $("#open-tab").click()
   }
-  
-  
+
+
   $('.remove_account').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -240,17 +240,17 @@
       return;
     window.location = $(this).attr('href')
   });
-  
+
   $(".reset").click(function(e){
     window.location = "{% url 'accounts:list'%}"
   });
-  
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-        $(".list_filter_row").toggle();    
-    });    
-  });  
-  
+
+  $(document).ready(function(){
+    $(".filter_toggle").click(function(){
+        $(".list_filter_row").toggle();
+    });
+  });
+
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#accounts_filter').attr("action", $(this).attr("href"));

@@ -1,24 +1,29 @@
 from django.test import TestCase
-from cases.models import Case
-from contacts.models import Contact
+
 from accounts.models import Account
-from common.models import Address, Comment, Attachments
+from cases.models import Case
+from common.models import Address
+from common.models import Attachments
+from common.models import Comment
 from common.models import User
+from contacts.models import Contact
 
 
 class CaseCreation(object):
     def setUp(self):
         self.address = Address.objects.create(
-            street="6th phase",
-            city="hyderabad",
-            postcode="506344",
-            country='IN')
+            street='6th phase',
+            city='hyderabad',
+            postcode='506344',
+            country='IN',
+        )
 
         self.user = User.objects.create(
-            first_name="raghu",
+            first_name='raghu',
             username='raghu',
             email='r@mp.com',
-            role="ADMIN")
+            role='ADMIN',
+        )
         self.user.set_password('raghu')
         self.user.save()
         self.client.login(email='r@mp.com', password='raghu')
@@ -26,35 +31,37 @@ class CaseCreation(object):
         self.client.login(email='r@mp.com', password='raghu')
 
         self.account = Account.objects.create(
-            name="account",
-            email="account@gmail.com", phone="12345",
-            billing_address_line="",
-            billing_street="6th phase",
-            billing_city="hyderabad",
-            billing_postcode="506344",
+            name='account',
+            email='account@gmail.com', phone='12345',
+            billing_address_line='',
+            billing_street='6th phase',
+            billing_city='hyderabad',
+            billing_postcode='506344',
             billing_country='IN',
-            website="www.account.com", description="account",
-            created_by=self.user)
+            website='www.account.com', description='account',
+            created_by=self.user,
+        )
 
         self.contacts = Contact.objects.create(
-            first_name="contact", email="contact@gmail.com", phone="12345",
-            description="contact",
+            first_name='contact', email='contact@gmail.com', phone='12345',
+            description='contact',
             created_by=self.user,
-            address=self.address
+            address=self.address,
         )
 
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem", status="New",
+            name='raghu', case_type='Problem', status='New',
             account=self.account,
-            priority="Low", description="something",
-            created_by=self.user, closed_on="2016-05-04")
+            priority='Low', description='something',
+            created_by=self.user, closed_on='2016-05-04',
+        )
         self.comment = Comment.objects.create(
             comment='testikd', case=self.case,
-            commented_by=self.user
+            commented_by=self.user,
         )
         self.attachment = Attachments.objects.create(
             attachment='image.png', case=self.case,
-            created_by=self.user, account=self.account
+            created_by=self.user, account=self.account,
         )
 
 
@@ -69,33 +76,40 @@ class CaseViewTestCase(CaseCreation, TestCase):
 
     def test_list_cases_post(self):
         self.cases = Case.objects.all()
-        data = {'name': 'name',
-                'status': 'status',
-                'priority': 'prioty',
-                'account': int(self.account.id)}
+        data = {
+            'name': 'name',
+            'status': 'status',
+            'priority': 'prioty',
+            'account': int(self.account.id),
+        }
         response = self.client.post('/cases/list/', data)
         self.assertEqual(response.status_code, 200)
 
 
 class CaseCreationUrlTestCase(CaseCreation, TestCase):
     def test_create_cases(self):
-        response = self.client.post('/cases/create/', {
-            'name': 'new case', 'case_type': 'Problem',
-            'status': 'New',
-            'account': self.account, 'contacts': [self.contacts.id],
-            'priority': "Low", 'description': "something"
-        })
+        response = self.client.post(
+            '/cases/create/', {
+                'name': 'new case', 'case_type': 'Problem',
+                'status': 'New',
+                'account': self.account, 'contacts': [self.contacts.id],
+                'priority': 'Low', 'description': 'something',
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_create_cases_html(self):
-        response = self.client.post('/cases/create/', {
-            'name': 'new case',
-            'case_type': 'Problem',
-            'status': 'New',
-            'account': self.account,
-            'contacts': [self.contacts.id],
-            'priority': "Low",
-            'description': "something"})
+        response = self.client.post(
+            '/cases/create/', {
+                'name': 'new case',
+                'case_type': 'Problem',
+                'status': 'New',
+                'account': self.account,
+                'contacts': [self.contacts.id],
+                'priority': 'Low',
+                'description': 'something',
+            },
+        )
         self.assertTemplateUsed(response, 'create_cases.html')
 
 
@@ -122,26 +136,30 @@ class CaseRemoveTestCase(CaseCreation, TestCase):
     def test_case_delete(self):
         response = self.client.post(
             '/cases/' + str(self.case.id) + '/remove/',
-            {'case_id': self.case.id})
+            {'case_id': self.case.id},
+        )
         self.assertEqual(response.status_code, 200)
 
 
 class CaseUpdateTestCase(CaseCreation, TestCase):
     def test_update_case_view(self):
         response = self.client.get(
-            '/cases/' + str(self.case.id) + '/edit_case/')
+            '/cases/' + str(self.case.id) + '/edit_case/',
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_case_update(self):
         response = self.client.post(
             '/cases/' + str(self.case.id) + '/edit_case/',
-            {'hiddenval': self.case.id})
+            {'hiddenval': self.case.id},
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_case_update_html(self):
         response = self.client.post(
             '/cases/' + str(self.case.id) + '/edit_case/',
-            {'hiddenval': self.case.id})
+            {'hiddenval': self.case.id},
+        )
         self.assertTemplateUsed(response, 'create_cases.html')
 
 
@@ -155,58 +173,71 @@ class CaseModelTestCase(CaseCreation, TestCase):
 class CaseFormTestCase(CaseCreation, TestCase):
 
     def test_case_creation_same_name(self):
-        response = self.client.post('/cases/create/',
-                                    {'name': 'raghu',
-                                     'case_type': 'type',
-                                     'status': 'status',
-                                     'account': self.account,
-                                     'contacts': [self.contacts.id],
-                                     'priority': 'priority',
-                                     'description': 'testingskdjf'})
+        response = self.client.post(
+            '/cases/create/',
+            {
+                'name': 'raghu',
+                'case_type': 'type',
+                'status': 'status',
+                'account': self.account,
+                'contacts': [self.contacts.id],
+                'priority': 'priority',
+                'description': 'testingskdjf',
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_case_create_valid(self):
-        response = self.client.post('/cases/create/',
-                                    {'name': 'name',
-                                     'case_type': 'case',
-                                     'status': 'status',
-                                     'account': self.account,
-                                     'contacts': [self.contacts.id],
-                                     'priority': 'priotiy',
-                                     'description': 'tejkskjdsa'
-                                     })
+        response = self.client.post(
+            '/cases/create/',
+            {
+                'name': 'name',
+                'case_type': 'case',
+                'status': 'status',
+                'account': self.account,
+                'contacts': [self.contacts.id],
+                'priority': 'priotiy',
+                'description': 'tejkskjdsa',
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_close_case(self):
         response = self.client.post(
-            '/cases/close_case/', {'case_id': self.case.id})
+            '/cases/close_case/', {'case_id': self.case.id},
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_comment_add(self):
         response = self.client.post(
-            '/cases/comment/add/', {'caseid': self.case.id})
+            '/cases/comment/add/', {'caseid': self.case.id},
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_comment_edit(self):
         response = self.client.post(
-            '/cases/comment/edit/', {'commentid': self.comment.id})
+            '/cases/comment/edit/', {'commentid': self.comment.id},
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_comment_delete(self):
         response = self.client.post(
-            '/cases/comment/remove/', {'comment_id': self.comment.id})
+            '/cases/comment/remove/', {'comment_id': self.comment.id},
+        )
         self.assertEqual(response.status_code, 200)
 
 
 class AttachmentTestCase(CaseCreation, TestCase):
     def test_attachment_add(self):
         response = self.client.post(
-            '/cases/attachment/add/', {'caseid': self.case.id})
+            '/cases/attachment/add/', {'caseid': self.case.id},
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_delete(self):
         response = self.client.post(
-            '/cases/attachment/remove/', {'attachment_id': self.attachment.id})
+            '/cases/attachment/remove/', {'attachment_id': self.attachment.id},
+        )
         self.assertEqual(response.status_code, 200)
 
 

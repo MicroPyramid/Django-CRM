@@ -98,7 +98,7 @@
             </div>
             <div class="col-md-12">
               <div class="created_information">
-                Created by <b>{{ case_record.created_by }}</b> created on <i><b>{{ case_record.created_on }}</b></i> 
+                Created by <b>{{ case_record.created_by }}</b> created on <i><b>{{ case_record.created_on }}</b></i>
               </div>
             </div>
           </div>
@@ -364,8 +364,8 @@
             quo : '"'
         }[b];
     }));
-  
-  
+
+
   $('#remove_case').click(function(e){
     var result = confirm("Are You Sure You Want to delete?");
     if (result==false) {
@@ -382,7 +382,7 @@
         minDate: today
     })
   });
-  
+
   $(".savenew").on('click', function(e){
     e.preventDefault()
     $("#save_new_form").val('true')
@@ -391,7 +391,7 @@
   $(document).ready(function() {
     $('.assigned_users').select2();
   });
-  
+
   $('#id_account').change(function(){
   var account = $("#id_account").val()
   $.get("{% url 'cases:select_contacts' %}", {"account":account}, function(data){
@@ -401,8 +401,8 @@
     });
   })
   });
-  
-  
+
+
   function remove_attachment(x) {
   const con = confirm("Do you want to Delete it for Sure!?");
   if (con == true) {
@@ -417,7 +417,7 @@
   })
   }
   }
-  
+
   $("#attachment_form").submit(function (e) {
   e.preventDefault()
   const formData = new FormData($("#attachment_form")[0]);
@@ -448,7 +448,7 @@
   }
   });
   });
-  
+
 </script>
 <script src="{% static 'js/mention.js' %}"></script>
 {% endblock js_block %}

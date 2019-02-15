@@ -1,9 +1,9 @@
 import boto.ses
-import sendgrid
-import requests
 import mandrill
-from django.core.mail import EmailMultiAlternatives
+import requests
+import sendgrid
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 
 
 def send_mail(mto, mfrom, msubject, mbody, user_active):
@@ -20,7 +20,7 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
         conn = boto.ses.connect_to_region(
             settings.AWS_REGION,
             aws_access_key_id=settings.AM_ACCESS_KEY,
-            aws_secret_access_key=settings.AM_PASS_KEY
+            aws_secret_access_key=settings.AM_PASS_KEY,
         )
         response = conn.send_email(mfrom, msubject, mbody, mto, format='html')
     elif mail_sender == 'MAILGUN':
@@ -32,7 +32,8 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
                 'to': mto,
                 'subject': msubject,
                 'html': mbody,
-            })
+            },
+        )
     elif mail_sender == 'SENDGRID':
         sg = sendgrid.SendGridClient(settings.SG_USER, settings.SG_PWD)
         sending_msg = sendgrid.Mail()
@@ -47,16 +48,16 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
         mandrill_client = mandrill.Mandrill(api_key)
 
         message = {
-            "html": mbody,
-            "subject": msubject,
-            "from_email": mfrom,
-            "from_name": "Django CRM",
-            "to": [{'email': i, 'type': 'to'} for i in mto]
+            'html': mbody,
+            'subject': msubject,
+            'from_email': mfrom,
+            'from_name': 'Django CRM',
+            'to': [{'email': i, 'type': 'to'} for i in mto],
         }
         response = mandrill_client.messages.send(message=message)
 
     else:
         msg = EmailMultiAlternatives(msubject, mbody, mfrom, [mto])
-        msg.attach_alternative(mbody, "text/html")
+        msg.attach_alternative(mbody, 'text/html')
         response = msg.send()
     return response

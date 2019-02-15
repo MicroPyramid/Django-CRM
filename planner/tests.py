@@ -1,8 +1,10 @@
 import datetime
-from django.utils import timezone
-from django.test import TestCase
-from planner.models import Event
+
 from django.contrib.auth.models import User
+from django.test import TestCase
+from django.utils import timezone
+
+from planner.models import Event
 
 
 # class EventObjects(object):

@@ -7,14 +7,14 @@ body {
   padding: 0;
   font-weight: 500;
   margin: 0;
-  padding-top:60px; 
+  padding-top:60px;
   font-size: 15px;
   @media(min-width:$large){
     font-size:18px;
   }
 }
 .login_register_body {
-  
+
 }
 
 *{
@@ -153,7 +153,7 @@ a{
 
 }
 .tertiary_btn{
-  
+
 }
 header{
   .navbar{
@@ -198,7 +198,7 @@ header{
       .open{
         a{
           background: $login_btn_bg !important;
-         
+
         }
       }
       li{
@@ -277,7 +277,7 @@ header{
     }
   }
 }
-/* inner_pages ends here */ 
+/* inner_pages ends here */
 
 /* CSS used here will be applied after bootstrap.css */
 $color_1: #ff7788;
@@ -351,10 +351,10 @@ $color_2: #000;
       color: darken($text_color, 15%);
       h4{
         font-size: 1.1rem;
-        font-weight: 800;        
+        font-weight: 800;
       }
     }
-    
+
     .search-row{
       .form-group{
         .input-group{
@@ -539,7 +539,7 @@ $color_2: #000;
                   color:#fff;
                   border-radius: 0;
                   border:none;
-                }  
+                }
               }
               &.actions{
                 .btn{
@@ -616,7 +616,7 @@ $color_2: #000;
   /* table_container_row ends here */
 /* breadcrumb starts here */
 .breadcrumb{
- margin:0; 
+ margin:0;
  padding:0 15px;
  background: none;
  .breadcrumb-item{
@@ -634,7 +634,7 @@ $color_2: #000;
   @extend .filter_row;
   margin-top:0;
 }
-/* assigned_teams ends here */ 
+/* assigned_teams ends here */
 
 /* overview_form_block starts here */
 .overview_form_block{
@@ -957,7 +957,7 @@ pre{
             display: block;
             text-align: left;
             font-size: 0.83rem;
-            border-bottom: 1px solid #dedede; 
+            border-bottom: 1px solid #dedede;
           }
         }
       }

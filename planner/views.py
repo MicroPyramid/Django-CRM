@@ -15,8 +15,6 @@
 # from leads.models import Lead
 # from django.contrib.contenttypes.models import ContentType
 # import datetime
-
-
 # @login_required
 # def load_meetings(request):
 #     if request.method == 'GET':
@@ -42,8 +40,6 @@
 #                       {'meetings': meetings, 'reminder_form_set': reminder_form_set})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_meetings')
-
-
 # @login_required
 # def load_tasks(request):
 #     if request.method == 'GET':
@@ -61,8 +57,6 @@
 #         return render(request, 'tasks.html', {'tasks': tasks})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_tasks')
-
-
 # @login_required
 # def load_calls(request):
 #     if request.method == 'GET':
@@ -87,8 +81,6 @@
 #         return render(request, 'calls.html', {'calls': calls, 'reminder_form_set': reminder_form_set})
 #     else:
 #         return HttpResponse('Invalid Method or Not Authanticated in load_calls')
-
-
 # @login_required
 # def create_meeting(request):
 #     if request.method == 'POST':
@@ -120,8 +112,6 @@
 #             return JsonResponse(dict(eventForm.errors))
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def create_task(request):
 #     if request.method == 'POST':
@@ -145,8 +135,6 @@
 #             return JsonResponse(dict(taskForm.errors))
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def create_call(request):
 #     if request.method == 'POST':
@@ -177,8 +165,6 @@
 #             return JsonResponse(dict(callsForm.errors))
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def delete_meeting(request):
 #     if request.method == 'POST':
@@ -189,8 +175,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def delete_task(request):
 #     if request.method == 'POST':
@@ -201,8 +185,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def delete_call(request):
 #     if request.method == 'POST':
@@ -213,8 +195,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def get_meeting(request):
 #     if request.method == 'POST':
@@ -254,8 +234,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def get_task(request):
 #     if request.method == 'POST':
@@ -285,8 +263,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def get_call(request):
 #     if request.method == 'POST':
@@ -325,8 +301,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def update_meeting(request):
 #     if request.method == 'POST':
@@ -367,8 +341,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def update_task(request):
 #     if request.method == 'POST':
@@ -398,8 +370,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def update_call(request):
 #     if request.method == 'POST':
@@ -436,8 +406,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def update_event_status(request):
 #     if request.method == 'POST':
@@ -466,8 +434,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def search_meetings(request):
 #     if request.method == 'GET':
@@ -483,7 +449,6 @@
 #                 if parent is not None:
 #                     parent_content_type = ContentType.objects.get_for_model(parent)
 #                     event = event.filter(content_type__pk=parent_content_type.id, object_id=parent.id) or event
-
 #             if request.GET.get('start_date'):
 #                 start_date = datetime.datetime.strptime(request.GET.get('start_date'), '%m/%d/%Y %H:%M:%S')
 #                 event = event.filter(start_date=start_date) or event
@@ -493,24 +458,20 @@
 #             if request.GET.get('updated_at'):
 #                 updated_at = datetime.datetime.strptime(request.GET.get('updated_at'), '%m/%d/%Y %H:%M:%S')
 #                 event = event.filter(updated_at=updated_at) or event
-
 #             if request.GET.get('status'):
 #                 event = event.filter(status=request.GET.get('status')) or event
-
 #             if request.GET.getlist('attendees_contacts'):
 #                 event = event.filter(attendees_contacts__in=request.GET.getlist('attendees_contacts')) or event
 #             if request.GET.getlist('attendees_user'):
 #                 event = event.filter(attendees_user__in=request.GET.getlist('attendees_user')) or event
 #             if request.GET.getlist('attendees_leads'):
 #                 event = event.filter(attendees_leads__in=request.GET.getlist('attendees_leads')) or event
-
 #             if request.GET.get('assigned_users'):
 #                 event = event.filter(assigned_users=request.GET.get('assigned_users')) or event
 #             if request.GET.get('created_user'):
 #                 event = event.filter(created_user=request.GET.get('created_user')) or event
 #             if request.GET.get('updated_user'):
 #                 event = event.filter(updated_user=request.GET.get('updated_user')) or event
-
 #             paginator = Paginator(event, 5)
 #             if request.GET.get('event_type') == 'Meeting':
 #                 try:
@@ -549,8 +510,6 @@
 #             return JsonResponse({'Event': 'DoesNotExist'})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # @login_required
 # def get_reminder_form(request):
 #     if request.method == 'GET':
@@ -564,8 +523,6 @@
 #         return render(request, 'reminder.html', {'reminder_form_set': reminder_form_set})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # def add_parent(parent_type, parent_id, form, request_user):
 #     if parent_type == 'Account':
 #         account = Account.objects.get(id=int(parent_id))
@@ -597,7 +554,6 @@
 #             event.updated_user = request_user
 #         event.save()
 #         return (event, event.parent.first_name)
-
 #     elif parent_type == 'Opportunity':
 #         opportunity = Opportunity.objects.get(id=int(parent_id))
 #         event = form.save(commit=False)
@@ -618,8 +574,6 @@
 #             event.updated_user = request_user
 #         event.save()
 #         return (event, event.parent.name)
-
-
 # def get_parent(parent_type, parent_id):
 #     if parent_type == 'Account':
 #         try:
@@ -651,8 +605,6 @@
 #             return contact
 #         except Contact.DoesNotExist:
 #             return None
-
-
 # def get_users(request):
 #     if request.method == 'GET':
 #         users = User.objects.all()
@@ -668,8 +620,6 @@
 #         return render(request, 'users.html', {'users': users})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # def get_contacts(request):
 #     if request.method == 'GET':
 #         contacts = Contact.objects.all()
@@ -685,8 +635,6 @@
 #         return render(request, 'contacts.html', {'contacts': contacts})
 #     else:
 #         return JsonResponse({'METHOD': 'INVALID'})
-
-
 # def get_leads(request):
 #     if request.method == 'GET':
 #         leads = Lead.objects.all()

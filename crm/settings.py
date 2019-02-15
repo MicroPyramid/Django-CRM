@@ -51,7 +51,7 @@ ROOT_URLCONF = 'crm.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, "templates"), ],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,13 +74,13 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dj_crm',
         'USER': 'postgres',
-        'PASSWORD': 'root',
+        'PASSWORD': 'P@ssw0rd',
         'HOST': '127.0.0.1',
-        'PORT': '5432'
-    }
+        'PORT': '5432',
+    },
 }
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
@@ -150,7 +150,8 @@ COMPRESS_URL = STATIC_URL
 COMPRESS_ENABLED = True
 
 COMPRESS_CSS_FILTERS = [
-    'compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
+    'compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter',
+]
 COMPRESS_REBUILD_TIMEOUT = 5400
 
 COMPRESS_OUTPUT_DIR = 'CACHE'
@@ -188,7 +189,7 @@ SG_PWD = os.getenv('SG_PWD', '')
 
 MANDRILL_API_KEY = os.getenv('MANDRILL_API_KEY', '')
 
-ADMIN_EMAIL = "admin@micropyramid.com"
+ADMIN_EMAIL = 'admin@micropyramid.com'
 
 try:
     from .dev_settings import *

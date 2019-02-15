@@ -111,12 +111,12 @@
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
-  $(document).ready(function(){ 
+  $(document).ready(function(){
     $(".filter_toggle").click(function(){
-      $(".list_filter_row").toggle(); 
-      }); 
+      $(".list_filter_row").toggle();
+      });
   });
-  
+
   $('.remove_document').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -124,11 +124,11 @@
       return;
     window.location = $(this).attr('href')
   });
-  
+
   $(".reset").click(function(e){
     window.location = "{% url 'common:doc_list'%}"
   });
-  
+
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#docs_filter').attr("action", $(this).attr("href"));

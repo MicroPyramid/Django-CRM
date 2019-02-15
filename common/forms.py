@@ -1,34 +1,45 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
-from common.models import Address, User, Document, Comment
+
+from common.models import Address
+from common.models import Comment
+from common.models import Document
+from common.models import User
 
 
 class BillingAddressForm(forms.ModelForm):
 
     class Meta:
         model = Address
-        fields = ('address_line', 'street', 'city',
-                  'state', 'postcode', 'country')
+        fields = (
+            'address_line', 'street', 'city',
+            'state', 'postcode', 'country',
+        )
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop('account', False)
 
         super(BillingAddressForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
         self.fields['address_line'].widget.attrs.update({
-            'placeholder': 'Address Line'})
+            'placeholder': 'Address Line',
+        })
         self.fields['street'].widget.attrs.update({
-            'placeholder': 'Street'})
+            'placeholder': 'Street',
+        })
         self.fields['city'].widget.attrs.update({
-            'placeholder': 'City'})
+            'placeholder': 'City',
+        })
         self.fields['state'].widget.attrs.update({
-            'placeholder': 'State'})
+            'placeholder': 'State',
+        })
         self.fields['postcode'].widget.attrs.update({
-            'placeholder': 'Postcode'})
-        self.fields["country"].choices = [
-            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+            'placeholder': 'Postcode',
+        })
+        self.fields['country'].choices = [
+            ('', '--Country--'), ] + list(self.fields['country'].choices)[1:]
 
         if account_view:
             self.fields['address_line'].required = True
@@ -42,25 +53,32 @@ class BillingAddressForm(forms.ModelForm):
 class ShippingAddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        fields = ('address_line', 'street', 'city',
-                  'state', 'postcode', 'country')
+        fields = (
+            'address_line', 'street', 'city',
+            'state', 'postcode', 'country',
+        )
 
     def __init__(self, *args, **kwargs):
         super(ShippingAddressForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
         self.fields['address_line'].widget.attrs.update({
-            'placeholder': 'Address Line'})
+            'placeholder': 'Address Line',
+        })
         self.fields['street'].widget.attrs.update({
-            'placeholder': 'Street'})
+            'placeholder': 'Street',
+        })
         self.fields['city'].widget.attrs.update({
-            'placeholder': 'City'})
+            'placeholder': 'City',
+        })
         self.fields['state'].widget.attrs.update({
-            'placeholder': 'State'})
+            'placeholder': 'State',
+        })
         self.fields['postcode'].widget.attrs.update({
-            'placeholder': 'Postcode'})
-        self.fields["country"].choices = [
-            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+            'placeholder': 'Postcode',
+        })
+        self.fields['country'].choices = [
+            ('', '--Country--'), ] + list(self.fields['country'].choices)[1:]
 
 
 class UserForm(forms.ModelForm):
@@ -69,8 +87,10 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name',
-                  'username', 'role', 'profile_pic']
+        fields = [
+            'email', 'first_name', 'last_name',
+            'username', 'role', 'profile_pic',
+        ]
 
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
@@ -96,21 +116,22 @@ class UserForm(forms.ModelForm):
         if password:
             if len(password) < 4:
                 raise forms.ValidationError(
-                    'Password must be at least 4 characters long!')
+                    'Password must be at least 4 characters long!',
+                )
         return password
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
+        email = self.cleaned_data.get('email')
         if self.instance.id:
             if self.instance.email != email:
-                if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
-                    return self.cleaned_data.get("email")
+                if not User.objects.filter(email=self.cleaned_data.get('email')).exists():
+                    return self.cleaned_data.get('email')
                 raise forms.ValidationError('Email already exists')
             else:
-                return self.cleaned_data.get("email")
+                return self.cleaned_data.get('email')
         else:
-            if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
-                return self.cleaned_data.get("email")
+            if not User.objects.filter(email=self.cleaned_data.get('email')).exists():
+                return self.cleaned_data.get('email')
             raise forms.ValidationError('User already exists with this email')
 
 
@@ -123,12 +144,12 @@ class LoginForm(forms.ModelForm):
         fields = ['email', 'password']
 
     def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop("request", None)
+        self.request = kwargs.pop('request', None)
         super(LoginForm, self).__init__(*args, **kwargs)
 
     def clean(self):
-        email = self.cleaned_data.get("email")
-        password = self.cleaned_data.get("password")
+        email = self.cleaned_data.get('email')
+        password = self.cleaned_data.get('password')
 
         if email and password:
             self.user = authenticate(username=email, password=password)
@@ -153,10 +174,12 @@ class ChangePasswordForm(forms.Form):
     def clean_confirm(self):
         if len(self.data.get('confirm')) < 4:
             raise forms.ValidationError(
-                'Password must be at least 4 characters long!')
+                'Password must be at least 4 characters long!',
+            )
         if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
             raise forms.ValidationError(
-                'Confirm password do not match with new password')
+                'Confirm password do not match with new password',
+            )
         return self.data.get('confirm')
 
 
@@ -175,10 +198,11 @@ class DocumentForm(forms.ModelForm):
         super(DocumentForm, self).__init__(*args, **kwargs)
 
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
 
         self.fields['status'].choices = [
-            (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
+            (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE
+        ]
         self.fields['status'].required = False
         self.fields['title'].required = True
 

@@ -155,7 +155,7 @@
                           {% endwith %}
                         </td>
                         <td>{{ lead.created_on }}</td>
-                        <td class="actions"> 
+                        <td class="actions">
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                         </td>
@@ -231,7 +231,7 @@
                           {% endwith %}
                         </td>
                         <td>{{ lead.created_on }}</td>
-                        <td class="actions"> 
+                        <td class="actions">
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                         </td>
@@ -258,28 +258,28 @@
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
-  $(document).ready(function(){  
+  $(document).ready(function(){
     $('.assigned_users').select2();
-    $(".filter_toggle").click(function(){    
-      $(".list_filter_row").toggle();    
-    });    
+    $(".filter_toggle").click(function(){
+      $(".list_filter_row").toggle();
+    });
   });
-  
+
   $("#close-tab").click(function(e){
     $("#tab_status").val('Closed')
   })
-  
+
   $("#open-tab").click(function(e){
     $("#tab_status").val('Open')
   })
-  
+
   tab_status = "{{tab_status}}"
   if(tab_status == 'Closed'){
     $("#close-tab").click()
   }else{
     $("#open-tab").click()
   }
-   
+
   $('.delete').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -287,7 +287,7 @@
       return;
     window.location = $(this).attr('href')
   });
-  
+
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#leads_filter').attr("action", $(this).attr("href"));

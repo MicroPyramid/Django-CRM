@@ -1,6 +1,8 @@
 from django import forms
+
+from common.models import Attachments
+from common.models import Comment
 from opportunity.models import Opportunity
-from common.models import Comment, Attachments
 
 
 class OpportunityForm(forms.ModelForm):
@@ -12,9 +14,10 @@ class OpportunityForm(forms.ModelForm):
         opp_contacts = kwargs.pop('contacts', [])
         super(OpportunityForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
         self.fields['description'].widget.attrs.update({
-            'rows': '8'})
+            'rows': '8',
+        })
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['account'].queryset = opp_accounts
         self.fields['contacts'].queryset = opp_contacts
@@ -24,10 +27,12 @@ class OpportunityForm(forms.ModelForm):
             value.widget.attrs['placeholder'] = value.label
 
         self.fields['closed_on'].widget.attrs.update({
-            'placeholder': 'Due Date'})
+            'placeholder': 'Due Date',
+        })
 
         self.fields['probability'].widget.attrs.update({
-            'placeholder': 'Probability'})
+            'placeholder': 'Probability',
+        })
 
     class Meta:
         model = Opportunity

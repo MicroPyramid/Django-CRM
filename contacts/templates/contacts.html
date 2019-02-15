@@ -52,7 +52,7 @@
           <div class="card-title text-right">
 
              <span class="float-left">Contacts - {% if show_pageitems %} {% show_pageitems %}{% else %} {{contact_obj_list|length}}{% endif %}</span>
-             
+
               <span class="filter_toggle">
                 <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
               </span>
@@ -122,11 +122,11 @@
 {%endblock%}
 {% block js_block %}
 <script type="text/javascript">
-$(document).ready(function(){    
-  $(".filter_toggle").click(function(){    
-      $(".list_filter_row").toggle();    
-  });    
-});    
+$(document).ready(function(){
+  $(".filter_toggle").click(function(){
+      $(".list_filter_row").toggle();
+  });
+});
 
   $('.delete').click(function(e){
     e.preventDefault()
@@ -135,7 +135,7 @@ $(document).ready(function(){
       return;
     window.location = $(this).attr('href')
   });
-  
+
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#contacts_filter').attr("action", $(this).attr("href"));

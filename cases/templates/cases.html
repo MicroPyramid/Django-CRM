@@ -158,13 +158,13 @@
       })
     }
   }
-  
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-        $(".list_filter_row").toggle();    
-    });    
-  });  
-  
+
+  $(document).ready(function(){
+    $(".filter_toggle").click(function(){
+        $(".list_filter_row").toggle();
+    });
+  });
+
   $('.remove_case').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')
@@ -172,7 +172,7 @@
       return;
     window.location = $(this).attr('href')
   });
-  
+
   $("a[rel='page']").click(function(e){
     e.preventDefault();
     $('#cases_filter').attr("action", $(this).attr("href"));

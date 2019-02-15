@@ -1,5 +1,7 @@
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages
+from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
     README = readme.read()
@@ -18,7 +20,8 @@ for dirpath, dirnames, filenames in os.walk(PROJECT_NAME):
     elif filenames:
         for f in filenames:
             data_files.append(os.path.join(
-                dirpath[len(PROJECT_NAME) + 1:], f))
+                dirpath[len(PROJECT_NAME) + 1:], f,
+            ))
 
 setup(
     name='django-crm',

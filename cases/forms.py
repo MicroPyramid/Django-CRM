@@ -1,6 +1,8 @@
 from django import forms
+
 from cases.models import Case
-from common.models import Comment, Attachments
+from common.models import Attachments
+from common.models import Comment
 
 
 class CaseForm(forms.ModelForm):
@@ -11,9 +13,10 @@ class CaseForm(forms.ModelForm):
         case_contacts = kwargs.pop('contacts', [])
         super(CaseForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
         self.fields['description'].widget.attrs.update({
-            'rows': '6'})
+            'rows': '6',
+        })
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['account'].queryset = case_accounts
         self.fields['contacts'].queryset = case_contacts
@@ -24,15 +27,19 @@ class CaseForm(forms.ModelForm):
 
     class Meta:
         model = Case
-        fields = ('assigned_to', 'name', 'status',
-                  'priority', 'case_type', 'account',
-                  'contacts', 'closed_on', 'description')
+        fields = (
+            'assigned_to', 'name', 'status',
+            'priority', 'case_type', 'account',
+            'contacts', 'closed_on', 'description',
+        )
 
     def clean_name(self):
         name = self.cleaned_data['name']
-        case = Case.objects.filter(name__iexact=name).exclude(id=self.instance.id)
+        case = Case.objects.filter(
+            name__iexact=name,
+        ).exclude(id=self.instance.id)
         if case:
-            raise forms.ValidationError("Case Already Exists with this Name")
+            raise forms.ValidationError('Case Already Exists with this Name')
         else:
             return name
 

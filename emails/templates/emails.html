@@ -36,7 +36,7 @@
   FILEUPLOAD:<input type="file" name="files"/>
 
         <input type="submit" id="email_draft" name="email_draft" value="save draft"/>
-        <input type="submit" value="submit"/> 
+        <input type="submit" value="submit"/>
 
 </table>
 </form>
@@ -112,7 +112,7 @@ $("#detail").submit(function(e){
   subject = $("#subject").val()
   message = $("#message").val()
   alert("hhhhh")
-  
+
   if(from == "" && to == "" && subject == "" && message == ""){
     e.preventDefault()
     $(".errors").show()
@@ -150,5 +150,3 @@ $('#email_draft').on(click, function() {
     })
 });
 </script>
-
-

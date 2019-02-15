@@ -124,7 +124,7 @@
             </div>
             <div class="col-md-12">
               <div class="created_information">
-                Created by <b>{{ opportunity_record.created_by }}</b> created on <i><b>{{ opportunity_record.created_on }}</b></i> 
+                Created by <b>{{ opportunity_record.created_by }}</b> created on <i><b>{{ opportunity_record.created_on }}</b></i>
               </div>
             </div>
           </div>
@@ -266,7 +266,7 @@
                 quo : '"'
             }[b];
         }));
-  
+
   $(function () {
       $('#datetimepicker1').datetimepicker({
           'format': 'YYYY-MM-DD',
@@ -312,8 +312,8 @@
       }
     })
   });
-  
-  
+
+
   function edit_comment(x) {
     $('#Comments_Opportunity_Modal').modal('show');
     comment = $("#comment_name" + x).text()
@@ -343,12 +343,12 @@
       }
     })
   });
-  
+
   function HideError(e) {
     $("#CommentError").hide()
     $("#AttachmentError").hide()
   }
-  
+
   function remove_comment(x) {
     var con = confirm("Do you want to Delete it for Sure!?")
     if (con == true) {
@@ -378,7 +378,7 @@
       })
     }
   }
-  
+
   $("#attachment_form").submit(function (e) {
     e.preventDefault()
       const formData = new FormData($("#attachment_form")[0]);

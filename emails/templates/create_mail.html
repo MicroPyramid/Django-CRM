@@ -27,7 +27,7 @@
                       <option>Select</option>
                       <option>aditya@micropyramid.com</option>
                       </select>-->
-                    <input type="email" class="form-control" id="from_email" name="from_email"{% if x %} value="{{x.from_email.value}}" {% endif %} 
+                    <input type="email" class="form-control" id="from_email" name="from_email"{% if x %} value="{{x.from_email.value}}" {% endif %}
                     {% if form.errors %} value="{{request.POST.from_email}}" {% endif %}
                     value="{{em.from_email}}"/>
                   </div>
@@ -43,7 +43,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1">To *</label>
                     <input type="email" class="form-control" id="to_email" name="to_email"
-                    {% if x %} value="{{x.to_email.value}}" {% endif %} 
+                    {% if x %} value="{{x.to_email.value}}" {% endif %}
                     {% if form.errors %} value="{{request.POST.to_email}}" {% endif %}
                     value="{{em.to_email}}" />
                   </div>
@@ -59,7 +59,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1">Subject *</label>
                     <input type="text" class="form-control" id="subject" name="subject"
-                    {% if x %} value="{{x.subject.value}}" {% endif %} 
+                    {% if x %} value="{{x.subject.value}}" {% endif %}
                     {% if form.errors %} value="{{request.POST.subject}}" {% endif %}
                     value="{{em.subject}}"/>
                   </div>
@@ -135,15 +135,15 @@
 <script type="text/javascript">
   CKEDITOR.replace( 'job_description',
   {
-  
+
   // skin : 'office2003',
   uiColor: '#ffffff',
     height: 120
   //width: 700,
   }
-  
+
   );
-  
+
   // CKEDITOR.replace('description', {
   //   customConfig: "{% static 'js/custom/ckeditor_config.js' %}"
   // });

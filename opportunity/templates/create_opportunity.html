@@ -178,7 +178,7 @@
            minDate:today
        })
    });
-   
+
    $(".savenew").on('click', function(e){
      e.preventDefault()
      $("#save_new_form").val('true')
@@ -188,7 +188,7 @@
      $('.assigned_users').select2();
      $("#id_contacts").select2();
    });
-   
+
    $('#id_account').change(function(){
        var Account= $("#id_account").val()
            $.get("{% url 'opportunities:contacts' %}", {"Account":Account}, function(data){
@@ -198,7 +198,7 @@
              });
            })
    });
-   
+
    $("#comment_form").submit(function(e){
      e.preventDefault()
      var formData = new FormData($("#comment_form")[0]);
@@ -231,15 +231,15 @@
          }
      });
    });
-   
-   
+
+
    function edit_comment(x){
      $('#myModal_comment').modal('show');
      comment = $("#comment_name"+x).text()
      $("#commentid").val(x)
      $("#id_editcomment").val(comment)
    }
-   
+
    $("#comment_edit").click(function(e){
      alert("Heyyyyyyyyyyy")
      e.preventDefault()
@@ -262,7 +262,7 @@
          }
      })
    });
-   
+
    function remove_comment(x){
    var warn = confirm("Are You Sure, you Want to Delete this Comment!?")
    if (warn == true){
@@ -275,7 +275,7 @@
      })
    }
    }
-   
+
    function editFun(x) {
      $.ajax({
          type: "POST",
@@ -301,8 +301,8 @@
              $("#id_contacts").html(contacts)
          }
      })
-   
-   
+
+
      $('#id_account').change(function() {
          var Account = $("#id_account").val()
          $.get("{% url 'opportunities:contacts' %}", {
@@ -315,7 +315,7 @@
              });
          })
      });
-   
+
    }
    function onAddTag(tag) {
    alert("Added a tag: " + tag);
@@ -323,13 +323,13 @@
    function onRemoveTag(tag) {
    alert("Removed a tag: " + tag);
    }
-   
+
    function onChangeTag(input,tag) {
    alert("Changed a tag: " + tag);
    }
-   
+
    $(function() {
-   
+
    $('#tags_1').tagsInput({width:'auto'});
    $('#tags_2').tagsInput({
      width: 'auto',
@@ -345,15 +345,15 @@
    });
    $('#tags_3').tagsInput({
      width: 'auto',
-   
+
      //autocomplete_url:'test/fake_plaintext_endpoint.html' //jquery.autocomplete (not jquery ui)
      autocomplete_url:'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
    });
-   
-   
+
+
    // Uncomment this line to see the callback functions in action
-   //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
-   
+   //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});
+
    // Uncomment this line to see an input with no interface for adding new tags.
    //      $('input.tags').tagsInput({interactive:false});
    });

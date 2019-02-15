@@ -109,7 +109,7 @@
             </div>
             <div class="col-md-12">
               <div class="created_information">
-                Created by <b>{{ account_record.created_by }}</b> created on <i><b>{{ account_record.created_on }}</b></i> 
+                Created by <b>{{ account_record.created_by }}</b> created on <i><b>{{ account_record.created_on }}</b></i>
               </div>
             </div>
             <div class="col-md-12 " style="padding:0">
@@ -309,7 +309,7 @@
                         <td>{{opportunity.name}}</td>
                         <td>{{opportunity.stage}}</td>
                         <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
-                        <td class="actions"> 
+                        <td class="actions">
                           <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}" class="btn btn-primary">View</a>
                           <a href="{% url 'opportunities:opp_edit' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
                           <a href="{% url 'opportunities:opp_remove' pk=opportunity.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
@@ -357,7 +357,7 @@
                         <td>{{ case.name }}</td>
                         <td>{{ case.status }}</td>
                         <td>{{ case.priority }}</td>
-                        <td class="actions"> 
+                        <td class="actions">
                           <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary">View</a>
                           <a href="{% url 'cases:edit_case' pk=case.id %}?view_account={{account_record.id}}" class="btn btn-success">Edit</a>
                           <a href="{% url 'cases:remove_case' case_id=case.id %}?view_account={{account_record.id}}" class="btn btn-danger">Remove</a>
@@ -423,7 +423,7 @@
     $("#id_editcomment").val(comment)
     $("#edit_file_field").html($("#comment_file_div" + x).clone())
   }
-  
+
   $("#comment_edit").click(function (e) {
     e.preventDefault()
     var formData = new FormData($("#comment_edit_form")[0]);
@@ -447,16 +447,16 @@
       }
     })
   })
-  
+
   /*Comment Edit Js Ends*/
-  
+
   function HideError(e) {
     $("#CommentError").hide()
     $("#CommentEditError").hide()
   }
-  
+
   /*Comment Remove Js Start*/
-  
+
   function remove_comment(x) {
     var con = confirm("Do you want to Delete it for Sure!?")
     if (con == true) {
@@ -486,7 +486,7 @@
       })
     }
   }
-  
+
   $("#attachment_form").submit(function (e) {
     e.preventDefault()
     const formData = new FormData($("#attachment_form")[0]);
@@ -517,7 +517,7 @@
       }
     })
   });
-  
+
 </script>
 <script src="{% static 'js/mention.js' %}"></script>
 {% endblock js_block %}

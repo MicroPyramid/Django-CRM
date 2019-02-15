@@ -15,7 +15,7 @@
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-8">
       <div class="card">
-       
+
         <div class="card-body" id="datashow">
          <div class="card-title text-right">
           <h5>
@@ -41,7 +41,7 @@
                 </div>
               </div>
               <div class="filter_col col-md-12">
-                
+
                 <div class="form-group">
                   <label class="lead_field_label" for="id_contact_account" data-name="name">Account Name</label>
                   {% if lead_record.account_name %}
@@ -71,7 +71,7 @@
                   {% endif %}
                 </div>
               </div>
-             
+
             </div>
             <div class="col-md-4">
               <div class="filter_col col-md-12">
@@ -116,7 +116,7 @@
               </div>
             </div>
             <div class="col-md-4">
-              
+
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   {% if lead_record.address.address_line or lead_record.address.street or lead_record.address.city or lead_record.address.state or lead_record.address.postcode or lead_record.address.country %}
@@ -138,7 +138,7 @@
             </div>
             <div class="col-md-12">
                 <div class="created_information">
-                  Created by <b>{{ lead_record.created_by }}</b> created on <i><b>{{ lead_record.created_on }}</b></i> 
+                  Created by <b>{{ lead_record.created_by }}</b> created on <i><b>{{ lead_record.created_on }}</b></i>
                 </div>
               </div>
           </div>
@@ -174,7 +174,7 @@
                               </div>
                             {% endif %}
 
-                              
+
                               <div class="stream-post-container" id="attachment_name{{attachment.id}}">
                                 <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
                               </div>

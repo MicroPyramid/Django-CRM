@@ -1,6 +1,8 @@
 from django import forms
+
 from .models import Account
-from common.models import Comment, Attachments
+from common.models import Attachments
+from common.models import Comment
 
 
 class AccountForm(forms.ModelForm):
@@ -9,28 +11,35 @@ class AccountForm(forms.ModelForm):
         account_view = kwargs.pop('account', False)
         super(AccountForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {"class": "form-control"}
+            field.widget.attrs = {'class': 'form-control'}
         self.fields['description'].widget.attrs.update({'rows': '8'})
-        self.fields['status'].choices = [(each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE]
+        self.fields['status'].choices = [
+            (each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE
+        ]
         self.fields['status'].required = False
         for key, value in self.fields.items():
             if key == 'phone':
-                value.widget.attrs['placeholder'] = "+91-123-456-7890"
+                value.widget.attrs['placeholder'] = '+91-123-456-7890'
             else:
                 value.widget.attrs['placeholder'] = value.label
 
         self.fields['billing_address_line'].widget.attrs.update({
-            'placeholder': 'Address Line'})
+            'placeholder': 'Address Line',
+        })
         self.fields['billing_street'].widget.attrs.update({
-            'placeholder': 'Street'})
+            'placeholder': 'Street',
+        })
         self.fields['billing_city'].widget.attrs.update({
-            'placeholder': 'City'})
+            'placeholder': 'City',
+        })
         self.fields['billing_state'].widget.attrs.update({
-            'placeholder': 'State'})
+            'placeholder': 'State',
+        })
         self.fields['billing_postcode'].widget.attrs.update({
-            'placeholder': 'Postcode'})
-        self.fields["billing_country"].choices = [
-            ("", "--Country--"), ] + list(self.fields["billing_country"].choices)[1:]
+            'placeholder': 'Postcode',
+        })
+        self.fields['billing_country'].choices = [
+            ('', '--Country--'), ] + list(self.fields['billing_country'].choices)[1:]
 
         if account_view:
             self.fields['billing_address_line'].required = True
@@ -42,11 +51,13 @@ class AccountForm(forms.ModelForm):
 
     class Meta:
         model = Account
-        fields = ('name', 'phone', 'email', 'website', 'industry',
-                  'description', 'status',
-                  'billing_address_line', 'billing_street',
-                  'billing_city', 'billing_state',
-                  'billing_postcode', 'billing_country', 'lead', 'contacts')
+        fields = (
+            'name', 'phone', 'email', 'website', 'industry',
+            'description', 'status',
+            'billing_address_line', 'billing_street',
+            'billing_city', 'billing_state',
+            'billing_postcode', 'billing_country', 'lead', 'contacts',
+        )
 
 
 class AccountCommentForm(forms.ModelForm):
