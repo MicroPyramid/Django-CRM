@@ -44,6 +44,16 @@ class CasesListView(LoginRequiredMixin, TemplateView):
         context["acc"] = int(self.request.POST.get("account")) if self.request.POST.get("account") else None
         context["case_priority"] = PRIORITY_CHOICE
         context["case_status"] = STATUS_CHOICE
+
+
+        search = False
+        if (
+            self.request.POST.get('name') or self.request.POST.get('account') or 
+            self.request.POST.get('status') or self.request.POST.get('priority')
+        ):
+            search = True
+
+        context["search"] = search
         return context
 
     def get(self, request, *args, **kwargs):

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
 {% block extralinks %}
@@ -106,6 +106,7 @@
                   <span class="error">{{ lead_form.description.errors }}</span>
                 </div>
               </div>
+
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
@@ -136,27 +137,28 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1" >Address</label>
-                  {{ address_form.address_line }}
-                  <span class="error">{{ address_form.address_line.errors }}</span>
+                  {{ lead_form.address_line }}
+                  <span class="error">{{ lead_form.address_line.errors }}</span>
                 </div>
-                {{ address_form.street }}
-                <span class="error">{{ address_form.street.errors }}</span>
+                {{ lead_form.street }}
+                <span class="error">{{ lead_form.street.errors }}</span>
                 <div class="row" style="margin-top:10px;">
                   <div class="col-md-4">
-                    {{ address_form.city }}
-                    <span class="error">{{ address_form.city.errors }}</span>
+                    {{ lead_form.city }}
+                    <span class="error">{{ lead_form.city.errors }}</span>
                   </div>
                   <div class="col-md-4">
-                    {{ address_form.state }}
-                    <span class="error">{{ address_form.state.errors }}</span>
+                    {{ lead_form.state }}
+                    <span class="error">{{ lead_form.state.errors }}</span>
                   </div>
+
                   <div class="col-md-4">
-                    {{ address_form.postcode }}
-                    <span class="error">{{ address_form.postcode.errors }}</span>
+                    {{ lead_form.postcode }}
+                    <span class="error">{{ lead_form.postcode.errors }}</span>
                   </div>
                   <div class="col-md-12" style="margin-top:10px;">
-                    {{ address_form.country }}
-                    <span class="error">{{ address_form.country.errors }}</span>
+                    {{ lead_form.country }}
+                    <span class="error">{{ lead_form.country.errors }}</span>
                   </div>
                 </div>
               </div>

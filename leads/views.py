@@ -64,6 +64,17 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
 
+        search = False
+        if (
+            self.request.POST.get('name') or self.request.POST.get('city') or
+            self.request.POST.get('email') or self.request.POST.get('tag') or
+            self.request.POST.get('status') or self.request.POST.get('source') or
+            self.request.POST.get('assigned_to')
+        ):
+            search = True
+
+        context["search"] = search
+
         context['tags'] = Tags.objects.all()
 
         tab_status = 'Open'

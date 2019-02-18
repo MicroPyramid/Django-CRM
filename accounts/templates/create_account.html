@@ -1,8 +1,10 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+ <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 {% endblock %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -12,12 +14,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-<head>
-  <link rel="stylesheet" type="text/css" href="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.css" />
-  <script type="text/javascript" src="//xoxco.com/projects/code/tagsinput/jquery.tagsinput.js"></script>
-  <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
-</head>
+{% if contact_count and lead_count %}
 <form id="formid" action='' method="POST" novalidate>
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
@@ -123,6 +120,17 @@
             <div class="col-md-4">
               <div class="filter_col col-12">
                 <div class="form-group">
+                  <label for="exampleInputEmail1">Assigned Users</label>
+                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                  {% for user in users %}
+                  <option value="{{user.id}}" {% if user in account_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                  {% endfor %}
+                  </select>
+                  {{ account_form.assigned_to.errors }}
+                </div>
+              </div>
+              <div class="filter_col col-12">
+                <div class="form-group">
                   <label for="id_sattus">Status{% if account_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ account_form.status }}
                   <span class="error">{{ account_form.status.errors }}</span>
@@ -165,12 +173,23 @@
   </div>
   <!-- overview ends here -->
 </form>
+{% else %}
+<div class="justify-content-center text-center">
+    <h3 class="mt-5">create a contacts and leads for creating an account</h3>
+ </div>
+{% endif %}
 {% endblock %}
-{% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+{% block js_block %}
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
 <script type="text/javascript">
+
+  $(document).ready(function() {
+    $('.assigned_users').select2();
+  });
+
+
   $("#copy_billing_btn").click(function(){
     var address_line = $("#id_address_line").val();
     var street = $("#id_street").val();

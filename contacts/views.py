@@ -38,6 +38,14 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
         context = super(ContactsListView, self).get_context_data(**kwargs)
         context["contact_obj_list"] = self.get_queryset()
         context["per_page"] = self.request.POST.get('per_page')
+
+        search = False
+        if (
+            self.request.POST.get('first_name') or self.request.POST.get('city') or
+            self.request.POST.get('phone') or self.request.POST.get('email')
+        ):
+            search = True
+        context["search"] = search
         return context
 
     def post(self, request, *args, **kwargs):

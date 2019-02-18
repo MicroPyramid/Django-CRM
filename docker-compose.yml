@@ -1,16 +1,19 @@
-version: '1.0'
+version: '2.0'
 
 services:
   db:
     image: postgres
     volumes:
       - /home/db:/var/lib/postgresql/data
-  dockertest:
+    environment:
+      POSTGRES_PASSWORD: "root"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "dj_crm"
+
+  web:
     build: .
     image: micropyramid/django-crm:1
-    environment:
-      - DJANGO_SETTINGS_MODULE=crm.dev_settings
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       - db

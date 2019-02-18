@@ -1,0 +1,59 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <form id="add_form" method="POST" action='' novalidate>
+		  <div class="overview_form_block row marl justify-content-center">
+		    <div class="col-md-12">
+		      <div class="card">
+		        <div class="card-body">
+		          <div class="card-title text-center">
+		            {% if contact_obj %}Edit{% else %}Create{% endif %} Email Template
+		          </div>
+		          	<form>
+									<div class="row marl">
+										<div class="col-md-12">
+											<div class="form-group">
+												<input type="email" class="form-control" placeholder="Enter Template Name">
+											</div>
+										</div>
+										<div class="col-md-12">
+											<div class="form-group">
+												<label>Html Code</label>
+												<div id="editor-container">
+												</div>
+											</div>
+										</div>
+										<div class="col-md-12 text-center">
+											<button type="submit" class="primary_btn mar_btm">Save Template</button>
+										</div>
+									</div>
+								</form>
+		        </div>
+		      </div>
+		    </div>
+		  </div>
+		</form>
+	  </div>  
+	</div>
+</div>
+{% endblock %}
+{% block js_block %}
+	<script>
+		var quill = new Quill('#editor-container', {
+		  modules: {
+		    toolbar: [
+		      [{ header: [1, 2, false] }],
+		      ['bold', 'italic', 'underline'],
+		      ['image', 'code-block']
+		    ]
+		  },
+		  placeholder: 'Compose an epic...',
+		  theme: 'snow'  // or 'bubble'
+		});
+	</script>
+{% endblock js_block %}

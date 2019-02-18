@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block breadcrumb %}
 {% block extralinks %}
@@ -109,6 +109,7 @@
                 <div class="form-group">
                   <label for="id_contacts">Contacts{% if case_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ case_form.contacts }}
+                  <span class="error">{{case_form.contacts.errors}}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
@@ -160,6 +161,7 @@
   });
   $(document).ready(function() {
     $('.assigned_users').select2();
+    $("#id_contacts").select2();
   });
   
   $('#id_account').change(function(){

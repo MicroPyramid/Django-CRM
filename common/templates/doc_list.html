@@ -1,6 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 {% block content %}
 <!-- main_container starts here -->
 <div class="main_container">
@@ -24,7 +27,7 @@
                     <input type="text" class="form-control" placeholder="Document Title" name="doc_name" {% if request.POST.doc_name %} value="{{request.POST.doc_name}}" {%endif%}/>
                   </div>
                 </div>
-                <div class="filter_col col-md-4">
+                <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Status</label>
                     <select class="form-control" id="id_status" name="status">
@@ -32,6 +35,16 @@
                       {% for each_status in status_choices %}
                       <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
                       {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Shared To</label>
+                    <select class="assigned_users form-control" name="shared_to" multiple="multiple">
+                    {% for user in users %}
+                    <option value="{{user.id}}" {% if user.id in sharedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                    {% endfor %}
                     </select>
                   </div>
                 </div>
@@ -64,11 +77,12 @@
               <thead>
                 {% if documents|length > 0 %}
                 <tr>
-                  <th>S.No</th>
-                  <th>Title</th>
-                  <th>Created By</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th width="5%">S.No</th>
+                  <th width="15%">Title</th>
+                  <th width="20%">Created By</th>
+                  <th width="10%">Status</th>
+                  <th width="20%">Shared To</th>
+                  <th width="10%">Actions</th>
                 </tr>
                 {% endif %}
               </thead>
@@ -79,16 +93,26 @@
                 {% paginate 10 documents %}
                 {% endif %}
                 {% for document in documents %}
-                <tr id="account_details{{each_account.id}}" class="text-center">
-                  <td scope="row">{{ forloop.counter }}</td>
-                  <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
-                  <td>{{document.created_by}}</td>
-                  <td>{{document.status}}</td>
-                  <td class="actions">
-                    <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                    <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
-                  </td>
-                </tr>
+                    <tr id="account_details{{each_account.id}}" class="text-center">
+                      <td scope="row">{{ forloop.counter }}</td>
+                      <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
+                      <td>{{document.created_by}}</td>
+                      <td>{{document.status}}</td>
+                      <td>{% with shared_users=document.shared_to.all %}
+                            {% if shared_users %}
+                              {% for user in shared_users %}
+                                <span class="text-left">{{ user.email }}</span><br>
+                              {% endfor %}
+                            {% else %}
+                              Not Shared to any
+                            {% endif %}
+                          {% endwith %}
+                      </td>
+                      <td class="actions">
+                        <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                        <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
+                      </td>
+                    </tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -110,12 +134,20 @@
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
   $(document).ready(function(){ 
+    $('.assigned_users').select2();
     $(".filter_toggle").click(function(){
       $(".list_filter_row").toggle(); 
       }); 
   });
+
+  search = "{{search}}"
+
+  if (search == 'True'){
+    $(".list_filter_row").show();
+  }
   
   $('.remove_document').click(function(e){
     e.preventDefault()

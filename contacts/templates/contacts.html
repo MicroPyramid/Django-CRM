@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
@@ -122,12 +122,17 @@
 {%endblock%}
 {% block js_block %}
 <script type="text/javascript">
-$(document).ready(function(){    
-  $(".filter_toggle").click(function(){    
+  $(document).ready(function(){
+    $(".filter_toggle").click(function(){
       $(".list_filter_row").toggle();    
-  });    
-});    
+    });
+  });
 
+  search = "{{search}}"
+
+  if (search == 'True'){
+    $(".list_filter_row").show();
+  }
   $('.delete').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')

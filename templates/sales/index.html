@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block content %}
 {% load common_tags %}
@@ -61,7 +61,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for account in accounts|slice:"15" %}
+                  {% for account in accounts|slice:"10" %}
                   <tr>
                     <td><a href="{% url 'accounts:view_account' account.id %}">{{account.name}}</a></td>
                     <td style="display: block;">
@@ -97,7 +97,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for opportunity in opportunities|slice:"15" %}
+                  {% for opportunity in opportunities|slice:"10" %}
                   <tr>
                     <td><a href="{% url 'opportunity:opp_view' opportunity.id %}">{{opportunity.name}}</a></td>
                     <td style="display: block;">

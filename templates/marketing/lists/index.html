@@ -1,0 +1,135 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <div class="table_container_row no_mar_top">
+	      <div class="card">
+	        <div class="card-body">
+	          <div class="card-title text-right">
+	            <span class="float-left">Contact List - 61</span>
+	            <a href="/m/cl/list/new/" class="primary_btn">Add New Contact</a>
+	          </div>
+	          <div class="table-responsive table-bordered ">
+	            <table class="table">
+	              <thead>
+	                <tr>
+	                  <th width="5%">ID</th>
+	                  <th width="20%">Name</th>
+	                  <th width="20%">Email</th>
+	                  <th width="15%">Last Actvity</th>
+	                  <th width="15%" class="text-center">Status</th>
+	                  <th width="10%">Actions</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Micropyramid</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-success">Subscribed</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Peeljobs</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-secondary">Unsubscribed</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Study Signal</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-info">Bounced</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Radiostring</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-warning">Marked</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Dummycompany</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-danger">Spam</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">12</td>
+	                  <td>Dummycompany</td>
+	                  <td>adminmp@gmail.com</td>
+	                  <td>
+	                    Tue, Nov 22, 2016, 12:00AM
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-dark">Unconfirmed</span> 
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	               
+	              </tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+	  </div>  
+	</div>
+</div>
+{% endblock %}

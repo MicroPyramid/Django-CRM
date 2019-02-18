@@ -1,0 +1,563 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <form id="add_form" method="POST" action='' novalidate>
+		  <div class="overview_form_block row justify-content-center">
+		    <div class="col-md-12">
+		      <div class="card">
+		        <div class="card-body">
+		          <div class="card-title text-right">
+		            <span class="float-left">Campaign report</span>
+		            <div class="date">
+									Sent on Tue, Nov 22, 2016, 12:00AM to <span class="badge badge-secondary">64211 Subscribers</span>
+								</div>
+		          </div>
+
+		          <div class="campaign_det row marl">
+								<div class="col-md-12">
+									<div class="title">Title: <span class="content">Campaign title</span> <span class="icon"><i class="fas fa-pencil-alt"></i></span></div>
+									<div class="subject"><a href="#">Subject: <span class="content">Campaign title Friday Discount</span></a> <span class="icon"><i class="fas fa-eye"></i> </span></div>
+									<div class="recievers">
+										To: <span class="badge badge-secondary">List: Campaign Users</span> <span class="badge badge-secondary">List: Dummy Users</span> <span class="badge badge-secondary">List: Example Users</span> <span class="badge badge-secondary">List: Template Users</span> <span class="badge badge-secondary">List: Successful Users</span>
+									</div>
+								</div>
+		          </div>
+
+		          <div class="row marl count_status">
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-success" style="font-size:16px;">21.16% Opened</span> <span class="label">1356 unique / opened 1788 times</span>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-dark" style="font-size:16px;">216 Not Opened</span> <span class="label"><a href="#"><i class="fas fa-download"></i></a></span>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-secondary" style="font-size:16px;">21.16% Clicked a link</span> <span class="label">120 unique clicks</span>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-danger" style="font-size:16px;">21.6% UnSubscribed</span> <span class="label">5 unsubscribed</span>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-warning" style="font-size:16px;">0.16% Bounced</span> <span class="label">3 bounced</span>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="well">
+										<span class="badge badge-info" style="font-size:16px;">6% marked as spam</span> <span class="label">0 marked as spam</span>
+									</div>
+								</div>
+		          </div>
+							
+							<section class="table_det_section row marl">
+								<div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right">
+							            <span class="float-left">Last Activity</span>
+							            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="45%">Link(url)</th>
+							                  <th width="30%" class="text-center">Unique</th>
+							                  <th width="10%" class="text-center">Total</th>
+							                  <th width="15%" class="text-center">Export</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr style="text-align:center;">
+							                  <td scope="row"><a href="#" class="anchor">http://sendy.co/a/w/3c</a></td>
+							                  <td class="text-center">12</td>
+							                  <td class="text-center">23</td>
+							                  <td class="text-center actions">
+							                    <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
+							                  </td>
+							                </tr>
+							                <tr style="text-align:center;">
+							                  <td scope="row"><a href="#" class="anchor">http://sendy.co/a/w/3c</a></td>
+							                  <td class="text-center">12</td>
+							                  <td class="text-center">23</td>
+							                  <td class="text-center actions">
+							                    <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
+							                  </td>
+							                </tr>
+							                <tr style="text-align:center;">
+							                  <td scope="row"><a href="#" class="anchor">http://sendy.co/a/w/3c</a></td>
+							                  <td class="text-center">12</td>
+							                  <td class="text-center">23</td>
+							                  <td class="text-center actions">
+							                    <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
+							                  </td>
+							                </tr>
+							                <tr style="text-align:center;">
+							                  <td scope="row"><a href="#" class="anchor">http://sendy.co/a/w/3c</a></td>
+							                  <td class="text-center">12</td>
+							                  <td class="text-center">23</td>
+							                  <td class="text-center actions">
+							                    <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
+							                  </td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div> 
+
+						  </section>
+						  <section class="table_det_section row marl">
+						    <div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right">
+							            <span class="float-left">Last 5 Opened</span>
+							            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="25%">Name</th>
+							                  <th width="25%">Email</th>
+							                  <th width="25%">List</th>
+							                  <th width="25%">Status</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-success">Subscribed</span>
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">Unsubscribed</span>
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">Unsubscribed</span>
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">Unsubscribed</span>
+							                  </td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div>  
+						  </section>
+
+						  <section class="table_det_section row marl">
+						    <div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right">
+							            <span class="float-left">Last 5 Unsubscribed</span>
+							            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="20%">Name</th>
+							                  <th width="20%">Email</th>
+							                  <th width="20%">List</th>
+							                  <th width="20%">Status</th>
+							                  <th width="20%">Date</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">UnSubscribed</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">UnSubscribed</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                	<td>
+							                    <span class="badge badge-secondary">UnSubscribed</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">UnSubscribed</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-secondary">UnSubscribed</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div>  
+						  </section>
+
+						  <section class="table_det_section row marl">
+						    <div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right">
+							            <span class="float-left">Last 5 Bounced</span>
+							            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="20%">Name</th>
+							                  <th width="20%">Email</th>
+							                  <th width="20%">List</th>
+							                  <th width="20%">Status</th>
+							                  <th width="20%">Date</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                	<td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-info">Bounced</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div>  
+						  </section>
+
+						   <section class="table_det_section row marl">
+						    <div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right">
+							            <span class="float-left">Last 5 Marked as Spam</span>
+							            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="20%">Name</th>
+							                  <th width="20%">Email</th>
+							                  <th width="20%">List</th>
+							                  <th width="20%">Status</th>
+							                  <th width="20%">Date</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-danger">Spam</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-danger">Spam</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                	<td>
+							                    <span class="badge badge-danger">Spam</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-danger">Spam</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							                <tr>
+							                  <td scope="row"><a href="#" class="anchor">bcfr cvpx	</a></td>
+							                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+							                  <td><a href="#" class="anchor">bcfr users list	</a></td>
+							                  <td>
+							                    <span class="badge badge-danger">Spam</span>
+							                  </td>
+							                  <td>
+							                    Mar 26, 2017, 04:26PM
+							                  </td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div>  
+						  </section>
+
+						   <section class="table_det_section row marl">
+						    <div class="col-md-12">
+							    <div class="table_container_row no_mar_top">
+							      <div class="card">
+							        <div class="card-body">
+							          <div class="card-title text-right title_lh">
+							            <span class="float-left">All Countries</span>
+							          </div>
+							          <div class="table-responsive table-bordered">
+							            <table class="table">
+							              <thead>
+							                <tr>
+							                  <th width="50%">Country</th>
+							                  <th width="20%" class="text-center">Opens</th>
+							                  <th width="20%" class="text-center">Export</th>
+							                </tr>
+							              </thead>
+							              <tbody>
+							                <tr>
+							                  <td scope="row">USA</td>
+							                  <td class="text-center">20</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">India</td>
+							                  <td class="text-center">10</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Russia</td>
+							                  <td class="text-center">75</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Australia</td>
+							                  <td class="text-center">220</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Newzeland</td>
+							                  <td class="text-center">85</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Europe</td>
+							                  <td class="text-center">52</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                 <tr>
+							                  <td scope="row">USA</td>
+							                  <td class="text-center">20</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">India</td>
+							                  <td class="text-center">10</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Russia</td>
+							                  <td class="text-center">75</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Australia</td>
+							                  <td class="text-center">220</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Newzeland</td>
+							                  <td class="text-center">85</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							                <tr>
+							                  <td scope="row">Europe</td>
+							                  <td class="text-center">52</td>
+							                  <td class="actions text-center"><a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a></td>
+							                </tr>
+							              </tbody>
+							            </table>
+							          </div>
+							        </div>
+							      </div>
+							    </div>
+						    </div>  
+						  </section>
+
+		        </div>
+		      </div>
+		    </div>
+		  </div>
+		</form>
+	  </div>  
+	</div>
+</div>
+{% endblock %}
+{% block js_block %}
+<script>
+	var quill = new Quill('#editor-container', {
+	  modules: {
+	    toolbar: [
+	      [{ header: [1, 2, false] }],
+	      ['bold', 'italic', 'underline'],
+	      ['image', 'code-block']
+	    ]
+	  },
+	  placeholder: 'Compose an epic...',
+	  theme: 'snow'  // or 'bubble'
+	});
+	$('form').submit(function(){
+		alert($(this["options"]).val());
+	    return false;
+	});
+</script>
+{% endblock js_block %}

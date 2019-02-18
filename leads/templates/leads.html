@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
 {% block extralinks %}
@@ -134,13 +134,11 @@
                         <td>{{ lead.get_status_display }}</td>
                         <td>
                           {% with lead_users=lead.assigned_to.all %}
-                          {% if lead_users %}
                           {% for user in lead_users %}
                           <span class="text-left">{{ user.email }}</span><br>
-                          {% endfor %}
-                          {% else %}
+                          {% empty %}
                           Not Assigned to Any
-                          {% endif %}
+                          {% endfor %}
                           {% endwith %}
                         </td>
                         <td >
@@ -210,13 +208,11 @@
                         <td>{{ lead.get_status_display }}</td>
                         <td>
                           {% with lead_users=lead.assigned_to.all %}
-                          {% if lead_users %}
                           {% for user in lead_users %}
                           <span class="text-left">{{ user.email }}</span><br>
-                          {% endfor %}
-                          {% else %}
+                          {% empty %}
                           Not Assigned to Any
-                          {% endif %}
+                          {% endfor %}
                           {% endwith %}
                         </td>
                         <td >
@@ -241,7 +237,7 @@
                   </table>
                 </div>
                 {%ifequal close_leads|length 0%}
-                <h6 class="text-center">No Dead Lead Records Found</h6>
+                <h6 class="text-center">No Closed Lead Records Found</h6>
                 {%endifequal%}
                 <div class="marl row text-center">
                   {% show_pages %}
@@ -264,6 +260,12 @@
       $(".list_filter_row").toggle();    
     });    
   });
+
+  search = "{{search}}"
+
+  if (search == 'True'){
+    $(".list_filter_row").show();
+  }
   
   $("#close-tab").click(function(e){
     $("#tab_status").val('Closed')

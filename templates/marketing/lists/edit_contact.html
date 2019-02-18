@@ -1,0 +1,47 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+    <div class="row marl">
+      <div class="col-md-12">
+        <form id="add_form" method="POST" action='' novalidate>
+          <div class="overview_form_block row marl justify-content-center">
+            <div class="col-md-5">
+              <div class="card">
+                <div class="card-body">
+                  <div class="card-title text-center">
+                    Edit Contact
+                  </div>
+                  <div class="row marl no-gutters justify-content-center">
+                    <div class="col-md-12">
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="required">Name <span class="error">*</span></label>
+                          <input type="text" class="form-control" value="Contacts Name">
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="required">Email</label>
+                          <input type="text" class="form-control" value="micropyramid@mp.com" disabled="disabled">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="row marl buttons_row text-center form_btn_row">
+                        <button class="btn btn-default save" type="submit">Update</button>
+                        <a href="/m/" class="btn btn-default save">Cancel</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+</div>
+{% endblock %}

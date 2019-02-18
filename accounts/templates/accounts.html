@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
 {% block extralinks %}
@@ -66,10 +66,10 @@
         <div class="col-md-12">
           <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item">
-              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open" aria-selected="true">Open</a>
+              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open" aria-selected="true">Active ({{open_accounts|length}})</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Closed</a>
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Closed ({{close_accounts|length}})</a>
             </li>
           </ul>
           <div class="tab-content" id="myTabContent">
@@ -244,6 +244,13 @@
   $(".reset").click(function(e){
     window.location = "{% url 'accounts:list'%}"
   });
+
+
+  search = "{{search}}"
+
+  if (search == 'True'){
+    $(".list_filter_row").show();
+  }
   
   $(document).ready(function(){    
     $(".filter_toggle").click(function(){    

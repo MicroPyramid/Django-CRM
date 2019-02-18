@@ -65,6 +65,7 @@ This project contains the following modules.
 
 Try
 ===
+
 Demo Available `here`_.
 
 Demo credentials for Django CRM:
@@ -72,9 +73,18 @@ Demo credentials for Django CRM:
   * **Email:** admin@micropyramid.com
   * **Password:** admin
 
-Contribution
-============
-We need contributions in UI development and documentation.
+
+Community
+=========
+
+Get help or stay up to date.
+
+- [Contribute on Issues](https://github.com/MicroPyramid/Django-CRM/issues)
+- Follow [@micropyramid](https://twitter.com/micropyramid) on Twitter
+- Ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/django-crm)
+- Chat with community [Gitter](https://gitter.im/MicroPyramid/Django-CRM)
+- For customisations, email django-crm@micropyramid.com
+
 
 Feature requests and bug reports
 ================================

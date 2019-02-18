@@ -7,6 +7,7 @@ app_name = 'crm'
 urlpatterns = [
     path('', include('common.urls', namespace="common")),
     path('', include('django.contrib.auth.urls')),
+    path('m/', include('marketing.urls', namespace="marketing")),
     path('accounts/', include('accounts.urls', namespace="accounts")),
     path('leads/', include('leads.urls', namespace="leads")),
     path('contacts/', include('contacts.urls', namespace="contacts")),
@@ -15,6 +16,7 @@ urlpatterns = [
     path('emails/', include('emails.urls', namespace="emails")),
     # path('planner/', include('planner.urls', namespace="planner")),
     path('logout/', views.LogoutView, {'next_page': '/login/'}, name="logout"),
+
 ]
 
 handler404 = handler404
