@@ -12,6 +12,10 @@ repos:
     -   id: name-tests-test
     -   id: double-quote-string-fixer
     -   id: requirements-txt-fixer
+-   repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+    - id: black
 -   repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.5
     hooks:
