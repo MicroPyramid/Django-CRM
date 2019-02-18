@@ -119,10 +119,10 @@
               
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  {% if lead_record.address.address_line or lead_record.address.street or lead_record.address.city or lead_record.address.state or lead_record.address.postcode or lead_record.address.country %}
+                  {% if lead_record.address_line or lead_record.street or lead_record.city or lead_record.state or lead_record.postcode or lead_record.country %}
                   <label class="lead_field_label" for="id_address" data-name="name" >Billing Address</label>
                   <div class="lead_field" id="lead_address" data-name="name">
-                    {{lead_record.address.get_complete_address}}
+                    {{lead_record.get_complete_address}}
                   </div>
                   {% endif %}
                 </div>

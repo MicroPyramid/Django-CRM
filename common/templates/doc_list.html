@@ -1,6 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
@@ -96,7 +97,15 @@
                     <tr id="account_details{{each_account.id}}" class="text-center">
                       <td scope="row">{{ forloop.counter }}</td>
                       <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
-                      <td>{{document.created_by}}</td>
+                      <td>
+                        {% if document.created_by.profile_pic %}
+                          {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                              <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ document.created_by }}">
+                          {% endthumbnail %}
+                        {% else %}
+                              <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                        {% endif %}
+                      </td>
                       <td>{{document.status}}</td>
                       <td>{% with shared_users=document.shared_to.all %}
                             {% if shared_users %}
