@@ -1,0 +1,13 @@
+{% extends 'root.html' %}
+
+{% block main_menu %}
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item"><a class="nav-link" id="dashboard" href="{% url 'common:home' %}">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" id="accounts" href="{% url 'accounts:list' %}">Accounts</a></li>
+              <li class="nav-item"><a class="nav-link" id="contacts" href="{% url 'contacts:list' %}">Contacts</a></li>
+              <li class="nav-item"><a class="nav-link" id="leads" href="{% url 'leads:list' %}">Leads</a></li>
+              <li class="nav-item"><a class="nav-link" id="opportunities"href="{% url 'opportunities:list' %}">Opportunities</a></li>
+              <li class="nav-item"><a class="nav-link" id="cases" href="{% url 'cases:list' %}">Cases</a></li>
+              <li class="nav-item"><a class="nav-link" id="documents" href="{% url 'common:doc_list' %}">Documents</a></li>
+            </ul>
+{% endblock %}

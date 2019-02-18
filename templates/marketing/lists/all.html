@@ -1,0 +1,135 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }}
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <div class="table_container_row no_mar_top">
+	      <div class="card">
+	        <div class="card-body">
+	          <div class="card-title text-right">
+	            <span class="float-left">Contacts List - 61</span>
+	            <a href="/m/cl/list/cnew/" class="primary_btn">Add New List</a>
+	          </div>
+	          <div class="table-responsive table-bordered ">
+	            <table class="table">
+	              <thead>
+	                <tr>
+	                  <th width="5%">ID</th>
+	                  <th width="30%">Name</th>
+	                  <th width="10%" class="text-center">Active</th>
+	                  <th width="15%" class="text-center">UnSubscribed</th>
+	                  <th width="15%" class="text-center">Bounced</th>
+	                  <th width="10%">Actions</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row">2</td>
+	                  <td>Micropyramid</td>
+	                  <td class="text-center">23</td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-secondary">15%</span>
+	                  </td>
+	                  <td class="text-center">
+	                    <span class="badge badge-pill badge-info">20%</span>
+	                  </td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	               
+	              </tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+	  </div>  
+	</div>
+</div>
+{% endblock %}

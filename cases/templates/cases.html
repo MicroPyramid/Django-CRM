@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
@@ -163,8 +163,14 @@
     $(".filter_toggle").click(function(){    
         $(".list_filter_row").toggle();    
     });    
-  });  
-  
+  });
+
+  search = "{{search}}"
+
+  if (search == 'True'){
+    $(".list_filter_row").show();
+  }
+
   $('.remove_case').click(function(e){
     e.preventDefault()
     url = $(this).attr('href')

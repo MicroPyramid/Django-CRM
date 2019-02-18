@@ -51,7 +51,7 @@ LEAD_STATUS = (
     ('in process', 'In Process'),
     ('converted', 'Converted'),
     ('recycled', 'Recycled'),
-    ('dead', 'Dead')
+    ('dead', 'Closed')
 )
 
 

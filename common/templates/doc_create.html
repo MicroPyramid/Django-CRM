@@ -1,5 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -33,6 +37,17 @@
                 </div>
                 {% if doc_obj %}<span>{{doc_obj.document_file }}</span>{% endif %}
                 <span class="error" id="id_document_file">{{ errors.document_file }}</span>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Share To{% if doc_form.shared_to.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <select class="assigned_users form-control" name="shared_to" multiple="multiple">
+                  {% for user in users %}
+                  <option value="{{user.id}}" {% if user in doc_obj.shared_to.all or user.id in sharedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                  {% endfor %}
+                  </select>
+                  {{ errors.shared_to.errors }}
+                </div>
               </div>
               <p></p>
               {% if doc_obj %}
@@ -68,15 +83,20 @@
 
 {% endblock content %}
 {% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script src="https://malsup.github.io/jquery.form.js"></script>
 <script type="text/javascript">
+
+  $(document).ready(function() {
+    $('.assigned_users').select2();
+  });
 
   var bar = $('.bar');
   var percent = $('.percent');
 
   $('#progress_bar').hide()
 
- $('form#add_form').ajaxForm({
+  $('form#add_form').ajaxForm({
     type:'POST',
     dataType:'json',
     url: ".",
@@ -112,7 +132,7 @@
   });
 
 
- $('#submit_btn').click(function() {
+  $('#submit_btn').click(function() {
     var file = $('#document_file')[0].files[0].name;
     console.log(file)
     if($('#title').val().length>0 && file.length>0){
@@ -124,10 +144,10 @@
 
   });
 
- function disableButton(){
-   // $('#progress_bar').show()
-   $('#submit_btn').attr('disabled','disabled')
- }
+  function disableButton(){
+     // $('#progress_bar').show()
+    $('#submit_btn').attr('disabled','disabled')
+  }
 
 </script>
 {% endblock js_block %}

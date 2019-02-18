@@ -1,0 +1,124 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <div class="table_container_row no_mar_top">
+	      <div class="card">
+	        <div class="card-body">
+	          <div class="card-title text-right">
+	            <span class="float-left">Email Templates - 15</span>
+	            <a href="/m/et/new/" class="primary_btn">Add New Email Template</a>
+	          </div>
+	          <div class="table-responsive table-bordered ">
+	            <table class="table">
+	              <thead>
+	                <tr>
+	                  <th width="55%">Template Name</th>
+	                  <th width="15%" class="text-center">Create Campaign</th>
+	                  <th width="15%">Preview</th>
+	                  <th width="15%">Actions</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i> </a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr><tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+	                <tr style="text-align:center;">
+	                  <td scope="row"><a href="#">Sample scheduled Email template </a></td>
+	                  <td class="text-center"><a href="/mt/et/list/detail/" class="a_color" data-toggle="tooltip" data-placement="bottom" title="Create a new campaign with this template"><i class="fas fa-calendar-plus"></i></a></td>
+	                  <td><a href="/mt/et/list/detail/" class="a_color"><i class="fas fa-eye"></i> View Template</a></td>
+	                  <td class="actions">
+	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+	                  </td>
+	                </tr>
+
+	              </tbody>
+	            </table>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+	  </div>  
+	</div>
+</div>
+{% endblock %}
+
+{% block js_block %}
+	<script>
+	$(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+    </script>
+{% endblock js_block %}

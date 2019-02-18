@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- filter_row starts here -->
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a href="{% url 'common:add_api_settings'%}" class="btn primary_btn"><i class="fa fa-plus"></i> Add New Setting</a></span>
+    </div>
+  </div>
+  <!-- filter_row ends here -->
+  <div class="table_container_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title list text-right">
+            <span class="float-left">Settings - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
+            <span class="filter_toggle">
+            <a href="#" class="primary_btn"></a>
+            </span>
+          </div>
+          <div class="table-responsive ">
+            <table class="table table-bordered table-striped table-condensed">
+              <thead>
+                {% if settings|length > 0 %}
+                <tr>
+                  <th width="20%">Title</th>
+                  <th width="20%">API Key</th>
+                  <th width="8%">Assign To</th>
+                  <th width="15%">User</th>
+                  <th width="20%">Actions</th>
+                </tr>
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
+                {% paginate per_page settings %}
+                {% else %}
+                {% paginate 10 settings %}
+                {% endif %}
+                {% for setting in settings %}
+                <tr class="text-center">
+                  <td><a href="{% url 'common:view_api_settings' setting.id %}">{{ setting.title }}</a></td>
+                  <td>{{ setting.apikey }}</td>
+                  <td class="user_role">{% for user in settings.lead_assigned_to.all %}{{user.email}}{% empty %}Not Assigned Yet!{% endfor %}</td>
+                  <td>{% if setting.created_by %}{{ setting.created_by.email }}{% else %}No user!{% endif %}</td>
+                  <td class="actions">
+                    <!-- <a href="{% url 'common:view_api_settings' setting.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                    <a href="{% url 'common:update_api_settings' setting.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
+                    <a href="{% url 'common:delete_api_settings' setting.id %}" class="btn btn-danger trash action"><i class="fas fa-trash-alt"></i>Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% ifequal users|length 0 %}
+          <h6 class="text-center">No Settings Found!</h6>
+          {% endifequal %}
+          <div class="marl row text-center">
+            {% show_pages %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- main_container ends here -->
+{% endblock %}
+{% block js_block %}
+<script type="text/javascript">
+  $('.trash').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+</script>
+{% endblock js_block %}

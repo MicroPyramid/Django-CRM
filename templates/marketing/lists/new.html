@@ -1,0 +1,61 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }} 
+<div class="marketing_pages">
+	<div class="row marl">
+	  <div class="col-md-12">
+	    <form id="add_form" method="POST" action='' novalidate>
+		  <div class="overview_form_block row marl justify-content-center">
+		    <div class="col-md-5">
+		      <div class="card">
+		        <div class="card-body">
+		          <div class="card-title text-center">
+		            {% if contact_obj %}Edit{% else %}Create{% endif %} Contact List
+		          </div>
+		          <div class="row marl justify-content-center">
+		          	 
+		              <div class="filter_col col-md-12">
+		                <div class="form-group">
+		                  <label class="required">Name <span class="error">*</span></label>
+		                  <input type="text" class="form-control" placeholder="Enter Contacts Name">
+		                </div>
+		              </div>
+		              
+		              <div class="filter_col col-md-12">
+		                <div class="form-group">
+		                  <label>Contacts File </label>
+		                  <input type="file" class="form-control" >
+		                </div>
+		              </div>
+		              <div class="filter_col col-md-12">
+						<div class="demo_clist">
+							<a href="#">Demo file <i class="fas fa-download"></i> </a>
+						</div>
+		              </div>	 
+		            <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
+		              {% if request.GET.view_account %}
+		                <input type="hidden" name="account" value="{{request.GET.view_account}}">
+		              {% endif %}
+
+		            <input type="hidden" id="save_new_form" name="savenewform">
+		            <div class="col-md-12">
+		              <div class="row marl buttons_row text-center form_btn_row">
+		                <a href="/m/"  class="btn primary_btn" >Save</a>
+		              
+		                <a href="/m/" class="btn seconadry_btn">Cancel</a>
+		              </div>
+		            </div>
+		          </div>
+		        </div>
+		      </div>
+		    </div>
+		  </div>
+		</form>
+	  </div>  
+
+	  
+	</div>
+</div>
+{% endblock %}

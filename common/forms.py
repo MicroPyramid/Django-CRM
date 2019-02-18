@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
-from common.models import Address, User, Document, Comment
+from common.models import Address, User, Document, Comment, APISettings
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -172,6 +172,7 @@ class PasswordResetEmailForm(PasswordResetForm):
 class DocumentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
+        users = kwargs.pop('users', [])
         super(DocumentForm, self).__init__(*args, **kwargs)
 
         for field in self.fields.values():
@@ -181,10 +182,12 @@ class DocumentForm(forms.ModelForm):
             (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
         self.fields['status'].required = False
         self.fields['title'].required = True
+        self.fields['shared_to'].queryset = users
+        self.fields['shared_to'].required = False
 
     class Meta:
         model = Document
-        fields = ['title', 'document_file', 'status']
+        fields = ['title', 'document_file', 'status', 'shared_to']
 
 
 class UserCommentForm(forms.ModelForm):
@@ -193,3 +196,23 @@ class UserCommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('comment', 'user', 'commented_by')
+
+
+class APISettingsForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        assigned_users = kwargs.pop('assign_to', [])
+        super(APISettingsForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+        self.fields['lead_assigned_to'].queryset = assigned_users
+        self.fields['lead_assigned_to'].required = False
+
+        # self.fields['title'].widget.attrs.update({
+        #     'placeholder': 'Project Name'})
+        # self.fields['lead_assigned_to'].widget.attrs.update({
+        #     'placeholder': 'Assign Leads To'})
+
+    class Meta:
+        model = APISettings
+        fields = ('title', 'lead_assigned_to')

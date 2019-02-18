@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
@@ -11,6 +11,29 @@
     </div>
   </div>
   <!-- filter_row ends here -->
+    <!-- popup for change password start's here  -->
+  <div class="modal fade" id="pass_change_div" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" style="padding:20px 50px;">
+          <h4><span class="glyphicon glyphicon-lock"></span> Change Password</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:20px 50px;">
+          <form role="form" id="chang_password_form" method="POST" action="{% url 'common:change_passsword_by_admin' %}">
+            <div class="form-group">
+              <label for="usrname"><span class="glyphicon glyphicon-user"></span> New Password</label>
+              <input type="password" class="form-control" name="new_passwoord" id="new_passwoord" placeholder="New Password">
+              <p id="password_eror"style="color:red"></p>
+              <input type="hidden" id="useer_id" name="useer_id">
+            </div>
+            <button id="submit_password" type="submit" class="btn btn-success btn-block"><span class="glyphicon glyphicon-off"></span> Change</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- popup for change password end's here -->
   <div class="table_container_row row marl">
     <div class="col-md-12">
       <div class="card">
@@ -45,13 +68,18 @@
                   <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
                   <td>{{ user.email }}</td>
                   <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}</td>
-                  <td><a {% if user.is_active %} onclick="return confirm('Are you sure you want to deactivate this user?')" {% else %} onclick="return confirm('Are you sure you want to activate this user?')" {% endif %} href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
+                  <td>
+                  {% ifnotequal request.user user  %}
+                  <a {% if user.is_active %} onclick="return confirm('Are you sure you want to deactivate this user?')" {% else %} onclick="return confirm('Are you sure you want to activate this user?')" {% endif %} href="{% url 'common:change_user_status' pk=user.id %}" class="on_off" style="color: #454545; text-decoration: none;">
                     {% if user.is_active == True %}
                     <i class="fa fa-toggle-on"></i> Active
                     {% else %}
                     <i class="fa fa-toggle-off"></i> InActive
                     {% endif %}
                     </a>
+                    {% else %}
+                    Active
+                  {% endifnotequal %}
                   </td>
                   <td class="actions">
                     <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
@@ -59,6 +87,8 @@
                     <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
                     {% endif %}
                     <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
+                    {% if user.email != admin_email or request.user != user %}
+                    <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href="" class="fa-passwd-reset fa-stack" ><i class="fa fa-undo fa-stack-2x"></i><i class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
                   </td>
                 </tr>
                 {% endfor %}
@@ -87,5 +117,27 @@
       return;
     window.location = $(this).attr('href')
   });
+</script>
+<script>
+$(document).ready(function(){
+  var user_id;
+  $(".fa-passwd-reset").click(function(e){
+    e.preventDefault();
+    user_id = $(this).attr('data-id')
+    $("#password_eror").text("");
+    $("#pass_change_div").modal();
+  });
+  $("#submit_password").click(function(e){
+    e.preventDefault();
+    if ($("#new_passwoord").val().length <4){
+      $("#password_eror").text("* Password must be atleast 4 characters long! ")
+    }
+    else{
+      $("#password_eror").text("");
+      $('#useer_id').val(user_id);
+      $("#chang_password_form").submit()
+    }
+  });
+});
 </script>
 {% endblock js_block %}
