@@ -12,6 +12,7 @@ class LeadForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
         if self.data.get('status') == 'converted':
             self.fields['account_name'].required = True
+            self.fields['email'].required = True
         self.fields['assigned_to'].queryset = assigned_users
         self.fields['assigned_to'].required = False
         for key, value in self.fields.items():

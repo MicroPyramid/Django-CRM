@@ -906,7 +906,43 @@ padding:0px !important;
     background: darken($dark_yellow, 10%);
   }
   &.color3{
-    background: darken($color_apricot_peach_approx, 40%);
+    background: darken($color_cerise_red_approx, 1%);
+  }
+  &.color4{
+    background: darken($dark_yellow, 40%);
+  }
+  &.color5{
+    background: darken($dark_sky, 30%);
+  }
+  &.color6{
+    background: darken($green, 1%);
+  }
+  &.color7{
+    background: blueviolet;
+  }
+  &.color8{
+    background:#a2866f;
+  }
+  &.color9{
+    background: cadetblue;
+  }
+  &.color10{
+    background: cornflowerblue;
+  }
+  &.color11{
+    background: dodgerblue;
+  }
+  &.color12{
+    background: blue;
+  }
+  &.color13{
+    background: coral;
+  }
+  &.color14{
+    background:crimson;
+  }
+  &.color15{
+    background: darkgoldenrod;
   }
 }
 .nav-tabs{

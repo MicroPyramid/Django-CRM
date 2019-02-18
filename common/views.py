@@ -112,7 +112,8 @@ class LoginView(TemplateView):
             # user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
             if user is not None:
                 if user.is_active:
-                    user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
+                    user = authenticate(username=request.POST.get(
+                        'email'), password=request.POST.get('password'))
 
                     if user is not None:
                         login(request, user)
@@ -400,7 +401,7 @@ class DocumentListView(LoginRequiredMixin, TemplateView):
 
         search = False
         if (
-            self.request.POST.get('doc_name') or self.request.POST.get('status') or 
+            self.request.POST.get('doc_name') or self.request.POST.get('status') or
             self.request.POST.get('shared_to')
         ):
             search = True
@@ -460,6 +461,8 @@ class UpdateDocumentView(LoginRequiredMixin, UpdateView):
         context = super(UpdateDocumentView, self).get_context_data(**kwargs)
         context["doc_obj"] = self.object
         context["doc_form"] = context["form"]
+        context["doc_file_name"] = context["doc_obj"].document_file.name.split(
+            "/")[-1]
         context["users"] = self.users
         context["sharedto_list"] = [
             int(i) for i in self.request.POST.getlist('shared_to', []) if i]
@@ -579,7 +582,6 @@ def add_api_settings(request):
     form = APISettingsForm(assign_to=users)
     assign_to_list = []
     if request.POST:
-        print ("request.POST", request.POST)
         form = APISettingsForm(request.POST, assign_to=users)
         assign_to_list = [
             int(i) for i in request.POST.getlist('lead_assigned_to', []) if i]
@@ -604,9 +606,11 @@ def add_api_settings(request):
             return redirect("common:api_settings")
         else:
             print (form.errors)
-            data = {'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list}
+            data = {'form': form, "setting": api_settings,
+                    'users': users, 'assign_to_list': assign_to_list}
     else:
-        data = {'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list}
+        data = {'form': form, "setting": api_settings,
+                'users': users, 'assign_to_list': assign_to_list}
     return render(request, 'settings/create.html', data)
 
 
@@ -622,7 +626,8 @@ def update_api_settings(request, pk):
     form = APISettingsForm(instance=api_settings, assign_to=users)
     assign_to_list = []
     if request.POST:
-        form = APISettingsForm(request.POST, instance=api_settings, assign_to=users)
+        form = APISettingsForm(
+            request.POST, instance=api_settings, assign_to=users)
         assign_to_list = [
             int(i) for i in request.POST.getlist('lead_assigned_to', []) if i]
         if form.is_valid():
@@ -646,9 +651,15 @@ def update_api_settings(request, pk):
                 return redirect('common:add_api_settings')
             return redirect("common:api_settings")
         else:
-            data = {'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list}
+            data = {
+                'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list,
+                'assigned_to_list': json.dumps([i.id for i in api_settings.lead_assigned_to.all() if i])
+            }
     else:
-        data = {'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list}
+        data = {
+            'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list,
+            'assigned_to_list': json.dumps([i.id for i in api_settings.lead_assigned_to.all() if i])
+        }
     return render(request, 'settings/update.html', data)
 
 

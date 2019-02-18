@@ -54,3 +54,34 @@ class Account(models.Model):
 
     class Meta:
         ordering = ['-created_on']
+
+    def get_complete_address(self):
+        address = ""
+        if self.billing_address_line:
+            address += self.billing_address_line
+        if self.billing_street:
+            if address:
+                address += ", " + self.billing_street
+            else:
+                address += self.billing_street
+        if self.billing_city:
+            if address:
+                address += ", " + self.billing_city
+            else:
+                address += self.billing_city
+        if self.billing_state:
+            if address:
+                address += ", " + self.billing_state
+            else:
+                address += self.billing_state
+        if self.billing_postcode:
+            if address:
+                address += ", " + self.billing_postcode
+            else:
+                address += self.billing_postcode
+        if self.billing_country:
+            if address:
+                address += ", " + self.get_billing_country_display()
+            else:
+                address += self.get_billing_country_display()
+        return address

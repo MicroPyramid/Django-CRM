@@ -35,7 +35,7 @@
                   <label for="exampleInputEmail1">Upload Document{% if doc_form.document_file.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="file" name="document_file" class="form-control" id="document_file" />
                 </div>
-                {% if doc_obj %}<span>{{doc_obj.document_file }}</span>{% endif %}
+                {% if doc_obj %}<span>{{doc_file_name}}</span>{% endif %}
                 <span class="error" id="id_document_file">{{ errors.document_file }}</span>
               </div>
               <div class="filter_col col-md-12">

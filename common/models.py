@@ -252,7 +252,8 @@ class APISettings(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
-        self.apikey = generate_key()
+        if not self.apikey or self.apikey is None or self.apikey == "":
+            self.apikey = generate_key()
         super(APISettings, self).save(*args, **kwargs)
 
 

@@ -15,7 +15,7 @@
 {% endblock %}
 {% block content %}
 {% if contact_count and lead_count %}
-<form id="formid" action='' method="POST" novalidate>
+<form id="formid" action='' method="POST" novalidate enctype="multipart/form-data">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">
@@ -106,7 +106,7 @@
                   </div>
                   <div class="filter_col col-md-12">
                     <div class="form-group ">
-                      <label for="exampleInputEmail1" class="required">Contacts{% if account_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="id_contacts" class="required">Contacts{% if account_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
                       {{ account_form.contacts }}
                       <span class="error">{{ account_form.contacts.errors }}</span>
                     </div>
@@ -118,6 +118,17 @@
               </div>
             </div>
             <div class="col-md-4">
+              <div class="filter_col col-12">
+                <!--<div class="form-group">
+                  <label for="exampleInputEmail1">Assigned Users</label>
+                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                  {% for user in users %}
+                  <option value="{{user.id}}" {% if user in account_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                  {% endfor %}
+                  </select>
+                  {{ account_form.assigned_to.errors }}
+                </div>-->
+              </div>
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
@@ -147,10 +158,10 @@
                 <div class="form-group">
                   <label for="exampleInputEmail1">Attachment</label>
                   <input type="file" name="account_attachment">
-                  {% if case_obj.account_attachment.count %}
-                    {% for i in case_obj.account_attachment.all %}
+                  {% if account_obj.account_attachment.count %}
+                    {% for i in account_obj.account_attachment.all %}
                     <span id="attachment{{i.id}}">
-                      <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
+                      <a target="_blank" href="{{ i.attachment.url }}">{{ i.file_name }}</a>
                       <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
                     </span>
                     {% endfor %}
@@ -186,6 +197,7 @@
 <script type="text/javascript">
 
   $(document).ready(function() {
+    $("#id_contacts").select2();
     $('.assigned_users').select2();
   });
 

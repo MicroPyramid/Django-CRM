@@ -73,6 +73,9 @@
                   <label for="exampleInputEmail1" class="required">Email Address{% if lead_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ lead_form.email }}
                   <span class="error">{{ lead_form.email.errors }}</span>
+                  {% if error %}
+                  <span class="error">{{ error }}</span>
+                  {% endif %}
                 </div>
               </div>
               <div class="filter_col col-md-12">
