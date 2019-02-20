@@ -25,14 +25,14 @@
             <div class="col-md-12">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="id_firstname">Title {% if doc_form.title.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="id_firstname">Title {% if doc_form.title.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   <input type="text" id="title" class="form-control" name="title" value="{% if doc_obj %}{{ doc_obj.title }}{% else %}{{request.POST.title}}{% endif %}" placeholder="Document title">
                 </div>
                 <span class="error" id="id_title">{{ errors.title }}</span>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Upload Document{% if doc_form.document_file.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Upload Document {% if doc_form.document_file.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   <input type="file" name="document_file" class="form-control" id="document_file" />
                 </div>
                 {% if doc_obj %}<span>{{doc_file_name}}</span>{% endif %}
@@ -43,7 +43,9 @@
                   <label for="exampleInputEmail1">Share To{% if doc_form.shared_to.field.required %}<span class="error">*</span>{% endif %}</label>
                   <select class="assigned_users form-control" name="shared_to" multiple="multiple">
                   {% for user in users %}
-                  <option value="{{user.id}}" {% if user in doc_obj.shared_to.all or user.id in sharedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                  {% if user != request.user %}
+                    <option value="{{user.id}}" {% if user in doc_obj.shared_to.all or user.id in sharedto_list %} selected="" {% endif %}>{{user.email}}</option>
+                  {% endif %}
                   {% endfor %}
                   </select>
                   {{ errors.shared_to.errors }}

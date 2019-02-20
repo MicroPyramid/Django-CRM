@@ -13,6 +13,7 @@ from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
 from contacts.forms import ContactForm, ContactCommentForm, ContactAttachmentForm
+from accounts.models import Account
 
 
 class ContactsListView(LoginRequiredMixin, TemplateView):
@@ -77,6 +78,11 @@ class CreateContactView(LoginRequiredMixin, CreateView):
             contact_obj.address = address_obj
             contact_obj.created_by = self.request.user
             contact_obj.save()
+            if self.request.GET.get('view_account', None):
+                if Account.objects.filter(id=
+                    int(self.request.GET.get('view_account'))).exists():
+                    Account.objects.get(id=
+                        int(self.request.GET.get('view_account'))).contacts.add(contact_obj)
             return self.form_valid(form)
 
         return self.form_invalid(form)

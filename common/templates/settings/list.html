@@ -16,7 +16,7 @@
       <div class="card">
         <div class="card-body">
           <div class="card-title list text-right">
-            <span class="float-left">Settings - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ users|length }}{% endif %}</span>
+            <span class="float-left">Settings - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ settings|length }}{% endif %}</span>
             <span class="filter_toggle">
             <a href="#" class="primary_btn"></a>
             </span>
@@ -27,10 +27,10 @@
                 {% if settings|length > 0 %}
                 <tr>
                   <th width="20%">Title</th>
-                  <th width="20%">API Key</th>
-                  <th width="8%">Assign To</th>
+                  <!-- <th width="20%">API Key</th> -->
+                  <th width="30%">Assign To</th>
                   <th width="15%">User</th>
-                  <th width="20%">Actions</th>
+                  <th width="10%">Actions</th>
                 </tr>
                 {% endif %}
               </thead>
@@ -43,7 +43,7 @@
                 {% for setting in settings %}
                 <tr class="text-center">
                   <td><a href="{% url 'common:view_api_settings' setting.id %}">{{ setting.title }}</a></td>
-                  <td>{{ setting.apikey }}</td>
+                  <!-- <td>{{ setting.apikey }}</td> -->
                   <td>
                   	{% for user in setting.lead_assigned_to.all %}
                   		{{user.email}}{% if forloop.counter < setting.lead_assigned_to.all|length %}, {% endif %}
@@ -62,7 +62,7 @@
               </tbody>
             </table>
           </div>
-          {% ifequal users|length 0 %}
+          {% ifequal settings|length 0 %}
           <h6 class="text-center">No Settings Found!</h6>
           {% endifequal %}
           <div class="marl row text-center">
