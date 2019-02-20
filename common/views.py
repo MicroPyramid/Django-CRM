@@ -601,13 +601,14 @@ def add_api_settings(request):
                     settings_obj.tags.add(tag)
             if assign_to_list:
                 settings_obj.lead_assigned_to.add(*assign_to_list)
+            success_url = reverse_lazy("common:api_settings")
             if request.POST.get("savenewform"):
-                return redirect('common:add_api_settings')
-            return redirect("common:api_settings")
+                success_url = reverse_lazy("common:add_api_settings")
+            data = {'success_url': success_url, 'error': False}
+            return JsonResponse(data)
+
         else:
-            print (form.errors)
-            data = {'form': form, "setting": api_settings,
-                    'users': users, 'assign_to_list': assign_to_list}
+            return JsonResponse({'error': True, 'errors': form.errors})
     else:
         data = {'form': form, "setting": api_settings,
                 'users': users, 'assign_to_list': assign_to_list}
@@ -647,14 +648,14 @@ def update_api_settings(request, pk):
             if assign_to_list:
                 settings_obj.lead_assigned_to.clear()
                 settings_obj.lead_assigned_to.add(*assign_to_list)
+            success_url = reverse_lazy("common:api_settings")
             if request.POST.get("savenewform"):
-                return redirect('common:add_api_settings')
-            return redirect("common:api_settings")
+                success_url = reverse_lazy("common:add_api_settings")
+            data = {'success_url': success_url, 'error': False}
+            return JsonResponse(data)
+
         else:
-            data = {
-                'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list,
-                'assigned_to_list': json.dumps([i.id for i in api_settings.lead_assigned_to.all() if i])
-            }
+            return JsonResponse({'error': True, 'errors': form.errors})
     else:
         data = {
             'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list,

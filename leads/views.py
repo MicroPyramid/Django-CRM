@@ -12,8 +12,8 @@ from django.views.generic import (
     CreateView, UpdateView, DetailView, ListView, TemplateView, View)
 
 from accounts.models import Account, Tags
-from common.models import User, Comment, Attachments
-from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
+from common.models import User, Comment, Attachments, APISettings
+from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES, get_client_ip
 from common import status
 from contacts.models import Contact
 from leads.models import Lead
@@ -581,7 +581,7 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
         if (
-            request.user == self.object.created_by or request.user.is_superuser or 
+            request.user == self.object.created_by or request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             self.object.delete()
@@ -593,30 +593,45 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
 
 def create_lead_from_site(request):
+    if request.method == "POST":
+        # ip_addres = get_client_ip(request)
+        # website_address = request.scheme + '://' + ip_addres
+        api_key = request.POST.get('apikey')
+        # api_setting = APISettings.objects.filter(website=website_address, apikey=api_key).first()
+        api_setting = APISettings.objects.filter(apikey=api_key).first()
+        if not api_setting:
+            return JsonResponse({
+                'error': True, 'message': "You don't have permission, please contact the admin!."},
+                status=status.HTTP_400_BAD_REQUEST)
 
-    if request.POST.get("email") and request.POST.get("full_name"):
-        user = User.objects.filter(is_admin=True, is_active=True).first()
-        lead = Lead.objects.create(
-            title=request.POST.get("full_name"),
-            status="assigned", source="micropyramid.com",
-            description=request.POST.get("message"),
-            email=request.POST.get("email"), phone=request.POST.get("phone"),
-            is_active=True, created_by=user)
-        lead.assigned_to.add(user)
-        # Send Email to Assigned Users
-        site_address = request.scheme + '://' + request.META['HTTP_HOST']
-        send_lead_assigned_emails.delay(lead.id, [user.id], site_address)
-        # Create Contact
-        contact = Contact.objects.create(
-            first_name=request.POST.get("full_name"),
-            email=request.POST.get("email"), phone=request.POST.get("phone"),
-            description=request.POST.get("message"), created_by=user,
-            is_active=True)
-        contact.assigned_to.add(user)
+        if api_setting and request.POST.get("email") and request.POST.get("full_name"):
+            # user = User.objects.filter(is_admin=True, is_active=True).first()
+            user = api_setting.created_by
+            lead = Lead.objects.create(
+                title=request.POST.get("full_name"),
+                status="assigned", source=api_setting.website,
+                description=request.POST.get("message"),
+                email=request.POST.get("email"), phone=request.POST.get("phone"),
+                is_active=True, created_by=user)
+            lead.assigned_to.add(user)
+            # Send Email to Assigned Users
+            site_address = request.scheme + '://' + request.META['HTTP_HOST']
+            send_lead_assigned_emails.delay(lead.id, [user.id], site_address)
+            # Create Contact
+            contact = Contact.objects.create(
+                first_name=request.POST.get("full_name"),
+                email=request.POST.get("email"), phone=request.POST.get("phone"),
+                description=request.POST.get("message"), created_by=user,
+                is_active=True)
+            contact.assigned_to.add(user)
 
-        lead.contacts.add(contact)
+            lead.contacts.add(contact)
 
-        return JsonResponse({'error': False, 'message': "Lead Created sucessfully."},
-                            status=status.HTTP_201_CREATED)
-    return JsonResponse({'error': True, 'message': "In-valid data."},
-                        status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': False, 'message': "Lead Created sucessfully."},
+                                status=status.HTTP_201_CREATED)
+        return JsonResponse({'error': True, 'message': "In-valid data."},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return JsonResponse({
+            'error': True, 'message': "In-valid request method."},
+            status=status.HTTP_400_BAD_REQUEST)

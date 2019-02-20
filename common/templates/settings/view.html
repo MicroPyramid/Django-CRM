@@ -1,10 +1,125 @@
-{% extends 'base.html' %}
+{% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'common:api_settings' %}">Settings</a></li>
+    <li class="breadcrumb-item active">{{ setting.title }} - View</li>
+  </ol>
+</nav>
+{% endblock %}
 {% block content %}
-<!-- main_container starts here -->
-<div class="main_container">
-  <!-- filter_row starts here -->
-  <div class="row marl">
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="card-title text-right">
+            <h5 >
+              <span class="float-left title">Overview</span>
+              <span class="" style="margin-top: 0px">
+                <div class="dropdown buttons_row">
+                  <button class="btn primary_btn dropdown-toggle " type="button" data-toggle="dropdown">Actions
+                  <span class="caret"></span></button>
+                  <ul class="dropdown-menu">
+                    <li><a href="{% url 'common:update_api_settings' setting.id %}" >Edit</a></li>
+                    <li class="trash"><a href="{% url 'common:delete_api_settings' setting.id %}" >Delete</a></li>
+                  </ul>
+                </div>
+              </span>
+            </h5>
+          </div>
+          <div class="row ">
+            <div class="col-md-12">
+              {% if setting.title %}
+              <div class="filter_col col-md-12" id="iname">
+                <div class="form-group" >
+                  <label class="acc_field_label" for="id_name" data-name="name">Title</label>
+                  <div class="account_field" id="account_name" data-name="name">{{ setting.title }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.website %}
+              <div class="filter_col col-md-12" id="iname">
+                <div class="form-group" >
+                  <label class="acc_field_label" for="id_name" data-name="name">Website</label>
+                  <div class="account_field" id="account_name" data-name="name">{{ setting.website }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.apikey %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_phone" data-name="name">API KEY</label>
+                  <div class="account_field" id="account_phone" data-name="name">
+                    <span class="copy-text" id="texttocopy">{{ setting.apikey }}</span>
+                    <span class="btn btn-primary" onclick="copyToClipboard('#texttocopy')"><i class="fa fa-copy"></i> Copy</span>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.lead_assigned_to.all|length > 0 %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_email" data-name="name">Assigned To</label>
+                  <div class="account_field" id="account_email" data-name="name">{% for user in setting.lead_assigned_to.all %}{{user.email}}{% if forloop.counter < setting.lead_assigned_to.all|length %}, {% endif %}{% endfor %}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.tags.all|length > 0 %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">Tags</label>
+                  <div class="account_field" id="account_website">
+                    {% for tag_obj in setting.tags.all %}
+                      <span class="">{{tag_obj.name}}</span>{% if forloop.counter < setting.tags.all|length %}, {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.created_by %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_email" data-name="name">Created By</label>
+                  <div class="account_field" id="account_email" data-name="name">{{ setting.created_by.email }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if setting.created_on %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_email" data-name="name">Created On</label>
+                  <div class="account_field" id="account_email" data-name="name">{{ setting.created_on }}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock content %}
+{% block js_block %}
+<script type="text/javascript">
+  $('.trash').click(function(e){
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+
+  function copyToClipboard(element) {
+    var $temp = $("<input>");
+    $("body").append($temp);
+    $temp.val($(element).html()).select();
+    document.execCommand("copy");
+    $temp.remove();
+    alert("Copied!")
+  }
+
+</script>
+{% endblock js_block %}

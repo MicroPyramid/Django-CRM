@@ -243,6 +243,7 @@ def generate_key():
 class APISettings(models.Model):
     title = models.CharField(max_length=1000)
     apikey = models.CharField(max_length=16, blank=True)
+    website = models.URLField(max_length=255, default='')
     lead_assigned_to = models.ManyToManyField(User, related_name='lead_assignee_users')
     tags = models.ManyToManyField('accounts.Tags', blank=True)
     created_by = models.ForeignKey(User, related_name='settings_created_by', on_delete=models.SET_NULL, null=True)

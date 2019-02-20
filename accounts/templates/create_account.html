@@ -131,17 +131,6 @@
               </div>
               <div class="filter_col col-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Assigned Users</label>
-                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                  {% for user in users %}
-                  <option value="{{user.id}}" {% if user in account_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                  {% endfor %}
-                  </select>
-                  {{ account_form.assigned_to.errors }}
-                </div>
-              </div>
-              <div class="filter_col col-12">
-                <div class="form-group">
                   <label for="id_sattus">Status{% if account_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ account_form.status }}
                   <span class="error">{{ account_form.status.errors }}</span>
@@ -196,11 +185,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
 <script type="text/javascript">
 
+  // $(document).ready(function() {
+  //   $('.assigned_users').select2();
+  // });
   $(document).ready(function() {
     $("#id_contacts").select2();
-    $('.assigned_users').select2();
   });
-
 
   $("#copy_billing_btn").click(function(){
     var address_line = $("#id_address_line").val();
@@ -273,3 +263,4 @@
   }
 </script>
 {% endblock js_block %}
+

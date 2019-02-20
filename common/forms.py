@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
@@ -198,6 +199,19 @@ class UserCommentForm(forms.ModelForm):
         fields = ('comment', 'user', 'commented_by')
 
 
+def find_urls(string):
+    # website_regex = "^((http|https)://)?([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com or google.com
+    # website_regex = "^https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com
+    website_regex = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$"  # http(s)://google.com
+    website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"  # http(s)://google.com:8000
+    url = re.findall(website_regex, string)
+    url_port = re.findall(website_regex_port, string)
+    if len(url) > 0 and url[0] != '':
+        return url
+    else:
+        return url_port
+
+
 class APISettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
@@ -215,4 +229,13 @@ class APISettingsForm(forms.ModelForm):
 
     class Meta:
         model = APISettings
-        fields = ('title', 'lead_assigned_to')
+        fields = ('title', 'lead_assigned_to', 'website')
+
+    def clean_website(self):
+        website = self.data.get('website')
+        if website and not (website.startswith('http://') or website.startswith('https://')):
+            raise forms.ValidationError("Please provide valid schema")
+        if not len(find_urls(website)) > 0:
+            raise forms.ValidationError(
+                "Please provide a valid URL with schema and without trailing slash - Example: http://google.com")
+        return website

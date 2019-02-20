@@ -80,9 +80,11 @@
                 <tr>
                   <th width="5%">S.No</th>
                   <th width="15%">Title</th>
-                  <th width="20%">Created By</th>
+                  <th width="10%">Created By</th>
+                  <th width="15%">Created On</th>
                   <th width="10%">Status</th>
                   <th width="20%">Shared To</th>
+                  <th width="5%">Download</th>
                   <th width="10%">Actions</th>
                 </tr>
                 {% endif %}
@@ -106,6 +108,7 @@
                               <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
                         {% endif %}
                       </td>
+                      <td>{{document.created_on}}</td>
                       <td>{{document.status}}</td>
                       <td>{% with shared_users=document.shared_to.all %}
                             {% if shared_users %}
@@ -113,13 +116,20 @@
                                 <span class="text-left">{{ user.email }}</span><br>
                               {% endfor %}
                             {% else %}
-                              Not Shared to any
+                              Not shared with anyone
                             {% endif %}
                           {% endwith %}
                       </td>
+                      <td>
+                        {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}
+                          <a href="{% url 'common:download_document' document.id %}">Download</a>
+                        {% endif %}
+                      </td>
                       <td class="actions">
-                        <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                        <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
+                        {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
+                          <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                          <a href="{% url 'common:remove_doc' document.id %}" class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
+                        {% endif %}
                       </td>
                     </tr>
                 {% endfor %}
@@ -177,3 +187,4 @@
   });
 </script>
 {% endblock js_block %}
+
