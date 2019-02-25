@@ -477,3 +477,4 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
         data = {'error': "You don't have permission to delete this attachment."}
         return JsonResponse(data)
+
