@@ -27,7 +27,7 @@
             <div class="col-md-12">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label>Title{% if settings_form.title.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label>Title{% if form.title.field.required %}<span class="error">*</span>{% endif %}</label>
                   <input type="text" name="title" class="form-control" value="">
                   <span class="error">{{ settings_form.title.errors }}</span>
                 </div>
@@ -36,7 +36,7 @@
             <div class="col-md-12">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label>Website{% if settings_form.website.field.required %}<span class="error">*</span>{% endif %} <span class="help-text">Example: http://google.com</span></label>
+                  <label>Website{% if form.website.field.required %}<span class="error">*</span>{% endif %} <span class="help-text">Example: http://google.com</span></label>
                   <input type="text" name="website" class="form-control" value="">
                   <span class="error">{{ settings_form.website.errors }}</span>
                 </div>
@@ -148,3 +148,4 @@
 
   </script>
 {% endblock js_block %}
+

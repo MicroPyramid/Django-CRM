@@ -1,17 +1,22 @@
 from django import forms
 from .models import Account
 from common.models import Comment, Attachments
+from leads.models import *
+from contacts.models import *
+from django.db.models import Q
 
 
 class AccountForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop('account', False)
+        request_user = kwargs.pop('request_user', None)
         super(AccountForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
         self.fields['description'].widget.attrs.update({'rows': '8'})
-        self.fields['status'].choices = [(each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE]
+        self.fields['status'].choices = [
+            (each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE]
         self.fields['status'].required = False
         for key, value in self.fields.items():
             if key == 'phone':
@@ -31,6 +36,13 @@ class AccountForm(forms.ModelForm):
             'placeholder': 'Postcode'})
         self.fields["billing_country"].choices = [
             ("", "--Country--"), ] + list(self.fields["billing_country"].choices)[1:]
+        self.fields["lead"].queryset = Lead.objects.all(
+        ).exclude(status='dead')
+        if request_user:
+            self.fields["lead"].queryset = Lead.objects.filter(
+                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)).exclude(status='dead')
+            self.fields["contacts"].queryset = Contact.objects.filter(
+                Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
 
         if account_view:
             self.fields['billing_address_line'].required = True

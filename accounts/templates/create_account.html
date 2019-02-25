@@ -27,88 +27,88 @@
             <div class="col-md-4">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" class="required">Name{% if account_form.name.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Name{% if account_form.name.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   {{ account_form.name }}
-                  <span class="error">{{ account_form.name.errors }}</span>
+                  <span class="error" id="id__name">{{ account_form.name.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Website{% if account_form.website.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ account_form.website }}
-                  <span class="error">{{ account_form.website.errors }}</span>
+                  <span class="error" id="id__website">{{ account_form.website.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" class="required">Phone{% if account_form.phone.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Phone{% if account_form.phone.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   {{ account_form.phone }}
-                  <span class="error">{{ account_form.phone.errors }}</span>
+                  <span class="error" id="id__phone">{{ account_form.phone.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1" class="required">Email Address{% if account_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Email Address{% if account_form.email.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   {{ account_form.email }}
-                  <span class="error">{{ account_form.email.errors }}</span>
+                  <span class="error" id="id__email">{{ account_form.email.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1" class="required">Leads{% if account_form.lead.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Leads{% if account_form.lead.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   {{ account_form.lead }}
-                  <span class="error">{{ account_form.lead.errors }}</span>
+                  <span class="error" id="id__lead">{{ account_form.lead.errors }}</span>
                 </div>
               </div>
             </div>
             <div class="col-md-4">
               <div class="filter_col billing_block col-md-12" style="padding: 0px;">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Billing Address {% if account_form.billing_address_line.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Billing Address {% if account_form.billing_address_line.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                   {{ account_form.billing_address_line }}
-                  <span class="error">{{ account_form.billing_address_line.errors }}</span>
+                  <span class="error" id="id__billing_address_line">{{ account_form.billing_address_line.errors }}</span>
                 </div>
                 <div class="row" style="margin-top: 10px;">
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Street {% if account_form.billing_street.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1">Street {% if account_form.billing_street.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.billing_street }}
-                      <span class="error">{{ account_form.billing_street.errors }}</span>
+                      <span class="error" id="id__billing_street">{{ account_form.billing_street.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">PostCode {% if account_form.billing_postcode.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1">PostCode {% if account_form.billing_postcode.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.billing_postcode }}
-                      <span class="error">{{ account_form.billing_postcode.errors }}</span>
+                      <span class="error" id="id__billing_postcode">{{ account_form.billing_postcode.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">City {% if account_form.billing_city.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1">City {% if account_form.billing_city.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.billing_city }}
-                      <span class="error">{{ account_form.billing_city.errors }}</span>
+                      <span class="error" id="id__billing_city">{{ account_form.billing_city.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">State {% if account_form.billing_state.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1">State {% if account_form.billing_state.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.billing_state }}
-                      <span class="error">{{ account_form.billing_state.errors }}</span>
+                      <span class="error" id="id__billing_state">{{ account_form.billing_state.errors }}</span>
                     </div>
                   </div>
                   <div class="col-md-12" style="margin-top: 10px;">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Country {% if account_form.billing_country.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1">Country {% if account_form.billing_country.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.billing_country }}
-                      <span class="error">{{ account_form.billing_country.errors }}</span>
+                      <span class="error" id="id__billing_country">{{ account_form.billing_country.errors }}</span>
                     </div>
                   </div>
                   <div class="filter_col col-md-12">
                     <div class="form-group ">
-                      <label for="id_contacts" class="required">Contacts{% if account_form.contacts.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="id_contacts" class="required">Contacts{% if account_form.contacts.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
                       {{ account_form.contacts }}
-                      <span class="error">{{ account_form.contacts.errors }}</span>
+                      <span class="error" id="id__contacts">{{ account_form.contacts.errors }}</span>
                     </div>
                   </div>
                 </div>
@@ -183,6 +183,7 @@
 {% block js_block %}
 <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script src="https://malsup.github.io/jquery.form.js"></script>
 <script type="text/javascript">
 
   // $(document).ready(function() {
@@ -261,6 +262,26 @@
       })
     }
   }
+
+
+
+  $('form#formid').ajaxForm({
+    type:'POST',
+    dataType:'json',
+    url: ".",
+    data:$('#formid').serialize(),
+    success: function(data) {
+      if(data.error){
+        $('.error').html('')
+        for (var key in data.errors) {
+          $('#id__'+key).html("<p>" + data.errors[key][0] + "</p>");
+        };
+        $('#submit_btn').removeAttr('disabled')
+      }
+        else{
+          window.location = data.success_url;
+        }
+    }
+  });
 </script>
 {% endblock js_block %}
-

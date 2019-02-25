@@ -74,6 +74,24 @@
                 </div>
               </div>
               {% endif %}
+              {% if account_record.contacts %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                  {% for contact in account_record.contacts.all %}
+                    <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% if account_record.lead %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">lead</label>
+                  <div class="account_field" id="account_website" data-name="name">{{ account_record.lead }}</div>
+                </div>
+              </div>
+              {% endif %}
             </div>
             <div class="col-md-4">
               {% if account_record.billing_address_line or account_record.billing_street or  account_record.billing_city or   account_record.billing_state or account_record.billing_postcode or account_record.billing_country %}
@@ -142,11 +160,11 @@
                         </div>
                         {% endif %}
                         <div class="stream-post-container" id="attachment_name{{attachment.id}}">
-                          <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                          <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span>{{attachment.file_name}} <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
                         </div>
                         <div class="stream-container">
-                          <pre class="float-left">{{ attachment.created_by }}</pre>
-                          <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                          <pre class="float-left">Uploaded by :{{ attachment.created_by }}</pre>
+                          <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i A' }}</pre>
                         </div>
                       </li>
                       {% endfor %}

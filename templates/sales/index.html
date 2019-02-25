@@ -53,6 +53,7 @@
               <span >Open Accounts</span>
             </div>
             <div class="table-responsive">
+            {% if accounts %}
               <table class="table">
                 <thead>
                   <tr>
@@ -78,6 +79,9 @@
                   {% endfor %}
                 </tbody>
               </table>
+            {% else %}
+            <p style="text-align:center">There are no records</p>
+            {% endif %}
             </div>
           </div>
         </div>
@@ -89,6 +93,7 @@
               <span >Open Opportunities</span>
             </div>
             <div class="table-responsive">
+              {% if opportunities %}
               <table class="table">
                 <thead>
                   <tr>
@@ -114,6 +119,9 @@
                   {% endfor %}
                 </tbody>
               </table>
+              {% else %}
+            <p style="text-align:center">There are no records</p>
+            {% endif %}
             </div>
           </div>
         </div>

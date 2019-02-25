@@ -232,3 +232,4 @@ class AttachmentTestCase(TestLeadModel, TestCase):
         response = self.client.post(
             '/leads/attachment/remove/', {'attachment_id': self.attachment.id})
         self.assertEqual(response.status_code, 200)
+

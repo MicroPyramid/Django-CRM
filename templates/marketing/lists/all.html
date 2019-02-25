@@ -21,8 +21,8 @@
 	                  <th width="30%">Name</th>
 	                  <th width="10%" class="text-center">Active</th>
 	                  <th width="15%" class="text-center">UnSubscribed</th>
-	                  <th width="15%" class="text-center">Bounced</th>
-	                  <th width="10%">Actions</th>
+	                  <th width="12%" class="text-center">Bounced</th>
+	                  <th width="13%">Actions</th>
 	                </tr>
 	              </thead>
 	              <tbody>
@@ -37,8 +37,9 @@
 	                    <span class="badge badge-pill badge-info">20%</span>
 	                  </td>
 	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+	                    <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title="" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -55,6 +56,7 @@
 	                  <td class="actions">
 	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -71,6 +73,7 @@
 	                  <td class="actions">
 	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -87,6 +90,7 @@
 	                  <td class="actions">
 	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -103,6 +107,7 @@
 	                  <td class="actions">
 	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -119,6 +124,7 @@
 	                  <td class="actions">
 	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
 	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+	                    <a href="/contacts/1/edit/" class="btn btn-dark import"><i class="fas fa-upload"></i></a>
 	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
 	                  </td>
 	                </tr>
@@ -133,3 +139,10 @@
 	</div>
 </div>
 {% endblock %}
+{% block js_block %}
+<script>
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+</script>
+{% endblock js_block %}

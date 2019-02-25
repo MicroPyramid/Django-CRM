@@ -1,7 +1,7 @@
 from django.urls import path
 from contacts.views import (
     ContactsListView, CreateContactView, ContactDetailView, UpdateContactView, RemoveContactView,
-    GetContactsView, AddCommentView, UpdateCommentView, DeleteCommentView,AddAttachmentsView,DeleteAttachmentsView)
+    GetContactsView, AddCommentView, UpdateCommentView, DeleteCommentView, AddAttachmentsView, DeleteAttachmentsView)
 
 app_name = 'contacts'
 
@@ -20,5 +20,6 @@ urlpatterns = [
     path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 
     path('attachment/add/', AddAttachmentsView.as_view(), name="add_attachment"),
-    path('attachment/remove/', DeleteAttachmentsView.as_view(), name="remove_attachment"),
+    path('attachment/remove/', DeleteAttachmentsView.as_view(),
+         name="remove_attachment"),
 ]

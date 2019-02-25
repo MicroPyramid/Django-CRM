@@ -2,7 +2,7 @@ from django.urls import path
 from opportunity.views import (
     OpportunityListView, CreateOpportunityView, OpportunityDetailView, UpdateOpportunityView,
     DeleteOpportunityView, GetContactView, GetOpportunitiesView, AddCommentView,
-    UpdateCommentView, DeleteCommentView,AddAttachmentsView)
+    UpdateCommentView, DeleteCommentView, AddAttachmentsView)
 
 
 app_name = 'opportunity'
@@ -23,5 +23,6 @@ urlpatterns = [
     path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 
     path('attachment/add/', AddAttachmentsView.as_view(), name="add_attachment"),
-    path('attachment/remove/', DeleteCommentView.as_view(), name="remove_attachment"),
+    path('attachment/remove/', DeleteCommentView.as_view(),
+         name="remove_attachment"),
 ]

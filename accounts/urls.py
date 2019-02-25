@@ -18,5 +18,6 @@ urlpatterns = [
     path('comment/remove/', DeleteCommentView.as_view(), name="remove_comment"),
 
     path('attachment/add/', AddAttachmentView.as_view(), name="add_attachment"),
-    path('attachment/remove/', DeleteAttachmentsView.as_view(), name="remove_attachment"),
+    path('attachment/remove/', DeleteAttachmentsView.as_view(),
+         name="remove_attachment"),
 ]
