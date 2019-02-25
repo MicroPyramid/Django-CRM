@@ -66,8 +66,10 @@ urlpatterns = [
     path('api/settings/', api_settings, name="api_settings"),
     path('api/settings/add/', add_api_settings, name="add_api_settings"),
     path('api/settings/<int:pk>/', view_api_settings, name="view_api_settings"),
-    path('api/settings/<int:pk>/update/', update_api_settings, name="update_api_settings"),
-    path('api/settings/<int:pk>/delete/', delete_api_settings, name="delete_api_settings"),
+    path('api/settings/<int:pk>/update/',
+         update_api_settings, name="update_api_settings"),
+    path('api/settings/<int:pk>/delete/',
+         delete_api_settings, name="delete_api_settings"),
 
     path('change-password-by-admin/', change_passsword_by_admin,
          name="change_passsword_by_admin"),

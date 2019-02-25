@@ -21,6 +21,7 @@ from leads.forms import LeadCommentForm, LeadForm, LeadAttachmentForm
 from planner.models import Event, Reminder
 from planner.forms import ReminderForm
 from leads.tasks import send_lead_assigned_emails
+from django.core.exceptions import PermissionDenied
 
 
 class LeadListView(LoginRequiredMixin, TemplateView):
@@ -30,6 +31,10 @@ class LeadListView(LoginRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all().exclude(status='converted')
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            queryset = queryset.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
+
         request_post = self.request.POST
         if request_post:
             if request_post.get('name'):
@@ -37,9 +42,11 @@ class LeadListView(LoginRequiredMixin, TemplateView):
                     Q(first_name__icontains=request_post.get('name')) &
                     Q(last_name__icontains=request_post.get('name')))
             if request_post.get('city'):
-                queryset = queryset.filter(city__icontains=request_post.get('city'))
+                queryset = queryset.filter(
+                    city__icontains=request_post.get('city'))
             if request_post.get('email'):
-                queryset = queryset.filter(email__icontains=request_post.get('email'))
+                queryset = queryset.filter(
+                    email__icontains=request_post.get('email'))
             if request_post.get('status'):
                 queryset = queryset.filter(status=request_post.get('status'))
             if request_post.get('tag'):
@@ -47,7 +54,8 @@ class LeadListView(LoginRequiredMixin, TemplateView):
             if request_post.get('source'):
                 queryset = queryset.filter(source=request_post.get('source'))
             if request_post.getlist('assigned_to'):
-                queryset = queryset.filter(assigned_to__id__in=request_post.getlist('assigned_to'))
+                queryset = queryset.filter(
+                    assigned_to__id__in=request_post.getlist('assigned_to'))
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -60,7 +68,8 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         context["close_leads"] = close_leads
         context["per_page"] = self.request.POST.get('per_page')
         context["source"] = LEAD_SOURCE
-        context["users"] = User.objects.filter(is_active=True).order_by('email')
+        context["users"] = User.objects.filter(
+            is_active=True).order_by('email')
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
 
@@ -146,7 +155,8 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
         if self.request.FILES.get('lead_attachment'):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get('lead_attachment').name
+            attachment.file_name = self.request.FILES.get(
+                'lead_attachment').name
             attachment.lead = lead_obj
             attachment.attachment = self.request.FILES.get('lead_attachment')
             attachment.save()
@@ -168,7 +178,7 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                 account_object.tags.add(tag)
 
             if self.request.POST.getlist('assigned_to', []):
-                account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+                # account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
                 assigned_to_list = self.request.POST.getlist('assigned_to')
                 current_site = get_current_site(self.request)
                 for assigned_to_user in assigned_to_list:
@@ -180,7 +190,8 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
                         'protocol': self.request.scheme,
                         'account': account_object
                     })
-                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email = EmailMessage(
+                        mail_subject, message, to=[user.email])
                     email.content_subtype = "html"
                     email.send()
 
@@ -196,7 +207,7 @@ class CreateLeadView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super(CreateLeadView, self).get_context_data(**kwargs)
         context["lead_form"] = context["form"]
-        context["accounts"] = Account.objects.all()
+        context["accounts"] = Account.objects.filter(status="open")
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["status"] = LEAD_STATUS
@@ -214,14 +225,23 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(LeadDetailView, self).get_context_data(**kwargs)
-        comments = Comment.objects.filter(lead__id=self.object.id).order_by('-id')
-        attachments = Attachments.objects.filter(lead__id=self.object.id).order_by('-id')
+        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        if self.request.user == context['object'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
+        comments = Comment.objects.filter(
+            lead__id=self.object.id).order_by('-id')
+        attachments = Attachments.objects.filter(
+            lead__id=self.object.id).order_by('-id')
         events = Event.objects.filter(
             Q(created_by=self.request.user) | Q(updated_by=self.request.user)
         ).filter(attendees_leads=context["lead_record"])
         meetings = events.filter(event_type='Meeting').order_by('-id')
         calls = events.filter(event_type='Call').order_by('-id')
-        RemindersFormSet = modelformset_factory(Reminder, form=ReminderForm, can_delete=True)
+        RemindersFormSet = modelformset_factory(
+            Reminder, form=ReminderForm, can_delete=True)
         reminder_form_set = RemindersFormSet({
             'form-TOTAL_FORMS': '1',
             'form-INITIAL_FORMS': '0',
@@ -282,7 +302,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
             form.fields['account_name'].required = False
         if form.is_valid():
             return self.form_valid(form)
-    
+
         return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -306,8 +326,10 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
 
                 current_site = get_current_site(self.request)
 
-                assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
-                all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+                assigned_form_users = form.cleaned_data.get(
+                    'assigned_to').values_list('id', flat=True)
+                all_members_list = list(
+                    set(list(assigned_form_users)) - set(list(assigned_to_ids)))
                 if len(all_members_list):
                     for assigned_to_user in all_members_list:
                         user = get_object_or_404(User, pk=assigned_to_user)
@@ -318,7 +340,8 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                             'protocol': self.request.scheme,
                             'lead': lead_obj
                         })
-                        email = EmailMessage(mail_subject, message, to=[user.email])
+                        email = EmailMessage(
+                            mail_subject, message, to=[user.email])
                         email.content_subtype = "html"
                         email.send()
 
@@ -327,11 +350,11 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
         else:
             lead_obj.assigned_to.clear()
 
-
         if self.request.FILES.get('lead_attachment'):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get('lead_attachment').name
+            attachment.file_name = self.request.FILES.get(
+                'lead_attachment').name
             attachment.lead = lead_obj
             attachment.attachment = self.request.FILES.get('lead_attachment')
             attachment.save()
@@ -352,7 +375,7 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
             for tag in lead_obj.tags.all():
                 account_object.tags.add(tag)
             if self.request.POST.getlist('assigned_to', []):
-                account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+                # account_object.assigned_to.add(*self.request.POST.getlist('assigned_to'))
                 assigned_to_list = self.request.POST.getlist('assigned_to')
                 current_site = get_current_site(self.request)
                 for assigned_to_user in assigned_to_list:
@@ -364,7 +387,8 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
                         'protocol': self.request.scheme,
                         'account': account_object
                     })
-                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email = EmailMessage(
+                        mail_subject, message, to=[user.email])
                     email.content_subtype = "html"
                     email.send()
 
@@ -382,8 +406,15 @@ class UpdateLeadView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateLeadView, self).get_context_data(**kwargs)
         context["lead_obj"] = self.object
+        user_assgn_list = [
+            i.id for i in context["lead_obj"].assigned_to.all()]
+        if self.request.user == context['lead_obj'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
         context["lead_form"] = context["form"]
-        context["accounts"] = Account.objects.all()
+        context["accounts"] = Account.objects.filter(status="open")
         context["users"] = self.users
         context["countries"] = COUNTRIES
         context["status"] = LEAD_STATUS
@@ -402,8 +433,11 @@ class DeleteLeadView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Lead, id=kwargs.get("pk"))
-        self.object.delete()
-        return redirect("leads:list")
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+            self.object.delete()
+            return redirect("leads:list")
+        else:
+            raise PermissionDenied
 
 
 class ConvertLeadView(LoginRequiredMixin, View):
@@ -426,7 +460,7 @@ class ConvertLeadView(LoginRequiredMixin, View):
                 billing_country=lead_obj.country
             )
             assignedto_list = lead_obj.assigned_to.all().values_list('id', flat=True)
-            account_object.assigned_to.add(*assignedto_list)
+            # account_object.assigned_to.add(*assignedto_list)
             account_object.save()
             current_site = get_current_site(self.request)
             for assigned_to_user in assignedto_list:
@@ -465,7 +499,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
                 return self.form_valid(form)
 
             return self.form_invalid(form)
-        
+
         data = {'error': "You don't have permission to comment."}
         return JsonResponse(data)
 
@@ -488,14 +522,15 @@ class UpdateCommentView(LoginRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, *args, **kwargs):
-        self.comment_obj = get_object_or_404(Comment, id=request.POST.get("commentid"))
+        self.comment_obj = get_object_or_404(
+            Comment, id=request.POST.get("commentid"))
         if request.user == self.comment_obj.commented_by:
             form = LeadCommentForm(request.POST, instance=self.comment_obj)
             if form.is_valid():
                 return self.form_valid(form)
 
             return self.form_invalid(form)
-        
+
         data = {'error': "You don't have permission to edit this comment."}
         return JsonResponse(data)
 
@@ -514,12 +549,13 @@ class UpdateCommentView(LoginRequiredMixin, View):
 class DeleteCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Comment, id=request.POST.get("comment_id"))
+        self.object = get_object_or_404(
+            Comment, id=request.POST.get("comment_id"))
         if request.user == self.object.commented_by:
             self.object.delete()
             data = {"cid": request.POST.get("comment_id")}
             return JsonResponse(data)
-        
+
         data = {'error': "You don't have permission to delete this comment."}
         return JsonResponse(data)
 
@@ -552,7 +588,7 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             if form.is_valid():
                 return self.form_valid(form)
             return self.form_invalid(form)
-        
+
         data = {'error': "You don't have permission to add attachment."}
         return JsonResponse(data)
 
@@ -568,7 +604,7 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             "attachment_url": attachment.attachment.url,
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email,
-            "download_url": reverse('common:download_attachment', kwargs={'pk':attachment.id}),
+            "download_url": reverse('common:download_attachment', kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display()
         })
 
@@ -579,7 +615,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
 class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        self.object = get_object_or_404(
+            Attachments, id=request.POST.get("attachment_id"))
         if (
             request.user == self.object.created_by or request.user.is_superuser or
             request.user.role == 'ADMIN'

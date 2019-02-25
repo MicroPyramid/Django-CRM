@@ -120,9 +120,11 @@
                   <td class="actions">
                     {#  <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
                     <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                    {% if request.user == case.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
                     {% if case.status != 'Closed' %}
                     <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> </a>
+                    {% endif %}
                     {% endif %}
                   </td>
                 </tr>

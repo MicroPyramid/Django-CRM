@@ -15,14 +15,18 @@ class Case(models.Model):
         max_length=64)
     status = models.CharField(choices=STATUS_CHOICE, max_length=64)
     priority = models.CharField(choices=PRIORITY_CHOICE, max_length=64)
-    case_type = models.CharField(choices=CASE_TYPE, max_length=255, blank=True, null=True, default='')
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, blank=True, null=True)
+    case_type = models.CharField(
+        choices=CASE_TYPE, max_length=255, blank=True, null=True, default='')
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, blank=True, null=True)
     contacts = models.ManyToManyField(Contact)
     # closed_on = models.DateTimeField()
     closed_on = models.DateField()
     description = models.TextField(blank=True, null=True)
-    assigned_to = models.ManyToManyField(User, related_name='case_assigned_users')
-    created_by = models.ForeignKey(User, related_name='case_created_by', on_delete=models.SET_NULL, null=True)
+    assigned_to = models.ManyToManyField(
+        User, related_name='case_assigned_users')
+    created_by = models.ForeignKey(
+        User, related_name='case_created_by', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
 

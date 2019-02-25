@@ -1,22 +1,24 @@
 @import "ref.scss";
 *{
-  font-family: 'Muli', sans-serif;
+  font-family: 'Roboto', sans-serif;
 }
 body {
-  font-family: 'Muli', sans-serif;
+  font-family: 'Roboto', sans-serif;
   padding: 0;
   font-weight: 500;
   margin: 0;
   padding-top:60px; 
   font-size: 15px;
-  @mediaremove(min-width:$large){
+  @media(min-width:$large){
     font-size:18px;
+  }
+  @media(min-width: $mob_min) and (max-width: $smob_max){
+    padding-top: 50px;
   }
 }
 .login_register_body {
   
 }
-
 /**{
     font-size: 15px;
     @media(min-width:$large){
@@ -176,12 +178,20 @@ header{
     border:none;
     border:1px solid #ddd;
     padding:0 15px;
+    @media(min-width: $mob_min) and (max-width: $smob_max){
+      padding: 5px 15px;
+    }
     .navbar-brand{
       color: darken($text_color, 10%);
       font-weight: 600;
       margin-right: 50px;
       &:hover{
         color: $login_btn_bg;
+      }
+    }
+    .navbar-toggler{
+      svg{
+        color: #333;
       }
     }
     .navbar-nav{

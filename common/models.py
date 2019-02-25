@@ -41,7 +41,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def documents(self):
         return self.document_uploaded.all()
 
-
     def get_full_name(self):
         full_name = None
         if self.first_name or self.last_name:
@@ -146,7 +145,8 @@ class Attachments(models.Model):
         User, related_name='attachment_created_by', on_delete=models.SET_NULL, null=True)
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    attachment = models.FileField(max_length=1001, upload_to='attachments/%Y/%m/')
+    attachment = models.FileField(
+        max_length=1001, upload_to='attachments/%Y/%m/')
     lead = models.ForeignKey(
         'leads.Lead', null=True, blank=True, related_name='lead_attachment', on_delete=models.CASCADE)
     account = models.ForeignKey(
@@ -203,7 +203,8 @@ class Document(models.Model):
 
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
-    created_by = models.ForeignKey(User, related_name='document_uploaded', on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(
+        User, related_name='document_uploaded', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
@@ -244,9 +245,11 @@ class APISettings(models.Model):
     title = models.CharField(max_length=1000)
     apikey = models.CharField(max_length=16, blank=True)
     website = models.URLField(max_length=255, default='')
-    lead_assigned_to = models.ManyToManyField(User, related_name='lead_assignee_users')
+    lead_assigned_to = models.ManyToManyField(
+        User, related_name='lead_assignee_users')
     tags = models.ManyToManyField('accounts.Tags', blank=True)
-    created_by = models.ForeignKey(User, related_name='settings_created_by', on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(
+        User, related_name='settings_created_by', on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -259,7 +262,8 @@ class APISettings(models.Model):
 
 
 class Google(models.Model):
-    user = models.ForeignKey(User, related_name='google', on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, related_name='google', on_delete=models.CASCADE)
     google_id = models.CharField(max_length=200, default='')
     google_url = models.CharField(max_length=1000, default='')
     verified_email = models.CharField(max_length=200, default='')

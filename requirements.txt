@@ -21,3 +21,4 @@ billiard==3.5.0.5
 celery==4.2.1
 kombu==4.3.0
 vine==1.2.0
+

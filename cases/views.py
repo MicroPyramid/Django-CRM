@@ -15,6 +15,7 @@ from accounts.models import Account
 from contacts.models import Contact
 from common.utils import PRIORITY_CHOICE, STATUS_CHOICE, CASE_TYPE
 from django.urls import reverse
+from django.core.exceptions import PermissionDenied
 
 
 class CasesListView(LoginRequiredMixin, TemplateView):
@@ -24,32 +25,40 @@ class CasesListView(LoginRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all().select_related("account")
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            queryset = queryset.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
+
         request_post = self.request.POST
         if request_post:
             if request_post.get('name'):
-                queryset = queryset.filter(name__icontains=request_post.get('name'))
+                queryset = queryset.filter(
+                    name__icontains=request_post.get('name'))
             if request_post.get('account'):
-                queryset = queryset.filter(account_id=request_post.get('account'))
+                queryset = queryset.filter(
+                    account_id=request_post.get('account'))
             if request_post.get('status'):
                 queryset = queryset.filter(status=request_post.get('status'))
             if request_post.get('priority'):
-                queryset = queryset.filter(priority=request_post.get('priority'))
+                queryset = queryset.filter(
+                    priority=request_post.get('priority'))
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super(CasesListView, self).get_context_data(**kwargs)
         context["cases"] = self.get_queryset()
-        context["accounts"] = Account.objects.all()
+        context["accounts"] = Account.objects.filter(status="open")
         context["per_page"] = self.request.POST.get('per_page')
-        context["acc"] = int(self.request.POST.get("account")) if self.request.POST.get("account") else None
+        context["acc"] = int(self.request.POST.get(
+            "account")) if self.request.POST.get("account") else None
         context["case_priority"] = PRIORITY_CHOICE
         context["case_status"] = STATUS_CHOICE
 
-
         search = False
         if (
-            self.request.POST.get('name') or self.request.POST.get('account') or 
-            self.request.POST.get('status') or self.request.POST.get('priority')
+            self.request.POST.get('name') or self.request.POST.get('account') or
+            self.request.POST.get(
+                'status') or self.request.POST.get('priority')
         ):
             search = True
 
@@ -72,8 +81,13 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
+        self.accounts = Account.objects.filter(status="open")
         self.contacts = Contact.objects.all()
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            self.accounts = Account.objects.filter(
+                created_by=self.request.user)
+            self.contacts = Contact.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
         return super(CreateCaseView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -116,7 +130,8 @@ class CreateCaseView(LoginRequiredMixin, CreateView):
         if self.request.FILES.get('case_attachment'):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get('case_attachment').name
+            attachment.file_name = self.request.FILES.get(
+                'case_attachment').name
             attachment.case = case
             attachment.attachment = self.request.FILES.get('case_attachment')
             attachment.save()
@@ -165,16 +180,22 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CaseDetailView, self).get_context_data(**kwargs)
+        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        if self.request.user == context['object'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
         assigned_data = []
         for each in context['case_record'].assigned_to.all():
             assigned_dict = {}
             assigned_dict['id'] = each.id
-            assigned_dict['name'] =  each.email
+            assigned_dict['name'] = each.email
             assigned_data.append(assigned_dict)
 
-        context.update({"comments": context["case_record"].cases.all(), 
-            "attachments": context['case_record'].case_attachment.all(), 
-            "assigned_data": json.dumps(assigned_data)})
+        context.update({"comments": context["case_record"].cases.all(),
+                        "attachments": context['case_record'].case_attachment.all(),
+                        "assigned_data": json.dumps(assigned_data)})
         return context
 
 
@@ -185,8 +206,13 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
+        self.accounts = Account.objects.filter(status="open")
         self.contacts = Contact.objects.all()
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            self.accounts = Account.objects.filter(
+                created_by=self.request.user)
+            self.contacts = Contact.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
         return super(UpdateCaseView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -213,8 +239,10 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
         if self.request.POST.getlist('assigned_to', []):
             current_site = get_current_site(self.request)
 
-            assigned_form_users = form.cleaned_data.get('assigned_to').values_list('id', flat=True)
-            all_members_list = list(set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+            assigned_form_users = form.cleaned_data.get(
+                'assigned_to').values_list('id', flat=True)
+            all_members_list = list(
+                set(list(assigned_form_users)) - set(list(assigned_to_ids)))
 
             if len(all_members_list):
                 for assigned_to_user in all_members_list:
@@ -226,7 +254,8 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
                         'protocol': self.request.scheme,
                         'case': case_obj
                     })
-                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email = EmailMessage(
+                        mail_subject, message, to=[user.email])
                     email.content_subtype = "html"
                     email.send()
 
@@ -244,7 +273,8 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
         if self.request.FILES.get('case_attachment'):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get('case_attachment').name
+            attachment.file_name = self.request.FILES.get(
+                'case_attachment').name
             attachment.case = case_obj
             attachment.attachment = self.request.FILES.get('case_attachment')
             attachment.save()
@@ -261,6 +291,13 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateCaseView, self).get_context_data(**kwargs)
         context["case_obj"] = self.object
+        user_assgn_list = [
+            i.id for i in context["case_obj"].assigned_to.all()]
+        if self.request.user == context['case_obj'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
         context["case_form"] = context["form"]
         context["accounts"] = self.accounts
         if self.request.GET.get('view_account'):
@@ -275,8 +312,6 @@ class UpdateCaseView(LoginRequiredMixin, UpdateView):
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         context["contacts_list"] = [
             int(i) for i in self.request.POST.getlist('contacts', []) if i]
-
-        # import pdb; pdb.set_trace()
         return context
 
 
@@ -285,23 +320,28 @@ class RemoveCaseView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
-        self.object.delete()
         if request.GET.get('view_account'):
             account = request.GET.get('view_account')
             return redirect("accounts:view_account", pk=account)
-
-        return redirect("cases:list")
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+            self.object.delete()
+            return redirect("cases:list")
+        else:
+            raise PermissionDenied
 
     def post(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
-        self.object.delete()
-        if request.is_ajax():
-            return JsonResponse({'error': False})
-        count = Case.objects.filter(
-            Q(assigned_to=request.user) | Q(created_by=request.user)).distinct().count()
-        data = {"case_id": case_id, "count": count}
-        return JsonResponse(data)
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+            self.object.delete()
+            if request.is_ajax():
+                return JsonResponse({'error': False})
+            count = Case.objects.filter(
+                Q(assigned_to__in=[request.user]) | Q(created_by=request.user)).distinct().count()
+            data = {"case_id": case_id, "count": count}
+            return JsonResponse(data)
+        else:
+            raise PermissionDenied
 
 
 class CloseCaseView(LoginRequiredMixin, View):
@@ -309,10 +349,13 @@ class CloseCaseView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         case_id = request.POST.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
-        self.object.status = "Closed"
-        self.object.save()
-        data = {'status': "Closed", "cid": case_id}
-        return JsonResponse(data)
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+            self.object.status = "Closed"
+            self.object.save()
+            data = {'status': "Closed", "cid": case_id}
+            return JsonResponse(data)
+        else:
+            raise PermissionDenied
 
 
 class SelectContactsView(LoginRequiredMixin, View):
@@ -375,7 +418,8 @@ class UpdateCommentView(LoginRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, *args, **kwargs):
-        self.comment_obj = get_object_or_404(Comment, id=request.POST.get("commentid"))
+        self.comment_obj = get_object_or_404(
+            Comment, id=request.POST.get("commentid"))
         if (
             request.user == self.comment_obj.commented_by or request.user.is_superuser or
             request.user.role == 'ADMIN'
@@ -404,7 +448,8 @@ class UpdateCommentView(LoginRequiredMixin, View):
 class DeleteCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Comment, id=request.POST.get("comment_id"))
+        self.object = get_object_or_404(
+            Comment, id=request.POST.get("comment_id"))
         if (
             request.user == self.object.commented_by or request.user.is_superuser or
             request.user.role == 'ADMIN'
@@ -436,7 +481,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
 
             return self.form_invalid(form)
 
-        data = {"error":True, "errors": "You don't have permission to add attachment for this case."}
+        data = {"error": True,
+                "errors": "You don't have permission to add attachment for this case."}
         return JsonResponse(data)
 
     def form_valid(self, form):
@@ -451,7 +497,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             "attachment_id": attachment.id,
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
-            "download_url": reverse('common:download_attachment', kwargs={'pk':attachment.id}),
+            "download_url": reverse('common:download_attachment', kwargs={'pk': attachment.id}),
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email,
             "message": "attachment Created",
@@ -460,20 +506,23 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         })
 
     def form_invalid(self, form):
-        return JsonResponse({"error":True, "errors": form['attachment'].errors})
+        return JsonResponse({"error": True, "errors": form['attachment'].errors})
 
 
 class DeleteAttachmentsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Attachments, id=request.POST.get("attachment_id"))
+        self.object = get_object_or_404(
+            Attachments, id=request.POST.get("attachment_id"))
         if (
-            request.user == self.object.created_by or request.user.is_superuser or 
+            request.user == self.object.created_by or request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             self.object.delete()
-            data = {"attachment_object": request.POST.get("attachment_id"), "error": False}
+            data = {"attachment_object": request.POST.get(
+                "attachment_id"), "error": False}
             return JsonResponse(data)
 
-        data = {"error":True, "errors": "You don't have permission to delete this attachment."}
+        data = {"error": True,
+                "errors": "You don't have permission to delete this attachment."}
         return JsonResponse(data)

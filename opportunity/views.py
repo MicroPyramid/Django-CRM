@@ -13,6 +13,8 @@ from contacts.models import Contact
 from opportunity.forms import OpportunityForm, OpportunityCommentForm, OpportunityAttachmentForm
 from opportunity.models import Opportunity
 from django.urls import reverse
+from django.db.models import Q
+from django.core.exceptions import PermissionDenied
 
 
 class OpportunityListView(LoginRequiredMixin, TemplateView):
@@ -22,6 +24,10 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all().prefetch_related("contacts", "account")
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            queryset = queryset.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user.id))
+
         request_post = self.request.POST
         if request_post:
             if request_post.get('name'):
@@ -43,7 +49,7 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(OpportunityListView, self).get_context_data(**kwargs)
         context["opportunity_list"] = self.get_queryset()
-        context["accounts"] = Account.objects.all()
+        context["accounts"] = Account.objects.filter(status="open")
         context["contacts"] = Contact.objects.all()
         context["stages"] = STAGES
         context["sources"] = SOURCES
@@ -51,7 +57,7 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
 
         search = False
         if (
-            self.request.POST.get('name') or self.request.POST.get('stage') or 
+            self.request.POST.get('name') or self.request.POST.get('stage') or
             self.request.POST.get('lead_source') or self.request.POST.get('account') or
             self.request.POST.get('contacts')
         ):
@@ -72,8 +78,13 @@ class CreateOpportunityView(LoginRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
+        self.accounts = Account.objects.filter(status="open")
         self.contacts = Contact.objects.all()
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            self.accounts = Account.objects.filter(
+                created_by=self.request.user)
+            self.contacts = Contact.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
         return super(CreateOpportunityView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -182,7 +193,12 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(OpportunityDetailView, self).get_context_data(**kwargs)
-
+        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        if self.request.user == context['object'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
         assigned_data = []
         for each in context['opportunity_record'].assigned_to.all():
             assigned_dict = {}
@@ -204,8 +220,13 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.all()
+        self.accounts = Account.objects.filter(status="open")
         self.contacts = Contact.objects.all()
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            self.accounts = Account.objects.filter(
+                created_by=self.request.user)
+            self.contacts = Contact.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
         return super(UpdateOpportunityView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -296,6 +317,13 @@ class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super(UpdateOpportunityView, self).get_context_data(**kwargs)
         context["opportunity_obj"] = self.object
+        user_assgn_list = [
+            i.id for i in context["opportunity_obj"].assigned_to.all()]
+        if self.request.user == context['opportunity_obj'].created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
         context["opportunity_form"] = context["form"]
         context["accounts"] = self.accounts
         if self.request.GET.get('view_account'):
@@ -321,15 +349,18 @@ class DeleteOpportunityView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(Opportunity, id=kwargs.get("pk"))
-        self.object.delete()
-        if request.is_ajax():
-            return JsonResponse({'error': False})
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+            self.object.delete()
+            if request.is_ajax():
+                return JsonResponse({'error': False})
 
-        if request.GET.get('view_account'):
-            account = request.GET.get('view_account')
-            return redirect("accounts:view_account", pk=account)
+            if request.GET.get('view_account'):
+                account = request.GET.get('view_account')
+                return redirect("accounts:view_account", pk=account)
 
-        return redirect("opportunities:list")
+            return redirect("opportunities:list")
+        else:
+            raise PermissionDenied
 
 
 class GetContactView(LoginRequiredMixin, View):

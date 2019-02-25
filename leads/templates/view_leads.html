@@ -176,12 +176,12 @@
 
                               
                               <div class="stream-post-container" id="attachment_name{{attachment.id}}">
-                                <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                                <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> {{attachment.file_name}} </span> <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
                               </div>
 
                               <div class="stream-container">
-                                <pre class="float-left">{{ attachment.created_by }}</pre>
-                                <pre class="float-right">{{ attachment.created_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                                <pre class="float-left">Uploaded by :{{ attachment.created_by }}</pre>
+                                <pre class="float-right">{{ attachment.created_on|date:'m/d/Y,  h:i A' }}</pre>
                               </div>
                           </li>
                       {% endfor %}

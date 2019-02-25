@@ -41,7 +41,8 @@ class LeadForm(forms.ModelForm):
             'placeholder': 'State'})
         self.fields['postcode'].widget.attrs.update({
             'placeholder': 'Postcode'})
-        self.fields["country"].choices = [("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+        self.fields["country"].choices = [
+            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
 
     class Meta:
         model = Lead

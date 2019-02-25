@@ -52,7 +52,7 @@
                 </div>
                 <div class="filter_col col-md-2">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Lead Status</label>
+                    <label for="exampleInputEmail1">Status</label>
                     <select class="form-control" id="id_status" name="status" >
                       <option value="">--Status of Lead--</option>
                       {% for each_status in status %}
@@ -164,7 +164,9 @@
                         <td>{{ lead.created_on }}</td>
                         <td class="actions"> 
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                          {% if request.user == lead.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
                           <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          {% endif %}
                         </td>
                       </tr>
                       {% endfor %}
@@ -240,7 +242,9 @@
                         <td>{{ lead.created_on }}</td>
                         <td class="actions"> 
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                          {% if request.user == lead.created_by %}
                           <a href="{% url 'leads:remove_lead' lead.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          {% endif %}
                         </td>
                       </tr>
                       {% endfor %}
