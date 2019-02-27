@@ -181,7 +181,7 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
     $(".selectedusers").html("")
     meetingID = $(this).closest("tr")[0].id
     meet = meetingID.match(/\d+/)[0]
-    $("#model-form").append("<input type="hidden" name="meetingID" value="" + meet + "">");
+    $("#model-form").append('<input type="hidden" name="meetingID" value="' + meet + '">');
     $("#gocreatemeeting").attr("id", "editmeeting").text("Edit");
     $.post(
         "/planner/get/meeting/",
@@ -244,7 +244,7 @@ $("body").on("click", "#editmeeting", function (e) {
     $("#model-form").attr({"id": "update-form", "type": "submit"});
     $("#editmeeting").attr({"id": "update", "type": "submit"}).text("Update");
     $("#modeldialogclosed").attr({"id": "modeldialogclosed"});
-    $("#modelbody").append("<input type="hidden" value="" + meetingID + "">")
+    $("#modelbody").append("<input type='hidden' value='" + meetingID + "'>")
 });
 $("body").on("click", "#updatemodeldialogclosed", function (e) {
     e.preventDefault();
@@ -254,7 +254,7 @@ $("body").on("click", "#updatemodeldialogclosed", function (e) {
     $("#model-form").find("input[type=text], textarea").val("");
     $("#update-form").attr({"id": "model-form"})
     $("#updatemodeldialogclosed").attr({"id": "model-form"})
-    $(".reminderslist[style="display:inline-flex"]").remove();
+    $(".reminderslist[style='display:inline-flex']").remove();
 
 });
 $("body").on("click", "#createmeeting", function (e) {
@@ -292,7 +292,7 @@ $("body").on("submit", "#update-form", function (e) {
                     $("#update-form").attr({"id": "model-form"})
                     $("#model-form").find("input[type=text], textarea").val("");
                     $("#updatemodeldialogclosed").attr({"id": "modeldialogclosed"})
-                    $(".reminderslist[style="display:inline-flex"]").remove();
+                    $(".reminderslist[style='display:inline-flex']").remove();
                 }
                 else if (data["auth"] == "NO") {
                     alert("Not Authanticated!!")

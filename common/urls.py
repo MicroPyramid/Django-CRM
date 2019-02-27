@@ -4,7 +4,7 @@ from django.urls import path
 from common.views import (
     HomeView, LoginView, ForgotPasswordView, LogoutView, ChangePasswordView, ProfileView,
     UsersListView, CreateUserView, UpdateUserView, UserDetailView, UserDeleteView, PasswordResetView,
-    DocumentListView, DocumentCreateView, UpdateDocumentView, DocumentDetailView, DocumentDeleteView,
+    DocumentListView, document_create, document_update, DocumentDetailView, DocumentDeleteView,
     download_document, change_user_status, download_attachment, add_comment, edit_comment, remove_comment,
     api_settings, add_api_settings, view_api_settings, update_api_settings, delete_api_settings,
     change_passsword_by_admin, google_login
@@ -42,8 +42,8 @@ urlpatterns = [
 
     # Document
     path('documents/list/', DocumentListView.as_view(), name='doc_list'),
-    path('documents/create/', DocumentCreateView.as_view(), name='create_doc'),
-    path('documents/<int:pk>/edit/', UpdateDocumentView.as_view(), name="edit_doc"),
+    path('documents/create/', document_create, name='create_doc'),
+    path('documents/<int:pk>/edit/', document_update, name="edit_doc"),
     path('documents/<int:pk>/view/', DocumentDetailView.as_view(), name='view_doc'),
     path('documents/<int:pk>/delete/',
          DocumentDeleteView.as_view(), name='remove_doc'),

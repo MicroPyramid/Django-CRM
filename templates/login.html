@@ -30,9 +30,11 @@
               <form method="POST" action="">
                 <div class="form-group">
                   <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email" name="email">
+                  <span class = "error">{{form.email.errors}}</span>
                 </div>
                 <div class="form-group">
                   <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password" name="password">
+                  <span class = "error">{{form.password.errors}}</span>
                 </div>
                 <div class="forgot">Forgot Password <a href="{% url "common:password_reset" %}">Click Here?</a></div>
                 {% if error %}

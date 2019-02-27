@@ -127,6 +127,14 @@ class LoginForm(forms.ModelForm):
         self.request = kwargs.pop("request", None)
         super(LoginForm, self).__init__(*args, **kwargs)
 
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            if len(password) < 4:
+                raise forms.ValidationError(
+                    'Password must be at least 4 characters long!')
+        return password
+
     def clean(self):
         email = self.cleaned_data.get("email")
         password = self.cleaned_data.get("password")
@@ -202,8 +210,10 @@ class UserCommentForm(forms.ModelForm):
 def find_urls(string):
     # website_regex = "^((http|https)://)?([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com or google.com
     # website_regex = "^https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com
-    website_regex = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$"  # http(s)://google.com
-    website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"  # http(s)://google.com:8000
+    # http(s)://google.com
+    website_regex = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$"
+    # http(s)://google.com:8000
+    website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"
     url = re.findall(website_regex, string)
     url_port = re.findall(website_regex_port, string)
     if len(url) > 0 and url[0] != '':

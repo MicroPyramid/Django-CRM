@@ -91,14 +91,14 @@
       e.preventDefault();
       $form = $(this)
       $.post("", $form.serialize(), function(response){
-         $(".error").remove();
+         $(".error_message").remove();
           if(response.error){
             $.each(response.errors, function(field_name, error){
               if (field_name == '__all__'){
-                error = "<span class=\"error\" style=color:red>" + error + "</span>"
+                error = "<span class=\"error_message\" style=color:red>" + error + "</span>"
                 $("span.__all__").after(error)
               }else{
-                error = "<span class=\"error\" style=color:red>" + error + "</span>"
+                error = "<span class=\"error_message\" style=color:red>" + error + "</span>"
                 $form.find("[name="+field_name + "]").after(error)
               }
             })
@@ -148,4 +148,3 @@
 
   </script>
 {% endblock js_block %}
-
