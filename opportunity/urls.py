@@ -1,6 +1,6 @@
 from django.urls import path
 from opportunity.views import (
-    OpportunityListView, CreateOpportunityView, OpportunityDetailView, UpdateOpportunityView,
+    OpportunityListView, create_opportunity, OpportunityDetailView, update_opportunity,
     DeleteOpportunityView, GetContactView, GetOpportunitiesView, AddCommentView,
     UpdateCommentView, DeleteCommentView, AddAttachmentsView)
 
@@ -10,9 +10,9 @@ app_name = 'opportunity'
 
 urlpatterns = [
     path('list/', OpportunityListView.as_view(), name='list'),
-    path('create/', CreateOpportunityView.as_view(), name='save'),
+    path('create/', create_opportunity, name='save'),
     path('<int:pk>/view/', OpportunityDetailView.as_view(), name="opp_view"),
-    path('<int:pk>/edit/', UpdateOpportunityView.as_view(), name="opp_edit"),
+    path('<int:pk>/edit/', update_opportunity, name="opp_edit"),
     path('<int:pk>/delete/', DeleteOpportunityView.as_view(), name="opp_remove"),
 
     path('contacts/', GetContactView.as_view(), name="contacts"),

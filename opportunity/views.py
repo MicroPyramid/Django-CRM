@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
 from accounts.models import Account, Tags
@@ -71,114 +71,98 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class CreateOpportunityView(LoginRequiredMixin, CreateView):
-    model = Opportunity
-    form_class = OpportunityForm
+def create_opportunity(request):
     template_name = "create_opportunity.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.filter(status="open")
-        self.contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            self.accounts = Account.objects.filter(
-                created_by=self.request.user)
-            self.contacts = Contact.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
-        return super(CreateOpportunityView, self).dispatch(request, *args, **kwargs)
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.filter(status="open")
+    contacts = Contact.objects.all()
+    if request.user.role != "ADMIN" and not request.user.is_superuser:
+        accounts = Account.objects.filter(
+            created_by=request.user)
+        contacts = Contact.objects.filter(
+            Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
 
-    def get_form_kwargs(self):
-        kwargs = super(CreateOpportunityView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts,
-                       "contacts": self.contacts})
-        return kwargs
+    kwargs_data = {"assigned_to": users, "account": accounts, "contacts": contacts}
+    form = OpportunityForm(**kwargs_data)
 
-    def post(self, request, *args, **kwargs):
-        self.object = None
-        form = self.get_form()
+    if request.POST:
+        form = OpportunityForm(request.POST, request.FILES, **kwargs_data)
         if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
+            opportunity_obj = form.save(commit=False)
+            opportunity_obj.created_by = request.user
+            if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
+                opportunity_obj.closed_by = request.user
+            opportunity_obj.save()
+            if request.POST.getlist('assigned_to', []):
+                opportunity_obj.assigned_to.add(
+                    *request.POST.getlist('assigned_to'))
+                assigned_to_list = request.POST.getlist('assigned_to')
+                current_site = get_current_site(request)
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to opportunity.'
+                    message = render_to_string('assigned_to/opportunity_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': request.scheme,
+                        'opportunity': opportunity_obj
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.content_subtype = "html"
+                    email.send()
+            if request.POST.getlist('contacts', []):
+                opportunity_obj.contacts.add(
+                    *request.POST.getlist('contacts'))
+            if request.POST.get('tags', ''):
+                tags = request.POST.get("tags")
+                splitted_tags = tags.split(",")
+                for t in splitted_tags:
+                    tag = Tags.objects.filter(name=t.lower())
+                    if tag:
+                        tag = tag[0]
+                    else:
+                        tag = Tags.objects.create(name=t.lower())
+                    opportunity_obj.tags.add(tag)
+            if request.FILES.get('oppurtunity_attachment'):
+                attachment = Attachments()
+                attachment.created_by = request.user
+                attachment.file_name = request.FILES.get(
+                    'oppurtunity_attachment').name
+                attachment.opportunity = opportunity_obj
+                attachment.attachment = request.FILES.get(
+                    'oppurtunity_attachment')
+                attachment.save()
+            success_url = reverse('opportunities:list')
+            if request.POST.get("savenewform"):
+                success_url = reverse("opportunities:save")
+            if request.POST.get('from_account'):
+                from_account = request.POST.get('from_account')
+                success_url = reverse("accounts:view_account", pk=from_account)
+            return JsonResponse({'error': False, 'success_url': success_url})
 
-    def form_valid(self, form):
-        opportunity_obj = form.save(commit=False)
-        opportunity_obj.created_by = self.request.user
-        if self.request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
-            opportunity_obj.closed_by = self.request.user
-        opportunity_obj.save()
-        if self.request.POST.getlist('assigned_to', []):
-            opportunity_obj.assigned_to.add(
-                *self.request.POST.getlist('assigned_to'))
-            assigned_to_list = self.request.POST.getlist('assigned_to')
-            current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to opportunity.'
-                message = render_to_string('assigned_to/opportunity_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'opportunity': opportunity_obj
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.content_subtype = "html"
-                email.send()
-        if self.request.POST.getlist('contacts', []):
-            opportunity_obj.contacts.add(
-                *self.request.POST.getlist('contacts'))
-        if self.request.POST.get('tags', ''):
-            tags = self.request.POST.get("tags")
-            splitted_tags = tags.split(",")
-            for t in splitted_tags:
-                tag = Tags.objects.filter(name=t.lower())
-                if tag:
-                    tag = tag[0]
-                else:
-                    tag = Tags.objects.create(name=t.lower())
-                opportunity_obj.tags.add(tag)
-        if self.request.FILES.get('oppurtunity_attachment'):
-            attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                'oppurtunity_attachment').name
-            attachment.opportunity = opportunity_obj
-            attachment.attachment = self.request.FILES.get(
-                'oppurtunity_attachment')
-            attachment.save()
-        if self.request.is_ajax():
-            return JsonResponse({'error': False})
-        if self.request.POST.get("savenewform"):
-            return redirect("opportunities:save")
-        if self.request.POST.get('from_account'):
-            from_account = self.request.POST.get('from_account')
-            return redirect("accounts:view_account", pk=from_account)
-        return redirect('opportunities:list')
+        else:
+            return JsonResponse({'error': True, 'errors': form.errors})
 
-    def form_invalid(self, form):
-        if self.request.is_ajax():
-            return JsonResponse({'error': True, 'opportunity_errors': form.errors})
-        return self.render_to_response(
-            self.get_context_data(form=form))
+    else:
+        context = {}
+        context["opportunity_form"] = form
 
-    def get_context_data(self, **kwargs):
-        context = super(CreateOpportunityView, self).get_context_data(**kwargs)
-        context["opportunity_form"] = context["form"]
-
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
+        context["accounts"] = accounts
+        if request.GET.get('view_account'):
             context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
-        context["contacts"] = self.contacts
-        context["users"] = self.users
+                Account, id=request.GET.get('view_account'))
+        context["contacts"] = contacts
+        context["users"] = users
         context["currencies"] = CURRENCY_CODES
         context["stages"] = STAGES
         context["sources"] = SOURCES
         context["assignedto_list"] = [
-            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+            int(i) for i in request.POST.getlist('assigned_to', []) if i]
 
         context["contacts_list"] = [
-            int(i) for i in self.request.POST.getlist('contacts', []) if i]
-        return context
+            int(i) for i in request.POST.getlist('contacts', []) if i]
+        return render(request, template_name, context)
 
 
 class OpportunityDetailView(LoginRequiredMixin, DetailView):
@@ -193,7 +177,7 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(OpportunityDetailView, self).get_context_data(**kwargs)
-        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        user_assgn_list = [assigned_to.id for assigned_to in context['object'].assigned_to.all()]
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -213,133 +197,116 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class UpdateOpportunityView(LoginRequiredMixin, UpdateView):
-    model = Opportunity
-    form_class = OpportunityForm
+def update_opportunity(request, pk):
     template_name = "create_opportunity.html"
+    opportunity_object = Opportunity.objects.filter(pk=pk).first()
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.filter(status="open")
+    contacts = Contact.objects.all()
+    if request.user.role != "ADMIN" and not request.user.is_superuser:
+        accounts = Account.objects.filter(
+            created_by=request.user)
+        contacts = Contact.objects.filter(
+            Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
 
-    def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.filter(status="open")
-        self.contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            self.accounts = Account.objects.filter(
-                created_by=self.request.user)
-            self.contacts = Contact.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
-        return super(UpdateOpportunityView, self).dispatch(request, *args, **kwargs)
+    kwargs_data = {"assigned_to": users, "account": accounts, "contacts": contacts}
+    form = OpportunityForm(instance=opportunity_object, **kwargs_data)
 
-    def get_form_kwargs(self):
-        kwargs = super(UpdateOpportunityView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts,
-                       "contacts": self.contacts})
-        return kwargs
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
+    if request.POST:
+        form = form = OpportunityForm(request.POST, request.FILES, instance=opportunity_object, **kwargs_data)
         if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
+            assigned_to_ids = opportunity_object.assigned_to.all().values_list('id', flat=True)
+            opportunity_obj = form.save(commit=False)
+            if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
+                opportunity_obj.closed_by = request.user
+            opportunity_obj.save()
 
-    def form_valid(self, form):
-        assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
-        opportunity_obj = form.save(commit=False)
-        if self.request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
-            opportunity_obj.closed_by = self.request.user
-        opportunity_obj.save()
+            opportunity_obj.contacts.clear()
+            all_members_list = []
+            if request.POST.getlist('assigned_to', []):
+                current_site = get_current_site(request)
+                assigned_form_users = form.cleaned_data.get(
+                    'assigned_to').values_list('id', flat=True)
+                all_members_list = list(
+                    set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+                if len(all_members_list):
+                    for assigned_to_user in all_members_list:
+                        user = get_object_or_404(User, pk=assigned_to_user)
+                        mail_subject = 'Assigned to opportunity.'
+                        message = render_to_string('assigned_to/opportunity_assigned.html', {
+                            'user': user,
+                            'domain': current_site.domain,
+                            'protocol': request.scheme,
+                            'opportunity': opportunity_obj
+                        })
+                        email = EmailMessage(
+                            mail_subject, message, to=[user.email])
+                        email.content_subtype = "html"
+                        email.send()
 
-        opportunity_obj.contacts.clear()
-        all_members_list = []
-        if self.request.POST.getlist('assigned_to', []):
-            current_site = get_current_site(self.request)
-            assigned_form_users = form.cleaned_data.get(
-                'assigned_to').values_list('id', flat=True)
-            all_members_list = list(
-                set(list(assigned_form_users)) - set(list(assigned_to_ids)))
-            if len(all_members_list):
-                for assigned_to_user in all_members_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to opportunity.'
-                    message = render_to_string('assigned_to/opportunity_assigned.html', {
-                        'user': user,
-                        'domain': current_site.domain,
-                        'protocol': self.request.scheme,
-                        'opportunity': opportunity_obj
-                    })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+                opportunity_obj.assigned_to.clear()
+                opportunity_obj.assigned_to.add(
+                    *request.POST.getlist('assigned_to'))
+            else:
+                opportunity_obj.assigned_to.clear()
 
-            opportunity_obj.assigned_to.clear()
-            opportunity_obj.assigned_to.add(
-                *self.request.POST.getlist('assigned_to'))
+            if request.POST.getlist('contacts', []):
+                opportunity_obj.contacts.add(
+                    *request.POST.getlist('contacts'))
+            opportunity_obj.tags.clear()
+            if request.POST.get('tags', ''):
+                tags = request.POST.get("tags")
+                splitted_tags = tags.split(",")
+                for t in splitted_tags:
+                    tag = Tags.objects.filter(name=t.lower())
+                    if tag:
+                        tag = tag[0]
+                    else:
+                        tag = Tags.objects.create(name=t.lower())
+                    opportunity_obj.tags.add(tag)
+            if request.FILES.get('oppurtunity_attachment'):
+                attachment = Attachments()
+                attachment.created_by = request.user
+                attachment.file_name = request.FILES.get(
+                    'oppurtunity_attachment').name
+                attachment.opportunity = opportunity_obj
+                attachment.attachment = request.FILES.get(
+                    'oppurtunity_attachment')
+                attachment.save()
+            success_url = reverse('opportunities:list')
+            if request.POST.get('from_account'):
+                from_account = request.POST.get('from_account')
+                success_url = reverse("accounts:view_account", pk=from_account)
+            return JsonResponse({'error': False, 'success_url': success_url})
+
         else:
-            opportunity_obj.assigned_to.clear()
-
-        if self.request.POST.getlist('contacts', []):
-            opportunity_obj.contacts.add(
-                *self.request.POST.getlist('contacts'))
-        opportunity_obj.tags.clear()
-        if self.request.POST.get('tags', ''):
-            tags = self.request.POST.get("tags")
-            splitted_tags = tags.split(",")
-            for t in splitted_tags:
-                tag = Tags.objects.filter(name=t.lower())
-                if tag:
-                    tag = tag[0]
-                else:
-                    tag = Tags.objects.create(name=t.lower())
-                opportunity_obj.tags.add(tag)
-        if self.request.FILES.get('oppurtunity_attachment'):
-            attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                'oppurtunity_attachment').name
-            attachment.opportunity = opportunity_obj
-            attachment.attachment = self.request.FILES.get(
-                'oppurtunity_attachment')
-            attachment.save()
-        if self.request.POST.get('from_account'):
-            from_account = self.request.POST.get('from_account')
-            return redirect("accounts:view_account", pk=from_account)
-        if self.request.is_ajax():
-            return JsonResponse({'error': False})
-        return redirect('opportunities:list')
-
-    def form_invalid(self, form):
-        if self.request.is_ajax():
-            return JsonResponse({'error': True, 'opportunity_errors': form.errors})
-        return self.render_to_response(
-            self.get_context_data(form=form))
-
-    def get_context_data(self, **kwargs):
-        context = super(UpdateOpportunityView, self).get_context_data(**kwargs)
-        context["opportunity_obj"] = self.object
+            return JsonResponse({'error': True, 'errors': form.errors})
+    else:
+        context = {}
+        context["opportunity_obj"] = opportunity_object
         user_assgn_list = [
-            i.id for i in context["opportunity_obj"].assigned_to.all()]
-        if self.request.user == context['opportunity_obj'].created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+            assigned_to.id for assigned_to in context["opportunity_obj"].assigned_to.all()]
+        if request.user == context['opportunity_obj'].created_by:
+            user_assgn_list.append(request.user.id)
+        if request.user.role != "ADMIN" and not request.user.is_superuser:
+            if request.user.id not in user_assgn_list:
                 raise PermissionDenied
-        context["opportunity_form"] = context["form"]
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
+        context["opportunity_form"] = form
+        context["accounts"] = accounts
+        if request.GET.get('view_account'):
             context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
-        context["contacts"] = self.contacts
-        context["users"] = self.users
+                Account, id=request.GET.get('view_account'))
+        context["contacts"] = contacts
+        context["users"] = users
         context["currencies"] = CURRENCY_CODES
         context["stages"] = STAGES
         context["sources"] = SOURCES
         context["assignedto_list"] = [
-            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+            int(i) for i in request.POST.getlist('assigned_to', []) if i]
         context["contacts_list"] = [
-            int(i) for i in self.request.POST.getlist('contacts', []) if i]
+            int(i) for i in request.POST.getlist('contacts', []) if i]
 
-        return context
+        return render(request, template_name, context)
 
 
 class DeleteOpportunityView(LoginRequiredMixin, View):
@@ -369,10 +336,10 @@ class GetContactView(LoginRequiredMixin, View):
         account_id = request.GET.get("account")
         if account_id:
             account = get_object_or_404(Account, id=account_id)
-            contacts = Contact.objects.filter(account=account)
+            contacts = account.contacts.all()
         else:
             contacts = Contact.objects.all()
-        data = {i.pk: i.first_name for i in contacts.distinct()}
+        data = {contact.pk: contact.first_name for contact in contacts.distinct()}
         return JsonResponse(data)
 
 

@@ -107,11 +107,13 @@
                 <label for="exampleInputEmail1">Attachment</label>
                   <input type="file" name="contact_attachment">
                   {% if contact_obj.contact_attachment.count %}
-                    {% for i in contact_obj.contact_attachment.all %}
-                    <span id="attachment{{i.id}}">
-                      <a target="_blank" href="{{i.attachment.url}}">{{i.file_name}}</a>
-                      <a class="action btn primary_btn"  onclick="remove_attachment({{i.id}})">X</a>
-                    </span>
+                    {% for attachment in contact_obj.contact_attachment.all %}
+                    <div id="attachment{{attachment.id}}" class="mt-2">
+                      <a target="_blank" href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a>
+                      {% if not attachment.created_by.role == 'ADMIN' or attachment.created_by.role == request.user.role %}
+                      <a class="action btn primary_btn"  onclick="remove_attachment({{attachment.id}})">X</a>
+                      {% endif %}
+                    </div>
                     {% endfor %}
                   {% endif %}
                   <span class="error"></span>

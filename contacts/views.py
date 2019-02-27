@@ -176,7 +176,7 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ContactDetailView, self).get_context_data(**kwargs)
-        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        user_assgn_list = [assigned_to.id for assigned_to in context['object'].assigned_to.all()]
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -285,7 +285,7 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         context = super(UpdateContactView, self).get_context_data(**kwargs)
         context["contact_obj"] = self.object
         user_assgn_list = [
-            i.id for i in context["contact_obj"].assigned_to.all()]
+            assigned_to.id for assigned_to in context["contact_obj"].assigned_to.all()]
         if self.request.user == context['contact_obj'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -477,4 +477,3 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
 
         data = {'error': "You don't have permission to delete this attachment."}
         return JsonResponse(data)
-

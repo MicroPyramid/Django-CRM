@@ -157,7 +157,7 @@ $("body").on("click", ".viewthis", function (e, from_edit_this) {
     e.preventDefault();
     callID = $(this).closest("tr")[0].id;
     call = callID.match(/\d+/)[0];
-    $("#model-form").append("<input type="hidden" name="callID" value="" + call + "">");
+    $("#model-form").append('<input type="hidden" name="callID" value="' + call + '">');
     $("#gocreatecall").attr("id", "editcall").text("Edit");
     $("#selectedleads").html("");
     $("#selectedcontacts").html("");
@@ -228,7 +228,7 @@ $("body").on("click", "#editcall", function (e) {
     $("#model-form").attr({"id": "update-form", "type": "submit"});
     $("#editcall").attr({"id": "update", "type": "submit"}).text("Update");
     $("#modeldialogclosed").attr({"id": "modeldialogclosed"});
-    $("#modelbody").append("<input type="hidden" value="" + callID + "">");
+    $("#modelbody").append('<input type="hidden" value="' + callID + '">');
 });
 $("body").on("click", "#updatemodeldialogclosed", function (e) {
     e.preventDefault();
@@ -238,7 +238,7 @@ $("body").on("click", "#updatemodeldialogclosed", function (e) {
     $("#model-form").find("input[type=text], textarea").val("");
     $("#update-form").attr({"id": "model-form"});
     $("#updatemodeldialogclosed").attr({"id": "model-form"});
-    $(".reminderslist[style="display:inline-flex"]").remove();
+    $(".reminderslist[style='display:inline-flex']").remove();
 
 });
 $("body").on("click", "#createcall", function (e) {
@@ -273,7 +273,7 @@ $("body").on("submit", "#update-form", function (e) {
                     $("#update-form").attr({"id": "model-form"});
                     $("#model-form").find("input[type=text], textarea").val("");
                     $("#updatemodeldialogclosed").attr({"id": "modeldialogclosed"});
-                    $(".reminderslist[style="display:inline-flex"]").remove();
+                    $(".reminderslist[style='display:inline-flex']").remove();
                     $(".selected-assigned-users").html("");
                     $(".selectedcontacts").html("");
                     $(".selectedusers").html("");

@@ -4,9 +4,9 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.views.generic import CreateView, UpdateView, DetailView, ListView, TemplateView, View
+from django.views.generic import CreateView, DetailView, ListView, TemplateView, View
 
 from cases.models import Case
 from cases.forms import CaseForm, CaseCommentForm, CaseAttachmentForm
@@ -74,99 +74,81 @@ class CasesListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class CreateCaseView(LoginRequiredMixin, CreateView):
-    model = Case
-    form_class = CaseForm
+def create_case(request):
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.filter(status="open")
+    contacts = Contact.objects.all()
+    if request.user.role != "ADMIN" and not request.user.is_superuser:
+        accounts = Account.objects.filter(
+            created_by=request.user)
+        contacts = Contact.objects.filter(
+            Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
+    kwargs_data = {
+        "assigned_to": users, "account": accounts, "contacts": contacts}
+    form = CaseForm(**kwargs_data)
     template_name = "create_cases.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.filter(status="open")
-        self.contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            self.accounts = Account.objects.filter(
-                created_by=self.request.user)
-            self.contacts = Contact.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
-        return super(CreateCaseView, self).dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super(CreateCaseView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts,
-                       "contacts": self.contacts})
-        return kwargs
-
-    def post(self, request, *args, **kwargs):
-        self.object = None
-        form = self.get_form()
+    if request.POST:
+        form = CaseForm(request.POST, request.FILES, **kwargs_data)
         if form.is_valid():
-            return self.form_valid(form)
+            case = form.save(commit=False)
+            case.created_by = request.user
+            case.save()
+            if request.POST.getlist('assigned_to', []):
+                case.assigned_to.add(*request.POST.getlist('assigned_to'))
+                assigned_to_list = request.POST.getlist('assigned_to')
+                current_site = get_current_site(request)
+                for assigned_to_user in assigned_to_list:
+                    user = get_object_or_404(User, pk=assigned_to_user)
+                    mail_subject = 'Assigned to case.'
+                    message = render_to_string('assigned_to/cases_assigned.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'protocol': request.scheme,
+                        'case': case
+                    })
+                    email = EmailMessage(mail_subject, message, to=[user.email])
+                    email.content_subtype = "html"
+                    email.send()
 
-        return self.form_invalid(form)
+            if request.POST.getlist('contacts', []):
+                case.contacts.add(*request.POST.getlist('contacts'))
+            if request.FILES.get('case_attachment'):
+                attachment = Attachments()
+                attachment.created_by = request.user
+                attachment.file_name = request.FILES.get(
+                    'case_attachment').name
+                attachment.case = case
+                attachment.attachment = request.FILES.get('case_attachment')
+                attachment.save()
+            success_url = reverse('cases:list')
+            if request.POST.get("savenewform"):
+                success_url = reverse("cases:add_case")
+            if request.POST.get('from_account'):
+                from_account = request.POST.get('from_account')
+                success_url = reverse("accounts:view_account", pk=from_account)
+            return JsonResponse({'error': False, "success_url": success_url})
 
-    def form_valid(self, form):
-        case = form.save(commit=False)
-        case.created_by = self.request.user
-        case.save()
-        if self.request.POST.getlist('assigned_to', []):
-            case.assigned_to.add(*self.request.POST.getlist('assigned_to'))
-            assigned_to_list = self.request.POST.getlist('assigned_to')
-            current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to case.'
-                message = render_to_string('assigned_to/cases_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'case': case
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.content_subtype = "html"
-                email.send()
+        else:
+            return JsonResponse({'error': True, 'errors': form.errors})
 
-        if self.request.POST.getlist('contacts', []):
-            case.contacts.add(*self.request.POST.getlist('contacts'))
-        if self.request.FILES.get('case_attachment'):
-            attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                'case_attachment').name
-            attachment.case = case
-            attachment.attachment = self.request.FILES.get('case_attachment')
-            attachment.save()
-        if self.request.is_ajax():
-            return JsonResponse({'error': False})
-        if self.request.POST.get("savenewform"):
-            return redirect("cases:add_case")
-        if self.request.POST.get('from_account'):
-            from_account = self.request.POST.get('from_account')
-            return redirect("accounts:view_account", pk=from_account)
-
-        return redirect('cases:list')
-
-    def form_invalid(self, form):
-        if self.request.is_ajax():
-            return JsonResponse({'error': True, 'case_errors': form.errors})
-        return self.render_to_response(self.get_context_data(form=form))
-
-    def get_context_data(self, **kwargs):
-        context = super(CreateCaseView, self).get_context_data(**kwargs)
-        context["case_form"] = context["form"]
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
+    else:
+        context = {}
+        context["case_form"] = form
+        context["accounts"] = accounts
+        if request.GET.get('view_account'):
             context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
-        context["contacts"] = self.contacts
-        context["users"] = self.users
+                Account, id=request.GET.get('view_account'))
+        context["contacts"] = contacts
+        context["users"] = users
         context["case_types"] = CASE_TYPE
         context["case_priority"] = PRIORITY_CHOICE
         context["case_status"] = STATUS_CHOICE
         context["assignedto_list"] = [
-            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+            int(i) for i in request.POST.getlist('assigned_to', []) if i]
         context["contacts_list"] = [
-            int(i) for i in self.request.POST.getlist('contacts', []) if i]
-        return context
+            int(i) for i in request.POST.getlist('contacts', []) if i]
+        return render(request, template_name, context)
 
 
 class CaseDetailView(LoginRequiredMixin, DetailView):
@@ -180,7 +162,7 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CaseDetailView, self).get_context_data(**kwargs)
-        user_assgn_list = [i.id for i in context['object'].assigned_to.all()]
+        user_assgn_list = [assigned_to.id for assigned_to in context['object'].assigned_to.all()]
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -199,120 +181,105 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class UpdateCaseView(LoginRequiredMixin, UpdateView):
-    model = Case
-    form_class = CaseForm
+def update_case(request, pk):
+    case_object = Case.objects.filter(pk=pk).first()
+    users = User.objects.filter(is_active=True).order_by('email')
+    accounts = Account.objects.filter(status="open")
+    contacts = Contact.objects.all()
+    if request.user.role != "ADMIN" and not request.user.is_superuser:
+        accounts = Account.objects.filter(
+            created_by=request.user)
+        contacts = Contact.objects.filter(
+            Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
+    kwargs_data = {"assigned_to": users, "account": accounts, "contacts": contacts}
+    form = CaseForm(instance=case_object, **kwargs_data)
     template_name = "create_cases.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        self.accounts = Account.objects.filter(status="open")
-        self.contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            self.accounts = Account.objects.filter(
-                created_by=self.request.user)
-            self.contacts = Contact.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
-        return super(UpdateCaseView, self).dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super(UpdateCaseView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users, "account": self.accounts,
-                       "contacts": self.contacts})
-        return kwargs
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
+    if request.POST:
+        form = CaseForm(request.POST, request.FILES, instance=case_object, **kwargs_data)
         if form.is_valid():
-            return self.form_valid(form)
+            assigned_to_ids = case_object.assigned_to.all().values_list('id', flat=True)
+            case_obj = form.save(commit=False)
+            case_obj.contacts.clear()
+            case_obj.save()
+            all_members_list = []
 
-        return self.form_invalid(form)
+            if request.POST.getlist('assigned_to', []):
+                current_site = get_current_site(request)
 
-    def form_valid(self, form):
-        assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
-        case_obj = form.save(commit=False)
-        case_obj.contacts.clear()
-        case_obj.save()
-        all_members_list = []
+                assigned_form_users = form.cleaned_data.get(
+                    'assigned_to').values_list('id', flat=True)
+                all_members_list = list(
+                    set(list(assigned_form_users)) - set(list(assigned_to_ids)))
 
-        if self.request.POST.getlist('assigned_to', []):
-            current_site = get_current_site(self.request)
+                if len(all_members_list):
+                    for assigned_to_user in all_members_list:
+                        user = get_object_or_404(User, pk=assigned_to_user)
+                        mail_subject = 'Assigned to case.'
+                        message = render_to_string('assigned_to/cases_assigned.html', {
+                            'user': user,
+                            'domain': current_site.domain,
+                            'protocol': request.scheme,
+                            'case': case_obj
+                        })
+                        email = EmailMessage(
+                            mail_subject, message, to=[user.email])
+                        email.content_subtype = "html"
+                        email.send()
 
-            assigned_form_users = form.cleaned_data.get(
-                'assigned_to').values_list('id', flat=True)
-            all_members_list = list(
-                set(list(assigned_form_users)) - set(list(assigned_to_ids)))
+                case_obj.assigned_to.clear()
+                case_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
+            else:
+                case_obj.assigned_to.clear()
 
-            if len(all_members_list):
-                for assigned_to_user in all_members_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to case.'
-                    message = render_to_string('assigned_to/cases_assigned.html', {
-                        'user': user,
-                        'domain': current_site.domain,
-                        'protocol': self.request.scheme,
-                        'case': case_obj
-                    })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+            if request.POST.getlist('contacts', []):
+                case_obj.contacts.add(*request.POST.getlist('contacts'))
 
-            case_obj.assigned_to.clear()
-            case_obj.assigned_to.add(*self.request.POST.getlist('assigned_to'))
+            success_url = reverse("cases:list")
+            if request.POST.get('from_account'):
+                from_account = request.POST.get('from_account')
+                success_url = reverse("accounts:view_account", pk=from_account)
+            if request.FILES.get('case_attachment'):
+                attachment = Attachments()
+                attachment.created_by = request.user
+                attachment.file_name = request.FILES.get(
+                    'case_attachment').name
+                attachment.case = case_obj
+                attachment.attachment = request.FILES.get('case_attachment')
+                attachment.save()
+
+            return JsonResponse({'error': False, 'success_url': success_url})
+
         else:
-            case_obj.assigned_to.clear()
+            return JsonResponse({'error': True, 'errors': form.errors})
 
-        if self.request.POST.getlist('contacts', []):
-            case_obj.contacts.add(*self.request.POST.getlist('contacts'))
-
-        if self.request.POST.get('from_account'):
-            from_account = self.request.POST.get('from_account')
-            return redirect("accounts:view_account", pk=from_account)
-        if self.request.FILES.get('case_attachment'):
-            attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                'case_attachment').name
-            attachment.case = case_obj
-            attachment.attachment = self.request.FILES.get('case_attachment')
-            attachment.save()
-
-        if self.request.is_ajax():
-            return JsonResponse({'error': False})
-        return redirect("cases:list")
-
-    def form_invalid(self, form):
-        if self.request.is_ajax():
-            return JsonResponse({'error': True, 'case_errors': form.errors})
-        return self.render_to_response(self.get_context_data(form=form))
-
-    def get_context_data(self, **kwargs):
-        context = super(UpdateCaseView, self).get_context_data(**kwargs)
-        context["case_obj"] = self.object
+    else:
+        context = {}
+        context["case_obj"] = case_object
         user_assgn_list = [
-            i.id for i in context["case_obj"].assigned_to.all()]
-        if self.request.user == context['case_obj'].created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+            assgined_to.id for assgined_to in context["case_obj"].assigned_to.all()]
+
+        if request.user == case_object.created_by:
+            user_assgn_list.append(request.user.id)
+        if request.user.role != "ADMIN" and not request.user.is_superuser:
+            if request.user.id not in user_assgn_list:
                 raise PermissionDenied
-        context["case_form"] = context["form"]
-        context["accounts"] = self.accounts
-        if self.request.GET.get('view_account'):
+        context["case_form"] = form
+        context["accounts"] = accounts
+        if request.GET.get('view_account'):
             context['account'] = get_object_or_404(
-                Account, id=self.request.GET.get('view_account'))
-        context["contacts"] = self.contacts
-        context["users"] = self.users
+                Account, id=request.GET.get('view_account'))
+        context["contacts"] = contacts
+        context["users"] = users
         context["case_types"] = CASE_TYPE
         context["case_priority"] = PRIORITY_CHOICE
         context["case_status"] = STATUS_CHOICE
         context["assignedto_list"] = [
-            int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+            int(i) for i in request.POST.getlist('assigned_to', []) if i]
         context["contacts_list"] = [
-            int(i) for i in self.request.POST.getlist('contacts', []) if i]
-        return context
+            int(i) for i in request.POST.getlist('contacts', []) if i]
+
+        return render(request, template_name, context)
 
 
 class RemoveCaseView(LoginRequiredMixin, View):
@@ -323,7 +290,10 @@ class RemoveCaseView(LoginRequiredMixin, View):
         if request.GET.get('view_account'):
             account = request.GET.get('view_account')
             return redirect("accounts:view_account", pk=account)
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+        if (
+            self.request.user.role == "ADMIN" or self.request.user.is_superuser or
+            self.request.user == self.object.created_by
+        ):
             self.object.delete()
             return redirect("cases:list")
         else:
@@ -349,7 +319,10 @@ class CloseCaseView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         case_id = request.POST.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser or self.request.user == self.object.created_by:
+        if (
+            self.request.user.role == "ADMIN" or self.request.user.is_superuser or
+            self.request.user == self.object.created_by
+        ):
             self.object.status = "Closed"
             self.object.save()
             data = {'status': "Closed", "cid": case_id}
@@ -358,17 +331,15 @@ class CloseCaseView(LoginRequiredMixin, View):
             raise PermissionDenied
 
 
-class SelectContactsView(LoginRequiredMixin, View):
-
-    def get(self, request, *args, **kwargs):
-        contact_account = request.GET.get("account")
-        if contact_account:
-            account = get_object_or_404(Account, id=contact_account)
-            contacts = Contact.objects.filter(account=account)
-        else:
-            contacts = Contact.objects.all()
-        data = {i.pk: i.first_name for i in contacts.distinct()}
-        return JsonResponse(data)
+def select_contact(request):
+    contact_account = request.GET.get("account")
+    if contact_account:
+        account = get_object_or_404(Account, id=contact_account)
+        contacts = account.contacts.all()
+    else:
+        contacts = Contact.objects.all()
+    data = {contact.pk: contact.first_name for contact in contacts.distinct()}
+    return JsonResponse(data)
 
 
 class GetCasesView(LoginRequiredMixin, ListView):

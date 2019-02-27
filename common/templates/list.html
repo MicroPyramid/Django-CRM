@@ -87,7 +87,7 @@
                     <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i class="fas fa-pencil-alt"></i>Edit</a>
                     {% endif %}
                     <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action" {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i class="fas fa-trash-alt"></i>Delete</a>
-                    {% if user.email != admin_email or request.user != user %}
+                    {% if user.email != admin_email and request.user != user %}
                     <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href="" class="fa-passwd-reset fa-stack" ><i class="fa fa-undo fa-stack-2x"></i><i class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
                   </td>
                 </tr>
