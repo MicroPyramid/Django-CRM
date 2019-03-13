@@ -3,6 +3,8 @@ from cases.models import Case
 from leads.models import Lead
 from common.models import User, Comment, Attachments
 from accounts.models import Account
+from leads.tasks import *
+from leads.forms import *
 
 
 class TestLeadModel(object):
@@ -10,20 +12,20 @@ class TestLeadModel(object):
         self.client = Client()
 
         self.user = User.objects.create(
-            username='uday', email='u@mp.com', role="ADMIN")
-        self.user.set_password('uday2293')
+            username='jorge', email='j@mp.com', role="ADMIN")
+        self.user.set_password('jorge2293')
         self.user.save()
 
-        self.client.login(username='u@mp.com', password='uday2293')
+        self.client.login(username='j@mp.com', password='jorge2293')
 
         self.account = Account.objects.create(name="account",
                                               email="account@gmail.com",
                                               phone="12345",
                                               billing_address_line="",
-                                              billing_street="Gokul enclave colony",
-                                              billing_city="Hasthinapuram",
-                                              billing_state="Telangana",
-                                              billing_postcode="500079",
+                                              billing_street="Arcade enclave colony",
+                                              billing_city="NewTown",
+                                              billing_state="California",
+                                              billing_postcode="5009",
                                               billing_country="AD",
                                               website="account.com",
                                               industry="IT",
@@ -31,14 +33,14 @@ class TestLeadModel(object):
                                               created_by=self.user)
 
         self.lead = Lead.objects.create(title="LeadCreation",
-                                        first_name="anjali",
+                                        first_name="Alisa",
                                         last_name="k",
-                                        email="anjalikotha1993@gmail.com",
+                                        email="Alisak1993@gmail.com",
                                         address_line="",
-                                        street="Gokul enclave colony",
-                                        city="Hasthinapuram",
-                                        state="Telangana",
-                                        postcode="500079",
+                                        street="Arcade enclave colony",
+                                        city="NewTown",
+                                        state="California",
+                                        postcode="5079",
                                         country="AD",
                                         website="www.gmail.com",
                                         status="assigned",
@@ -47,25 +49,29 @@ class TestLeadModel(object):
                                         description="Iam an Lead",
                                         created_by=self.user)
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem", status="New", account=self.account,
+            name="Rose", case_type="Problem",
+            status="New",
+            account=self.account,
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
             comment='testikd', case=self.case, commented_by=self.user)
         self.attachment = Attachments.objects.create(
-            attachment='image.png', case=self.case, created_by=self.user, account=self.account)
+            attachment='image.png',
+            case=self.case, created_by=self.user,
+            account=self.account)
 
 
 class LeadsPostrequestTestCase(TestLeadModel, TestCase):
     def test_valid_postrequesttestcase_date(self):
-        data = {'title': 'LeadCreation', 'first_name': "kotha",
-                'last_name': "anjali", 'email': "anjalikotha1993@gmail.com",
+        data = {'title': 'LeadCreation', 'first_name': "micky",
+                'last_name': "Alisa", 'email': "Alisamicky1993@gmail.com",
                 'account': self.account,
                 'address_line': "",
-                'street': "Gokul enclave colony",
-                'city': "Hasthinapuram",
-                'state': "Telangana",
-                'postcode': "500079",
+                'street': "Arcade enclave colony",
+                'city': "NewTown",
+                'state': "California",
+                'postcode': "579",
                 'country': "AD",
                 'website': "www.gmail.com", "status ": "assigned",
                 "source": "Call",
@@ -76,9 +82,10 @@ class LeadsPostrequestTestCase(TestLeadModel, TestCase):
 
     def test_leads_list(self):
         self.lead = Lead.objects.all()
-        get_name = Lead.objects.get(first_name='anjali')
+        get_name = Lead.objects.get(first_name='Alisa')
         # print(get_name.first_name+get_name.last_name,str(get_name))
-        self.assertEqual(get_name.first_name + get_name.last_name, str(get_name))
+        self.assertEqual(get_name.first_name +
+                         get_name.last_name, str(get_name))
         response = self.client.get('/leads/list/')
         self.assertEqual(response.status_code, 200)
 
@@ -91,14 +98,14 @@ class LeadsCreateUrlTestCase(TestLeadModel, TestCase):
     def test_leads_create_url(self):
         response = self.client.post('/leads/create/', {
                                     'title': 'LeadCreation',
-                                    'first_name': "kotha",
-                                    'email': "anjalikotha1993@gmail.com",
+                                    'first_name': "micky",
+                                    'email': "Alisamicky1993@gmail.com",
                                     'account': self.account,
                                     'address_line': "",
-                                    'street': "Gokul enclave colony",
-                                    'city': "Hasthinapuram",
-                                    'state': "Telangana",
-                                    'postcode': "500079",
+                                    'street': "Arcade enclave colony",
+                                    'city': "NewTown",
+                                    'state': "California",
+                                    'postcode': "579",
                                     'country': "AD",
                                     'website': "www.gmail.com",
                                     "status": "assigned",
@@ -110,11 +117,14 @@ class LeadsCreateUrlTestCase(TestLeadModel, TestCase):
 
     def test_leads_create_html(self):
         response = self.client.post('/leads/create/', {
-            'title': 'LeadCreation', 'name': "kotha", 'email': "anjalikotha1993@gmail.com", 'account': self.account,
-            'address_line': "", 'street': "Gokul enclave colony", 'city': "Hasthinapuram",
-            'state': "Telangana", 'postcode': "500079", 'country': "AD",
+            'title': 'LeadCreation', 'name': "micky",
+            'email': "Alisamicky1993@gmail.com", 'account': self.account,
+            'address_line': "",
+            'street': "Arcade enclave colony", 'city': "NewTown",
+            'state': "California", 'postcode': "579", 'country': "AD",
             'website': "www.gmail.com", 'status': "assigned",
-            "source": "Call", 'opportunity_amount': "700", 'description': "Iam an Lead", 'created_by': self.user})
+            "source": "Call", 'opportunity_amount': "700",
+            'description': "Iam an Lead", 'created_by': self.user})
         # self.assertTemplateUsed(response, 'create_lead.html')
         self.assertEqual(response.status_code, 200)
 
@@ -129,14 +139,14 @@ class LeadsViewTestCase(TestLeadModel, TestCase):
 
     def test_leads_view(self):
         Lead.objects.create(title="LeadCreationbylead",
-                            first_name="anjali",
+                            first_name="Alisa",
                             last_name="k",
-                            email="srilathakotha1993@gmail.com",
+                            email="Alisa@gmail.com",
                             address_line="",
-                            street="Gokul enclave colony",
-                            city="Hasthinapuram",
-                            state="Telangana",
-                            postcode="500079",
+                            street="Arcade enclave colony",
+                            city="NewTown",
+                            state="California",
+                            postcode="579",
                             country="AD",
                             website="www.gmail.com",
                             status='converted',
@@ -158,8 +168,9 @@ class LeadListTestCase(TestLeadModel, TestCase):
 
     def test_leads_list_queryset(self):
         self.lead = Lead.objects.all()
-        data = {'fist_name': "meghana", 'last_name': "reddy",
-                'city': "hyd", 'email': "contact@gmail.com", 'status': "Assigned"}
+        data = {'fist_name': "marphy", 'last_name': "racheal",
+                'city': "hyd", 'email': "contact@gmail.com",
+                'status': "Assigned"}
         response = self.client.post('/leads/list/', data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'leads.html')
@@ -189,21 +200,24 @@ class UpdateLeadTestCase(TestLeadModel, TestCase):
     def test_update_lead(self):
         url = '/leads/' + str(self.lead.id) + '/edit/'
         data = {
-            'title': "Creation", 'first_name': "meghana", 'last_name': "k",
+            'title': "Creation", 'first_name': "marphy", 'last_name': "k",
             'email': "meg@gmail.com", 'account': self.account,
-            'address_line': "", 'street': "Gokul enclave colony", 'city': "Hasthinapuram",
-            'state': "Telangana", 'postcode': "500079", 'country': "AD",
-            'phone': "+917894563452", 'website': "www.gmail.com", 'status': "assigned",
-            'source': "", 'opportunity_amount': "700", 'description': "Iam an Lead", 'created_by': self.user}
+            'address_line': "",
+            'street': "Arcade enclave colony", 'city': "NewTown",
+            'state': "California",
+            'postcode': "579", 'country': "AD",
+            'phone': "+917894563452",
+            'website': "www.gmail.com", 'status': None,
+            'source': "", 'opportunity_amount': "700",
+            'description': "Iam an Lead", 'created_by': self.user}
         response = self.client.post(url, data)
-        # self.assertEqual(response.status_code, 302)
         self.assertEqual(response.status_code, 200)
 
 
 class LeadDetailTestCase(TestLeadModel, TestCase):
     def test_lead_detail(self):
         url = '/leads/' + str(self.lead.id) + '/view/'
-        response = self.client.get(url)
+        response = self.client.get(url, {'status': ''})
         self.assertEqual(response.status_code, 200)
 
 
@@ -235,3 +249,23 @@ class AttachmentTestCase(TestLeadModel, TestCase):
             '/leads/attachment/remove/', {'attachment_id': self.attachment.id})
         self.assertEqual(response.status_code, 200)
 
+
+class TestTemplates(TestLeadModel, TestCase):
+    def test_lead_list_view(self):
+        resp = self.client.post('/leads/list/', {'name': 'trevor',
+                                                 'tag': "123",
+                                                 'source': "call",
+                                                 'assigned_to': '1',
+                                                 'tab_status': 'Open'})
+        self.assertEqual(resp.status_code, 200)
+        # print(resp.name)
+        # self.assertTrue(resp.name)
+
+    # def test_lead_from_site(self):
+    #     resp = self.client.get()
+
+
+class TestConvertLeadView(TestLeadModel, TestCase):
+    def test_get_fun(self):
+        resp = self.client.get('/leads/' + str(self.lead.id) + '/convert/')
+        self.assertEqual(resp.status_code, 302)

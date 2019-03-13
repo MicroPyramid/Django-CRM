@@ -25,6 +25,7 @@
 </head>
 <body class="main_body_bg_color">
   <div class="wrapper">
+    {% block header %}
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a>
@@ -63,9 +64,10 @@
           </div>
         {% endif %}
         </nav>
-      </header>
+    </header>
+      {% endblock %}
 
-    <div id="mainbody" class="main_container">
+    <div id="mainbody" class="main_container" style="margin-top:65px;">
       {% block breadcrumb %}
       {% endblock %}
 
@@ -81,6 +83,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.min.js"></script>
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script>
 
 {% block js_block %}{% endblock js_block %}
 <script type="text/javascript">
@@ -93,6 +96,22 @@
       $('#' + word).addClass('active')
     }
   });
+  /*
+    Usage is very simple; to block user activity for the page:
+      $.blockUI();
+
+    Blocking with a custom message:
+      $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
+
+    Blocking with custom style:
+      $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
+
+    To unblock the page:
+      $.unblockUI();
+
+    If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
+      $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+  */
 </script>
 </body>
 </html>

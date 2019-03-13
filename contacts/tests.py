@@ -10,16 +10,16 @@ class ContactObjectsCreation(object):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create(
-            first_name="navaneetha",
-            username='navaneetha',
+            first_name="Nathan",
+            username='Nathan',
             email="n@mp.com",
             role="ADMIN")
         self.user.set_password('navi123')
         self.user.save()
         self.address = Address.objects.create(
-            street="kphb 5th phase",
-            city="hyd",
-            state="telanagana",
+            street="5th phase",
+            city="Orlando",
+            state="Florida",
             postcode=502279, country="AD")
 
         self.contact = Contact.objects.create(
@@ -31,7 +31,7 @@ class ContactObjectsCreation(object):
             created_by=self.user)
         self.contact.assigned_to.add(self.user)
         self.case = Case.objects.create(
-            name="raghu",
+            name="lucy",
             case_type="Problem",
             status="New",
             priority="Low",
@@ -52,6 +52,9 @@ class ContactObjectsCreation(object):
 class ContactObjectsCreation_Count(ContactObjectsCreation, TestCase):
     def test_contact_object_creation(self):
         c = Contact.objects.count()
+        con = Contact.objects.filter(id=self.contact.id)
+        # print(self.contact.first_name)
+        self.assertEqual(str(con.last()), self.contact.first_name)
         self.assertEqual(c, 1)
 
     def test_address_object_creation(self):
@@ -76,7 +79,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_create(self):
         response = self.client.post('/contacts/create/', {
             'first_name': 'contact',
-            'last_name': 'reddy',
+            'last_name': 'george',
             'email': 'meg@gmail.com',
             'phone': '+917898901234',
             'address': self.address.id,
@@ -96,6 +99,11 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         response = self.client.get(reverse("contacts:list"))
         self.assertEqual(response.status_code, 200)
 
+    def test_contacts_delete_get(self):
+        response = self.client.get(
+            '/contacts/' + str(self.contact.id) + '/delete/')
+        self.assertEqual(response.status_code, 302)
+
     def test_contacts_delete_location_checking(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/delete/')
@@ -104,7 +112,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_edit(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/edit/', {
-                'name': 'priya',
+                'name': 'Preston',
                 'email': 'contact@gmail.com',
                 'phone': '12345',
                 'pk': self.contact.id,
@@ -114,7 +122,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_edit_html(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/edit/', {
-                'name': 'priya',
+                'name': 'Preston',
                 'email': 'contact@gmail.com',
                 'phone': '12345',
                 'pk': self.contact.id,
@@ -149,7 +157,8 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_list_queryset(self):
         data = {'fist_name': 'contact',
-                'city': "hyd", 'phone': '12345', 'email': "contact@gmail.com"}
+                'city': "Orlando", 'phone': '12345',
+                'email': "contact@gmail.com"}
         response = self.client.post('/contacts/list/', data)
 
         self.assertEqual(response.status_code, 200)
@@ -162,14 +171,30 @@ class CommentTestCase(ContactObjectsCreation, TestCase):
             '/contacts/comment/add/', {'contactid': self.contact.id})
         self.assertEqual(response.status_code, 200)
 
+    # def test_GetContactsView(self):
+    #     response = self.client.get('/get/list/')
+    #     # self.assertEqual(response.status_code, 200)
+        # self.assertIsNone(response.context['contacts'])
+
     def test_comment_edit(self):
         response = self.client.post(
             '/contacts/comment/edit/', {'commentid': self.comment.id})
         self.assertEqual(response.status_code, 200)
+        resp = self.client.post(
+            '/contacts/comment/edit/',
+            {'commentid': self.comment.id, 'comment': 'hello123'})
+        self.assertEqual(resp.status_code, 200)
 
     def test_comment_delete(self):
         response = self.client.post(
             '/contacts/comment/remove/', {'comment_id': self.comment.id})
+        self.assertEqual(response.status_code, 200)
+
+    def test_form_valid(self):
+        response = self.client.post(
+            '/contacts/comment/add/', {'contactid': self.contact.id,
+                                       'comment': 'hello'})
+        # print(response , "response")
         self.assertEqual(response.status_code, 200)
 
 

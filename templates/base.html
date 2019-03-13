@@ -9,9 +9,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Django CRM</title>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Quicksand:300,400,500,700" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
+
     {% compress css %}
     <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
     <link href="{% static 'css/mention.scss' %}" type="text/x-scss" rel="stylesheet">
@@ -72,7 +73,7 @@
       </header>
       <!-- header ends here -->
       <!-- main_container starts here -->
-      <div id="mainbody" class="main_container">
+      <div id="mainbody" class="main_container" style="padding-top:65px;">
         <!-- breadcrumb starts here -->
         {% block breadcrumb %}
         {% endblock %}

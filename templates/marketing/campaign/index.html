@@ -2,145 +2,170 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
-{{ block.super }} 
+{{ block.super }}
 <div class="marketing_pages">
-	<div class="row marl">
-	  <div class="col-md-12">
-	    <div class="table_container_row no_mar_top">
-	      <div class="card">
-	        <div class="card-body">
-	          <div class="card-title text-right">
-	            <span class="float-left">Campaigns - 54</span>
-	            <a href="/m/cm/list/new/" class="primary_btn">Add New Campaign</a>
-	          </div>
-	          <div class="table-responsive table-bordered ">
-	            <table class="table">
-	              <thead>
-	                <tr>
-	                  <th width="25%">Campaign</th>
-	                  <th width="10%">Receipents</th>
-	                  <th width="20%">Sent</th>
-	                  <th width="15%">Unique Opens</th>
-	                  <th width="15%">Unique Clicks</th>
-	                  <th width="10%">Actions</th>
-	                </tr>
-	              </thead>
-	              <tbody>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	                <tr style="text-align:center;">
-	                  <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
-	                  <td>5478</td>
-	                  <td>
-	                    Tue, Nov 22, 2016, 12:00AM
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">20.6%</span> 125 Opened
-	                  </td>
-	                  <td>
-	                    <span class="badge badge-secondary">15.5%</span> 78 Clicked
-	                  </td>
-	                  <td class="actions">
-	                    <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-	                    <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
-	                    <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-	                  </td>
-	                </tr>
-	              </tbody>
-	            </table>
-	          </div>
-	        </div>
-	      </div>
-	    </div>
-	  </div>  
-	</div>
+  <div class="row marl">
+    <div class="col-md-12">
+      <div class="table_container_row no_mar_top">
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title text-right">
+              <span class="float-left">Campaigns - {{ campaigns_list|length }}</span>
+              <a href="{% url 'marketing:campaign_new' %}" class="primary_btn">Add New Campaign</a>
+            </div>
+            <div class="table-responsive table-bordered ">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th width="25%">Campaign</th>
+                    <th width="10%">Receipents</th>
+                    <th width="20%">Sent</th>
+                    <th width="15%">Unique Opens</th>
+                    <th width="15%">Unique Clicks</th>
+                    <th width="10%">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for campaign in campaigns_list %}
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
+                      <td>5478</td>
+                      <td>
+                        {{ campaign.created_on }}
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="{% url 'marketing:campaign_edit' campaign.id %}" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'marketing:campaign_delete' campaign.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6"> No records found!</td>
+                    </tr>
+                  {% endfor %}
+                  <!--
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                    <tr style="text-align:center;">
+                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="#">Sample scheduled newsletter </a></td>
+                      <td>5478</td>
+                      <td>
+                        Tue, Nov 22, 2016, 12:00AM
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">20.6%</span> 125 Opened
+                      </td>
+                      <td>
+                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
+                      </td>
+                      <td class="actions">
+                        <a href="/contacts/1/edit/" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a>
+                        <a href="/contacts/1/delete/" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      </td>
+                    </tr>
+                  -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

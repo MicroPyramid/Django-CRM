@@ -123,7 +123,7 @@
                     {% if request.user == case.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
                     {% if case.status != 'Closed' %}
-                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-warning"><i class="fas fa-times"></i> </a>
+                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-info"><i class="fas fa-times"></i> </a>
                     {% endif %}
                     {% endif %}
                   </td>

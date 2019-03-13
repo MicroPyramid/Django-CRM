@@ -1,16 +1,14 @@
-import json
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.mail import EmailMessage
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
-from accounts.forms import AccountForm, AccountCommentForm, AccountAttachmentForm
+from accounts.forms import AccountForm, AccountCommentForm, \
+    AccountAttachmentForm
 from accounts.models import Account, Tags
 from common.models import User, Comment, Attachments
-from common.utils import INDCHOICES, COUNTRIES, CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
+from common.utils import INDCHOICES, COUNTRIES, \
+    CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from opportunity.models import Opportunity, STAGES, SOURCES
 from cases.models import Case
@@ -91,7 +89,8 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(CreateAccountView, self).dispatch(request, *args, **kwargs)
+        return super(
+            CreateAccountView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(CreateAccountView, self).get_form_kwargs()
@@ -160,10 +159,12 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
         context["contact_count"] = Contact.objects.count()
-        context["lead_count"] = Lead.objects.exclude(status='dead').count()
+        context["leads"] = Lead.objects.exclude(
+            status__in=['converted', 'closed'])
+        context["lead_count"] = context["leads"].count()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='dead').count()
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='closed').count()
         return context
 
 
@@ -178,18 +179,17 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != account_record.created_by:
                 raise PermissionDenied
-        if (
+
+        comment_permission = True if (
             self.request.user == account_record.created_by or
             self.request.user.is_superuser or self.request.user.role == 'ADMIN'
-        ):
-            comment_permission = True
-        else:
-            comment_permission = False
+        ) else False
 
         context.update({
             "comments": account_record.accounts_comments.all(),
             "attachments": account_record.account_attachment.all(),
-            "opportunity_list": Opportunity.objects.filter(account=account_record),
+            "opportunity_list": Opportunity.objects.filter(
+                account=account_record),
             "contacts": account_record.contacts.all(),
             "users": User.objects.filter(is_active=True).order_by('email'),
             "cases": Case.objects.filter(account=account_record),
@@ -212,7 +212,8 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(AccountUpdateView, self).dispatch(request, *args, **kwargs)
+        return super(AccountUpdateView, self).dispatch(
+            request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(AccountUpdateView, self).get_form_kwargs()
@@ -233,9 +234,6 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         # Save Account
         account_object = form.save(commit=False)
         account_object.save()
-
-        all_members_list = []
-
         account_object.tags.clear()
         if self.request.POST.get('tags', ''):
             tags = self.request.POST.get("tags")
@@ -284,10 +282,12 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
         context["contact_count"] = Contact.objects.count()
-        context["lead_count"] = Lead.objects.exclude(status='dead').count()
+        context["leads"] = Lead.objects.exclude(
+            status__in=['converted', 'closed'])
+        context["lead_count"] = context["leads"].count()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='dead').count()
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='closed').count()
         return context
 
 
@@ -322,7 +322,8 @@ class AddCommentView(LoginRequiredMixin, CreateView):
                 return self.form_valid(form)
             return self.form_invalid(form)
 
-        data = {'error': "You don't have permission to comment for this account."}
+        data = {
+            'error': "You don't have permission to comment for this account."}
         return JsonResponse(data)
 
     def form_valid(self, form):
@@ -392,7 +393,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         self.account = get_object_or_404(
             Account, id=request.POST.get('accountid'))
         if (
-            request.user == self.account.created_by or request.user.is_superuser or
+            request.user == self.account.created_by or
+            request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             form = self.get_form()
@@ -402,7 +404,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
         data = {
-            'error': "You don't have permission to add attachment for this account."}
+            'error': "You don't have permission to add attachment \
+            for this account."}
         return JsonResponse(data)
 
     def form_valid(self, form):
@@ -415,7 +418,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             "attachment_id": attachment.id,
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
-            "download_url": reverse('common:download_attachment', kwargs={'pk': attachment.id}),
+            "download_url": reverse('common:download_attachment',
+                                    kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display(),
             "created_on": attachment.created_on,
             "created_by": attachment.created_by.email
@@ -431,12 +435,14 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
         self.object = get_object_or_404(
             Attachments, id=request.POST.get("attachment_id"))
         if (
-            request.user == self.object.created_by or request.user.is_superuser or
+            request.user == self.object.created_by or
+            request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             self.object.delete()
             data = {"acd": request.POST.get("attachment_id")}
             return JsonResponse(data)
 
-        data = {'error': "You don't have permission to delete this attachment."}
+        data = {
+            'error': "You don't have permission to delete this attachment."}
         return JsonResponse(data)

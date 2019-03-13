@@ -114,11 +114,12 @@
                       <tr>
                         <th width="5%">ID</th>
                         <th width="10%">Name</th>
+                        <th width="8%">Created By</th>
                         <th width="10%">Source</th>
                         <th width="10%">Status</th>
                         <th width="20%">Assigned User</th>
-                        <th width="20%">Tags</th>
-                        <th width="15%">Created On</th>
+                        <th width="15%">Tags</th>
+                        <th width="10%">Created On</th>
                         <th width="10%">Actions</th>
                       </tr>
                       {% endif %}
@@ -133,6 +134,15 @@
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
                         <td><a href="{% url 'leads:view_lead' lead.id %}">{{ lead.first_name }} {{ lead.last_name }}</a></td>
+                        <td>
+                          {% if lead.created_by.profile_pic %}
+                            {% thumbnail lead.created_by.profile_pic "40x40" crop="center" as im %}
+                                <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ lead.created_by }}">
+                            {% endthumbnail %}
+                          {% else %}
+                              <img src="{% static 'images/user.png' %}" alt="Micro profile pic" style="width: 40px;height: 40px;"/>
+                          {% endif %}
+                        </td>
                         <td>{{ lead.source }}</td>
                         <td>{{ lead.get_status_display }}</td>
                         <td>

@@ -1,0 +1,20 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }}
+  <div class="marketing_pages">
+    <div class="row marl">
+      <div class="col-md-12">
+        <p>{{email_template.title}}</p>
+        <p>{{email_template.subject}}</p>
+        <span>{{email_template.html|safe}}</span>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_block %}
+	<script>
+  </script>
+{% endblock js_block %}

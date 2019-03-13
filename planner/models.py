@@ -13,8 +13,9 @@ from common.utils import EVENT_PARENT_TYPE, EVENT_STATUS
 class Reminder(models.Model):
     reminder_type = models.CharField(max_length=5, blank=True,
                                      null=True)
-    reminder_time = models.IntegerField(pgettext_lazy("time of the reminder to event in Seconds", "Reminder"),
-                                        blank=True, null=True)
+    reminder_time = models.IntegerField(pgettext_lazy(
+        "time of the reminder to event in Seconds", "Reminder"),
+        blank=True, null=True)
 
     def __str__(self):
         return self.reminder_type
@@ -28,9 +29,13 @@ class Event(models.Model):
     name = models.CharField(
         pgettext_lazy("Name of the Event", "Event"),
         max_length=64)
-    event_type = models.CharField(_("Type of the event"), max_length=7)  # call meeting task
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, blank=True, null=True,
-                                     limit_choices_to=limit, choices=EVENT_PARENT_TYPE)
+    event_type = models.CharField(
+        _("Type of the event"), max_length=7)  # call meeting task
+    content_type = models.ForeignKey(ContentType,
+                                     on_delete=models.CASCADE,
+                                     blank=True, null=True,
+                                     limit_choices_to=limit,
+                                     choices=EVENT_PARENT_TYPE)
     object_id = models.PositiveIntegerField(blank=True, null=True)
     parent = GenericForeignKey('content_type', 'object_id')
     status = models.CharField(
@@ -42,22 +47,28 @@ class Event(models.Model):
     start_date = models.DateField(default=None)
     close_date = models.DateField(default=None, null=True)
 
-    duration = models.IntegerField(pgettext_lazy("Duration of the Event in Seconds", "Durations"), default=None,
-                                   null=True)  # not for tasks
+    duration = models.IntegerField(pgettext_lazy(
+        "Duration of the Event in Seconds", "Durations"), default=None,
+        null=True)  # not for tasks
     reminders = models.ManyToManyField(Reminder, blank=True)
     priority = models.CharField(max_length=10, blank=True)  # only for task
     updated_on = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_user')
+        User, on_delete=models.SET_NULL, null=True,
+        blank=True, related_name='updated_user')
     attendees_user = models.ManyToManyField(User, blank=True,
                                             related_name='attendees_user')
     attendees_contacts = models.ManyToManyField(Contact, blank=True,
-                                                related_name='attendees_contact')
+                                                related_name='attendees_contact'
+                                                )
     attendees_leads = models.ManyToManyField(Lead, blank=True,
                                              related_name='attendees_lead')
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    created_by = models.ForeignKey(User, related_name='event_created_by', on_delete=models.SET_NULL, null=True)
-    assigned_to = models.ManyToManyField(User, blank=True, related_name='event_assigned_users')
+    created_by = models.ForeignKey(
+        User, related_name='event_created_by',
+        on_delete=models.SET_NULL, null=True)
+    assigned_to = models.ManyToManyField(
+        User, blank=True, related_name='event_assigned_users')
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=False)
 

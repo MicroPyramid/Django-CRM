@@ -1,48 +1,64 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
-{% load paginate %}
 {% block content %}
-{{ block.super }} 
-<div class="marketing_pages">
-	<div class="row marl">
-	  <div class="col-md-12">
-	    <form id="add_form" method="POST" action='' novalidate>
-		  <div class="overview_form_block row marl justify-content-center">
-		    <div class="col-md-12">
-		      <div class="card">
-		        <div class="card-body">
-		          <div class="card-title text-center">
-		            {% if contact_obj %}Edit{% else %}Create{% endif %} Email Template
-		          </div>
-		          	<form>
-									<div class="row marl">
-										<div class="col-md-12">
-											<div class="form-group">
-												<input type="email" class="form-control" placeholder="Enter Template Name">
-											</div>
-										</div>
-										<div class="col-md-12">
-											<div class="form-group">
-												<label>Html Code</label>
-												<div id="editor-container">
-												</div>
-											</div>
-										</div>
-										<div class="col-md-12 text-center">
-											<button type="submit" class="primary_btn mar_btm">Save Template</button>
-										</div>
-									</div>
-								</form>
-		        </div>
-		      </div>
-		    </div>
-		  </div>
-		</form>
-	  </div>  
+	{{ block.super }}
+	<div class="marketing_pages">
+	  <div class="row marl">
+	    <div class="col-md-12">
+	      <form id="add_form" method="POST" action='' novalidate>
+	        <div class="overview_form_block row marl justify-content-center">
+	          <div class="col-md-12">
+	            <div class="card">
+	              <div class="card-body">
+	                <div class="card-title text-center">
+	                  {% if email_template %}Edit{% else %}Create{% endif %} Email Template
+	                </div>
+	                <form>
+	                  <div class="row marl">
+	                    <div class="col-md-12">
+	                      <div class="form-group">
+	                      	<label for="">Title</label>
+	                        <input type="text" class="form-control" name="title" value="{% if email_template %}{{ email_template.title }}{% endif %}" placeholder="Enter Template Title">
+	                      </div>
+	                      <span id="id_title"></span>
+	                    </div>
+	                    <div class="col-md-12">
+	                      <div class="form-group">
+	                      	<label for="">Subject</label>
+	                        <input type="text" class="form-control" name="subject" value="{% if email_template %}{{ email_template.subject }}{% endif %}" placeholder="Enter Template Subject">
+	                      </div>
+	                      <span id="id_title"></span>
+	                    </div>
+	                    <div class="col-md-12">
+	                      <div class="form-group">
+	                        <label>HTML Code</label>
+                        	<div id="editor-container">{% if email_template %}{{ email_template.html|safe }}{% endif %}</div>
+	                      </div>
+	                    	<input type="hidden" name="html" id="html_content">
+	                      <span id="id_html"></span>
+	                    </div>
+	                    <!-- <div class="col-md-12 text-center">
+	                    	<pre id="myPrecious"></pre>
+	                    	<div id="justText"></div>
+	                    	<div id="justHtml"></div>
+	                    </div> -->
+	                    <div class="col-md-12 text-center">
+	                      <button type="submit" class="primary_btn mar_btm save_btn">Save Template</button>
+	                      <a href="{% url 'marketing:email_template_list' %}" class="primary_btn">Cancel</a>
+	                    </div>
+	                  </div>
+	                </form>
+	              </div>
+	            </div>
+	          </div>
+	        </div>
+	      </form>
+	    </div>
+	  </div>
 	</div>
-</div>
 {% endblock %}
 {% block js_block %}
+	<script src="https://malsup.github.com/jquery.form.js"></script>
 	<script>
 		var quill = new Quill('#editor-container', {
 		  modules: {
@@ -53,7 +69,50 @@
 		    ]
 		  },
 		  placeholder: 'Compose an epic...',
-		  theme: 'snow'  // or 'bubble'
+		  theme: 'snow' // or 'bubble'
 		});
+
+		var preciousContent = document.getElementById('myPrecious');
+		var justTextContent = document.getElementById('justText');
+		var justHtmlContent = document.getElementById('justHtml');
+
+		quill.on('text-change', function() {
+		  var delta = quill.getContents();
+		  var text = quill.getText();
+		  var justHtml = quill.root.innerHTML;
+		  /*preciousContent.innerHTML = JSON.stringify(delta);
+		  justTextContent.innerHTML = text;
+		  justHtmlContent.innerHTML = justHtml;*/
+		  $('#html_content').val(justHtml);
+		});
+
+
+		$('.save_btn').click(function(e){
+	  	e.preventDefault();
+	  	$("form#add_form").submit()
+		})
+
+    $('form#add_form').ajaxForm({
+    	type: 'POST',
+      dataType: 'json',
+      url: $(this).attr('action'),
+      data: $(this).serialize(),
+      success: function(data) {
+      	console.log("data", data)
+        if (data.error == false) {
+          window.location = "{% url 'marketing:email_template_list' %}";
+        } else {
+          /*$(document).ajaxStop($.unblockUI);*/
+          // $.unblockUI();
+          $('p.failure').remove();
+          for (var key in data.errors) {
+            $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+          }
+        }
+      },
+      error: function(xhr, errmsg, err) {
+      	console.log('error data', errmsg, err)
+      }
+    });
 	</script>
 {% endblock js_block %}

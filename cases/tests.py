@@ -10,29 +10,29 @@ class CaseCreation(object):
     def setUp(self):
         self.address = Address.objects.create(
             street="6th phase",
-            city="hyderabad",
+            city="LosVegas",
             postcode="506344",
-            country='IN')
+            country='US')
 
         self.user = User.objects.create(
-            first_name="raghu",
-            username='raghu',
+            first_name="robert",
+            username='robert',
             email='r@mp.com',
             role="ADMIN")
-        self.user.set_password('raghu')
+        self.user.set_password('robert')
         self.user.save()
-        self.client.login(email='r@mp.com', password='raghu')
+        self.client.login(email='r@mp.com', password='robert')
 
-        self.client.login(email='r@mp.com', password='raghu')
+        self.client.login(email='r@mp.com', password='robert')
 
         self.account = Account.objects.create(
             name="account",
             email="account@gmail.com", phone="12345",
             billing_address_line="",
             billing_street="6th phase",
-            billing_city="hyderabad",
+            billing_city="LosVegas",
             billing_postcode="506344",
-            billing_country='IN',
+            billing_country='US',
             website="www.account.com", description="account",
             created_by=self.user)
 
@@ -44,7 +44,7 @@ class CaseCreation(object):
         )
 
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem", status="New",
+            name="robert", case_type="Problem", status="New",
             account=self.account,
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
@@ -158,7 +158,7 @@ class CaseFormTestCase(CaseCreation, TestCase):
 
     def test_case_creation_same_name(self):
         response = self.client.post('/cases/create/',
-                                    {'name': 'raghu',
+                                    {'name': 'robert',
                                      'case_type': 'type',
                                      'status': 'status',
                                      'account': self.account,

@@ -4,26 +4,64 @@
 <ul class="navbar-nav mr-auto">
 </ul>
 {% endblock %}
+{% block header %}
+
+{% endblock header %}
+
 
 {% block content %}
-<ul class="list-group side_menu mb-3">
-  <!--  <li class="list-group-item d-flex justify-content-between">
+<div class="side_menu">
+  <div class="logo_block">
+    <a href="#">Django <span class="green_color text-uppercase">Crm</span></a>
+  </div>
+  <div class="profile_block">
+    <ul>
+      <li data-toggle="tooltip" data-placement="bottom" title="Santharao Nowpada"><a href="#" class="profile_pic"><img src="https://lh3.googleusercontent.com/-6gBVCn2WaAk/AAAAAAAAAAI/AAAAAAAAAAA/ACHi3rd7EWo94Fj0ep0DQa3tDjddczFC3g/s96-c-mo/photo.jpg" alt="profile picture"></a></li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Users"><a href="#" class="sky_blue box"><i class="fas fa-users"></i></a></li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Change Password"><a href="#" class="red box"><i class="fas fa-key"></i></a></li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Profile"><a href="#" class="green box"><i class="fas fa-user"></i></a></li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Logout"><a href="#" class="purple box"><i class="fas fa-sign-out-alt"></i></a></li>
+    </ul>
+  </div>
+  <div class="menu_block">
+    <ul class="main_menu">
+      <li class="parent_menu">
+        <a href="{% url 'marketing:contact_lists' %}" class="red"><i class="far fa-address-book"></i>Contacts</a>
+        <ul class="submenu">
+          <li><a href="{% url 'marketing:contacts_list' %}" class="yellow"><i class="fas fa-bars"></i>All Contacts</a></li>
+          <li><a href="{% url 'marketing:contacts_list_new' %}" class="yellow"><i class="far fa-plus-square"></i>Create Contact</a></li>
+        </ul>
+      </li>
+      <li class="parent_menu">
+        <a href="{% url 'marketing:email_template_list' %}" class="purple"><i class="fas fa-envelope-open"></i>Email Templates</a>
+        <ul class="submenu">
+          <li><a href="{% url 'marketing:email_template_list' %}" class="d_green"><i class="fas fa-bars"></i>All Templates</a></li>
+          <li><a href="{% url 'marketing:email_template_new' %}" class="d_green"><i class="far fa-plus-square"></i>Create Template</a></li>
+        </ul>
+      </li>
+      <li class="parent_menu">
+        <a href="{% url 'marketing:campaign_list' %}" class="green"><i class="fas fa-at"></i>Campaigns</a>
+        <ul class="submenu">
+          <li><a href="{% url 'marketing:campaign_list' %}" class="sky_color"><i class="fas fa-bars"></i>All Campaigns</a></li>
+          <li><a href="{% url 'marketing:campaign_new' %}" class="sky_color"><i class="far fa-plus-square"></i>Create Campaign</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+<!-- <ul class="list-group side_menu mb-3">
+  <li class="logo list-group-item">
     <div class="item">
-      <h6 class="heading"><i class="fas fa-users"></i>Groups</h6>
-      <ul>
-        <li><a href="/m/cl/all"><i class="fas fa-bars"></i>List</a></li>
-        <li><a href="/m/cl/list/new/"><i class="fas fa-plus"></i>Create List</a></li>
-      </ul>
+      <a href="#">Django <span class="green_color text-uppercase">Crm</span></a>
     </div>
-  </li> -->
+  </li>
+
   <li class="list-group-item d-flex justify-content-between">
     <div class="item">
       <h6 class="heading"><i class="fas fa-address-book"></i> Contacts</h6>
       <ul>
         <li><a href="/m/cl/all"><i class="fas fa-bars"></i>All</a></li>
         <li><a href="/m/cl/lists/" class=""><i class="fas fa-bars"></i> Lists</a></li>
-       <!--  <li><a href="/m/cl/all/"><i class="fas fa-bars"></i>All Contacts</a></li> -->
-        <!-- <li><a href="/m/cl/list/new/"> <i class="fas fa-plus"></i>Create New Contact</a></li> -->
         <li><a href="/m/cl/list/cnew/"> <i class="fas fa-plus"></i>Create New Contacts</a></li>
       </ul>
     </div>
@@ -46,5 +84,5 @@
       </ul>
     </div>
   </li>
-</ul>
+</ul> -->
 {% endblock %}

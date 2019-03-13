@@ -56,7 +56,12 @@
               <div class="filter_col col-md-12">
                 <div class="form-group ">
                   <label for="exampleInputEmail1" class="required">Leads{% if account_form.lead.field.required %}<span class="error_marker" style="color:red">*</span>{% endif %}</label>
-                  {{ account_form.lead }}
+                  <select name="lead" class="form-control" placeholder="Lead" required="" id="id_lead">
+                    <option value="" selected="">---------</option>
+                    {% for lead in leads %}
+                    <option value="{{lead.id}}" {% ifequal account_obj.lead.id lead.id %}selected{% endifequal %}>{{lead.first_name}} {{lead.last_name}}</option>
+                    {% endfor %}
+                  </select>
                   <span class="error" id="id__lead">{{ account_form.lead.errors }}</span>
                 </div>
               </div>

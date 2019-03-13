@@ -1,3 +1,4 @@
+import pytz
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -51,7 +52,7 @@ LEAD_STATUS = (
     ('in process', 'In Process'),
     ('converted', 'Converted'),
     ('recycled', 'Recycled'),
-    ('dead', 'Closed')
+    ('closed', 'Closed')
 )
 
 
@@ -579,3 +580,11 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
+    user_time_zone = pytz.timezone(custom_timezone)
+    if to_utc:
+        custom_date = user_time_zone.localize(custom_date.replace(tzinfo=None))
+        user_time_zone = pytz.UTC
+    return custom_date.astimezone(user_time_zone)

@@ -26,7 +26,8 @@ class Case(models.Model):
     assigned_to = models.ManyToManyField(
         User, related_name='case_assigned_users')
     created_by = models.ForeignKey(
-        User, related_name='case_created_by', on_delete=models.SET_NULL, null=True)
+        User, related_name='case_created_by',
+        on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
 
@@ -39,30 +40,44 @@ class Case(models.Model):
     def get_meetings(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
         return Event.objects.filter(
-            content_type=content_type, object_id=self.id, event_type="Meeting", status="Planned")
+            content_type=content_type,
+            object_id=self.id,
+            event_type="Meeting",
+            status="Planned")
 
     def get_completed_meetings(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
         return Event.objects.filter(
-            content_type=content_type, object_id=self.id, event_type="Meeting").exclude(status="Planned")
+            content_type=content_type,
+            object_id=self.id,
+            event_type="Meeting").exclude(status="Planned")
 
     def get_tasks(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
-        return Event.objects.filter(content_type=content_type, object_id=self.id, event_type="Task", status="Planned")
+        return Event.objects.filter(content_type=content_type,
+                                    object_id=self.id,
+                                    event_type="Task",
+                                    status="Planned")
 
     def get_completed_tasks(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
         return Event.objects.filter(
-            content_type=content_type, object_id=self.id, event_type="Task").exclude(status="Planned")
+            content_type=content_type,
+            object_id=self.id,
+            event_type="Task").exclude(status="Planned")
 
     def get_calls(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
-        return Event.objects.filter(content_type=content_type, object_id=self.id, event_type="Call", status="Planned")
+        return Event.objects.filter(content_type=content_type,
+                                    object_id=self.id, event_type="Call",
+                                    status="Planned")
 
     def get_completed_calls(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
         return Event.objects.filter(
-            content_type=content_type, object_id=self.id, event_type="Call").exclude(status="Planned")
+            content_type=content_type,
+            object_id=self.id,
+            event_type="Call").exclude(status="Planned")
 
     def get_assigned_user(self):
         return User.objects.get(id=self.assigned_to.id)
