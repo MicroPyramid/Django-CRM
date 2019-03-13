@@ -1,61 +1,115 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+{% endblock extralinks %}
 {% block content %}
-{{ block.super }} 
+{{ block.super }}
 <div class="marketing_pages">
 	<div class="row marl">
 	  <div class="col-md-12">
-	    <form id="add_form" method="POST" action='' novalidate>
-		  <div class="overview_form_block row marl justify-content-center">
-		    <div class="col-md-5">
-		      <div class="card">
-		        <div class="card-body">
-		          <div class="card-title text-center">
-		            {% if contact_obj %}Edit{% else %}Create{% endif %} Contact List
-		          </div>
-		          <div class="row marl justify-content-center">
-		          	 
+	    <form id="add_form" method="post" action="." enctype="multipart/form-data" novalidate>
+			  <div class="overview_form_block row marl justify-content-center">
+			    <div class="col-md-5">
+			      <div class="card">
+			        <div class="card-body">
+			          <div class="card-title text-center">
+			            {% if contact_list %}Edit{% else %}Create{% endif %} Contact List
+			          </div>
+			          <div class="row marl justify-content-center">
 		              <div class="filter_col col-md-12">
 		                <div class="form-group">
 		                  <label class="required">Name <span class="error">*</span></label>
-		                  <input type="text" class="form-control" placeholder="Enter Contacts Name">
+		                  <input type="text" class="form-control" name="name" value="{% if contact_list %}{{contact_list.name}}{% endif %}" placeholder="Enter Contacts Name">
+		                  <span id="id_name"></span>
 		                </div>
 		              </div>
-		              
 		              <div class="filter_col col-md-12">
 		                <div class="form-group">
 		                  <label>Contacts File </label>
-		                  <input type="file" class="form-control" >
+		                  <input type="file" class="form-control" name="contacts_file">
+		                  <span id="id_contacts_file"></span>
 		                </div>
 		              </div>
 		              <div class="filter_col col-md-12">
-						<div class="demo_clist">
-							<a href="#">Demo file <i class="fas fa-download"></i> </a>
-						</div>
-		              </div>	 
-		            <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
-		              {% if request.GET.view_account %}
-		                <input type="hidden" name="account" value="{{request.GET.view_account}}">
-		              {% endif %}
-
-		            <input type="hidden" id="save_new_form" name="savenewform">
-		            <div class="col-md-12">
-		              <div class="row marl buttons_row text-center form_btn_row">
-		                <a href="/m/"  class="btn primary_btn" >Save</a>
-		              
-		                <a href="/m/" class="btn seconadry_btn">Cancel</a>
+		                <div class="form-group">
+		                  <label>Tags</label>
+                  		<div class="txt-box-div" id="tag-div">
+                  			<input type="text" name="tags" id="tags_1" class="tags" value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
+                  		</div>
+                  		<span id="id_tags"></span>
+		                </div>
 		              </div>
-		            </div>
-		          </div>
-		        </div>
-		      </div>
-		    </div>
-		  </div>
-		</form>
-	  </div>  
-
-	  
+		              <div class="filter_col col-md-12">
+										<div class="demo_clist">
+											<a href="#">Demo file <i class="fas fa-download"></i> </a>
+										</div>
+		              </div>
+			            <div class="col-md-12">
+			              <div class="row marl buttons_row text-center form_btn_row">
+			                <button type="submit" class="btn primary_btn save_btn">Save</button>
+			                <a href="{% url 'marketing:contact_lists' %}" class="btn seconadry_btn">Cancel</a>
+			              </div>
+			            </div>
+			          </div>
+			        </div>
+			      </div>
+			    </div>
+			  </div>
+			</form>
+	  </div>
 	</div>
 </div>
 {% endblock %}
+{% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script src="https://malsup.github.com/jquery.form.js"></script>
+<script>
+	// $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+  $('.save_btn').click(function(e){
+  	e.preventDefault();
+  	$("form#add_form").submit()
+	})
+	  /*$.blockUI({
+	  	message: '<h1>Please wait ...</h1>',
+	  	css: {
+	      border: 'none',
+	      padding: '15px',
+	      backgroundColor: '#000',
+	      '-webkit-border-radius': '10px',
+	      '-moz-border-radius': '10px',
+	      opacity: .5,
+	      color: '#fff'
+	    }
+	  });*/
+  	// setTimeout($.unblockUI, 2000);
+    $('form#add_form').ajaxForm({
+    	type: 'POST',
+      dataType: 'json',
+      url: $(this).attr('action'),
+      data: $(this).serialize(),
+      success: function(data) {
+      	console.log("data", data)
+        if (data.error == false) {
+          window.location = "{% url 'marketing:contact_lists' %}";
+        } else {
+          /*$(document).ajaxStop($.unblockUI);*/
+          // $.unblockUI();
+          $('p.failure').remove();
+          for (var key in data.errors) {
+            $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+          }
+        }
+      },
+      error: function(xhr, errmsg, err) {
+      	console.log('error data', errmsg, err)
+      }
+    });
+
+  $(function() {
+    $('#tags_1').tagsInput({width:'auto'});
+  });
+
+</script>
+{% endblock js_block %}

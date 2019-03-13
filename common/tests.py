@@ -8,13 +8,29 @@ from common.forms import *
 class ObjectsCreation(object):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create(first_name="admin", username='admin', email='admin@micropyramid.com',
-                                        is_staff=True, is_admin=True, is_superuser=True, is_active=True, role='ADMIN')
+        # self.user = User.objects.create(first_name="admin",
+        #                                 username='admin',
+        #                                 email='admin@micropyramid.com',
+        #                                 is_staff=True,
+        #                                 is_admin=True,
+        #                                 is_superuser=True, is_active=True)
+
+        self.user = User.objects.create(first_name="admin",
+                                        username='admin',
+                                        email='admin@micropyramid.com',
+                                        is_staff=True,
+                                        is_admin=True,
+                                        is_superuser=True,
+                                        is_active=True, role='ADMIN')
+
         self.user.set_password('admin123')
         self.user.save()
-        self.user = User.objects.create(first_name="pavan", username='pavan', email='pavan@micropyramid.com',
-                                        is_staff=True, is_admin=True, is_superuser=True, is_active=False)
-        self.user.set_password('pavan123')
+        self.user = User.objects.create(first_name="paul",
+                                        username='paul',
+                                        email='paul@micropyramid.com',
+                                        is_staff=True, is_admin=True,
+                                        is_superuser=True, is_active=False)
+        self.user.set_password('paul123')
         self.user.save()
         # self.user
         user_login = self.client.login(
@@ -92,7 +108,7 @@ class ForgotPasswordViewTestCase(ObjectsCreation, TestCase):
 
 
 class LoginViewTestCase(ObjectsCreation, TestCase):
-    # user2 = User.objects.create(first_name="pavan", username='pavan', email='pavan@micropyramid.com',
+    # user2 = User.objects.create(first_name="paul", username='paul', email='paul@micropyramid.com',
     #                                     is_staff=True, is_admin=True, is_superuser=True, is_active=False)
     def test_login_post(self):
         self.client.logout()
@@ -133,20 +149,20 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 class UserTestCase(ObjectsCreation, TestCase):
     def test_user_create_url(self):
         response = self.client.get('/users/create/', {
-            'first_name': 'meghana',
-            'last_name': "reddy",
-            'username': 'meghana',
-            'email': 'meghana@micropyramid.com',
-            'password': 'meghana123'})
+            'first_name': 'micheal',
+            'last_name': "clark",
+            'username': 'micheal',
+            'email': 'micheal@micropyramid.com',
+            'password': 'micheal123'})
         self.assertEqual(response.status_code, 200)
 
     def test_user_create_html(self):
         response = self.client.get('/users/create/', {
-            'first_name': 'meghana',
+            'first_name': 'micheal',
             'last_name': "",
-            'username': 'meghana',
+            'username': 'micheal',
             'email': '',
-            'password': 'meghana123'})
+            'password': 'micheal123'})
 
         self.assertTemplateUsed(response, 'create.html')
 
@@ -158,7 +174,7 @@ class UserListTestCase(ObjectsCreation, TestCase):
         response = self.client.get('/users/list/')
         # get_img_url = self.users.filter()
         get_user = User.objects.get(email='admin@micropyramid.com')
-        self.assertEqual(get_user.email, get_user.__unicode__())
+        self.assertEqual(get_user.email, get_user.__str__())
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
 
@@ -193,9 +209,11 @@ class UserUpdateTestCase(ObjectsCreation, TestCase):
 
     def test_accounts_update_post(self):
         response = self.client.post('/users/' + str(self.user.id) + '/edit/',
-                                    {'first_name': "meghana", 'user_name': 'meghana',
+                                    {'first_name': "micheal",
+                                     'user_name': 'micheal',
                                      'email': "abc@micropyramid",
-                                     'role': "USER", 'is_superuser': False})
+                                     'role': "USER",
+                                     'is_superuser': False})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create.html')
 
@@ -226,6 +244,14 @@ class ProfileViewTestCase(ObjectsCreation, TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    # def test_context_data(self):
+    #     user_login = self.client.login(
+    #         username='admin@micropyramid.com', password='admin123')
+    #     url = "/profile/"
+    #     response = self.client.get(url)
+    #     print(response, "hello")
+    #     self.assertContains(response,'admin@micropyramid.com')
+
 
 class UserDetailView(ObjectsCreation, TestCase):
     def test_user_detail(self):
@@ -246,11 +272,14 @@ class DocumentDetailView(ObjectsCreation, TestCase):
 
 class CreateCommentFile(TestCase):
     def test_invalid_user_form(self):
-        fields = ['email', 'first_name', 'last_name',
-                  'username', 'role', 'profile_pic']
-        user1 = User.objects.create(username='teja',
-                                    first_name='teja',
-                                    last_name='reddy',
+        fields = ['email',
+                  'first_name',
+                  'last_name',
+                  'username', 'role',
+                  'profile_pic']
+        user1 = User.objects.create(username='robert',
+                                    first_name='robert',
+                                    last_name='clark',
                                     email='tr@mp.com',
                                     role='USER',
                                     profile_pic="",
@@ -261,7 +290,7 @@ class CreateCommentFile(TestCase):
                 'profile_pic': user1.profile_pic,
                 'password': user1.password}
         form = UserForm(data=data)
-        userr = User.objects.get(username='teja')
+        userr = User.objects.get(username='robert')
         # print(userr)
         self.assertEqual(len(userr.password), 3)
         self.assertFalse(form.is_valid())

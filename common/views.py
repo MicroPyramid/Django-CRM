@@ -7,13 +7,20 @@ from django.db.models import Q
 from django.core.mail import EmailMessage
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404
+from django.http import (HttpResponseRedirect,
+                         JsonResponse, HttpResponse,
+                         Http404)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import (
     CreateView, UpdateView, DetailView, TemplateView, View, DeleteView)
-from common.models import User, Document, Attachments, Comment, APISettings, Google
+from common.models import (User, Document, Attachments,
+                           Comment,
+                           APISettings,
+                           Google)
 from common.forms import (
-    UserForm, LoginForm, ChangePasswordForm, PasswordResetEmailForm, DocumentForm, UserCommentForm,
+    UserForm, LoginForm,
+    ChangePasswordForm, PasswordResetEmailForm,
+    DocumentForm, UserCommentForm,
     APISettingsForm
 )
 from django.contrib.auth.views import PasswordResetView
@@ -26,6 +33,8 @@ from accounts.models import Account, Tags
 from leads.models import Lead
 from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
+import boto3
+import botocore
 
 
 def handler404(request, exception):
@@ -45,7 +54,8 @@ class AdminRequiredMixin(AccessMixin):
         if not request.user.role == "ADMIN":
             if not request.user.is_superuser:
                 return self.handle_no_permission()
-        return super(AdminRequiredMixin, self).dispatch(request, *args, **kwargs)
+        return super(AdminRequiredMixin, self).dispatch(
+            request, *args, **kwargs)
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -55,18 +65,21 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         accounts = Account.objects.filter(status="open")
         contacts = Contact.objects.all()
-        leads = Lead.objects.exclude(status='converted' and 'dead')
+        leads = Lead.objects.exclude(status='converted')
         opportunities = Opportunity.objects.all()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
         else:
             accounts = accounts.filter(created_by=self.request.user.id)
             contacts = contacts.filter(
-                Q(assigned_to__id__in=[self.request.user.id]) | Q(created_by=self.request.user.id))
+                Q(assigned_to__id__in=[self.request.user.id]) |
+                Q(created_by=self.request.user.id))
             leads = leads.filter(
-                Q(assigned_to__id__in=[self.request.user.id]) | Q(created_by=self.request.user.id)).exclude(status='dead')
+                Q(assigned_to__id__in=[self.request.user.id]) |
+                Q(created_by=self.request.user.id)).exclude(status='closed')
             opportunities = opportunities.filter(
-                Q(assigned_to__id__in=[self.request.user.id]) | Q(created_by=self.request.user.id))
+                Q(assigned_to__id__in=[self.request.user.id]) |
+                Q(created_by=self.request.user.id))
 
         context["accounts"] = accounts
         context["contacts_count"] = contacts.count()
@@ -88,7 +101,8 @@ class ChangePasswordView(LoginRequiredMixin, TemplateView):
         form = ChangePasswordForm(request.POST)
         if form.is_valid():
             user = request.user
-            if not check_password(request.POST.get('CurrentPassword'), user.password):
+            if not check_password(request.POST.get('CurrentPassword'),
+                                  user.password):
                 error = "Invalid old password"
             else:
                 user.set_password(request.POST.get('Newpassword'))
@@ -97,13 +111,16 @@ class ChangePasswordView(LoginRequiredMixin, TemplateView):
                 return HttpResponseRedirect('/')
         else:
             errors = form.errors
-        return render(request, "change_password.html", {'error': error, 'errors': errors, 'change_password_form': form})
+        return render(request, "change_password.html",
+                      {'error': error, 'errors': errors,
+                       'change_password_form': form})
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
     template_name = "profile.html"
 
     def get_context_data(self, **kwargs):
+
         context = super(ProfileView, self).get_context_data(**kwargs)
         context["user_obj"] = self.request.user
         return context
@@ -138,40 +155,40 @@ class LoginView(TemplateView):
                     if user is not None:
                         login(request, user)
                         return HttpResponseRedirect('/')
-                    else:
-                        return render(request, "login.html", {
-                            "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
-                            "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
-                            "GP_CLIENT_ID": settings.GP_CLIENT_ID,
-                            "error": True,
-                            "message": "Your username and password didn't match. Please try again."
-                        })
-                else:
                     return render(request, "login.html", {
                         "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
                         "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
                         "GP_CLIENT_ID": settings.GP_CLIENT_ID,
                         "error": True,
-                        "message": "Your Account is inactive. Please Contact Administrator"
+                        "message":
+                        "Your username and password didn't match. \
+                        Please try again."
                     })
-            else:
                 return render(request, "login.html", {
                     "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
                     "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
                     "GP_CLIENT_ID": settings.GP_CLIENT_ID,
                     "error": True,
-                    "message": "Your Account is not Found. Please Contact Administrator"
+                    "message":
+                    "Your Account is inactive. Please Contact Administrator"
                 })
-
-        else:
             return render(request, "login.html", {
                 "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
                 "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
                 "GP_CLIENT_ID": settings.GP_CLIENT_ID,
-                # "error": True,
-                # "message": "Your username and password didn't match. Please try again."
-                "form": form
+                "error": True,
+                "message":
+                "Your Account is not Found. Please Contact Administrator"
             })
+
+        return render(request, "login.html", {
+            "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
+            "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
+            "GP_CLIENT_ID": settings.GP_CLIENT_ID,
+            # "error": True,
+            # "message": "Your username and password didn't match. Please try again."
+            "form": form
+        })
 
 
 class ForgotPasswordView(TemplateView):
@@ -264,7 +281,8 @@ class UserDetailView(AdminRequiredMixin, DetailView):
             users_data.append(assigned_dict)
         context.update({
             "user_obj": user_obj,
-            "opportunity_list": Opportunity.objects.filter(assigned_to=user_obj.id),
+            "opportunity_list":
+            Opportunity.objects.filter(assigned_to=user_obj.id),
             "contacts": Contact.objects.filter(assigned_to=user_obj.id),
             "cases": Case.objects.filter(assigned_to=user_obj.id),
             # "accounts": Account.objects.filter(assigned_to=user_obj.id),
@@ -282,14 +300,16 @@ class UpdateUserView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         user = form.save(commit=False)
         if self.request.is_ajax():
-            if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if (self.request.user.role != "ADMIN" and not
+                    self.request.user.is_superuser):
                 if self.request.user.id != self.object.id:
                     data = {'error_403': True, 'error': True}
                     return JsonResponse(data)
         if user.role == "USER":
             user.is_superuser = False
         user.save()
-        if self.request.user.role == "ADMIN" and self.request.user.is_superuser:
+        if (self.request.user.role == "ADMIN" and
+                self.request.user.is_superuser):
             if self.request.is_ajax():
                 data = {'success_url': reverse_lazy(
                     'common:users_list'), 'error': False}
@@ -349,17 +369,14 @@ def document_create(request):
             data = {'success_url': reverse_lazy(
                 'common:doc_list'), 'error': False}
             return JsonResponse(data)
-
-        else:
-            return JsonResponse({'error': True, 'errors': form.errors})
-    else:
-        context = {}
-        context["doc_form"] = form
-        context["users"] = users
-        context["sharedto_list"] = [
-            int(i) for i in request.POST.getlist('assigned_to', []) if i]
-        context["errors"] = form.errors
-        return render(request, template_name, context)
+        return JsonResponse({'error': True, 'errors': form.errors})
+    context = {}
+    context["doc_form"] = form
+    context["users"] = users
+    context["sharedto_list"] = [
+        int(i) for i in request.POST.getlist('assigned_to', []) if i]
+    context["errors"] = form.errors
+    return render(request, template_name, context)
 
 
 class DocumentListView(LoginRequiredMixin, TemplateView):
@@ -373,9 +390,12 @@ class DocumentListView(LoginRequiredMixin, TemplateView):
             queryset = queryset
         else:
             if self.request.user.documents():
-                doc_ids = self.request.user.documents().values_list('id', flat=True)
+                doc_ids = self.request.user.documents().values_list('id',
+                                                                    flat=True)
                 shared_ids = queryset.filter(
-                    Q(status='active') & Q(shared_to__id__in=[self.request.user.id])).values_list('id', flat=True)
+                    Q(status='active') &
+                    Q(shared_to__id__in=[self.request.user.id])).values_list(
+                    'id', flat=True)
                 queryset = queryset.filter(
                     Q(id__in=doc_ids) | Q(id__in=shared_ids))
             else:
@@ -407,7 +427,8 @@ class DocumentListView(LoginRequiredMixin, TemplateView):
 
         search = False
         if (
-            self.request.POST.get('doc_name') or self.request.POST.get('status') or
+            self.request.POST.get('doc_name') or
+            self.request.POST.get('status') or
             self.request.POST.get('shared_to')
         ):
             search = True
@@ -439,7 +460,8 @@ def document_update(request, pk):
     document = Document.objects.filter(id=pk).first()
 
     if request.POST:
-        form = DocumentForm(request.POST, request.FILES, instance=document, users=users)
+        form = DocumentForm(request.POST, request.FILES,
+                            instance=document, users=users)
         if form.is_valid():
             doc = form.save(commit=False)
             doc.save()
@@ -451,21 +473,17 @@ def document_update(request, pk):
             data = {'success_url': reverse_lazy(
                 'common:doc_list'), 'error': False}
             return JsonResponse(data)
-
-        else:
-            return JsonResponse({'error': True, 'errors': form.errors})
-
-    else:
-        context = {}
-        context["doc_obj"] = document
-        context["doc_form"] = form
-        context["doc_file_name"] = context["doc_obj"].document_file.name.split(
-            "/")[-1]
-        context["users"] = users
-        context["sharedto_list"] = [
-            int(i) for i in request.POST.getlist('shared_to', []) if i]
-        context["errors"] = form.errors
-        return render(request, template_name, context)
+        return JsonResponse({'error': True, 'errors': form.errors})
+    context = {}
+    context["doc_obj"] = document
+    context["doc_form"] = form
+    context["doc_file_name"] = context["doc_obj"].document_file.name.split(
+        "/")[-1]
+    context["users"] = users
+    context["sharedto_list"] = [
+        int(i) for i in request.POST.getlist('shared_to', []) if i]
+    context["errors"] = form.errors
+    return render(request, template_name, context)
 
 
 class UpdateDocumentView(LoginRequiredMixin, UpdateView):
@@ -479,7 +497,8 @@ class UpdateDocumentView(LoginRequiredMixin, UpdateView):
                 raise PermissionDenied
 
         self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(UpdateDocumentView, self).dispatch(request, *args, **kwargs)
+        return super(UpdateDocumentView, self).dispatch(
+            request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(UpdateDocumentView, self).get_form_kwargs()
@@ -526,10 +545,12 @@ class DocumentDetailView(LoginRequiredMixin, DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.role == 'ADMIN':
-            if (not request.user == Document.objects.get(id=kwargs['pk']).created_by):
+            if (not request.user ==
+                    Document.objects.get(id=kwargs['pk']).created_by):
                 raise PermissionDenied
 
-        return super(DocumentDetailView, self).dispatch(request, *args, **kwargs)
+        return super(DocumentDetailView, self).dispatch(
+            request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(DocumentDetailView, self).get_context_data(**kwargs)
@@ -548,29 +569,82 @@ def download_document(request, pk):
             if (not request.user == doc_obj.created_by and
                     request.user not in doc_obj.shared_to.all()):
                 raise PermissionDenied
-        path = doc_obj.document_file.path
-        file_path = os.path.join(settings.MEDIA_ROOT, path)
-        if os.path.exists(file_path):
-            with open(file_path, 'rb') as fh:
-                response = HttpResponse(
-                    fh.read(), content_type="application/vnd.ms-excel")
-                response['Content-Disposition'] = 'inline; filename=' + \
-                    os.path.basename(file_path)
+        if settings.STORAGE_TYPE == "normal":
+            # print('no no no no')
+            path = doc_obj.document_file.path
+            file_path = os.path.join(settings.MEDIA_ROOT, path)
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(
+                        fh.read(), content_type="application/vnd.ms-excel")
+                    response['Content-Disposition'] = 'inline; filename=' + \
+                        os.path.basename(file_path)
+                    return response
+        else:
+            file_path = doc_obj.document_file
+            file_name = doc_obj.title
+            # print(file_path)
+            # print(file_name)
+            BUCKET_NAME = "django-crm-demo"
+            KEY = str(file_path)
+            s3 = boto3.resource('s3')
+            try:
+                s3.Bucket(BUCKET_NAME).download_file(KEY, file_name)
+                # print('got it')
+                with open(file_name, 'rb') as fh:
+                    response = HttpResponse(
+                        fh.read(), content_type="application/vnd.ms-excel")
+                    response['Content-Disposition'] = 'inline; filename=' + \
+                        os.path.basename(file_name)
+                os.remove(file_name)
                 return response
+            except botocore.exceptions.ClientError as e:
+                if e.response['Error']['Code'] == "404":
+                    print("The object does not exist.")
+                else:
+                    raise
+
+            return path
     raise Http404
 
 
 def download_attachment(request, pk):
     attachment_obj = Attachments.objects.filter(id=pk).last()
-    path = attachment_obj.attachment.path
-    file_path = os.path.join(settings.MEDIA_ROOT, path)
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as fh:
-            response = HttpResponse(
-                fh.read(), content_type="application/vnd.ms-excel")
-            response['Content-Disposition'] = 'inline; filename=' + \
-                os.path.basename(file_path)
-            return response
+    if attachment_obj:
+        if settings.STORAGE_TYPE == "normal":
+            path = attachment_obj.attachment.path
+            file_path = os.path.join(settings.MEDIA_ROOT, path)
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as fh:
+                    response = HttpResponse(
+                        fh.read(), content_type="application/vnd.ms-excel")
+                    response['Content-Disposition'] = 'inline; filename=' + \
+                        os.path.basename(file_path)
+                    return response
+        else:
+            file_path = attachment_obj.attachment
+            file_name = attachment_obj.file_name
+            # print(file_path)
+            # print(file_name)
+            BUCKET_NAME = "django-crm-demo"
+            KEY = str(file_path)
+            s3 = boto3.resource('s3')
+            try:
+                s3.Bucket(BUCKET_NAME).download_file(KEY, file_name)
+                with open(file_name, 'rb') as fh:
+                    response = HttpResponse(
+                        fh.read(), content_type="application/vnd.ms-excel")
+                    response['Content-Disposition'] = 'inline; filename=' + \
+                        os.path.basename(file_name)
+                os.remove(file_name)
+                return response
+            except botocore.exceptions.ClientError as e:
+                if e.response['Error']['Code'] == "404":
+                    print("The object does not exist.")
+                else:
+                    raise
+            # if file_path:
+            #     print('yes tus pus')
     raise Http404
 
 
@@ -598,8 +672,7 @@ def add_comment(request):
                 "commented_on": comment.commented_on,
                 "commented_by": comment.commented_by.email
             })
-        else:
-            return JsonResponse({"error": form.errors})
+        return JsonResponse({"error": form.errors})
 
 
 def edit_comment(request, pk):
@@ -614,8 +687,7 @@ def edit_comment(request, pk):
                     "comment_id": comment_obj.id,
                     "comment": comment_obj.comment,
                 })
-            else:
-                return JsonResponse({"error": form['comment'].errors})
+            return JsonResponse({"error": form['comment'].errors})
         data = {'error': "You don't have permission to edit this comment."}
         return JsonResponse(data)
 
@@ -667,12 +739,9 @@ def add_api_settings(request):
                 success_url = reverse_lazy("common:add_api_settings")
             data = {'success_url': success_url, 'error': False}
             return JsonResponse(data)
-
-        else:
-            return JsonResponse({'error': True, 'errors': form.errors})
-    else:
-        data = {'form': form, "setting": api_settings,
-                'users': users, 'assign_to_list': assign_to_list}
+        return JsonResponse({'error': True, 'errors': form.errors})
+    data = {'form': form, "setting": api_settings,
+            'users': users, 'assign_to_list': assign_to_list}
     return render(request, 'settings/create.html', data)
 
 
@@ -714,14 +783,14 @@ def update_api_settings(request, pk):
                 success_url = reverse_lazy("common:add_api_settings")
             data = {'success_url': success_url, 'error': False}
             return JsonResponse(data)
-
-        else:
-            return JsonResponse({'error': True, 'errors': form.errors})
-    else:
-        data = {
-            'form': form, "setting": api_settings, 'users': users, 'assign_to_list': assign_to_list,
-            'assigned_to_list': json.dumps([setting.id for setting in api_settings.lead_assigned_to.all() if setting])
-        }
+        return JsonResponse({'error': True, 'errors': form.errors})
+    data = {
+        'form': form, "setting": api_settings,
+        'users': users, 'assign_to_list': assign_to_list,
+        'assigned_to_list':
+        json.dumps(
+            [setting.id for setting in api_settings.lead_assigned_to.all() if setting])
+    }
     return render(request, 'settings/update.html', data)
 
 
@@ -731,7 +800,8 @@ def delete_api_settings(request, pk):
         api_settings.delete()
         data = {"error": False, "response": "Successfully Deleted!"}
     else:
-        data = {"error": True, "response": "Object Not Found!"}
+        data = {"error": True,
+                "response": "Object Not Found!"}
     # return JsonResponse(data)
     return redirect('common:api_settings')
 
@@ -743,15 +813,16 @@ def change_passsword_by_admin(request):
             user.set_password(request.POST.get("new_passwoord"))
             user.save()
             mail_subject = 'Crm Account Password Changed'
-            message = "<h3><b>hello</b> <i>" + user.username + "</i></h3><br><h2><p> <b>Your account password has been changed ! </b></p></h2>" + \
-                "<br> <p><b> New Password</b> : <b><i>" + \
+            message = "<h3><b>hello</b> <i>" + user.username +\
+                "</i></h3><br><h2><p> <b>Your account password has been changed !\
+                 </b></p></h2>" \
+                + "<br> <p><b> New Password</b> : <b><i>" + \
                 request.POST.get("new_passwoord") + "</i><br></p>"
             email = EmailMessage(mail_subject, message, to=[user.email])
             email.content_subtype = "html"
             email.send()
             return HttpResponseRedirect('/users/list/')
-    else:
-        raise PermissionDenied
+    raise PermissionDenied
 
 
 def google_login(request):
@@ -759,7 +830,8 @@ def google_login(request):
         params = {
             'grant_type': 'authorization_code',
             'code': request.GET.get('code'),
-            'redirect_uri': 'http://' + request.META['HTTP_HOST'] + reverse('common:google_login'),
+            'redirect_uri': 'http://' +
+            request.META['HTTP_HOST'] + reverse('common:google_login'),
             'client_id': settings.GP_CLIENT_ID,
             'client_secret': settings.GP_CLIENT_SECRET
         }
@@ -807,7 +879,7 @@ def google_login(request):
                 role="USER"
             )
 
-        google, created = Google.objects.get_or_create(user=user)
+        google, _ = Google.objects.get_or_create(user=user)
         google.user = user
         google.google_url = link
         google.verified_email = verified_email
@@ -827,16 +899,14 @@ def google_login(request):
 
         if request.GET.get('state') != '1235dfghjkf123':
             return HttpResponseRedirect(request.GET.get('state'))
-        else:
-            return HttpResponseRedirect(reverse("common:home"))
+        return HttpResponseRedirect(reverse("common:home"))
+    if request.GET.get('next'):
+        next_url = request.GET.get('next')
     else:
-        if request.GET.get('next'):
-            next_url = request.GET.get('next')
-        else:
-            next_url = '1235dfghjkf123'
-        rty = "https://accounts.google.com/o/oauth2/auth?client_id=" + \
-            settings.GP_CLIENT_ID + "&response_type=code"
-        rty += "&scope=https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email&redirect_uri=" + \
-            'http://' + request.META['HTTP_HOST'] + \
-            reverse('common:google_login') + "&state=" + next_url
-        return HttpResponseRedirect(rty)
+        next_url = '1235dfghjkf123'
+    rty = "https://accounts.google.com/o/oauth2/auth?client_id=" + \
+        settings.GP_CLIENT_ID + "&response_type=code"
+    rty += "&scope=https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email&redirect_uri=" \
+        + 'http://' + request.META['HTTP_HOST'] + \
+        reverse('common:google_login') + "&state=" + next_url
+    return HttpResponseRedirect(rty)

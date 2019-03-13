@@ -13,7 +13,9 @@ def get_rendered_html(template_name, context={}):
 
 
 @task
-def send_email(subject, html_content, text_content=None, from_email=None, recipients=[], attachments=[], bcc=[], cc=[]):
+def send_email(subject, html_content,
+               text_content=None, from_email=None,
+               recipients=[], attachments=[], bcc=[], cc=[]):
     # send email to user with attachment
     if not from_email:
         from_email = settings.DEFAULT_FROM_EMAIL

@@ -57,8 +57,10 @@ class ReminderForm(forms.ModelForm):
         model = Reminder
         fields = '__all__'
 
-    reminder_type = forms.ChoiceField(choices=(('Email', 'Email'), ('Popup', 'Popup')),
-                                      widget=forms.Select(attrs={'class': 'form-control input-sm'}))
+    reminder_type = forms.ChoiceField(choices=(
+        ('Email', 'Email'), ('Popup', 'Popup')),
+        widget=forms.Select(attrs={
+            'class': 'form-control input-sm'}))
     reminder_time = forms.ChoiceField(choices=(("0", "on time"),
                                                ("60", "1m before"),
                                                ("120", "2m before"),
@@ -71,7 +73,9 @@ class ReminderForm(forms.ModelForm):
                                                ("10800", "3h before"),
                                                ("18000", "5h before"),
                                                ("86400", "1d before")
-                                               ), widget=forms.Select(attrs={'class': 'form-control input-sm'}))
+                                               ),
+                                      widget=forms.Select(attrs={
+                                          'class': 'form-control input-sm'}))
 
 
 # class MeetingEventForm(EventForm):

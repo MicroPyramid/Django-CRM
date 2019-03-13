@@ -3,10 +3,13 @@ import os
 import time
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
+                                        UserManager)
 from common.templatetags.common_tags import (
-    is_document_file_image, is_document_file_audio, is_document_file_video, is_document_file_pdf,
-    is_document_file_code, is_document_file_text, is_document_file_sheet, is_document_file_zip
+    is_document_file_image, is_document_file_audio,
+    is_document_file_video, is_document_file_pdf,
+    is_document_file_code, is_document_file_text,
+    is_document_file_sheet, is_document_file_zip
 )
 from common.utils import COUNTRIES, ROLES
 
@@ -51,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             full_name = self.email
         return full_name
 
-    def __unicode__(self):
+    def __str__(self):
         return self.email
 
     class Meta:
@@ -113,15 +116,25 @@ class Comment(models.Model):
     commented_by = models.ForeignKey(
         User, on_delete=models.CASCADE, blank=True, null=True)
     account = models.ForeignKey(
-        'accounts.Account', blank=True, null=True, related_name="accounts_comments", on_delete=models.CASCADE)
-    lead = models.ForeignKey('leads.Lead', blank=True, null=True,
-                             related_name="leads", on_delete=models.CASCADE)
+        'accounts.Account', blank=True, null=True,
+        related_name="accounts_comments",
+        on_delete=models.CASCADE)
+    lead = models.ForeignKey('leads.Lead',
+                             blank=True, null=True,
+                             related_name="leads",
+                             on_delete=models.CASCADE)
     opportunity = models.ForeignKey(
-        'opportunity.Opportunity', blank=True, null=True, related_name="opportunity_comments", on_delete=models.CASCADE)
+        'opportunity.Opportunity', blank=True,
+        null=True, related_name="opportunity_comments",
+        on_delete=models.CASCADE)
     contact = models.ForeignKey(
-        'contacts.Contact', blank=True, null=True, related_name="contact_comments", on_delete=models.CASCADE)
+        'contacts.Contact', blank=True,
+        null=True, related_name="contact_comments",
+        on_delete=models.CASCADE)
     user = models.ForeignKey(
-        'User', blank=True, null=True, related_name="user_comments", on_delete=models.CASCADE)
+        'User', blank=True, null=True,
+        related_name="user_comments",
+        on_delete=models.CASCADE)
 
     def get_files(self):
         return Comment_Files.objects.filter(comment_id=self)
@@ -142,22 +155,30 @@ class Comment_Files(models.Model):
 
 class Attachments(models.Model):
     created_by = models.ForeignKey(
-        User, related_name='attachment_created_by', on_delete=models.SET_NULL, null=True)
+        User, related_name='attachment_created_by',
+        on_delete=models.SET_NULL, null=True)
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     attachment = models.FileField(
         max_length=1001, upload_to='attachments/%Y/%m/')
     lead = models.ForeignKey(
-        'leads.Lead', null=True, blank=True, related_name='lead_attachment', on_delete=models.CASCADE)
+        'leads.Lead', null=True,
+        blank=True, related_name='lead_attachment',
+        on_delete=models.CASCADE)
     account = models.ForeignKey(
-        'accounts.Account', null=True, blank=True, related_name='account_attachment', on_delete=models.CASCADE)
+        'accounts.Account', null=True, blank=True,
+        related_name='account_attachment', on_delete=models.CASCADE)
     contact = models.ForeignKey(
-        'contacts.Contact', on_delete=models.CASCADE, related_name='contact_attachment', blank=True, null=True)
+        'contacts.Contact', on_delete=models.CASCADE,
+        related_name='contact_attachment',
+        blank=True, null=True)
     opportunity = models.ForeignKey(
-        'opportunity.Opportunity', blank=True, null=True, on_delete=models.CASCADE,
+        'opportunity.Opportunity', blank=True,
+        null=True, on_delete=models.CASCADE,
         related_name='opportunity_attachment')
     case = models.ForeignKey(
-        'cases.Case', blank=True, null=True, on_delete=models.CASCADE, related_name='case_attachment')
+        'cases.Case', blank=True, null=True,
+        on_delete=models.CASCADE, related_name='case_attachment')
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
@@ -185,8 +206,7 @@ class Attachments(models.Model):
     def get_file_type_display(self):
         if self.attachment:
             return self.file_type()[1]
-        else:
-            return None
+        return None
 
 
 def document_path(self, filename):
@@ -204,7 +224,8 @@ class Document(models.Model):
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
     created_by = models.ForeignKey(
-        User, related_name='document_uploaded', on_delete=models.SET_NULL, null=True)
+        User, related_name='document_uploaded',
+        on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
@@ -249,7 +270,8 @@ class APISettings(models.Model):
         User, related_name='lead_assignee_users')
     tags = models.ManyToManyField('accounts.Tags', blank=True)
     created_by = models.ForeignKey(
-        User, related_name='settings_created_by', on_delete=models.SET_NULL, null=True)
+        User, related_name='settings_created_by',
+        on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

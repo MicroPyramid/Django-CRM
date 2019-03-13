@@ -7,18 +7,21 @@ from common.models import User, Comment, Attachments
 class AccountCreateTest(object):
     def setUp(self):
         self.user = User.objects.create(
-            first_name="uday", username='uday', email='u@mp.com', role='ADMIN')
-        self.user.set_password('uday2293')
+            first_name="mike", username='mike', email='u@mp.com', role='ADMIN')
+        self.user.set_password('mike2293')
         self.user.save()
 
         self.account = Account.objects.create(
-            name="Uday", email="udayteja@micropyramid.com", phone="8333855552",
-            billing_address_line="", billing_street="KPHB", billing_city="HYDERABAD",
-            billing_state="ANDHRA PRADESH", billing_postcode="500073", billing_country="IN",
-            website="www.uday.com", created_by=self.user,
+            name="mike", email="mike@micropyramid.com", phone="8333855552",
+            billing_address_line="", billing_street="KPHB",
+            billing_city="New York",
+            billing_state="usa", billing_postcode="500073",
+            billing_country="IN",
+            website="www.mike.com", created_by=self.user,
             industry="SOFTWARE", description="Yes.. Testing Done")
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem", status="New", account=self.account,
+            name="raghu", case_type="Problem",
+            status="New", account=self.account,
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
@@ -29,25 +32,34 @@ class AccountCreateTest(object):
             attachment='image.png', case=self.case,
             created_by=self.user, account=self.account
         )
-        self.client.login(email='u@mp.com', password='uday2293')
+        self.client.login(email='u@mp.com', password='mike2293')
 
 
 class AccountsCreateTestCase(AccountCreateTest, TestCase):
     def test_account_create_url(self):
         response = self.client.get('/accounts/create/', {
-            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "",
-            'billing_address_line': "", 'billing_street': "KPHB", 'billing_city': "HYDERABAD",
-            'billing_state': "ANDHRA PRADESH", 'billing_postcode': "500073", 'billing_country': "IN",
-            'website': "www.uday.com",
+            'name': "mike", 'email': "mike@micropyramid.com",
+            'phone': "",
+            'billing_address_line': "",
+            'billing_street': "KPHB",
+            'billing_city': "New York",
+            'billing_state': "usa",
+            'billing_postcode': "500073",
+            'billing_country': "IN",
+            'website': "www.mike.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
         response = self.client.get('/accounts/create/', {
-            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "",
-            'billing_address_line': "", 'billing_street': "KPHB", 'billing_city': "HYDERABAD",
-            'billing_state': "ANDHRA PRADESH", 'billing_postcode': "500073", 'billing_country': "IN",
-            'website': "www.uday.com",
+            'name': "mike", 'email': "mike@micropyramid.com", 'phone': "",
+            'billing_address_line': "",
+            'billing_street': "KPHB",
+            'billing_city': "New York",
+            'billing_state': "usa",
+            'billing_postcode': "500073",
+            'billing_country': "IN",
+            'website': "www.mike.com",
             'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertTemplateUsed(response, 'create_account.html')
 
@@ -64,8 +76,10 @@ class AccountsListTestCase(AccountCreateTest, TestCase):
         self.account = Account.objects.all()
         data = {'name': 'name', 'city': 'city',
                 'billing_address_line': "billing_address_line",
-                'billing_street': "billing_street", 'billing_city': "billing_city",
-                'billing_state': "billing_state", 'billing_postcode': "billing_postcode",
+                'billing_street': "billing_street",
+                'billing_city': "billing_city",
+                'billing_state': "billing_state",
+                'billing_postcode': "billing_postcode",
                 'billing_country': "billing_country"}
         response = self.client.post('/accounts/list/', data)
         self.assertEqual(response.status_code, 200)
@@ -101,22 +115,36 @@ class AccountsRemoveTestCase(AccountCreateTest, TestCase):
 
 class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
     def test_accounts_update(self):
-        response = self.client.get('/accounts/' + str(self.account.id) + '/edit/', {
-            'name': "Uday", 'email': "udayteja@micropyramid.com", 'phone': "8333855552",
-            'billing_address_line': "", 'billing_street': "KPHB", 'billing_city': "HYDERABAD",
-            'billing_state': "ANDHRA PRADESH", 'billing_postcode': "500073", 'billing_country': "IN",
-            'website': "www.uday.com",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+        response = self.client.get(
+            '/accounts/' + str(self.account.id) + '/edit/', {
+                'name': "mike",
+                'email': "mike@micropyramid.com", 'phone': "8333855552",
+                'billing_address_line': "",
+                'billing_street': "KPHB",
+                'billing_city': "New York",
+                'billing_state': "usa",
+                'billing_postcode': "500073",
+                'billing_country': "IN",
+                'website': "www.mike.com",
+                'industry': "SOFTWARE",
+                'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create_account.html')
 
     def test_accounts_update_post(self):
-        response = self.client.post('/accounts/' + str(self.account.id) + '/edit/', {
-            'name': "meghana", 'email': "meghana@micropyramid.com", 'phone': "9555333123",
-            'billing_address_line': "", 'billing_street': "KPHB", 'billing_city': "HYDERABAD",
-            'billing_state': "ANDHRA PRADESH", 'billing_postcode': "500073", 'billing_country': "IN",
-            'website': "www.meghana.com",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+        response = self.client.post(
+            '/accounts/' + str(self.account.id) + '/edit/',
+            {
+                'name': "dolly", 'email': "dolly@micropyramid.com",
+                'phone': "9555333123",
+                'billing_address_line': "",
+                'billing_street': "KPHB",
+                'billing_city': "New York",
+                'billing_state': "usa",
+                'billing_postcode': "500073",
+                'billing_country': "IN",
+                'website': "www.dolly.com",
+                'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create_account.html')
 
@@ -134,9 +162,15 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
 class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 
     def test_account_creation_invalid_data(self):
-        data = {'name': "", 'email': "", 'phone': "", 'website': "", 'industry': "", 'description': "",
-                'billing_address_line': "", 'billing_street': "KPHB", 'billing_city': "HYDERABAD",
-                'billing_state': "ANDHRA PRADESH", 'billing_postcode': "500073", 'billing_country': "IN"}
+        data = {'name': "", 'email': "", 'phone': "",
+                'website': "", 'industry': "",
+                'description': "",
+                'billing_address_line': "",
+                'billing_street': "KPHB",
+                'billing_city': "New York",
+                'billing_state': "usa",
+                'billing_postcode': "500073",
+                'billing_country': "IN"}
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)
 
@@ -190,5 +224,6 @@ class AttachmentTestCase(AccountCreateTest, TestCase):
 
     def test_attachment_delete(self):
         response = self.client.post(
-            '/accounts/attachment/remove/', {'attachment_id': self.attachment.id})
+            '/accounts/attachment/remove/',
+            {'attachment_id': self.attachment.id})
         self.assertEqual(response.status_code, 200)

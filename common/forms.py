@@ -104,13 +104,15 @@ class UserForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if self.instance.id:
             if self.instance.email != email:
-                if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
+                if not User.objects.filter(
+                        email=self.cleaned_data.get("email")).exists():
                     return self.cleaned_data.get("email")
                 raise forms.ValidationError('Email already exists')
             else:
                 return self.cleaned_data.get("email")
         else:
-            if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
+            if not User.objects.filter(
+                    email=self.cleaned_data.get("email")).exists():
                 return self.cleaned_data.get("email")
             raise forms.ValidationError('User already exists with this email')
 
@@ -173,7 +175,8 @@ class PasswordResetEmailForm(PasswordResetForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if not User.objects.filter(email__iexact=email, is_active=True).exists():
+        if not User.objects.filter(email__iexact=email,
+                                   is_active=True).exists():
             raise forms.ValidationError("User doesn't exist with this Email")
         return email
 
@@ -216,10 +219,9 @@ def find_urls(string):
     website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"
     url = re.findall(website_regex, string)
     url_port = re.findall(website_regex_port, string)
-    if len(url) > 0 and url[0] != '':
+    if url and url[0] != '':
         return url
-    else:
-        return url_port
+    return url_port
 
 
 class APISettingsForm(forms.ModelForm):
@@ -243,9 +245,11 @@ class APISettingsForm(forms.ModelForm):
 
     def clean_website(self):
         website = self.data.get('website')
-        if website and not (website.startswith('http://') or website.startswith('https://')):
+        if website and not (website.startswith('http://') or
+                            website.startswith('https://')):
             raise forms.ValidationError("Please provide valid schema")
         if not len(find_urls(website)) > 0:
             raise forms.ValidationError(
-                "Please provide a valid URL with schema and without trailing slash - Example: http://google.com")
+                "Please provide a valid URL with schema and without trailing \
+                slash - Example: http://google.com")
         return website

@@ -14,7 +14,7 @@ class Email(models.Model):
     status = models.CharField(max_length=200, default="sent")
     important = models.BooleanField(max_length=10, default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.subject
 
     class Meta:
