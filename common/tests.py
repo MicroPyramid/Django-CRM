@@ -1,11 +1,13 @@
 from django.test import TestCase
 from django.test import Client
-
+from django.urls import reverse
 from common.models import User, Document
 from common.forms import *
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class ObjectsCreation(object):
+
     def setUp(self):
         self.client = Client()
         # self.user = User.objects.create(first_name="admin",
@@ -33,13 +35,19 @@ class ObjectsCreation(object):
         self.user.set_password('paul123')
         self.user.save()
         # self.user
-        user_login = self.client.login(
+        self.client.login(
             username='admin@micropyramid.com', password='admin123')
         self.document = Document.objects.create(
             title="abc", document_file="1.png", created_by=self.user)
 
+        self.comment = Comment.objects.create(
+            comment='testikd', user=self.user,
+            commented_by=self.user
+        )
+
 
 class TestHomePage(ObjectsCreation, TestCase):
+
     def test_home_page(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
@@ -80,6 +88,7 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
 
 
 class PasswordChangeTestCase(ObjectsCreation, TestCase):
+
     def test_password_change(self):
         self.client.login(username="admin@micropyramid.com",
                           password="admin123")
@@ -98,6 +107,14 @@ class PasswordChangeTestCase(ObjectsCreation, TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
 
+    def change_passsword_by_admin(self):
+        print(self.user, "madhu", self.user.role)
+        response = self.client.post(reverse('common:change_passsword_by_admin'), {
+            'useer_id': self.user.id,
+            'new_passwoord': "admin123"
+        })
+        self.assertEqual(response.status_code, 302)
+
 
 class ForgotPasswordViewTestCase(ObjectsCreation, TestCase):
 
@@ -109,7 +126,8 @@ class ForgotPasswordViewTestCase(ObjectsCreation, TestCase):
 
 class LoginViewTestCase(ObjectsCreation, TestCase):
     # user2 = User.objects.create(first_name="paul", username='paul', email='paul@micropyramid.com',
-    #                                     is_staff=True, is_admin=True, is_superuser=True, is_active=False)
+    # is_staff=True, is_admin=True, is_superuser=True, is_active=False)
+
     def test_login_post(self):
         self.client.logout()
         data = {"email": "admin@micropyramid.com", "password": "admin123"}
@@ -147,6 +165,7 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 
 
 class UserTestCase(ObjectsCreation, TestCase):
+
     def test_user_create_url(self):
         response = self.client.get('/users/create/', {
             'first_name': 'micheal',
@@ -188,6 +207,7 @@ class UserListTestCase(ObjectsCreation, TestCase):
 
 
 class UserRemoveTestCase(ObjectsCreation, TestCase):
+
     def test_users_remove(self):
         response = self.client.get('/users/' + str(self.user.id) + '/delete/')
         self.assertEqual(response['location'], '/users/list/')
@@ -199,6 +219,7 @@ class UserRemoveTestCase(ObjectsCreation, TestCase):
 
 
 class UserUpdateTestCase(ObjectsCreation, TestCase):
+
     def test_users_update(self):
         response = self.client.get('/users/' + str(self.user.id) + '/edit/', {
             'first_name': "admin",
@@ -239,6 +260,7 @@ class UserUpdateTestCase(ObjectsCreation, TestCase):
 
 
 class ProfileViewTestCase(ObjectsCreation, TestCase):
+
     def test_profile_view(self):
         url = "/profile/"
         response = self.client.get(url)
@@ -254,6 +276,7 @@ class ProfileViewTestCase(ObjectsCreation, TestCase):
 
 
 class UserDetailView(ObjectsCreation, TestCase):
+
     def test_user_detail(self):
         url = "/users/" + str(self.user.id) + "/view/"
         response = self.client.get(url)
@@ -261,6 +284,7 @@ class UserDetailView(ObjectsCreation, TestCase):
 
 
 class DocumentDetailView(ObjectsCreation, TestCase):
+
     def test_document_detail(self):
         url = "/documents/" + str(self.document.id) + "/view/"
         repsonse = self.client.get(url)
@@ -271,12 +295,8 @@ class DocumentDetailView(ObjectsCreation, TestCase):
 
 
 class CreateCommentFile(TestCase):
+
     def test_invalid_user_form(self):
-        fields = ['email',
-                  'first_name',
-                  'last_name',
-                  'username', 'role',
-                  'profile_pic']
         user1 = User.objects.create(username='robert',
                                     first_name='robert',
                                     last_name='clark',
@@ -295,3 +315,81 @@ class CreateCommentFile(TestCase):
         self.assertEqual(len(userr.password), 3)
         self.assertFalse(form.is_valid())
         # self.assertTrue(form.)
+
+
+class CommentTestCase(ObjectsCreation, TestCase):
+
+    def test_comment_add(self):
+        response = self.client.post(
+            '/comment/add/', {'userid': self.user.id})
+        self.assertEqual(response.status_code, 200)
+
+    def test_comment_edit(self):
+        response = self.client.post(reverse('common:edit_comment',
+                                            kwargs={'pk': self.comment.id}))
+        self.assertEqual(response.status_code, 200)
+        resp = self.client.post(reverse('common:edit_comment',
+                                        kwargs={'pk': self.comment.id}), {'comment': 'hello123'})
+        self.assertEqual(resp.status_code, 200)
+
+    def test_comment_delete(self):
+        response = self.client.post(
+            '/comment/remove/', {'comment_id': self.comment.id})
+        self.assertEqual(response.status_code, 200)
+
+    def test_form_valid(self):
+        response = self.client.post(
+            '/comment/add/', {'userid': self.user.id,
+                              'comment': 'hello'})
+        self.assertEqual(response.status_code, 200)
+
+
+class DocumentTestCase(ObjectsCreation, TestCase):
+
+    def test_document_add(self):
+        response = self.client.post(
+            '/documents/create/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_document_create(self):
+        response = self.client.post(
+            '/documents/create/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_document_edit(self):
+        upload_file = open('static/images/user.png', 'rb')
+        data = {'title': "doc",
+                'created_by': self.user,
+                'document_file': SimpleUploadedFile(
+                    upload_file.name, upload_file.read()),
+                'status': 'active',
+                'shared_to': str(self.user.id)}
+        response = self.client.get(reverse('common:edit_doc',
+                                           kwargs={'pk': self.document.id}), data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_document_valid(self):
+        upload_file = open('static/images/user.png', 'rb')
+        response = self.client.post(
+            '/documents/create/', {'title': "doc",
+                                   'created_by': self.user,
+                                   'document_file': SimpleUploadedFile(
+                                       upload_file.name, upload_file.read()),
+                                   'status': 'active',
+                                   'shared_to': str(self.user.id)})
+        self.assertEqual(response.status_code, 200)
+
+    def test_document_delete(self):
+        response = self.client.get(reverse('common:remove_doc',
+                                           kwargs={'pk': self.document.id}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_document_list_view(self):
+        response = self.client.get(reverse('common:doc_list'))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(reverse('common:doc_list'), {
+            'doc_name': 'doc',
+            'status': 'active',
+            "shared_to": str(self.user.id)
+        })
+        self.assertEqual(response.status_code, 200)

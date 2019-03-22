@@ -4,12 +4,14 @@ from accounts.models import Account
 from contacts.models import Contact
 from common.models import User, Comment, Attachments, Address
 from cases.models import Case
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 # Create your tests here.
 
 
 class OpportunityModel(object):
+
     def setUp(self):
 
         self.user = User.objects.create(
@@ -47,6 +49,7 @@ class OpportunityModel(object):
             closed_on="2016-05-04",
             description="hgfdxc",
             created_by=self.user)
+        self.opportunity.assigned_to.add(self.user)
         self.case = Case.objects.create(
             name="raghu", case_type="Problem", status="New", account=self.account,
             priority="Low", description="something",
@@ -58,6 +61,7 @@ class OpportunityModel(object):
 
 
 class OpportunityCreateTestCase(OpportunityModel, TestCase):
+
     def test_opportunity_create(self):
         response = self.client.get('/opportunities/create/', {
             'name': "meghan", 'amount': "478",
@@ -67,8 +71,14 @@ class OpportunityCreateTestCase(OpportunityModel, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_opportunity_create_post(self):
+        upload_file = open('static/images/user.png', 'rb')
         url = '/opportunities/create/'
-        data = {'name': "micky", 'amount': "500", 'stage': "CLOSED WON"}
+        data = {'name': "micky", 'amount': "500", 'stage': "CLOSED WON",
+                'assigned_to': str(self.user.id),
+                'contacts': str(self.contacts.id),
+                'tags': 'tag',
+                'oppurtunity_attachment': SimpleUploadedFile(
+                    upload_file.name, upload_file.read())}
         response = self.client.post(url, data)
         # self.assertEqual(response.status_code, 302)
         self.assertEqual(response.status_code, 200)
@@ -113,16 +123,24 @@ class EditOpportunityTestCase(OpportunityModel, TestCase):
             'stage': "negotiation/review",
             'lead_source': "Call", 'probability': "58",
             'closed_on': "2016-05-04", 'description': "hgfdxc"})
-        resp = self.client.post( '/opportunities/' + str(self.opportunity.id) + '/edit/', **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        resp = self.client.post('/opportunities/' + str(self.opportunity.id) +
+                                '/edit/', **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
         self.assertEqual(resp.status_code, 200)
-        resp1 = self.client.post( '/opportunities/create/', **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        resp1 = self.client.post(
+            '/opportunities/create/', **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
         self.assertEqual(resp1.status_code, 200)
 
     def test_update_opportunity(self):
+        upload_file = open('static/images/user.png', 'rb')
         url = '/opportunities/' + str(self.opportunity.id) + '/edit/'
         data = {
             'name': "meghan", 'amount': "478", 'stage': "QUALIFICATION",
-            'probability': "58", 'closed_on': "2016-05-04", 'description': "hgfdxc"}
+            'probability': "58", 'closed_on': "2016-05-04",
+            'description': "hgfdxc",
+            'tags': 'tag', 'assigned_to': str(self.user.id),
+            'contacts': str(self.contacts.id),
+            'oppurtunity_attachment': SimpleUploadedFile(
+                upload_file.name, upload_file.read())}
         response = self.client.post(url, data)
         # self.assertEqual(response.status_code, 302)
         self.assertEqual(response.status_code, 200)
@@ -137,6 +155,7 @@ class EditOpportunityTestCase(OpportunityModel, TestCase):
 
 
 class OpportunityListView(OpportunityModel, TestCase):
+
     def test_opportunity_list(self):
         self.opportunity = Opportunity.objects.all()
         response = self.client.get('/opportunities/list/')
@@ -164,6 +183,7 @@ class OpportunityListView(OpportunityModel, TestCase):
 
 
 class ContactGetViewTestCase(OpportunityModel, TestCase):
+
     def test_get_contact(self):
         url = '/opportunities/contacts/'
         response = self.client.get(url)
@@ -173,6 +193,7 @@ class ContactGetViewTestCase(OpportunityModel, TestCase):
 
 
 class CommentTestCase(OpportunityModel, TestCase):
+
     def test_comment_add(self):
         response = self.client.post(
             '/opportunities/comment/add/', {'opportunityid': self.opportunity.id})
@@ -188,11 +209,21 @@ class CommentTestCase(OpportunityModel, TestCase):
             '/opportunities/comment/remove/', {'comment_id': self.comment.id})
         self.assertEqual(response.status_code, 200)
 
+    def test_comment_form_valid(self):
+        response = self.client.post(
+            '/opportunities/comment/add/', {'opportunityid': self.opportunity.id,
+                                            'comment': 'hello'})
+        self.assertEqual(response.status_code, 200)
+
 
 class AttachmentTestCase(OpportunityModel, TestCase):
+
     def test_attachment_add(self):
+        upload_file = open('static/images/user.png', 'rb')
         url = "/opportunities/attachment/add/"
-        data = {'opportunityid': self.opportunity.id}
+        data = {'opportunityid': self.opportunity.id,
+                'attachment': SimpleUploadedFile(
+                    upload_file.name, upload_file.read())}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
 
@@ -204,9 +235,9 @@ class AttachmentTestCase(OpportunityModel, TestCase):
 
 
 class TestGetOpportunitiesView(OpportunityModel, TestCase):
+
     def test_get_page(self):
         url = "/opportunities/get/list/"
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertIsNotNone(resp.context['opportunities'])
-

@@ -4,9 +4,13 @@ from common.models import Address, User, Comment, Attachments
 from cases.models import Case
 from django.test import Client
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from contacts.forms import ContactAttachmentForm
+from accounts.models import Account
 
 
 class ContactObjectsCreation(object):
+
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create(
@@ -50,6 +54,7 @@ class ContactObjectsCreation(object):
 
 
 class ContactObjectsCreation_Count(ContactObjectsCreation, TestCase):
+
     def test_contact_object_creation(self):
         c = Contact.objects.count()
         con = Contact.objects.filter(id=self.contact.id)
@@ -77,6 +82,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         self.assertTemplateUsed(response, 'contacts.html')
 
     def test_contacts_create(self):
+        upload_file = open('static/images/user.png', 'rb')
         response = self.client.post('/contacts/create/', {
             'first_name': 'contact',
             'last_name': 'george',
@@ -84,7 +90,45 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
             'phone': '+917898901234',
             'address': self.address.id,
             'description': 'contact',
-            'created_by': self.user})
+            'created_by': self.user,
+            'assigned_to': str(self.user.id),
+            'contact_attachment': SimpleUploadedFile(
+                upload_file.name, upload_file.read())
+        })
+        self.assertEqual(response.status_code, 302)
+
+    def test_contact_create(self):
+        upload_file = open('static/images/user.png', 'rb')
+        response = self.client.post('/contacts/create/', {
+            'first_name': 'contact',
+            'last_name': 'george',
+            'email': 'meg@gmail.com',
+            'phone': '+917898901234',
+            'address': self.address.id,
+            'description': 'contact',
+            'created_by': self.user,
+            'assigned_to': str(self.user.id),
+            'contact_attachment': SimpleUploadedFile(
+                upload_file.name, upload_file.read())
+        })
+        self.assertEqual(response.status_code, 302)
+
+    def test_update_contact(self):
+        upload_file = open('static/images/user.png', 'rb')
+        url = '/contacts/' + str(self.contact.id) + '/edit/'
+        data = {
+            'first_name': 'contact',
+            'last_name': 'george',
+            'email': 'meg@gmail.com',
+            'phone': '+917898901234',
+            'address': self.address.id,
+            'description': 'contact',
+            'created_by': self.user,
+            'assigned_to': str(self.user.id),
+            'contact_attachment': SimpleUploadedFile(
+                upload_file.name, upload_file.read())
+        }
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
 
     def test_contacts_create_html(self):
@@ -166,6 +210,7 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
 
 
 class CommentTestCase(ContactObjectsCreation, TestCase):
+
     def test_comment_add(self):
         response = self.client.post(
             '/contacts/comment/add/', {'contactid': self.contact.id})
@@ -199,14 +244,18 @@ class CommentTestCase(ContactObjectsCreation, TestCase):
 
 
 class AttachmentTestCase(ContactObjectsCreation, TestCase):
+
     def test_attachment_add(self):
         response = self.client.post(
             '/contacts/attachment/add/', {'contactid': self.contact.id})
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_valid(self):
+        upload_file = open('static/images/user.png', 'rb')
         response = self.client.post(
-            '/contacts/attachment/add/', {'contactid': self.contact.id})
+            '/contacts/attachment/add/', {'contactid': self.contact.id,
+                                          'attachment': SimpleUploadedFile(
+                                              upload_file.name, upload_file.read())})
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_delete(self):

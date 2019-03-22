@@ -113,7 +113,7 @@
                       {% if open_leads|length > 0 %}
                       <tr>
                         <th width="5%">ID</th>
-                        <th width="10%">Name</th>
+                        <th width="10%">Title</th>
                         <th width="8%">Created By</th>
                         <th width="10%">Source</th>
                         <th width="10%">Status</th>
@@ -133,7 +133,8 @@
                       {% for lead in open_leads %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'leads:view_lead' lead.id %}">{{ lead.first_name }} {{ lead.last_name }}</a></td>
+                        <td><a href="{% url 'leads:view_lead' lead.id %}">
+                          {{ lead.title }} </a></td>
                         <td>
                           {% if lead.created_by.profile_pic %}
                             {% thumbnail lead.created_by.profile_pic "40x40" crop="center" as im %}
@@ -207,7 +208,7 @@
                       {% if close_leads|length > 0 %}
                       <tr>
                         <th width="5%">ID</th>
-                        <th width="10%">Name</th>
+                        <th width="10%">Title</th>
                         <th width="10%">Source</th>
                         <th width="10%">Status</th>
                         <th width="20%">Assigned User</th>
@@ -226,7 +227,8 @@
                       {% for lead in close_leads %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'leads:view_lead' lead.id %}">{{ lead.first_name }} {{ lead.last_name }}</a></td>
+                        <td><a href="{% url 'leads:view_lead' lead.id %}">
+                          {{ lead.title }}</a></td>
                         <td>{{ lead.source }}</td>
                         <td>{{ lead.get_status_display }}</td>
                         <td>

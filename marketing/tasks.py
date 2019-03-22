@@ -2,12 +2,13 @@ import datetime
 import hashlib
 import pytz
 import requests
+from mimetypes import MimeTypes
 from celery.task import task
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template import Template, Context
 from common.utils import convert_to_custom_timezone
-from marketing.models import Contact, ContactList, Campaign, CampaignLog
+from marketing.models import Contact, FailedContact, ContactList, Campaign, CampaignLog
 
 
 @task
@@ -26,11 +27,29 @@ def campaign_click(request):
 
 
 @task
-def upload_csv_file(data, user, contact_lists):
+def upload_csv_file(data, invalid_data, user, contact_lists):
     for each in data:
         contact = Contact.objects.filter(email=each['email']).first()
         if not contact:
             contact = Contact.objects.create(
+                email=each['email'], created_by_id=user,
+                name=each['first name'])
+            if each.get('company name', None):
+                contact.company_name = each['company name']
+            if each.get('last name', None):
+                contact.last_name = each['last name']
+            if each.get('city', None):
+                contact.city = each['city']
+            if each.get("state", None):
+                contact.state = each['state']
+            contact.save()
+        for contact_list in contact_lists:
+            contact.contact_list.add(ContactList.objects.get(id=int(contact_list)))
+
+    for each in invalid_data:
+        contact = FailedContact.objects.filter(email=each['email']).first()
+        if not contact:
+            contact = FailedContact.objects.create(
                 email=each['email'], created_by_id=user,
                 name=each['first name'])
             if each.get('company name', None):
@@ -76,13 +95,18 @@ def get_campaign_message_id(campaign):
 def run_campaign(campaign):
     try:
         campaign = Campaign.objects.get(id=campaign)
+        attachments = []
+        if campaign.attachment:
+            file_path = campaign.attachment.path
+            file_name = file_path.split("/")[-1]
+            content = open(file_path, 'rb').read()
+            mime = MimeTypes()
+            mime_type = mime.guess_type(file_path)
+            attachments.append((file_name, content, mime_type[0]))
         subject = campaign.subject
-        # project_settings = Settings.objects.filter().first()
 
-        contacts = []
-        for each_list in campaign.contact_lists.all():
-            contacts = Contact.objects.filter(contact_list__in=[each_list])
-        # contacts = campaign.contacts.filter(Q(is_bounced=False) | Q(is_unsubscribed=False)).distinct()
+        contacts = Contact.objects.filter(
+            contact_list__in=[each_list for each_list in campaign.contact_lists.all()])
         default_html = campaign.html_processed
         for each_contact in contacts:
             html = default_html
@@ -94,18 +118,15 @@ def run_campaign(campaign):
                 message_id = get_campaign_message_id(campaign_log)
                 campaign_log.message_id = message_id
                 campaign_log.save()
-                domain_name = settings.SUBDOMAIN_NAME + '.' + project_settings.domain if project_settings else ''
-                # domain_name = 'micro.peeljobs.com'
+                domain_name = 'django-crm.com'
                 if campaign.from_email is not None:
                     from_email = campaign.from_email
                 else:
                     from_email = campaign.created_by.email
                 reply_to_email = str(from_email) + ' <' + str(message_id + '@' + domain_name + '') + '>'
             if not (each_contact.is_bounced or each_contact.is_unsubscribed):
-                # link = '<img src="https://micropyramid.localtunnel.me/track-email/' + \
-                #     str(campaign_log.id) + '/" height="1" width="1"</img>'
-                domain_url = '%s%s' % (settings.SCHEME, settings.HOST_URL)
-                link = '<img src="' + domain_url + '/track-email/' + \
+                domain_url = settings.URL_FOR_LINKS
+                link = '<img src="' + domain_url + '/m/cm/track-email/' + \
                     str(campaign_log.id) + '/contact/' + str(each_contact.id) + '/" height="1" width="1" />'
                 names_dict = {'company_name': each_contact.company_name if each_contact.company_name else '',
                               'last_name': each_contact.last_name if each_contact.last_name else '',
@@ -117,13 +138,9 @@ def run_campaign(campaign):
                 html = Template(html).render(Context(names_dict))
                 mail_html = html + link
                 from_email = str(campaign.from_name) + "<" + str(campaign.from_email) + '>'
-                # text_content = re.sub(r'<(.*?)>', '', html)
-                # ReplyMail.objects.create(campaign_log=campaign_log,
-                #                          reply_from=campaign.created_by.email,
-                #                          text=text_content,
-                #                          sent_on=datetime.datetime.now())
+                to_email = [each_contact.email]
                 send_campaign_mail(
-                    subject, mail_html, from_email, [each_contact.email], [], [reply_to_email], [])
+                    subject, mail_html, from_email, to_email, [], [reply_to_email], attachments)
     except Exception as e:
         print (e)
         pass
@@ -161,14 +178,16 @@ def send_scheduled_campaigns():
     from datetime import datetime
     campaigns = Campaign.objects.filter(schedule_date_time__isnull=False)
     for each in campaigns:
-        sent_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S')
-        local_tz = pytz.timezone('UTC')
-        schedule_date_time_hour = str(each.schedule_date_time.time()).replace(':00:00', '')
+        schedule_date_time = each.schedule_date_time
+
+        sent_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+        sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M')
+        local_tz = pytz.timezone(settings.TIME_ZONE)
         sent_time = local_tz.localize(sent_time)
-        sent_time = convert_to_custom_timezone(sent_time, each.timezone)
+        sent_time = convert_to_custom_timezone(sent_time, each.timezone, to_utc=True)
+
         if (
             str(each.schedule_date_time.date()) == str(sent_time.date()) and
-            str(schedule_date_time_hour) == str(sent_time.hour)
+            str(schedule_date_time.hour) == str(sent_time.hour)
         ):
             run_campaign(each)

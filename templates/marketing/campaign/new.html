@@ -1,12 +1,16 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
+{% endblock extralinks %}
 {% block content %}
 {{ block.super }}
 <div class="marketing_pages">
   <div class="row marl">
     <div class="col-md-12">
-      <form id="add_form" method="POST" action='' novalidate>
+      <form id="add_form" method="POST" action='' novalidate enctype="multipart/form-data">
         <div class="overview_form_block row marl justify-content-center">
           <div class="col-md-12">
             <div class="card">
@@ -27,10 +31,10 @@
                     <div class="col-md-3">
                       <div class="form-group">
                         <label>Select Template</label>
-                        <select class="form-control" name="email_template">
+                        <select class="form-control js-example-basic-single email-template-select" name="email_template">
                           <option value="">Select a template</option>
                           {% for email_template in email_templates %}
-                            <option value="{{email_template.id}}">{{ email_template.title }}</option>
+                            <option value="{{email_template.id}}" htmlcode="{{email_template.html}}" subject="{{email_template.subject}}">{{ email_template.title }}</option>
                           {% endfor %}
                           <!-- <option value="one">First template</option>
                           <option value="two">Second template</option>
@@ -66,10 +70,19 @@
                       <div class="row">
                         <div class="col-md-3">
                           <div class="form-group">
+                            <label>Select Contact List</label>
+                            <select class="contact-lsit-select js-example-basic-multiple" name="contact_list" multiple="multiple">
+                              {% for contact_list in contact_lists %}
+                                <option value="{{contact_list.id}}">{{ contact_list.name }}</option>
+                              {% endfor %}
+                            </select>
+                            <span id="id_contact_list"></span>
+                          </div>
+                          <div class="form-group">
                             <label><input type="checkbox" name="reply_to_crm" value="true"> Reply To CRM</label>
                             <span id="id_reply_to_crm"></span>
                           </div>
-                          <div class="form-group">
+                          <div class="form-group reply_to_email">
                             <label>Reply to email</label>
                             <input type="email" class="form-control" placeholder="replyto@mp.com" name="reply_to_email">
                             <span id="id_reply_to_email"></span>
@@ -112,22 +125,28 @@
                                 <span id="id_schedule_later"></span>
                               </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 timezone-div" style="display: none;">
                               <div class="form-group">
                                 <label>Timezone</label>
-                                <select name="timezone" id="timezone" class="form-control">
+                                <select name="timezone" id="timezone" class="form-control timezone-select js-example-basic-single">
                                   <option value="">Select a Timezone</option>
                                   {% for timezone in timezones %}
-                                    <option value="{{timezone.0}}">{{timezone.1}}</option>
+                                    <option value="{{timezone.0}}" {% if timezone.0 == settings_timezone %}selected{% endif %}>{{timezone.1}}</option>
                                   {% endfor %}
                                 </select>
                                 <span id="id_timezone"></span>
                               </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 timezone-div" style="display: none;">
                               <div class="form-group">
                                 <label for="">Schedule Date Time</label>
-                                <input type="datetime" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time">
+                                <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                  <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker1" name="schedule_date_time" />
+                                  <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                                      <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                  </div>
+                                </div>
+                                <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
                                 <span id="id_schedule_date_time"></span>
                               </div>
                             </div>
@@ -140,11 +159,11 @@
                             </div>
                             <div class="form-group">
                               <label>Html Code</label>
+                              <span id="id_html"></span>
                               <div id="editor-container">
                               </div>
                               <span class="hint">Use the following tags in your subject, plain text or HTML code and they'll automatically be formatted when your campaign is sent. For web version and unsubscribe tags, you can style them with inline CSS.</span>
                               <input type="hidden" name="html" id="html_content">
-                              <span id="id_html"></span>
                             </div>
                             <div class="col-md-12 no-padding">
                               <div class="row help_container">
@@ -234,8 +253,45 @@
 </div>
 {% endblock %}
 {% block js_block %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   <script src="https://malsup.github.com/jquery.form.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
   <script>
+
+    // $('[name="schedule_date_time"]').datetimepicker({format: 'yyyy-mm-dd hh:ii'});
+    $(function () {
+      $.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
+        icons: {
+            time: 'fa fa-clock',
+            date: 'fa fa-calendar',
+            up: 'fa fa-arrow-up',
+            down: 'fa fa-arrow-down',
+            previous: 'fa fa-chevron-left',
+            next: 'fa fa-chevron-right',
+            today: 'far fa-calendar-check-o',
+            clear: 'fa fa-trash',
+            close: 'fa fa-times'
+        }
+      });
+      $('#datetimepicker1').datetimepicker({
+        format: "YYYY-MM-DD HH:mm"
+      });
+    });
+
+    $(document).ready(function() {
+      $(".email-template-select").select2({
+        placeholder: "Select an email template"
+      })
+      $(".contact-lsit-select").select2({
+        placeholder: "Select a contact list",
+        tags: "true",
+        allowClear: true
+      });
+      $(".timezone-select").select2({
+        placeholder: "Select a Timezone",
+      });
+    });
     var quill = new Quill('#editor-container', {
       modules: {
         toolbar: [
@@ -253,6 +309,37 @@
       $('#html_content').val(justHtml);
     });
 
+    $('[name="email_template"]').on('change', function(e){
+      var optionSelected = $("option:selected", this);
+      var valueSelected = this.value;
+      var subject = $('[name="subject"]');
+      var html_code = $("#editor-container");
+      var html_content = $('#html_content');
+      if ($(optionSelected).val()){
+        subject.val($(optionSelected).attr("subject"));
+        quill.root.innerHTML = $(optionSelected).attr("htmlcode");
+      } else {
+        subject.val("");
+        quill.root.innerHTML = "";
+        html_content.val("");
+      }
+    })
+
+    $('[name="schedule_later"]').on('change', function(e){
+      if ($(this).is(":checked")){
+        $('.timezone-div').show();
+      } else {
+        $('.timezone-div').hide();
+      }
+    })
+
+    $('[name="reply_to_crm"]').on('change', function(e){
+      if ($(this).is(":checked")){
+        $('.reply_to_email').hide();
+      } else {
+        $('.reply_to_email').show();
+      }
+    })
 
     $('.save_btn').click(function(e){
       e.preventDefault();
@@ -261,7 +348,7 @@
 
     $('form#add_form').ajaxForm({
       type: 'POST',
-      dataType: 'json',
+      // dataType: 'json',
       url: $(this).attr('action'),
       data: $(this).serialize(),
       success: function(data) {
