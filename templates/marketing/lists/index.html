@@ -29,7 +29,7 @@
 	              	{% for contact_list in contact_lists %}
 		                <tr style="text-align:center;">
 		                  <td scope="row">{{ forloop.counter }}</td>
-		                  <td>{{ contact_list.name }}</td>
+		                  <td><a href="{% url 'marketing:contact_list_detail' contact_list.id %}">{{ contact_list.name }}</td>
 		                  <td>{{ contact_list.created_by }}</td>
 		                  <td>
 		                    {{ contact_list.updated_on }}

@@ -10,9 +10,12 @@ from marketing.models import (
     EmailTemplate, Campaign, Tag
 )
 
+email_regex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
+
 
 def csv_doc_validate(document):
     temp_row = []
+    invalid_row = []
     reader = csv.reader((document.read().decode("utf-8")).splitlines())
     # csv_headers = ["first name", "last name", "email"]
     csv_headers = ["first name", "email"]
@@ -20,6 +23,7 @@ def csv_doc_validate(document):
     required_headers = ["first name", "email"]
     for y_index, row in enumerate(reader):
         each = {}
+        invalid_each = {}
         if y_index == 0:
             csv_headers = [header_name.lower()
                            for header_name in row if header_name]
@@ -40,15 +44,23 @@ def csv_doc_validate(document):
                     continue
                 if csv_headers[x_index] in required_headers:
                     if not cell_value:
-                        message = 'Missing required value %s for row %s' % (
-                            csv_headers[x_index], y_index + 1)
-                        return {"error": True, "message": message}
+                        # message = 'Missing required value %s for row %s' % (
+                        #     csv_headers[x_index], y_index + 1)
+                        # return {"error": True, "message": message}
+                        invalid_each[csv_headers[x_index]] = cell_value
+                    else:
+                        if csv_headers[x_index] == "email":
+                            if re.match(email_regex, cell_value) is None:
+                                invalid_each[csv_headers[x_index]] = cell_value
                 each[csv_headers[x_index]] = cell_value
-        temp_row.append(each)
-    return {"error": False, "validated_rows": temp_row}
+        if invalid_each:
+            invalid_row.append(each)
+        else:
+            temp_row.append(each)
+    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row}
 
 
-def get_validated_rows(wb, sheet_name, validated_rows):
+def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
     # headers = ["first name", "last name", "email"]
     # required_headers = ["first name", "last name", "email"]
     headers = ["first name", "email"]
@@ -68,6 +80,7 @@ def get_validated_rows(wb, sheet_name, validated_rows):
             continue
         else:
             temp_row = []
+            invalid_row = []
             for x_index, cell in enumerate(row):
                 try:
                     headers[x_index]
@@ -75,29 +88,28 @@ def get_validated_rows(wb, sheet_name, validated_rows):
                     continue
                 if headers[x_index] in required_headers:
                     if not cell.value:
-                        message = 'Missing required \
-                                    value %s for row %s in sheet %s'\
-                            % (headers[x_index], y_index + 1, sheet_name)
-                        return {"error": True, "message": message}
-                    # elif x_index == 0:
-                    #     cell_value = is_valid_date_format(cell.value)
-                    #     if not cell_value:
-                    #         message = 'Invalid date format(format:yyyy-mm-dd) \
-                    #                  %s for row %s in sheet %s' % (headers[x_index], y_index + 1, sheet_name)
-                    #         return {"error": True, "message": message}
+                        # message = 'Missing required \
+                        #             value %s for row %s in sheet %s'\
+                        #     % (headers[x_index], y_index + 1, sheet_name)
+                        # return {"error": True, "message": message}
+                        invalid_row.append(headers[x_index])
                 temp_row.append(cell.value)
-            if len(temp_row) >= len(required_headers):
-                validated_rows.append(temp_row)
-    return validated_rows
+            if len(invalid_row) > 0:
+                invalid_rows.append(temp_row)
+            else:
+                if len(temp_row) >= len(required_headers):
+                    validated_rows.append(temp_row)
+    return validated_rows, invalid_rows
 
 
 def xls_doc_validate(document):
     wb = openpyxl.load_workbook(document)
     sheets = wb.get_sheet_names()
     validated_rows = []
+    invalid_rows = []
     for sheet_name in sheets:
-        get_validated_rows(wb, sheet_name, validated_rows)
-    return {"error": False, "validated_rows": validated_rows}
+        validated_rows, invalid_rows = get_validated_rows(wb, sheet_name, validated_rows, invalid_rows)
+    return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
 
 
 def import_document_validator(document):
@@ -141,7 +153,8 @@ class ContactListForm(forms.ModelForm):
             if data.get("error"):
                 raise forms.ValidationError(data.get("message"))
             else:
-                self.validated_rows = data.get("validated_rows")
+                self.validated_rows = data.get("validated_rows", [])
+                self.invalid_rows = data.get("invalid_rows", [])
         return document
 
     def clean_tags(self):
@@ -265,7 +278,7 @@ class SendCampaignForm(forms.ModelForm):
 
     class Meta:
         model = Campaign
-        fields = ['title', 'subject', 'html', 'email_template']
+        fields = ['title', 'subject', 'html', 'email_template', 'attachment']
 
     def __init__(self, *args, **kwargs):
         super(SendCampaignForm, self).__init__(*args, **kwargs)
@@ -278,11 +291,11 @@ class SendCampaignForm(forms.ModelForm):
     def clean_contact_list(self):
         contact_list = self.cleaned_data.get("contact_list")
         if not contact_list or contact_list == '[]' or \
-                json.loads(contact_list) == []:
+                contact_list == []:
             raise forms.ValidationError(
                 "Please choose any of the Contact List")
         else:
-            for each in json.loads(contact_list):
+            for each in contact_list:
                 if not ContactList.objects.filter(id=each).first():
                     raise forms.ValidationError(
                         "Please choose a valid Contact List")

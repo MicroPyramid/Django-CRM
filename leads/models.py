@@ -13,9 +13,9 @@ from contacts.models import Contact
 class Lead(models.Model):
     title = models.CharField(
         pgettext_lazy("Treatment Pronouns for the customer",
-                      "Title"), max_length=64, blank=True, null=True)
-    first_name = models.CharField(("First name"), max_length=255)
-    last_name = models.CharField(("Last name"), max_length=255)
+                      "Title"), max_length=64)
+    first_name = models.CharField(("First name"), null=True, max_length=255)
+    last_name = models.CharField(("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
     status = models.CharField(

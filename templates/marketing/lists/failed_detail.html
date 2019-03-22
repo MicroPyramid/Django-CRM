@@ -10,11 +10,11 @@
         <div class="card">
           <div class="card-body">
             <div class="card-title text-right">
-              <span class="float-left">{{ contact_list.name }} - {{ contacts_list|length }}</span>
-              {% if contact_list.failed_contacts.all|length > 0 %}
-                <a href="{% url 'marketing:failed_contact_list_detail' contact_list.id %}" class="primary_btn">Failed Contacts</a>
+              <span class="float-left">{{ contact_list.name }} -  Failed: {{ failed_contacts_list|length }}</span>
+              {% if contact_list.contacts.all|length > 0 %}
+                <a href="{% url 'marketing:contact_list_detail' contact_list.id %}" class="primary_btn">Contacts</a>
               {% endif %}
-              <a href="#" class="primary_btn">Add New Contact</a>
+              <a href="{% url 'marketing:failed_contact_list_download_delete' contact_list.id %}" class="primary_btn">Download & Delete</a>
             </div>
             <div class="table-responsive table-bordered ">
               <table class="table">
@@ -27,7 +27,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for contact in contacts_list %}
+                  {% for contact in failed_contacts_list %}
                   <tr style="text-align:center;">
                     <td scope="row">{{ forloop.counter }}</td>
                     <td>{{ contact.name }}</td>
