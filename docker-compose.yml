@@ -3,8 +3,8 @@ version: '2.0'
 services:
   db:
     image: postgres
-    volumes:
-      - /home/db:/var/lib/postgresql/data
+    # volumes:
+    #   - /home/db:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: "root"
       POSTGRES_USER: "postgres"
@@ -13,6 +13,9 @@ services:
   web:
     build: .
     image: micropyramid/django-crm:1
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
     ports:
       - "8001:8000"
     depends_on:
