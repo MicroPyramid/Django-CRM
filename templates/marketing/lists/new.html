@@ -64,7 +64,8 @@
 {% endblock %}
 {% block js_block %}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-  <script src="https://malsup.github.com/jquery.form.js"></script>
+  <!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.js"></script>
   <script>
     // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
     $('.save_btn').click(function(e) {
@@ -72,8 +73,8 @@
       $("form#add_form").submit()
     })
     /*$.blockUI({
-      message: '<h1>Please wait ...</h1>',
-      css: {
+    	message: '<h1>Please wait ...</h1>',
+    	css: {
         border: 'none',
         padding: '15px',
         backgroundColor: '#000',

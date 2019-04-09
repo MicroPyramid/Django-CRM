@@ -233,6 +233,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "marketing.tasks.send_scheduled_campaigns",
         "schedule": crontab(hour='*/1')
     },
+    "runs-unsubscribes-bounces-for-every-one-hour": {
+        "task": "marketing.tasks.list_all_bounces_unsubscribes",
+        "schedule": crontab(hour='*/1')
+    },
 }
 
 MAIL_SENDER = 'AMAZON'

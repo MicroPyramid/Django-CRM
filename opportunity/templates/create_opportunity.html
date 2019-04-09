@@ -56,7 +56,15 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Currency</label>
-                  {{ opportunity_form.currency }}
+                  <select name="currency" id="id_currency" class="form-control">
+                    <option value="">----------</option>
+                    {% for currency in currencies %}
+                      <option value="{{currency.0}}"
+                      {% if opportunity_obj.currency == currency.0 %}
+                      selected=""
+                      {% endif %}>{{currency.1}}</option>
+                    {% endfor %}
+                  </select>
                   <span class="error error_message" id="error_id_currency">{{opportunity_form.currency.errors}}</span>
                 </div>
               </div>
@@ -252,6 +260,7 @@
   $(document).ready(function() {
     $('.assigned_users').select2();
     $("#id_contacts").select2();
+    $('#id_currency').select2();
   });
   
   $('#id_account').change(function(){

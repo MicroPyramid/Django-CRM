@@ -5,7 +5,7 @@ from opportunity.views import (
     DeleteOpportunityView, GetContactView,
     GetOpportunitiesView,
     AddCommentView,
-    UpdateCommentView, DeleteCommentView, AddAttachmentsView)
+    UpdateCommentView, DeleteCommentView, AddAttachmentsView, DeleteAttachmentsView)
 
 
 app_name = 'opportunity'
@@ -29,6 +29,6 @@ urlpatterns = [
 
     path('attachment/add/',
          AddAttachmentsView.as_view(), name="add_attachment"),
-    path('attachment/remove/', DeleteCommentView.as_view(),
+    path('attachment/remove/', DeleteAttachmentsView.as_view(),
          name="remove_attachment"),
 ]

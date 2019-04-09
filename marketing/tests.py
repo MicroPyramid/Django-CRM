@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test import Client
 from common.models import User
+import os
 # from marketing.models import Tag, Document, ContactList, EmailTemplate, Contact, Campaign, CampaignLinkClick, CampaignLog, Link, CampaignOpen
 # from .models import *
 from marketing.views import *
@@ -66,3 +67,65 @@ class TestTemplates(TestMarketingModel, TestCase):
         self.assertEqual(resp13.status_code, 200)
         # self.assertEqual(resp14.status_code, 200)
         # self.assertEqual(resp15.status_code, 200)
+
+
+
+class TestCreateContacts(TestMarketingModel, TestCase):
+
+    def test_contact_list_new(self):
+        data= ['company name,email,first name,last name,city,state\n',
+                    'mp,admin@mp,Admin,MP,Hyderabad,Telangana\n',
+                    'mp,hrmp.com,HR,MP,Hyderabad,Telangana\n',
+                    'mp,contactus@mp.com,,MP,Hyderabad,Telangana\n',
+                    'mp,test@mp.com,Test,MP,Hyderabad,Telangana\n',
+                    'mp,hello@mp.com,Hello,MP,Hyderabad,Telangana\n']
+
+        with open('marketing/test_file.csv', 'w') as fp:
+            fp.writelines(data)
+
+        with open('marketing/test_file.csv') as fp:
+            response = self.client.post('/m/cl/list/cnew/',
+                {'name': 'sample_test', 'attachment': fp})
+            self.assertEqual(response.status_code, 200)
+
+        os.remove('marketing/test_file.csv')
+
+class TestViewContactList(TestMarketingModel, TestCase):
+
+    # def test_view_contact_list(self):
+    #     ## ContactList create object first !!!
+    #     response = self.client.get('/m/cl/list/1/detail/')
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertTemplateUsed(response, 'marketing/lists/detail.html')
+
+    def test_contact_list_pagination(self):
+        response = self.client.get('/m/cl/all/?page=1')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/m/cl/all/?page=asdf')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/m/cl/all/?page=')
+        self.assertEqual(response.status_code, 200)
+
+
+class TestEmailTemplateList(TestMarketingModel, TestCase):
+
+
+    def test_email_template_list_pagination(self):
+        response = self.client.get('/m/et/list/?page=1')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/m/et/list/?page=asdf')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get('/m/et/list/?page=')
+        self.assertEqual(response.status_code, 200)
+
+
+# class SearchContactsList(TestMarketingModel, TestCase):
+
+
+#     def test_search_contact_list(self):
+#         response = self.client.post('/m/cl/all/', {'tags':'abcd', 'search': 'campaign1'})
+#         self.assertEqual(response.status_code, 301)

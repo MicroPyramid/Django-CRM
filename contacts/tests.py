@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from contacts.forms import ContactAttachmentForm
 from accounts.models import Account
+from django.utils.encoding import force_text
 
 
 class ContactObjectsCreation(object):
@@ -50,6 +51,13 @@ class ContactObjectsCreation(object):
             attachment='image.png', case=self.case,
             created_by=self.user
         )
+
+        self.user_contacts_mp = User.objects.create(
+            first_name="mp",
+            username='mp',
+            email="mp@mp.com",
+            role="USER")
+
         self.client.login(username='n@mp.com', password='navi123')
 
 
@@ -202,11 +210,25 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_list_queryset(self):
         data = {'fist_name': 'contact',
                 'city': "Orlando", 'phone': '12345',
-                'email': "contact@gmail.com"}
+                'email': "contact@gmail.com", 'assigned_to': str(self.user.id)}
         response = self.client.post('/contacts/list/', data)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'contacts.html')
+
+    def test_contacts_list_user_role(self):
+        self.client.login(username='mp@mp.com', password='mp')
+        self.contact = Contact.objects.create(
+            first_name="contactmp",
+            email="contact@gmmpail.com",
+            created_by=self.user_contacts_mp)
+        response = self.client.get('/contacts/list/')
+        self.assertEqual(response.status_code, 200)
+        self.contact.delete()
+
+        response = self.client.post(
+            '/contacts/list/', {'first_name': 'contactmp', 'assigned_to': str(self.user.id)})
+        self.assertEqual(response.status_code, 200)
 
 
 class CommentTestCase(ContactObjectsCreation, TestCase):
@@ -263,3 +285,111 @@ class AttachmentTestCase(ContactObjectsCreation, TestCase):
             '/contacts/attachment/remove/',
             {'attachment_id': self.attachment.id})
         self.assertEqual(response.status_code, 200)
+
+
+class TestContactCreateContact(ContactObjectsCreation, TestCase):
+
+    def test_create_new_contact(self):
+        upload_file = open('static/images/user.png', 'rb')
+        response = self.client.post('/contacts/create/', {
+            'first_name': 'contact',
+            'last_name': 'george',
+            'email': 'meg@gmail.com',
+            'phone': '+917898901234',
+            'address': self.address.id,
+            'description': 'contact',
+            'created_by': self.user,
+            'assigned_to': str(self.user.id),
+            'savenewform': True,
+            'address_line': 'address one'
+        })
+        self.assertEqual(response.status_code, 302)
+
+    def test_contact_detail_view_error(self):
+        self.client.login(username='mp@mp.com', password='mp')
+        self.contact = Contact.objects.create(created_by=self.user)
+        # Todo
+        # response = self.client.get(reverse('contacts:view_contact', args=(self.contact.id,)))
+        # self.assertEqual(403, response.status_code)
+
+    def test_contact_update_view(self):
+        self.client.login(username='n@mp.com', password='navi123')
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)), {
+            'first_name': 'first name',
+            'last_name': 'last name',
+            'phone': '232323',
+            'email': 'email@email.com',
+            'assigned_to': str(self.user.id)
+        })
+        self.assertEqual(200, response.status_code)
+
+    def test_contact_update_view_assigned_Users(self):
+        self.client.login(username='n@mp.com', password='navi123')
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)), {
+            'first_name': 'first name',
+            'last_name': 'last name',
+            'phone': '232323',
+            'email': 'email@email.com',
+            'assigned_to': str(self.user_contacts_mp.id)
+        })
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)), {
+            'first_name': 'first name',
+            'last_name': 'last name',
+            'phone': '232323',
+            'email': 'email@email.com'
+        })
+        self.assertEqual(200, response.status_code)
+
+    def test_contact_update_view_error(self):
+        self.usermp1 = User.objects.create(
+            first_name="mp1",
+            username='mp1',
+            email="mp1@mp.com",
+            role="USER")
+        self.usermp1.set_password('mp')
+        self.usermp1.save()
+        self.contact = Contact.objects.create(
+            first_name="contactmp",
+            email="contact@gmmpail.com",
+            created_by=self.user_contacts_mp)
+        self.client.login(username='mp1@mp.com', password='mp')
+        response = self.client.get(
+            reverse('contacts:edit_contact', args=(self.contact.id,)), {})
+        self.assertEqual(403, response.status_code)
+
+        response = self.client.post(reverse('contacts:remove_contact', args=(
+            self.contact.id,)), {'pk': self.contact.id})
+        self.assertEqual(403, response.status_code)
+        self.contact.delete()
+
+        self.contact = Contact.objects.create(created_by=self.user)
+        response = self.client.post(
+            '/contacts/comment/add/', {'contactid': self.contact.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             'error': "You don't have permission to comment."})
+
+        response = self.client.post(
+            '/contacts/comment/edit/', {'commentid': self.comment.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             'error': "You don't have permission to edit this comment."})
+
+        response = self.client.post(
+            '/contacts/comment/remove/', {'comment_id': self.comment.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             'error': "You don't have permission to delete this comment."})
+
+        response = self.client.post(
+            '/contacts/attachment/add/', {'contactid': self.contact.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             'error': "You don't have permission to add attachment."})
+
+        self.attachment = Attachments.objects.create(
+            attachment='image.png', case=self.case,
+            created_by=self.user
+        )
+        response = self.client.post(
+            '/contacts/attachment/remove/', {'attachment_id': self.attachment.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             'error': "You don't have permission to delete this attachment."})

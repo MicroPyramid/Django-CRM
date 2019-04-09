@@ -28,7 +28,17 @@
     {% block header %}
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a>
+        <!-- <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a> -->
+        <div class="dropdown">
+          <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+            Django CRM
+          </a>
+
+          <div class="dropdown-menu mt-2" aria-labelledby="dropdownMenuLink">
+            <a class="dropdown-item" href="/">Sales</a>
+            <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
+          </div>
+        </div>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <i class="fas fa-bars"></i>
         </button>
