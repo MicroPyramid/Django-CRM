@@ -238,12 +238,17 @@ class CommentTestCase(AccountCreateTest, TestCase):
 
     def test_comment_add(self):
         response = self.client.post(
-            '/accounts/comment/add/', {'accountid': self.account.id,
-                                       'comment': 'comment'})
+            '/accounts/comment/add/', {'accountid': self.account.id})
         self.assertEqual(response.status_code, 200)
 
     def test_comment_create(self):
+        response = self.client.post(
+            '/accounts/comment/add/', {'accountid': self.account.id,
+                                       'comment': self.comment.id})
+        self.assertEqual(response.status_code, 200)
 
+    def test_comment_creation(self):
+        self.client.login(email='mp@micropyramid.com', password='mp')
         response = self.client.post(
             '/accounts/comment/add/', {'accountid': self.account.id,
                                        'comment': 'comment'})
@@ -251,6 +256,12 @@ class CommentTestCase(AccountCreateTest, TestCase):
 
     def test_comment_edit(self):
         self.client.login(email='mp@micropyramid.com', password='mp')
+        response = self.client.post(
+            '/accounts/comment/edit/', {'commentid': self.comment.id,
+                                        'comment': 'comment'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_comment_update(self):
         response = self.client.post(
             '/accounts/comment/edit/', {'commentid': self.comment.id,
                                         'comment': 'comment'})
@@ -344,5 +355,32 @@ class TestCreateLeadPostView(AccountCreateTest, TestCase):
                                       'tags': 'tag1',
                                       'account_attachment': SimpleUploadedFile(
                                           upload_file.name, upload_file.read())
-                                      })
+                                      },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_lead_post_status(self):
+        upload_file = open('static/images/user.png', 'rb')
+        response = self.client.post(reverse(
+            'accounts:edit_account', kwargs={'pk': self.account.id}),
+            {"name": "mike",
+             "email": "mike@micropyramid.com",
+             "phone": "+91-833-385-5552",
+             "billing_address_line": "sddsv",
+             "billing_street": "KPHB",
+             "billing_city": "New York",
+             "billing_state": "usa",
+             "billing_postcode": "500073",
+             "billing_country": "IN",
+             "website": "www.mike.com",
+             "created_by": self.user,
+             "status": "open",
+             "industry": "SOFTWARE",
+             "description": "Yes.. Testing Done",
+             "lead": str(self.lead.id),
+             'contacts': str(self.contact.id),
+             'tags': 'tag1',
+             'account_attachment': SimpleUploadedFile(
+                 upload_file.name, upload_file.read())
+             })
         self.assertEqual(response.status_code, 302)

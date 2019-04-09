@@ -43,7 +43,7 @@ def dashboard(request):
 @login_required(login_url='/login')
 def contact_lists(request):
     tags = Tag.objects.all()
-    if (request.user.is_superuser):
+    if (request.user.role == "ADMIN"):
         queryset = ContactList.objects.all()
     else:
         queryset = ContactList.objects.filter(created_by=request.user)
@@ -453,8 +453,9 @@ def campaign_details(request, pk):
     if (request.user.is_admin or request.user.is_superuser):
         contact_lists = contact_lists
     else:
-        contact_lists = contact_lists.filter(
-            is_public=True, created_by=request.user)
+        # contact_lists = contact_lists.filter(
+        #     is_public=True, created_by=request.user)
+        contact_lists = contact_lists.filter(created_by=request.user)
 
     contacts = Contact.objects.filter(contact_list__in=contact_lists)
     contact_list_ids = campaign.contact_lists.all().values_list('id', flat=True)

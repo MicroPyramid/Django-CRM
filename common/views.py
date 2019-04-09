@@ -486,59 +486,6 @@ def document_update(request, pk):
     return render(request, template_name, context)
 
 
-class UpdateDocumentView(LoginRequiredMixin, UpdateView):
-    model = Document
-    form_class = DocumentForm
-    template_name = "doc_create.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.role == 'ADMIN':
-            if not request.user == Document.objects.get(id=kwargs['pk']).created_by:
-                raise PermissionDenied
-
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(UpdateDocumentView, self).dispatch(
-            request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super(UpdateDocumentView, self).get_form_kwargs()
-        kwargs.update({'users': self.users})
-        return kwargs
-
-    def form_valid(self, form):
-        doc = form.save(commit=False)
-        doc.save()
-
-        doc.shared_to.clear()
-        if self.request.POST.getlist('shared_to'):
-            doc.shared_to.add(*self.request.POST.getlist('shared_to'))
-
-        if self.request.is_ajax():
-            data = {'success_url': reverse_lazy(
-                'common:doc_list'), 'error': False}
-            return JsonResponse(data)
-        return super(UpdateDocumentView, self).form_valid(form)
-
-    def form_invalid(self, form):
-        response = super(UpdateDocumentView, self).form_invalid(form)
-        if self.request.is_ajax():
-            return JsonResponse({'error': True, 'errors': form.errors})
-        return response
-
-    def get_context_data(self, **kwargs):
-        context = super(UpdateDocumentView, self).get_context_data(**kwargs)
-        context["doc_obj"] = self.object
-        context["doc_form"] = context["form"]
-        context["doc_file_name"] = context["doc_obj"].document_file.name.split(
-            "/")[-1]
-        context["users"] = self.users
-        context["sharedto_list"] = [
-            int(i) for i in self.request.POST.getlist('shared_to', []) if i]
-        if "errors" in kwargs:
-            context["errors"] = kwargs["errors"]
-        return context
-
-
 class DocumentDetailView(LoginRequiredMixin, DetailView):
     model = Document
     template_name = "doc_detail.html"

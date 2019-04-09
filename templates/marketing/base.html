@@ -1,5 +1,7 @@
 {% extends 'root.html' %}
-
+{% load staticfiles %}
+{% load compress %}
+{% load thumbnail %}
 {% block main_menu %}
 <ul class="navbar-nav mr-auto">
 </ul>
@@ -11,16 +13,48 @@
 
 {% block content %}
 <div class="side_menu">
-  <div class="logo_block">
-    <a href="#">Django <span class="green_color text-uppercase">Crm</span></a>
-  </div>
+  <!-- <div class="logo_block"> -->
+    <!-- <a href="#">Django <span class="green_color text-uppercase">Crm</span></a> -->
+    <div class="dropdown">
+      <a class="dropdown-toggle navbar-brand mt-2 ml-3" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:#000; font-weight: 800; font-size: 1.5em;">
+        Django <span class="green_color text-uppercase" style="color:#7ae847">Crm</span>
+      </a>
+
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+        <a class="dropdown-item" href="/">Sales</a>
+        <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
+      </div>
+    </div>
+  <!-- </div> -->
   <div class="profile_block">
     <ul>
-      <li data-toggle="tooltip" data-placement="bottom" title="Santharao Nowpada"><a href="#" class="profile_pic"><img src="https://lh3.googleusercontent.com/-6gBVCn2WaAk/AAAAAAAAAAI/AAAAAAAAAAA/ACHi3rd7EWo94Fj0ep0DQa3tDjddczFC3g/s96-c-mo/photo.jpg" alt="profile picture"></a></li>
-      <li data-toggle="tooltip" data-placement="bottom" title="Users"><a href="#" class="sky_blue box"><i class="fas fa-users"></i></a></li>
-      <li data-toggle="tooltip" data-placement="bottom" title="Change Password"><a href="#" class="red box"><i class="fas fa-key"></i></a></li>
-      <li data-toggle="tooltip" data-placement="bottom" title="Profile"><a href="#" class="green box"><i class="fas fa-user"></i></a></li>
-      <li data-toggle="tooltip" data-placement="bottom" title="Logout"><a href="#" class="purple box"><i class="fas fa-sign-out-alt"></i></a></li>
+
+      <li data-toggle="tooltip" data-placement="bottom" title="{{request.user}}">
+        <a href="#" class="profile_pic">
+        <!-- <img src="https://lh3.googleusercontent.com/-6gBVCn2WaAk/AAAAAAAAAAI/AAAAAAAAAAA/ACHi3rd7EWo94Fj0ep0DQa3tDjddczFC3g/s96-c-mo/photo.jpg" alt="profile picture"> -->
+        {% if not request.user.profile_pic %}
+        <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
+        {% else %}
+        {% thumbnail request.user.profile_pic "25x25" as im %}
+        <img src="{{ im.url }}">
+        {% endthumbnail %}
+        {% endif %}
+        </a>
+      </li>
+
+      <li data-toggle="tooltip" data-placement="bottom" title="Users">
+        <a href="{% url 'common:users_list' %}" class="sky_blue box"><i class="fas fa-users"></i>
+        </a>
+      </li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Change Password">
+        <a href="{% url 'common:change_password' %}" class="red box"><i class="fas fa-key"></i></a>
+      </li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Profile">
+        <a href="{% url 'common:profile' %}" class="green box"><i class="fas fa-user"></i></a>
+      </li>
+      <li data-toggle="tooltip" data-placement="bottom" title="Logout">
+        <a href="{% url 'common:logout' %}" class="purple box"><i class="fas fa-sign-out-alt"></i></a>
+      </li>
     </ul>
   </div>
   <div class="menu_block">
