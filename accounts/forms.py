@@ -1,6 +1,6 @@
 from django import forms
 from .models import Account
-from common.models import Comment, Attachments
+from common.models import Comment, Attachments, User
 from leads.models import Lead
 from contacts.models import Contact
 from django.db.models import Q
@@ -44,6 +44,7 @@ class AccountForm(forms.ModelForm):
             self.fields["contacts"].queryset = Contact.objects.filter(
                 Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
 
+        self.fields['assigned_to'].required = False
         if account_view:
             self.fields['billing_address_line'].required = True
             self.fields['billing_street'].required = True
@@ -55,7 +56,7 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
         fields = ('name', 'phone', 'email', 'website', 'industry',
-                  'description', 'status',
+                  'description', 'status', 'assigned_to',
                   'billing_address_line', 'billing_street',
                   'billing_city', 'billing_state',
                   'billing_postcode', 'billing_country', 'lead', 'contacts')
@@ -75,3 +76,15 @@ class AccountAttachmentForm(forms.ModelForm):
     class Meta:
         model = Attachments
         fields = ('attachment', 'account')
+
+
+class EmailForm(forms.Form):
+    recipients = forms.CharField(max_length=500)
+    message_subject = forms.CharField(max_length=500)
+    message_body = forms.CharField(widget=forms.Textarea)
+
+    def __init__(self, *args, **kwargs):
+        super(EmailForm, self).__init__(*args, **kwargs)
+        self.fields['message_subject'].widget.attrs['class'] = 'form-control'
+        self.fields['message_subject'].widget.attrs['required'] = True
+        self.fields['message_subject'].widget.attrs['placeholder'] = 'Email Subject'

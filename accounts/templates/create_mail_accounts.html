@@ -1,0 +1,178 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block extralinks %}
+{% load thumbnail %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
+{% endblock %}
+{% block content %}
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- heading_create starts here -->
+  <div class="row marl">
+    <div class="col-md-12">
+      <form id="add_form" method="POST" action='' novalidate>
+        <div class="overview_form_block row marl justify-content-center">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title text-center">
+                  Send Mail
+                </div>
+                <form>
+                  <div class="row marl">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label for="">Contacts</label>
+                        <!-- <input type="text" class="form-control" name="contacts_list" id="id_contacts"> -->
+                        <!-- <select name="recipients" id="_id_recipients">
+                          <option value="">email</option>
+
+                        </select> -->
+                        <input type="text" placeholder="Contacts" name="recipients" id="_id_recipients">
+                      </div>
+                      <span id="id_recipients"></span>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label for="">Subject</label>
+                        <input type="text" class="form-control" name="message_subject"  placeholder="Enter Subject">
+                      </div>
+                      <span id="id_message_subject"></span>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label>Message</label>
+                        <div id="editor-container"></div>
+                      </div>
+                      <input type="hidden" name="message_body" id="html_content">
+                      <span id="id_message_body"></span>
+                    </div>
+                    <!-- <div class="col-md-12 text-center">
+                            <pre id="myPrecious"></pre>
+                            <div id="justText"></div>
+                            <div id="justHtml"></div>
+                        </div> -->
+                    <div class="col-md-12 text-center">
+                      <button type="submit" class="primary_btn mar_btm save_btn">Send</button>
+                      <a href="{% url 'accounts:create_mail' account_id %}" class="primary_btn">Cancel</a>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_block %}
+<script src="https://malsup.github.com/jquery.form.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.js"></script>
+<script>
+  $(document).ready(function () {
+    // $("#id_contacts").select2();
+    var REGEX_EMAIL = '([a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*@' +
+    '(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)';
+
+    $('#_id_recipients').selectize({
+    persist: false,
+    maxItems: null,
+    valueField: 'email',
+    labelField: 'name',
+    searchField: ['name', 'email'],
+    // options: [
+    // {email: 'brian@thirdroute.com', name: 'Brian Reavis'},
+    // {email: 'nikola@tesla.com', name: 'Nikola Tesla'},
+    // {email: 'someone@gmail.com'}
+    // ],
+    options: {{contacts_list|safe}},
+    render: {
+    item: function(item, escape) {
+    return '<div>' +
+      (item.name ? '<span class="name">' + escape(item.name) + '</span>' : '') +
+      (item.email ? '<span class="email">' + escape(item.email) + '</span>' : '') +
+      '</div>';
+    },
+    option: function(item, escape) {
+    var label = item.name || item.email;
+    var caption = item.name ? item.email : null;
+    return '<div>' +
+      '<span class="label">' + escape(label) + '</span>' +
+      (caption ? '<span class="caption">' + escape(caption) + '</span>' : '') +
+      '</div>';
+    }
+    },
+    createFilter: function(input) {
+    var match, regex;
+
+    // email@address.com
+    regex = new RegExp('^' + REGEX_EMAIL + '$', 'i');
+    match = input.match(regex);
+    if (match) return !this.options.hasOwnProperty(match[0]);
+
+    // name <email@address.com>
+      regex = new RegExp('^([^<]*)\<' + REGEX_EMAIL + '\>$' , 'i' ); match=input.match(regex); if (match) return
+        !this.options.hasOwnProperty(match[2]); return false; }, create: function(input) { if ((new RegExp('^' +
+        REGEX_EMAIL + '$' , 'i' )).test(input)) { return {email: input}; } var match=input.match(new RegExp('^([^<]*)\<'
+        + REGEX_EMAIL + '\>$' , 'i' )); if (match) { return { email : match[2], name : $.trim(match[1]) }; }
+        alert('Invalid email address.'); return false; } });
+  });
+  var quill = new Quill('#editor-container', {
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, false] }],
+        ['bold', 'italic', 'underline'],
+        ['image', 'code-block']
+      ]
+    },
+    placeholder: 'Compose an epic...',
+    theme: 'snow' // or 'bubble'
+  });
+
+  var preciousContent = document.getElementById('myPrecious');
+  var justTextContent = document.getElementById('justText');
+  var justHtmlContent = document.getElementById('justHtml');
+
+  quill.on('text-change', function () {
+    var delta = quill.getContents();
+    var text = quill.getText();
+    var justHtml = quill.root.innerHTML;
+    /*preciousContent.innerHTML = JSON.stringify(delta);
+    justTextContent.innerHTML = text;
+    justHtmlContent.innerHTML = justHtml;*/
+    $('#html_content').val(justHtml);
+  });
+
+
+  $('.save_btn').click(function (e) {
+    e.preventDefault();
+    $("form#add_form").submit()
+  })
+
+  $('form#add_form').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: $(this).attr('action'),
+    data: $(this).serialize(),
+    success: function (data) {
+      console.log("data", data)
+      if (data.error == false) {
+        window.location = "{% url 'accounts:list' %}";
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+        }
+      }
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+  });
+</script>
+{% endblock js_block %}

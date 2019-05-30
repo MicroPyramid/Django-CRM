@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
 from common.models import Address, User, Document, Comment, APISettings
+from django.contrib.auth import password_validation
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -154,20 +155,22 @@ class LoginForm(forms.ModelForm):
 
 
 class ChangePasswordForm(forms.Form):
-    CurrentPassword = forms.CharField(max_length=100)
+    # CurrentPassword = forms.CharField(max_length=100)
     Newpassword = forms.CharField(max_length=100)
     confirm = forms.CharField(max_length=100)
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super(ChangePasswordForm, self).__init__(*args, **kwargs)
 
     def clean_confirm(self):
-        if len(self.data.get('confirm')) < 4:
-            raise forms.ValidationError(
-                'Password must be at least 4 characters long!')
+        # if len(self.data.get('confirm')) < 4:
+        #     raise forms.ValidationError(
+        #         'Password must be at least 4 characters long!')
         if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
             raise forms.ValidationError(
                 'Confirm password do not match with new password')
+        password_validation.validate_password(self.cleaned_data.get('Newpassword'), user=self.user)
         return self.data.get('confirm')
 
 
@@ -184,6 +187,7 @@ class PasswordResetEmailForm(PasswordResetForm):
 class DocumentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
+        self.instance = kwargs.get('instance', None)
         users = kwargs.pop('users', [])
         super(DocumentForm, self).__init__(*args, **kwargs)
 
@@ -194,12 +198,26 @@ class DocumentForm(forms.ModelForm):
             (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
         self.fields['status'].required = False
         self.fields['title'].required = True
-        self.fields['shared_to'].queryset = users
+        if users:
+            self.fields['shared_to'].queryset = users
         self.fields['shared_to'].required = False
 
     class Meta:
         model = Document
         fields = ['title', 'document_file', 'status', 'shared_to']
+
+    def clean_title(self):
+        title = self.cleaned_data.get('title')
+        if not self.instance:
+            if Document.objects.filter(title=title).exists():
+                raise forms.ValidationError(
+                    'Document with this Title already exists')
+                return title
+        if Document.objects.filter(title=title).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError(
+                'Document with this Title already exists')
+            return title
+        return title
 
 
 class UserCommentForm(forms.ModelForm):

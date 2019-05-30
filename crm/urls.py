@@ -16,6 +16,7 @@ urlpatterns = [
     path('opportunities/',
          include('opportunity.urls', namespace="opportunities")),
     path('cases/', include('cases.urls', namespace="cases")),
+    path('tasks/', include('tasks.urls', namespace="tasks")),
     path('emails/', include('emails.urls', namespace="emails")),
     # path('planner/', include('planner.urls', namespace="planner")),
     path('logout/', views.LogoutView, {'next_page': '/login/'}, name="logout"),
