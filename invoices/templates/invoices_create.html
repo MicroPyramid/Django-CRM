@@ -1,0 +1,277 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% block breadcrumb %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css"
+  href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
+{% endblock %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'invoices:invoices_list' %}">Invoices</a></li>
+    <li class="breadcrumb-item active">{% if invoice_obj %}Edit{% else %}Create{% endif %}</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<form id="formid" action='' method="POST" novalidate enctype="multipart/form-data">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-9">
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title text-center">
+            {% if invoice_obj %}EDIT{% else %}CREATE{% endif %} INVOICE
+          </div>
+          <div class="row marl">
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Invoice
+                    Title{% if form.invoice_title.field.required %}<span class="error_marker"
+                      style="color:red">*</span>{% endif %}</label>
+                  {{ form.invoice_title }}
+                  <span class="error" id="id__invoice_title">{{ form.invoice_title.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Invoice Number{% if form.invoice_number.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ form.invoice_number }}
+                  <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Name{% if form.name.field.required %}<span
+                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  {{ form.name }}
+                  <span class="error" id="id__name">{{ form.name.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Email{% if form.email.field.required %}<span
+                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  {{ form.email }}
+                  <span class="error" id="id__email">{{ form.email.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Currency{% if form.currency.field.required %}<span
+                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  {{ form.currency }}
+                  <span class="error" id="id__currency">{{ form.currency.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Phone{% if form.phone.field.required %}<span
+                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  {{ form.phone }}
+                  <span class="error" id="id__phone">{{ form.phone.errors }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col billing_block col-md-12" style="padding: 0px;">
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                    <label for="exampleInputEmail1" class="required">Quantity{% if form.quantity.field.required %}<span
+                        class="error_marker" style="color:red">*</span>{% endif %}</label>
+                    {{ form.quantity }}
+                    <span class="error" id="id__quantity">{{ form.quantity.errors }}</span>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                    <label for="id_contacts" class="required">Rate{% if form.rate.field.required %}<span
+                        class="error_marker" style="color:red">*</span>{% endif %}</label>
+                    {{ form.rate }}
+                    <span class="error" id="id__rate">{{ form.rate.errors }}</span>
+                  </div>
+                </div>
+                <div class="filter_col col-md-12">
+                  <div class="form-group ">
+                    <label for="id_contacts" class="required">Total Amount{% if form.total_amount.field.required %}<span
+                        class="error_marker" style="color:red">*</span>{% endif %}</label>
+                    {{ form.total_amount }}
+                    <span class="error" id="id__total_amount">{{ form.total_amount.errors }}</span>
+                  </div>
+                </div>
+                <div class="filter_col billing_block col-md-12" style="padding: 0px;">
+                  <div class="filter_col col-md-12">
+                    <div class="form-group ">
+                      <label for="id_contacts" class="required">Status{% if form.status.field.required %}<span
+                          class="error_marker" style="color:red">*</span>{% endif %}</label>
+                      {{ form.status }}
+                      <span class="error" id="id__status">{{ form.status.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-12">
+                    <div class="form-group ">
+                      <label for="exampleInputEmail1">Assign To</label>
+                      {{form.assigned_to}}
+                      <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-12">
+                    <div class="form-group ">
+                      <label for="exampleInputEmail1">Due Date {% if form.due_date.field.required %}<span
+                          class="error_marker" style="color:red">*</span>{% endif %}</label>
+                      <div id="datepicker1" class='input-group date'>
+                        {{ form.due_date }}
+                        <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                      </div>
+                      <span class="error" id="id__due_date">{{ form.due_date.errors }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group ">
+                  <label for="exampleInputEmail1">Details</label>
+                  {{form.details}}
+                  <span class="error" id="id__details">{{ form.details.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">From Address</label>
+                  {{ from_address_form.address_line }}
+                  <span class="error" id="id__address_line">{{ from_address_form.address_line.errors }}</span>
+                </div>
+                {{ from_address_form.street }}
+                <span class="error" id="id__street">{{ from_address_form.street.errors }}</span>
+                <div class="row" style="margin-top: 10px;">
+                  <div class="col-md-4">
+                    {{ from_address_form.city }}
+                    {{ from_address_form.city.errors }}
+                    <span class="error" id="id__city">{{ to_address_form.city.errors }}</span>
+                  </div>
+                  <div class="col-md-4">
+                    {{ from_address_form.state }}
+                    <span class="error" id="id__state">{{ from_address_form.state.errors }}</span>
+                  </div>
+                  <div class="col-md-4">
+                    {{ from_address_form.postcode }}
+                    <span class="error" id="id__postcode">{{ from_address_form.postcode.errors }}</span>
+                  </div>
+                  <div class="col-md-12" style="margin-top: 10px;">
+                    {{ from_address_form.country }}
+                    <span class="error" id="id__country">{{ from_address_form.country.errors }}</span>
+                  </div>
+                </div>
+                <br>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">To Address</label>
+                  {{ to_address_form.address_line }}
+                  <span class="error" id="id__address_line_">{{ to_address_form.address_line.errors }}</span>
+                </div>
+                {{ to_address_form.street }}
+                <span class="error" id="id__street_">{{ to_address_form.street.errors }}</span>
+                <div class="row" style="margin-top: 10px;">
+                  <div class="col-md-4">
+                    {{ to_address_form.city }}
+                    {{ to_address_form.city.errors }}
+                    <span class="error" id="id__city_">{{ to_address_form.city.errors }}</span>
+                  </div>
+                  <div class="col-md-4">
+                    {{ to_address_form.state }}
+                    <span class="error" id="id__state_">{{ to_address_form.state.errors }}</span>
+                  </div>
+                  <div class="col-md-4">
+                    {{ to_address_form.postcode }}
+                    <span class="error" id="id__postcode_">{{ to_address_form.postcode.errors }}</span>
+                  </div>
+                  <div class="col-md-12" style="margin-top: 10px;">
+                    {{ to_address_form.country }}
+                    <span class="error" id="id__country_">{{ to_address_form.country.errors }}</span>
+                  </div>
+                </div>
+                <br>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="col-md-12">
+              <div class="row marl buttons_row form_btn_row text-center">
+                <button class="btn btn-default save" type="submit">Save</button>
+                <a href="{% url 'invoices:invoices_list' %}" class="btn btn-default clear"
+                  id="create_user_cancel">Cancel</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <input type="hidden" id="save_new_form" name="savenewform"> -->
+  </div>
+  <!-- overview ends here -->
+</form>
+{% endblock %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+{% block js_block %}
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script src="https://malsup.github.io/jquery.form.js"></script>
+<script type="text/javascript">
+
+  // $(document).ready(function() {
+  //   $('.assigned_users').select2();
+  // });
+  $(document).ready(function () {
+    $("#id_contacts").select2();
+    $("#id_assigned_to").select2();
+    $('#id_currency').select2();
+    var date = new Date();
+    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    $('#id_due_date').datetimepicker({
+      'format': 'YYYY-MM-DD',
+      minDate: today
+    })
+
+
+    $('#id_quantity').keyup(calculate);
+    $('#id_rate').keyup(calculate);
+    function calculate(e) {
+      $('#id_total_amount').val($('#id_quantity').val() * $('#id_rate').val());
+    }
+
+  });
+
+  $('form#formid').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: ".",
+    data: $('#formid').serialize(),
+    success: function (data) {
+      if (data.error) {
+        $('.error').html('')
+        for (var key in data.errors) {
+          $('#id__' + key).html("<p>" + data.errors[key][0] + "</p>");
+        };
+        for (var key in data.from_address_errors) {
+          $('#id__' + key).html("<p>" + data.from_address_errors[key][0] + "</p>");
+        };
+        for (var key in data.to_address_errors) {
+          $('#id__' + key + '_').html("<p>" + data.to_address_errors[key][0] + "</p>");
+          console.log($('#id__' + key + '_'))
+        };
+        $('#submit_btn').removeAttr('disabled')
+      }
+      else {
+        window.location = data.success_url;
+      }
+    }
+  });
+</script>
+{% endblock js_block %}

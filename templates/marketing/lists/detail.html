@@ -3,8 +3,51 @@
 {% load paginate %}
 {% block content %}
 {{ block.super }}
-<div class="marketing_pages">
+<div class="main_container ml-5 mr-5">
   <div class="row marl">
+    <div class="filter_row list_filter_row row marl col-md-12 mb-2">
+      <div class="">
+        <div class="card">
+          <div class="card-body">
+            <form id="leads_filter" action="" method="POST">
+              <div class="card-body ">
+                <div class="card-title">Filters</div>
+                <div class="row marl">
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Name</label>
+                      <input type="text" class="form-control" placeholder="Name" name="name"
+                        value="{{request.POST.name}}">
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Email</label>
+                      <input type="text" class="form-control" placeholder="Email" name="email"
+                        value="{{request.POST.email}}">
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Company Name</label>
+                      <input type="text" class="form-control" placeholder="Company Name" name="company_name"
+                        value="{{request.POST.company_name}}">
+                    </div>
+                  </div>
+                  <input type="hidden" name="tab_status" id="tab_status">
+                  <div class="filter_col col-2">
+                    <div class="form-group buttons_row">
+                      <button class="btn btn-primary save" type="submit">Search</button>
+                      <a href="" class="btn btn-default clear" onclick="window.location.reload">Clear</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="col-md-12">
       <div class="table_container_row no_mar_top">
         <div class="card">
@@ -12,9 +55,13 @@
             <div class="card-title text-right">
               <span class="float-left">{{ contact_list.name }} - {{ contacts_list|length }}</span>
               {% if contact_list.failed_contacts.all|length > 0 %}
-                <a href="{% url 'marketing:failed_contact_list_detail' contact_list.id %}" class="primary_btn">Failed Contacts</a>
+              <a href="{% url 'marketing:failed_contact_list_detail' contact_list.id %}" class="primary_btn">Failed
+                Contacts</a>
               {% endif %}
-              <a href="#" class="primary_btn">Add New Contact</a>
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
+              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact</a>
             </div>
             <div class="table-responsive table-bordered ">
               <table class="table">
@@ -27,15 +74,31 @@
                   </tr>
                 </thead>
                 <tbody>
+                  <tr>
+                    <span><b>Tags : </b></span>
+                    {% for tag in contact_list.tags.all %}
+                    <span class="text-left color{{forloop.counter}} tag_class_cl" id="list_tag" data-link="{{tag.id}}"
+                      style="cursor: pointer;">{{tag.name}}</span>
+                    {% empty %}
+                    <span class="text-left">No Tags</span>
+                    {% endfor %}
+                  </tr>
+                  {% if per_page %}
+                  {% paginate per_page contacts_list %}
+                  {% else%}
+                  {% paginate 10 contacts_list %}
+                  {% endif %}
                   {% for contact in contacts_list %}
                   <tr style="text-align:center;">
                     <td scope="row">{{ forloop.counter }}</td>
                     <td>{{ contact.name }}</td>
-                    <td>{{ contact.email }}</td>
+                    <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
                     <td class="actions">
-                      <a href="#" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit"><i
+                          class="fas fa-edit"></i></a>
                       <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
-                      <a href="#" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      <a href="{% url 'marketing:delete_contact' contact.id %}"
+                        class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
                     </td>
                   </tr>
                   {% empty %}
@@ -51,5 +114,33 @@
       </div>
     </div>
   </div>
+  <div class="marl row text-center mt-5">
+    {% show_pages %}
+  </div>
 </div>
 {% endblock %}
+
+{% block js_block %}
+<script>
+  $(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+    $('#id_tag').select2();
+
+    $(".remove_account").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      if (!confirm('Are you sure you want to delete?'))
+        return;
+      window.location = $(this).attr('href')
+    })
+
+    $("a[rel='page']").click(function (e) {
+      e.preventDefault();
+      $('#leads_filter').attr("action", $(this).attr("href"));
+      $('#leads_filter').submit();
+    });
+  })
+</script>
+{% endblock js_block %}

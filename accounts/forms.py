@@ -36,9 +36,12 @@ class AccountForm(forms.ModelForm):
             'placeholder': 'Postcode'})
         self.fields["billing_country"].choices = [
             ("", "--Country--"), ] + list(self.fields["billing_country"].choices)[1:]
-        self.fields["lead"].queryset = Lead.objects.all(
-        ).exclude(status='closed')
-        if request_user:
+        # self.fields["lead"].queryset = Lead.objects.all(
+        # ).exclude(status='closed')
+        if request_user.role == 'ADMIN':
+            self.fields["lead"].queryset = Lead.objects.filter().exclude(status='closed')
+            self.fields["contacts"].queryset = Contact.objects.filter()
+        else:
             self.fields["lead"].queryset = Lead.objects.filter(
                 Q(assigned_to__in=[request_user]) | Q(created_by=request_user)).exclude(status='closed')
             self.fields["contacts"].queryset = Contact.objects.filter(

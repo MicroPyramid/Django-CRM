@@ -112,7 +112,7 @@ class AccountsListTestCase(AccountCreateTest, TestCase):
 
     def test_accounts_list(self):
         self.accounts = Account.objects.all()
-        response = self.client.get('/accounts/list/')
+        response = self.client.get(reverse('accounts:list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts.html')
 
@@ -125,7 +125,7 @@ class AccountsListTestCase(AccountCreateTest, TestCase):
                 'billing_state': "billing_state",
                 'billing_postcode': "billing_postcode",
                 'billing_country': "billing_country"}
-        response = self.client.post('/accounts/list/', data)
+        response = self.client.post(reverse('accounts:list'), data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts.html')
 
@@ -152,7 +152,7 @@ class AccountsRemoveTestCase(AccountCreateTest, TestCase):
     def test_accounts_remove(self):
         response = self.client.get(
             '/accounts/' + str(self.account.id) + '/delete/')
-        self.assertEqual(response['location'], '/accounts/list/')
+        self.assertEqual(response['location'], '/accounts/')
 
     # def test_accounts_remove_status(self):
     #     Account.objects.filter(id=self.account.id).delete()

@@ -122,7 +122,7 @@ class Comment(models.Model):
         on_delete=models.CASCADE)
     lead = models.ForeignKey('leads.Lead',
                              blank=True, null=True,
-                             related_name="leads",
+                             related_name="leads_comments",
                              on_delete=models.CASCADE)
     opportunity = models.ForeignKey(
         'opportunity.Opportunity', blank=True,
@@ -139,6 +139,12 @@ class Comment(models.Model):
 
     task = models.ForeignKey('tasks.Task', blank=True, null=True,
                              related_name='tasks_comments', on_delete=models.CASCADE)
+
+    invoice = models.ForeignKey('invoices.Invoice', blank=True, null=True,
+                                related_name='invoice_comments', on_delete=models.CASCADE)
+
+    event = models.ForeignKey('events.Event', blank=True, null=True,
+                                related_name='events_comments', on_delete=models.CASCADE)
 
     def get_files(self):
         return Comment_Files.objects.filter(comment_id=self)
@@ -186,6 +192,11 @@ class Attachments(models.Model):
 
     task = models.ForeignKey('tasks.Task', blank=True, null=True,
                              related_name='tasks_attachment', on_delete=models.CASCADE)
+
+    invoice = models.ForeignKey('invoices.Invoice', blank=True, null=True,
+                                related_name='invoice_attachment', on_delete=models.CASCADE)
+    event = models.ForeignKey('events.Event', blank=True, null=True,
+                                related_name='events_attachment', on_delete=models.CASCADE)
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")

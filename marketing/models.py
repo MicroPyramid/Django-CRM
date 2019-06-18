@@ -35,6 +35,9 @@ class EmailTemplate(models.Model):
     subject = models.CharField(max_length=5000)
     html = models.TextField()
 
+    class Meta:
+        ordering = ['id', ]
+
     @property
     def created_by_user(self):
         return self.created_by if self.created_by else None
@@ -51,6 +54,9 @@ class ContactList(models.Model):
     # is_public = models.BooleanField(default=False)
     visible_to = models.ManyToManyField(
         User, related_name="contact_lists_visible_to")
+
+    class Meta:
+        ordering = ('id',)
 
     @property
     def created_by_user(self):
@@ -126,6 +132,9 @@ class Contact(models.Model):
     def __str__(self):
         return self.email
 
+    class Meta:
+        ordering = ['id', ]
+
 
 class FailedContact(models.Model):
     phone_regex = RegexValidator(
@@ -191,10 +200,14 @@ class Campaign(models.Model):
     opens = models.IntegerField(default='0', blank=True)
     opens_unique = models.IntegerField(default='0', blank=True)
     bounced = models.IntegerField(default='0')
+    tags = models.ManyToManyField(Tag)
     status = models.CharField(
         default="Preparing", choices=STATUS_CHOICES, max_length=20)
     attachment = models.FileField(
         max_length=1000, upload_to=get_campaign_attachment_path, blank=True, null=True)
+
+    class Meta:
+        ordering = ('-created_on', )
 
     @property
     def no_of_unsubscribers(self):
@@ -225,11 +238,27 @@ class Campaign(models.Model):
     @property
     def sent_on_format(self):
         if self.schedule_date_time:
-            c_schedule_date_time = convert_to_custom_timezone(self.schedule_date_time, self.timezone)
+            c_schedule_date_time = convert_to_custom_timezone(
+                self.schedule_date_time, self.timezone)
             return c_schedule_date_time.strftime('%b %d, %Y %I:%M %p')
         else:
-            c_created_on = convert_to_custom_timezone(self.created_on, self.timezone)
+            c_created_on = convert_to_custom_timezone(
+                self.created_on, self.timezone)
             return c_created_on.strftime('%b %d, %Y %I:%M %p')
+
+    @property
+    def get_all_emails_count(self):
+        return self.contact_lists.exclude(contacts__email=None).values_list('contacts__email').count()
+
+    @property
+    def get_all_email_bounces_count(self):
+        return self.contact_lists.filter(contacts__is_bounced=True
+                                         ).exclude(contacts__email=None).values_list('contacts__email').count()
+
+    @property
+    def get_all_emails_unsubscribed_count(self):
+        return self.contact_lists.filter(contacts__is_unsubscribed=True
+                                         ).exclude(contacts__email=None).values_list('contacts__email').count()
 
 
 @receiver(models.signals.pre_delete, sender=Campaign)
@@ -274,9 +303,19 @@ class CampaignLinkClick(models.Model):
 
 
 class CampaignOpen(models.Model):
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name='campaign_open')
     ip_address = models.GenericIPAddressField()
     created_on = models.DateTimeField(auto_now_add=True)
     user_agent = models.CharField(max_length=2000, blank=True, null=True)
     contact = models.ForeignKey(
-        Contact, blank=True, null=True, on_delete=models.CASCADE)
+        Contact, blank=True, null=True, on_delete=models.CASCADE, related_name='contact_campaign_open')
+
+
+class CampaignCompleted(models.Model):
+    """ This Model Is Used To Check If The Scheduled Later Emails Have Been Sent
+        related name : campaign_is_completed
+    """
+    campaign = models.OneToOneField(
+        Campaign, on_delete=models.CASCADE, related_name='campaign_is_completed')
+    is_completed = models.BooleanField(default=False)

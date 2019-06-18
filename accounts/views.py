@@ -113,8 +113,9 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super(CreateAccountView, self).get_form_kwargs()
         kwargs.update({"account": True})
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            kwargs.update({"request_user": self.request.user})
+        kwargs.update({"request_user": self.request.user})
+        # if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        #     kwargs.update({"request_user": self.request.user})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -179,8 +180,13 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
         context["contact_count"] = Contact.objects.count()
-        context["leads"] = Lead.objects.exclude(
-            status__in=['converted', 'closed'])
+        if self.request.user.role == 'ADMIN':
+            context["leads"] = Lead.objects.exclude(
+                status__in=['converted', 'closed'])
+        else:
+            context["leads"] = Lead.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(
+                status__in=['converted', 'closed'])
         context["lead_count"] = context["leads"].count()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(
@@ -252,8 +258,9 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
     def get_form_kwargs(self):
         kwargs = super(AccountUpdateView, self).get_form_kwargs()
         kwargs.update({"account": True})
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            kwargs.update({"request_user": self.request.user})
+        kwargs.update({"request_user": self.request.user})
+        # if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        #     kwargs.update({"request_user": self.request.user})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -321,8 +328,13 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
         context["contact_count"] = Contact.objects.count()
-        context["leads"] = Lead.objects.exclude(
-            status__in=['converted', 'closed'])
+        if self.request.user.role == 'ADMIN':
+            context["leads"] = Lead.objects.exclude(
+                status__in=['converted', 'closed'])
+        else:
+            context["leads"] = Lead.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(
+                status__in=['converted', 'closed'])
         context["lead_count"] = context["leads"].count()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(

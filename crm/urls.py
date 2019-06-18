@@ -9,7 +9,7 @@ app_name = 'crm'
 urlpatterns = [
     path('', include('common.urls', namespace="common")),
     path('', include('django.contrib.auth.urls')),
-    path('m/', include('marketing.urls', namespace="marketing")),
+    path('marketing/', include('marketing.urls', namespace="marketing")),
     path('accounts/', include('accounts.urls', namespace="accounts")),
     path('leads/', include('leads.urls', namespace="leads")),
     path('contacts/', include('contacts.urls', namespace="contacts")),
@@ -17,6 +17,8 @@ urlpatterns = [
          include('opportunity.urls', namespace="opportunities")),
     path('cases/', include('cases.urls', namespace="cases")),
     path('tasks/', include('tasks.urls', namespace="tasks")),
+    path('invoices/', include('invoices.urls', namespace="invoices")),
+    path('events/', include('events.urls', namespace="events")),
     path('emails/', include('emails.urls', namespace="emails")),
     # path('planner/', include('planner.urls', namespace="planner")),
     path('logout/', views.LogoutView, {'next_page': '/login/'}, name="logout"),

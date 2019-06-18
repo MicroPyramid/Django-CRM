@@ -78,7 +78,7 @@ class ContactObjectsCreation_Count(ContactObjectsCreation, TestCase):
 class ContactViewsTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_list_page(self):
-        response = self.client.get('/contacts/list/')
+        response = self.client.get(reverse('contacts:list'))
         self.assertEqual(response.status_code, 200)
         if response.status_code == 200:
             self.assertEqual(
@@ -86,7 +86,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
             self.assertTrue(response.context['contact_obj_list'])
 
     def test_contacts_list_html(self):
-        response = self.client.get('/contacts/list/')
+        response = self.client.get(reverse('contacts:list'))
         self.assertTemplateUsed(response, 'contacts.html')
 
     def test_contacts_create(self):
@@ -159,7 +159,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_delete_location_checking(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/delete/')
-        self.assertEqual(response['location'], '/contacts/list/')
+        self.assertEqual(response['location'], '/contacts/')
 
     def test_contacts_edit(self):
         response = self.client.post(
@@ -203,7 +203,7 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_list(self):
         self.contacts = Contact.objects.all()
-        response = self.client.get('/contacts/list/')
+        response = self.client.get(reverse('contacts:list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'contacts.html')
 
@@ -211,7 +211,7 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
         data = {'fist_name': 'contact',
                 'city': "Orlando", 'phone': '12345',
                 'email': "contact@gmail.com", 'assigned_to': str(self.user.id)}
-        response = self.client.post('/contacts/list/', data)
+        response = self.client.post(reverse('contacts:list'), data)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'contacts.html')
@@ -222,12 +222,12 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
             first_name="contactmp",
             email="contact@gmmpail.com",
             created_by=self.user_contacts_mp)
-        response = self.client.get('/contacts/list/')
+        response = self.client.get(reverse('contacts:list'))
         self.assertEqual(response.status_code, 200)
         self.contact.delete()
 
         response = self.client.post(
-            '/contacts/list/', {'first_name': 'contactmp', 'assigned_to': str(self.user.id)})
+            reverse('contacts:list'), {'first_name': 'contactmp', 'assigned_to': str(self.user.id)})
         self.assertEqual(response.status_code, 200)
 
 

@@ -67,7 +67,7 @@
                     <option value="" selected="">---------</option>
                     {% for lead in leads %}
                     <option value="{{lead.id}}" {% ifequal account_obj.lead.id lead.id %}selected{% endifequal %}>
-                      {{lead.first_name}} {{lead.last_name}}</option>
+                    {{lead.first_name}} {{lead.last_name}}</option>
                     {% endfor %}
                   </select>
                   <span class="error" id="id__lead">{{ account_form.lead.errors }}</span>

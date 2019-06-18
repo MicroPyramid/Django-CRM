@@ -404,6 +404,9 @@ def update_lead(request, pk):
                     #     email.content_subtype = "html"
                     #     email.send()
 
+                for comment in lead_obj.leads_comments.all():
+                    comment.account = account_object
+                    comment.save()
                 account_object.save()
             status = request.GET.get('status', None)
             success_url = reverse('leads:list')
@@ -471,7 +474,7 @@ def convert_lead(request, pk):
         )
         contacts_list = lead_obj.contacts.all().values_list('id', flat=True)
         account_object.contacts.add(*contacts_list)
-        account_object.save()
+        account_obj = account_object.save()
         current_site = get_current_site(request)
         for assigned_to_user in lead_obj.assigned_to.all().values_list(
                 'id', flat=True):

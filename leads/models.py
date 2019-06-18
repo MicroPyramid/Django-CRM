@@ -53,6 +53,7 @@ class Lead(models.Model):
     enquery_type = models.CharField(max_length=255, blank=True, null=True)
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
+    created_from_site = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created_on']

@@ -3,18 +3,21 @@
 {% load paginate %}
 {% block content %}
 {{ block.super }}
-  <div class="marketing_pages">
-    <div class="row marl">
-      <div class="col-md-12">
-        <p>{{email_template.title}}</p>
-        <p>{{email_template.subject}}</p>
-        <span>{{email_template.html|safe}}</span>
-      </div>
+<div class="main_container ml-5 mr-5">
+  <div class="row marl">
+    <div class="col-md-12">
+      <b class="bold">Title</b>
+      <p>{{email_template.title}}</p>
+      <b>Subject </b>
+      <p>{{email_template.subject}}</p>
+      <b>Body </b>
+      <span>{{email_template.html|safe}}</span>
     </div>
   </div>
+</div>
 {% endblock %}
 
 {% block js_block %}
-	<script>
-  </script>
+<script>
+</script>
 {% endblock js_block %}

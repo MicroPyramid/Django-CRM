@@ -1,4 +1,5 @@
 import csv
+import datetime
 import re
 import json
 import openpyxl
@@ -108,7 +109,8 @@ def xls_doc_validate(document):
     validated_rows = []
     invalid_rows = []
     for sheet_name in sheets:
-        validated_rows, invalid_rows = get_validated_rows(wb, sheet_name, validated_rows, invalid_rows)
+        validated_rows, invalid_rows = get_validated_rows(
+            wb, sheet_name, validated_rows, invalid_rows)
     return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
 
 
@@ -118,11 +120,11 @@ def import_document_validator(document):
         document.seek(0, 0)
         return csv_doc_validate(document)
     except Exception as e:
-        print (e)
+        print(e)
         try:
             return xls_doc_validate(document)
         except Exception as e:
-            print (e)
+            print(e)
             return {"error": True, "message": "Not a valid CSV/XLS file"}
 
 
@@ -139,8 +141,9 @@ class ContactListForm(forms.ModelForm):
         self.fields['contacts_file'].widget.attrs.update({
             "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
         })
-        if self.instance is None:
-            self.fields['contacts_file'].required = True
+        self.fields['contacts_file'].required = True
+        # if self.instance is None:
+        #     self.fields['contacts_file'].required = True
         if self.data.get('contacts_file'):
             self.fields['contacts_file'].widget.attrs.update({
                 "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
@@ -155,30 +158,9 @@ class ContactListForm(forms.ModelForm):
             else:
                 self.validated_rows = data.get("validated_rows", [])
                 self.invalid_rows = data.get("invalid_rows", [])
+                if self.invalid_rows:
+                    raise forms.ValidationError('Uploaded file is not valid')
         return document
-
-    def clean_tags(self):
-        tags_data = self.data['tags'].split(",") if self.data['tags'] else []
-        if len(tags_data) > 0:
-            instance_tags = []
-            if self.instance and self.instance.id is not None:
-                instance_tags = list(
-                    set(self.instance.tags.all().values_list(
-                        'name', flat=True)))
-            for each in tags_data:
-                tags = Tag.objects.filter(name__iexact=each)
-                if instance_tags:
-                    tags = tags.exclude(name__in=instance_tags)
-                if tags:
-                    raise forms.ValidationError(
-                        str(each) + ' Tag aleady existed with this name')
-                if bool(re.search(r"[~\!_.@#\$%\^&\*\(\)\+{}\":;'/\[\]]",
-                                  each)):
-                    raise forms.ValidationError(
-                        "Tags Should not contain special \
-                        charcters except hyphens")
-            return self.data['tags']
-        raise forms.ValidationError("Enter Any tags")
 
     def clean_visible_to(self):
         visible_to_data = json.loads(self.data['visible_to'])
@@ -203,26 +185,45 @@ class ContactListForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     contact_list = forms.CharField(max_length=5000)
 
+    def __init__(self, *args, **kwargs):
+        request_user = kwargs.pop('request_user', None)
+        self.obj_instance = kwargs.get('instance', None)
+        super(ContactForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+
+        self.fields['name'].required = True
+        self.fields['last_name'].required = True
+        self.fields['city'].required = True
+        self.fields['state'].required = True
+        self.fields['email'].required = True
+        self.fields['contact_list'].required = False
+
     class Meta:
         model = Contact
-        fields = ["name", "email", "contact_number"]
+        fields = ["name", "email", "contact_number",
+                  "last_name", "city", "state"]
 
-    def __init__(self, *args, **kwargs):
-        super(ContactForm, self).__init__(*args, **kwargs)
-
-    def clean_contact_list(self):
-        contact_list = self.cleaned_data.get("contact_list")
-        if not contact_list or contact_list == '[]' or\
-                json.loads(contact_list) == []:
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if Contact.objects.filter(email=email).exclude(id=self.instance.id).exists():
             raise forms.ValidationError(
-                "Please choose any of the Contact List")
-        else:
-            for each in json.loads(contact_list):
-                if not ContactList.objects.filter(id=each).first():
-                    raise forms.ValidationError(
-                        "Please choose a valid Contact List")
+                'Contact with this Email already exists')
+        return email
 
-        return contact_list
+    # def clean_contact_list(self):
+    #     contact_list = self.cleaned_data.get("contact_list")
+    #     if not contact_list or contact_list == '[]' or\
+    #             json.loads(contact_list) == []:
+    #         raise forms.ValidationError(
+    #             "Please choose any of the Contact List")
+    #     else:
+    #         for each in json.loads(contact_list):
+    #             if not ContactList.objects.filter(id=each).first():
+    #                 raise forms.ValidationError(
+    #                     "Please choose a valid Contact List")
+
+    #     return contact_list
 
 
 class ContactsCSVUploadForm(forms.Form):
@@ -234,6 +235,7 @@ class ContactsCSVUploadForm(forms.Form):
         self.fields['contacts_file'].widget.attrs.update({
             "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
         })
+        self.fields['contacts_file'].required = True
 
     def clean_contacts_file(self):
         document = self.cleaned_data.get("contacts_file")
@@ -275,12 +277,14 @@ class SendCampaignForm(forms.ModelForm):
     from_email = forms.EmailField(max_length=100, required=True)
     from_name = forms.CharField(max_length=100, required=True)
     contact_list = forms.CharField(max_length=5000, required=True)
+    tags = forms.CharField(max_length=5000, required=False)
 
     class Meta:
         model = Campaign
-        fields = ['title', 'subject', 'html', 'email_template', 'attachment']
+        fields = ['title', 'subject', 'html', 'email_template', 'attachment', ]
 
     def __init__(self, *args, **kwargs):
+        self.contacts_list = kwargs.pop('contacts_list')
         super(SendCampaignForm, self).__init__(*args, **kwargs)
         if self.data.get('schedule_later') and self.data['schedule_later'] == 'true':
             self.fields['timezone'].required = True
@@ -288,16 +292,31 @@ class SendCampaignForm(forms.ModelForm):
         if not self.data.get('reply_to_crm'):
             self.fields['reply_to_email'].required = True
 
+    def clean_schedule_date_time(self):
+        schedule_date_time = self.cleaned_data.get('schedule_date_time')
+        if self.cleaned_data.get('schedule_later') == 'true':
+            schedule_date_time = datetime.datetime.strptime(
+                schedule_date_time, '%Y-%m-%d %H:%M')
+            if schedule_date_time < datetime.datetime.now():
+                raise forms.ValidationError(
+                    'Schedule Date Time should be greater than current time')
+        return schedule_date_time
+
     def clean_contact_list(self):
-        contact_list = self.cleaned_data.get("contact_list")
+        contact_list = self.contacts_list
         if not contact_list or contact_list == '[]' or \
                 contact_list == []:
             raise forms.ValidationError(
                 "Please choose any of the Contact List")
         else:
             for each in contact_list:
-                if not ContactList.objects.filter(id=each).first():
+                contacts_list_obj = ContactList.objects.filter(id=each).first()
+                if not contacts_list_obj:
                     raise forms.ValidationError(
                         "Please choose a valid Contact List")
+
+                if contacts_list_obj.contacts.count() < 1:
+                    raise forms.ValidationError(
+                        'The contact list "{}" does not have any contacts in it .'.format(contacts_list_obj.name))
 
         return contact_list

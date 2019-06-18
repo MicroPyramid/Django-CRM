@@ -65,6 +65,12 @@ def send_email_user_mentions(comment_id, called_from, domain='demo.django-crm.io
         elif called_from == 'tasks':
             context["url"] = protocol + '://' + domain + \
                 reverse('tasks:task_detail', args=(comment.task.id,))
+        elif called_from == 'invoices':
+            context["url"] = protocol + '://' + domain + \
+                reverse('invoices:invoice_details', args=(comment.invoice.id,))
+        elif called_from == 'events':
+            context["url"] = protocol + '://' + domain + \
+                reverse('events:detail_view', args=(comment.event.id,))
         else:
             context["url"] = ''
         html_content = render_to_string('comment_email.html', context=context)

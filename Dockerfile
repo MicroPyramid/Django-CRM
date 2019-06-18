@@ -7,7 +7,7 @@ COPY . /app/
 
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
   apt update && \
-  apt install -y git ruby-dev nodejs postgresql-client && \
+  apt install -y git ruby-dev nodejs postgresql-client redis-server wkhtmltopdf && \
   apt clean && \
   gem install compass sass && \
   npm -g install less && \

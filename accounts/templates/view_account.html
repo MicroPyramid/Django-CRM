@@ -5,6 +5,11 @@
 
 {% block extralinks %}
 <link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
+<style>
+  .opacity_block{
+    opacity: 0.2;
+  }
+</style>
 {% endblock extralinks %}
 
 <!-- breadcrumb starts here -->
@@ -18,8 +23,8 @@
 {% block content %}
 <!-- ACCOUNTS VIEW STARTS -->
 <div class="main_container" id="maincontainer">
-  <div class="overview_form_block row marl justify-content-center">
-    <div class="col-md-8">
+  <div class="overview_form_block row marl justify-content-center" id="opacity_block">
+    <div class="col-md-8" id="opacity_block">
       <div class="card">
         <div class="card-body" id="datashow">
           <div class="card-title text-right">
@@ -501,6 +506,13 @@
         </div>
       </form>
     </div>
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+    style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+  
+    <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+      <span class="sr-only">Processing File...</span>
+    </div>
+  </div>
   </div>
 </div>
 <!-- ACCOUNTS VIEW ENDS -->
@@ -508,6 +520,9 @@
 {% block js_block %}
 
 <script type="text/javascript">
+  $('#loading_spinner').hide()
+
+
   $("#comment_form").submit(function (e) {
     e.preventDefault()
     var formData = new FormData($("#comment_form")[0]);
@@ -622,9 +637,15 @@
       cache: false,
       contentType: false,
       processData: false,
+      beforeSend: function(){
+        $('#loading_spinner').show()
+        $('#opacity_block').addClass('opacity_block')
+      },
       success: function (data) {
         if (data.error) {
           $("#AttachmentError").html(data.error).show()
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
         } else {
           d = new Date(data.created_on)
           $("#attachment_div").prepend(
@@ -638,7 +659,11 @@
           )
           $("#AttachmentError").html("")
           $("#id_attachments").val("")
-          alert("Attachment Saved")
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+          setTimeout(() => {
+            alert("Attachment Saved")
+          }, 100);
         }
       }
     })
