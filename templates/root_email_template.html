@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+
+<head>
+  <META http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+
+<body>
+  <div
+    style="width:100%!important;margin:0!important;padding:0!important;font-size:12px;font-family:&#39;Poppins&#39;,sans-serif;color:#45586d;background:#f9f9f9">
+    <table cellpadding="0" cellspacing="0" border="0"
+      style="height:auto!important;margin:0;padding:0;width:100%!important;font-family:&#39;Ubuntu&#39;,sans-serif;color:#45586d;background:#f9f9f9">
+      <tr>
+        <td>
+          <table width="600" align="center" cellpadding="0" cellspacing="0" border="0"
+            style="color:#45586d;background:#f9f9f9;margin-top:40px!important;margin-right:auto!important;margin-bottom:0!important;margin-left:auto!important;border:none;width:100%!important;max-width:600px!important">
+            <tr>
+              <td>
+                <table style="width:600px;background:#fff;padding:0" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td
+                      style="text-align:center;background-color:#38abdd;height:100px;width:100%;background-position:center">
+                      <div style="background:rgba(0,0,0,0.50);height:100px">
+                        <div style="width:100%;float:left">
+                          <h1 style="font-size:2.2rem;color:#fff;text-align:center;padding-left:30px;padding-top:10px">
+                            Django CRM </h1>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr style="background:#fff">
+                    <td style="text-align:center;padding:20px 15px;color:#131e26;font-weight:bold;font-size:17px">
+                      <strong
+                        style="margin-bottom:15px;margin-top:30px;color:#ef9a9a;font-size:1.6rem;font-weight:600;display:block">
+
+                        {% block heading %}
+
+                        {% endblock heading %}
+
+                      </strong>
+                      <p
+                        style="color:#4f657d;font-size:1rem;font-weight:500;line-height:25px;margin-bottom:10px;margin-top:10px;text-align:center">
+
+                        {% block subject %}
+
+                        {% endblock subject %}
+
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0px 15px;width:100%">
+                      <div><a href="#"
+                          style="display:inline-block;padding:10px;text-align:left;color:#ef9a9a;font-size:1rem;font-weight:600;letter-spacing:0.7px;text-decoration:none;display:block">
+
+                          {% block content %}
+
+                          {% endblock content %}
+
+                        </a></div>
+                      <p style="line-height:2rem;margin-top:2rem; margin-bottom: 2rem;">
+
+                        {% block content_body %}
+
+                        {% endblock content_body %}
+
+                      </p>
+                      <!-- <ul style="list-style:none;margin-bottom:2rem;padding-left:1rem">
+                        <li style="font-size:0.9rem;font-weight:500;padding:8px"> Points</li>
+                        <li style="font-size:0.9rem;font-weight:500;padding:8px"> Points</li>
+                        <li style="font-size:0.9rem;font-weight:500;padding:8px"> Points</li>
+                        <li style="font-size:0.9rem;font-weight:500;padding:8px"> Points</li>
+                        <li style="font-size:0.9rem;font-weight:500;padding:8px"> Points</li>
+                      </ul> -->
+
+
+                      <!-- link button link -->
+                      <!--
+                        <div style="margin-bottom:20px"><a href="#"
+                          style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Link</a>
+                        </div>
+                      -->
+                      <!-- link -->
+                      {% block button_link %}
+
+
+                      {% endblock button_link %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align:center;padding:15px;background:#ef9a9a">
+                      <a style="text-decoration:none;color:#45586d;font-weight:600"></a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+
+</html>

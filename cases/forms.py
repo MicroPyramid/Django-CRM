@@ -14,10 +14,11 @@ class CaseForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
         self.fields['description'].widget.attrs.update({
             'rows': '6'})
-        self.fields['assigned_to'].queryset = assigned_users
+        if assigned_users:
+            self.fields['assigned_to'].queryset = assigned_users
+        self.fields['assigned_to'].required = False
         self.fields['account'].queryset = case_accounts
         self.fields['contacts'].queryset = case_contacts
-        self.fields['assigned_to'].required = False
         self.fields['contacts'].required = False
         for key, value in self.fields.items():
             value.widget.attrs['placeholder'] = value.label

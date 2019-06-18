@@ -36,7 +36,7 @@
                 </div>
                 <div class="filter_col col-md-3">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Assigned Users</label>
+                    <label for="exampleInputEmail1">Assigned To</label>
                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                     {% for user in users %}
                     <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
@@ -79,7 +79,7 @@
                 <tr>
                   <th width="5%" >S.no</th>
                   <th width="20%" >Name</th>
-                  <th width="20%">Assigned User</th>
+                  <th width="20%">Assigned To</th>
                   <th width="15%" >City</th>
                   <th width="15%" >State</th>
                   <th width="15%" >Actions</th>
@@ -95,7 +95,7 @@
                 {% for contact in contact_obj_list %}
                 <tr style="text-align:center;">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}}</a></td>
+                  <td><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}} {{contact.last_name}}</a></td>
                   <td>
                   {% with contact_users=contact.assigned_to.all %}
                   {% for user in contact_users %}
@@ -107,7 +107,7 @@
                         <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
                   {% endif %}
                   {% empty %}
-                  Not Assigned to Any
+                  None
                   {% endfor %}
                   {% endwith %}
                   </td>

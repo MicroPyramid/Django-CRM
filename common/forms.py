@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
 from common.models import Address, User, Document, Comment, APISettings
+from django.contrib.auth import password_validation
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -104,13 +105,15 @@ class UserForm(forms.ModelForm):
         email = self.cleaned_data.get("email")
         if self.instance.id:
             if self.instance.email != email:
-                if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
+                if not User.objects.filter(
+                        email=self.cleaned_data.get("email")).exists():
                     return self.cleaned_data.get("email")
                 raise forms.ValidationError('Email already exists')
             else:
                 return self.cleaned_data.get("email")
         else:
-            if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
+            if not User.objects.filter(
+                    email=self.cleaned_data.get("email")).exists():
                 return self.cleaned_data.get("email")
             raise forms.ValidationError('User already exists with this email')
 
@@ -152,20 +155,22 @@ class LoginForm(forms.ModelForm):
 
 
 class ChangePasswordForm(forms.Form):
-    CurrentPassword = forms.CharField(max_length=100)
+    # CurrentPassword = forms.CharField(max_length=100)
     Newpassword = forms.CharField(max_length=100)
     confirm = forms.CharField(max_length=100)
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super(ChangePasswordForm, self).__init__(*args, **kwargs)
 
     def clean_confirm(self):
-        if len(self.data.get('confirm')) < 4:
-            raise forms.ValidationError(
-                'Password must be at least 4 characters long!')
+        # if len(self.data.get('confirm')) < 4:
+        #     raise forms.ValidationError(
+        #         'Password must be at least 4 characters long!')
         if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
             raise forms.ValidationError(
                 'Confirm password do not match with new password')
+        password_validation.validate_password(self.cleaned_data.get('Newpassword'), user=self.user)
         return self.data.get('confirm')
 
 
@@ -173,7 +178,8 @@ class PasswordResetEmailForm(PasswordResetForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if not User.objects.filter(email__iexact=email, is_active=True).exists():
+        if not User.objects.filter(email__iexact=email,
+                                   is_active=True).exists():
             raise forms.ValidationError("User doesn't exist with this Email")
         return email
 
@@ -181,6 +187,7 @@ class PasswordResetEmailForm(PasswordResetForm):
 class DocumentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
+        self.instance = kwargs.get('instance', None)
         users = kwargs.pop('users', [])
         super(DocumentForm, self).__init__(*args, **kwargs)
 
@@ -191,12 +198,26 @@ class DocumentForm(forms.ModelForm):
             (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE]
         self.fields['status'].required = False
         self.fields['title'].required = True
-        self.fields['shared_to'].queryset = users
+        if users:
+            self.fields['shared_to'].queryset = users
         self.fields['shared_to'].required = False
 
     class Meta:
         model = Document
         fields = ['title', 'document_file', 'status', 'shared_to']
+
+    def clean_title(self):
+        title = self.cleaned_data.get('title')
+        if not self.instance:
+            if Document.objects.filter(title=title).exists():
+                raise forms.ValidationError(
+                    'Document with this Title already exists')
+                return title
+        if Document.objects.filter(title=title).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError(
+                'Document with this Title already exists')
+            return title
+        return title
 
 
 class UserCommentForm(forms.ModelForm):
@@ -216,10 +237,9 @@ def find_urls(string):
     website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"
     url = re.findall(website_regex, string)
     url_port = re.findall(website_regex_port, string)
-    if len(url) > 0 and url[0] != '':
+    if url and url[0] != '':
         return url
-    else:
-        return url_port
+    return url_port
 
 
 class APISettingsForm(forms.ModelForm):
@@ -243,9 +263,11 @@ class APISettingsForm(forms.ModelForm):
 
     def clean_website(self):
         website = self.data.get('website')
-        if website and not (website.startswith('http://') or website.startswith('https://')):
+        if website and not (website.startswith('http://') or
+                            website.startswith('https://')):
             raise forms.ValidationError("Please provide valid schema")
         if not len(find_urls(website)) > 0:
             raise forms.ValidationError(
-                "Please provide a valid URL with schema and without trailing slash - Example: http://google.com")
+                "Please provide a valid URL with schema and without trailing \
+                slash - Example: http://google.com")
         return website

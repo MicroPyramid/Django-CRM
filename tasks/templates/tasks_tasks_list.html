@@ -1,0 +1,311 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% load thumbnail %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .table_container_row .card .card-body table tbody .due-date td {
+    color: red;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- heading_create starts here -->
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn" href="{% url 'tasks:task_create' %}"><i class="fa fa-plus"></i> Add
+          New Task</a></span>
+    </div>
+  </div>
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="docs_filter" method="POST" action="">
+            <div class="card-body">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-4">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Title</label>
+                    <input type="text" class="form-control" placeholder="Task Title" name="task_title"
+                      {% if request.POST.task_title %} value="{{request.POST.task_title}}" {%endif%} />
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Status</label>
+                    <select class="form-control" id="id_status" name="status">
+                      <option value="">--Status--</option>
+                      {% for each_status in status_choices %}
+                      <option value="{{each_status.0}}" {% if request.POST.status %}
+                        {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %}>
+                        {{each_status.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Priority</label>
+                    <select class="form-control" id="id_priority" name="priority">
+                      <option value="">--Priority-- </option>
+                      {% for each_priority in priority_choices %}
+                      <option value="{{each_priority.0}}" {% if request.POST.priority %}
+                        {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>
+                        {{each_priority.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-3">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'tasks:tasks_list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- heading_create ends here -->
+  <div class="table_container_row row marl ">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="panel-heading-list card-title text-right">
+            <span class="total_count float-left">Tasks - {% if show_pageitems %} {% show_pageitems %}{% else %}
+              {{tasks|length}}{% endif %}</span>
+            <span class="filter_toggle ">
+              <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+            </span>
+          </div>
+          <div class="table-responsive">
+            <table class="table ">
+              <thead>
+                {% if tasks|length > 0 %}
+                <tr>
+                  <th width="5%">S.No</th>
+                  <th width="15%">Title</th>
+                  <th width="10%">Created By</th>
+                  <th width="15%">Status</th>
+                  <th width="10%">Priority</th>
+                  <th width="10%">Due Date</th>
+                  <th width="20%">Assigned To</th>
+                  <th width="10%">Actions</th>
+                </tr>
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
+                {% paginate per_page tasks %}
+                {% else%}
+                {% paginate 10 tasks %}
+                {% endif %}
+                {% for task in tasks %}
+
+
+                {% if task.due_date %}
+
+                {% if task.due_date < today and task.status != 'completed' %}
+                <tr id="task_{{task.id}}" class="text-center due-date">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  </td>
+                  <td>
+                    {% if document.created_by.profile_pic %}
+                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                      title="{{ document.created_by }}">
+                    {% endthumbnail %}
+                    {% else %}
+                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    {% endif %}
+                  </td>
+                  <!-- <td>{{document.created_on}}</td> -->
+                  <td>{{task.status}}</td>
+                  <td>{{task.priority}}</td>
+
+                  {% if task.due_date %}
+                  <td>{{task.due_date}}</td>
+                  {% else %}
+                  <td>-</td>
+                  {% endif %}
+
+
+                  <td>{% with users=task.assigned_to.all %}
+                    {% if users %}
+                    {% for user in users %}
+                    <span class="text-left">{{ user.email }}</span><br>
+                    {% endfor %}
+                    {% else %}
+                    None
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                  <td class="actions">
+                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
+                        class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
+                        class="fas fa-trash-alt"></i></a>
+                    {% endif %}
+                  </td>
+                </tr>
+                <!-- <h2>due date</h2> -->
+                {% else %}
+                <tr id="task_{{task.id}}" class="text-center">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  </td>
+                  <td>
+                    {% if document.created_by.profile_pic %}
+                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                      title="{{ document.created_by }}">
+                    {% endthumbnail %}
+                    {% else %}
+                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    {% endif %}
+                  </td>
+                  <!-- <td>{{document.created_on}}</td> -->
+                  <td>{{task.status}}</td>
+                  <td>{{task.priority}}</td>
+
+                  {% if task.due_date %}
+                  <td>{{task.due_date}}</td>
+                  {% else %}
+                  <td>-</td>
+                  {% endif %}
+
+
+                  <td>{% with users=task.assigned_to.all %}
+                    {% if users %}
+                    {% for user in users %}
+                    <span class="text-left">{{ user.email }}</span><br>
+                    {% endfor %}
+                    {% else %}
+                    None
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                  <td class="actions">
+                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
+                        class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
+                        class="fas fa-trash-alt"></i></a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endif %}
+                {% else %}
+                <tr id="task_{{task.id}}" class="text-center">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  </td>
+                  <td>
+                    {% if document.created_by.profile_pic %}
+                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                      title="{{ document.created_by }}">
+                    {% endthumbnail %}
+                    {% else %}
+                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    {% endif %}
+                  </td>
+                  <!-- <td>{{document.created_on}}</td> -->
+                  <td>{{task.status}}</td>
+                  <td>{{task.priority}}</td>
+
+                  {% if task.due_date %}
+                  <td>{{task.due_date}}</td>
+                  {% else %}
+                  <td>-</td>
+                  {% endif %}
+
+
+                  <td>{% with users=task.assigned_to.all %}
+                    {% if users %}
+                    {% for user in users %}
+                    <span class="text-left">{{ user.email }}</span><br>
+                    {% endfor %}
+                    {% else %}
+                    None
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                  <td class="actions">
+                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
+                        class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
+                        class="fas fa-trash-alt"></i></a>
+                    {% endif %}
+                  </td>
+                </tr>
+                <!-- <h2>else block</h2> -->
+
+                {% endif %}
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% ifequal tasks|length 0 %}
+          <h6 class="text-center">No Tasks Found</h6>
+          {% endifequal %}
+          <div class="text-center row marl">
+            {% show_pages %}
+          </div>
+        </div>
+      </div>
+      <br clear="all">
+    </div>
+  </div>
+  <!-- accounts list start -->
+  <!-- accounts list end -->
+</div>
+<!-- main_container ends here -->
+{% endblock %}
+{% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script type="text/javascript">
+  $(document).ready(function () {
+    $('.assigned_users').select2();
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+  });
+
+  search = "{{search}}"
+
+  if (search == 'True') {
+    $(".list_filter_row").show();
+  }
+
+  $('.remove_document').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+
+  $(".reset").click(function (e) {
+    window.location = "{% url 'common:doc_list'%}"
+  });
+
+  $("a[rel='page']").click(function (e) {
+    e.preventDefault();
+    $('#docs_filter').attr("action", $(this).attr("href"));
+    $('#docs_filter').submit();
+  });
+</script>
+{% endblock js_block %}

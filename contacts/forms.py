@@ -12,7 +12,8 @@ class ContactForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
         self.fields['description'].widget.attrs.update({
             'rows': '6'})
-        self.fields['assigned_to'].queryset = assigned_users
+        if assigned_users:
+            self.fields['assigned_to'].queryset = assigned_users
         self.fields['assigned_to'].required = False
 
         for key, value in self.fields.items():
@@ -24,7 +25,9 @@ class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
         fields = (
-            'assigned_to', 'first_name', 'last_name', 'email', 'phone', 'address', 'description'
+            'assigned_to', 'first_name',
+            'last_name', 'email',
+            'phone', 'address', 'description'
         )
 
 

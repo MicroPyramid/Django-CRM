@@ -12,10 +12,13 @@ from common.models import User, Comment, Attachments
 from common.forms import BillingAddressForm
 from common.utils import COUNTRIES
 from contacts.models import Contact
-from contacts.forms import ContactForm, ContactCommentForm, ContactAttachmentForm
+from contacts.forms import (ContactForm,
+                            ContactCommentForm, ContactAttachmentForm)
 from accounts.models import Account
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from common.tasks import send_email_user_mentions
+from contacts.tasks import send_email_to_assigned_user
 
 
 class ContactsListView(LoginRequiredMixin, TemplateView):
@@ -25,9 +28,11 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if (self.request.user.role != "ADMIN" and not
+                self.request.user.is_superuser):
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
+                Q(assigned_to__in=[self.request.user]) |
+                Q(created_by=self.request.user))
 
         request_post = self.request.POST
         if request_post:
@@ -46,7 +51,7 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
             if request_post.getlist('assigned_to'):
                 queryset = queryset.filter(
                     assigned_to__id__in=request_post.getlist('assigned_to'))
-        return queryset
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super(ContactsListView, self).get_context_data(**kwargs)
@@ -58,8 +63,10 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         search = False
         if (
-            self.request.POST.get('first_name') or self.request.POST.get('city') or
-            self.request.POST.get('phone') or self.request.POST.get(
+            self.request.POST.get('first_name') or
+            self.request.POST.get('city') or
+            self.request.POST.get('phone') or
+            self.request.POST.get(
                 'email') or self.request.POST.get('assigned_to')
         ):
             search = True
@@ -77,12 +84,20 @@ class CreateContactView(LoginRequiredMixin, CreateView):
     template_name = "create_contact.html"
 
     def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(CreateContactView, self).dispatch(request, *args, **kwargs)
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            self.users = User.objects.filter(is_active=True).order_by('email')
+        elif request.user.google.all():
+            self.users = []
+        else:
+            self.users = User.objects.filter(role='ADMIN').order_by('email')
+        return super(CreateContactView, self).dispatch(
+            request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(CreateContactView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users})
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            self.users = User.objects.filter(is_active=True).order_by('email')
+            kwargs.update({"assigned_to": self.users})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -96,7 +111,8 @@ class CreateContactView(LoginRequiredMixin, CreateView):
             contact_obj.created_by = self.request.user
             contact_obj.save()
             if self.request.GET.get('view_account', None):
-                if Account.objects.filter(id=int(self.request.GET.get('view_account'))).exists():
+                if Account.objects.filter(
+                        id=int(self.request.GET.get('view_account'))).exists():
                     Account.objects.get(id=int(self.request.GET.get(
                         'view_account'))).contacts.add(contact_obj)
             return self.form_valid(form)
@@ -110,18 +126,22 @@ class CreateContactView(LoginRequiredMixin, CreateView):
                 *self.request.POST.getlist('assigned_to'))
             assigned_to_list = self.request.POST.getlist('assigned_to')
             current_site = get_current_site(self.request)
-            for assigned_to_user in assigned_to_list:
-                user = get_object_or_404(User, pk=assigned_to_user)
-                mail_subject = 'Assigned to contact.'
-                message = render_to_string('assigned_to/contact_assigned.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    'protocol': self.request.scheme,
-                    'contact': contact_obj
-                })
-                email = EmailMessage(mail_subject, message, to=[user.email])
-                email.content_subtype = "html"
-                email.send()
+            recipients = assigned_to_list
+            send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
+                protocol=self.request.scheme)
+            # for assigned_to_user in assigned_to_list:
+            #     user = get_object_or_404(User, pk=assigned_to_user)
+            #     mail_subject = 'Assigned to contact.'
+            #     message = render_to_string(
+            #         'assigned_to/contact_assigned.html', {
+            #             'user': user,
+            #             'domain': current_site.domain,
+            #             'protocol': self.request.scheme,
+            #             'contact': contact_obj
+            #         })
+            #     email = EmailMessage(mail_subject, message, to=[user.email])
+            #     email.content_subtype = "html"
+            #     email.send()
 
         if self.request.FILES.get('contact_attachment'):
             attachment = Attachments()
@@ -176,10 +196,12 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ContactDetailView, self).get_context_data(**kwargs)
-        user_assgn_list = [assigned_to.id for assigned_to in context['object'].assigned_to.all()]
+        user_assgn_list = [
+            assigned_to.id for assigned_to in context['object'].assigned_to.all()]
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if (self.request.user.role != "ADMIN" and not
+                self.request.user.is_superuser):
             if self.request.user.id not in user_assgn_list:
                 raise PermissionDenied
         assigned_data = []
@@ -189,9 +211,20 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
             assigned_dict['name'] = each.email
             assigned_data.append(assigned_dict)
 
-        context.update({"comments": context["contact_record"].contact_comments.all(),
-                        'attachments': context["contact_record"].contact_attachment.all(),
-                        "assigned_data": json.dumps(assigned_data)
+        if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
+            users_mention = list(User.objects.all().values('username'))
+        elif self.request.user != context['object'].created_by:
+            users_mention = [{'username': context['object'].created_by.username}]
+        else:
+            users_mention = list(context['object'].assigned_to.all().values('username'))
+
+        context.update({"comments":
+                        context["contact_record"].contact_comments.all(),
+                        'attachments':
+                        context["contact_record"].contact_attachment.all(),
+                        "assigned_data": json.dumps(assigned_data),
+                        "tasks" : context['object'].contacts_tasks.all(),
+                        'users_mention':  users_mention,
                         })
         return context
 
@@ -202,12 +235,20 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
     template_name = "create_contact.html"
 
     def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by('email')
-        return super(UpdateContactView, self).dispatch(request, *args, **kwargs)
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            self.users = User.objects.filter(is_active=True).order_by('email')
+        elif request.user.google.all():
+            self.users = []
+        else:
+            self.users = User.objects.filter(role='ADMIN').order_by('email')
+        return super(UpdateContactView, self).dispatch(
+            request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(UpdateContactView, self).get_form_kwargs()
-        kwargs.update({"assigned_to": self.users})
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            self.users = User.objects.filter(is_active=True).order_by('email')
+            kwargs.update({"assigned_to": self.users})
         return kwargs
 
     def post(self, request, *args, **kwargs):
@@ -224,7 +265,8 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         return self.form_invalid(form)
 
     def form_valid(self, form):
-        assigned_to_ids = self.get_object().assigned_to.all().values_list('id', flat=True)
+        assigned_to_ids = self.get_object().assigned_to.all().values_list(
+            'id', flat=True)
 
         contact_obj = form.save(commit=False)
         all_members_list = []
@@ -234,20 +276,25 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
                 'assigned_to').values_list('id', flat=True)
             all_members_list = list(
                 set(list(assigned_form_users)) - set(list(assigned_to_ids)))
-            if len(all_members_list):
-                for assigned_to_user in all_members_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to contact.'
-                    message = render_to_string('assigned_to/contact_assigned.html', {
-                        'user': user,
-                        'domain': current_site.domain,
-                        'protocol': self.request.scheme,
-                        'contact': contact_obj
-                    })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+            current_site = get_current_site(self.request)
+            recipients = all_members_list
+            send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
+                protocol=self.request.scheme)
+            # if all_members_list:
+            #     for assigned_to_user in all_members_list:
+            #         user = get_object_or_404(User, pk=assigned_to_user)
+            #         mail_subject = 'Assigned to contact.'
+            #         message = render_to_string(
+            #             'assigned_to/contact_assigned.html', {
+            #                 'user': user,
+            #                 'domain': current_site.domain,
+            #                 'protocol': self.request.scheme,
+            #                 'contact': contact_obj
+            #             })
+            #         email = EmailMessage(
+            #             mail_subject, message, to=[user.email])
+            #         email.content_subtype = "html"
+            #         email.send()
 
             contact_obj.assigned_to.clear()
             contact_obj.assigned_to.add(
@@ -288,7 +335,8 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
             assigned_to.id for assigned_to in context["contact_obj"].assigned_to.all()]
         if self.request.user == context['contact_obj'].created_by:
             user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if (self.request.user.role != "ADMIN" and not
+                self.request.user.is_superuser):
             if self.request.user.id not in user_assgn_list:
                 raise PermissionDenied
         context["address_obj"] = self.object.address
@@ -317,7 +365,9 @@ class RemoveContactView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         contact_id = kwargs.get("pk")
         self.object = get_object_or_404(Contact, id=contact_id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser and self.request.user != self.object.created_by:
+        if (self.request.user.role != "ADMIN" and not
+            self.request.user.is_superuser and
+                self.request.user != self.object.created_by):
             raise PermissionDenied
         else:
             if self.object.address_id:
@@ -339,7 +389,8 @@ class AddCommentView(LoginRequiredMixin, CreateView):
             Contact, id=request.POST.get('contactid'))
         if (
             request.user in self.contact.assigned_to.all() or
-            request.user == self.contact.created_by or request.user.is_superuser or
+            request.user == self.contact.created_by or
+            request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             form = self.get_form()
@@ -356,6 +407,10 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         comment.commented_by = self.request.user
         comment.contact = self.contact
         comment.save()
+        comment_id = comment.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'contacts', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
@@ -385,6 +440,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
         self.comment_obj.save(update_fields=["comment"])
+        comment_id = self.comment_obj.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'contacts', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "commentid": self.comment_obj.id,
             "comment": self.comment_obj.comment,
@@ -430,7 +489,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             Contact, id=request.POST.get('contactid'))
         if (
                 request.user in self.contact.assigned_to.all() or
-                request.user == self.contact.created_by or request.user.is_superuser or
+                request.user == self.contact.created_by or
+                request.user.is_superuser or
                 request.user.role == 'ADMIN'
         ):
             form = self.get_form()
@@ -453,9 +513,11 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             "attachment": attachment.file_name,
             "attachment_url": attachment.attachment.url,
             "created_on": attachment.created_on,
-            "download_url": reverse('common:download_attachment', kwargs={'pk': attachment.id}),
+            "download_url": reverse('common:download_attachment',
+                                    kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display(),
-            "created_by": attachment.created_by.email
+            "created_by": attachment.created_by.email,
+            "file_type": attachment.file_type()
         })
 
     def form_invalid(self, form):
@@ -468,12 +530,14 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
         self.object = get_object_or_404(
             Attachments, id=request.POST.get("attachment_id"))
         if (
-            request.user == self.object.created_by or request.user.is_superuser or
+            request.user == self.object.created_by or
+            request.user.is_superuser or
             request.user.role == 'ADMIN'
         ):
             self.object.delete()
             data = {"aid": request.POST.get("attachment_id")}
             return JsonResponse(data)
 
-        data = {'error': "You don't have permission to delete this attachment."}
+        data = {'error':
+                "You don't have permission to delete this attachment."}
         return JsonResponse(data)

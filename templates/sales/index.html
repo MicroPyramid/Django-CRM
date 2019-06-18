@@ -50,15 +50,16 @@
         <div class="card">
           <div class="card-body">
             <div class="card-title">
-              <span >Open Accounts</span>
+              <span>Recent Accounts</span>
             </div>
             <div class="table-responsive">
-            {% if accounts %}
+              {% if accounts %}
               <table class="table">
                 <thead>
                   <tr>
                     <th width="45%">Name</th>
                     <th width="50%">Tags</th>
+                    <th width="50%">Assigned To</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -66,22 +67,35 @@
                   <tr>
                     <td><a href="{% url 'accounts:view_account' account.id %}">{{account.name}}</a></td>
                     <td style="display: block;">
-                    {% for tag in account.tags.all|slice:'3' %}
-                      <span class="text-left color{{forloop.counter}}" id="list_tag">{{tag.name}}</span>
-                    {% empty %}
+                      {% for tag in account.tags.all|slice:'3' %}
+                      <span class="text-left color{{forloop.counter}} tag_class_acc" id="list_tag"
+                        data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                      {% empty %}
                       <span class="text-left">No Tags</span>
-                    {% endfor %}
-                    {% if account.tags.all|length > 3 %}
-                    <span class="text-left" id="list_tag">{{account.tags.all|length|subtract:'3'}}<span> more </span></span>
-                    {% endif %}
+                      {% endfor %}
+                      {% if account.tags.all|length > 3 %}
+                      <span class="text-left" id="list_tag">{{account.tags.all|length|subtract:'3'}}<span> more
+                        </span></span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% with users=account.assigned_to.all %}
+                      {% if users %}
+                      {% for user in users %}
+                      {{user}}
+                      {% endfor %}
+                      {% else %}
+                      None
+                      {% endif %}
+                      {% endwith %}
                     </td>
                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
-            {% else %}
-            <p style="text-align:center">There are no records</p>
-            {% endif %}
+              {% else %}
+              <p style="text-align:center">There are no records</p>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -90,7 +104,7 @@
         <div class="card">
           <div class="card-body">
             <div class="card-title">
-              <span >Open Opportunities</span>
+              <span>Recent Opportunities</span>
             </div>
             <div class="table-responsive">
               {% if opportunities %}
@@ -99,6 +113,7 @@
                   <tr>
                     <th width="45%">Name</th>
                     <th width="50%">Tags</th>
+                    <th width="50%">Assigned To</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -107,21 +122,36 @@
                     <td><a href="{% url 'opportunity:opp_view' opportunity.id %}">{{opportunity.name}}</a></td>
                     <td style="display: block;">
                       {% for tag in opportunity.tags.all|slice:'3' %}
-                      <span class="text-left color{{forloop.counter}}" id="list_tag">{{tag.name}}</span>
+                      <span class="text-left color{{forloop.counter}} tag_class_opp" id="list_tag"
+                        data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
                       {% empty %}
                       <span class="text-left">No Tags</span>
                       {% endfor %}
                       {% if opportunity.tags.all|length > 3 %}
-                      <span class="text-left" id="list_tag">{{opportunity.tags.all|length|subtract:'3'}}<span> more </span></span>
+                      <span class="text-left" id="list_tag">{{opportunity.tags.all|length|subtract:'3'}}<span> more
+                        </span></span>
                       {% endif %}
+                    </td>
+                    <td>
+                      {% with users=opportunity.assigned_to.all %}
+                      {% for user in users|slice:'3'  %}
+                      <span class="text-left" id="list_opp_users_">{{user}}<span>
+                      {% empty %}
+                      <span class="text-left">None</span>
+                      {% endfor %}
+                      {% if users|length > 3 %}
+                      <span style="color:white; background-color: #333; padding:0.15em; border-radius: 10%;" class="text-left ml-1" id="list_opp_users">{{users|length|subtract:'3'}}<span> more
+                        </span></span>
+                      {% endif %}
+                      {% endwith %}
                     </td>
                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
               {% else %}
-            <p style="text-align:center">There are no records</p>
-            {% endif %}
+              <p style="text-align:center">There are no records</p>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -129,4 +159,27 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
+{% block js_block %}
+<script type="text/javascript">
+
+  $(document).ready(function () {
+    $(".tag_class_opp").click(function () {
+      // $(".tag_class_opp").css('cursor', 'pointer')
+      url = "{% url 'opportunity:list' %}"
+      url = url + "?tag=" + $(this).attr('data-link')
+      window.location.href = url;
+    });
+
+    $(".tag_class_acc").click(function () {
+      // $(".tag_class_acc").css('cursor', 'pointer')
+      url = "{% url 'accounts:list' %}"
+      url = url + "?tag=" + $(this).attr('data-link')
+      window.location.href = url;
+    });
+
+  });
+
+</script>
+{% endblock js_block %}

@@ -1,6 +1,15 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load thumbnail %}
 {% block content %}
+{% block extralinks %}
+<link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
+<style>
+  .opacity_block {
+    opacity: 0.2;
+  }
+</style>
+{% endblock extralinks %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'cases:list' %}">Cases</a></li>
@@ -10,16 +19,16 @@
 <!-- CASE VIEW STARTS -->
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-8" id="opacity_block">
       <div class="card">
         <div class="card-body" id="datashow">
           <div class="card-title text-right">
-            <h5 >
+            <h5>
               <span class="float-left title">Overview</span>
               <span class="" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
                   <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                  <span class="caret"></span></button>
+                    <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'cases:edit_case' case_record.id %}">Edit</a></li>
                   </ul>
@@ -30,7 +39,7 @@
           <div class="row marl">
             <div class="col-md-4">
               <div class="filter_col col-md-12" id="iname">
-                <div class="form-group" >
+                <div class="form-group">
                   <label class="case_field_label" for="id_name" data-name="name">Name</label>
                   <div class="case_field" id="case_name" data-name="name">{{ case_record.name }}</div>
                 </div>
@@ -39,7 +48,7 @@
                 {% if case_record.account %}
                 <div class="form-group">
                   <label class="case_field_label" for="id_account" data-name="name">Account</label>
-                  <div class="case_field" id ="case_account" data-name="name">{{ case_record.account }}</div>
+                  <div class="case_field" id="case_account" data-name="name">{{ case_record.account }}</div>
                 </div>
                 {% endif %}
               </div>
@@ -49,7 +58,7 @@
                   <label class="case_field_label" for="id_contact" data-name="name">Contact</label>
                   <div class="case_field" id="case_contact" data-name="name">
                     {% for contact in case_record.contacts.all %}
-                    <li>{{ contact }}</li>
+                    <div>{{ contact }}</div>
                     {% endfor %}
                   </div>
                 </div>
@@ -90,7 +99,7 @@
               <div class="filter_col col-md-12">
                 {% if case_record.description %}
                 <div class="form-group">
-                  <label class="case_field_label" for="id_description" data-name="name" >Description</label>
+                  <label class="case_field_label" for="id_description" data-name="name">Description</label>
                   <div class="case_field" id="case_description" data-name="name">{{ case_record.description }}</div>
                 </div>
                 {% endif %}
@@ -98,7 +107,7 @@
             </div>
             <div class="col-md-12">
               <div class="created_information">
-                Created by <b>{{ case_record.created_by }}</b> created on <i><b>{{ case_record.created_on }}</b></i> 
+                Created by <b>{{ case_record.created_by }}</b> created on <b>{{ case_record.created_on }}</b>
               </div>
             </div>
           </div>
@@ -113,10 +122,13 @@
               <form id="attachment_form" method="POST" enctype="multipart/form-data">
                 <div class="form-group ">
                   <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
-                  <div><i id="AttachmentError" style="display:none; color:red"></i></div>
+                  <div>
+                    <p id="AttachmentError" style="display:none; color:red"></p>
+                  </div>
                   <br>
                   <div class="buttons_row">
-                    <button class="btn btn-default save" style="text-align: center;" id="attachment_submit">Save</button>
+                    <button class="btn btn-default save" style="text-align: center;"
+                      id="attachment_submit">Save</button>
                   </div>
                 </div>
                 <input type="hidden" value="{{case_record.id}}" name="caseid">
@@ -127,11 +139,19 @@
                   {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
                   <div class="float-right right-container">
                     <div class="list-row-buttons btn-group float-right">
-                      <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
+                      <button class="action btn primary_btn"
+                        onclick="remove_attachment({{attachment.id}})">Remove</button>
                     </div>
                   </div>
                   {% endif %}
                   <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                    {% if attachment.attachment %}
+                    {% if 'image' in attachment.file_type %}
+                    {% thumbnail attachment.attachment "80x80" crop="center" as im %}
+                    <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" class="mb-2">
+                    {% endthumbnail %}
+                    {% endif %}
+                    {% endif %}
                     <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span>{{attachment.file_name}} <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
                   </div>
                   <div class="stream-container">
@@ -153,8 +173,11 @@
             <div class="col-md-12">
               <form id="comment_form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
-                  <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea>
-                  <div><i id="CommentError" style="display:none; color:red"></i></div>
+                  <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_comments" name="comment"
+                    placeholder="Submit Your Comments Here"></textarea>
+                  <div>
+                    <p id="CommentError" style="display:none; color:red"></p>
+                  </div>
                   </br>
                   <div class="buttons_row">
                     <button class="btn btn-default save" id="comment_submit" type="submit">Submit</button>
@@ -168,7 +191,8 @@
                   {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
                   <div class="float-right right-container">
                     <div class="list-row-buttons btn-group float-right">
-                      <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions <span class="caret"></span></button>
+                      <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown"
+                        type="button">Actions <span class="caret"></span></button>
                       <ul class="dropdown-menu text-center">
                         <li>
                           <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
@@ -199,10 +223,13 @@
                   <h4 class="modal-title">Update Your Comment</h4>
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
                 </div>
-                <form id="comment_edit_form" method="POST" >
+                <form id="comment_edit_form" method="POST">
                   <div class="modal-body">
                     <div class="form-group">
-                      <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea>
+                      <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_editcomment"
+                        name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea><span>
+                        <p id="CommentEditError" style="display:none; color:red"></p>
+                      </span>
                       <input type="hidden" value="{{ case.id }}" name="caseid">
                       <input type="hidden" value="" name="commentid" id="commentid">
                     </div>
@@ -216,6 +243,13 @@
           </div>
         </div>
         <!-- Comments Section Ends-->
+      </div>
+    </div>
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+      style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+      <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+        <span class="sr-only">Processing File...</span>
       </div>
     </div>
   </div>
@@ -356,99 +390,123 @@
 <script src="{% static 'js/cases/view_case.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
+  $('#loading_spinner').hide()
   var assigned_to_list = "{{ assigned_data }}";
-  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
-       return {
-            l   : '<',
-            g   : '>',
-            quo : '"'
-        }[b];
-    }));
-  
-  
-  $('#remove_case').click(function(e){
+  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function (a, b) {
+    return {
+      l: '<',
+      g: '>',
+      quo: '"'
+    }[b];
+  }));
+
+
+  $('#remove_case').click(function (e) {
     var result = confirm("Are You Sure You Want to delete?");
-    if (result==false) {
+    if (result == false) {
       e.preventDefault()
     }
   });
 </script>
 <script type="text/javascript">
   $(function () {
-   var date = new Date();
-   var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    var date = new Date();
+    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     $('#id_closed_on').datetimepicker({
-        'format': 'YYYY-MM-DD',
-        minDate: today
+      'format': 'YYYY-MM-DD',
+      minDate: today
     })
   });
-  
-  $(".savenew").on('click', function(e){
+
+  $(".savenew").on('click', function (e) {
     e.preventDefault()
     $("#save_new_form").val('true')
     $('#submitForm').submit()
   });
-  $(document).ready(function() {
+  $(document).ready(function () {
     $('.assigned_users').select2();
   });
-  
-  $('#id_account').change(function(){
-  var account = $("#id_account").val()
-  $.get("{% url 'cases:select_contacts' %}", {"account":account}, function(data){
-    $("#id_contacts").html("")
-    $.each(data, function (index, value) {
-      $("#id_contacts").append("<option value="+index+">"+value+"</option>")
-    });
-  })
+
+  $('#id_account').change(function () {
+    var account = $("#id_account").val()
+    $.get("{% url 'cases:select_contacts' %}", { "account": account }, function (data) {
+      $("#id_contacts").html("")
+      $.each(data, function (index, value) {
+        $("#id_contacts").append("<option value=" + index + ">" + value + "</option>")
+      });
+    })
   });
-  
-  
+
+
   function remove_attachment(x) {
-  const con = confirm("Do you want to Delete it for Sure!?");
-  if (con == true) {
-  $.post('{% url "cases:remove_attachment" %}', {
-    "attachment_id": x
-  }, function (data) {
-    if (data.error) {
-      alert(data.errors)
-    } else {
-      $("#attachment" + data.attachment_object).remove()
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "cases:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.errors)
+        } else {
+          $("#attachment" + data.attachment_object).remove()
+        }
+      })
     }
-  })
   }
-  }
-  
+
   $("#attachment_form").submit(function (e) {
-  e.preventDefault()
-  const formData = new FormData($("#attachment_form")[0]);
-  $.ajax({
-  url: "{% url 'cases:add_attachment' %}",
-  type: "POST",
-  data: formData,
-  cache: false,
-  contentType: false,
-  processData: false,
-  success: function (data) {
-    if (data.error) {
-      $("#AttachmentError").html(data.errors).show()
-    } else {
-        d = new Date(data.created_on)
-        $("#attachment_div").prepend(
+    e.preventDefault()
+    const formData = new FormData($("#attachment_form")[0]);
+    $.ajax({
+      url: "{% url 'cases:add_attachment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      beforeSend: function () {
+        $('#loading_spinner').show()
+        $('#opacity_block').addClass('opacity_block')
+      },
+      success: function (data) {
+        if (data.error) {
+          $("#AttachmentError").html(data.errors).show()
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+        } else {
+          d = new Date(data.created_on)
+          $("#attachment_div").prepend(
             "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
-              "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
-              "<div class='stream-post-container' id='attachment_name"+data.attachment_id+"'>"+
-              "<pre><span class='icon'><i style='font-size:1.5rem;' class='"+data.attachment_display+"'></i>&nbsp;&nbsp;</span><a href='"+data.download_url+"'>Download</a></pre></div>"+
-              "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right date'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>" +
+            "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment(" + data.attachment_id + ")''>Remove</button></div></div>" +
+            "<div class='stream-post-container' id='attachment_name" + data.attachment_id + "'>" +
+            `${(data.file_type[0]).startsWith('image') ? `<img src=${data.attachment_url} width="80px" height="80px" class="mb-2">` : ''}` +
+            "<pre><span class='icon'><i style='font-size:1.5rem;' class='" + data.attachment_display + "'></i>&nbsp;&nbsp;</span>" + data.attachment + "&nbsp; &nbsp;<a href='" + data.download_url + "'>Download</a></pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.created_by + "</pre><pre class='float-right date'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>" +
             "</li>"
-        )
-        $("#AttachmentError").html("")
-        alert("Attachment Saved")
-        $("#id_attachments").val("")
-    }
-  }
+          )
+          $("#AttachmentError").html("")
+          // alert("Attachment Saved")
+          $("#id_attachments").val("")
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+          setTimeout(() => {
+            alert("Attachment Saved")
+          }, 100)
+        }
+      }
+    });
   });
-  });
-  
+
 </script>
-<script src="{% static 'js/mention.js' %}"></script>
+<script src="{% static 'js/bootstrap-suggest.js' %}"></script>
+<script>
+  $('.mentions').suggest('@', {
+    data: {{ users_mention| safe}},
+    map: function (user) {
+      return {
+        value: user.username,
+        text: '<strong>' + user.username + '</strong>'
+      }
+    }
+ })
+</script>
 {% endblock js_block %}

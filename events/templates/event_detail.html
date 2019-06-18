@@ -1,0 +1,474 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load thumbnail %}
+{% block breadcrumb %}
+{% block extralinks %}
+<link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
+<style>
+  .opacity_block {
+    opacity: 0.2;
+  }
+</style>
+{% endblock extralinks %}
+<!-- breadcrumb starts here -->
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'events:events_list' %}">Event</a></li>
+    <li class="active breadcrumb-item">{{event.name}}</li>
+  </ol>
+</nav>
+{% endblock breadcrumb %}
+{% block content %}
+<!-- Task VIEW STARTS -->
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-8" id="opacity_block">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="card-title text-right">
+            <h5>
+              <span class="float-left title">Overview</span>
+              <span style="margin-top: 0px">
+                <div class="dropdown buttons_row">
+                  <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                    <span class="caret"></span></button>
+                  <ul class="dropdown-menu">
+                    <li><a href="{% url 'events:event_update' event.id %}">Edit</a></li>
+                  </ul>
+                </div>
+              </span>
+            </h5>
+          </div>
+          <div class="row marl">
+            <div class="col-md-4">
+              {% if event.name %}
+              <div class="filter_col col-md-12" id="iname">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_name" data-name="name">Name</label>
+                  <div class="account_field" id="account_name" data-name="name">{{ event.name }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if event.event_type %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_phone" data-name="name">Event Type</label>
+                  <div class="account_field" id="account_phone" data-name="name">{{ event.event_type }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if event.start_date %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_status" data-name="name">Start Date</label>
+                  <div class="account_field" id="account_status" data-name="name">{{ event.start_date }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if event.end_date %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_status" data-name="name">End Date</label>
+                  <div class="account_field" id="account_status" data-name="name">{{ event.end_date }}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  {% with contacts=event.contacts.all  %}
+                  <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                  {% if contacts %}
+                  {% for contact in contacts %}
+                  <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                  {% endfor %}
+                  {% else %}
+                  <div class="account_field" id="account_website" data-name="name">None</div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+              </div>
+
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  {% with users=event.assigned_to.all  %}
+                  <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
+                  {% if users %}
+                  {% for user in users %}
+                  <div class="account_field" id="account_website" data-name="name">{{ user }}</div>
+                  {% endfor %}
+                  {% else %}
+                  <div class="account_field" id="account_website" data-name="name">None</div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+              </div>
+              {% if event.start_time %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">Start Time</label>
+                  <div class="account_field" id="account_website" data-name="name">{{event.start_time}}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if event.end_time %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">End Time</label>
+                  <div class="account_field" id="account_website" data-name="name">{{event.end_time}}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              {% if event.description %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">Description</label>
+                  <div class="account_field" id="account_website" data-name="name">{{ event.description }}</div>
+                </div>
+              </div>
+              {% endif %}
+              {% if event.date_of_meeting %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_website" data-name="name">Date Of Meeting</label>
+                  <div class="account_field" id="account_website" data-name="name">{{ event.date_of_meeting }}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12">
+          <div class="created_information">
+            Created by <b>{{ event.created_by }}</b> created on
+            <b>{{ event.created_on }}</b>
+          </div>
+        </div>
+        <div class="col-md-12" style="padding:0;">
+
+          <div class="col-md-12 " style="padding:0">
+            <!-- Attachment Section start -->
+            <div class="card-body mar-top" id="datashow">
+              <div class="card-title view-pad">
+                <h5>Attachments</h5>
+              </div>
+              <div class="row marl">
+                <div class="col-md-12">
+                  <form id="attachment_form" method="POST" enctype="multipart/form-data">
+                    <div class="form-group ">
+                      <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
+                      <div>
+                        <p id="AttachmentError" style="display:none; color:red"></p>
+                      </div>
+                      <br>
+                      <div class="buttons_row">
+                        <button class="btn btn-default save" style="text-align: center;"
+                          id="attachment_submit">Save</button>
+                      </div>
+                    </div>
+                    <input type="hidden" value="{{event.id}}" name="event_id">
+                  </form>
+                  <ul class="list-group" id="attachment_div">
+                    {% for attachment in attachments %}
+                    <li class="list-group-item list-row" id="attachment{{attachment.id}}">
+                      {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
+                      <div class="float-right right-container">
+                        <div class="list-row-buttons btn-group float-right">
+                          <button class="action btn primary_btn"
+                            onclick="remove_attachment({{attachment.id}})">Remove</button>
+                        </div>
+                      </div>
+                      {% endif %}
+                      <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                        {% if attachment.attachment %}
+                        {% if 'image' in attachment.file_type %}
+                        {% thumbnail attachment.attachment "80x80" crop="center" as im %}
+                        <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" class="mb-2">
+                        {% endthumbnail %}
+                        {% endif %}
+                        {% endif %}
+                        <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span>{{attachment.file_name}} <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
+                      </div>
+                      <div class="stream-container">
+                        <pre class="float-left">Uploaded by :{{ attachment.created_by }}</pre>
+                        <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i A' }}</pre>
+                      </div>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <!-- Attachment Section end -->
+            <!-- Comments Section starts-->
+            <div class="card-body" id="datashow">
+              <div class="card-title">
+                <h5>Comments</h5>
+              </div>
+              <div class="row marl">
+                <div class="col-md-12">
+                  <form id="comment_form" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                      <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_comments"
+                        name="comment" placeholder="Submit Your Comments Here"></textarea>
+                      <div>
+                        <p id="CommentError" style="display:none; color:red"></p>
+                      </div>
+                      </br>
+                      <div class="buttons_row">
+                        <button class="btn btn-default save" style="text-align: center;" id="comment_submit"
+                          type="submit">Submit</button>
+                      </div>
+                    </div>
+                    <input type="hidden" value="{{ event.id }}" name="event_id">
+                  </form>
+                  <ul class="list-group" id="comments_div">
+                    {% for comment in comments %}
+                    <li class="list-group-item list-row" id="comment{{comment.id}}">
+                      {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
+                      <div class="list-row-buttons btn-group float-right">
+                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown"
+                          type="button">Actions<span class="caret"></span></button>
+                        <ul class="dropdown-menu text-center">
+                          <li>
+                            <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
+                          </li>
+                          <li>
+                            <a class="action" onclick="remove_comment({{comment.id}})">Remove</a>
+                          </li>
+                        </ul>
+                      </div>
+                      {% endif %}
+                      <div class="stream-post-container" id="comment_name{{comment.id}}">
+                        <pre>{{ comment.comment }}</pre>
+                      </div>
+                      <div class="stream-container">
+                        <pre class="float-left">{{ comment.commented_by }}</pre>
+                        <pre class="float-right date">{{ comment.commented_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                      </div>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+              <div class="modal fade" id="Comments_Accounts_Modal" role="dialog" data-keyboard="false"
+                data-backdrop="static">
+                <div class="modal-dialog modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h4 class="modal-title">Update Your Comment</h4>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
+                    </div>
+                    <form id="comment_edit_form" method="POST">
+                      <div class="modal-body">
+                        <div class="form-group">
+                          <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_editcomment"
+                            name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea><span>
+                            <p id="CommentEditError" style="display:none; color:red"></p>
+                          </span>
+                          <input type="hidden" value="{{ event.id }}" name="event_id">
+                          <input type="hidden" value="" name="commentid" id="commentid">
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-default save" id="comment_edit" type="submit">Update</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Comments Section Ends-->
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+      style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+      <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+        <span class="sr-only">Processing File...</span>
+      </div>
+    </div>
+    <br>
+  </div>
+</div>
+</div>
+<!-- ACCOUNTS VIEW ENDS -->
+</div>
+</div>
+</div>
+</div>
+<br>
+</div>
+</div>
+</div>
+<!-- ACCOUNTS VIEW ENDS -->
+{% endblock content %}
+{% block js_block %}
+<script type="text/javascript">
+  $('#loading_spinner').hide()
+  $("#comment_form").submit(function (e) {
+    e.preventDefault()
+    var formData = new FormData($("#comment_form")[0]);
+    $.ajax({
+      url: "{% url 'events:add_comment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.error) {
+          $("#CommentError").html(data.error).show()
+        } else {
+          d = new Date(data.commented_on);
+          $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
+            "<div class='float-right right-container'>" +
+            "<div class='list-row-buttons btn-group float-right'>" +
+            "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>" +
+            "<ul class='dropdown-menu text-center'>" +
+            "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
+            "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
+            "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.commented_by + "</pre><pre class='float-right'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>"
+          )
+          $("#id_comments").val("")
+          alert("Comment Submitted")
+          $("#CommentError").html("")
+        }
+      }
+    });
+  });
+
+  function edit_comment(x) {
+    $('#Comments_Accounts_Modal').modal('show');
+    comment = $("#comment_name" + x).text()
+    $("#commentid").val(x)
+    $("#id_editcomment").val(comment)
+    $("#edit_file_field").html($("#comment_file_div" + x).clone())
+  }
+
+  $("#comment_edit").click(function (e) {
+    e.preventDefault()
+    var formData = new FormData($("#comment_edit_form")[0]);
+    $.ajax({
+      url: "{% url 'events:edit_comment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.error) {
+          $("#CommentEditError").html(data.error).show()
+        } else {
+          console.log($("#comment_name" + data.comment_id))
+          $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
+          $('#Comments_Accounts_Modal').modal('hide');
+          $("#id_editcomment").val("")
+          $("#CommentEditError").html('')
+        }
+      }
+    })
+  })
+
+  /*Comment Edit Js Ends*/
+
+  function HideError(e) {
+    $("#CommentError").hide()
+    $("#CommentEditError").hide()
+  }
+
+  /*Comment Remove Js Start*/
+
+  function remove_comment(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "accounts:remove_comment" %}', {
+        "comment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#comment" + data.cid).remove()
+        }
+      })
+    }
+  }
+
+  function remove_attachment(x) {
+    const con = confirm("Do you want to Delete it for Sure!?");
+    if (con == true) {
+      $.post('{% url "leads:remove_attachment" %}', {
+        "attachment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#attachment" + data.aid).remove()
+        }
+      })
+    }
+  }
+
+  $("#attachment_form").submit(function (e) {
+    e.preventDefault()
+    const formData = new FormData($("#attachment_form")[0]);
+    $.ajax({
+      url: "{% url 'events:add_attachment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      beforeSend: function () {
+        $('#loading_spinner').show()
+        $('#opacity_block').addClass('opacity_block')
+      },
+      success: function (data) {
+        if (data.error) {
+          $("#AttachmentError").html(data.error).show()
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+        } else {
+          d = new Date(data.created_on)
+          $("#attachment_div").prepend(
+            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+            "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment(" + data.attachment_id + ")''>Remove</button></div></div>" +
+            "<div class='stream-post-container' id='attachment_name" + data.attachment_id + "'>" +
+            `${(data.file_type[0]).startsWith('image') ? `<img src=${data.attachment_url} width="80px" height="80px" class="mb-2">` : ''}` +
+            "<pre><span class='icon'><i style='font-size:1.5rem;' class='" + data.attachment_display + "'></i>&nbsp;&nbsp;</span>" + data.attachment + "&nbsp; &nbsp;<a href='" + data.download_url + "'>Download</a></pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.created_by + "</pre><pre class='float-right date'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>" +
+            "</li>"
+          )
+          $("#AttachmentError").html("")
+          $("#id_attachments").val("")
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+          setTimeout(() => {
+            alert("Attachment Saved")
+          }, 100)
+          // alert("Attachment Saved")
+        }
+      }
+    })
+  });
+
+</script>
+<script src="{% static 'js/bootstrap-suggest.js' %}"></script>
+<script>
+  $('.mentions').suggest('@', {
+    data: {{ users_mention| safe}},
+    map: function (user) {
+      return {
+        value: user.username,
+        text: '<strong>' + user.username + '</strong>'
+      }
+    }
+ })
+</script>
+{% endblock js_block %}

@@ -1,0 +1,56 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }}
+<div class="main_container ml-5 mr-5">
+  <div class="row marl">
+    <div class="col-md-12">
+      <div class="table_container_row no_mar_top">
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title text-right">
+              <span class="float-left">{{ contact_list.name }} -  Failed: {{ failed_contacts_list|length }}</span>
+              <!-- {% if contact_list.contacts.all|length > 0 %}
+                <a href="{% url 'marketing:contact_list_detail' contact_list.id %}" class="primary_btn">Contacts</a>
+              {% endif %} -->
+              <a href="{% url 'marketing:failed_contact_list_download_delete' contact_list.id %}" class="primary_btn">Download & Delete</a>
+                <!-- <div class="" style="margin-top: 2.5em;"></div> -->
+            </div>
+            <div class="table-responsive table-bordered ">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th width="5%">ID</th>
+                    <th width="20%">Name</th>
+                    <th width="20%">Email</th>
+                    <th width="10%">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for contact in failed_contacts_list %}
+                  <tr style="text-align:center;">
+                    <td scope="row">{{ forloop.counter }}</td>
+                    <td>{{ contact.name }}</td>
+                    <td>{{ contact.email }}</td>
+                    <td class="actions">
+                      <a href="{% url 'marketing:edit_failed_contact' contact.id %}" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                      <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                      <a href="{% url 'marketing:delete_failed_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr style="text-align:center;">
+                    <td colspan="6">No records found!</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -48,6 +48,12 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
             :alt: Code Helpers
          .. image:: https://img.shields.io/github/license/MicroPyramid/Django-CRM.svg
             :target: https://pypi.python.org/pypi/Django-CRM/
+         .. image:: https://opencollective.com/django-crm/backers/badge.svg
+            :alt: Backers on Open Collective
+            :target: #backers
+         .. image:: https://opencollective.com/django-crm/sponsors/badge.svg
+            :alt: Sponsors on Open Collective
+            :target: #sponsors
 
 
 http://django-crm.readthedocs.io for latest documentation
@@ -74,6 +80,28 @@ Demo credentials for Django CRM:
   * **Password:** admin
 
 
+Installation
+============
+
+* Install the dependencies
+
+   .. code-block:: python
+
+      pip install -r requirements.txt
+      python manage.py makemigrations
+      python manage.py createsuperuser
+      python manage.py runserver
+
+  This will install all the required dependencies for django-crm.
+  After this download and install the System Requirements.
+
+
+System Requirements
+===================
+
+- wkhtmltopdf (https://wkhtmltopdf.org/downloads.html)
+- sass (https://www.npmjs.com/package/sass) or (https://rubygems.org/gems/sass)
+
 Community
 =========
 
@@ -84,6 +112,39 @@ Get help or stay up to date.
 - Ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/django-crm)
 - Chat with community [Gitter](https://gitter.im/MicroPyramid/Django-CRM)
 - For customisations, email django-crm@micropyramid.com
+
+Credits
++++++++
+
+Contributors
+------------
+
+This project exists thanks to all the people who contribute! 
+
+.. image:: https://opencollective.com/django-crm/contributors.svg?width=890&button=false
+
+Backers
+-------
+
+Thank you to all our backers! `Become a backer`__.
+
+.. image:: https://opencollective.com/django-crm/backers.svg?width=890
+    :target: https://opencollective.com/django-crm#backers
+
+__ Backer_
+.. _Backer: https://opencollective.com/django-crm#backer
+
+Sponsors
+--------
+
+Support us by becoming a sponsor. Your logo will show up here with a link to your website. `Become a sponsor`__.
+
+.. image:: https://opencollective.com/django-crm/sponsor/0/avatar.svg
+    :target: https://opencollective.com/django-crm/sponsor/0/website
+
+__ Sponsor_
+.. _Sponsor: https://opencollective.com/django-crm#sponsor
+
 
 
 Feature requests and bug reports
