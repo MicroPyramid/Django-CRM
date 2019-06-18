@@ -24,6 +24,7 @@ from common.forms import (
     APISettingsForm
 )
 from django.contrib.auth.views import PasswordResetView
+from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse_lazy, reverse
 from django.conf import settings
 from opportunity.models import Opportunity
@@ -35,6 +36,9 @@ from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
 import boto3
 import botocore
+
+from common.utils import ROLES
+from common.tasks import send_email_user_status, send_email_user_delete, send_email_to_new_user
 
 
 def handler404(request, exception):
@@ -65,7 +69,8 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         accounts = Account.objects.filter(status="open")
         contacts = Contact.objects.all()
-        leads = Lead.objects.exclude(status='converted')
+        leads = Lead.objects.exclude(
+            status='converted').exclude(status='closed')
         opportunities = Opportunity.objects.all()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
@@ -98,17 +103,17 @@ class ChangePasswordView(LoginRequiredMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         error, errors = "", ""
-        form = ChangePasswordForm(request.POST)
+        form = ChangePasswordForm(request.POST, user=request.user)
         if form.is_valid():
             user = request.user
-            if not check_password(request.POST.get('CurrentPassword'),
-                                  user.password):
-                error = "Invalid old password"
-            else:
-                user.set_password(request.POST.get('Newpassword'))
-                user.is_active = True
-                user.save()
-                return HttpResponseRedirect('/')
+            # if not check_password(request.POST.get('CurrentPassword'),
+            #                       user.password):
+            #     error = "Invalid old password"
+            # else:
+            user.set_password(request.POST.get('Newpassword'))
+            user.is_active = True
+            user.save()
+            return HttpResponseRedirect('/')
         else:
             errors = form.errors
         return render(request, "change_password.html",
@@ -210,13 +215,30 @@ class UsersListView(AdminRequiredMixin, TemplateView):
 
     def get_queryset(self):
         queryset = self.model.objects.all()
-        return queryset
+
+        request_post = self.request.POST
+        if request_post:
+            if request_post.get('username'):
+                queryset = queryset.filter(
+                    username__icontains=request_post.get('username'))
+            if request_post.get('email'):
+                queryset = queryset.filter(
+                    email=request_post.get('email'))
+            if request_post.get('role'):
+                queryset = queryset.filter(
+                    role=request_post.get('role'))
+
+        return queryset.order_by('username')
 
     def get_context_data(self, **kwargs):
         context = super(UsersListView, self).get_context_data(**kwargs)
-        context["users"] = self.get_queryset()
+        active_users = self.get_queryset().filter(is_active=True)
+        inactive_users = self.get_queryset().filter(is_active=False)
+        context["active_users"] = active_users
+        context["inactive_users"] = inactive_users
         context["per_page"] = self.request.POST.get('per_page')
         context['admin_email'] = settings.ADMIN_EMAIL
+        context['roles'] = ROLES
         return context
 
     def post(self, request, *args, **kwargs):
@@ -235,15 +257,19 @@ class CreateUserView(AdminRequiredMixin, CreateView):
             user.set_password(form.cleaned_data.get("password"))
         user.save()
 
-        mail_subject = 'Created account in CRM'
-        message = render_to_string('new_user.html', {
-            'user': user,
-            'created_by': self.request.user
+        current_site = self.request.get_host()
+        protocol = self.request.scheme
+        send_email_to_new_user.delay(user.email, self.request.user.email,
+                                     domain=current_site, protocol=protocol)
+        # mail_subject = 'Created account in CRM'
+        # message = render_to_string('new_user.html', {
+        #     'user': user,
+        #     'created_by': self.request.user
 
-        })
-        email = EmailMessage(mail_subject, message, to=[user.email])
-        email.content_subtype = "html"
-        email.send()
+        # })
+        # email = EmailMessage(mail_subject, message, to=[user.email])
+        # email.content_subtype = "html"
+        # email.send()
 
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy(
@@ -343,6 +369,9 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        current_site = request.get_host()
+        send_email_user_delete.delay(
+            self.object.email, domain=current_site, protocol=request.scheme)
         self.object.delete()
         return redirect("common:users_list")
 
@@ -355,8 +384,13 @@ class PasswordResetView(PasswordResetView):
 
 def document_create(request):
     template_name = "doc_create.html"
-
-    users = User.objects.filter(is_active=True).order_by('email')
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     form = DocumentForm(users=users)
     if request.POST:
         form = DocumentForm(request.POST, request.FILES, users=users)
@@ -455,9 +489,15 @@ class DocumentDeleteView(LoginRequiredMixin, DeleteView):
 
 def document_update(request, pk):
     template_name = "doc_create.html"
-    users = User.objects.filter(is_active=True).order_by('email')
-    form = DocumentForm(users=users)
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     document = Document.objects.filter(id=pk).first()
+    form = DocumentForm(users=users, instance=document)
 
     if request.POST:
         form = DocumentForm(request.POST, request.FILES,
@@ -602,6 +642,9 @@ def change_user_status(request, pk):
     else:
         user.is_active = True
     user.save()
+    current_site = request.get_host()
+    send_email_user_status.delay(
+        pk, domain=current_site, protocol=request.scheme)
     return HttpResponseRedirect('/users/list/')
 
 
@@ -857,3 +900,21 @@ def google_login(request):
         + 'http://' + request.META['HTTP_HOST'] + \
         reverse('common:google_login') + "&state=" + next_url
     return HttpResponseRedirect(rty)
+
+
+def create_lead_from_site(request):
+    allowed_domains = ['micropyramid.com', 'test.microsite.com:8000', ]
+    # add origin_domain = request.get_host() in the post body
+    if (request.get_host() in ['sales.micropyramid.com', ] and request.POST.get('origin_domain') in allowed_domains):
+        if request.method == 'POST':
+            if request.POST.get('full_name', None):
+                lead = Lead.objects.create(title=request.POST.get('full_name'), email=request.POST.get(
+                    'email'), phone=request.POST.get('phone'), description=request.POST.get('message'),
+                    created_from_site=True)
+                recipients = User.objects.filter(role='ADMIN').values_list('id', flat=True)
+                lead.assigned_to.add(*recipients)
+                from leads.tasks import send_email_to_assigned_user
+                send_email_to_assigned_user(recipients, lead.id, domain='sales.micropyramid.com')
+                return HttpResponse('Lead Created')
+    from django.http import HttpResponseBadRequest
+    return HttpResponseBadRequest('Bad Request')

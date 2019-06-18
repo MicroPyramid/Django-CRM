@@ -2,12 +2,14 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block extralinks %}
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 {% endblock extralinks %}
 {% block content %}
 {{ block.super }}
-<div class="marketing_pages">
+<div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
       <form id="add_form" method="POST" action='' novalidate enctype="multipart/form-data">
@@ -22,19 +24,21 @@
                   <div class="row marl">
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label>Title</label>
+                        <label>Title</label><span class="error_marker" style="color:red"> *</span>
                         <input type="text" name="title" class="form-control" placeholder="Title of this campaign">
-                        <small class="form-text text-muted">Set a title for this campaign?</small>
+                        <!-- <small class="form-text text-muted">Set a title for this campaign?</small> -->
                         <span id="id_title"></span>
                       </div>
                     </div>
                     <div class="col-md-3">
                       <div class="form-group">
                         <label>Select Template</label>
-                        <select class="form-control js-example-basic-single email-template-select" name="email_template">
+                        <select class="form-control js-example-basic-single email-template-select" name="email_template"
+                          id="select_template">
                           <option value="">Select a template</option>
                           {% for email_template in email_templates %}
-                            <option value="{{email_template.id}}" htmlcode="{{email_template.html}}" subject="{{email_template.subject}}">{{ email_template.title }}</option>
+                          <option value="{{email_template.id}}" htmlcode="{{email_template.html}}"
+                            subject="{{email_template.subject}}">{{ email_template.title }}</option>
                           {% endfor %}
                           <!-- <option value="one">First template</option>
                           <option value="two">Second template</option>
@@ -46,7 +50,7 @@
                     </div>
                     <div class="col-md-3">
                       <div class="form-group">
-                        <label>Subject</label>
+                        <label>Subject</label><span class="error_marker" style="color:red"> *</span>
                         <input type="text" name="subject" class="form-control" placeholder="Subject of this Campaign">
                         <!-- <small class="form-text text-muted">Set a title for this campaign?</small> -->
                         <span id="id_subject"></span>
@@ -54,14 +58,14 @@
                     </div>
                     <div class="col-md-3">
                       <div class="form-group">
-                        <label>From Name</label>
+                        <label>From Name</label><span class="error_marker" style="color:red"> *</span>
                         <input type="text" class="form-control" placeholder="John Doe" name="from_name">
                         <span id="id_from_name"></span>
                       </div>
                     </div>
                     <div class="col-md-3">
                       <div class="form-group">
-                        <label>From Email</label>
+                        <label>From Email</label><span class="error_marker" style="color:red"> *</span>
                         <input type="email" class="form-control" placeholder="support@mp.com" name="from_email">
                         <span id="id_from_email"></span>
                       </div>
@@ -70,10 +74,11 @@
                       <div class="row">
                         <div class="col-md-3">
                           <div class="form-group">
-                            <label>Select Contact List</label>
-                            <select class="contact-lsit-select js-example-basic-multiple" name="contact_list" multiple="multiple">
+                            <label>Select Contact List</label><span class="error_marker" style="color:red"> *</span>
+                            <select class="contact-lsit-select js-example-basic-multiple" name="contact_list"
+                              multiple="multiple">
                               {% for contact_list in contact_lists %}
-                                <option value="{{contact_list.id}}">{{ contact_list.name }}</option>
+                              <option value="{{contact_list.id}}">{{ contact_list.name }}</option>
                               {% endfor %}
                             </select>
                             <span id="id_contact_list"></span>
@@ -83,24 +88,38 @@
                             <span id="id_reply_to_crm"></span>
                           </div>
                           <div class="form-group reply_to_email">
-                            <label>Reply to email</label>
+                            <label>Reply to email</label><span class="error_marker" style="color:red"> *</span>
                             <input type="email" class="form-control" placeholder="replyto@mp.com" name="reply_to_email">
                             <span id="id_reply_to_email"></span>
                           </div>
-                          <div class="form-group">
+                          <!-- <div class="form-group">
                             <label>Query String</label>
                             <div class="well">
-                              Optionally append a query string to all links in your email newsletter. A good use case is Google Analytics tracking. Don't include '?' in your query string.
+                              Optionally append a query string to all links in your email newsletter. A good use case is
+                              Google Analytics tracking. Don't include '?' in your query string.
                             </div>
                             <input type="email" class="form-control" placeholder="url">
-                          </div>
+                          </div> -->
                           <div class="form-group">
                             <label>Attachments</label>
                             <input type="file" class="form-control" name="attachment">
-                            <small class="form-text text-muted">Allowed file types: jpeg, jpg, gif, png, pdf, zip</small>
+                            <small class="form-text text-muted">Allowed file types: jpeg, jpg, gif, png, pdf,
+                              zip</small>
                             <span id="id_attachment"></span>
                           </div>
-                          <div class="form-group">
+
+                          <!-- <div class="filter_col col-md-12"> -->
+                            <div class="form-group">
+                              <label>Tags</label>
+                              <div class="txt-box-div" id="tag-div">
+                                <input type="text" name="tags" id="tags_1" class="tags"
+                                  value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
+                              </div>
+                              <span id="id_tags"></span>
+                            </div>
+                          <!-- </div> -->
+                          <!--
+                            <div class="form-group">
                             <label>Track Opens</label>
                             <button type="button" class="btn btn-toggle" data-toggle="button" aria-pressed="false" autocomplete="off">
                               <div class="handle"></div>
@@ -111,10 +130,14 @@
                             <button type="button" class="btn btn-toggle" data-toggle="button" aria-pressed="false" autocomplete="off">
                               <div class="handle"></div>
                             </button>
-                          </div><br>
+                          </div>
+                         -->
+                          <br>
                           <div class="form-group">
-                            <button type="submit" class="primary_btn mar_btm save_btn">Save Campaign</button>
-                            <a href="{% url 'marketing:campaign_list' %}" class="seconadry_btn">Cancel</a>
+                            <div class="row marl buttons_row text-center form_btn_row">
+                              <button type="submit" class="btn btn-default save">Save Campaign</button>
+                              <a href="{% url 'marketing:campaign_list' %}" class="btn btn-default clear">Cancel</a>
+                            </div>
                           </div>
                         </div>
                         <div class="col-md-9">
@@ -128,10 +151,12 @@
                             <div class="col-md-4 timezone-div" style="display: none;">
                               <div class="form-group">
                                 <label>Timezone</label>
-                                <select name="timezone" id="timezone" class="form-control timezone-select js-example-basic-single">
+                                <select name="timezone" id="timezone"
+                                  class="form-control timezone-select js-example-basic-single">
                                   <option value="">Select a Timezone</option>
                                   {% for timezone in timezones %}
-                                    <option value="{{timezone.0}}" {% if timezone.0 == settings_timezone %}selected{% endif %}>{{timezone.1}}</option>
+                                  <option value="{{timezone.0}}"
+                                    {% if timezone.0 == settings_timezone %}selected{% endif %}>{{timezone.1}}</option>
                                   {% endfor %}
                                 </select>
                                 <span id="id_timezone"></span>
@@ -139,11 +164,13 @@
                             </div>
                             <div class="col-md-4 timezone-div" style="display: none;">
                               <div class="form-group">
-                                <label for="">Schedule Date Time</label>
+                                <label for="">Schedule Date Time</label><span class="error_marker" style="color:red"> *</span>
                                 <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
-                                  <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker1" name="schedule_date_time" />
-                                  <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
-                                      <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                  <input type="text" class="form-control datetimepicker-input"
+                                    data-target="#datetimepicker1" name="schedule_date_time" />
+                                  <div class="input-group-append" data-target="#datetimepicker1"
+                                    data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                   </div>
                                 </div>
                                 <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
@@ -152,17 +179,19 @@
                             </div>
                           </div>
                           <div class="col-md-12">
-                            <div class="form-group">
+                            <!-- <div class="form-group">
                               <label>Plain Text</label>
                               <textarea class="form-control" rows="3" name="plain_html"></textarea>
                               <span id="id_plain_html"></span>
-                            </div>
+                            </div> -->
                             <div class="form-group">
-                              <label>Html Code</label>
+                              <label>Html Code</label><span class="error_marker" style="color:red"> *</span>
                               <span id="id_html"></span>
                               <div id="editor-container">
                               </div>
-                              <span class="hint">Use the following tags in your subject, plain text or HTML code and they'll automatically be formatted when your campaign is sent. For web version and unsubscribe tags, you can style them with inline CSS.</span>
+                              <span class="hint">Use the following tags in your subject, plain text or HTML code and
+                                they'll automatically be formatted when your campaign is sent. For web version and
+                                unsubscribe tags, you can style them with inline CSS.</span>
                               <input type="hidden" name="html" id="html_content">
                             </div>
                             <div class="col-md-12 no-padding">
@@ -253,120 +282,154 @@
 </div>
 {% endblock %}
 {% block js_block %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-  <script src="https://malsup.github.com/jquery.form.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
-  <script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script src="https://malsup.github.com/jquery.form.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
+<script>
 
-    // $('[name="schedule_date_time"]').datetimepicker({format: 'yyyy-mm-dd hh:ii'});
-    $(function () {
-      $.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
-        icons: {
-            time: 'fa fa-clock',
-            date: 'fa fa-calendar',
-            up: 'fa fa-arrow-up',
-            down: 'fa fa-arrow-down',
-            previous: 'fa fa-chevron-left',
-            next: 'fa fa-chevron-right',
-            today: 'far fa-calendar-check-o',
-            clear: 'fa fa-trash',
-            close: 'fa fa-times'
+  $.urlParam = function (name) {
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)')
+      .exec(window.location.search);
+
+    return (results !== null) ? results[1] || 0 : false;
+  }
+
+
+  // $('[name="schedule_date_time"]').datetimepicker({format: 'yyyy-mm-dd hh:ii'});
+  $(function () {
+
+    $(function() {
+      $('#tags_1').tagsInput({ width: 'auto' });
+    });
+
+    $.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
+      icons: {
+        time: 'fa fa-clock',
+        date: 'fa fa-calendar',
+        up: 'fa fa-arrow-up',
+        down: 'fa fa-arrow-down',
+        previous: 'fa fa-chevron-left',
+        next: 'fa fa-chevron-right',
+        today: 'far fa-calendar-check-o',
+        clear: 'fa fa-trash',
+        close: 'fa fa-times'
+      }
+    });
+    $('#datetimepicker1').datetimepicker({
+      format: "YYYY-MM-DD HH:mm"
+    });
+  });
+
+  $(document).ready(function () {
+    $(".email-template-select").select2({
+      placeholder: "Select an email template"
+    })
+    $(".contact-lsit-select").select2({
+      placeholder: "Select a contact list",
+      tags: "true",
+      allowClear: true
+    });
+    $(".timezone-select").select2({
+      placeholder: "Select a Timezone",
+    });
+  });
+  var quill = new Quill('#editor-container', {
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, false] }],
+        ['bold', 'italic', 'underline'],
+        // ['image', 'code-block']
+        ['code-block']
+      ]
+    },
+    placeholder: 'Compose an epic...',
+    theme: 'snow' // or 'bubble'
+  });
+
+  quill.on('text-change', function () {
+    var justHtml = quill.root.innerHTML;
+    $('#html_content').val(justHtml);
+  });
+
+  $('[name="email_template"]').on('change', function (e) {
+    var optionSelected = $("option:selected", this);
+    var valueSelected = this.value;
+    var subject = $('[name="subject"]');
+    var html_code = $("#editor-container");
+    var html_content = $('#html_content');
+    if ($(optionSelected).val()) {
+      subject.val($(optionSelected).attr("subject"));
+      quill.root.innerHTML = $(optionSelected).attr("htmlcode");
+    } else {
+      subject.val("");
+      quill.root.innerHTML = "";
+      html_content.val("");
+    }
+  })
+
+  selectedEmail = $.urlParam('email_template')
+  if (selectedEmail) {
+    $('#select_template option[value="' + selectedEmail + '"]').attr('selected', 'true')
+    var optionSelected = $('#select_template option[value="' + selectedEmail + '"]');
+    var valueSelected = selectedEmail;
+    var subject = $('[name="subject"]');
+    var html_code = $("#editor-container");
+    var html_content = $('#html_content');
+    if ($(optionSelected).val()) {
+      subject.val($(optionSelected).attr("subject"));
+      quill.root.innerHTML = $(optionSelected).attr("htmlcode");
+    } else {
+      subject.val("");
+      quill.root.innerHTML = "";
+      html_content.val("");
+    }
+  }
+
+  $('[name="schedule_later"]').on('change', function (e) {
+    if ($(this).is(":checked")) {
+      $('.timezone-div').show();
+    } else {
+      $('.timezone-div').hide();
+    }
+  })
+
+  $('[name="reply_to_crm"]').on('change', function (e) {
+    if ($(this).is(":checked")) {
+      $('.reply_to_email').hide();
+    } else {
+      $('.reply_to_email').show();
+    }
+  })
+
+  $('.save_btn').click(function (e) {
+    e.preventDefault();
+    $("form#add_form").submit()
+  })
+
+  $('form#add_form').ajaxForm({
+    type: 'POST',
+    // dataType: 'json',
+    url: $(this).attr('action'),
+    data: $(this).serialize(),
+    success: function (data) {
+      console.log("data", data)
+      if (data.error == false) {
+        window.location = "{% url 'marketing:campaign_list' %}";
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
         }
-      });
-      $('#datetimepicker1').datetimepicker({
-        format: "YYYY-MM-DD HH:mm"
-      });
-    });
-
-    $(document).ready(function() {
-      $(".email-template-select").select2({
-        placeholder: "Select an email template"
-      })
-      $(".contact-lsit-select").select2({
-        placeholder: "Select a contact list",
-        tags: "true",
-        allowClear: true
-      });
-      $(".timezone-select").select2({
-        placeholder: "Select a Timezone",
-      });
-    });
-    var quill = new Quill('#editor-container', {
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, false] }],
-          ['bold', 'italic', 'underline'],
-          ['image', 'code-block']
-        ]
-      },
-      placeholder: 'Compose an epic...',
-      theme: 'snow' // or 'bubble'
-    });
-
-    quill.on('text-change', function() {
-      var justHtml = quill.root.innerHTML;
-      $('#html_content').val(justHtml);
-    });
-
-    $('[name="email_template"]').on('change', function(e){
-      var optionSelected = $("option:selected", this);
-      var valueSelected = this.value;
-      var subject = $('[name="subject"]');
-      var html_code = $("#editor-container");
-      var html_content = $('#html_content');
-      if ($(optionSelected).val()){
-        subject.val($(optionSelected).attr("subject"));
-        quill.root.innerHTML = $(optionSelected).attr("htmlcode");
-      } else {
-        subject.val("");
-        quill.root.innerHTML = "";
-        html_content.val("");
       }
-    })
-
-    $('[name="schedule_later"]').on('change', function(e){
-      if ($(this).is(":checked")){
-        $('.timezone-div').show();
-      } else {
-        $('.timezone-div').hide();
-      }
-    })
-
-    $('[name="reply_to_crm"]').on('change', function(e){
-      if ($(this).is(":checked")){
-        $('.reply_to_email').hide();
-      } else {
-        $('.reply_to_email').show();
-      }
-    })
-
-    $('.save_btn').click(function(e){
-      e.preventDefault();
-      $("form#add_form").submit()
-    })
-
-    $('form#add_form').ajaxForm({
-      type: 'POST',
-      // dataType: 'json',
-      url: $(this).attr('action'),
-      data: $(this).serialize(),
-      success: function(data) {
-        console.log("data", data)
-        if (data.error == false) {
-          window.location = "{% url 'marketing:campaign_list' %}";
-        } else {
-          /*$(document).ajaxStop($.unblockUI);*/
-          // $.unblockUI();
-          $('p.failure').remove();
-          for (var key in data.errors) {
-            $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
-          }
-        }
-      },
-      error: function(xhr, errmsg, err) {
-        console.log('error data', errmsg, err)
-      }
-    });
-  </script>
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+  });
+</script>
 {% endblock js_block %}

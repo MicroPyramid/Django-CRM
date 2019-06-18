@@ -8,7 +8,7 @@ from cases.views import (
 app_name = 'cases'
 
 urlpatterns = [
-    path('list/', CasesListView.as_view(), name='list'),
+    path('', CasesListView.as_view(), name='list'),
     path('create/', create_case, name='add_case'),
     path('<int:pk>/view/', CaseDetailView.as_view(), name="view_case"),
     path('<int:pk>/edit_case/', update_case, name="edit_case"),

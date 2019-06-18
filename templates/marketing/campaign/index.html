@@ -1,56 +1,138 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% load common_tags %}
 {% block content %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock extralinks %}
+
 {{ block.super }}
-<div class="marketing_pages">
+<div class="main_container ml-5 mr-5">
   <div class="row marl">
+    <div class="filter_row list_filter_row row marl col-md-12 mb-2">
+      <div class="">
+        <div class="card">
+          <div class="card-body">
+            <form id="leads_filter" action="" method="POST">
+              <div class="card-body ">
+                <div class="card-title">Filters</div>
+                <div class="row marl">
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Name</label>
+                      <input type="text" class="form-control" placeholder="Campaign Name" name="campaign_name"
+                        value="{{request.POST.campaign_name}}">
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Created By</label>
+                      <select name="created_by" id="" class="assigned_users_ form-control">
+                        <option value="">
+                          ------------------</option>
+                        {% for user in users %}
+                        <option value="{{user.id}}" {% if user.id|slugify == request.POST.created_by %} selected=""
+                          {% endif %}>
+                          {{user.email}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <input type="hidden" name="tab_status" id="tab_status">
+                  <div class="filter_col col-2">
+                    <div class="form-group buttons_row">
+                      <button class="btn btn-primary save" type="submit">Search</button>
+                      <a href="" class="btn btn-default clear" onclick="window.location.reload">Clear</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="col-md-12">
       <div class="table_container_row no_mar_top">
         <div class="card">
           <div class="card-body">
             <div class="card-title text-right">
               <span class="float-left">Campaigns - {{ campaigns_list|length }}</span>
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
               <a href="{% url 'marketing:campaign_new' %}" class="primary_btn">Add New Campaign</a>
             </div>
             <div class="table-responsive table-bordered ">
               <table class="table">
+                {% if campaigns_list %}
                 <thead>
                   <tr>
-                    <th width="25%">Campaign</th>
+                    <th width="20%">Campaign</th>
                     <th width="10%">Receipents</th>
                     <th width="20%">Sent</th>
-                    <th width="15%">Unique Opens</th>
-                    <th width="15%">Unique Clicks</th>
+                    <th width="10%">Unique Opens</th>
+                    <th width="10%">Bounces</th>
+                    <th width="10%">Unsubscribed</th>
+                    <th width="10%">Tags</th>
                     <th width="10%">Actions</th>
                   </tr>
                 </thead>
+                {% endif %}
                 <tbody>
+                  {% if per_page %}
+                  {% paginate per_page campaigns_list %}
+                  {% else%}
+                  {% paginate 10 campaigns_list %}
+                  {% endif %}
                   {% for campaign in campaigns_list %}
-                    <tr style="text-align:center;">
-                      <td scope="row"><span class="badge badge-primary">Primary</span> <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
-                      <td>5478</td>
-                      <td>
-                        {{ campaign.sent_on_format }}
-                      </td>
-                      <td>
-                        <span class="badge badge-secondary">20.6%</span> 125 Opened
-                      </td>
-                      <td>
-                        <span class="badge badge-secondary">15.5%</span> 78 Clicked
-                      </td>
-                      <td class="actions">
-                          <a href="{% url 'marketing:campaign_details' campaign.id %}" class="btn btn-success view"><i class="fas fa-eye"></i></a>
-                        <!--
+                  <tr style="text-align:center;">
+                    <td scope="row">
+                      <!-- <span class="badge badge-primary">Primary</span> -->
+                      <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
+                    <td class="text-center">{{campaign.get_all_emails_count}}</td>
+                    <td>
+                      {{ campaign.sent_on_format }}
+                    </td>
+                    <td class="text-center">
+                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      {{campaign.opens_unique}}
+                    </td>
+                    <td class="text-center">
+                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      {{campaign.get_all_email_bounces_count}}
+                    </td>
+                    <td class="text-center">
+                      <!-- <span class="badge badge-secondary">15.5%</span> -->
+                      {{campaign.get_all_emails_unsubscribed_count}}
+                    </td>
+                    <td class="text-center">
+                      {% for tag in campaign.tags.all|slice:'3' %}
+                      <span class="text-left color{{forloop.counter}} tag_class_camp" id="list_tag"
+                        data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                      {% empty %}
+                      <span class="text-left">No Tags</span>
+                      {% endfor %}
+                      {% if campaign.tags.all|length > 3 %}
+                      <span class="text-left" id="list_tag">{{campaign.tags.all|length|subtract:'3'}}<span> more
+                        </span></span>
+                      {% endif %}
+                    </td>
+                    <td class="actions">
+                      <a href="{% url 'marketing:campaign_details' campaign.id %}" class="btn btn-success view"><i
+                          class="fas fa-eye"></i></a>
+                      <!--
                           <a href="{% url 'marketing:campaign_edit' campaign.id %}" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
                         -->
-                        <a href="{% url 'marketing:campaign_delete' campaign.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
-                      </td>
-                    </tr>
+                      <a href="{% url 'marketing:campaign_delete' campaign.id %}"
+                        class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
                   {% empty %}
-                    <tr>
-                      <td colspan="6"> No records found!</td>
-                    </tr>
+                  <tr>
+                    <td colspan="6"> No records found!</td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -60,5 +142,41 @@
       </div>
     </div>
   </div>
+  <div class="marl row text-center mt-5">
+    {% show_pages %}
+  </div>
 </div>
 {% endblock %}
+
+{% block js_block %}
+<script>
+  $(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+    $('#id_tag').select2();
+
+    $(".remove_account").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      if (!confirm('Are you sure you want to delete?'))
+        return;
+      window.location = $(this).attr('href')
+    })
+
+    $("a[rel='page']").click(function (e) {
+      e.preventDefault();
+      $('#leads_filter').attr("action", $(this).attr("href"));
+      $('#leads_filter').submit();
+    });
+
+    $(".tag_class_camp").click(function (e) {
+      e.preventDefault()
+      // $(".tag_class_opp").css('cursor', 'pointer')
+      url = "{% url 'marketing:campaign_list' %}"
+      url = url + "?tag=" + $(this).attr('data-link')
+      window.location.href = url;
+    });
+  })
+</script>
+{% endblock js_block %}

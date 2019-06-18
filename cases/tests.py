@@ -77,7 +77,7 @@ class CaseViewTestCase(CaseCreation, TestCase):
 
     def test_list_cases(self):
         self.cases = Case.objects.all()
-        response = self.client.get('/cases/list/')
+        response = self.client.get(reverse('cases:list'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cases'][0].id, self.case.id)
         self.assertTrue(response.context['cases'])
@@ -89,7 +89,7 @@ class CaseViewTestCase(CaseCreation, TestCase):
                 'status': 'status',
                 'priority': 'prioty',
                 'account': int(self.account.id)}
-        response = self.client.post('/cases/list/', data)
+        response = self.client.post(reverse('cases:list'), data)
         self.assertEqual(response.status_code, 200)
 
 
@@ -144,7 +144,7 @@ class CaseRemoveTestCase(CaseCreation, TestCase):
 
     def test_case_deletion_show_case(self):
         response = self.client.get('/cases/' + str(self.case.id) + '/remove/')
-        self.assertEqual(response['location'], '/cases/list/')
+        self.assertEqual(response['location'], '/cases/')
 
     def test_case_delete(self):
         response = self.client.post(

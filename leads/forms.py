@@ -13,11 +13,12 @@ class LeadForm(forms.ModelForm):
         if self.data.get('status') == 'converted':
             self.fields['account_name'].required = True
             self.fields['email'].required = True
-        self.fields['assigned_to'].queryset = assigned_users
-        self.fields['assigned_to'].required = False
         self.fields['first_name'].required = False
         self.fields['last_name'].required = False
         self.fields['title'].required = True
+        if assigned_users:
+            self.fields['assigned_to'].queryset = assigned_users
+        self.fields['assigned_to'].required = False
         for key, value in self.fields.items():
             if key == 'phone':
                 value.widget.attrs['placeholder'] =\

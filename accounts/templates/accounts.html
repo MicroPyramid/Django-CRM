@@ -11,7 +11,8 @@
   <!-- heading_create starts here -->
   <div class="row marl">
     <div class="col-lg-12 text-right">
-      <span class="d-inline"><a class="primary_btn" href="{% url 'accounts:new_account' %}"><i class="fa fa-plus"></i> Add New Account</a></span>
+      <span class="d-inline"><a class="primary_btn" href="{% url 'accounts:new_account' %}"><i class="fa fa-plus"></i>
+          Add New Account</a></span>
     </div>
   </div>
   <div class="filter_row list_filter_row row marl">
@@ -25,23 +26,27 @@
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Name</label>
-                    <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %} value="{{request.POST.name}}" {%endif%}/>
+                    <input type="text" class="form-control" placeholder="Account Name" name="name" {% if request.POST %}
+                      value="{{request.POST.name}}" {%endif%} />
                   </div>
                 </div>
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">City</label>
-                    <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %} value="{{request.POST.city}}" {%endif%}/>
+                    <input type="text" class="form-control" placeholder="City" name="city" {% if request.POST %}
+                      value="{{request.POST.city}}" {%endif%} />
                   </div>
                 </div>
                 <input type="hidden" name="tab_status" id="tab_status">
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Tags</label>
-                    <select class="form-control" id="id_tag" name="tag" >
-                      <option value="">--Select Tags--</option>
+                    <select class="form-control" id="id_tag" name="tag" multiple>
+                      <!-- <option value="">--Select Tags--</option> -->
                       {% for tag in tags %}
-                      <option value="{{tag.id}}" {% if request.POST.tag %} {% ifequal tag.id request.POST.tag|add:"0" %}selected{% endifequal %}{% endif %} >{{ tag.name }} </option>
+                      <option value="{{tag.id}}" {% if request_tags %}
+                        {% if tag.id|slugify in request_tags %}selected{% endif %}{% endif %}>{{ tag.name }}
+                      </option>
                       {% endfor%}
                     </select>
                   </div>
@@ -67,10 +72,12 @@
         <div class="col-md-12">
           <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item">
-              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open" aria-selected="true">Active ({{open_accounts|length}})</a>
+              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
+                aria-selected="true">Active ({{open_accounts|length}})</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close" aria-selected="false">Closed ({{close_accounts|length}})</a>
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
+                aria-selected="false">Closed ({{close_accounts|length}})</a>
             </li>
           </ul>
           <div class="tab-content" id="myTabContent">
@@ -78,9 +85,10 @@
               <div class="card">
                 <div class="card-body">
                   <div class="panel-heading-list card-title text-right">
-                    <span class="total_count float-left">Open Accounts - {% if show_pageitems %} {% show_pageitems %}{% else %}{{open_accounts|length}}{% endif %}</span>
+                    <span class="total_count float-left">Open Accounts - {% if show_pageitems %}
+                      {% show_pageitems %}{% else %}{{open_accounts|length}}{% endif %}</span>
                     <span class="filter_toggle ">
-                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
                   </div>
                   <div class="table-responsive">
@@ -106,19 +114,25 @@
                         {% endif %}
                         {% for each_account in open_accounts %}
                         <tr id="account_details{{each_account.id}}" class="text-center">
-                          <td scope="row">{{ forloop.counter }}</td>
-                          <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
+                          <td scope="row" class="s_no" data-id="{{forloop.counter}}">{{ forloop.counter }}</td>
+                          <td>{% if each_account.name %}<a
+                              href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
+                          </td>
                           <td>
                             {% if each_account.created_by.profile_pic %}
-                              {% thumbnail each_account.created_by.profile_pic "40x40" crop="center" as im %}
-                                  <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ each_account.created_by }}">
-                              {% endthumbnail %}
+                            {% thumbnail each_account.created_by.profile_pic "40x40" crop="center" as im %}
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ each_account.created_by }}">
+                            {% endthumbnail %}
                             {% else %}
-                                <img src="{% static 'images/user.png' %}" alt="Micro profile pic" style="width: 40px;height: 40px;" />
+                            <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                              style="width: 40px;height: 40px;" />
                             {% endif %}
                           </td>
-                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified {% endif %}</td>
-                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified
+                            {% endif %}</td>
+                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
+                            specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
@@ -132,8 +146,10 @@
                           </td>
                           <td class="actions">
                             {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
-                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                            <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
+                                class="fas fa-pencil-alt"></i></a>
+                            <a href="{% url 'accounts:remove_account' each_account.id %}"
+                              class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                           </td>
                         </tr>
                         {% endfor %}
@@ -153,10 +169,11 @@
               <div class="card">
                 <div class="card-body">
                   <div class="panel-heading-list card-title text-right">
-                    <span class="total_count float-left">Closed Accounts - {% if show_pageitems %} {% show_pageitems %}{% else %}{{close_accounts|length}}{% endif %}</span>
+                    <span class="total_count float-left">Closed Accounts - {% if show_pageitems %}
+                      {% show_pageitems %}{% else %}{{close_accounts|length}}{% endif %}</span>
                     <span class="filter_toggle ">
-                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-                    </span>                  
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
                   </div>
                   <div class="table-responsive">
                     <table class="table">
@@ -179,11 +196,15 @@
                         {% paginate 10 close_accounts %}
                         {% endif %}
                         {% for each_account in close_accounts %}
-                        <tr id="account_details{{each_account.id}}" >
+                        <tr id="account_details{{each_account.id}}">
                           <td scope="row">{{ forloop.counter }}</td>
-                          <td>{% if each_account.name %}<a href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}</td>
-                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified {% endif %}</td>
-                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not specified {% endif %}</td>
+                          <td>{% if each_account.name %}<a
+                              href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
+                          </td>
+                          <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified
+                            {% endif %}</td>
+                          <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
+                            specified {% endif %}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
@@ -196,8 +217,10 @@
                             {% endwith %}
                           </td>
                           <td class="actions">
-                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                            <a href="{% url 'accounts:remove_account' each_account.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
+                                class="fas fa-pencil-alt"></i></a>
+                            <a href="{% url 'accounts:remove_account' each_account.id %}"
+                              class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
                           </td>
                         </tr>
                         {% endfor %}
@@ -228,48 +251,72 @@
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
-  $("#close-tab").click(function(e){
+  $("#close-tab").click(function (e) {
     $("#tab_status").val('Closed');
   })
-  
-  $("#open-tab").click(function(e){
+
+  $("#open-tab").click(function (e) {
     $("#tab_status").val('Open')
   })
-  
+
   tab_status = "{{tab_status}}"
-  if(tab_status == 'Closed'){
+  if (tab_status == 'Closed') {
     $("#close-tab").click()
-  }else{
+  } else {
     $("#open-tab").click()
   }
-  
-  
-  $('.remove_account').click(function(e){
+
+
+  $('.remove_account').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
       return;
     window.location = $(this).attr('href')
   });
-  
-  $(".reset").click(function(e){
+
+  $(".reset").click(function (e) {
     window.location = "{% url 'accounts:list'%}"
   });
 
 
   search = "{{search}}"
 
-  if (search == 'True'){
+  if (search == 'True') {
     $(".list_filter_row").show();
   }
-  
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-        $(".list_filter_row").toggle();    
-    });    
-  });  
-  
-  $("a[rel='page']").click(function(e){
+
+  $(document).ready(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+    $('#id_tag').select2();
+
+    ////////////////////////
+    $.urlParam = function (name) {
+      var results = new RegExp('[\?&]' + name + '=([^&#]*)')
+        .exec(window.location.search);
+      return (results !== null) ? results[1] || 0 : false;
+    }
+
+    if ($.urlParam('page')) {
+      $('.s_no').each(function (i, e) {
+        pageNum = $.urlParam('page')
+        if (!$(this).attr('data-id').endsWith('0')) {
+          serialNumber = parseInt((pageNum - 1) + $(this).attr('data-id'))
+          console.log(serialNumber)
+        }
+        else {
+          serialNumber = parseInt($(this).attr('data-id')) * pageNum
+          console.log(serialNumber)
+        }
+      })
+    }
+    ////////////////////////
+
+  });
+
+  $("a[rel='page']").click(function (e) {
     e.preventDefault();
     $('#accounts_filter').attr("action", $(this).attr("href"));
     $('#accounts_filter').submit();

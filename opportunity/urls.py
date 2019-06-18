@@ -12,7 +12,7 @@ app_name = 'opportunity'
 
 
 urlpatterns = [
-    path('list/', OpportunityListView.as_view(), name='list'),
+    path('', OpportunityListView.as_view(), name='list'),
     path('create/', create_opportunity, name='save'),
     path('<int:pk>/view/', OpportunityDetailView.as_view(), name="opp_view"),
     path('<int:pk>/edit/', update_opportunity, name="opp_edit"),

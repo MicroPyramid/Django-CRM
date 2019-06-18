@@ -2,78 +2,107 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block extralinks %}
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<style>
+  .add_opacity {
+    opacity: 0.2;
+  }
+
+  #cover_screen {
+    position: relative;
+  }
+
+  #position_abs {
+    position: absolute;
+    left: 14%;
+  }
+</style>
 {% endblock extralinks %}
 {% block content %}
-  {{ block.super }}
-  <div class="marketing_pages">
-    <div class="row marl">
-      <div class="col-md-12">
-        <form id="add_form" method="post" action="." enctype="multipart/form-data" novalidate>
-          <div class="overview_form_block row marl justify-content-center">
-            <div class="col-md-5">
-              <div class="card">
-                <div class="card-body">
-                  <div class="card-title text-center">
-                    {% if contact_list %}Edit{% else %}Create{% endif %} Contact List
+{{ block.super }}
+<div class="main_container ml-5 mr-5" id="cover_screen">
+  <div class="row marl" id="position_abs">
+    <div class="col-md-12">
+      <form id="add_form" method="post" action="." enctype="multipart/form-data" novalidate>
+        <div class="overview_form_block row marl justify-content-center">
+          <div class="col-md-7">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title text-center">
+                  {% if contact_list %}Edit{% else %}Create{% endif %} Contact List
+                </div>
+                <div class="row marl justify-content-center">
+                  <div class="filter_col col-md-12">
+                    <div class="form-group">
+                      <label class="required">Name <span class="error">*</span></label>
+                      <input type="text" class="form-control" name="name"
+                        value="{% if contact_list %}{{contact_list.name}}{% endif %}"
+                        placeholder="Enter Contact List Name">
+                      <span id="id_name"></span>
+                    </div>
                   </div>
-                  <div class="row marl justify-content-center">
-                    <div class="filter_col col-md-12">
-                      <div class="form-group">
-                        <label class="required">Name <span class="error">*</span></label>
-                        <input type="text" class="form-control" name="name" value="{% if contact_list %}{{contact_list.name}}{% endif %}" placeholder="Enter Contact List Name">
-                        <span id="id_name"></span>
-                      </div>
+                  <div class="filter_col col-md-12">
+                    <div class="form-group">
+                      <label>Contacts File
+                      </label>
+                      <input type="file" class="form-control" name="contacts_file">
+                      <span id="id_contacts_file"></span>
                     </div>
-                    <div class="filter_col col-md-12">
-                      <div class="form-group">
-                        <label>Contacts File </label>
-                        <input type="file" class="form-control" name="contacts_file">
-                        <span id="id_contacts_file"></span>
+                  </div>
+                  <div class="filter_col col-md-12">
+                    <div class="form-group">
+                      <label>Tags</label>
+                      <div class="txt-box-div" id="tag-div">
+                        <input type="text" name="tags" id="tags_1" class="tags"
+                          value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
                       </div>
+                      <span id="id_tags"></span>
                     </div>
-                    <div class="filter_col col-md-12">
-                      <div class="form-group">
-                        <label>Tags</label>
-                        <div class="txt-box-div" id="tag-div">
-                          <input type="text" name="tags" id="tags_1" class="tags" value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
-                        </div>
-                        <span id="id_tags"></span>
-                      </div>
+                  </div>
+                  <div class="filter_col col-md-12">
+                    <div class="demo_clist">
+                      <a href="{% url 'marketing:demo_file_download' %}">Demo file <i class="fas fa-download"></i> </a>
                     </div>
-                    <div class="filter_col col-md-12">
-                      <div class="demo_clist">
-                        <a href="#">Demo file <i class="fas fa-download"></i> </a>
-                      </div>
-                    </div>
-                    <div class="col-md-12">
-                      <div class="row marl buttons_row text-center form_btn_row">
-                        <button type="submit" class="btn primary_btn save_btn">Save</button>
-                        <a href="{% url 'marketing:contact_lists' %}" class="btn seconadry_btn">Cancel</a>
-                      </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="row marl buttons_row text-center form_btn_row">
+                      <button type="submit" class="btn btn-default save">Save</button>
+                      <a href="{% url 'marketing:contact_lists' %}" class="btn btn-default clear">Cancel</a>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
+  <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+    style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+    <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+      <span class="sr-only">Processing File...</span>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 {% block js_block %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-  <!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.js"></script>
-  <script>
-    // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-    $('.save_btn').click(function(e) {
-      e.preventDefault();
-      $("form#add_form").submit()
-    })
-    /*$.blockUI({
-    	message: '<h1>Please wait ...</h1>',
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.js"></script>
+<script>
+  // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+  $('#loading_spinner').hide()
+  $('.save_btn').click(function (e) {
+    e.preventDefault();
+    $("form#add_form").submit()
+  })
+  // $('#loading_spinner').hide()
+  /*$.blockUI({
+    message: '<h1>Please wait ...</h1>',
     	css: {
         border: 'none',
         padding: '15px',
@@ -84,31 +113,38 @@
         color: '#fff'
       }
     });*/
-    // setTimeout($.unblockUI, 2000);
-    $('form#add_form').ajaxForm({
-      type: 'POST',
-      dataType: 'json',
-      url: $(this).attr('action'),
-      data: $(this).serialize(),
-      success: function(data) {
-        if (data.error == false) {
-          window.location = "{% url 'marketing:contact_lists' %}";
-        } else {
-          /*$(document).ajaxStop($.unblockUI);*/
-          // $.unblockUI();
-          $('p.failure').remove();
-          for (var key in data.errors) {
-            $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
-          }
-        }
-      },
-      error: function(xhr, errmsg, err) {
-        console.log('error data', errmsg, err)
-      }
-    });
+  // setTimeout($.unblockUI, 2000);
+  $('form#add_form').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: $(this).attr('action'),
+    data: $(this).serialize(),
+    beforeSend: function () {
+      $('#loading_spinner').show()
+      $('#cover_screen').addClass('add_opacity')
+    },
+    success: function (data) {
+      if (data.error == false) {
+        window.location = "{% url 'marketing:contact_lists' %}";
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+          $('#loading_spinner').hide()
+          $('#cover_screen').removeClass('add_opacity')
 
-    $(function() {
-      $('#tags_1').tagsInput({ width: 'auto' });
-    });
-  </script>
+        }
+      }
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+  });
+
+  $(function () {
+    $('#tags_1').tagsInput({ width: 'auto' });
+  });
+</script>
 {% endblock js_block %}

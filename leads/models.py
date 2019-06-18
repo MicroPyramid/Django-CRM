@@ -53,12 +53,16 @@ class Lead(models.Model):
     enquery_type = models.CharField(max_length=255, blank=True, null=True)
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
+    created_from_site = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created_on']
 
     def __str__(self):
-        return self.first_name + self.last_name
+        if self.first_name and self.last_name:
+            return self.first_name + self.last_name
+        else:
+            return self.title
 
     def get_complete_address(self):
         return return_complete_address(self)

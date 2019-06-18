@@ -1,9 +1,10 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% load common_tags %}
 {% block content %}
 {{ block.super }}
-<div class="marketing_pages">
+<div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
       <form id="add_form" method="POST" action='' novalidate>
@@ -14,35 +15,56 @@
                 <div class="card-title text-right">
                   <span class="float-left">Campaign report</span>
                   <div class="date">
-                    Sent on {{ campaign.sent_on_format }} to <span class="badge badge-secondary">64211 Subscribers</span>
+                    Sent on {{ campaign.sent_on_format }}
+                    <!-- to <span class="badge badge-secondary">64211 Subscribers</span> -->
                   </div>
                 </div>
                 <div class="campaign_det row marl">
                   <div class="col-md-12">
-                    <div class="title">Title: <span class="content">{{ campaign.title }}</span> <span class="icon"><i class="fas fa-pencil-alt"></i></span></div>
-                    <div class="subject"><a href="#">Subject: <span class="content">{{ campaign.subject }}</span></a> <span class="icon"><i class="fas fa-eye"></i> </span></div>
+                    <div class="title">Title: <span class="content">{{ campaign.title }}</span> <span
+                        class="icon"></span></div>
+                    <div class="subject"><a href="#">Subject: <span class="content">{{ campaign.subject }}</span></a>
+                      <span class="icon"></span></div>
                     <div class="recievers">
-                      To: {% for contact_list in campaign.contact_lists.all %}<span class="badge badge-secondary">List: {{ contact_list.name }}</span>{% endfor %}
+                      To: {% for contact_list in campaign.contact_lists.all %}<span
+                        class="badge badge-secondary mr-1">List: {{ contact_list.name }}</span>{% endfor %}
                     </div>
                   </div>
                 </div>
                 <div class="row marl count_status">
                   <div class="col-md-4">
                     <div class="well">
-                      <span class="badge badge-success" style="font-size:16px;">21.16% Opened</span> <span class="label">1356 unique / opened 1788 times</span>
+                      <span class="badge badge-success" style="font-size:16px;">Opened</span> <span
+                        class="label">{{read_contacts|length}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
-                      <span class="badge badge-dark" style="font-size:16px;">216 Not Opened</span>
+                      <span class="badge badge-dark" style="font-size:16px;">Bounced</span> <span
+                        class="label">{{bounced_contacts|length}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
-                      <span class="badge badge-secondary" style="font-size:16px;">21.16% Clicked a link</span> <span class="label">120 unique clicks</span>
+                      <span class="badge badge-secondary" style="font-size:16px;">Unsubscribed</span> <span
+                        class="label">{{unsubscribe_contacts|length}}</span>
                     </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-12">
+                    <div class="well">
+                      <span class="badge badge-warning" style="font-size:16px;">Tags</span> <span
+                        class="label">{{campaign.tags.all|length}}</span>
+                      <div class="mt-3">
+                        {% for tag in campaign.tags.all %}
+                        <span class="text-left color{{forloop.counter}} tag_class_camp" id="list_tag"
+                          data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                        {% empty %}
+                        <span class="text-left">No Tags</span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                  <!-- <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-danger" style="font-size:16px;">21.6% UnSubscribed</span> <span class="label">5 unsubscribed</span>
                     </div>
@@ -56,60 +78,62 @@
                     <div class="well">
                       <span class="badge badge-info" style="font-size:16px;">6% marked as spam</span> <span class="label">0 marked as spam</span>
                     </div>
-                  </div>
+                  </div> -->
                 </div>
                 {% with campaign.marketing_links.all as campaign_marketing_links %}
                 {% if campaign_marketing_links|length > 0 %}
-                  <section class="table_det_section row marl">
-                    <div class="col-md-12">
-                      <div class="table_container_row no_mar_top">
-                        <div class="card">
-                          <div class="card-body">
-                            <div class="card-title text-right">
-                              <span class="float-left">Last Activity</span>
-                              <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
-                            </div>
-                            <div class="table-responsive table-bordered">
-                              <table class="table">
-                                <thead>
-                                  <tr>
-                                    <th width="45%">Link(url)</th>
-                                    <th width="30%" class="text-center">Unique</th>
-                                    <th width="10%" class="text-center">Total</th>
-                                    <th width="15%" class="text-center">Export</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {% if per_page %}
-                                    {% paginate per_page campaign_marketing_links %}
-                                  {% else%}
-                                    {% paginate 10 campaign_marketing_links %}
-                                  {% endif %}
-                                  {% for link in campaign_marketing_links %}
-                                    <tr style="text-align:center;">
-                                      <td scope="row"><a href="{{ link.original }}" class="anchor">{{ link.original }}</a></td>
-                                      <td class="text-center">{{ link.unique }}</td>
-                                      <td class="text-center">{{ link.clicks }}</td>
-                                      <td class="text-center actions">
-                                        <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
-                                      </td>
-                                    </tr>
-                                  {% endfor %}
-                                </tbody>
-                              </table>
-                            </div>
+                <section class="table_det_section row marl">
+                  <div class="col-md-12">
+                    <div class="table_container_row no_mar_top">
+                      <div class="card">
+                        <div class="card-body">
+                          <div class="card-title text-right">
+                            <span class="float-left">Last Activity</span>
+                            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
                           </div>
-                          <div class="card-footer">
-                            <div class="text-center row marl">
-                              {% show_pages %}
-                            </div>
+                          <div class="table-responsive table-bordered">
+                            <table class="table">
+                              <thead>
+                                <tr>
+                                  <th width="45%">Link(url)</th>
+                                  <th width="30%" class="text-center">Unique</th>
+                                  <th width="10%" class="text-center">Total</th>
+                                  <th width="15%" class="text-center">Export</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {% if per_page %}
+                                {% paginate per_page campaign_marketing_links %}
+                                {% else%}
+                                {% paginate 10 campaign_marketing_links %}
+                                {% endif %}
+                                {% for link in campaign_marketing_links %}
+                                <tr style="text-align:center;">
+                                  <td scope="row"><a href="{{ link.original }}" class="anchor">{{ link.original }}</a>
+                                  </td>
+                                  <td class="text-center">{{ link.unique }}</td>
+                                  <td class="text-center">{{ link.clicks }}</td>
+                                  <td class="text-center actions">
+                                    <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
+                                  </td>
+                                </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                        <div class="card-footer">
+                          <div class="text-center row marl">
+                            {% show_pages %}
                           </div>
                         </div>
                       </div>
                     </div>
-                  </section>
+                  </div>
+                </section>
                 {% endif %}
                 {% endwith %}
+                {% if read_contacts %}
                 <section class="table_det_section row marl">
                   <div class="col-md-12">
                     <div class="table_container_row no_mar_top">
@@ -117,67 +141,51 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last 5 Opened</span>
-                            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+                            <a href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_opened=true"
+                              class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
+                              {% for contact in read_contacts|slice:"5" %}
                               <thead>
                                 <tr>
-                                  <th width="25%">Name</th>
-                                  <th width="25%">Email</th>
-                                  <th width="25%">List</th>
-                                  <th width="25%">Status</th>
+                                  <th width="20%">Name</th>
+                                  <th width="20%">Email</th>
+                                  <th width="20%">List</th>
+                                  <th width="20%">Date</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
+                                  <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
+                                      class="anchor">{{contact.name}}</a></td>
+                                  <td><a href="{% url 'marketing:contact_detail' contact.id %}"
+                                      class="anchor">{{contact.email}}</a></td>
+                                  {% with contacts=contact.contact_list.all %}
+                                  {% for contact in contacts %}
+                                  <td><a href="{% url 'marketing:contact_list_detail' contact.id %}"
+                                      class="anchor">{{contact.name}} </a></td>
+                                  {% endfor %}
+                                  {% endwith %}
+                                  <!-- <td>
                                     <span class="badge badge-success">Subscribed</span>
-                                  </td>
+                                  </td> -->
+                                  <td> {{contact.created_on}}</td>
                                 </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-info">Bounced</span>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">Unsubscribed</span>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">Unsubscribed</span>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">Unsubscribed</span>
-                                  </td>
-                                </tr>
+                                {% endfor %}
                               </tbody>
                             </table>
+                            {% if read_contacts|length == 0 %}
+                            No Contacts
+                            {% endif %}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </section>
+                {% endif %}
+                {% if unsubscribe_contacts %}
                 <section class="table_det_section row marl">
                   <div class="col-md-12">
                     <div class="table_container_row no_mar_top">
@@ -189,71 +197,41 @@
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
+                              {% if unsubscribe_contacts %}
                               <thead>
                                 <tr>
                                   <th width="20%">Name</th>
                                   <th width="20%">Email</th>
                                   <th width="20%">List</th>
-                                  <th width="20%">Status</th>
                                   <th width="20%">Date</th>
                                 </tr>
                               </thead>
                               <tbody>
+                                {% for contact in unsubscribe_contacts|slice:"5"  %}
                                 <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
+                                  <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
+                                      class="anchor">{{contact.name}}</a></td>
+                                  <td><a
+                                      href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_unsubscribed=true"
+                                      class="anchor">{{contact.email}}</a></td>
+                                  {% with contacts=contact.contact_list.all %}
                                   <td>
-                                    <span class="badge badge-secondary">UnSubscribed</span>
+                                    {% for contact in contacts %}
+                                    <div>
+                                      <a href="{% url 'marketing:contact_list_detail' contact.id %}"
+                                        class="anchor">{{contact.name}}</a>
+                                    </div>
+                                    {% endfor %}
                                   </td>
+                                  {% endwith %}
                                   <td>
-                                    Mar 26, 2017, 04:26PM
+                                    {{contact.updated_on}}
                                   </td>
                                 </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">UnSubscribed</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">UnSubscribed</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">UnSubscribed</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-secondary">UnSubscribed</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                No Contacts
+                                {% endif %}
                               </tbody>
                             </table>
                           </div>
@@ -262,6 +240,8 @@
                     </div>
                   </div>
                 </section>
+                {% endif %}
+                {% if bounced_contacts %}
                 <section class="table_det_section row marl">
                   <div class="col-md-12">
                     <div class="table_container_row no_mar_top">
@@ -269,21 +249,67 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last 5 Bounced</span>
-                            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+                            <a href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_bounced=true"
+                              title="download bounced contacts" class="primary_btn text-center"><i
+                                class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
+                              {% if bounced_contacts %}
                               <thead>
                                 <tr>
                                   <th width="20%">Name</th>
                                   <th width="20%">Email</th>
                                   <th width="20%">List</th>
-                                  <th width="20%">Status</th>
                                   <th width="20%">Date</th>
                                 </tr>
                               </thead>
                               <tbody>
+                                {% for contact in bounced_contacts|slice:"5" %}
+
                                 <tr>
+                                  <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
+                                      class="anchor">{{contact.name}}</a></td>
+                                  <td><a href="{% url 'marketing:contact_detail' contact.id %}"
+                                      class="anchor">{{contact.email}}</a></td>
+                                  {% with contacts=contact.contact_list.all %}
+                                  <td>
+                                    {% for contact in contacts %}
+                                    <div>
+                                      <a href="{% url 'marketing:contact_list_detail' contact.id %}"
+                                        class="anchor">{{contact.name}}</a>
+                                    </div>
+                                    {% endfor %}
+                                  </td>
+                                  {% endwith %}
+                                  <td>
+                                    {{contact.updated_on}}
+                                  </td>
+                                </tr>
+                                {% endfor %}
+                                <!-- <tr>
+                                    <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
+                                    <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+                                    <td><a href="#" class="anchor">bcfr users list </a></td>
+                                    <td>
+                                      <span class="badge badge-info">Bounced</span>
+                                    </td>
+                                    <td>
+                                      Mar 26, 2017, 04:26PM
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
+                                    <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
+                                    <td><a href="#" class="anchor">bcfr users list </a></td>
+                                    <td>
+                                      <span class="badge badge-info">Bounced</span>
+                                    </td>
+                                    <td>
+                                      Mar 26, 2017, 04:26PM
+                                    </td>
+                                  </tr>
+                                  <tr>
                                   <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
                                   <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
                                   <td><a href="#" class="anchor">bcfr users list </a></td>
@@ -304,41 +330,11 @@
                                   <td>
                                     Mar 26, 2017, 04:26PM
                                   </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-info">Bounced</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-info">Bounced</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td scope="row"><a href="#" class="anchor">bcfr cvpx </a></td>
-                                  <td><a href="#" class="anchor">bcfrcvpx@gmail.com</a></td>
-                                  <td><a href="#" class="anchor">bcfr users list </a></td>
-                                  <td>
-                                    <span class="badge badge-info">Bounced</span>
-                                  </td>
-                                  <td>
-                                    Mar 26, 2017, 04:26PM
-                                  </td>
-                                </tr>
+                                </tr> -->
                               </tbody>
+                              {% else %}
+                              No Contacts
+                              {% endif %}
                             </table>
                           </div>
                         </div>
@@ -346,7 +342,8 @@
                     </div>
                   </div>
                 </section>
-                <section class="table_det_section row marl">
+                {% endif %}
+                <!-- <section class="table_det_section row marl">
                   <div class="col-md-12">
                     <div class="table_container_row no_mar_top">
                       <div class="card">
@@ -515,7 +512,7 @@
                       </div>
                     </div>
                   </div>
-                </section>
+                </section> -->
               </div>
             </div>
           </div>
@@ -527,20 +524,27 @@
 {% endblock %}
 {% block js_block %}
 <script>
-var quill = new Quill('#editor-container', {
-  modules: {
-    toolbar: [
-      [{ header: [1, 2, false] }],
-      ['bold', 'italic', 'underline'],
-      ['image', 'code-block']
-    ]
-  },
-  placeholder: 'Compose an epic...',
-  theme: 'snow' // or 'bubble'
-});
-$('form').submit(function() {
-  alert($(this["options"]).val());
-  return false;
-});
+  $(".tag_class_camp").click(function (e) {
+    e.preventDefault()
+    // $(".tag_class_opp").css('cursor', 'pointer')
+    url = "{% url 'marketing:campaign_list' %}"
+    url = url + "?tag=" + $(this).attr('data-link')
+    window.location.href = url;
+  });
+  var quill = new Quill('#editor-container', {
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, false] }],
+        ['bold', 'italic', 'underline'],
+        ['image', 'code-block']
+      ]
+    },
+    placeholder: 'Compose an epic...',
+    theme: 'snow' // or 'bubble'
+  });
+  $('form').submit(function () {
+    alert($(this["options"]).val());
+    return false;
+  });
 </script>
 {% endblock js_block %}

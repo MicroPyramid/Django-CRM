@@ -20,6 +20,7 @@ deploy_mp:
     - pip install -r /home/dj_crm/dj_crm/requirements.txt
     - python /home/dj_crm/dj_crm/manage.py migrate --noinput
     - sudo /etc/init.d/uwsgi restart
+    - sudo /usr/bin/supervisorctl restart all
   only:
     - master
   tags:
@@ -35,6 +36,7 @@ deploy_live:
     - pip install -r /home/dj_crm/dj_crm/requirements.txt
     - python /home/dj_crm/dj_crm/manage.py migrate --noinput
     - sudo /etc/init.d/uwsgi restart
+    - sudo /usr/bin/supervisorctl restart all
   only:
     - master
   tags:

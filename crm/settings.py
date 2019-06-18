@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'mwx@&97%!$fx_*zgj(2ygi^(s=oh5j(cqb$=+-mkd9scbt!0v0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -38,6 +38,9 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'storages',
     'marketing',
+    'tasks',
+    'invoices',
+    'events',
 ]
 
 MIDDLEWARE = [
@@ -232,11 +235,7 @@ CELERY_BEAT_SCHEDULE = {
     "runs-scheduled-campaigns-for-every-one-hour": {
         "task": "marketing.tasks.send_scheduled_campaigns",
         "schedule": crontab(hour='*/1')
-    },
-    "runs-unsubscribes-bounces-for-every-one-hour": {
-        "task": "marketing.tasks.list_all_bounces_unsubscribes",
-        "schedule": crontab(hour='*/1')
-    },
+    }
 }
 
 MAIL_SENDER = 'AMAZON'

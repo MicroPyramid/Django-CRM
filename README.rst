@@ -80,6 +80,28 @@ Demo credentials for Django CRM:
   * **Password:** admin
 
 
+Installation
+============
+
+* Install the dependencies
+
+   .. code-block:: python
+
+      pip install -r requirements.txt
+      python manage.py makemigrations
+      python manage.py createsuperuser
+      python manage.py runserver
+
+  This will install all the required dependencies for django-crm.
+  After this download and install the System Requirements.
+
+
+System Requirements
+===================
+
+- wkhtmltopdf (https://wkhtmltopdf.org/downloads.html)
+- sass (https://www.npmjs.com/package/sass) or (https://rubygems.org/gems/sass)
+
 Community
 =========
 

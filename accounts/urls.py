@@ -2,13 +2,13 @@ from django.urls import path
 from accounts.views import (
     AccountsListView, CreateAccountView, AccountDetailView, AccountUpdateView,
     AccountDeleteView, AddCommentView, UpdateCommentView, DeleteCommentView,
-    AddAttachmentView, DeleteAttachmentsView
+    AddAttachmentView, DeleteAttachmentsView, create_mail
 )
 
 app_name = 'accounts'
 
 urlpatterns = [
-    path('list/', AccountsListView.as_view(), name='list'),
+    path('', AccountsListView.as_view(), name='list'),
     path('create/', CreateAccountView.as_view(), name='new_account'),
     path('<int:pk>/view/', AccountDetailView.as_view(), name="view_account"),
     path('<int:pk>/edit/', AccountUpdateView.as_view(), name="edit_account"),
@@ -23,4 +23,6 @@ urlpatterns = [
          name="add_attachment"),
     path('attachment/remove/', DeleteAttachmentsView.as_view(),
          name="remove_attachment"),
+    path('create-mail/<int:account_id>/', create_mail,
+         name="create_mail"),
 ]

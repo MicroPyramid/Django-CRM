@@ -22,7 +22,8 @@ from planner.models import Event, Reminder
 from planner.forms import ReminderForm
 from leads.tasks import send_lead_assigned_emails
 from django.core.exceptions import PermissionDenied
-
+from common.tasks import send_email_user_mentions
+from leads.tasks import send_email_to_assigned_user
 
 class LeadListView(LoginRequiredMixin, TemplateView):
     model = Lead
@@ -52,13 +53,13 @@ class LeadListView(LoginRequiredMixin, TemplateView):
             if request_post.get('status'):
                 queryset = queryset.filter(status=request_post.get('status'))
             if request_post.get('tag'):
-                queryset = queryset.filter(tags__in=request_post.get('tag'))
+                queryset = queryset.filter(tags__in=request_post.getlist('tag'))
             if request_post.get('source'):
                 queryset = queryset.filter(source=request_post.get('source'))
             if request_post.getlist('assigned_to'):
                 queryset = queryset.filter(
                     assigned_to__id__in=request_post.getlist('assigned_to'))
-        return queryset
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super(LeadListView, self).get_context_data(**kwargs)
@@ -74,6 +75,7 @@ class LeadListView(LoginRequiredMixin, TemplateView):
             is_active=True).order_by('email')
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
+        context["request_tags"] = self.request.POST.getlist('tag')
 
         search = True if (
             self.request.POST.get('name') or self.request.POST.get('city') or
@@ -102,7 +104,13 @@ class LeadListView(LoginRequiredMixin, TemplateView):
 
 def create_lead(request):
     template_name = "create_lead.html"
-    users = User.objects.filter(is_active=True).order_by('email')
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     form = LeadForm(assigned_to=users)
 
     if request.POST:
@@ -125,20 +133,23 @@ def create_lead(request):
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
                 assigned_to_list = request.POST.getlist('assigned_to')
                 current_site = get_current_site(request)
-                for assigned_to_user in assigned_to_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to lead.'
-                    message = render_to_string(
-                        'assigned_to/leads_assigned.html', {
-                            'user': user,
-                            'domain': current_site.domain,
-                            'protocol': request.scheme,
-                            'lead': lead_obj
-                        })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+                recipients = assigned_to_list
+                send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
+                    protocol=request.scheme)
+                # for assigned_to_user in assigned_to_list:
+                #     user = get_object_or_404(User, pk=assigned_to_user)
+                #     mail_subject = 'Assigned to lead.'
+                #     message = render_to_string(
+                #         'assigned_to/leads_assigned.html', {
+                #             'user': user,
+                #             'domain': current_site.domain,
+                #             'protocol': request.scheme,
+                #             'lead': lead_obj
+                #         })
+                #     email = EmailMessage(
+                #         mail_subject, message, to=[user.email])
+                #     email.content_subtype = "html"
+                #     email.send()
 
             if request.FILES.get('lead_attachment'):
                 attachment = Attachments()
@@ -169,20 +180,23 @@ def create_lead(request):
                     # account_object.assigned_to.add(*request.POST.getlist('assigned_to'))
                     assigned_to_list = request.POST.getlist('assigned_to')
                     current_site = get_current_site(request)
-                    for assigned_to_user in assigned_to_list:
-                        user = get_object_or_404(User, pk=assigned_to_user)
-                        mail_subject = 'Assigned to account.'
-                        message = render_to_string(
-                            'assigned_to/account_assigned.html', {
-                                'user': user,
-                                'domain': current_site.domain,
-                                'protocol': request.scheme,
-                                'account': account_object
-                            })
-                        email = EmailMessage(
-                            mail_subject, message, to=[user.email])
-                        email.content_subtype = "html"
-                        email.send()
+                    recipients = assigned_to_list
+                    send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
+                        protocol=request.scheme)
+                    # for assigned_to_user in assigned_to_list:
+                    #     user = get_object_or_404(User, pk=assigned_to_user)
+                    #     mail_subject = 'Assigned to account.'
+                    #     message = render_to_string(
+                    #         'assigned_to/account_assigned.html', {
+                    #             'user': user,
+                    #             'domain': current_site.domain,
+                    #             'protocol': request.scheme,
+                    #             'account': account_object
+                    #         })
+                    #     email = EmailMessage(
+                    #         mail_subject, message, to=[user.email])
+                    #     email.content_subtype = "html"
+                    #     email.send()
 
                 account_object.save()
             success_url = reverse('leads:list')
@@ -242,11 +256,19 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
             assigned_dict['name'] = each.email
             assigned_data.append(assigned_dict)
 
+        if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
+            users_mention = list(User.objects.all().values('username'))
+        elif self.request.user != context['object'].created_by:
+            users_mention = [{'username': context['object'].created_by.username}]
+        else:
+            users_mention = list(context['object'].assigned_to.all().values('username'))
+
         context.update({
             "attachments": attachments, "comments": comments,
             "status": LEAD_STATUS, "countries": COUNTRIES,
             "reminder_form_set": reminder_form_set,
             "meetings": meetings, "calls": calls,
+            "users_mention": users_mention,
             "assigned_data": json.dumps(assigned_data)})
         return context
 
@@ -254,7 +276,13 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
 def update_lead(request, pk):
     lead_record = Lead.objects.filter(pk=pk).first()
     template_name = "create_lead.html"
-    users = User.objects.filter(is_active=True).order_by('email')
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     status = request.GET.get('status', None)
     initial = {}
     if status and status == "converted":
@@ -303,21 +331,25 @@ def update_lead(request, pk):
                     all_members_list = list(
                         set(list(assigned_form_users)) -
                         set(list(assigned_to_ids)))
-                    if all_members_list:
-                        for assigned_to_user in all_members_list:
-                            user = get_object_or_404(User, pk=assigned_to_user)
-                            mail_subject = 'Assigned to lead.'
-                            message = render_to_string(
-                                'assigned_to/leads_assigned.html', {
-                                    'user': user,
-                                    'domain': current_site.domain,
-                                    'protocol': request.scheme,
-                                    'lead': lead_obj
-                                })
-                            email = EmailMessage(
-                                mail_subject, message, to=[user.email])
-                            email.content_subtype = "html"
-                            email.send()
+                    current_site = get_current_site(request)
+                    recipients = all_members_list
+                    send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
+                        protocol=request.scheme)
+                    # if all_members_list:
+                    #     for assigned_to_user in all_members_list:
+                    #         user = get_object_or_404(User, pk=assigned_to_user)
+                    #         mail_subject = 'Assigned to lead.'
+                    #         message = render_to_string(
+                    #             'assigned_to/leads_assigned.html', {
+                    #                 'user': user,
+                    #                 'domain': current_site.domain,
+                    #                 'protocol': request.scheme,
+                    #                 'lead': lead_obj
+                    #             })
+                    #         email = EmailMessage(
+                    #             mail_subject, message, to=[user.email])
+                    #         email.content_subtype = "html"
+                    #         email.send()
 
                 lead_obj.assigned_to.clear()
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
@@ -353,21 +385,28 @@ def update_lead(request, pk):
                     # account_object.assigned_to.add(*request.POST.getlist('assigned_to'))
                     assigned_to_list = request.POST.getlist('assigned_to')
                     current_site = get_current_site(request)
-                    for assigned_to_user in assigned_to_list:
-                        user = get_object_or_404(User, pk=assigned_to_user)
-                        mail_subject = 'Assigned to account.'
-                        message = render_to_string(
-                            'assigned_to/account_assigned.html', {
-                                'user': user,
-                                'domain': current_site.domain,
-                                'protocol': request.scheme,
-                                'account': account_object
-                            })
-                        email = EmailMessage(
-                            mail_subject, message, to=[user.email])
-                        email.content_subtype = "html"
-                        email.send()
+                    recipients = assigned_to_list
+                    send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
+                        protocol=request.scheme)
+                    # current_site = get_current_site(request)
+                    # for assigned_to_user in assigned_to_list:
+                    #     user = get_object_or_404(User, pk=assigned_to_user)
+                    #     mail_subject = 'Assigned to account.'
+                    #     message = render_to_string(
+                    #         'assigned_to/account_assigned.html', {
+                    #             'user': user,
+                    #             'domain': current_site.domain,
+                    #             'protocol': request.scheme,
+                    #             'account': account_object
+                    #         })
+                    #     email = EmailMessage(
+                    #         mail_subject, message, to=[user.email])
+                    #     email.content_subtype = "html"
+                    #     email.send()
 
+                for comment in lead_obj.leads_comments.all():
+                    comment.account = account_object
+                    comment.save()
                 account_object.save()
             status = request.GET.get('status', None)
             success_url = reverse('leads:list')
@@ -435,7 +474,7 @@ def convert_lead(request, pk):
         )
         contacts_list = lead_obj.contacts.all().values_list('id', flat=True)
         account_object.contacts.add(*contacts_list)
-        account_object.save()
+        account_obj = account_object.save()
         current_site = get_current_site(request)
         for assigned_to_user in lead_obj.assigned_to.all().values_list(
                 'id', flat=True):
@@ -485,6 +524,10 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         comment.commented_by = self.request.user
         comment.lead = self.lead
         comment.save()
+        comment_id = comment.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'leads', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
@@ -514,6 +557,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
         self.comment_obj.save(update_fields=["comment"])
+        comment_id = self.comment_obj.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'leads', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "commentid": self.comment_obj.id,
             "comment": self.comment_obj.comment,
@@ -579,7 +626,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             "created_by": attachment.created_by.email,
             "download_url": reverse(
                 'common:download_attachment', kwargs={'pk': attachment.id}),
-            "attachment_display": attachment.get_file_type_display()
+            "attachment_display": attachment.get_file_type_display(),
+            "file_type": attachment.file_type()
         })
 
     def form_invalid(self, form):

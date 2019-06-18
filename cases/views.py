@@ -17,6 +17,8 @@ from contacts.models import Contact
 from common.utils import PRIORITY_CHOICE, STATUS_CHOICE, CASE_TYPE
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied
+from common.tasks import send_email_user_mentions
+from cases.tasks import send_email_to_assigned_user
 
 
 class CasesListView(LoginRequiredMixin, TemplateView):
@@ -76,7 +78,13 @@ class CasesListView(LoginRequiredMixin, TemplateView):
 
 
 def create_case(request):
-    users = User.objects.filter(is_active=True).order_by('email')
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     accounts = Account.objects.filter(status="open")
     contacts = Contact.objects.all()
     if request.user.role != "ADMIN" and not request.user.is_superuser:
@@ -99,20 +107,23 @@ def create_case(request):
                 case.assigned_to.add(*request.POST.getlist('assigned_to'))
                 assigned_to_list = request.POST.getlist('assigned_to')
                 current_site = get_current_site(request)
-                for assigned_to_user in assigned_to_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to case.'
-                    message = render_to_string(
-                        'assigned_to/cases_assigned.html', {
-                            'user': user,
-                            'domain': current_site.domain,
-                            'protocol': request.scheme,
-                            'case': case
-                        })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+                recipients = assigned_to_list
+                send_email_to_assigned_user.delay(recipients, case.id, domain=current_site.domain,
+                    protocol=request.scheme)
+                # for assigned_to_user in assigned_to_list:
+                #     user = get_object_or_404(User, pk=assigned_to_user)
+                #     mail_subject = 'Assigned to case.'
+                #     message = render_to_string(
+                #         'assigned_to/cases_assigned.html', {
+                #             'user': user,
+                #             'domain': current_site.domain,
+                #             'protocol': request.scheme,
+                #             'case': case
+                #         })
+                #     email = EmailMessage(
+                #         mail_subject, message, to=[user.email])
+                #     email.content_subtype = "html"
+                #     email.send()
 
             if request.POST.getlist('contacts', []):
                 case.contacts.add(*request.POST.getlist('contacts'))
@@ -176,8 +187,16 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
             assigned_dict['name'] = each.email
             assigned_data.append(assigned_dict)
 
+        if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
+            users_mention = list(User.objects.all().values('username'))
+        elif self.request.user != context['object'].created_by:
+            users_mention = [{'username': context['object'].created_by.username}]
+        else:
+            users_mention = list(context['object'].assigned_to.all().values('username'))
+
         context.update({"comments": context["case_record"].cases.all(),
                         "attachments": context['case_record'].case_attachment.all(),
+                        "users_mention": users_mention,
                         "assigned_data": json.dumps(assigned_data)})
         return context
 
@@ -191,8 +210,15 @@ def update_case(request, pk):
             created_by=request.user)
         contacts = Contact.objects.filter(
             Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     kwargs_data = {
-        "assigned_to": User.objects.filter(is_active=True).order_by('email'),
+        "assigned_to": users,
         "account": accounts, "contacts": contacts}
     form = CaseForm(instance=case_object, **kwargs_data)
 
@@ -215,22 +241,24 @@ def update_case(request, pk):
                 all_members_list = list(
                     set(list(assigned_form_users)) -
                     set(list(assigned_to_ids)))
-
-                if all_members_list:
-                    for assigned_to_user in all_members_list:
-                        user = get_object_or_404(User, pk=assigned_to_user)
-                        mail_subject = 'Assigned to case.'
-                        message = render_to_string(
-                            'assigned_to/cases_assigned.html', {
-                                'user': user,
-                                'domain': current_site.domain,
-                                'protocol': request.scheme,
-                                'case': case_obj
-                            })
-                        email = EmailMessage(
-                            mail_subject, message, to=[user.email])
-                        email.content_subtype = "html"
-                        email.send()
+                recipients = all_members_list
+                send_email_to_assigned_user.delay(recipients, case_obj.id, domain=current_site.domain,
+                    protocol=request.scheme)
+                # if all_members_list:
+                #     for assigned_to_user in all_members_list:
+                #         user = get_object_or_404(User, pk=assigned_to_user)
+                #         mail_subject = 'Assigned to case.'
+                #         message = render_to_string(
+                #             'assigned_to/cases_assigned.html', {
+                #                 'user': user,
+                #                 'domain': current_site.domain,
+                #                 'protocol': request.scheme,
+                #                 'case': case_obj
+                #             })
+                #         email = EmailMessage(
+                #             mail_subject, message, to=[user.email])
+                #         email.content_subtype = "html"
+                #         email.send()
 
                 case_obj.assigned_to.clear()
                 case_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
@@ -379,6 +407,10 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         comment.commented_by = self.request.user
         comment.case = self.case
         comment.save()
+        comment_id = comment.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'cases', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
@@ -412,6 +444,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
         self.comment_obj.save(update_fields=["comment"])
+        comment_id = self.comment_obj.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'cases', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": self.comment_obj.id,
             "comment": self.comment_obj.comment,
@@ -483,6 +519,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             "created_by": attachment.created_by.email,
             "message": "attachment Created",
             "attachment_display": attachment.get_file_type_display(),
+            "file_type": attachment.file_type(),
             "error": False
         })
 

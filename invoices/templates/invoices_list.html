@@ -1,0 +1,369 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% load thumbnail %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- heading_create starts here -->
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn" href="{% url 'invoices:invoices_create'%}"><i
+            class="fa fa-plus"></i>
+          Add New
+          Invoice</a></span>
+    </div>
+  </div>
+  <!-- heading_create ends here -->
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="leads_filter" action="" method="POST">
+            <div class="card-body ">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Invoice Title or Number</label>
+                    <input type="text" class="form-control" placeholder="Invoice Title or Number"
+                      name="invoice_title_number" value="{{request.POST.invoice_title_number}}">
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Created By</label>
+                    <select name="created_by" id="" class="assigned_users_ form-control">
+                      <option value="">
+                        ------------------</option>
+                      {% for user in users %}
+                      <option value="{{user.id}}" {% if user.id|slugify == request.POST.created_by %} selected="" {% endif %}>
+                        {{user.email}}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Assigned Users</label>
+                    <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                      {% for user in users %}
+                      <option value="{{user.id}}" {% if user.id|slugify in assigned_to %} selected="" {% endif %}>
+                        {{user.email}}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Status</label>
+                    <select class="form-control" id="id_status" name="status">
+                      <option value="">--Status of Invoice--</option>
+                      {% for each_status in status %}
+                      <option value="{{each_status.0}}" {% if request.POST.status %}
+                        {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %}>
+                        {{each_status.1}} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Total Amount</label>
+                    <input type="number" class="form-control" placeholder="Total Amount" name="total_amount"
+                      value="{{request.POST.total_amount}}">
+                  </div>
+                </div>
+                <input type="hidden" name="tab_status" id="tab_status">
+                <div class="filter_col col-2">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'invoices:invoices_list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-12 col-lg-12 col-xl-12">
+    <div class="table_container_row row marl no-gutters">
+      <div class="col-md-12">
+        <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
+              aria-selected="true">Open ({{open_leads|length}})</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
+              aria-selected="false">Closed ({{close_leads|length}})</a>
+          </li>
+        </ul> -->
+        <div class="tab-content" id="myTabContent">
+          <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title text-right">
+                  <span class="float-left">Invoices - {% if show_pageitems %}
+                    {% show_pageitems %}{% else %}
+                    {{ invoices|length }}{% endif %}</span>
+                  <span class="filter_toggle">
+                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                  </span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table ">
+                    <thead>
+                      {% if invoices|length > 0 %}
+                      <tr>
+                        <th width="5%">ID</th>
+                        <th width="5%">Invoice Title</th>
+                        <th width="5%">Invoice Number</th>
+                        <th width="5%">Email</th>
+                        <th width="5%">Status</th>
+                        <th width="10%">Assigned To</th>
+                        <th width="5%">Created by</th>
+                        <th width="5%">Created On</th>
+                        <th width="10%">Actions</th>
+                      </tr>
+                      {% endif %}
+                    </thead>
+                    <tbody>
+                      {% if per_page %}
+                      {% paginate per_page invoices %}
+                      {% else %}
+                      {% paginate 10 invoices %}
+                      {% endif %}
+                      {% for invoice in invoices %}
+                      <tr class="text-center">
+                        <td scope="row">{{ forloop.counter }}</td>
+                        <td><a href="{% url 'invoices:invoice_details' invoice.id %}">
+                            {{ invoice.invoice_title }} </a></td>
+                        <td>{{ invoice.invoice_number }} </td>
+                        <td>{{ invoice.email }} </td>
+                        <td>{{ invoice.status }} </td>
+                        <td>
+                          {% with users=invoice.assigned_to.all %}
+                          {% for user in users %}
+                          {% if user.profile_pic %}
+                          {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ user.email }}">
+                          {% endthumbnail %}
+                          {% else %}
+                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          {% endif %}
+                          {% empty %}
+                          None
+                          {% endfor %}
+                          {% endwith %}
+                        </td>
+                        <td>
+                          {% if invoice.created_by.profile_pic %}
+                          {% thumbnail invoice.created_by.profile_pic "40x40" crop="center" as im %}
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ lead.created_by }}" style="border-radius: 50%" />
+                          {% endthumbnail %}
+                          {% else %}
+                          <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                            style="width: 40px;height: 40px;border-radius: 50%;" />
+                          {% endif %}
+                        </td>
+                        <td>{{ invoice.created_on|date:'d-m-Y' }}</td>
+                        <td class="actions">
+                          <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit"><i
+                              class="fas fa-pencil-alt"></i></a>
+                          {% if request.user == invoice.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
+                          <a href="{% url 'invoices:invoice_delete' invoice.id %}"
+                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          {% if invoice.is_draft %}
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="send mail"
+                            class="btn btn-info"><i class="fas fa-paper-plane"></i></a>
+                          {% endif %}
+                          {% if invoice.is_sent == True %}
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="re send mail"
+                            class="btn btn-secondary"><i class="fas fa-paper-plane"></i></a>
+                          <a href="{% url 'invoices:invoice_change_status_paid' invoice.id %}" title="Paid"
+                            class="btn btn-info"><i class="fas fa-check-square"></i></a>
+                          <a href="{% url 'invoices:invoice_change_status_cancelled' invoice.id %}" title="Cancel"
+                            class="btn btn-danger " style="background-color: red;"><i class="fas fa-window-close"></i></a>
+                          {% endif %}
+                          {% if invoice.is_resent %}
+                          <a href="{% url 'invoices:invoice_change_status_paid' invoice.id %}" title="Paid"
+                            class="btn btn-info"><i class="fas fa-check-square"></i></a>
+                          <a href="{% url 'invoices:invoice_change_status_cancelled' invoice.id %}" title="Cancel"
+                            class="btn btn-danger " style="background-color: red;"><i class="fas fa-window-close"></i></a>
+                          {% endif %}
+                          {% if invoice.is_paid_or_cancelled == True %}
+                          <!-- <a  title="re send mail" class="btn btn-secondary">no actions</a> -->
+                          {% endif %}
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {%ifequal invoices|length 0%}
+                <h6 class="text-center">No Invoices Found</h6>
+                {%endifequal%}
+                <div class="marl row text-center">
+                  {% show_pages %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- second tab for closed and other statuses -->
+          <!--
+          <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title text-right">
+                  <span class="float-left">Open Leads - {% if show_pageitems %}
+                    {% show_pageitems %}{% else %}
+                    {{ open_leads|length }}{% endif %}</span>
+                  <span class="filter_toggle">
+                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                  </span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table ">
+                    <thead>
+                      {% if invoices|length > 0 %}
+                      <tr>
+                        <th width="5%">ID</th>
+                        <th width="10%">Invoice Title</th>
+                        <th width="8%">Invoice Number</th>
+                        <th width="10%">Email</th>
+                        <th width="10%">Status</th>
+                        <th width="20%">Assigned To</th>
+                        <th width="15%">Created by</th>
+                        <th width="10%">Created On</th>
+                        <th width="10%">Actions</th>
+                      </tr>
+                      {% endif %}
+                    </thead>
+                    <tbody>
+                      {% if per_page %}
+                      {% paginate per_page invoices %}
+                      {% else %}
+                      {% paginate 10 invoices %}
+                      {% endif %}
+                      {% for invoice in invoices %}
+                      <tr class="text-center">
+                        <td scope="row">{{ forloop.counter }}</td>
+                        <td><a href="">
+                            {{ invoice.invoice_title }} </a></td>
+                        <td>{{ invoice.invoice_number }} </td>
+                        <td>{{ invoice.email }} </td>
+                        <td>{{ invoice.status }} </td>
+                        <td>
+                          {% with users=invoice.assigned_to.all %}
+                          {% for user in users %}
+                          {% if user.profile_pic %}
+                          {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ user.email }}">
+                          {% endthumbnail %}
+                          {% else %}
+                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          {% endif %}
+                          {% empty %}
+                          Not Assigned to Any
+                          {% endfor %}
+                          {% endwith %}
+                        </td>
+                        <td>
+                          {% if invoice.created_by.profile_pic %}
+                          {% thumbnail invoice.created_by.profile_pic "40x40" crop="center" as im %}
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ lead.created_by }}">
+                          {% endthumbnail %}
+                          {% else %}
+                          <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                            style="width: 40px;height: 40px;" />
+                          {% endif %}
+                        </td>
+                        <td>{{ invoice.created_on }}</td>
+                        <td class="actions">
+                          <a href="" class="btn btn-success edit"><i
+                              class="fas fa-pencil-alt"></i></a>
+                          {% if request.user == lead.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
+                          <a href=""
+                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {%ifequal invoices|length 0%}
+                <h6 class="text-center">No Invoices Found</h6>
+                {%endifequal%}
+                <div class="marl row text-center">
+                  {% show_pages %}
+                </div>
+              </div>
+            </div>
+          </div>
+        -->
+          <!-- second tab div for closed or another status -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script type="text/javascript">
+  $(document).ready(function () {
+    $('.assigned_users').select2();
+    $('#id_tag').select2();
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+  });
+
+  search = "{{search}}"
+
+  if (search == 'True') {
+    $(".list_filter_row").show();
+  }
+
+  $("#close-tab").click(function (e) {
+    $("#tab_status").val('Closed')
+  })
+
+  $("#open-tab").click(function (e) {
+    $("#tab_status").val('Open')
+  })
+
+  tab_status = "{{tab_status}}"
+  if (tab_status == 'Closed') {
+    $("#close-tab").click()
+  } else {
+    $("#open-tab").click()
+  }
+
+  $('.delete').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+
+  $("a[rel='page']").click(function (e) {
+    e.preventDefault();
+    $('#leads_filter').attr("action", $(this).attr("href"));
+    $('#leads_filter').submit();
+  });
+</script>
+{% endblock js_block %}
