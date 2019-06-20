@@ -7,17 +7,18 @@ from django.db import models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('common', '0005_auto_20190204_1400'),
-    ]
+    dependencies = [("common", "0005_auto_20190204_1400")]
 
     operations = [
         migrations.AddField(
-            model_name='comment',
-            name='user',
+            model_name="comment",
+            name="user",
             field=models.ForeignKey(
-                blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
-                related_name='user_comments', to=settings.AUTH_USER_MODEL,
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="user_comments",
+                to=settings.AUTH_USER_MODEL,
             ),
         ),
     ]

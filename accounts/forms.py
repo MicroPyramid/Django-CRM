@@ -6,57 +6,67 @@ from common.models import Comment
 
 
 class AccountForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
-        account_view = kwargs.pop('account', False)
+        account_view = kwargs.pop("account", False)
         super(AccountForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {'class': 'form-control'}
-        self.fields['description'].widget.attrs.update({'rows': '8'})
-        self.fields['status'].choices = [
+            field.widget.attrs = {"class": "form-control"}
+        self.fields["description"].widget.attrs.update({"rows": "8"})
+        self.fields["status"].choices = [
             (each[0], each[1]) for each in Account.ACCOUNT_STATUS_CHOICE
         ]
-        self.fields['status'].required = False
+        self.fields["status"].required = False
         for key, value in self.fields.items():
-            if key == 'phone':
-                value.widget.attrs['placeholder'] = '+91-123-456-7890'
+            if key == "phone":
+                value.widget.attrs["placeholder"] = "+91-123-456-7890"
             else:
-                value.widget.attrs['placeholder'] = value.label
+                value.widget.attrs["placeholder"] = value.label
 
-        self.fields['billing_address_line'].widget.attrs.update({
-            'placeholder': 'Address Line',
-        })
-        self.fields['billing_street'].widget.attrs.update({
-            'placeholder': 'Street',
-        })
-        self.fields['billing_city'].widget.attrs.update({
-            'placeholder': 'City',
-        })
-        self.fields['billing_state'].widget.attrs.update({
-            'placeholder': 'State',
-        })
-        self.fields['billing_postcode'].widget.attrs.update({
-            'placeholder': 'Postcode',
-        })
-        self.fields['billing_country'].choices = [
-            ('', '--Country--'), ] + list(self.fields['billing_country'].choices)[1:]
+        self.fields["billing_address_line"].widget.attrs.update(
+            {"placeholder": "Address Line"},
+        )
+        self.fields["billing_street"].widget.attrs.update(
+            {"placeholder": "Street"},
+        )
+        self.fields["billing_city"].widget.attrs.update(
+            {"placeholder": "City"},
+        )
+        self.fields["billing_state"].widget.attrs.update(
+            {"placeholder": "State"},
+        )
+        self.fields["billing_postcode"].widget.attrs.update(
+            {"placeholder": "Postcode"},
+        )
+        self.fields["billing_country"].choices = [("", "--Country--")] + list(
+            self.fields["billing_country"].choices,
+        )[1:]
 
         if account_view:
-            self.fields['billing_address_line'].required = True
-            self.fields['billing_street'].required = True
-            self.fields['billing_city'].required = True
-            self.fields['billing_state'].required = True
-            self.fields['billing_postcode'].required = True
-            self.fields['billing_country'].required = True
+            self.fields["billing_address_line"].required = True
+            self.fields["billing_street"].required = True
+            self.fields["billing_city"].required = True
+            self.fields["billing_state"].required = True
+            self.fields["billing_postcode"].required = True
+            self.fields["billing_country"].required = True
 
     class Meta:
         model = Account
         fields = (
-            'name', 'phone', 'email', 'website', 'industry',
-            'description', 'status',
-            'billing_address_line', 'billing_street',
-            'billing_city', 'billing_state',
-            'billing_postcode', 'billing_country', 'lead', 'contacts',
+            "name",
+            "phone",
+            "email",
+            "website",
+            "industry",
+            "description",
+            "status",
+            "billing_address_line",
+            "billing_street",
+            "billing_city",
+            "billing_state",
+            "billing_postcode",
+            "billing_country",
+            "lead",
+            "contacts",
         )
 
 
@@ -65,7 +75,7 @@ class AccountCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
-        fields = ('comment', 'account', 'commented_by')
+        fields = ("comment", "account", "commented_by")
 
 
 class AccountAttachmentForm(forms.ModelForm):
@@ -73,4 +83,4 @@ class AccountAttachmentForm(forms.ModelForm):
 
     class Meta:
         model = Attachments
-        fields = ('attachment', 'account')
+        fields = ("attachment", "account")

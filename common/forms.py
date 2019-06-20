@@ -9,76 +9,65 @@ from common.models import User
 
 
 class BillingAddressForm(forms.ModelForm):
-
     class Meta:
         model = Address
         fields = (
-            'address_line', 'street', 'city',
-            'state', 'postcode', 'country',
+            "address_line", "street", "city",
+            "state", "postcode", "country",
         )
 
     def __init__(self, *args, **kwargs):
-        account_view = kwargs.pop('account', False)
+        account_view = kwargs.pop("account", False)
 
         super(BillingAddressForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {'class': 'form-control'}
-        self.fields['address_line'].widget.attrs.update({
-            'placeholder': 'Address Line',
-        })
-        self.fields['street'].widget.attrs.update({
-            'placeholder': 'Street',
-        })
-        self.fields['city'].widget.attrs.update({
-            'placeholder': 'City',
-        })
-        self.fields['state'].widget.attrs.update({
-            'placeholder': 'State',
-        })
-        self.fields['postcode'].widget.attrs.update({
-            'placeholder': 'Postcode',
-        })
-        self.fields['country'].choices = [
-            ('', '--Country--'), ] + list(self.fields['country'].choices)[1:]
+            field.widget.attrs = {"class": "form-control"}
+        self.fields["address_line"].widget.attrs.update(
+            {"placeholder": "Address Line"},
+        )
+        self.fields["street"].widget.attrs.update({"placeholder": "Street"})
+        self.fields["city"].widget.attrs.update({"placeholder": "City"})
+        self.fields["state"].widget.attrs.update({"placeholder": "State"})
+        self.fields["postcode"].widget.attrs.update(
+            {"placeholder": "Postcode"},
+        )
+        self.fields["country"].choices = [("", "--Country--")] + list(
+            self.fields["country"].choices,
+        )[1:]
 
         if account_view:
-            self.fields['address_line'].required = True
-            self.fields['street'].required = True
-            self.fields['city'].required = True
-            self.fields['state'].required = True
-            self.fields['postcode'].required = True
-            self.fields['country'].required = True
+            self.fields["address_line"].required = True
+            self.fields["street"].required = True
+            self.fields["city"].required = True
+            self.fields["state"].required = True
+            self.fields["postcode"].required = True
+            self.fields["country"].required = True
 
 
 class ShippingAddressForm(forms.ModelForm):
     class Meta:
         model = Address
         fields = (
-            'address_line', 'street', 'city',
-            'state', 'postcode', 'country',
+            "address_line", "street", "city",
+            "state", "postcode", "country",
         )
 
     def __init__(self, *args, **kwargs):
         super(ShippingAddressForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs = {'class': 'form-control'}
-        self.fields['address_line'].widget.attrs.update({
-            'placeholder': 'Address Line',
-        })
-        self.fields['street'].widget.attrs.update({
-            'placeholder': 'Street',
-        })
-        self.fields['city'].widget.attrs.update({
-            'placeholder': 'City',
-        })
-        self.fields['state'].widget.attrs.update({
-            'placeholder': 'State',
-        })
-        self.fields['postcode'].widget.attrs.update({
-            'placeholder': 'Postcode',
-        })
-        self.fields['country'].choices = [
-            ('', '--Country--'), ] + list(self.fields['country'].choices)[1:]
+            field.widget.attrs = {"class": "form-control"}
+        self.fields["address_line"].widget.attrs.update(
+            {"placeholder": "Address Line"},
+        )
+        self.fields["street"].widget.attrs.update({"placeholder": "Street"})
+        self.fields["city"].widget.attrs.update({"placeholder": "City"})
+        self.fields["state"].widget.attrs.update({"placeholder": "State"})
+        self.fields["postcode"].widget.attrs.update(
+            {"placeholder": "Postcode"},
+        )
+        self.fields["country"].choices = [("", "--Country--")] + list(
+            self.fields["country"].choices,
+        )[1:]
 
 
 class UserForm(forms.ModelForm):
@@ -88,16 +77,16 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = [
-            'email', 'first_name', 'last_name',
-            'username', 'role', 'profile_pic',
+            "email", "first_name", "last_name",
+            "username", "role", "profile_pic",
         ]
 
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
 
-        self.fields['first_name'].required = True
+        self.fields["first_name"].required = True
         if not self.instance.pk:
-            self.fields['password'].required = True
+            self.fields["password"].required = True
 
         # self.fields['password'].required = True
 
@@ -108,31 +97,33 @@ class UserForm(forms.ModelForm):
     #     self.fields['username'].required = True
     #     self.fields['email'].required = True
     #
-        # if not self.instance.pk:
-        #     self.fields['password'].required = True
+    # if not self.instance.pk:
+    #     self.fields['password'].required = True
 
     def clean_password(self):
-        password = self.cleaned_data.get('password')
+        password = self.cleaned_data.get("password")
         if password:
             if len(password) < 4:
                 raise forms.ValidationError(
-                    'Password must be at least 4 characters long!',
+                    "Password must be at least 4 characters long!",
                 )
         return password
 
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         if self.instance.id:
             if self.instance.email != email:
-                if not User.objects.filter(email=self.cleaned_data.get('email')).exists():
-                    return self.cleaned_data.get('email')
-                raise forms.ValidationError('Email already exists')
+                if not User.objects.filter(
+                    email=self.cleaned_data.get("email"),
+                ).exists():
+                    return self.cleaned_data.get("email")
+                raise forms.ValidationError("Email already exists")
             else:
-                return self.cleaned_data.get('email')
+                return self.cleaned_data.get("email")
         else:
-            if not User.objects.filter(email=self.cleaned_data.get('email')).exists():
-                return self.cleaned_data.get('email')
-            raise forms.ValidationError('User already exists with this email')
+            if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
+                return self.cleaned_data.get("email")
+            raise forms.ValidationError("User already exists with this email")
 
 
 class LoginForm(forms.ModelForm):
@@ -141,15 +132,15 @@ class LoginForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'password']
+        fields = ["email", "password"]
 
     def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop('request', None)
+        self.request = kwargs.pop("request", None)
         super(LoginForm, self).__init__(*args, **kwargs)
 
     def clean(self):
-        email = self.cleaned_data.get('email')
-        password = self.cleaned_data.get('password')
+        email = self.cleaned_data.get("email")
+        password = self.cleaned_data.get("password")
 
         if email and password:
             self.user = authenticate(username=email, password=password)
@@ -172,43 +163,41 @@ class ChangePasswordForm(forms.Form):
         super(ChangePasswordForm, self).__init__(*args, **kwargs)
 
     def clean_confirm(self):
-        if len(self.data.get('confirm')) < 4:
+        if len(self.data.get("confirm")) < 4:
             raise forms.ValidationError(
-                'Password must be at least 4 characters long!',
+                "Password must be at least 4 characters long!",
             )
-        if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
+        if self.data.get("confirm") != self.cleaned_data.get("Newpassword"):
             raise forms.ValidationError(
-                'Confirm password do not match with new password',
+                "Confirm password do not match with new password",
             )
-        return self.data.get('confirm')
+        return self.data.get("confirm")
 
 
 class PasswordResetEmailForm(PasswordResetForm):
-
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         if not User.objects.filter(email__iexact=email, is_active=True).exists():
             raise forms.ValidationError("User doesn't exist with this Email")
         return email
 
 
 class DocumentForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
         super(DocumentForm, self).__init__(*args, **kwargs)
 
         for field in self.fields.values():
-            field.widget.attrs = {'class': 'form-control'}
+            field.widget.attrs = {"class": "form-control"}
 
-        self.fields['status'].choices = [
+        self.fields["status"].choices = [
             (each[0], each[1]) for each in Document.DOCUMENT_STATUS_CHOICE
         ]
-        self.fields['status'].required = False
-        self.fields['title'].required = True
+        self.fields["status"].required = False
+        self.fields["title"].required = True
 
     class Meta:
         model = Document
-        fields = ['title', 'document_file', 'status']
+        fields = ["title", "document_file", "status"]
 
 
 class UserCommentForm(forms.ModelForm):
@@ -216,4 +205,4 @@ class UserCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
-        fields = ('comment', 'user', 'commented_by')
+        fields = ("comment", "user", "commented_by")

@@ -9,31 +9,35 @@ import common.models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('common', '0002_auto_20190128_1237'),
-    ]
+    dependencies = [("common", "0002_auto_20190128_1237")]
 
     operations = [
         migrations.CreateModel(
-            name='Document',
+            name="Document",
             fields=[
                 (
-                    'id', models.AutoField(
+                    "id",
+                    models.AutoField(
                         auto_created=True,
-                        primary_key=True, serialize=False, verbose_name='ID',
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
-                ('title', models.CharField(blank=True, max_length=1000, null=True)),
+                ("title", models.CharField(blank=True, max_length=1000, null=True)),
                 (
-                    'document_file', models.FileField(
+                    "document_file",
+                    models.FileField(
                         max_length=5000, upload_to=common.models.document_path,
                     ),
                 ),
-                ('created_on', models.DateTimeField(auto_now_add=True)),
+                ("created_on", models.DateTimeField(auto_now_add=True)),
                 (
-                    'created_by', models.ForeignKey(
+                    "created_by",
+                    models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='document_uploaded', to=settings.AUTH_USER_MODEL,
+                        related_name="document_uploaded",
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],

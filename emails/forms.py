@@ -12,4 +12,4 @@ class EmailForm(forms.ModelForm):
 
     class Meta:
         model = Email
-        fields = ('from_email', 'to_email', 'subject', 'message')
+        fields = ("from_email", "to_email", "subject", "message")
