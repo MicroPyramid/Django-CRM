@@ -260,6 +260,10 @@ class Campaign(models.Model):
         return self.contact_lists.filter(contacts__is_unsubscribed=True
                                          ).exclude(contacts__email=None).values_list('contacts__email').count()
 
+    @property
+    def get_all_emails_subscribed_count(self):
+        return self.get_all_emails_count - self.get_all_email_bounces_count - self.get_all_emails_unsubscribed_count
+
 
 @receiver(models.signals.pre_delete, sender=Campaign)
 def comment_attachments_delete(sender, instance, **kwargs):
@@ -319,3 +323,14 @@ class CampaignCompleted(models.Model):
     campaign = models.OneToOneField(
         Campaign, on_delete=models.CASCADE, related_name='campaign_is_completed')
     is_completed = models.BooleanField(default=False)
+
+
+class ContactUnsubscribedCampaign(models.Model):
+    """ This Model Is Used To Check If The Contact has Unsubscribed To a Particular Campaign
+        related name : contact_is_unsubscribed
+    """
+    campaigns = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name='campaign_is_unsubscribed')
+    contacts = models.ForeignKey(
+        Contact, on_delete=models.Case, related_name='contact_is_unsubscribed')
+    is_unsubscribed = models.BooleanField(default=False)

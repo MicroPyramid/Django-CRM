@@ -3,6 +3,12 @@
 {% load paginate %}
 {% block content %}
 {{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-5">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:contact_lists' %}">Contact List</a></li>
+    <li class="breadcrumb-item active">{{contact_list.name}}</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="filter_row list_filter_row row marl col-md-12 mb-2">
@@ -61,7 +67,7 @@
               <span class="filter_toggle">
                 <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
               </span>
-              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact</a>
+              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact List</a>
             </div>
             <div class="table-responsive table-bordered ">
               <table class="table">
@@ -94,11 +100,13 @@
                     <td>{{ contact.name }}</td>
                     <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
                     <td class="actions">
-                      <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit"><i
-                          class="fas fa-edit"></i></a>
+                      <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
+                        class="btn btn-success edit edit_contact"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a>
                       <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
-                      <a href="{% url 'marketing:delete_contact' contact.id %}"
-                        class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                      <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
+                        class="btn btn-danger delete remove_account"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-trash"></i></a>
                     </td>
                   </tr>
                   {% empty %}
@@ -128,12 +136,42 @@
     });
     $('#id_tag').select2();
 
+    // $(".remove_account").click(function (e) {
+    //   e.preventDefault()
+    //   url = $(this).attr('href')
+    //   if (!confirm('Are you sure you want to delete?'))
+    //     return;
+    //   window.location = $(this).attr('href')
+    // })
+
     $(".remove_account").click(function (e) {
       e.preventDefault()
       url = $(this).attr('href')
-      if (!confirm('Are you sure you want to delete?'))
-        return;
-      window.location = $(this).attr('href')
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      if (contact_lists > 1) {
+        if (!confirm('Are you sure you want to delete? this contact exists in other contact lists, deleting this will delete this contact from other contact lists too!'))
+          return;
+        window.location = $(this).attr('href');
+      } else {
+        if (!confirm('Are you sure you want to delete?'))
+          return;
+        window.location = $(this).attr('href');
+      }
+    })
+
+    $(".edit_contact").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      console.log(url)
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      console.log(contact_lists);
+      if (contact_lists > 1) {
+        if (!confirm('Are you sure you want to edit? this contact exists in other contact lists, editing this will change this contact information in other contact lists too!'))
+          return;
+        window.location = $(this).attr('href');
+      } else {
+        window.location = $(this).attr('href');
+      }
     })
 
     $("a[rel='page']").click(function (e) {

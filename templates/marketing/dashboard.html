@@ -150,19 +150,20 @@
                             {% endif %}
                           </td>
                           <td>
-                            {% with users=campaign.contact_lists.all %}
-                            {% for user in users|slice:'3'  %}
+                            {% with contacts_lists=campaign.contact_lists.all %}
+                            {% for contact in contacts_lists|slice:'3'  %}
                             <div>
                               <div>
-                                <span class="text-left" id="list_opp_users_">{{user.name}}<span>
+                                <span class="text-left" id="list_opp_users_">
+                                  <a href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a><span>
                               </div>
                               {% empty %}
                               <span class="text-left">None</span>
                               {% endfor %}
-                              {% if users|length > 3 %}
+                              {% if contact|length > 3 %}
                               <div>
                                 <span style="color:white; background-color: #333; padding:0.15em; border-radius: 10%;"
-                                  class="text-left ml-1" id="list_opp_users">{{users|length|subtract:'3'}}<span>
+                                  class="text-left ml-1" id="list_opp_users">{{contact|length|subtract:'3'}}<span>
                                     more
                                   </span></span>
                               </div>

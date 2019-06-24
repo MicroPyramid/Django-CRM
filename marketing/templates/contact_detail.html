@@ -3,6 +3,12 @@
 {% load paginate %}
 {% block content %}
 {{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:contacts_list' %}">Contacts</a></li>
+    <li class="breadcrumb-item active">{{contact_obj.email}}</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
@@ -12,7 +18,7 @@
             <div class="card">
               <div class="card-body">
                 <div class="card-title text-center">
-                 Contact Detail
+                  Contact Detail
                 </div>
                 <div class="row marl no-gutters justify-content-center">
                   <div class="col-md-12">
@@ -21,7 +27,7 @@
                         <label for="exampleInputEmail1" class="required">
                           Email{% if form.email.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
-                            <br>
+                        <br>
                         {{contact_obj.email}}
                       </div>
                     </div>
@@ -30,7 +36,7 @@
                         <label for="exampleInputEmail1" class="required">First
                           Name{% if form.name.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
-                            <br>
+                        <br>
                         {{contact_obj.name}}
                       </div>
                     </div>
@@ -39,7 +45,7 @@
                         <label for="exampleInputEmail1" class="required">Last
                           Name{% if form.last_name.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
-                            <br>
+                        <br>
                         {{contact_obj.last_name}}
                       </div>
                     </div>
@@ -48,7 +54,7 @@
                         <label for="exampleInputEmail1" class="required">City
                           {% if form.city.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
-                            <br>
+                        <br>
                         {{contact_obj.city}}
                       </div>
                     </div>
@@ -57,8 +63,8 @@
                         <label for="exampleInputEmail1" class="required">State
                           {% if form.state.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
-                            <br>
-                            {{contact_obj.state}}
+                        <br>
+                        {{contact_obj.state}}
                       </div>
                     </div>
                   </div>
