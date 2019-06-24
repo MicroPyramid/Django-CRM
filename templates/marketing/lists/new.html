@@ -20,6 +20,12 @@
 {% endblock extralinks %}
 {% block content %}
 {{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:contact_lists' %}">Contact List</a></li>
+    <li class="breadcrumb-item active">{% if contact_list %}Edit{% else %}Create{% endif %}</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5" id="cover_screen">
   <div class="row marl" id="position_abs">
     <div class="col-md-12">
@@ -43,10 +49,13 @@
                   </div>
                   <div class="filter_col col-md-12">
                     <div class="form-group">
-                      <label>Contacts File
+                      <label>Contacts File <span class="error">*</span>
                       </label>
                       <input type="file" class="form-control" name="contacts_file">
                       <span id="id_contacts_file"></span>
+                      <!-- <span>
+                          {% if contact_list.contacts.all|length > 0 %} <a href="#">Download Previous File</a>{% endif %}
+                      </span> -->
                     </div>
                   </div>
                   <div class="filter_col col-md-12">

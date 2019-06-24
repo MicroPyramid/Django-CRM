@@ -4,9 +4,13 @@
 {% block content %}
 {{ block.super }}
 
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock extralinks %}
 
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
+
     <div class="filter_row list_filter_row row marl col-md-12 mb-2">
       <div class="">
         <div class="card">
@@ -24,13 +28,6 @@
                   </div>
                   <div class="filter_col col-md-3">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Email</label>
-                      <input type="text" class="form-control" placeholder="Contact Email" name="contact_email"
-                        value="{{request.POST.contact_email}}">
-                    </div>
-                  </div>
-                  <div class="filter_col col-md-3">
-                    <div class="form-group">
                       <label for="exampleInputEmail1">Created By</label>
                       <select name="created_by" id="" class="assigned_users_ form-control">
                         <option value="">
@@ -41,6 +38,13 @@
                           {{user.email}}</option>
                         {% endfor %}
                       </select>
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Email</label>
+                      <input type="text" class="form-control" placeholder="Contact Email" name="contact_email"
+                        value="{{request.POST.contact_email}}">
                     </div>
                   </div>
                   <input type="hidden" name="tab_status" id="tab_status">
@@ -57,31 +61,30 @@
         </div>
       </div>
     </div>
-    <div class="col-md-12 mt-2">
-      <div class="heading text-right">
-        <span class="float-left">All Contacts - {{contacts|length }}</span>
-        <span class="filter_toggle">
-          <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-        </span>
-        <a href="{% url 'marketing:contact_list_new' %}" class="secondary_btn">Add New Contact List</a>
-      </div>
-    </div>
+
     <div class="col-md-12">
       <div class="table_container_row no_mar_top">
         <div class="card">
           <div class="card-body">
-            <div class="table-responsive">
+            <div class="card-title text-right">
+              <span class="float-left">Contacts - {{ contacts|length }}</span>
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
+              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact List</a>
+            </div>
+            <div class="table-responsive table-bordered ">
               <table class="table">
                 {% if contacts %}
                 <thead>
                   <tr>
-                    <th width="5%">ID</th>
-                    <th width="10%">Name</th>
+                    <th width="5%">S. No</th>
+                    <th width="20%">Name</th>
                     <th width="10%">Email</th>
-                    <!-- <th width="10%" class="text-center">Active</th> -->
-                    <th width="15%" class="text-center">UnSubscribed</th>
-                    <th width="12%" class="text-center">Bounced</th>
-                    <th width="13%">Actions</th>
+                    <th width="15%">Created by</th>
+                    <th width="15%">Created On</th>
+                    <th width="15%">Related Contact List</th>
+                    <th width="10%">Actions</th>
                   </tr>
                 </thead>
                 {% endif %}
@@ -93,232 +96,55 @@
                   {% endif %}
                   {% for contact in contacts %}
                   <tr style="text-align:center;">
-                    <td scope="row">{{forloop.counter}}</td>
-                    <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{contact.name}}</a> </td>
-                    <td>{{contact.email}}</td>
-                    <!-- <td class="text-center">{{contact.is_active}}</td> -->
-                    <td class="text-center">
-                      <span class="badge box dark_grey">{{contact.is_unsubscribed}}</span>
+                    <td scope="row">{{ forloop.counter }}</td>
+                    <td><a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.name }}</td>
+                    <td class="text-center">{{ contact.email }}</td>
+                    <td>{{ contact.created_by }}</td>
+                    <td>{{ contact.created_on }}</td>
+                    <td>
+                      {% for contact_list in contact.contact_list.all %}
+                      <span> <a
+                          href="{% url 'marketing:contact_list_detail' contact_list.id %}">{{contact_list.name}}</a>
+                      </span>
+                      {% endfor %}
                     </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">{{contact.is_bounced}}</span>
-                    </td>
-                    <td class="actions">
-                      <a href="{% url 'marketing:edit_contact' contact.id %}" data-toggle="tooltip"
-                        data-placement="bottom" title="" class="green box"><i class="far fa-edit"></i></a>
+                    <td class="actions text-center">
+                      <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a>
                       <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
                       <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
-                      <a href="{% url 'marketing:delete_contact' contact.id %}" class="red box remove_account"><i
-                          class="far fa-trash-alt"></i></a>
+                      <a href="{% url 'marketing:delete_contact' contact.id %}"
+                        class="btn btn-danger delete remove_account"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                          class="fas fa-trash-alt"></i></a>
                     </td>
+                  </tr>
+                  {% empty %}
+                  <tr style="text-align:center;">
+                    <td colspan="6">No records found!</td>
                   </tr>
                   {% endfor %}
-                  <!--not required-->
-                  <!-- <tr style="text-align:center;">
-                    <td scope="row">1</td>
-                    <td>Micropyramid</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">15%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">2</td>
-                    <td>Peeljobs</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">3</td>
-                    <td>Study Signal</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">4</td>
-                    <td>Django Crm</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">5</td>
-                    <td>Refactored
-                    </td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">6</td>
-                    <td>Refactored</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">7</td>
-                    <td>Artbnkr</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">70%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">8</td>
-                    <td>Now Finance</td>
-                    <td class="text-center">125</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">45%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">65%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">9</td>
-                    <td>Goshoppi</td>
-                    <td class="text-center">154</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">5%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">54%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr>
-                  <tr style="text-align:center;">
-                    <td scope="row">10</td>
-                    <td>Techond</td>
-                    <td class="text-center">23</td>
-                    <td class="text-center">
-                      <span class="badge box dark_grey">15%</span>
-                    </td>
-                    <td class="text-center">
-                      <span class="badge box sky_blue">20%</span>
-                    </td>
-                    <td class="actions">
-                      <a href="/contacts/1/edit/" data-toggle="tooltip" data-placement="bottom" title=""
-                        class="green box"><i class="far fa-edit"></i></a>
-                      <a href="/contacts/1/edit/" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="/contacts/1/edit/" class="purple box"><i class="fas fa-upload"></i></a>
-                      <a href="/contacts/1/delete/" class="red box remove_account"><i class="far fa-trash-alt"></i></a>
-                    </td>
-                  </tr> -->
-                  <!-- not reqiuired-->
                 </tbody>
               </table>
             </div>
-            {% ifequal contacts|length 0 %}
-            <h6 class="text-center">No Contacts Found</h6>
-            {% endifequal %}
           </div>
         </div>
       </div>
+      <div class="marl row text-center mt-5">
+        {% show_pages %}
+      </div>
     </div>
-  </div>
-  <div class="marl row text-center mt-5">
-    {% show_pages %}
   </div>
 </div>
 {% endblock %}
+
 {% block js_block %}
 <script>
   $(function () {
-    $('[data-toggle="tooltip"]').tooltip()
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+    $('#id_tag').select2();
 
     $("a[rel='page']").click(function (e) {
       e.preventDefault();
@@ -329,9 +155,31 @@
     $(".remove_account").click(function (e) {
       e.preventDefault()
       url = $(this).attr('href')
-      if (!confirm('Are you sure you want to delete?'))
-        return;
-      window.location = $(this).attr('href')
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      if (contact_lists > 1) {
+        if (!confirm('Are you sure you want to delete? this contact exists in other contact lists, deleting this will delete this contact from other contact lists too!'))
+          return;
+        window.location = $(this).attr('href');
+      } else {
+        if (!confirm('Are you sure you want to delete?'))
+          return;
+        window.location = $(this).attr('href');
+      }
+    })
+
+    $(".edit_contact").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      console.log(url)
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      console.log(contact_lists);
+      if (contact_lists > 1) {
+        if (!confirm('Are you sure you want to edit? this contact exists in other contact lists, editing this will change this contact information in other contact lists too!'))
+          return;
+        window.location = $(this).attr('href');
+      } else {
+        window.location = $(this).attr('href');
+      }
     })
   })
 </script>

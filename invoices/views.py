@@ -101,7 +101,7 @@ def invoices_create(request):
             prefix='from')
         context["to_address_form"] = InvoiceAddressForm(prefix='to')
 
-        return render(request, 'invoices_create.html', context)
+        return render(request, 'invoice_create_1.html', context)
 
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request_user=request.user)
@@ -166,7 +166,7 @@ def invoice_edit(request, invoice_id):
                                                           instance=invoice_obj.from_address)
         context['to_address_form'] = InvoiceAddressForm(prefix='to',
                                                         instance=invoice_obj.to_address)
-        return render(request, 'invoices_create.html', context)
+        return render(request, 'invoice_create_1.html', context)
 
     if request.method == 'POST':
         form = InvoiceForm(request.POST, instance=invoice_obj,

@@ -108,8 +108,7 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
             'first_name': '',
             'last_name': '',
             'username': '',
-            'role': 'r',
-            'profile_pic': None})
+            'role': 'ADMIN',})
         self.assertEqual(response.status_code, 200)
 
 

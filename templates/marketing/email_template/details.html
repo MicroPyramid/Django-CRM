@@ -1,23 +1,58 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+<style>
+  .detail {
+    font-size: 2em;
+  }
+</style>
+{% endblock %}
 {% block content %}
 {{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:email_template_list' %}">Email Template</a></li>
+    <li class="breadcrumb-item active">{{email_template.title}}</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
-      <b class="bold">Title</b>
+      <b class="bold detail">Title</b>
       <p>{{email_template.title}}</p>
-      <b>Subject </b>
+      <b class="detail">Subject </b>
       <p>{{email_template.subject}}</p>
-      <b>Body </b>
-      <span>{{email_template.html|safe}}</span>
+      <b class="detail">Body </b>
+      <!-- <span>{{email_template.html|safe}}</span> -->
+
+      <div id="editor-container">
+        {{ email_template.html|safe }}
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
 
+
 {% block js_block %}
 <script>
+
+  var quill = new Quill('#editor-container', {
+    modules: {
+      toolbar: [
+        ['code-block']
+      ]
+    },
+    theme: 'snow'
+  });
+  quill.disable();
+
+  $('.ql-toolbar').hide();
+  $('#editor-container').css('border', 'none');
+  $('.ql-editor').css('margin', '0');
+  $('.ql-editor').css('padding', '0');
+  // $('#editor-container').css('height','0');
+
 </script>
 {% endblock js_block %}

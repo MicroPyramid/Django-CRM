@@ -98,12 +98,35 @@
 {% block js_block %}{% endblock js_block %}
 <script type="text/javascript">
   $(document).ready(function(){
-    word = window.location.pathname.split('/')[1]
+    word = window.location.pathname.split('/')[1];
     if(word == ""){
-      $("#dashboard").addClass('active')
+      $("#dashboard").addClass('active');
     }
     else{
-      $('#' + word).addClass('active')
+      $('#' + word).addClass('active');
+    }
+    marketing_word = window.location.pathname.split('/')[2];
+    if(marketing_word == ""){
+      $("#marketing-dashboard").addClass('active');
+    }
+    // console.log(marketing_word.substring(0,7) === 'contact');
+    else if(marketing_word.substring(0,7) === "contact"){
+      $("#contact").css({'border-bottom':'3px solid #099CBE,'});
+      $(".contact_class").css('border-bottom','3px solid #099CBE');
+      marketing_word = window.location.pathname.split('/')[2]
+      // console.log(marketing_word)
+      // console.log(marketing_word == 'contact-list')
+      // console.log(marketing_word == 'contacts')
+      if (marketing_word == 'contact-list'){
+        $(".contact-list").css('background','#e5e5e5');
+      }
+      if (marketing_word == 'contacts'){
+        $(".contacts").css('background','#e5e5e5');
+      }
+      // $("#contacts").css('background','#e5e5e5');
+    }
+    else{
+      $('#' + marketing_word).addClass('active')
     }
   });
   /*

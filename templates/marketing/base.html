@@ -3,26 +3,26 @@
 {% block main_menu %}
 <ul class="navbar-nav mr-auto">
   <!-- add submenu for contacts-->
-  <li class="nav-item"><a class="nav-link" id="accounts" href="{% url 'marketing:dashboard' %}">Dashboard</a></li>
-  <li class="nav-item mt-2">
+  <li class="nav-item"><a class="nav-link" id="marketing-dashboard" href="{% url 'marketing:dashboard' %}">Dashboard</a></li>
+  <li class="nav-item mt-2 contact_class" id="contact">
   <div class="btn-group">
     <button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
       style="box-shadow: none; color: #657b88">
       Contacts
     </button>
     <div class="dropdown-menu mt-2">
-      <a class="dropdown-item " href="{% url 'marketing:contact_lists' %}" >Contacts List</a>
+      <a class="dropdown-item contact-list" id="contact-list" href="{% url 'marketing:contact_lists' %}" >Contacts List</a>
       <!-- <div class="dropdown-divider"></div> -->
-      <a class="dropdown-item" href="{% url 'marketing:contacts_list' %}" >Contacts</a>
+      <a class="dropdown-item contacts" id="contacts" href="{% url 'marketing:contacts_list' %}" >Contacts</a>
     </div>
   </div>
 </li>
 
   <!-- <li class="nav-item"><a href="{% url 'marketing:contact_lists' %}" class="nav-link" id="contact_lists">Contacts</a>
   </li> -->
-  <li class="nav-item"><a class="nav-link" id="accounts" href="{% url 'marketing:email_template_list' %}">Email
+  <li class="nav-item"><a class="nav-link" id="email-templates" href="{% url 'marketing:email_template_list' %}">Email
       templates</a></li>
-  <li class="nav-item"><a class="nav-link" id="contacts" href="{% url 'marketing:campaign_list' %}">Campaigns</a></li>
+  <li class="nav-item"><a class="nav-link" id="campaigns" href="{% url 'marketing:campaign_list' %}">Campaigns</a></li>
   <!-- <li class="nav-item"><a class="nav-link" id="leads" href="{% url 'leads:list' %}">Leads</a></li>
   <li class="nav-item"><a class="nav-link" id="opportunities"href="{% url 'opportunities:list' %}">Opportunities</a></li>
   <li class="nav-item"><a class="nav-link" id="cases" href="{% url 'cases:list' %}">Cases</a></li>
@@ -43,8 +43,8 @@
 {% load compress %}
 {% load thumbnail %}
 {% block main_menu %}
-<ul class="navbar-nav mr-auto">
-</ul>
+<!-- <ul class="navbar-nav mr-auto">
+</ul> -->
 {% endblock %}
 {% block header %}
 
