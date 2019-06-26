@@ -1,0 +1,324 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% block breadcrumb %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css"
+  href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
+{% endblock %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'invoices:invoices_list' %}">Invoices</a></li>
+    <li class="breadcrumb-item active">{% if invoice_obj %}Edit{% else %}Create{% endif %}</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="crm_invoice" style="">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="crm_form">
+          <div class="row">
+            <div class="col-md-9 p-5 m-auto" style=" background: #fff!important;">
+              <h1 class="text-center pb-3">{% if invoice_obj %}Edit{% else %}Create{% endif %} Invoice</h1>
+              <form id="formid" action='' method="POST" novalidate>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Invoice
+                        Title{% if form.invoice_title.field.required %}<span class="error_marker" style="color:red">
+                          *</span>{% endif %} </label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="micropyramid"> -->
+                        {{ form.invoice_title }}
+                        <span class="error" id="id__invoice_title">{{ form.invoice_title.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label for="inputPassword" class="col-sm-4 col-form-label"
+                        style="margin:auto; padding:inherit;">Invoice
+                        Number{% if form.invoice_number.field.required %}<span class="error_marker"
+                          style="color:red">*</span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="inputPassword" placeholder="79840PM90"> -->
+                        {{ form.invoice_number }}
+                        <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
+
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group row">
+                      <label for="staticEmail"
+                        class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
+                          class="error_marker" style="color:red">*</span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        {{ form.status }}
+                        <span class="error" id="id__status">{{ form.status.errors }}</span>
+                        <!-- <span class="error" id="id__name">{{ form.name.errors }}</span> -->
+                      </div>
+                    </div>
+                  </div>
+                  <!-- <div class="col-md-6">
+                    <div class="form-group row">
+                      <label for="id_contacts" class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
+                          class="error_marker" style="color:red">*</span>{% endif %}</label>
+                      {{ form.status }}
+                      <span class="error" id="id__status">{{ form.status.errors }}</span>
+                    </div> -->
+                  <!-- <div class="row">
+                      <div class="col-sm-8 pl-0">
+                        <div class="form-group ">
+                          <label for="id_contacts" class="required">Status{% if form.status.field.required %}<span
+                              class="error_marker" style="color:red">*</span>{% endif %}</label>
+                          {{ form.status }}
+                          <span class="error" id="id__status">{{ form.status.errors }}</span>
+                        </div>
+                      </div>
+                    </div> -->
+                  <!-- <label>Status</label>
+                    <button class="btn status btn-primary">Sent</button> -->
+                  <!-- </div> -->
+                  <div class="col-md-12">
+                    <div class="row">
+                      <div class="form-group mt-5 col-md-6">
+                        <!-- <label for="exampleFormControlTextarea1">From Address</label>
+                        <textarea class="form-control" id="exampleFormControlTextarea1"
+                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"
+                          rows="6"></textarea> -->
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">From Address</label>
+                          {{ from_address_form.address_line }}
+                          <span class="error" id="id__address_line">{{ from_address_form.address_line.errors }}</span>
+                        </div>
+                        {{ from_address_form.street }}
+                        <span class="error" id="id__street">{{ from_address_form.street.errors }}</span>
+                        <div class="row" style="margin-top: 10px;">
+                          <div class="col-md-4">
+                            {{ from_address_form.city }}
+                            {{ from_address_form.city.errors }}
+                            <span class="error" id="id__city">{{ to_address_form.city.errors }}</span>
+                          </div>
+                          <div class="col-md-4">
+                            {{ from_address_form.state }}
+                            <span class="error" id="id__state">{{ from_address_form.state.errors }}</span>
+                          </div>
+                          <div class="col-md-4">
+                            {{ from_address_form.postcode }}
+                            <span class="error" id="id__postcode">{{ from_address_form.postcode.errors }}</span>
+                          </div>
+                          <div class="col-md-12" style="margin-top: 10px;">
+                            {{ from_address_form.country }}
+                            <span class="error" id="id__country">{{ from_address_form.country.errors }}</span>
+                          </div>
+                        </div>
+                        <br>
+                      </div>
+                      <div class="form-group mt-5 col-md-6">
+                        <!-- <label for="exampleFormControlTextarea1">To Address</label>
+                        <textarea class="form-control" id="exampleFormControlTextarea1" rows="6"
+                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"></textarea> -->
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">To Address</label>
+                          {{ to_address_form.address_line }}
+                          <span class="error" id="id__address_line_">{{ to_address_form.address_line.errors }}</span>
+                        </div>
+                        {{ to_address_form.street }}
+                        <span class="error" id="id__street_">{{ to_address_form.street.errors }}</span>
+                        <div class="row" style="margin-top: 10px;">
+                          <div class="col-md-4">
+                            {{ to_address_form.city }}
+                            {{ to_address_form.city.errors }}
+                            <span class="error" id="id__city_">{{ to_address_form.city.errors }}</span>
+                          </div>
+                          <div class="col-md-4">
+                            {{ to_address_form.state }}
+                            <span class="error" id="id__state_">{{ to_address_form.state.errors }}</span>
+                          </div>
+                          <div class="col-md-4">
+                            {{ to_address_form.postcode }}
+                            <span class="error" id="id__postcode_">{{ to_address_form.postcode.errors }}</span>
+                          </div>
+                          <div class="col-md-12" style="margin-top: 10px;">
+                            {{ to_address_form.country }}
+                            <span class="error" id="id__country_">{{ to_address_form.country.errors }}</span>
+                          </div>
+                        </div>
+                        <br>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6 mt-5">
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Name
+                        {% if form.name.field.required %}<span class="error_marker" style="color:red"> *
+                        </span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        {{ form.name }}
+                        <span class="error" id="id__name">{{ form.name.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Email
+                        {% if form.email.field.required %}<span class="error_marker" style="color:red"> *
+                        </span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail"
+                                placeholder="lakshman@micropyramid.com"> -->
+                        {{ form.email }}
+                        <span class="error" id="id__email">{{ form.email.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label for="staticEmail"
+                        class="col-sm-4 col-form-label">Phone{% if form.phone.field.required %}<span
+                          class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        {{ form.phone }}
+                        <span class="error" id="id__phone">{{ form.phone.errors }}</span>
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="6566589125"> -->
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6 mt-5">
+                    <div class="form-group row">
+                      <label for="inputState" class="col-sm-4">Currency{% if form.currency.field.required %}<span
+                          class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        {{ form.currency }}
+                        <span class="error" id="id__currency">{{ form.currency.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        {{form.assigned_to}}
+                        <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Due Date
+                        {% if form.due_date.field.required %}<span class="error_marker"
+                          style="color:red">*</span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        <div id="datepicker1" class='input-group date'>
+                          {{ form.due_date }}
+                          <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                          </span>
+                        </div>
+                        <span class="error" id="id__due_date">{{ form.due_date.errors }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-12 mt-5">
+                    <div class="row pt-0 pb-4">
+                      <div class="form-group col-md-4">
+                        <label for="inputCity">Quality Hours{% if form.quantity.field.required %}<span
+                            class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                        <!-- <input type="text" class="form-control" id="inputCity" placeholder="5:30"> -->
+                        {{ form.quantity }}
+                        <span class="error" id="id__quantity">{{ form.quantity.errors }}</span>
+                      </div>
+                      <div class="form-group col-md-4">
+                        <label for="inputState">Rate {% if form.rate.field.required %}<span class="error_marker"
+                            style="color:red">*</span>{% endif %}</label>
+                        {{ form.rate }}
+                        <span class="error" id="id__rate">{{ form.rate.errors }}</span>
+                      </div>
+                      <div class="form-group col-md-4">
+                        <label for="inputZip">Total Amount{% if form.total_amount.field.required %}<span
+                            class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                        {{ form.total_amount }}
+                        <span class="error" id="id__total_amount">{{ form.total_amount.errors }}</span>
+                        <!-- <input type="text" class="form-control" id="inputZip" placeholder="5:31"> -->
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-12 mt-1">
+                    <div class="form-group">
+                      <label for="inputZip">Details</label>
+                      {{form.details}}
+                      <span class="error" id="id__details">{{ form.details.errors }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="col-md-12">
+                    <div class="row marl buttons_row form_btn_row text-center">
+                      <button class="btn btn-default save" type="submit">Save</button>
+                      <a href="{% url 'invoices:invoices_list' %}" class="btn btn-default clear"
+                        id="create_user_cancel">Cancel</a>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+  {% block js_block %}
+  <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+  <script src="https://malsup.github.io/jquery.form.js"></script>
+  <script type="text/javascript">
+
+    // $(document).ready(function() {
+    //   $('.assigned_users').select2();
+    // });
+    $(document).ready(function () {
+      $("#id_contacts").select2();
+      $("#id_assigned_to").select2();
+      $('#id_currency').select2();
+      var date = new Date();
+      var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      $('#id_due_date').datetimepicker({
+        'format': 'YYYY-MM-DD',
+        minDate: today
+      })
+
+
+      $('#id_quantity').keyup(calculate);
+      $('#id_rate').keyup(calculate);
+      function calculate(e) {
+        $('#id_total_amount').val($('#id_quantity').val() * $('#id_rate').val());
+      }
+
+    });
+
+    $('form#formid').ajaxForm({
+      type: 'POST',
+      dataType: 'json',
+      url: ".",
+      data: $('#formid').serialize(),
+      success: function (data) {
+        if (data.error) {
+          $('.error').html('')
+          for (var key in data.errors) {
+            $('#id__' + key).html("<p>" + data.errors[key][0] + "</p>");
+          };
+          for (var key in data.from_address_errors) {
+            $('#id__' + key).html("<p>" + data.from_address_errors[key][0] + "</p>");
+          };
+          for (var key in data.to_address_errors) {
+            $('#id__' + key + '_').html("<p>" + data.to_address_errors[key][0] + "</p>");
+            console.log($('#id__' + key + '_'))
+          };
+          $('#submit_btn').removeAttr('disabled')
+        }
+        else {
+          window.location = data.success_url;
+        }
+      }
+    });
+  </script>
+  {% endblock js_block %}

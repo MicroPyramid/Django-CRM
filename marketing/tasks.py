@@ -145,7 +145,8 @@ def run_campaign(campaign, domain='demo.django-crm.io', protocol='https'):
                 #     title="company_logo"/>'
 
                 unsubscribe_from_campaign_url = reverse(
-                    'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id, })
+                    'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id,
+                                                                   'campaign_id': campaign.id})
                 unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
                     domain_url + unsubscribe_from_campaign_url)
                 names_dict = {'company_name': each_contact.company_name if each_contact.company_name else '',

@@ -9,6 +9,13 @@
 {% endblock extralinks %}
 {% block content %}
 {{ block.super }}
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:campaign_list' %}">Campaigns</a></li>
+    <li class="breadcrumb-item active">{% if campaign_obj %}Edit{% else %}Create{% endif %} Email Template</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
@@ -109,14 +116,14 @@
                           </div>
 
                           <!-- <div class="filter_col col-md-12"> -->
-                            <div class="form-group">
-                              <label>Tags</label>
-                              <div class="txt-box-div" id="tag-div">
-                                <input type="text" name="tags" id="tags_1" class="tags"
-                                  value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
-                              </div>
-                              <span id="id_tags"></span>
+                          <div class="form-group">
+                            <label>Tags</label>
+                            <div class="txt-box-div" id="tag-div">
+                              <input type="text" name="tags" id="tags_1" class="tags"
+                                value="{% if contact_list %}{% for tag in contact_list.tags.all %}{{tag.name}}, {% endfor %}{% endif %}" />
                             </div>
+                            <span id="id_tags"></span>
+                          </div>
                           <!-- </div> -->
                           <!--
                             <div class="form-group">
@@ -164,7 +171,8 @@
                             </div>
                             <div class="col-md-4 timezone-div" style="display: none;">
                               <div class="form-group">
-                                <label for="">Schedule Date Time</label><span class="error_marker" style="color:red"> *</span>
+                                <label for="">Schedule Date Time</label><span class="error_marker" style="color:red">
+                                  *</span>
                                 <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
                                   <input type="text" class="form-control datetimepicker-input"
                                     data-target="#datetimepicker1" name="schedule_date_time" />
@@ -301,7 +309,7 @@
   // $('[name="schedule_date_time"]').datetimepicker({format: 'yyyy-mm-dd hh:ii'});
   $(function () {
 
-    $(function() {
+    $(function () {
       $('#tags_1').tagsInput({ width: 'auto' });
     });
 

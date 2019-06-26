@@ -26,7 +26,7 @@ urlpatterns = [
     path('contact-list/<int:pk>/failed/download/',
          failed_contact_list_download_delete, name='failed_contact_list_download_delete'),
     path('contact-list/<int:pk>/edit/', edit_contact_list, name='edit_contact_list'),
-    path('cl/list/<int:pk>/delete/', delete_contact_list, name='delete_contact_list'),
+    # path('cl/list/<int:pk>/delete/', delete_contact_list, name='delete_contact_list'),
 
     path('email-templates/', email_template_list, name='email_template_list'),
     path('email-templates/create/', email_template_new, name='email_template_new'),
@@ -42,7 +42,7 @@ urlpatterns = [
     path('cm/link/<int:link_id>/e/<int:email_id>/', campaign_link_click, name='campaign_link_click'),
     path('cm/track-email/<int:campaign_log_id>/contact/<int:email_id>/', campaign_open, name='campaign_open'),
     path('demo-file-download-for-contacts-list/', demo_file_download, name='demo_file_download'),
-    path('unsubscribe-from-campaign/<int:contact_id>/', unsubscribe_from_campaign, name="unsubscribe_from_campaign"),
+    path('unsubscribe-from-campaign/<int:contact_id>/<int:campaign_id>/', unsubscribe_from_campaign, name="unsubscribe_from_campaign"),
     path('contacts/<int:contact_id>/view/', contact_detail, name="contact_detail"),
     path('download-contacts-for-campaign/<int:compaign_id>/', download_contacts_for_campaign, name="download_contacts_for_campaign"),
     path('create-campaign-from-template/<int:template_id>/', create_campaign_from_template, name="create_campaign_from_template"),

@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
 from common.models import Address, User, Document, Comment, APISettings
 from django.contrib.auth import password_validation
+from teams.models import Teams
 
 
 class BillingAddressForm(forms.ModelForm):
@@ -68,11 +69,14 @@ class ShippingAddressForm(forms.ModelForm):
 class UserForm(forms.ModelForm):
 
     password = forms.CharField(max_length=100, required=False)
+    # sales = forms.BooleanField(required=False)
+    # marketing = forms.BooleanField(required=False)
 
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name',
-                  'username', 'role', 'profile_pic']
+                  'username', 'role', 'profile_pic',
+                  'has_sales_access', 'has_marketing_access']
 
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
@@ -100,6 +104,14 @@ class UserForm(forms.ModelForm):
                 raise forms.ValidationError(
                     'Password must be at least 4 characters long!')
         return password
+
+    def clean_has_sales_access(self):
+        sales = self.cleaned_data.get('has_sales_access', False)
+        marketing = self.data.get('has_marketing_access', False)
+        if not sales and not marketing:
+            raise forms.ValidationError('Select atleast one option')
+        return sales
+
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -170,7 +182,8 @@ class ChangePasswordForm(forms.Form):
         if self.data.get('confirm') != self.cleaned_data.get('Newpassword'):
             raise forms.ValidationError(
                 'Confirm password do not match with new password')
-        password_validation.validate_password(self.cleaned_data.get('Newpassword'), user=self.user)
+        password_validation.validate_password(
+            self.cleaned_data.get('Newpassword'), user=self.user)
         return self.data.get('confirm')
 
 

@@ -18,9 +18,12 @@ from tasks.celery_tasks import send_email
 from tasks.forms import TaskAttachmentForm, TaskCommentForm, TaskForm
 from tasks.models import Task
 from tasks.utils import *
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
 @login_required
+@sales_access_required
 def tasks_list(request):
     if request.method == 'GET':
 
@@ -56,6 +59,7 @@ def tasks_list(request):
 
 
 @login_required
+@sales_access_required
 def task_create(request):
     if request.method == 'GET':
         if request.user.role == 'ADMIN' or request.user.is_superuser:
@@ -83,6 +87,7 @@ def task_create(request):
 
 
 @login_required
+@sales_access_required
 def task_detail(request, task_id):
 
     task = get_object_or_404(Task, pk=task_id)
@@ -108,6 +113,7 @@ def task_detail(request, task_id):
 
 
 @login_required
+@sales_access_required
 def task_edit(request, task_id):
     task_obj = get_object_or_404(Task, pk=task_id)
 
@@ -143,6 +149,7 @@ def task_edit(request, task_id):
 
 
 @login_required
+@sales_access_required
 def task_delete(request, task_id):
     task_obj = get_object_or_404(Task, pk=task_id)
 

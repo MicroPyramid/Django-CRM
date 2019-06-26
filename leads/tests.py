@@ -289,7 +289,7 @@ class UpdateLeadTestCase(TestLeadModel, TestCase):
             'state': "California",
             'postcode': "579", 'country': "AD",
             'phone': "+917894563452",
-            'website': "www.gmail.com", 'status': None,
+            'website': "www.gmail.com", 'status': '',
             'source': "", 'opportunity_amount': "700",
             'description': "Iam an Lead", 'created_by': self.user}
         response = self.client.post(url, data)
@@ -476,7 +476,7 @@ class TestLeadListView(TestCase):
         self.client = Client()
 
         self.user = User.objects.create(
-            username='gorge', email='g@mp.com')
+            username='gorge', email='g@mp.com', has_sales_access=True)
         self.user.set_password('jorge2293')
         self.user.save()
 

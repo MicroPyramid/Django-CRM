@@ -69,14 +69,16 @@
                 {% if campaigns_list %}
                 <thead>
                   <tr>
-                    <th width="20%">Campaign</th>
-                    <th width="10%">Receipents</th>
-                    <th width="20%">Sent</th>
-                    <th width="10%">Unique Opens</th>
-                    <th width="10%">Bounces</th>
-                    <th width="10%">Unsubscribed</th>
-                    <th width="10%">Tags</th>
-                    <th width="10%">Actions</th>
+                    <th width="15%" class="text-center">Campaign</th>
+                    <th width="5%" class="text-center">Receipents</th>
+                    <th width="15%" class="text-center">Sent</th>
+                    <th width="10%" class="text-center">Created By</th>
+                    <th width="10%" class="text-center">Unique Opens</th>
+                    <th width="5%" class="text-center">Bounces</th>
+                    <th width="5%" class="text-center">Subscribed</th>
+                    <th width="5%" class="text-center">Unsubscribed</th>
+                    <th width="15%" class="text-center">Tags</th>
+                    <th width="10%" class="text-center">Actions</th>
                   </tr>
                 </thead>
                 {% endif %}
@@ -95,6 +97,9 @@
                     <td>
                       {{ campaign.sent_on_format }}
                     </td>
+                    <td>
+                      {{ campaign.created_by }}
+                    </td>
                     <td class="text-center">
                       <!-- <span class="badge badge-secondary">20.6%</span>  -->
                       {{campaign.opens_unique}}
@@ -105,8 +110,12 @@
                     </td>
                     <td class="text-center">
                       <!-- <span class="badge badge-secondary">15.5%</span> -->
-                      {{campaign.get_all_emails_unsubscribed_count}}
+                      {{campaign.get_all_emails_subscribed_count}}
                     </td>
+                    <td class="text-center">
+                        <!-- <span class="badge badge-secondary">15.5%</span> -->
+                        {{campaign.get_all_emails_unsubscribed_count}}
+                      </td>
                     <td class="text-center">
                       {% for tag in campaign.tags.all|slice:'3' %}
                       <span class="text-left color{{forloop.counter}} tag_class_camp" id="list_tag"
@@ -119,7 +128,7 @@
                         </span></span>
                       {% endif %}
                     </td>
-                    <td class="actions">
+                    <td class="actions text-center">
                       <a href="{% url 'marketing:campaign_details' campaign.id %}" class="btn btn-success view"><i
                           class="fas fa-eye"></i></a>
                       <!--

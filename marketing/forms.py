@@ -197,12 +197,13 @@ class ContactForm(forms.ModelForm):
         self.fields['city'].required = True
         self.fields['state'].required = True
         self.fields['email'].required = True
+        self.fields['company_name'].required = True
         self.fields['contact_list'].required = False
 
     class Meta:
         model = Contact
         fields = ["name", "email", "contact_number",
-                  "last_name", "city", "state"]
+                  "last_name", "city", "state", "company_name"]
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

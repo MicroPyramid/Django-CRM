@@ -1,4 +1,5 @@
 import json
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -19,9 +20,11 @@ from django.urls import reverse
 from django.core.exceptions import PermissionDenied
 from common.tasks import send_email_user_mentions
 from cases.tasks import send_email_to_assigned_user
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
-class CasesListView(LoginRequiredMixin, TemplateView):
+class CasesListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Case
     context_object_name = "cases"
     template_name = "cases.html"
@@ -77,6 +80,8 @@ class CasesListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@login_required
+@sales_access_required
 def create_case(request):
     users = []
     if request.user.role == 'ADMIN' or request.user.is_superuser:
@@ -162,7 +167,7 @@ def create_case(request):
     return render(request, template_name, context)
 
 
-class CaseDetailView(LoginRequiredMixin, DetailView):
+class CaseDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
     model = Case
     context_object_name = "case_record"
     template_name = "view_case.html"
@@ -201,6 +206,8 @@ class CaseDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+@login_required
+@sales_access_required
 def update_case(request, pk):
     case_object = Case.objects.filter(pk=pk).first()
     accounts = Account.objects.filter(status="open")
@@ -312,7 +319,7 @@ def update_case(request, pk):
     return render(request, "create_cases.html", context)
 
 
-class RemoveCaseView(LoginRequiredMixin, View):
+class RemoveCaseView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
@@ -345,7 +352,7 @@ class RemoveCaseView(LoginRequiredMixin, View):
         raise PermissionDenied
 
 
-class CloseCaseView(LoginRequiredMixin, View):
+class CloseCaseView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         case_id = request.POST.get("case_id")

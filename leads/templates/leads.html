@@ -147,6 +147,7 @@
                         <td><a href="{% url 'leads:view_lead' lead.id %}">
                             {{ lead.title }} </a></td>
                         <td>
+                          {% if lead.created_by %}
                           {% if lead.created_by.profile_pic %}
                           {% thumbnail lead.created_by.profile_pic "40x40" crop="center" as im %}
                           <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
@@ -154,7 +155,10 @@
                           {% endthumbnail %}
                           {% else %}
                           <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                            style="width: 40px;height: 40px;" />
+                            style="width: 40px;height: 40px;" title="{{ lead.created_by }}" />
+                          {% endif %}
+                          {% else %}
+                          None
                           {% endif %}
                         </td>
                         <td>{{ lead.source }}</td>

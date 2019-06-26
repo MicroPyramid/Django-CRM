@@ -99,12 +99,16 @@
                       <td scope="row">{{ forloop.counter }}</td>
                       <td>{% if document.title %}<a href="{% url 'common:view_doc' document.id %}">{{ document.title }}</a>{% endif %}</td>
                       <td>
+                        {% if document.created_by %}
                         {% if document.created_by.profile_pic %}
-                          {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
-                              <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ document.created_by }}">
-                          {% endthumbnail %}
+                        {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                        <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ document.created_by }}">
+                        {% endthumbnail %}
                         {% else %}
-                              <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                        <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                        {% endif %}
+                        {% else %}
+                        None
                         {% endif %}
                       </td>
                       <td>{{document.created_on}}</td>

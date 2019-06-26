@@ -123,6 +123,7 @@
                           <th width="20%">Username</th>
                           <th width="20%">Email Address</th>
                           <th width="8%">User Role</th>
+                          <th width="8%">Permissions</th>
                           <th width="15%">Status</th>
                           <th width="20%">Actions</th>
                         </tr>
@@ -139,6 +140,20 @@
                           <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
                           <td>{{ user.email }}</td>
                           <td class="user_role">{% if user.is_superuser %} Admin {% else %} {{user.role}} {% endif %}
+                          </td>
+                          <td>
+                            {% if user.is_superuser or user.role == 'ADMIN' %}
+                            Sales, Marketing
+                            {% endif %}
+                            {% if user.has_sales_access and user.has_marketing_access %}
+                            Sales, Marketing
+                            {% elif user.has_sales_access and not user.has_marketing_access %}
+                            Sales
+                            {% elif not user.has_sales_access and user.has_marketing_access %}
+                            Marketing
+                            {% else %}
+                            {{''}}
+                            {% endif %}
                           </td>
                           <td>
                             {% ifnotequal request.user user  %}

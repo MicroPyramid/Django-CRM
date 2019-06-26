@@ -4,6 +4,12 @@
 {% load common_tags %}
 {% block content %}
 {{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'marketing:campaign_list' %}">Campaigns</a></li>
+    <li class="breadcrumb-item active">{{ campaign.title }}</li>
+  </ol>
+</nav>
 <div class="main_container ml-5 mr-5">
   <div class="row marl">
     <div class="col-md-12">
@@ -35,19 +41,19 @@
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-success" style="font-size:16px;">Opened</span> <span
-                        class="label">{{read_contacts|length}}</span>
+                        class="label">{{campaign.get_all_emails_contacts_opened}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-dark" style="font-size:16px;">Bounced</span> <span
-                        class="label">{{bounced_contacts|length}}</span>
+                        class="label">{{campaign.get_all_email_bounces_count}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-secondary" style="font-size:16px;">Unsubscribed</span> <span
-                        class="label">{{unsubscribe_contacts|length}}</span>
+                        class="label">{{campaign.get_all_emails_unsubscribed_count}}</span>
                     </div>
                   </div>
                   <div class="col-md-12">
@@ -141,12 +147,12 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last 5 Opened</span>
+                            <span>Click here to download all the opened contacts</span>
                             <a href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_opened=true"
                               class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
-                              {% for contact in read_contacts|slice:"5" %}
                               <thead>
                                 <tr>
                                   <th width="20%">Name</th>
@@ -156,16 +162,21 @@
                                 </tr>
                               </thead>
                               <tbody>
+                                {% for contact in read_contacts|slice:"5" %}
                                 <tr>
                                   <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
                                       class="anchor">{{contact.name}}</a></td>
                                   <td><a href="{% url 'marketing:contact_detail' contact.id %}"
                                       class="anchor">{{contact.email}}</a></td>
                                   {% with contacts=contact.contact_list.all %}
-                                  {% for contact in contacts %}
-                                  <td><a href="{% url 'marketing:contact_list_detail' contact.id %}"
-                                      class="anchor">{{contact.name}} </a></td>
-                                  {% endfor %}
+                                  <td>
+                                    {% for contact in contacts %}
+                                    <div>
+                                      <a href="{% url 'marketing:contact_list_detail' contact.id %}"
+                                        class="anchor">{{contact.name}} </a>
+                                    </div>
+                                    {% endfor %}
+                                  </td>
                                   {% endwith %}
                                   <!-- <td>
                                     <span class="badge badge-success">Subscribed</span>
@@ -193,7 +204,10 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last 5 Unsubscribed</span>
-                            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+                            <span>Click here to download all the unsubscribed contacts</span>
+                            <a href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_unsubscribed=true"
+                              title="download bounced contacts" class="primary_btn text-center"><i
+                                class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
@@ -211,9 +225,7 @@
                                 <tr>
                                   <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
                                       class="anchor">{{contact.name}}</a></td>
-                                  <td><a
-                                      href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_unsubscribed=true"
-                                      class="anchor">{{contact.email}}</a></td>
+                                  <td><a href="#" class="anchor">{{contact.email}}</a></td>
                                   {% with contacts=contact.contact_list.all %}
                                   <td>
                                     {% for contact in contacts %}
@@ -249,6 +261,7 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last 5 Bounced</span>
+                            <span>Click here to download all the bounced contacts</span>
                             <a href="{% url 'marketing:download_contacts_for_campaign' campaign.id  %}?is_bounced=true"
                               title="download bounced contacts" class="primary_btn text-center"><i
                                 class="fas fa-download mar_right_0"></i></a>
