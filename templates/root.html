@@ -3,26 +3,29 @@
 {% load thumbnail %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Django CRM</title>
-    <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.core.css" rel="stylesheet">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Django CRM</title>
+  <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.core.css" rel="stylesheet">
 
-    {% compress css %}
-      <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
-      <link href="{% static 'css/mention.scss' %}" type="text/x-scss" rel="stylesheet">
-    {% endcompress %}
+  {% compress css %}
+  <link href="{% static 'css/main.scss' %}" type="text/x-scss" rel="stylesheet">
+  <link href="{% static 'css/mention.scss' %}" type="text/x-scss" rel="stylesheet">
+  {% endcompress %}
 
-    {% block extralinks %} {% endblock %}
+  {% block extralinks %} {% endblock %}
 </head>
+
 <body class="main_body_bg_color">
   <div class="wrapper">
     {% block header %}
@@ -30,52 +33,68 @@
       <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <!-- <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a> -->
         <div class="dropdown">
-          <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+          <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" style="color:#44535c">
             Django CRM
           </a>
 
           <div class="dropdown-menu mt-2" aria-labelledby="dropdownMenuLink">
+            {% if user.is_superuser or user.role == 'ADMIN' %}
             <a class="dropdown-item" href="/">Sales</a>
             <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
+            {% elif user.has_sales_access and user.has_marketing_access %}
+            <a class="dropdown-item" href="/">Sales</a>
+            <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
+            {% elif user.has_sales_access and not user.has_marketing_access %}
+            <a class="dropdown-item" href="/">Sales</a>
+            {% elif not user.has_sales_access and user.has_marketing_access %}
+            <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
+            {% else %}
+            {{''}}
+            {% endif %}
+            <!-- <a class="dropdown-item" href="/">Sales</a>
+            <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a> -->
           </div>
         </div>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <i class="fas fa-bars"></i>
         </button>
         {% if request.user.is_authenticated %}
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            {% block main_menu %}{% endblock %}
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          {% block main_menu %}{% endblock %}
 
-            <ul class="navbar-nav navbar-right my-2 my-lg-0">
-              <li class="nav-item dropdown">
-                <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" >
-                  {% if not request.user.profile_pic %}
-                    <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
-                  {% else %}
-                    {% thumbnail request.user.profile_pic "25x25" as im %}
-                      <img src="{{ im.url }}">
-                    {% endthumbnail %}
-                  {% endif %}
-                  <b class="caret"></b>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                  {% if request.user.role == "ADMIN"  or request.user.is_superuser %}
-                  <a class="dropdown-item" href="{% url 'common:users_list' %}">Users</a>
-                  <a class="dropdown-item" href="{% url 'common:api_settings' %}">Settings</a>
-                  {% endif %}
-                  {% if request.user.email != "admin@micropyramid.com" %}
-                  <a class="dropdown-item" href="/change-password/">Change Password</a>
-                  {% endif %}
-                  <a class="dropdown-item" href="{% url 'common:profile' %}">Profile</a>
-                  <a class="dropdown-item" href="{% url 'common:logout' %}">Logout</a>
-                </div>
-              </li>
-            </ul>
-          </div>
+          <ul class="navbar-nav navbar-right my-2 my-lg-0">
+            <li class="nav-item dropdown">
+              <a href="#" class="dropdown-toggle abcd nav-link" data-toggle="dropdown" role="button"
+                aria-haspopup="true" aria-expanded="false">
+                {% if not request.user.profile_pic %}
+                <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
+                {% else %}
+                {% thumbnail request.user.profile_pic "25x25" as im %}
+                <img src="{{ im.url }}">
+                {% endthumbnail %}
+                {% endif %}
+                <b class="caret"></b>
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                {% if request.user.role == "ADMIN"  or request.user.is_superuser %}
+                <a class="dropdown-item" href="{% url 'common:users_list' %}">Users</a>
+                <a class="dropdown-item" href="{% url 'common:api_settings' %}">Settings</a>
+                {% endif %}
+                {% if request.user.email != "admin@micropyramid.com" %}
+                <a class="dropdown-item" href="/change-password/">Change Password</a>
+                {% endif %}
+                <a class="dropdown-item" href="{% url 'common:profile' %}">Profile</a>
+                <a class="dropdown-item" href="{% url 'common:logout' %}">Logout</a>
+              </div>
+            </li>
+          </ul>
+        </div>
         {% endif %}
-        </nav>
+      </nav>
     </header>
-      {% endblock %}
+    {% endblock %}
 
     <div id="mainbody" class="main_container" style="margin-top:65px;">
       {% block breadcrumb %}
@@ -85,66 +104,68 @@
       {% endblock %}
     </div>
   </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
-<script defer src="https://use.fontawesome.com/releases/v5.7.1/js/all.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" ></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.min.js"></script>
-<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+  <script defer src="https://use.fontawesome.com/releases/v5.7.1/js/all.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script>
 
-{% block js_block %}{% endblock js_block %}
-<script type="text/javascript">
-  $(document).ready(function(){
-    word = window.location.pathname.split('/')[1];
-    if(word == ""){
-      $("#dashboard").addClass('active');
-    }
-    else{
-      $('#' + word).addClass('active');
-    }
-    marketing_word = window.location.pathname.split('/')[2];
-    if(marketing_word == ""){
-      $("#marketing-dashboard").addClass('active');
-    }
-    // console.log(marketing_word.substring(0,7) === 'contact');
-    else if(marketing_word.substring(0,7) === "contact"){
-      $("#contact").css({'border-bottom':'3px solid #099CBE,'});
-      $(".contact_class").css('border-bottom','3px solid #099CBE');
-      marketing_word = window.location.pathname.split('/')[2]
-      // console.log(marketing_word)
-      // console.log(marketing_word == 'contact-list')
-      // console.log(marketing_word == 'contacts')
-      if (marketing_word == 'contact-list'){
-        $(".contact-list").css('background','#e5e5e5');
+  {% block js_block %}{% endblock js_block %}
+  <script type="text/javascript">
+    $(document).ready(function () {
+      word = window.location.pathname.split('/')[1];
+      if (word == "") {
+        $("#dashboard").addClass('active');
       }
-      if (marketing_word == 'contacts'){
-        $(".contacts").css('background','#e5e5e5');
+      else {
+        $('#' + word).addClass('active');
       }
-      // $("#contacts").css('background','#e5e5e5');
-    }
-    else{
-      $('#' + marketing_word).addClass('active')
-    }
-  });
+      marketing_word = window.location.pathname.split('/')[2];
+      if (marketing_word == "") {
+        $("#marketing-dashboard").addClass('active');
+      }
+      // console.log(marketing_word.substring(0,7) === 'contact');
+      else if (marketing_word.substring(0, 7) === "contact") {
+        $("#contact").css({ 'border-bottom': '3px solid #099CBE,' });
+        $(".contact_class").css('border-bottom', '3px solid #099CBE');
+        marketing_word = window.location.pathname.split('/')[2]
+        // console.log(marketing_word)
+        // console.log(marketing_word == 'contact-list')
+        // console.log(marketing_word == 'contacts')
+        if (marketing_word == 'contact-list') {
+          $(".contact-list").css('background', '#e5e5e5');
+        }
+        if (marketing_word == 'contacts') {
+          $(".contacts").css('background', '#e5e5e5');
+        }
+        // $("#contacts").css('background','#e5e5e5');
+      }
+      else {
+        $('#' + marketing_word).addClass('active')
+      }
+    });
   /*
-    Usage is very simple; to block user activity for the page:
-      $.blockUI();
-
-    Blocking with a custom message:
-      $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
-
-    Blocking with custom style:
-      $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
-
-    To unblock the page:
-      $.unblockUI();
-
-    If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
-      $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-  */
-</script>
+      Usage is very simple; to block user activity for the page:
+        $.blockUI();
+  
+      Blocking with a custom message:
+        $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
+  
+      Blocking with custom style:
+        $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
+  
+      To unblock the page:
+        $.unblockUI();
+  
+      If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
+        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+    */
+  </script>
 </body>
+
 </html>

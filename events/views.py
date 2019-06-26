@@ -15,9 +15,12 @@ from common.tasks import send_email_user_mentions
 from events.forms import EventAttachmentForm, EventCommentForm, EventForm
 from events.models import Event
 from events.tasks import send_email
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
 @login_required
+@sales_access_required
 def events_list(request):
 
     if request.user.role == 'ADMIN' or request.user.is_superuser:
@@ -51,7 +54,8 @@ def events_list(request):
                 Q(created_by=request.user) | Q(assigned_to=request.user)).distinct()
 
         if request.POST.get('event_name', None):
-            events = events.filter(name__icontains=request.POST.get('event_name'))
+            events = events.filter(
+                name__icontains=request.POST.get('event_name'))
 
         if request.POST.get('created_by', None):
             events = events.filter(
@@ -63,13 +67,15 @@ def events_list(request):
             context['assigned_to'] = request.POST.getlist('assigned_to')
 
         if request.POST.get('date_of_meeting', None):
-            events = events.filter(date_of_meeting=request.POST.get('date_of_meeting'))
+            events = events.filter(
+                date_of_meeting=request.POST.get('date_of_meeting'))
 
         context['events'] = events.distinct().order_by('id')
         return render(request, 'events_list.html', context)
 
 
 @login_required
+@sales_access_required
 def event_create(request):
     if request.method == 'GET':
         context = {}
@@ -89,7 +95,8 @@ def event_create(request):
                 event.created_by = request.user
                 event.save()
                 form.save_m2m()
-                send_email.delay(event.id, domain=request.get_host(), protocol=request.scheme)
+                send_email.delay(
+                    event.id, domain=request.get_host(), protocol=request.scheme)
 
             if form.cleaned_data.get('event_type') == 'Recurring':
                 delta = end_date - start_date
@@ -113,7 +120,8 @@ def event_create(request):
                     )
                     event.contacts.add(*request.POST.getlist('contacts'))
                     event.assigned_to.add(*request.POST.getlist('assigned_to'))
-                    send_email.delay(event.id, domain=request.get_host(), protocol=request.scheme)
+                    send_email.delay(
+                        event.id, domain=request.get_host(), protocol=request.scheme)
 
             return JsonResponse({'error': False, 'success_url': reverse('events:events_list')})
         else:
@@ -121,6 +129,7 @@ def event_create(request):
 
 
 @login_required
+@sales_access_required
 def event_detail_view(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or event.created_by == request.user or request.user in event.assigned_to.all()):
@@ -144,6 +153,7 @@ def event_detail_view(request, event_id):
 
 
 @login_required
+@sales_access_required
 def event_update(request, event_id):
     event_obj = get_object_or_404(Event, pk=event_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or event_obj.created_by == request.user or request.user in event_obj.assigned_to.all()):
@@ -176,14 +186,15 @@ def event_update(request, event_id):
                 # event.created_by = request.user
                 event.save()
                 form.save_m2m()
-                send_email.delay(event.id, domain=request.get_host(), protocol=request.scheme)
-
+                send_email.delay(
+                    event.id, domain=request.get_host(), protocol=request.scheme)
 
             if form.cleaned_data.get('event_type') == 'Recurring':
                 event = form.save(commit=False)
                 event.save()
                 form.save_m2m()
-                send_email.delay(event.id, domain=request.get_host(), protocol=request.scheme)
+                send_email.delay(
+                    event.id, domain=request.get_host(), protocol=request.scheme)
 
                 # event.contacts.add(*request.POST.getlist('contacts'))
                 # event.assigned_to.add(*request.POST.getlist('assigned_to'))
@@ -194,6 +205,7 @@ def event_update(request, event_id):
 
 
 @login_required
+@sales_access_required
 def event_delete(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or event.created_by == request.user):

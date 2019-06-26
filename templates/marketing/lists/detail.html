@@ -165,13 +165,7 @@
       console.log(url)
       var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
       console.log(contact_lists);
-      if (contact_lists > 1) {
-        if (!confirm('Are you sure you want to edit? this contact exists in other contact lists, editing this will change this contact information in other contact lists too!'))
-          return;
-        window.location = $(this).attr('href');
-      } else {
-        window.location = $(this).attr('href');
-      }
+      window.location = $(this).attr('href');
     })
 
     $("a[rel='page']").click(function (e) {

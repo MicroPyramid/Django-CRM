@@ -13,7 +13,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"> <a href="{% url 'contacts:list' %}">Contacts</a></li>
-    <li class="breadcrumb-item active">view</li>
+    <li class="breadcrumb-item active">{{contact_record.first_name}} {{contact_record.last_name}}</li>
   </ol>
 </nav>
 {% endblock %}

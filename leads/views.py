@@ -1,4 +1,5 @@
 import json
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -24,8 +25,11 @@ from leads.tasks import send_lead_assigned_emails
 from django.core.exceptions import PermissionDenied
 from common.tasks import send_email_user_mentions
 from leads.tasks import send_email_to_assigned_user
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
-class LeadListView(LoginRequiredMixin, TemplateView):
+
+class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Lead
     context_object_name = "lead_obj"
     template_name = "leads.html"
@@ -102,6 +106,8 @@ class LeadListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@login_required
+@sales_access_required
 def create_lead(request):
     template_name = "create_lead.html"
     users = []
@@ -217,7 +223,7 @@ def create_lead(request):
     return render(request, template_name, context)
 
 
-class LeadDetailView(LoginRequiredMixin, DetailView):
+class LeadDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
     model = Lead
     context_object_name = "lead_record"
     template_name = "view_leads.html"
@@ -273,6 +279,8 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+@login_required
+@sales_access_required
 def update_lead(request, pk):
     lead_record = Lead.objects.filter(pk=pk).first()
     template_name = "create_lead.html"
@@ -437,7 +445,7 @@ def update_lead(request, pk):
     return render(request, template_name, context)
 
 
-class DeleteLeadView(LoginRequiredMixin, View):
+class DeleteLeadView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)

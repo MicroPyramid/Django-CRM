@@ -1,0 +1,88 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load thumbnail %}
+{% block content%}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'teams:teams_list' %}">Teams</a></li>
+    <li class="breadcrumb-item" active>View</li>
+  </ol>
+</nav>
+<!-- OPPORTUNITY VIEW STARTS -->
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="panel-heading card-title view-pad text-center">
+            <h5>
+              Team
+            </h5>
+            <a href="{% url 'teams:team_edit' team_obj.id %}" class="btn btn-success edit">Edit</a>
+          </div>
+          <div class="row marl no-gutters">
+            <div class="col-md-8">
+              {% if team_obj.name %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_title" data-name="title">Name</label>
+                  <div class="contact_field" id="doc_title" data-name="name">{{ team_obj.name }}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if team_obj.description %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_status" data-name="status">Description</label>
+                  <div class="contact_field" id="doc_status" data-name="status">
+                    {{ team_obj.description }} </div>
+                </div>
+              </div>
+              {% endif %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_status" data-name="status">Assigned To</label>
+                  <br>
+                  {% with users=team_obj.users.all %}
+                  {% for user in users %}
+                  {% if user.profile_pic %}
+                  {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                  <span>
+                    <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                  </span>
+                  {% endthumbnail %}
+                  {% else %}
+                  <span>
+                    <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                  </span>
+                  {% endif %}
+                  {% empty %}
+                  None
+                </div>
+              </div>
+              {% endfor %}
+              {% endwith %}
+              <div class="filter_col col-md-12">
+                <div class="form-group mt-3">
+                  <label class="contact_field_label" for="id_created_by" data-name="created_by">Created By</label>
+                  <div class="contact_field" id="created_by" data-name="created_by">
+                    {{ team_obj.created_by }}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_created_on" data-name="created_on">Created On</label>
+                  <div class="contact_field" id="created_on" data-name="created_on">
+                    {{ team_obj.created_on }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- OPPORTUNITY VIEW ENDS -->
+{% endblock %}

@@ -20,9 +20,10 @@ from django.contrib.auth.decorators import login_required
 from accounts.tasks import send_email
 from common.tasks import send_email_user_mentions
 from django.contrib.sites.shortcuts import get_current_site
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
-
-class AccountsListView(LoginRequiredMixin, TemplateView):
+class AccountsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Account
     context_object_name = "accounts_list"
     template_name = "accounts.html"
@@ -95,7 +96,7 @@ class AccountsListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class CreateAccountView(LoginRequiredMixin, CreateView):
+class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView):
     model = Account
     form_class = AccountForm
     template_name = "create_account.html"
@@ -194,7 +195,7 @@ class CreateAccountView(LoginRequiredMixin, CreateView):
         return context
 
 
-class AccountDetailView(LoginRequiredMixin, DetailView):
+class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
     model = Account
     context_object_name = "account_record"
     template_name = "view_account.html"
@@ -240,7 +241,7 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class AccountUpdateView(LoginRequiredMixin, UpdateView):
+class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Account
     form_class = AccountForm
     template_name = "create_account.html"
@@ -342,7 +343,7 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
         return context
 
 
-class AccountDeleteView(LoginRequiredMixin, DeleteView):
+class AccountDeleteView(SalesAccessRequiredMixin, LoginRequiredMixin, DeleteView):
     model = Account
     template_name = 'view_account.html'
 

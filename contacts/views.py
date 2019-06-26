@@ -19,9 +19,11 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from common.tasks import send_email_user_mentions
 from contacts.tasks import send_email_to_assigned_user
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
-class ContactsListView(LoginRequiredMixin, TemplateView):
+class ContactsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Contact
     context_object_name = "contact_obj_list"
     template_name = "contacts.html"
@@ -78,7 +80,7 @@ class ContactsListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class CreateContactView(LoginRequiredMixin, CreateView):
+class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView):
     model = Contact
     form_class = ContactForm
     template_name = "create_contact.html"
@@ -185,7 +187,7 @@ class CreateContactView(LoginRequiredMixin, CreateView):
         return context
 
 
-class ContactDetailView(LoginRequiredMixin, DetailView):
+class ContactDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
     model = Contact
     context_object_name = "contact_record"
     template_name = "view_contact.html"
@@ -229,7 +231,7 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class UpdateContactView(LoginRequiredMixin, UpdateView):
+class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Contact
     form_class = ContactForm
     template_name = "create_contact.html"
@@ -357,7 +359,7 @@ class UpdateContactView(LoginRequiredMixin, UpdateView):
         return context
 
 
-class RemoveContactView(LoginRequiredMixin, View):
+class RemoveContactView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)

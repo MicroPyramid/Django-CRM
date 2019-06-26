@@ -33,6 +33,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=50, choices=ROLES)
     profile_pic = models.FileField(
         max_length=1000, upload_to=img_url, null=True, blank=True)
+    has_sales_access = models.BooleanField(default=False)
+    has_marketing_access = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', ]
@@ -144,7 +146,7 @@ class Comment(models.Model):
                                 related_name='invoice_comments', on_delete=models.CASCADE)
 
     event = models.ForeignKey('events.Event', blank=True, null=True,
-                                related_name='events_comments', on_delete=models.CASCADE)
+                              related_name='events_comments', on_delete=models.CASCADE)
 
     def get_files(self):
         return Comment_Files.objects.filter(comment_id=self)
@@ -196,7 +198,7 @@ class Attachments(models.Model):
     invoice = models.ForeignKey('invoices.Invoice', blank=True, null=True,
                                 related_name='invoice_attachment', on_delete=models.CASCADE)
     event = models.ForeignKey('events.Event', blank=True, null=True,
-                                related_name='events_attachment', on_delete=models.CASCADE)
+                              related_name='events_attachment', on_delete=models.CASCADE)
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
@@ -249,6 +251,9 @@ class Document(models.Model):
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
     shared_to = models.ManyToManyField(User, related_name='document_shared_to')
 
+    class Meta:
+        ordering = ('-created_on',)
+
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
         if (len(name_ext_list) > 1):
@@ -292,6 +297,9 @@ class APISettings(models.Model):
         on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ('-created_on',)
+
     def __str__(self):
         return self.title
 
@@ -316,32 +324,3 @@ class Google(models.Model):
 
     def __str__(self):
         return self.email
-
-# # Need to be reviewed
-# class Task(models.Model):
-
-#     # assigned_to can be assigned to contact, oppurtunity, case
-#     assigned_to = models.ManyToManyField(User, related_name='task_assigned_to')
-#     status = models.CharField(max_length=50, choices=)
-#     subject = models.CharField(max_length=200, default='')
-#     name = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_task')
-
-#     due_date = models.DateField(auto_now=False, auto_now_add=False)
-#     # this could be choice field
-#     related_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='to_account')
-#     # related_to = models.CharField(max_length=50, choices=)
-#     priority = models.CharField(max_length=50, , choices=)
-
-
-#     comments = models.TextField()
-#     recurrence = models.BooleanField()
-
-
-#     # optional fields
-#     status = models.CharField(max_length=50, choices=)
-#     # type_task = models.CharField(max_length=50)
-#     # phone = models.phonenumber_field(null=True)
-#     # email = models.EmailField(max_length=254)
-
-#     send_notification_mail = models.BooleanField(default=False)
-#     reminder_field = models.DateTimeField(auto_now=False, auto_now_add=False)

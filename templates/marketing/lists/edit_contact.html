@@ -33,6 +33,15 @@
                     </div>
                     <div class="filter_col col-md-12">
                       <div class="form-group">
+                        <label for="exampleInputEmail1" class="required">
+                          Company{% if form.company_name.field.required %}<span class="error_marker"
+                            style="color:red">*</span>{% endif %}</label>
+                        {{ form.company_name }}
+                        <span class="error" id="id__company_name">{{ form.company_name.errors }}</span>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
                         <label for="exampleInputEmail1" class="required">First
                           Name{% if form.name.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
@@ -72,7 +81,9 @@
                   <div class="col-md-12">
                     <div class="row marl buttons_row text-center form_btn_row">
                       <button class="btn btn-default save" type="submit">Update</button>
-                      <a href="{% url 'marketing:contacts_list' %}" class="btn btn-default clear">Cancel</a>
+                      <a {% if request.META.HTTP_REFERER %} href="{{ request.META.HTTP_REFERER }}" {% else %} href="/"
+                        {% endif %} class="btn btn-default clear">Cancel</a>
+                      <!-- <a href="#" onclick="window.history.back()" class="btn btn-default clear">Cancel</a> -->
                     </div>
                   </div>
                 </div>
