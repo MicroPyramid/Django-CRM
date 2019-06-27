@@ -1,13 +1,17 @@
 {% extends "sales/base.html" %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 {% block content %}
 <!-- main_container starts here -->
 <div class="main_container">
   <!-- heading_create starts here -->
   <div class="row marl">
     <div class="col-lg-12 text-right">
-      <span class="d-inline"><a class="primary_btn"  href="{% url 'opportunities:save'%}"><i class="fa fa-plus"></i> Add New Opportunity</a></span>
+      <span class="d-inline"><a class="primary_btn" href="{% url 'opportunities:save'%}"><i class="fa fa-plus"></i> Add
+          New Opportunity</a></span>
     </div>
   </div>
   <!-- heading_create ends here -->
@@ -15,83 +19,103 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-            <form id="opportunity_filter" method="POST" action="">
-          <div class="card-body ">
-           <div class="card-title">Filters</div>
-            <div class="row marl">
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Name</label>
-                  <input type="text" class="form-control" placeholder="Name" id="id_name" name="name" {% if request.POST %} value="{{request.POST.name}}" {% endif %}>
+          <form id="opportunity_filter" method="POST" action="">
+            <div class="card-body ">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label>
+                    <input type="text" class="form-control" placeholder="Name" id="id_name" name="name"
+                      {% if request.POST %} value="{{request.POST.name}}" {% endif %}>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Account</label>
-                  <select class="form-control" id="id_account" name="account">
-                    <option value="">---------</option>
-                    {% for l in accounts %}
-                    <option value="{{l.id}}" {% if request.POST.account %}{%ifequal l.id request.POST.account|add:"0"%}selected{%endifequal%} {% endif %}>{{ l.name }}</option>
-                    {% endfor %}
-                  </select>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Account</label>
+                    <select class="form-control" id="id_account" name="account">
+                      <option value="">---------</option>
+                      {% for l in accounts %}
+                      <option value="{{l.id}}"
+                        {% if request.POST.account %}{%ifequal l.id request.POST.account|add:"0"%}selected{%endifequal%}
+                        {% endif %}>{{ l.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-2">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Stage</label>
-                  <select class="form-control" id="id_stage" name="stage" >
-                    <option value="">---------</option>
-                    {% for stage in stages %}
-                    <option value="{{stage.0}}" {% if request.POST.stage %} {% ifequal stage.0 request.POST.stage %}selected{% endifequal %} {% endif %}>{{stage.1}} </option>
-                    {% endfor%}
-                  </select>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Stage</label>
+                    <select class="form-control" id="id_stage" name="stage">
+                      <option value="">---------</option>
+                      {% for stage in stages %}
+                      <option value="{{stage.0}}" {% if request.POST.stage %}
+                        {% ifequal stage.0 request.POST.stage %}selected{% endifequal %} {% endif %}>{{stage.1}}
+                      </option>
+                      {% endfor%}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col col-md-3">
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Lead Source</label>
-                  <select class="form-control" id="id_lead_source" name="lead_source" >
-                    <option value="">---------</option>
-                    {% for source in sources %}
-                    <option value="{{source.0}}" {% if request.POST.lead_source %} {% ifequal source.0 request.POST.lead_source %}selected{% endifequal %} {% endif %}>{{source.1}} </option>
-                    {% endfor%}
-                  </select>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Lead Source</label>
+                    <select class="form-control" id="id_lead_source" name="lead_source">
+                      <option value="">---------</option>
+                      {% for source in sources %}
+                      <option value="{{source.0}}" {% if request.POST.lead_source %}
+                        {% ifequal source.0 request.POST.lead_source %}selected{% endifequal %} {% endif %}>{{source.1}}
+                      </option>
+                      {% endfor%}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="filter_col text-left col-2">
-                <div class="form-group buttons_row">
-                  <button class="btn btn-primary save" type="submit">Search</button>
-                  <a href="{% url 'opportunities:list' %}" class="btn btn-default clear">Clear</a>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Tags</label>
+                    <select class="form-control" id="id_tag" name="tag" multiple>
+                      <!-- <option value="">--Select Tags--</option> -->
+                      {% for tag in tags %}
+                      <option value="{{tag.id}}" {% if request_tags %}
+                        {% if tag.id|slugify in request_tags %}selected{% endif %}{% endif %}>{{ tag.name }} </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
+                <div class="filter_col text-left col-2">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="{% url 'opportunities:list' %}" class="btn btn-default clear">Clear</a>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
         </div>
       </div>
     </div>
   </div>
-   <div class="table_container_row row marl ">
+  <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
-       
+
         <div class="card-body">
-         <div class="panel-heading-list card-title text-right">
-           <span class="float-left">Opportunities - {% if show_pageitems %} {% show_pageitems %}{% else %} {{ opportunity_list|length }}{% endif %}</span>
-              <span class="filter_toggle">
-                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-              </span>
-         
-        </div>
-        <div class="table-responsive">
-          <table class="table ">
-            <thead>
-              {% if opportunity_list|length > 0 %}
+          <div class="panel-heading-list card-title text-right">
+            <span class="float-left">Opportunities - {% if show_pageitems %} {% show_pageitems %}{% else %}
+              {{ opportunity_list|length }}{% endif %}</span>
+            <span class="filter_toggle">
+              <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+            </span>
+
+          </div>
+          <div class="table-responsive">
+            <table class="table ">
+              <thead>
+                {% if opportunity_list|length > 0 %}
 
                 <tr>
                   <th width="5%">S.No</th>
                   <th width="10%">Name</th>
-                  <th width="20%">Assigned User</th>
+                  <th width="20%">Assigned To</th>
                   <th width="15%">Tags</th>
                   <th width="15%">Account</th>
                   <!--<th width="15%">Contact(s)</th>-->
@@ -99,48 +123,48 @@
                   <th width="10%">Lead Source</th>
                   <th width="10%">Actions</th>
                 </tr>
-              {% endif %}
-            </thead>
-            <tbody>
-              {% if per_page %}
+                {% endif %}
+              </thead>
+              <tbody>
+                {% if per_page %}
                 {% paginate per_page opportunity_list %}
-              {% else %}
+                {% else %}
                 {% paginate 10 opportunity_list %}
-              {% endif %}
-              {% for opportunity in opportunity_list %}
-              <tr class="text-center">
-                <td scope="row">{{ forloop.counter }}</td>
-                <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
-                <td>
-                  {% with opportunity_users=opportunity.assigned_to.all %}
-                  {% if opportunity_users %}
-                  {% for user in opportunity_users %}
-                  <span class="text-left">{{ user.email }}</span><br>
-                  {% endfor %}
-                  {% else %}
-                  Not Assigned to Any
-                  {% endif %}
-                  {% endwith %}
-                </td>
-                <td >
-                  {% with tags=opportunity.tags.all %}
-                  {% if tags %}
-                  {% for tag in tags %}
-                  <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
-                  {% endfor %}
-                  {% else %}
-                  No Tags
-                  {% endif %}
-                  {% endwith %}
-                </td>
-                <td>
-                  {% if opportunity.account %}
+                {% endif %}
+                {% for opportunity in opportunity_list %}
+                <tr class="text-center">
+                  <td scope="row">{{ forloop.counter }}</td>
+                  <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
+                  <td>
+                    {% with opportunity_users=opportunity.assigned_to.all %}
+                    {% if opportunity_users %}
+                    {% for user in opportunity_users %}
+                    <span class="text-left">{{ user.email }}</span><br>
+                    {% endfor %}
+                    {% else %}
+                    None
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                  <td>
+                    {% with tags=opportunity.tags.all %}
+                    {% if tags %}
+                    {% for tag in tags %}
+                    <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                    {% endfor %}
+                    {% else %}
+                    No Tags
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                  <td>
+                    {% if opportunity.account %}
                     <a href="{% url  'accounts:view_account' opportunity.account.id %}">{{ opportunity.account }}</a>
-                  {% else %}
+                    {% else %}
                     No Related Account
-                  {% endif %}
-                </td>
-                <!--<td>
+                    {% endif %}
+                  </td>
+                  <!--<td>
                   {% with opp_contacts=opportunity.contacts.all %}
                     {% if opp_contacts %}
                       {% for contact in opp_contacts %}
@@ -151,22 +175,25 @@
                     {% endif %}
                   {% endwith %}
                 </td>-->
-                <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
-                <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}</td>
-                <td class="actions">
-                  <!-- <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> -->
-                  <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
-                  {% if request.user == opportunity.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                  <a href="{% url 'opportunities:opp_remove' opportunity.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                  <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
+                  <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}
+                  </td>
+                  <td class="actions">
+                    <!-- <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> -->
+                    <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i
+                        class="fas fa-pencil-alt"></i></a>
+                    {% if request.user == opportunity.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
+                    <a href="{% url 'opportunities:opp_remove' opportunity.id %}"
+                      class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
           {% ifequal opportunity_list|length 0 %}
-            <h6 class="text-center">No Opportunity Records Found</h6>
+          <h6 class="text-center">No Opportunity Records Found</h6>
           {% endifequal %}
           <div class="marl row text-center">
             {% show_pages %}
@@ -178,25 +205,26 @@
     <br clear="all">
   </div>
   <!-- filter_row starts here -->
- 
+
 </div>
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-      $(".list_filter_row").toggle();    
-    });    
-  });  
+  $(document).ready(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+    $('#id_tag').select2();
+  });
 
   search = "{{search}}"
 
-  if (search == 'True'){
+  if (search == 'True') {
     $(".list_filter_row").show();
   }
 
-  $('.delete').click(function(e){
+  $('.delete').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
@@ -204,7 +232,7 @@
     window.location = $(this).attr('href')
   });
 
-  $("a[rel='page']").click(function(e){
+  $("a[rel='page']").click(function (e) {
     e.preventDefault();
     $('#opportunity_filter').attr("action", $(this).attr("href"));
     $('#opportunity_filter').submit();

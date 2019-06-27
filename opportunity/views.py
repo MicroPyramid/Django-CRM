@@ -17,6 +17,8 @@ from opportunity.models import Opportunity
 from django.urls import reverse
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
+from common.tasks import send_email_user_mentions
+from opportunity.tasks import send_email_to_assigned_user
 
 
 class OpportunityListView(LoginRequiredMixin, TemplateView):
@@ -32,6 +34,9 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.user]) |
                 Q(created_by=self.request.user.id))
+
+        if self.request.GET.get('tag', None):
+            queryset = queryset.filter(tags__in = self.request.GET.getlist('tag'))
 
         request_post = self.request.POST
         if request_post:
@@ -49,7 +54,9 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
             if request_post.get('contacts'):
                 queryset = queryset.filter(
                     contacts=request_post.get('contacts'))
-        return queryset
+            if request_post.get('tag'):
+                queryset = queryset.filter(tags__in=request_post.getlist('tag'))
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super(OpportunityListView, self).get_context_data(**kwargs)
@@ -59,7 +66,14 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
         context["stages"] = STAGES
         context["sources"] = SOURCES
         context["per_page"] = self.request.POST.get('per_page')
-
+        tag_ids = list(set(Opportunity.objects.values_list('tags', flat=True)))
+        context["tags"] = Tags.objects.filter(id__in=tag_ids)
+        if self.request.POST.get('tag', None):
+            context["request_tags"] = self.request.POST.getlist('tag')
+        elif self.request.GET.get('tag', None):
+            context["request_tags"] = self.request.GET.getlist('tag')
+        else:
+            context["request_tags"] = None
         search = False
         if (
             self.request.POST.get('name') or self.request.POST.get('stage') or
@@ -85,9 +99,15 @@ def create_opportunity(request):
             created_by=request.user)
         contacts = Contact.objects.filter(
             Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
-
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     kwargs_data = {
-        "assigned_to": User.objects.filter(is_active=True).order_by('email'),
+        "assigned_to": users,
         "account": accounts, "contacts": contacts}
     if request.POST:
         form = OpportunityForm(request.POST, request.FILES, **kwargs_data)
@@ -102,20 +122,23 @@ def create_opportunity(request):
                     *request.POST.getlist('assigned_to'))
                 assigned_to_list = request.POST.getlist('assigned_to')
                 current_site = get_current_site(request)
-                for assigned_to_user in assigned_to_list:
-                    user = get_object_or_404(User, pk=assigned_to_user)
-                    mail_subject = 'Assigned to opportunity.'
-                    message = render_to_string(
-                        'assigned_to/opportunity_assigned.html', {
-                            'user': user,
-                            'domain': current_site.domain,
-                            'protocol': request.scheme,
-                            'opportunity': opportunity_obj
-                        })
-                    email = EmailMessage(
-                        mail_subject, message, to=[user.email])
-                    email.content_subtype = "html"
-                    email.send()
+                recipients = assigned_to_list
+                send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,
+                    protocol=request.scheme)
+                # for assigned_to_user in assigned_to_list:
+                #     user = get_object_or_404(User, pk=assigned_to_user)
+                #     mail_subject = 'Assigned to opportunity.'
+                #     message = render_to_string(
+                #         'assigned_to/opportunity_assigned.html', {
+                #             'user': user,
+                #             'domain': current_site.domain,
+                #             'protocol': request.scheme,
+                #             'opportunity': opportunity_obj
+                #         })
+                #     email = EmailMessage(
+                #         mail_subject, message, to=[user.email])
+                #     email.content_subtype = "html"
+                #     email.send()
             if request.POST.getlist('contacts', []):
                 opportunity_obj.contacts.add(
                     *request.POST.getlist('contacts'))
@@ -197,10 +220,19 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
             assigned_data.append(assigned_dict)
 
         comments = context["opportunity_record"].opportunity_comments.all()
+
+        if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
+            users_mention = list(User.objects.all().values('username'))
+        elif self.request.user != context['object'].created_by:
+            users_mention = [{'username': context['object'].created_by.username}]
+        else:
+            users_mention = list(context['object'].assigned_to.all().values('username'))
+
         context.update({
             "comments": comments,
             'attachments': context[
                 "opportunity_record"].opportunity_attachment.all(),
+            "users_mention": users_mention,
             "assigned_data": json.dumps(assigned_data)})
         return context
 
@@ -214,9 +246,15 @@ def update_opportunity(request, pk):
             created_by=request.user)
         contacts = Contact.objects.filter(
             Q(assigned_to__in=[request.user]) | Q(created_by=request.user))
-
+    users = []
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        users = User.objects.filter(is_active=True).order_by('email')
+    elif request.user.google.all():
+        users = []
+    else:
+        users = User.objects.filter(role='ADMIN').order_by('email')
     kwargs_data = {
-        "assigned_to": User.objects.filter(is_active=True).order_by('email'),
+        "assigned_to": users,
         "account": accounts, "contacts": contacts}
     form = OpportunityForm(instance=opportunity_object, **kwargs_data)
 
@@ -241,21 +279,25 @@ def update_opportunity(request, pk):
                 all_members_list = list(
                     set(list(assigned_form_users)) -
                     set(list(assigned_to_ids)))
-                if all_members_list:
-                    for assigned_to_user in all_members_list:
-                        user = get_object_or_404(User, pk=assigned_to_user)
-                        mail_subject = 'Assigned to opportunity.'
-                        message = render_to_string(
-                            'assigned_to/opportunity_assigned.html', {
-                                'user': user,
-                                'domain': current_site.domain,
-                                'protocol': request.scheme,
-                                'opportunity': opportunity_obj
-                            })
-                        email = EmailMessage(
-                            mail_subject, message, to=[user.email])
-                        email.content_subtype = "html"
-                        email.send()
+                current_site = get_current_site(request)
+                recipients = all_members_list
+                send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,
+                    protocol=request.scheme)
+                # if all_members_list:
+                #     for assigned_to_user in all_members_list:
+                #         user = get_object_or_404(User, pk=assigned_to_user)
+                #         mail_subject = 'Assigned to opportunity.'
+                #         message = render_to_string(
+                #             'assigned_to/opportunity_assigned.html', {
+                #                 'user': user,
+                #                 'domain': current_site.domain,
+                #                 'protocol': request.scheme,
+                #                 'opportunity': opportunity_obj
+                #             })
+                #         email = EmailMessage(
+                #             mail_subject, message, to=[user.email])
+                #         email.content_subtype = "html"
+                #         email.send()
 
                 opportunity_obj.assigned_to.clear()
                 opportunity_obj.assigned_to.add(
@@ -384,6 +426,10 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         comment.commented_by = self.request.user
         comment.opportunity = self.opportunity
         comment.save()
+        comment_id = comment.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'opportunity', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
@@ -413,6 +459,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
     def form_valid(self, form):
         self.comment_obj.comment = form.cleaned_data.get("comment")
         self.comment_obj.save(update_fields=["comment"])
+        comment_id = self.comment_obj.id
+        current_site = get_current_site(self.request)
+        send_email_user_mentions.delay(comment_id, 'opportunity', domain=current_site.domain,
+            protocol=self.request.scheme)
         return JsonResponse({
             "commentid": self.comment_obj.id,
             "comment": self.comment_obj.comment,
@@ -479,7 +529,8 @@ class AddAttachmentsView(LoginRequiredMixin, CreateView):
             "created_by": attachment.created_by.email,
             "download_url": reverse('common:download_attachment',
                                     kwargs={'pk': attachment.id}),
-            "attachment_display": attachment.get_file_type_display()
+            "attachment_display": attachment.get_file_type_display(),
+            "file_type": attachment.file_type()
         })
 
     def form_invalid(self, form):

@@ -148,11 +148,11 @@ class LeadsPostrequestTestCase(TestLeadModel, TestCase):
         # print(get_name.first_name+get_name.last_name,str(get_name))
         self.assertEqual(get_name.first_name +
                          get_name.last_name, str(get_name))
-        response = self.client.get('/leads/list/')
+        response = self.client.get(reverse('leads:list'))
         self.assertEqual(response.status_code, 200)
 
     def test_leads_list_html(self):
-        response = self.client.get('/leads/list/')
+        response = self.client.get(reverse('leads:list'))
         self.assertTemplateUsed(response, 'leads.html')
 
 
@@ -239,7 +239,7 @@ class LeadListTestCase(TestLeadModel, TestCase):
 
     def test_leads_list(self):
         self.lead = Lead.objects.all()
-        response = self.client.get('/leads/list/')
+        response = self.client.get(reverse('leads:list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'leads.html')
 
@@ -248,7 +248,7 @@ class LeadListTestCase(TestLeadModel, TestCase):
         data = {'fist_name': "marphy", 'last_name': "racheal",
                 'city': "hyd", 'email': "contact@gmail.com",
                 'status': "Assigned"}
-        response = self.client.post('/leads/list/', data)
+        response = self.client.post(reverse('leads:list'), data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'leads.html')
 
@@ -265,7 +265,7 @@ class LeadsRemoveTestCase(TestLeadModel, TestCase):
 
     def test_leads_remove(self):
         response = self.client.get('/leads/' + str(self.lead.id) + '/delete/')
-        self.assertEqual(response['location'], '/leads/list/')
+        self.assertEqual(response['location'], '/leads/')
 
     def test_leads_remove_status(self):
         self.client.login(username='mp@micropyramid.com', password='mp')
@@ -289,7 +289,7 @@ class UpdateLeadTestCase(TestLeadModel, TestCase):
             'state': "California",
             'postcode': "579", 'country': "AD",
             'phone': "+917894563452",
-            'website': "www.gmail.com", 'status': None,
+            'website': "www.gmail.com", 'status': '',
             'source': "", 'opportunity_amount': "700",
             'description': "Iam an Lead", 'created_by': self.user}
         response = self.client.post(url, data)
@@ -372,7 +372,7 @@ class AttachmentTestCase(TestLeadModel, TestCase):
 class TestTemplates(TestLeadModel, TestCase):
 
     def test_lead_list_view(self):
-        resp = self.client.post('/leads/list/', {'name': 'trevor',
+        resp = self.client.post(reverse('leads:list'), {'name': 'trevor',
                                                  'tag': "123",
                                                  'source': "call",
                                                  'assigned_to': '1',
@@ -483,7 +483,7 @@ class TestLeadListView(TestCase):
         self.client.login(username='g@mp.com', password='jorge2293')
 
     def test_lead_list_view(self):
-        response = self.client.get('/leads/list/')
+        response = self.client.get(reverse('leads:list'))
         self.assertEqual(response.status_code, 200)
 
         # response = self.client.post('/leads/create/',{})

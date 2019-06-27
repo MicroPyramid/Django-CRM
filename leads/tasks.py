@@ -1,8 +1,10 @@
 from celery.task import task
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives, EmailMessage
 from django.db.models import Q
-from django.core.mail import EmailMultiAlternatives
+from django.shortcuts import reverse
 from django.template.loader import render_to_string
+
 from accounts.models import User
 from leads.models import Lead
 
@@ -59,3 +61,31 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
             mail_kwargs["html_content"] = html_content
             mail_kwargs["recipients"] = [user.email]
             send_email.delay(**mail_kwargs)
+
+
+
+@task
+def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io', protocol='http'):
+    """ Send Mail To Users When they are assigned to a lead """
+    lead = Lead.objects.get(id=lead_id)
+    for user in recipients:
+        recipients_list = []
+        user = User.objects.filter(id=user).first()
+        if user:
+            recipients_list.append(user.email)
+            context = {}
+            context["url"] = protocol + '://' + domain + \
+                reverse('leads:view_lead', args=(lead.id,))
+            context["user"] = user
+            context["lead"] = lead
+            subject = 'Assigned to lead.'
+            html_content = render_to_string(
+                'assigned_to/leads_assigned.html', context=context)
+
+            msg = EmailMessage(
+                subject,
+                html_content,
+                to=recipients_list
+            )
+            msg.content_subtype = "html"
+            msg.send()

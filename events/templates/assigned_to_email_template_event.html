@@ -1,0 +1,19 @@
+{% extends 'root_email_template.html' %}
+
+{% block heading %}
+Hello {{ user }}
+{% endblock heading %}
+
+
+{% block content_body %}
+You have been invited to an Event {{event_name}} created by {{event_created_by}}
+Date of meeting {{event_date_of_meeting}}
+{% endblock content_body %}
+
+{% block button_link %}
+<div style="margin-bottom:20px">
+    <a href="{{url}}"
+        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">click
+        here</a>
+</div>
+{% endblock button_link %}

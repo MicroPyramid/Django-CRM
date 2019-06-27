@@ -116,11 +116,11 @@ class opportunityCreateTestCase(OpportunityModel, TestCase):
     def test_del_opportunity_url(self):
         response = self.client.get(
             '/opportunities/' + str(self.opportunity.id) + '/delete/')
-        self.assertEqual(response['location'], '/opportunities/list/')
+        self.assertEqual(response['location'], '/opportunities/')
 
     def test_opportunity_delete(self):
         Opportunity.objects.filter(id=self.account.id).delete()
-        response = self.client.get('/opportunities/list/')
+        response = self.client.get(reverse('opportunity:list'))
         self.assertEqual(response.status_code, 200)
 
 
@@ -172,7 +172,7 @@ class OpportunityListView(OpportunityModel, TestCase):
 
     def test_opportunity_list(self):
         self.opportunity = Opportunity.objects.all()
-        response = self.client.get('/opportunities/list/')
+        response = self.client.get(reverse('opportunity:list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'opportunity.html')
 
@@ -181,7 +181,7 @@ class OpportunityListView(OpportunityModel, TestCase):
         data = {
             'name': 'meghan', 'stage': 'city',
             'lead_source': 'Call', 'accounts': self.account}
-        response = self.client.post('/opportunities/list/', data)
+        response = self.client.post(reverse('opportunity:list'), data)
         get_opp_val = Opportunity.objects.get(lead_source='Call')
         self.assertEqual(get_opp_val.lead_source, 'Call')
         self.assertEqual(get_opp_val.name, str(get_opp_val))

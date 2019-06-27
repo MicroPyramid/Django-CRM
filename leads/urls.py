@@ -11,7 +11,7 @@ app_name = 'leads'
 
 
 urlpatterns = [
-    path('list/', LeadListView.as_view(), name='list'),
+    path('', LeadListView.as_view(), name='list'),
     path('create/', create_lead, name='add_lead'),
     # create_lead_from_site
     path('create/from-site/', create_lead_from_site,

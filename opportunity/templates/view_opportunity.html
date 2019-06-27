@@ -1,6 +1,15 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load thumbnail %}
 {% block breadcrumb %}
+{% block extralinks %}
+<link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
+<style>
+  .opacity_block {
+    opacity: 0.2;
+  }
+</style>
+{% endblock extralinks %}
 <!-- Breadcrumb Starts Here -->
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -14,7 +23,7 @@
 <!-- OPPORTUNITY VIEW STARTS -->
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-8" id="opacity_block">
       <div class="card">
         <div class="card-body" id="datashow">
           <div class="card-title text-right">
@@ -23,9 +32,9 @@
               <span class="" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
                   <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                  <span class="caret"></span></button>
+                    <span class="caret"></span></button>
                   <ul class="dropdown-menu">
-                    <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}" >Edit</a></li>
+                    <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}">Edit</a></li>
                   </ul>
                 </div>
               </span>
@@ -36,13 +45,15 @@
               <div class="filter_col col-md-12" id="iname">
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_name" data-name="name">Name</label>
-                  <div class="opportunity_field" id="opportunity_name" data-name="name">{{ opportunity_record.name }}</div>
+                  <div class="opportunity_field" id="opportunity_name" data-name="name">{{ opportunity_record.name }}
+                  </div>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_opportunity_account" data-name="name">Account</label>
-                  <div class="opportunity_field" id ="opportunity_account" data-name="name">{{ opportunity_record.account }}</div>
+                  <div class="opportunity_field" id="opportunity_account" data-name="name">
+                    {{ opportunity_record.account }}</div>
                 </div>
               </div>
               <div class="filter_col col-md-12">
@@ -61,7 +72,8 @@
                 {% if opportunity_record.amount %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_amount" data-name="name">Amount</label>
-                  <div class="opportunity_field" id="opportunity_amount" data-name="name">{{ opportunity_record.currency }} {{ opportunity_record.amount }}</div>
+                  <div class="opportunity_field" id="opportunity_amount" data-name="name">
+                    {{ opportunity_record.currency }} {{ opportunity_record.amount }}</div>
                 </div>
                 {% endif %}
               </div>
@@ -71,7 +83,8 @@
                 {% if opportunity_record.stage %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_stage" data-name="name">Stage</label>
-                  <div class="opportunity_field" id="opportunity_stage" data-name="name">{{ opportunity_record.stage }}</div>
+                  <div class="opportunity_field" id="opportunity_stage" data-name="name">{{ opportunity_record.stage }}
+                  </div>
                 </div>
                 {% endif %}
               </div>
@@ -79,7 +92,8 @@
                 {% if opportunity_record.lead_source %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_lead_source" data-name="name">Lead Source</label>
-                  <div class="opportunity_field" id="opportunity_lead_source" data-name="name">{{ opportunity_record.lead_source }}</div>
+                  <div class="opportunity_field" id="opportunity_lead_source" data-name="name">
+                    {{ opportunity_record.lead_source }}</div>
                 </div>
                 {% endif %}
               </div>
@@ -87,7 +101,8 @@
                 {% if opportunity_record.probability %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_probability" data-name="name">Probability</label>
-                  <div class="opportunity_field" id="opportunity_probability" data-name="name">{{opportunity_record.probability}} %</div>
+                  <div class="opportunity_field" id="opportunity_probability" data-name="name">
+                    {{opportunity_record.probability}} %</div>
                 </div>
                 {% endif %}
               </div>
@@ -95,7 +110,8 @@
                 {% if opportunity_record.closed_on %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_close_date" data-name="name">Close Date</label>
-                  <div class="opportunity_field" id="opportunity_close_date" data-name="name">{{opportunity_record.closed_on|date}}</div>
+                  <div class="opportunity_field" id="opportunity_close_date" data-name="name">
+                    {{opportunity_record.closed_on|date}}</div>
                 </div>
                 {% endif %}
               </div>
@@ -105,7 +121,8 @@
                 {% if opportunity_record.description %}
                 <div class="form-group">
                   <label class="opportunity_field_label" for="id_description" data-name="name">Description</label>
-                  <div class="opportunity_field" id="opportunity_description" data-name="name">{{opportunity_record.description}}</div>
+                  <div class="opportunity_field" id="opportunity_description" data-name="name">
+                    {{opportunity_record.description}}</div>
                 </div>
                 {% endif %}
               </div>
@@ -120,11 +137,12 @@
                   </div>
                 </div>
               </div>
-            {% endif %}
+              {% endif %}
             </div>
             <div class="col-md-12">
               <div class="created_information">
-                Created by <b>{{ opportunity_record.created_by }}</b> created on <i><b>{{ opportunity_record.created_on }}</b></i> 
+                Created by <b>{{ opportunity_record.created_by }}</b> created on
+                <b>{{ opportunity_record.created_on }}</b>
               </div>
             </div>
           </div>
@@ -140,10 +158,13 @@
                 <form id="attachment_form" method="POST" enctype="multipart/form-data">
                   <div class="form-group ">
                     <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
-                    <div><i id="AttachmentError" style="display:none; color:red"></i></div>
+                    <div>
+                      <p id="AttachmentError" style="display:none; color:red"></p>
+                    </div>
                     <br>
                     <div class="buttons_row">
-                      <button class="btn btn-default save" style="text-align: center;" id="attachment_submit">Save</button>
+                      <button class="btn btn-default save" style="text-align: center;"
+                        id="attachment_submit">Save</button>
                     </div>
                   </div>
                   <input type="hidden" value="{{opportunity_record.id}}" name="opportunityid">
@@ -154,17 +175,25 @@
                     {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == attachment.created_by %}
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
-                        <button  class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">Remove</button>
+                        <button class="action btn primary_btn"
+                          onclick="remove_attachment({{attachment.id}})">Remove</button>
                       </div>
                     </div>
                     {% endif %}
 
                     <div class="stream-post-container" id="attachment_name{{attachment.id}}">
+                      {% if attachment.attachment %}
+                      {% if 'image' in attachment.file_type %}
+                      {% thumbnail attachment.attachment "80x80" crop="center" as im %}
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" class="mb-2">
+                      {% endthumbnail %}
+                      {% endif %}
+                      {% endif %}
                       <pre> <span class="icon"><i style="font-size:1.5rem;" class="{{attachment.get_file_type_display}}"></i> </span>{{attachment.file_name}} <a href="{% url 'common:download_attachment' attachment.id %}">Download</a></pre>
                     </div>
 
                     <div class="stream-container">
-                     <pre class="float-left"> Uploaded by : {{ attachment.created_by }}</pre>
+                      <pre class="float-left"> Uploaded by : {{ attachment.created_by }}</pre>
                       <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i A' }}</pre>
                     </div>
                   </li>
@@ -183,11 +212,15 @@
               <div class="col-md-12">
                 <form id="comment_form" method="POST" enctype="multipart/form-data">
                   <div class="form-group">
-                    <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea>
-                    <div><i id="CommentError" style="display:none; color:red"></i></div>
+                    <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_comments" name="comment"
+                      placeholder="Submit Your Comments Here"></textarea>
+                    <div>
+                      <p id="CommentError" style="display:none; color:red"></p>
+                    </div>
                     </br>
                     <div class="buttons_row">
-                      <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                      <button class="btn btn-default save" style="text-align: center;" id="comment_submit"
+                        type="submit">Submit</button>
                     </div>
                   </div>
                   <input type="hidden" value="{{ opportunity_record.id }}" name="opportunityid">
@@ -198,7 +231,8 @@
                     {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
                     <div class="float-right right-container">
                       <div class="list-row-buttons btn-group float-right">
-                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions <span class="caret"></span></button>
+                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown"
+                          type="button">Actions <span class="caret"></span></button>
                         <ul class="dropdown-menu text-center">
                           <li>
                             <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
@@ -222,17 +256,21 @@
                 </ul>
               </div>
             </div>
-            <div class="modal fade" id="Comments_Opportunity_Modal" role="dialog" data-keyboard="false" data-backdrop="static">
+            <div class="modal fade" id="Comments_Opportunity_Modal" role="dialog" data-keyboard="false"
+              data-backdrop="static">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                   <div class="modal-header">
                     <h4 class="modal-title">Update Your Comment</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
                   </div>
-                  <form id="comment_edit_form" method="POST" >
+                  <form id="comment_edit_form" method="POST">
                     <div class="modal-body">
                       <div class="form-group">
-                        <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea><span><i id="CommentEditError" style="display:none; color:red"></i></span>
+                        <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_editcomment"
+                          name="comment" placeholder="Submit Your Comments" style="color:black;"></textarea><span>
+                          <p id="CommentEditError" style="display:none; color:red"></p>
+                        </span>
                         <input type="hidden" value="{{ opportunity.id }}" name="opportunityid">
                         <input type="hidden" value="" name="commentid" id="commentid">
                       </div>
@@ -249,6 +287,13 @@
         </div>
       </div>
     </div>
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+      style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+      <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+        <span class="sr-only">Processing File...</span>
+      </div>
+    </div>
   </div>
 </div>
 <!-- OPPORTUNITY VIEW ENDS -->
@@ -257,26 +302,28 @@
 {% block js_block %}
 
 <script type="text/javascript">
+  $('#loading_spinner').hide()
+
 
   var assigned_to_list = "{{ assigned_data }}";
-  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
-           return {
-                l   : '<',
-                g   : '>',
-                quo : '"'
-            }[b];
-        }));
-  
+  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function (a, b) {
+    return {
+      l: '<',
+      g: '>',
+      quo: '"'
+    }[b];
+  }));
+
   $(function () {
-      $('#datetimepicker1').datetimepicker({
-          'format': 'YYYY-MM-DD',
-      });
+    $('#datetimepicker1').datetimepicker({
+      'format': 'YYYY-MM-DD',
+    });
   });
-  $('#remove_opportunity').click(function(e){
-        var result = confirm("Are You Sure You Want to delete?");
-        if (result==false) {
-          e.preventDefault()
-        }
+  $('#remove_opportunity').click(function (e) {
+    var result = confirm("Are You Sure You Want to delete?");
+    if (result == false) {
+      e.preventDefault()
+    }
   });
 
 
@@ -297,13 +344,13 @@
           d = new Date(data.commented_on);
           $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
             "<div class='float-right right-container'>" +
-            "<div class='list-row-buttons btn-group float-right'>"+
-            "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>"+
+            "<div class='list-row-buttons btn-group float-right'>" +
+            "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>" +
             "<ul class='dropdown-menu text-center'>" +
             "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
             "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
-            "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
-            "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>"
+            "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.commented_by + "</pre><pre class='float-right'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>"
           )
           $("#id_comments").val("")
           alert("Comment Submitted")
@@ -312,8 +359,8 @@
       }
     })
   });
-  
-  
+
+
   function edit_comment(x) {
     $('#Comments_Opportunity_Modal').modal('show');
     comment = $("#comment_name" + x).text()
@@ -343,18 +390,18 @@
       }
     })
   });
-  
+
   function HideError(e) {
     $("#CommentError").hide()
     $("#AttachmentError").hide()
   }
-  
+
   function remove_comment(x) {
     var con = confirm("Do you want to Delete it for Sure!?")
     if (con == true) {
       $.post('{% url "opportunities:remove_comment" %}', {
         "comment_id": x
-        }, function (data) {
+      }, function (data) {
         if (data.error) {
           alert(data.error)
         } else {
@@ -366,7 +413,7 @@
 
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
-      if (con == true) {
+    if (con == true) {
       $.post('{% url "leads:remove_attachment" %}', {
         "attachment_id": x
       }, function (data) {
@@ -378,33 +425,45 @@
       })
     }
   }
-  
+
   $("#attachment_form").submit(function (e) {
     e.preventDefault()
-      const formData = new FormData($("#attachment_form")[0]);
-      $.ajax({
+    const formData = new FormData($("#attachment_form")[0]);
+    $.ajax({
       url: "{% url 'opportunities:add_attachment' %}",
       type: "POST",
       data: formData,
       cache: false,
       contentType: false,
       processData: false,
+      beforeSend: function () {
+        $('#loading_spinner').show()
+        $('#opacity_block').addClass('opacity_block')
+      },
       success: function (data) {
         if (data.error) {
           $("#AttachmentError").html(data.error).show()
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
         } else {
           d = new Date(data.created_on)
           $("#attachment_div").prepend(
-              "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
-                "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment("+data.attachment_id+")''>Remove</button></div></div>" +
-                "<div class='stream-post-container' id='attachment_name"+data.attachment_id+"'>"+
-                "<pre><span class='icon'><i style='font-size:1.5rem;' class='"+data.attachment_display+"'></i>&nbsp;&nbsp;</span><a href='"+data.download_url+"'>Download</a></pre></div>"+
-                "<div class='stream-container'><pre class='float-left'>"+data.created_by+"</pre><pre class='float-right date'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>" +
-              "</li>"
+            "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
+            "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment(" + data.attachment_id + ")''>Remove</button></div></div>" +
+            "<div class='stream-post-container' id='attachment_name" + data.attachment_id + "'>" +
+            `${(data.file_type[0]).startsWith('image') ? `<img src=${data.attachment_url} width="80px" height="80px" class="mb-2">` : ''}` +
+            "<pre><span class='icon'><i style='font-size:1.5rem;' class='" + data.attachment_display + "'></i>&nbsp;&nbsp;</span>" + data.attachment + "&nbsp; &nbsp;<a href='" + data.download_url + "'>Download</a></pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.created_by + "</pre><pre class='float-right date'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>" +
+            "</li>"
           )
           $("#id_attachments").val("")
-          alert("Attachment Saved")
+          // alert("Attachment Saved")
           $("#AttachmentError").html("")
+          $('#loading_spinner').hide()
+          $('#opacity_block').removeClass('opacity_block')
+          setTimeout(() => {
+            alert("Attachment Saved")
+          }, 100)
         }
       }
     })
@@ -412,6 +471,17 @@
 
 </script>
 
-<script src="{% static 'js/mention.js' %}"></script>
-
+<!-- <script src="{% static 'js/mention.js' %}"></script> -->
+<script src="{% static 'js/bootstrap-suggest.js' %}"></script>
+<script>
+  $('.mentions').suggest('@', {
+    data: {{ users_mention| safe}},
+    map: function (user) {
+      return {
+        value: user.username,
+        text: '<strong>' + user.username + '</strong>'
+      }
+    }
+ })
+</script>
 {% endblock js_block %}

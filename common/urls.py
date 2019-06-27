@@ -12,7 +12,7 @@ from common.views import (
     add_comment, edit_comment, remove_comment,
     api_settings, add_api_settings, view_api_settings,
     update_api_settings, delete_api_settings,
-    change_passsword_by_admin, google_login
+    change_passsword_by_admin, google_login, create_lead_from_site
 )
 from django.conf.urls.static import static
 from django.conf import settings
@@ -51,7 +51,7 @@ urlpatterns = [
          name='password_reset_complete'),
 
     # Document
-    path('documents/list/', DocumentListView.as_view(), name='doc_list'),
+    path('documents/', DocumentListView.as_view(), name='doc_list'),
     path('documents/create/', document_create, name='create_doc'),
     path('documents/<int:pk>/edit/', document_update, name="edit_doc"),
     path('documents/<int:pk>/view/',
@@ -87,6 +87,8 @@ urlpatterns = [
     path('change-password-by-admin/', change_passsword_by_admin,
          name="change_passsword_by_admin"),
     path('google/login/', google_login, name="google_login"),
+    path('create-lead-from-site/', create_lead_from_site,
+         name='create_lead_from_site')
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

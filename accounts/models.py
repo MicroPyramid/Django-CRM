@@ -6,6 +6,7 @@ from common.models import User
 from common.utils import INDCHOICES, COUNTRIES
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
+from contacts.models import Contact
 
 
 class Tags(models.Model):
@@ -65,6 +66,8 @@ class Account(models.Model):
         "Name of Contact", "Contact Name"), max_length=120)
     contacts = models.ManyToManyField(
         'contacts.Contact', related_name="account_contacts")
+    assigned_to = models.ManyToManyField(
+        User, related_name='account_assigned_users')
 
     def __str__(self):
         return self.name
@@ -102,3 +105,23 @@ class Account(models.Model):
             else:
                 address += self.get_billing_country_display()
         return address
+
+
+class Email(models.Model):
+    sender = models.ForeignKey(
+        Account, related_name='sent_email', on_delete=models.SET_NULL, null=True)
+
+    recipient = models.ForeignKey(
+        Contact, related_name='recieved_email', on_delete=models.SET_NULL, null=True)
+
+    sent_at = models.DateTimeField(auto_now_add=True)
+    message_subject = models.TextField(null=True)
+    message_body = models.TextField(null=True)
+
+    def __str__(self):
+        return self.message_body
+
+    def save(self, *args, **kwargs):
+        # prevent user from sending messages to themselves
+        if self.sender.email != self.recipient.email:
+            super(Email, self).save(*args, **kwargs)

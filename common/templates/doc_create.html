@@ -122,12 +122,14 @@
     success: function(data) {
       if(data.error){
         $('.error').html('')
+        $('.progress').hide()
         for (var key in data.errors) {
           $('#id_'+key).html("<p>" + data.errors[key][0] + "</p>");
         };
         $('#submit_btn').removeAttr('disabled')
       }
         else{
+        $('.progress').show()
           window.location = data.success_url;
         }
     }
