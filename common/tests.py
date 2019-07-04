@@ -21,12 +21,12 @@ class ObjectsCreation(object):
         #                                 is_superuser=True, is_active=True)
 
         self.user_admin = User.objects.create(first_name="admin",
-                                        username='admin',
-                                        email='admin@micropyramid.com',
-                                        is_staff=True,
-                                        is_admin=True,
-                                        is_superuser=True,
-                                        is_active=True, role='ADMIN')
+                                              username='admin',
+                                              email='admin@micropyramid.com',
+                                              is_staff=True,
+                                              is_admin=True,
+                                              is_superuser=True,
+                                              is_active=True, role='ADMIN')
 
         self.user_admin.set_password('admin123')
         self.user_admin.save()
@@ -41,7 +41,8 @@ class ObjectsCreation(object):
             first_name="mp",
             username='mp',
             email='mp@micropyramid.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.user1.set_password('mp')
         self.user1.save()
         # self.user
@@ -59,7 +60,8 @@ class ObjectsCreation(object):
             first_name="mp2",
             username='mp2',
             email='mp2@micropyramid.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.user2.set_password('mp')
         self.user2.save()
 
@@ -108,7 +110,7 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
             'first_name': '',
             'last_name': '',
             'username': '',
-            'role': 'ADMIN',})
+            'role': 'ADMIN', })
         self.assertEqual(response.status_code, 200)
 
 
@@ -441,8 +443,9 @@ class TestChangeUserStatus(ObjectsCreation, TestCase):
 
     def test_change_user_status(self):
         response = self.client.get(reverse('common:change_user_status',
-            args=(self.user2.id,)))
+                                           args=(self.user2.id,)))
         self.assertEqual(response.status_code, 302)
+
 
 class TestDocumentListViewUser(ObjectsCreation, TestCase):
 
@@ -450,25 +453,29 @@ class TestDocumentListViewUser(ObjectsCreation, TestCase):
         response = self.client.get(reverse('common:doc_list'))
         self.assertEqual(response.status_code, 200)
 
+
 class TestViewApiSettings(ObjectsCreation, TestCase):
 
     def test_view_api_settings(self):
 
         self.api_settings = APISettings.objects.create(title='api key',
-            apikey='a45fds54fds54',
-            website='https://micropyramid.com')
+                                                       apikey='a45fds54fds54',
+                                                       website='https://micropyramid.com')
 
         response = self.client.get(reverse('common:api_settings'))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(reverse('common:view_api_settings',args=(self.api_settings.id,)))
+        response = self.client.get(
+            reverse('common:view_api_settings', args=(self.api_settings.id,)))
         self.assertEqual(response.status_code, 200)
+
 
 class TestDocumentDetailViewPermissionDenied(ObjectsCreation, TestCase):
 
     def test_document_detail_view_permission(self):
         self.client.login(username='mp2@micropyramid.com', password='mp')
-        response = self.client.get(reverse('common:view_doc', args=(self.document.id,)))
+        response = self.client.get(
+            reverse('common:view_doc', args=(self.document.id,)))
         self.assertEqual(response.status_code, 403)
 
 
@@ -476,7 +483,7 @@ class TestChangePasswordByAdmin(ObjectsCreation, TestCase):
 
     def test_change_password_by_admin(self):
         response = self.client.post(reverse('common:change_passsword_by_admin'),
-                    {'useer_id':self.user2.id,'new_passwoord':'new password'})
+                                    {'useer_id': self.user2.id, 'new_passwoord': 'new password'})
         self.assertEqual(response.status_code, 302)
 
 
@@ -485,19 +492,21 @@ class TestChangePasswordByAdminPermission(ObjectsCreation, TestCase):
     def test_change_password_by_admin_permission(self):
         self.client.login(username='mp2@micropyramid.com', password='mp')
         response = self.client.post(reverse('common:change_passsword_by_admin'),
-                    {'useer_id':self.user2.id,'new_passwoord':'new password'})
+                                    {'useer_id': self.user2.id, 'new_passwoord': 'new password'})
         self.assertEqual(response.status_code, 403)
         self.client.logout()
+
 
 class TestDocumentCreateForm(ObjectsCreation, TestCase):
 
     def test_document_create_form(self):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post(reverse('common:create_doc'),
-            {'title': 'doc',
-            'document_file': SimpleUploadedFile(upload_file.name, upload_file.read()),
-            'shared_to':str(self.user1.id)})
+                                    {'title': 'doc',
+                                     'document_file': SimpleUploadedFile(upload_file.name, upload_file.read()),
+                                     'shared_to': str(self.user1.id)})
         self.assertEqual(response.status_code, 200)
+
 
 class TestCommentDelete(ObjectsCreation, TestCase):
 
@@ -519,10 +528,11 @@ class TestCommentDelete(ObjectsCreation, TestCase):
                                         description="Iam an Lead",
                                         created_by=self.user_admin)
         self.comment_user = Comment.objects.create(comment='comment 1',
-                                commented_by=self.user_admin,lead=self.lead)
+                                                   commented_by=self.user_admin, lead=self.lead)
         response = self.client.post(reverse('common:remove_comment'),
-                        {'comment_id':self.comment_user.id })
-        self.assertJSONEqual(force_text(response.content), {"cid": str(self.comment_user.id)})
+                                    {'comment_id': self.comment_user.id})
+        self.assertJSONEqual(force_text(response.content), {
+                             "cid": str(self.comment_user.id)})
 
 
 class TestCommentEditErrors(ObjectsCreation, TestCase):
@@ -545,15 +555,17 @@ class TestCommentEditErrors(ObjectsCreation, TestCase):
                                         description="Iam an Lead",
                                         created_by=self.user_admin)
         self.comment_user = Comment.objects.create(comment='comment 1',
-                                commented_by=self.user_admin,lead=self.lead)
+                                                   commented_by=self.user_admin, lead=self.lead)
         response = self.client.post(reverse('common:edit_comment', args=(self.comment_user.id,)),
-                        {'pk':self.comment_user.id, 'comment':''})
-        self.assertJSONEqual(force_text(response.content), {"error": ['This field is required.']})
+                                    {'pk': self.comment_user.id, 'comment': ''})
+        self.assertJSONEqual(force_text(response.content), {
+                             "error": ['This field is required.']})
 
         response = self.client.post(reverse('common:edit_comment', args=(self.comment_user.id,)),
-                        {'pk':self.comment_user.id, 'comment':'asdf'})
+                                    {'pk': self.comment_user.id, 'comment': 'asdf'})
 
-        self.assertJSONEqual(force_text(response.content), {"comment_id":self.comment_user.id, "comment": 'asdf'})
+        self.assertJSONEqual(force_text(response.content), {
+                             "comment_id": self.comment_user.id, "comment": 'asdf'})
 
 
 class TestDocumentListUser(ObjectsCreation, TestCase):
@@ -568,38 +580,43 @@ class TestDocumentDelete(ObjectsCreation, TestCase):
 
     def test_document_delete(self):
         self.client.login(username='mp2@micropyramid.com', password='mp')
-        response = self.client.get(reverse('common:remove_doc', args=(self.document.id,)))
+        response = self.client.get(
+            reverse('common:remove_doc', args=(self.document.id,)))
         self.assertEqual(response.status_code, 403)
 
 
 class TestDocumentUpdate(ObjectsCreation, TestCase):
 
     def test_document_update(self):
-        response = self.client.get(reverse('common:edit_doc', args=(self.document.id,)), {'title':"abc"})
+        response = self.client.get(
+            reverse('common:edit_doc', args=(self.document.id,)), {'title': "abc"})
         self.assertEqual(response.status_code, 200)
+
 
 class TestUserUpdate(ObjectsCreation, TestCase):
 
     def test_user_update(self):
-        response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {})
+        response = self.client.post(
+            reverse('common:edit_user', args=(self.user2.id,)), {})
         self.assertTrue('error' in str(response.content))
         response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {
-            'first_name':'mp2',
-            'last_name':'mp22',
-            'username':'mp2',
-            'role':'USER',
-            'email':'mp2@micropyramid.com'
+            'first_name': 'mp2',
+            'last_name': 'mp22',
+            'username': 'mp2',
+            'role': 'USER',
+            'email': 'mp2@micropyramid.com',
+            'has_sales_access': 'true'
         }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(force_text(response.content), json.dumps(
             {'success_url': reverse('common:users_list'), 'error': False}))
 
         response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertJSONEqual(force_text(response.content),
-            json.dumps({"error": True, "errors": {"email": ["This field is required."],
-            "first_name": ["This field is required."], "username": ["This field is required."],
-            "role": ["This field is required."]}}))
-
+                             json.dumps({"error": True, "errors": {"email": ["This field is required."],
+                                                                   "first_name": ["This field is required."], "username": ["This field is required."],
+                                                                   "role": ["This field is required."],
+                                                                   'has_sales_access': ['Select atleast one option']}}))
 
     def test_user_update_permissions(self):
         self.user_obj = User.objects.create(
@@ -611,36 +628,43 @@ class TestUserUpdate(ObjectsCreation, TestCase):
         self.user_obj.save()
         self.client.login(username='mp2@micropyramid.com', password='mp')
         response = self.client.post(reverse('common:edit_user', args=(self.user_obj.id,)), {
-            'first_name':'mp2',
-            'last_name':'mp22',
-            'username':'mp222',
-            'role':'USER',
-            'email':'mp2@mssicropyramid.com'},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertJSONEqual(force_text(response.content), json.dumps({"error_403": True, "error": True}))
-
-        response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {
-            'first_name':'mp2',
-            'last_name':'mp22',
-            'username':'mp2',
-            'role':'USER',
-            'email':'mp2@micropyramid.com'},
+            'first_name': 'mp2',
+            'last_name': 'mp22',
+            'username': 'mp222',
+            'role': 'USER',
+            'email': 'mp2@mssicropyramid.com',
+            'has_sales_access': 'true'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertJSONEqual(force_text(response.content),
-        json.dumps({'success_url': reverse('common:profile'), 'error': False}))
+                             json.dumps({"error_403": True, "error": True}))
+
+        response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {
+            'first_name': 'mp2',
+            'last_name': 'mp22',
+            'username': 'mp2',
+            'role': 'USER',
+            'email': 'mp2@micropyramid.com',
+            'has_sales_access': 'true'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertJSONEqual(force_text(response.content),
+                             json.dumps({'success_url': reverse('common:profile'), 'error': False}))
+
 
 class TestAPISettingsDelete(ObjectsCreation, TestCase):
 
     def test_api_settings_delete(self):
         self.api_settings = APISettings.objects.create(title='api key',
-            apikey='a45fds54fds54',
-            website='https://micropyramid.com')
+                                                       apikey='a45fds54fds54',
+                                                       website='https://micropyramid.com')
 
-        response = self.client.get(reverse('common:delete_api_settings',args=(self.api_settings.id,)))
+        response = self.client.get(
+            reverse('common:delete_api_settings', args=(self.api_settings.id,)))
         self.assertEqual(response.status_code, 302)
 
-        response = self.client.get(reverse('common:delete_api_settings',args=(self.api_settings.id,)))
+        response = self.client.get(
+            reverse('common:delete_api_settings', args=(self.api_settings.id,)))
         self.assertEqual(response.status_code, 302)
+
 
 class TestGetFullNameModel(ObjectsCreation, TestCase):
 
@@ -675,100 +699,116 @@ class TestGetFullNameModel(ObjectsCreation, TestCase):
         self.document_code = Document.objects.create(
             title="code_file", document_file="doc.py", created_by=self.user)
 
-        self.assertEqual(("text", "fa fa-file-alt"), self.document_txt.file_type())
-        self.assertEqual(("sheet", "fa fa-file-excel"), self.document_csv.file_type())
-        self.assertEqual(("zip", "fa fa-file-archive"), self.document_zip.file_type())
-        self.assertEqual(("pdf", "fa fa-file-pdf"), self.document_pdf.file_type())
-        self.assertEqual(("file", "fa fa-file"), self.document_other_format.file_type())
-        self.assertEqual(("image", "fa fa-file-image"), self.document_image.file_type())
-        self.assertEqual(("video", "fa fa-file-video"), self.document_video.file_type())
-        self.assertEqual(("audio", "fa fa-file-audio"), self.document_audio.file_type())
-        self.assertEqual(("code", "fa fa-file-code"), self.document_code.file_type())
+        self.assertEqual(("text", "fa fa-file-alt"),
+                         self.document_txt.file_type())
+        self.assertEqual(("sheet", "fa fa-file-excel"),
+                         self.document_csv.file_type())
+        self.assertEqual(("zip", "fa fa-file-archive"),
+                         self.document_zip.file_type())
+        self.assertEqual(("pdf", "fa fa-file-pdf"),
+                         self.document_pdf.file_type())
+        self.assertEqual(("file", "fa fa-file"),
+                         self.document_other_format.file_type())
+        self.assertEqual(("image", "fa fa-file-image"),
+                         self.document_image.file_type())
+        self.assertEqual(("video", "fa fa-file-video"),
+                         self.document_video.file_type())
+        self.assertEqual(("audio", "fa fa-file-audio"),
+                         self.document_audio.file_type())
+        self.assertEqual(("code", "fa fa-file-code"),
+                         self.document_code.file_type())
+
 
 class TestUserCreationView(ObjectsCreation, TestCase):
 
     def test_user_creation_view(self):
-        response = self.client.post(reverse('common:create_user'),{},
-                              HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.post(reverse('common:create_user'), {},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(force_text(response.content),
-            json.dumps({"error": True, "errors": {"email": ["This field is required."], "first_name": ["This field is required."], "username": ["This field is required."], "role": ["This field is required."], "password": ["This field is required."]}}))
+                         json.dumps({"error": True, "errors": {"email": ["This field is required."],
+                                    "first_name": ["This field is required."],
+                                    "username": ["This field is required."],
+                                    "role": ["This field is required."],
+                                    "has_sales_access": ["Select atleast one option"],
+                                    "password": ["This field is required."]}}))
 
-        response = self.client.post(reverse('common:create_user'),{
-            'email':'user@create.com',
-            'first_name':'first name?',
-            'username':'joe',
-            'role':'USER',
-            'password':'testpassword'
-            },HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(force_text(response.content), json.dumps({"success_url": "/users/list/", "error": False}))
+        response=self.client.post(reverse('common:create_user'), {
+            'email': 'user@create.com',
+            'first_name': 'first name?',
+            'username': 'joe',
+            'role': 'USER',
+            'password': 'testpassword',
+            'has_sales_access':'true',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(force_text(response.content), json.dumps(
+            {"success_url": "/users/list/", "error": False}))
 
     def test_add_api_settings(self):
-        response = self.client.post(reverse('common:add_api_settings'), {})
+        response=self.client.post(reverse('common:add_api_settings'), {})
         self.assertTrue('error' in str(response.content))
-        response = self.client.post(reverse('common:add_api_settings'), {
-            'title':'api title','lead_assigned_to':str(self.user2.id),'website':'https://micropyramid.com',
-            'tags':'api_tag, tag1'
+        response=self.client.post(reverse('common:add_api_settings'), {
+            'title': 'api title', 'lead_assigned_to': str(self.user2.id), 'website': 'https://micropyramid.com',
+            'tags': 'api_tag, tag1'
         })
         self.assertJSONEqual(force_text(response.content),
-            json.dumps({'success_url': reverse("common:api_settings"), 'error': False}))
+                             json.dumps({'success_url': reverse("common:api_settings"), 'error': False}))
 
-        response = self.client.post(reverse('common:add_api_settings'), {
-            'title':'api title','lead_assigned_to':str(self.user2.id),'website':'https://micropyramid.com',
-            'tags':'api_tag, tag1', 'savenewform':'true'
+        response=self.client.post(reverse('common:add_api_settings'), {
+            'title': 'api title', 'lead_assigned_to': str(self.user2.id), 'website': 'https://micropyramid.com',
+            'tags': 'api_tag, tag1', 'savenewform': 'true'
         })
         self.assertJSONEqual(force_text(response.content),
-            json.dumps({'success_url': reverse("common:add_api_settings"), 'error': False}))
+                             json.dumps({'success_url': reverse("common:add_api_settings"), 'error': False}))
 
-        response = self.client.post(reverse('common:add_api_settings'), {
-            'title':'','lead_assigned_to':str(self.user2.id),'website':'micropyramid.com',
-            'tags':'api_tag, tag1', 'savenewform':'true'
+        response=self.client.post(reverse('common:add_api_settings'), {
+            'title': '', 'lead_assigned_to': str(self.user2.id), 'website': 'micropyramid.com',
+            'tags': 'api_tag, tag1', 'savenewform': 'true'
         })
         self.assertJSONEqual(force_text(response.content),
-            json.dumps({"error": True, "errors": {"title": ["This field is required."], "website": ["Please provide valid schema"]}}))
-
+                             json.dumps({"error": True, "errors": {"title": ["This field is required."], "website": ["Please provide valid schema"]}}))
 
     def test_update_api_settings(self):
-        self.api_settings_update = APISettings.objects.create(title='api key update',
-            apikey='asdfasd',
-            website='https://example.com')
-        response = self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {})
+        self.api_settings_update=APISettings.objects.create(title='api key update',
+                                                              apikey='asdfasd',
+                                                              website='https://example.com')
+        response=self.client.post(
+            reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {})
         self.assertTrue('error' in str(response.content))
-        response = self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
-            'title':'api key update',
-            'apikey':'asdfasd',
-            'website':'http://example.com',
-            'lead_assigned_to':str(self.user2.id),
-            'tags':'api_tag_new, tag1'
+        response=self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
+            'title': 'api key update',
+            'apikey': 'asdfasd',
+            'website': 'http://example.com',
+            'lead_assigned_to': str(self.user2.id),
+            'tags': 'api_tag_new, tag1'
         })
 
-        response = self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
-            'title':'api title','lead_assigned_to':str(self.user2.id),'website':'https://micropyramid.com',
-            'tags':'api_tag, tag1', 'savenewform':'true'
-        })
-        self.assertJSONEqual(force_text(response.content),
-            json.dumps({'success_url': reverse("common:add_api_settings"), 'error': False}))
-
-        response = self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
-            'title':'','lead_assigned_to':str(self.user2.id),'website':'micropyramid.com',
-            'tags':'api_tag, tag1', 'savenewform':'true'
+        response=self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
+            'title': 'api title', 'lead_assigned_to': str(self.user2.id), 'website': 'https://micropyramid.com',
+            'tags': 'api_tag, tag1', 'savenewform': 'true'
         })
         self.assertJSONEqual(force_text(response.content),
-            json.dumps({"error": True, "errors": {"title": ["This field is required."], "website": ["Please provide valid schema"]}}))
+                             json.dumps({'success_url': reverse("common:add_api_settings"), 'error': False}))
 
+        response=self.client.post(reverse('common:update_api_settings', args=(self.api_settings_update.id,)), {
+            'title': '', 'lead_assigned_to': str(self.user2.id), 'website': 'micropyramid.com',
+            'tags': 'api_tag, tag1', 'savenewform': 'true'
+        })
+        self.assertJSONEqual(force_text(response.content),
+                             json.dumps({"error": True, "errors": {"title": ["This field is required."], "website": ["Please provide valid schema"]}}))
 
     def test_document_list_user_view(self):
         self.client.login(username='mp2@micropyramid.com', password='mp')
-        self.document = Document.objects.create(
+        self.document=Document.objects.create(
             title="user 2 doc", document_file="1.png", created_by=self.user2)
         self.document.shared_to.add(self.user2.id)
-        response = self.client.get(reverse('common:doc_list'))
+        response=self.client.get(reverse('common:doc_list'))
         self.assertEqual(200, response.status_code)
 
-        upload_file = open('static/images/user.png', 'rb')
-        response = self.client.post(reverse('common:edit_doc', args=(self.document.id,)), {
-            'title':'user 2 doc',
-            'document_file':SimpleUploadedFile(upload_file.name, upload_file.read()),
-            'shared_to':str(self.user2.id)
+        upload_file=open('static/images/user.png', 'rb')
+        response=self.client.post(reverse('common:edit_doc', args=(self.document.id,)), {
+            'title': 'user 2 doc',
+            'document_file': SimpleUploadedFile(upload_file.name, upload_file.read()),
+            'shared_to': str(self.user2.id)
         })
         self.assertEqual(200, response.status_code)
         # self.assertEqual(force_text(response.content),
@@ -777,17 +817,19 @@ class TestUserCreationView(ObjectsCreation, TestCase):
         # response = self.client.get(reverse('common:download_document', args=(self.document.id,)))
         # self.assertEqual(200, response.status_code)
 
-        self.attachment = Attachments.objects.create(
+        self.attachment=Attachments.objects.create(
             attachment=SimpleUploadedFile(upload_file.name, upload_file.read()), created_by=self.user)
-        response = self.client.get(reverse('common:download_attachment', kwargs=({'pk':self.attachment.id})))
+        response=self.client.get(
+            reverse('common:download_attachment', kwargs=({'pk': self.attachment.id})))
 
     def test_document_update(self):
         self.client.login(username='mp@micropyramid.com', password='mp')
-        response = self.client.get(reverse('common:download_document', args=(self.document.id,)))
+        response=self.client.get(
+            reverse('common:download_document', args=(self.document.id,)))
         self.assertEqual(403, response.status_code)
 
     def test_user_status(self):
-        self.user_status = User.objects.create(
+        self.user_status=User.objects.create(
             first_name="mpus",
             username='mpus',
             email='mpus@micropyramid.com',
@@ -796,5 +838,6 @@ class TestUserCreationView(ObjectsCreation, TestCase):
         )
         self.user_status.set_password('mp')
         self.user_status.save()
-        response = self.client.get(reverse('common:change_user_status', kwargs={'pk': self.user_status.id}))
+        response=self.client.get(
+            reverse('common:change_user_status', kwargs={'pk': self.user_status.id}))
         self.assertEqual(302, response.status_code)

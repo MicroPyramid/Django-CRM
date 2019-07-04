@@ -74,18 +74,26 @@
                       <span class="text-left">No Tags</span>
                       {% endfor %}
                       {% if account.tags.all|length > 3 %}
-                      <span class="text-left" id="list_tag">{{account.tags.all|length|subtract:'3'}}<span> more
-                        </span></span>
+                      <a href="{% url 'accounts:view_account' account.id %}">
+                        <span class="text-left" id="list_tag">{{account.tags.all|length|subtract:'3'}}<span> more
+                          </span></span></a>
                       {% endif %}
                     </td>
                     <td>
                       {% with users=account.assigned_to.all %}
-                      {% if users %}
-                      {% for user in users %}
-                      {{user}}
+                      {% for user in users|slice:'3' %}
+                      <div>
+                        {{user}}
+                      </div>
+                      {% empty %}
+                      <span class="text-left">None</span>
                       {% endfor %}
-                      {% else %}
-                      None
+                      {% if users|length > 3 %}
+                      <div>
+                        <a href="{% url 'accounts:view_account' account.id %}">
+                          <span class="text-left" id="list_tag">{{users|length|subtract:'3'}}<span> more
+                            </span></span></a>
+                      </div>
                       {% endif %}
                       {% endwith %}
                     </td>
@@ -128,22 +136,25 @@
                       <span class="text-left">No Tags</span>
                       {% endfor %}
                       {% if opportunity.tags.all|length > 3 %}
-                      <span class="text-left" id="list_tag">{{opportunity.tags.all|length|subtract:'3'}}<span> more
-                        </span></span>
+                      <a href="{% url 'opportunity:opp_view' opportunity.id %}">
+                        <span class="text-left" id="list_tag">{{opportunity.tags.all|length|subtract:'3'}}<span> more
+                          </span></span></a>
                       {% endif %}
                     </td>
                     <td>
                       {% with users=opportunity.assigned_to.all %}
                       {% for user in users|slice:'3'  %}
                       <span class="text-left" id="list_opp_users_">{{user}}<span>
-                      {% empty %}
-                      <span class="text-left">None</span>
-                      {% endfor %}
-                      {% if users|length > 3 %}
-                      <span style="color:white; background-color: #333; padding:0.15em; border-radius: 10%;" class="text-left ml-1" id="list_opp_users">{{users|length|subtract:'3'}}<span> more
-                        </span></span>
-                      {% endif %}
-                      {% endwith %}
+                          {% empty %}
+                          <span class="text-left">None</span>
+                          {% endfor %}
+                          {% if users|length > 3 %}
+                          <a href="{% url 'opportunity:opp_view' opportunity.id %}">
+                            <span class="text-left" id="list_tag">{{users|length|subtract:'3'}}<span> more
+                              </span></span>
+                          </a>
+                          {% endif %}
+                          {% endwith %}
                     </td>
                   </tr>
                   {% endfor %}

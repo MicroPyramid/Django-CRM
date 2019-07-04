@@ -119,6 +119,7 @@
                               href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
                           </td>
                           <td>
+                            {% if each_account.created_by %}
                             {% if each_account.created_by.profile_pic %}
                             {% thumbnail each_account.created_by.profile_pic "40x40" crop="center" as im %}
                             <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
@@ -126,7 +127,10 @@
                             {% endthumbnail %}
                             {% else %}
                             <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                              style="width: 40px;height: 40px;" />
+                              style="width: 40px;height: 40px;" title="{{ each_account.created_by }}" />
+                            {% endif %}
+                            {% else %}
+                            None
                             {% endif %}
                           </td>
                           <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified
@@ -182,6 +186,7 @@
                         <tr>
                           <th width="5%">ID</th>
                           <th width="15%">Name</th>
+                          <th width="10%">Created By</th>
                           <th width="10%">City</th>
                           <th width="10%">State</th>
                           <th width="18%">Tags</th>
@@ -200,6 +205,21 @@
                           <td scope="row">{{ forloop.counter }}</td>
                           <td>{% if each_account.name %}<a
                               href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
+                          </td>
+                          <td>
+                            {% if each_account.created_by %}
+                            {% if each_account.created_by.profile_pic %}
+                            {% thumbnail each_account.created_by.profile_pic "40x40" crop="center" as im %}
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ each_account.created_by }}">
+                            {% endthumbnail %}
+                            {% else %}
+                            <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                              style="width: 40px;height: 40px;" title="{{ each_account.created_by }}" />
+                            {% endif %}
+                            {% else %}
+                            None
+                            {% endif %}
                           </td>
                           <td>{% if each_account.billing_city %}{{ each_account.billing_city }} {% else %} Not specified
                             {% endif %}</td>

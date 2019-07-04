@@ -294,7 +294,8 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
             first_name="mpmp",
             username='mpmp',
             email='mpmp@micropyramid.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.usermp.set_password('mp')
         self.usermp.save()
 

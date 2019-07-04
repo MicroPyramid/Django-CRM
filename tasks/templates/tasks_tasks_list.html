@@ -116,16 +116,22 @@
                 {% if task.due_date < today and task.status != 'completed' %}
                 <tr id="task_{{task.id}}" class="text-center due-date">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}"
+                      style="color:red;">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
-                    {% if document.created_by.profile_pic %}
-                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    {% if task.created_by %}
+                    {% if task.created_by.profile_pic %}
+                    {% thumbnail task.created_by.profile_pic "40x40" crop="center" as im %}
                     <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                      title="{{ document.created_by }}">
+                      title="{{ task.created_by }}" style="border-radius: 50%" />
                     {% endthumbnail %}
                     {% else %}
-                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                      style="width: 40px;height: 40px;border-radius: 50%;" title="{{ task.created_by }}" />
+                    {% endif %}
+                    {% else %}
+                    None
                     {% endif %}
                   </td>
                   <!-- <td>{{document.created_on}}</td> -->
@@ -165,13 +171,18 @@
                   <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
-                    {% if document.created_by.profile_pic %}
-                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    {% if task.created_by %}
+                    {% if task.created_by.profile_pic %}
+                    {% thumbnail task.created_by.profile_pic "40x40" crop="center" as im %}
                     <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                      title="{{ document.created_by }}">
+                      title="{{ task.created_by }}" style="border-radius: 50%" />
                     {% endthumbnail %}
                     {% else %}
-                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                      style="width: 40px;height: 40px;border-radius: 50%;" title="{{ task.created_by }}" />
+                    {% endif %}
+                    {% else %}
+                    None
                     {% endif %}
                   </td>
                   <!-- <td>{{document.created_on}}</td> -->
@@ -211,13 +222,18 @@
                   <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
-                    {% if document.created_by.profile_pic %}
-                    {% thumbnail document.created_by.profile_pic "40x40" crop="center" as im %}
+                    {% if task.created_by %}
+                    {% if task.created_by.profile_pic %}
+                    {% thumbnail task.created_by.profile_pic "40x40" crop="center" as im %}
                     <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                      title="{{ document.created_by }}">
+                      title="{{ task.created_by }}" style="border-radius: 50%" />
                     {% endthumbnail %}
                     {% else %}
-                    <img src="{% static 'images/user.png' %}" title="{{ document.created_by }}" width="40" height="40">
+                    <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                      style="width: 40px;height: 40px;border-radius: 50%;" title="{{ task.created_by }}" />
+                    {% endif %}
+                    {% else %}
+                    None
                     {% endif %}
                   </td>
                   <!-- <td>{{document.created_on}}</td> -->

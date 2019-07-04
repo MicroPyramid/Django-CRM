@@ -41,19 +41,19 @@
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-success" style="font-size:16px;">Opened</span> <span
-                        class="label">{{read_contacts|length}}</span>
+                        class="label">{{campaign.get_all_emails_contacts_opened}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-dark" style="font-size:16px;">Bounced</span> <span
-                        class="label">{{bounced_contacts|length}}</span>
+                        class="label">{{campaign.get_all_email_bounces_count}}</span>
                     </div>
                   </div>
                   <div class="col-md-4">
                     <div class="well">
                       <span class="badge badge-secondary" style="font-size:16px;">Unsubscribed</span> <span
-                        class="label">{{unsubscribe_contacts|length}}</span>
+                        class="label">{{campaign.get_all_emails_unsubscribed_count}}</span>
                     </div>
                   </div>
                   <div class="col-md-12">
@@ -153,7 +153,6 @@
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
-                              {% for contact in read_contacts|slice:"5" %}
                               <thead>
                                 <tr>
                                   <th width="20%">Name</th>
@@ -163,16 +162,21 @@
                                 </tr>
                               </thead>
                               <tbody>
+                                {% for contact in read_contacts|slice:"5" %}
                                 <tr>
                                   <td scope="row"><a href="{% url 'marketing:contact_detail' contact.id %}"
                                       class="anchor">{{contact.name}}</a></td>
                                   <td><a href="{% url 'marketing:contact_detail' contact.id %}"
                                       class="anchor">{{contact.email}}</a></td>
                                   {% with contacts=contact.contact_list.all %}
-                                  {% for contact in contacts %}
-                                  <td><a href="{% url 'marketing:contact_list_detail' contact.id %}"
-                                      class="anchor">{{contact.name}} </a></td>
-                                  {% endfor %}
+                                  <td>
+                                    {% for contact in contacts %}
+                                    <div>
+                                      <a href="{% url 'marketing:contact_list_detail' contact.id %}"
+                                        class="anchor">{{contact.name}} </a>
+                                    </div>
+                                    {% endfor %}
+                                  </td>
                                   {% endwith %}
                                   <!-- <td>
                                     <span class="badge badge-success">Subscribed</span>

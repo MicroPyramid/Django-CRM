@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb mb-3">
     <li class="breadcrumb-item"><a href="{% url 'marketing:contacts_list' %}">Contacts</a></li>
-    <li class="breadcrumb-item active">{{contact_obj.email}}</li>
+    <li class="breadcrumb-item active">{{contact_obj.name}}</li>
   </ol>
 </nav>
 <div class="main_container ml-5 mr-5">
@@ -31,6 +31,15 @@
                         {{contact_obj.email}}
                       </div>
                     </div>
+                    <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label for="exampleInputEmail1" class="required">
+                            Company{% if form.email.field.required %}<span class="error_marker"
+                              style="color:red">*</span>{% endif %}</label>
+                          <br>
+                          {{contact_obj.company_name}}
+                        </div>
+                      </div>
                     <div class="filter_col col-md-12">
                       <div class="form-group">
                         <label for="exampleInputEmail1" class="required">First

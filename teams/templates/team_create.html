@@ -1,0 +1,103 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'teams:teams_list' %}">Teams</a></li>
+    <li class="breadcrumb-item">{% if team_obj %}Edit{% else %}Create{% endif %}</li>
+  </ol>
+</nav>
+{% endblock breadcrumb %}
+{% block content %}
+<form id="add_form" method="POST" action="" novalidate>
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title text-center">
+            {% if team_obj %}EDIT{% else %}CREATE{% endif %} TEAM
+          </div>
+          <div class="row marl">
+            <div class="col-md-12">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_firstname">Name {% if form.name.field.required %}<span class="error_marker"
+                      style="color:red">*</span>{% endif %}</label>
+                  {{form.name}}
+                </div>
+                <span class="error" id="id__name"></span>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_firstname">Description {% if form.description.field.required %}<span
+                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  {{form.description}}
+                </div>
+                <span class="error" id="id__description"></span>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="id_firstname">Assign Users {% if form.users.field.required %}<span class="error_marker"
+                      style="color:red">*</span>{% endif %}</label>
+                  {{form.users}}
+                </div>
+                <span class="error" id="id__users"></span>
+              </div>
+            </div>
+          </div>
+          <div class="row marl buttons_row form_btn_row text-center">
+            <button class="btn btn-default save" type="submit" id="submit_btn">Save</button>
+            <a href="{% url 'teams:teams_list' %}" class="btn btn-default clear" id="create_doc_cancel">Cancel</a>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+
+{% endblock content %}
+{% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script src="https://malsup.github.io/jquery.form.js"></script>
+<script type="text/javascript">
+
+  $(document).ready(function () {
+    $('#id_users').select2();
+  });
+
+
+  $('form#add_form').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: ".",
+    data: $('#add_form').serialize(),
+    beforeSubmit: disableButton,
+    success: function (data) {
+      if (data.error) {
+        $('.error').html('')
+        for (var key in data.errors) {
+          $('#id__' + key).html("<p>" + data.errors[key][0] + "</p>");
+        };
+        $('#submit_btn').removeAttr('disabled')
+      }
+      else {
+        window.location = data.success_url;
+      }
+    }
+  });
+
+
+  function disableButton() {
+    // $('#progress_bar').show()
+    $('#submit_btn').attr('disabled', 'disabled')
+  }
+
+</script>
+{% endblock js_block %}

@@ -177,14 +177,18 @@
                         <td>{{ event.end_date }} </td>
                         <td>{{ event.created_on|date:'d-m-Y' }}</td>
                         <td>
+                          {% if event.created_by %}
                           {% if event.created_by.profile_pic %}
                           {% thumbnail event.created_by.profile_pic "40x40" crop="center" as im %}
                           <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ event.created_by }}" style="border-radius: 50%" />
+                          title="{{ event.created_by }}" style="border-radius: 50%" />
                           {% endthumbnail %}
                           {% else %}
                           <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                            style="width: 40px;height: 40px;border-radius: 50%;" />
+                          style="width: 40px;height: 40px;border-radius: 50%;" title="{{ event.created_by }}" />
+                          {% endif %}
+                          {% else %}
+                          None
                           {% endif %}
                         </td>
                         <td class="actions">

@@ -1,4 +1,5 @@
 import json
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -19,9 +20,11 @@ from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from common.tasks import send_email_user_mentions
 from opportunity.tasks import send_email_to_assigned_user
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
-class OpportunityListView(LoginRequiredMixin, TemplateView):
+class OpportunityListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Opportunity
     context_object_name = "opportunity_list"
     template_name = "opportunity.html"
@@ -91,6 +94,8 @@ class OpportunityListView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@login_required
+@sales_access_required
 def create_opportunity(request):
     accounts = Account.objects.filter(status="open")
     contacts = Contact.objects.all()
@@ -168,7 +173,7 @@ def create_opportunity(request):
                 from_account = request.POST.get('from_account')
                 success_url = reverse("accounts:view_account", kwargs={
                                       'pk': from_account})
-                print(success_url)
+                # print(success_url)
             return JsonResponse({'error': False, 'success_url': success_url})
         return JsonResponse({'error': True, 'errors': form.errors})
     context = {}
@@ -191,7 +196,7 @@ def create_opportunity(request):
     return render(request, "create_opportunity.html", context)
 
 
-class OpportunityDetailView(LoginRequiredMixin, DetailView):
+class OpportunityDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
     model = Opportunity
     context_object_name = "opportunity_record"
     template_name = "view_opportunity.html"
@@ -237,6 +242,8 @@ class OpportunityDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+@login_required
+@sales_access_required
 def update_opportunity(request, pk):
     opportunity_object = Opportunity.objects.filter(pk=pk).first()
     accounts = Account.objects.filter(status="open")
@@ -362,7 +369,7 @@ def update_opportunity(request, pk):
     return render(request, "create_opportunity.html", context)
 
 
-class DeleteOpportunityView(LoginRequiredMixin, View):
+class DeleteOpportunityView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)

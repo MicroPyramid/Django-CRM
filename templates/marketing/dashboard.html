@@ -2,6 +2,13 @@
 {% load staticfiles %}
 {% load common_tags %}
 {% load paginate %}
+{% block extralinks %} 
+<style>
+  .modebar{
+    display: none
+  }
+</style>
+{% endblock %}
 {% block content %}
 {{ block.super }}
 <div class="" style="">
@@ -53,6 +60,17 @@
           </div>
           <!-- count_blocks_row ends here -->
           <div class="open_sections row">
+
+            <div class="col-md-12">
+              <div class="" id="graph">
+                <!-- <a href="{% url 'marketing:contacts_list' %}">
+                  <div class="title">Contacts</div>
+                  <div class="count">{{contacts|length}}</div>
+                </a> -->
+              </div>
+            </div>
+
+
             <div class="col-md-6 table_container_row">
               <div class="card">
                 <div class="card-body">
@@ -70,7 +88,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {% for contact in contacts_list|slice:"10" %}
+                        {% for contact in contacts_list|slice:"5" %}
                         <tr>
                           <td><a href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a>
                           </td>
@@ -130,7 +148,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {% for campaign in campaigns|slice:"10" %}
+                        {% for campaign in campaigns|slice:"5" %}
                         <tr>
                           <td><a href="{% url 'marketing:campaign_details' campaign.id %}">{{campaign.title}}</a>
                           </td>
@@ -155,17 +173,19 @@
                             <div>
                               <div>
                                 <span class="text-left" id="list_opp_users_">
-                                  <a href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a><span>
+                                  <a
+                                    href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a><span>
                               </div>
                               {% empty %}
                               <span class="text-left">None</span>
                               {% endfor %}
-                              {% if contact|length > 3 %}
+                              {% if contacts_lists|length > 3 %}
                               <div>
-                                <span style="color:white; background-color: #333; padding:0.15em; border-radius: 10%;"
-                                  class="text-left ml-1" id="list_opp_users">{{contact|length|subtract:'3'}}<span>
+                                <a href="{% url 'marketing:campaign_details' campaign.id %}" style="color:white;">
+                                    <span class="text-left" id="list_tag">{{contacts_lists|length|subtract:'3'}}<span>
                                     more
                                   </span></span>
+                                  </a>
                               </div>
                               {% endif %}
                               {% endwith %}
@@ -192,6 +212,7 @@
 
 {% endblock %}
 {% block js_block %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
 
   $(document).ready(function () {
@@ -209,7 +230,83 @@
       url = url + "?tag=" + $(this).attr('data-link')
       window.location.href = url;
     });
+
+    {% if campaigns|length %}
+
+    var trace1 = {
+      // x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      // y: [20, 14, 25, 16, 18, 22, 19, 15, 12, 16, 14, 17],
+      x:{{x_axis_titles|safe}},
+      y:{{y_axis_unsubscribed}},
+      type: 'bar',
+      name: 'Unsubscribed',
+      marker: {
+        color: 'rgb(49,130,189)',
+        opacity: 0.7
+      }
+    };
+
+    var trace2 = {
+      // x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      // y: [19, 14, 22, 14, 16, 19, 15, 14, 10, 12, 12, 16],
+      x:{{x_axis_titles|safe}},
+      y:{{y_axis_bounces}},
+      type: 'bar',
+      name: 'Bounces',
+      marker: {
+        color: '#e65c00',
+        opacity: 0.5
+      }
+    };
+
+    var trace3 = {
+      // x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      // y: [19, 14, 22, 14, 16, 19, 15, 14, 10, 12, 12, 16],
+      x:{{x_axis_titles|safe}},
+      y:{{y_axis_subscribed}},
+      type: 'bar',
+      name: 'Subscribed',
+      marker: {
+        color: '#00cc00',
+        opacity: 0.5
+      }
+    };
+
+    var trace4 = {
+      // x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      // y: [19, 14, 22, 14, 16, 19, 15, 14, 10, 12, 12, 16],
+      x:{{x_axis_titles|safe}},
+      y:{{y_axis_opened}},
+      type: 'bar',
+      name: 'Opened',
+      marker: {
+        color: '#00ffff',
+        opacity: 0.5
+      }
+    };
+
+    var data = [trace1, trace2, trace3, trace4];
+
+    var layout = {
+      title: 'Campaigns',
+      margin:{
+        b:160,
+        l:120,
+      },
+      xaxis: {
+        type: 'category',
+        tickangle: -45,
+      },
+      barmode: 'group'
+    };
+
+    Plotly.newPlot('graph', data, layout);
+
+    {% endif %}
+
   });
+
+  // $('.modebar').css('display','none');
 
 </script>
 {% endblock js_block %}

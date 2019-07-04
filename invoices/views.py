@@ -19,9 +19,12 @@ from invoices.forms import (InvoiceAddressForm, InvoiceAttachmentForm,
                             InvoiceCommentForm, InvoiceForm)
 from invoices.models import Invoice
 from invoices.tasks import send_email, send_invoice_email, send_invoice_email_cancel
+from common.access_decorators_mixins import (
+    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 
 
 @login_required
+@sales_access_required
 def invoices_list(request):
 
     if request.user.role == 'ADMIN' or request.user.is_superuser:
@@ -88,6 +91,7 @@ def invoices_list(request):
 
 
 @login_required
+@sales_access_required
 def invoices_create(request):
     if request.method == 'GET':
         context = {}
@@ -127,6 +131,7 @@ def invoices_create(request):
 
 
 @login_required
+@sales_access_required
 def invoice_details(request, invoice_id):
     invoice = get_object_or_404(Invoice.objects.select_related(
         'from_address', 'to_address'), pk=invoice_id)
@@ -147,10 +152,11 @@ def invoice_details(request, invoice_id):
         else:
             context['users_mention'] = list(
                 invoice.assigned_to.all().values('username'))
-        return render(request, 'invoices_detail.html', context)
+        return render(request, 'invoices_detail_1.html', context)
 
 
 @login_required
+@sales_access_required
 def invoice_edit(request, invoice_id):
     invoice_obj = get_object_or_404(Invoice, pk=invoice_id)
 
@@ -194,6 +200,7 @@ def invoice_edit(request, invoice_id):
 
 
 @login_required
+@sales_access_required
 def invoice_delete(request, invoice_id):
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user):
@@ -205,6 +212,7 @@ def invoice_delete(request, invoice_id):
 
 
 @login_required
+@sales_access_required
 def invoice_send_mail(request, invoice_id):
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user):
@@ -219,6 +227,7 @@ def invoice_send_mail(request, invoice_id):
 
 
 @login_required
+@sales_access_required
 def invoice_change_status_paid(request, invoice_id):
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user):
@@ -231,6 +240,7 @@ def invoice_change_status_paid(request, invoice_id):
         return redirect('invoices:invoices_list')
 
 @login_required
+@sales_access_required
 def invoice_change_status_cancelled(request, invoice_id):
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user):
@@ -243,6 +253,7 @@ def invoice_change_status_cancelled(request, invoice_id):
         return redirect('invoices:invoices_list')
 
 @login_required
+@sales_access_required
 def invoice_download(request, invoice_id):
     invoice = get_object_or_404(Invoice.objects.select_related(
         'from_address', 'to_address'), pk=invoice_id)

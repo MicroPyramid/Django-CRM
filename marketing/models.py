@@ -56,7 +56,7 @@ class ContactList(models.Model):
         User, related_name="contact_lists_visible_to")
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('-created_on',)
 
     @property
     def created_by_user(self):
@@ -263,6 +263,15 @@ class Campaign(models.Model):
     @property
     def get_all_emails_subscribed_count(self):
         return self.get_all_emails_count - self.get_all_email_bounces_count - self.get_all_emails_unsubscribed_count
+
+    @property
+    def get_all_emails_contacts_opened(self):
+        contact_ids = CampaignOpen.objects.filter(
+            campaign=self).values_list('contact_id', flat=True)
+        # opened_contacts = Contact.objects.filter(id__in=contact_ids)
+        # return opened_contacts
+        return contact_ids.count()
+
 
 
 @receiver(models.signals.pre_delete, sender=Campaign)
