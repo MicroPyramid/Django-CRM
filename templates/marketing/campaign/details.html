@@ -95,7 +95,7 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last Activity</span>
-                            <a href="#" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+                            <a href="{% url 'marketing:download_links_clicked' campaign.id  %}" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
@@ -104,7 +104,7 @@
                                   <th width="45%">Link(url)</th>
                                   <th width="30%" class="text-center">Unique</th>
                                   <th width="10%" class="text-center">Total</th>
-                                  <th width="15%" class="text-center">Export</th>
+                                  <!-- <th width="15%" class="text-center">Export</th> -->
                                 </tr>
                               </thead>
                               <tbody>
@@ -119,9 +119,9 @@
                                   </td>
                                   <td class="text-center">{{ link.unique }}</td>
                                   <td class="text-center">{{ link.clicks }}</td>
-                                  <td class="text-center actions">
+                                  <!-- <td class="text-center actions">
                                     <a href="#" class="btn btn-success"><i class="fas fa-download mar_right_0"></i></a>
-                                  </td>
+                                  </td> -->
                                 </tr>
                                 {% endfor %}
                               </tbody>
@@ -171,10 +171,12 @@
                                   {% with contacts=contact.contact_list.all %}
                                   <td>
                                     {% for contact in contacts %}
+                                    {% if contact in campaign.contact_lists.all %}
                                     <div>
                                       <a href="{% url 'marketing:contact_list_detail' contact.id %}"
-                                        class="anchor">{{contact.name}} </a>
+                                      class="anchor">{{contact.name}} </a>
                                     </div>
+                                    {% endif %}
                                     {% endfor %}
                                   </td>
                                   {% endwith %}
@@ -229,10 +231,12 @@
                                   {% with contacts=contact.contact_list.all %}
                                   <td>
                                     {% for contact in contacts %}
+                                    {% if contact in campaign.contact_lists.all %}
                                     <div>
                                       <a href="{% url 'marketing:contact_list_detail' contact.id %}"
                                         class="anchor">{{contact.name}}</a>
                                     </div>
+                                    {% endif %}
                                     {% endfor %}
                                   </td>
                                   {% endwith %}
@@ -288,10 +292,12 @@
                                   {% with contacts=contact.contact_list.all %}
                                   <td>
                                     {% for contact in contacts %}
+                                    {% if contact in campaign.contact_lists.all %}
                                     <div>
                                       <a href="{% url 'marketing:contact_list_detail' contact.id %}"
                                         class="anchor">{{contact.name}}</a>
                                     </div>
+                                    {% endif %}
                                     {% endfor %}
                                   </td>
                                   {% endwith %}

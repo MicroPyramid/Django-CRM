@@ -3,6 +3,7 @@ from contacts.models import Contact
 from common.models import User, Attachments, Comment
 from django.db.models import Q
 from events.models import Event
+from teams.models import Teams
 
 
 class EventForm(forms.ModelForm):
@@ -18,6 +19,9 @@ class EventForm(forms.ModelForm):
     recurring_days = forms.MultipleChoiceField(
         required=False, choices=WEEKDAYS)
 
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
+
     def __init__(self, *args, **kwargs):
         request_user = kwargs.pop('request_user', None)
         self.obj_instance = kwargs.get('instance', None)
@@ -29,6 +33,7 @@ class EventForm(forms.ModelForm):
             self.fields['assigned_to'].queryset = User.objects.all()
             self.fields["contacts"].queryset = Contact.objects.filter()
             self.fields['assigned_to'].required = True
+            self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
         elif request_user.google.all():
             self.fields['assigned_to'].queryset = User.objects.none()
             self.fields["contacts"].queryset = Contact.objects.filter(
@@ -47,6 +52,7 @@ class EventForm(forms.ModelForm):
             self.fields['start_date'].widget.attrs['readonly'] = True
             self.fields['end_date'].widget.attrs['readonly'] = True
 
+        self.fields["teams"].required = False
         self.fields['name'].required = True
         self.fields['event_type'].required = True
         self.fields['contacts'].required = True
@@ -58,9 +64,10 @@ class EventForm(forms.ModelForm):
 
     def clean_recurring_days(self):
         recurring_days = self.cleaned_data.get('recurring_days')
-        if self.cleaned_data.get('event_type') == 'Recurring':
-            if len(recurring_days) < 1:
-                raise forms.ValidationError('Choose atleast on recurring day')
+        if not self.obj_instance:
+            if self.cleaned_data.get('event_type') == 'Recurring':
+                if len(recurring_days) < 1:
+                    raise forms.ValidationError('Choose atleast one recurring day')
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -81,10 +88,13 @@ class EventForm(forms.ModelForm):
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
-        if self.obj_instance:
-            return self.obj_instance.start_date
+        if start_date:
+            if self.obj_instance:
+                return self.obj_instance.start_date
+            else:
+                return start_date
         else:
-            return start_date
+            raise forms.ValidationError('Enter a valid Start date.')
 
     def clean_end_date(self):
         end_date = self.cleaned_data.get('end_date')
@@ -100,6 +110,8 @@ class EventForm(forms.ModelForm):
 
     def clean_end_time(self):
         end_time = self.cleaned_data.get('end_time')
+        if not self.cleaned_data.get('start_time'):
+            raise forms.ValidationError('Enter a valid start time.')
         if self.cleaned_data.get('start_time') > end_time:
             raise forms.ValidationError(
                 'End Time cannot be less than Start Time')

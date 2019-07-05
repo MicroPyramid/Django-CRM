@@ -341,7 +341,7 @@ class CreateCommentFile(TestCase):
                 'username': user1.username, 'role': user1.role,
                 'profile_pic': user1.profile_pic,
                 'password': user1.password}
-        form = UserForm(data=data)
+        form = UserForm(data=data, request_user=user1)
         userr = User.objects.get(username='robert')
         # print(userr)
         self.assertEqual(len(userr.password), 3)
@@ -616,7 +616,7 @@ class TestUserUpdate(ObjectsCreation, TestCase):
                              json.dumps({"error": True, "errors": {"email": ["This field is required."],
                                                                    "first_name": ["This field is required."], "username": ["This field is required."],
                                                                    "role": ["This field is required."],
-                                                                   'has_sales_access': ['Select atleast one option']}}))
+                                                                   'has_sales_access': ['Select atleast one option.']}}))
 
     def test_user_update_permissions(self):
         self.user_obj = User.objects.create(
@@ -729,7 +729,7 @@ class TestUserCreationView(ObjectsCreation, TestCase):
                                     "first_name": ["This field is required."],
                                     "username": ["This field is required."],
                                     "role": ["This field is required."],
-                                    "has_sales_access": ["Select atleast one option"],
+                                    "has_sales_access": ["Select atleast one option."],
                                     "password": ["This field is required."]}}))
 
         response=self.client.post(reverse('common:create_user'), {

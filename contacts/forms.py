@@ -1,9 +1,12 @@
 from django import forms
 from contacts.models import Contact
 from common.models import Comment, Attachments
+from teams.models import Teams
 
 
 class ContactForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         assigned_users = kwargs.pop('assigned_to', [])
@@ -21,6 +24,8 @@ class ContactForm(forms.ModelForm):
                 value.widget.attrs['placeholder'] = "+91-123-456-7890"
             else:
                 value.widget.attrs['placeholder'] = value.label
+        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["teams"].required = False
 
     class Meta:
         model = Contact

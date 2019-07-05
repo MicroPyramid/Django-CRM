@@ -1,9 +1,12 @@
 from django import forms
 from cases.models import Case
 from common.models import Comment, Attachments
+from teams.models import Teams
 
 
 class CaseForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         assigned_users = kwargs.pop('assigned_to', [])
@@ -22,6 +25,9 @@ class CaseForm(forms.ModelForm):
         self.fields['contacts'].required = False
         for key, value in self.fields.items():
             value.widget.attrs['placeholder'] = value.label
+
+        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["teams"].required = False
 
     class Meta:
         model = Case

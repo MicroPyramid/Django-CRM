@@ -38,6 +38,16 @@
                 {% if doc_obj %}<span>{{doc_file_name}}</span>{% endif %}
                 <span class="error" id="id_document_file">{{ errors.document_file }}</span>
               </div>
+              {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus">Teams{% if doc_form.teams.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ doc_form.teams }}
+                  <span class="error" id="id__teams">{{ doc_form.teams.errors }}</span>
+                </div>
+              </div>
+              {% endif %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Share To{% if doc_form.shared_to.field.required %}<span class="error">*</span>{% endif %}</label>
@@ -91,6 +101,7 @@
 
   $(document).ready(function() {
     $('.assigned_users').select2();
+    $('#id_teams').select2();
   });
 
   var bar = $('.bar');

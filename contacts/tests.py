@@ -308,9 +308,6 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
     def test_contact_detail_view_error(self):
         self.client.login(username='mp@mp.com', password='mp')
         self.contact = Contact.objects.create(created_by=self.user)
-        # Todo
-        # response = self.client.get(reverse('contacts:view_contact', args=(self.contact.id,)))
-        # self.assertEqual(403, response.status_code)
 
     def test_contact_update_view(self):
         self.client.login(username='n@mp.com', password='navi123')

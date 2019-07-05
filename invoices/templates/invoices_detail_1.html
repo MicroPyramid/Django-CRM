@@ -175,7 +175,9 @@
                       <div class="col-sm-8 pl-0 col-form-label">
                         {% for user in invoice.assigned_to.all %}
                         <div>
-                          {{user}}
+                          <a href="{% url 'common:view_user' user.id %}">
+                            {{user}}
+                          </a>
                         </div>
                         {% endfor %}
                       </div>

@@ -61,7 +61,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1" class="required">Date of Meeting</label>
                     <input type="text" id="date_of_meeting" name="date_of_meeting" class="form-control"
-                    value="{{request.POST.date_of_meeting}}">
+                      value="{{request.POST.date_of_meeting}}">
                   </div>
                 </div>
                 <div class="filter_col col-md-2">
@@ -161,11 +161,15 @@
                           {% for user in users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ user.email }}">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ user.email }}">
+                          </a>
                           {% endthumbnail %}
                           {% else %}
-                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          </a>
                           {% endif %}
                           {% empty %}
                           None
@@ -181,11 +185,11 @@
                           {% if event.created_by.profile_pic %}
                           {% thumbnail event.created_by.profile_pic "40x40" crop="center" as im %}
                           <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                          title="{{ event.created_by }}" style="border-radius: 50%" />
+                            title="{{ event.created_by }}" style="border-radius: 50%" />
                           {% endthumbnail %}
                           {% else %}
                           <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                          style="width: 40px;height: 40px;border-radius: 50%;" title="{{ event.created_by }}" />
+                            style="width: 40px;height: 40px;border-radius: 50%;" title="{{ event.created_by }}" />
                           {% endif %}
                           {% else %}
                           None

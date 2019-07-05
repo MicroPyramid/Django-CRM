@@ -52,6 +52,16 @@
                   <span class="error">{{ contact_form.email.errors }}</span>
                 </div>
               </div>
+              {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus">Teams{% if contact_form.teams.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ contact_form.teams }}
+                  <span class="error" id="id__teams">{{ contact_form.teams.errors }}</span>
+                </div>
+              </div>
+              {% endif %}
             </div>
             <div class="col-md-4">
               <div class="filter_col col-12">
@@ -148,6 +158,7 @@
   });
   $(document).ready(function() {
     $('.assigned_users').select2();
+    $('#id_teams').select2();
   });
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");

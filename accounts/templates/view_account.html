@@ -6,7 +6,7 @@
 {% block extralinks %}
 <link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
 <style>
-  .opacity_block{
+  .opacity_block {
     opacity: 0.2;
   }
 </style>
@@ -121,7 +121,9 @@
                   <label class="case_field_label" for="id_contact" data-name="name">Assigned To</label>
                   <div class="case_field" id="case_contact" data-name="name">
                     {% for user in account_record.assigned_to.all %}
-                    <div>{{ user }}</div>
+                    <div>
+                      <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
+                    </div>
                     {% endfor %}
                   </div>
                 </div>
@@ -331,7 +333,8 @@
                         <td>{{ contact.phone }}</td>
                         <td>{{ contact.email }}</td>
                         <td class="actions">
-                          <a href="{% url 'contacts:view_contact' pk=contact.id %}" class="btn btn-primary" style="color: white;">View</a>
+                          <a href="{% url 'contacts:view_contact' pk=contact.id %}" class="btn btn-primary"
+                            style="color: white;">View</a>
                           <a href="{% url 'contacts:edit_contact' pk=contact.id %}?view_account={{account_record.id}}"
                             class="btn btn-success">Edit</a>
                           <a href="{% url 'contacts:remove_contact' pk=contact.id %}?view_account={{account_record.id}}"
@@ -382,8 +385,8 @@
                         <td>{{opportunity.stage}}</td>
                         <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
                         <td class="actions">
-                          <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}"
-                            class="btn btn-primary" style="color: white;">View</a>
+                          <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}" class="btn btn-primary"
+                            style="color: white;">View</a>
                           <a href="{% url 'opportunities:opp_edit' pk=opportunity.id %}?view_account={{account_record.id}}"
                             class="btn btn-success">Edit</a>
                           <a href="{% url 'opportunities:opp_remove' pk=opportunity.id %}?view_account={{account_record.id}}"
@@ -434,7 +437,8 @@
                         <td>{{ case.status }}</td>
                         <td>{{ case.priority }}</td>
                         <td class="actions">
-                          <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary" style="color: white;">View</a>
+                          <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary"
+                            style="color: white;">View</a>
                           <a href="{% url 'cases:edit_case' pk=case.id %}?view_account={{account_record.id}}"
                             class="btn btn-success">Edit</a>
                           <a href="{% url 'cases:remove_case' case_id=case.id %}?view_account={{account_record.id}}"
@@ -485,7 +489,8 @@
                         <td>{{task.status}}</td>
                         <td>{{task.priority}} {% if task.probability %} % {% endif %}</td>
                         <td class="actions">
-                          <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-primary" style="color: white;">View</a>
+                          <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-primary"
+                            style="color: white;">View</a>
                           <a href="{% url 'tasks:task_edit' task.id %}?view_account={{account_record.id}}"
                             class="btn btn-success">Edit</a>
                           <a href="{% url 'tasks:task_delete' task.id %}?view_account={{account_record.id}}"
@@ -507,12 +512,12 @@
       </form>
     </div>
     <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
-    style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
-  
-    <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
-      <span class="sr-only">Processing File...</span>
+      style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+      <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+        <span class="sr-only">Processing File...</span>
+      </div>
     </div>
-  </div>
   </div>
 </div>
 <!-- ACCOUNTS VIEW ENDS -->
@@ -637,7 +642,7 @@
       cache: false,
       contentType: false,
       processData: false,
-      beforeSend: function(){
+      beforeSend: function () {
         $('#loading_spinner').show()
         $('#opacity_block').addClass('opacity_block')
       },

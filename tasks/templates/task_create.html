@@ -17,7 +17,7 @@
 {% block content %}
 <form id="formid" action='' method="POST" novalidate enctype="multipart/form-data">
   <div class="overview_form_block row marl justify-content-center">
-    <div class="col-md-9" >
+    <div class="col-md-9">
       <div class="card">
         <div class="card-body">
           <div class="card-title text-center">
@@ -35,8 +35,8 @@
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Status{% if form.status.field.required %}<span
-                      class="error_marker" style="color:red">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Status{% if form.status.field.required %}<span class="error_marker"
+                      style="color:red">*</span>{% endif %}</label>
                   {{ form.status }}
                   <span class="error" id="id__status">{{ form.status.errors }}</span>
                 </div>
@@ -80,10 +80,6 @@
                     <span class="error" id="id__account">{{ form.account.errors }}</span>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="filter_col billing_block col-md-12" style="padding: 0px;">
                 <div class="filter_col col-md-12">
                   <div class="form-group ">
                     <label for="id_contacts" class="required">Contacts{% if form.contacts.field.required %}<span
@@ -92,6 +88,20 @@
                     <span class="error" id="id__contacts">{{ form.contacts.errors }}</span>
                   </div>
                 </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="filter_col billing_block col-md-12" style="padding: 0px;">
+                {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+                <div class="filter_col col-12">
+                  <div class="form-group">
+                    <label for="id_sattus">Teams{% if form.teams.field.required %}<span
+                        class="error">*</span>{% endif %}</label>
+                    {{ form.teams }}
+                    <span class="error" id="id__teams">{{ form.teams.errors }}</span>
+                  </div>
+                </div>
+                {% endif %}
                 <div class="filter_col col-md-12">
                   <div class="form-group ">
                     <label for="exampleInputEmail1">Assign To</label>
@@ -136,6 +146,7 @@
   $(document).ready(function () {
     $("#id_contacts").select2();
     $("#id_assigned_to").select2();
+    $("#id_teams").select2();
     var date = new Date();
     var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     $('#id_due_date').datetimepicker({

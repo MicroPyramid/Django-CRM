@@ -21,6 +21,7 @@ from common.tasks import send_email_user_mentions
 from contacts.tasks import send_email_to_assigned_user
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from teams.models import Teams
 
 
 class ContactsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
@@ -126,11 +127,6 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
         if self.request.POST.getlist('assigned_to', []):
             contact_obj.assigned_to.add(
                 *self.request.POST.getlist('assigned_to'))
-            assigned_to_list = self.request.POST.getlist('assigned_to')
-            current_site = get_current_site(self.request)
-            recipients = assigned_to_list
-            send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
-                protocol=self.request.scheme)
             # for assigned_to_user in assigned_to_list:
             #     user = get_object_or_404(User, pk=assigned_to_user)
             #     mail_subject = 'Assigned to contact.'
@@ -144,6 +140,18 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             #     email = EmailMessage(mail_subject, message, to=[user.email])
             #     email.content_subtype = "html"
             #     email.send()
+        if self.request.POST.getlist('teams', []):
+            user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
+            assinged_to_users_ids = contact_obj.assigned_to.all().values_list('id', flat=True)
+            for user_id in user_ids:
+                if user_id not in assinged_to_users_ids:
+                    contact_obj.assigned_to.add(user_id)
+
+        assigned_to_list = list(contact_obj.assigned_to.all().values_list('id', flat=True))
+        current_site = get_current_site(self.request)
+        recipients = assigned_to_list
+        send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
+            protocol=self.request.scheme)
 
         if self.request.FILES.get('contact_attachment'):
             attachment = Attachments()
@@ -278,10 +286,6 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
                 'assigned_to').values_list('id', flat=True)
             all_members_list = list(
                 set(list(assigned_form_users)) - set(list(assigned_to_ids)))
-            current_site = get_current_site(self.request)
-            recipients = all_members_list
-            send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
-                protocol=self.request.scheme)
             # if all_members_list:
             #     for assigned_to_user in all_members_list:
             #         user = get_object_or_404(User, pk=assigned_to_user)
@@ -303,6 +307,18 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
                 *self.request.POST.getlist('assigned_to'))
         else:
             contact_obj.assigned_to.clear()
+
+        if self.request.POST.getlist('teams', []):
+            user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
+            assinged_to_users_ids = contact_obj.assigned_to.all().values_list('id', flat=True)
+            for user_id in user_ids:
+                if user_id not in assinged_to_users_ids:
+                    contact_obj.assigned_to.add(user_id)
+
+        current_site = get_current_site(self.request)
+        recipients = list(contact_obj.assigned_to.all().values_list('id', flat=True))
+        send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
+            protocol=self.request.scheme)
 
         if self.request.FILES.get('contact_attachment'):
             attachment = Attachments()

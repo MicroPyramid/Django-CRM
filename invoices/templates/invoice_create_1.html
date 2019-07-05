@@ -183,24 +183,6 @@
                         <!-- <input type="text" class="form-control" id="staticEmail" placeholder="6566589125"> -->
                       </div>
                     </div>
-                  </div>
-                  <div class="col-md-6 mt-5">
-                    <div class="form-group row">
-                      <label for="inputState" class="col-sm-4">Currency{% if form.currency.field.required %}<span
-                          class="error_marker" style="color:red"> * </span>{% endif %}</label>
-                      <div class="col-sm-8 pl-0">
-                        {{ form.currency }}
-                        <span class="error" id="id__currency">{{ form.currency.errors }}</span>
-                      </div>
-                    </div>
-                    <div class="form-group row">
-                      <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
-                      <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
-                        {{form.assigned_to}}
-                        <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
-                      </div>
-                    </div>
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Due Date
                         {% if form.due_date.field.required %}<span class="error_marker"
@@ -213,6 +195,34 @@
                           </span>
                         </div>
                         <span class="error" id="id__due_date">{{ form.due_date.errors }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6 mt-5">
+                    <div class="form-group row">
+                      <label for="inputState" class="col-sm-4">Currency{% if form.currency.field.required %}<span
+                          class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                      <div class="col-sm-8 pl-0">
+                        {{ form.currency }}
+                        <span class="error" id="id__currency">{{ form.currency.errors }}</span>
+                      </div>
+                    </div>
+                    {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Teams</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        {{form.teams}}
+                        <span class="error" id="id__teams">{{ form.teams.errors }}</span>
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        {{form.assigned_to}}
+                        <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
                       </div>
                     </div>
                   </div>
@@ -279,6 +289,7 @@
       $("#id_contacts").select2();
       $("#id_assigned_to").select2();
       $('#id_currency').select2();
+      $('#id_teams').select2();
       var date = new Date();
       var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       $('#id_due_date').datetimepicker({

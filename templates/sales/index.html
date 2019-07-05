@@ -83,7 +83,7 @@
                       {% with users=account.assigned_to.all %}
                       {% for user in users|slice:'3' %}
                       <div>
-                        {{user}}
+                          <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
                       </div>
                       {% empty %}
                       <span class="text-left">None</span>
@@ -144,7 +144,7 @@
                     <td>
                       {% with users=opportunity.assigned_to.all %}
                       {% for user in users|slice:'3'  %}
-                      <span class="text-left" id="list_opp_users_">{{user}}<span>
+                      <span class="text-left" id="list_opp_users_"><a href="{% url 'common:view_user' user.id %}">{{user}}</a><span>
                           {% empty %}
                           <span class="text-left">None</span>
                           {% endfor %}

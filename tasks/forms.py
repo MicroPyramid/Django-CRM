@@ -4,9 +4,12 @@ from accounts.models import Account
 from contacts.models import Contact
 from common.models import User, Attachments, Comment
 from django.db.models import Q
+from teams.models import Teams
 
 
 class TaskForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         # assigned_users = kwargs.pop('assigned_to', [])
@@ -27,7 +30,9 @@ class TaskForm(forms.ModelForm):
             self.fields["account"].queryset = Account.objects.filter(status="open")
 
             self.fields["contacts"].queryset = Contact.objects.filter()
+            self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
 
+        self.fields["teams"].required = False
         self.fields['assigned_to'].required = False
         # if assigned_users:
         #     self.fields['assigned_to'].queryset = assigned_users

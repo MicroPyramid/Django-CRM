@@ -22,6 +22,7 @@ from common.tasks import send_email_user_mentions
 from cases.tasks import send_email_to_assigned_user
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from teams.models import Teams
 
 
 class CasesListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
@@ -111,10 +112,10 @@ def create_case(request):
             if request.POST.getlist('assigned_to', []):
                 case.assigned_to.add(*request.POST.getlist('assigned_to'))
                 assigned_to_list = request.POST.getlist('assigned_to')
-                current_site = get_current_site(request)
-                recipients = assigned_to_list
-                send_email_to_assigned_user.delay(recipients, case.id, domain=current_site.domain,
-                    protocol=request.scheme)
+                # current_site = get_current_site(request)
+                # recipients = assigned_to_list
+                # send_email_to_assigned_user.delay(recipients, case.id, domain=current_site.domain,
+                #     protocol=request.scheme)
                 # for assigned_to_user in assigned_to_list:
                 #     user = get_object_or_404(User, pk=assigned_to_user)
                 #     mail_subject = 'Assigned to case.'
@@ -132,6 +133,17 @@ def create_case(request):
 
             if request.POST.getlist('contacts', []):
                 case.contacts.add(*request.POST.getlist('contacts'))
+            if request.POST.getlist('teams', []):
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                assinged_to_users_ids = case.assigned_to.all().values_list('id', flat=True)
+                for user_id in user_ids:
+                    if user_id not in assinged_to_users_ids:
+                        case.assigned_to.add(user_id)
+
+            current_site = get_current_site(request)
+            recipients = list(case.assigned_to.all().values_list('id', flat=True))
+            send_email_to_assigned_user.delay(recipients, case.id, domain=current_site.domain,
+                protocol=request.scheme)
             if request.FILES.get('case_attachment'):
                 attachment = Attachments()
                 attachment.created_by = request.user
@@ -248,9 +260,9 @@ def update_case(request, pk):
                 all_members_list = list(
                     set(list(assigned_form_users)) -
                     set(list(assigned_to_ids)))
-                recipients = all_members_list
-                send_email_to_assigned_user.delay(recipients, case_obj.id, domain=current_site.domain,
-                    protocol=request.scheme)
+                # recipients = all_members_list
+                # send_email_to_assigned_user.delay(recipients, case_obj.id, domain=current_site.domain,
+                #     protocol=request.scheme)
                 # if all_members_list:
                 #     for assigned_to_user in all_members_list:
                 #         user = get_object_or_404(User, pk=assigned_to_user)
@@ -271,6 +283,18 @@ def update_case(request, pk):
                 case_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
             else:
                 case_obj.assigned_to.clear()
+
+            if request.POST.getlist('teams', []):
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                assinged_to_users_ids = case_obj.assigned_to.all().values_list('id', flat=True)
+                for user_id in user_ids:
+                    if user_id not in assinged_to_users_ids:
+                        case_obj.assigned_to.add(user_id)
+
+            current_site = get_current_site(request)
+            recipients = list(case_obj.assigned_to.all().values_list('id', flat=True))
+            send_email_to_assigned_user.delay(recipients, case_obj.id, domain=current_site.domain,
+                protocol=request.scheme)
 
             if request.POST.getlist('contacts', []):
                 case_obj.contacts.add(*request.POST.getlist('contacts'))

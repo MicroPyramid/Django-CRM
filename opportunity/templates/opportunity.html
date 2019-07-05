@@ -1,6 +1,7 @@
 {% extends "sales/base.html" %}
 {% load staticfiles %}
 {% load paginate %}
+{% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
@@ -137,13 +138,21 @@
                   <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
                   <td>
                     {% with opportunity_users=opportunity.assigned_to.all %}
-                    {% if opportunity_users %}
                     {% for user in opportunity_users %}
-                    <span class="text-left">{{ user.email }}</span><br>
-                    {% endfor %}
+                    {% if user.profile_pic %}
+                    {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
+                    {% endthumbnail %}
                     {% else %}
-                    None
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                    </a>
                     {% endif %}
+                    {% empty %}
+                    None
+                    {% endfor %}
                     {% endwith %}
                   </td>
                   <td>
