@@ -137,7 +137,7 @@
                       {% for event in events %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'events:detail_view' event.id %}">
+                        <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_event{{event.id}}">
                             {{ event.name }} </a></td>
                         <td>
                           {% with contacts=event.contacts.all  %}
@@ -197,6 +197,8 @@
                         </td>
                         <td class="actions">
                           {% if request.user == event.created_by or request.user.role == 'ADMIN' %}
+                          <a href="{% url 'events:detail_view' event.id %}" class="btn btn-info edit"><i
+                            class="fas fa-eye"></i></a>
                           <a href="{% url 'events:event_update' event.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'events:event_delete' event.id %}"
@@ -318,6 +320,172 @@
     </div>
   </div>
 </div>
+
+
+{% for event in events %}
+
+<div class="modal fade" id="exampleModalCenter_event{{event.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ event.name }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left title">Overview</span> -->
+                      <span style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'events:event_update' event.id %}">Edit</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      {% if event.name %}
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name">Name</label>
+                          <div class="account_field" id="account_name" data-name="name">{{ event.name }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if event.event_type %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_phone" data-name="name">Event Type</label>
+                          <div class="account_field" id="account_phone" data-name="name">{{ event.event_type }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if event.start_date %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_status" data-name="name">Start Date</label>
+                          <div class="account_field" id="account_status" data-name="name">{{ event.start_date }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if event.end_date %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_status" data-name="name">End Date</label>
+                          <div class="account_field" id="account_status" data-name="name">{{ event.end_date }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          {% with contacts=event.contacts.all  %}
+                          <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                          {% if contacts %}
+                          {% for contact in contacts %}
+                          <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                          {% endfor %}
+                          {% else %}
+                          <div class="account_field" id="account_website" data-name="name">None</div>
+                          {% endif %}
+                          {% endwith %}
+                        </div>
+                      </div>
+
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          {% with users=event.assigned_to.all  %}
+                          <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
+                          {% if users %}
+                          {% for user in users %}
+                          <div class="account_field" id="account_website" data-name="name">
+                            <a href="{% url 'common:view_user' user.id %}">
+                              {{ user }}
+                            </a>
+                          </div>
+                          {% endfor %}
+                          {% else %}
+                          <div class="account_field" id="account_website" data-name="name">None</div>
+                          {% endif %}
+                          {% endwith %}
+                        </div>
+                      </div>
+                      {% if event.start_time %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Start Time</label>
+                          <div class="account_field" id="account_website" data-name="name">{{event.start_time}}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if event.end_time %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">End Time</label>
+                          <div class="account_field" id="account_website" data-name="name">{{event.end_time}}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if event.description %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Description</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ event.description }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if event.date_of_meeting %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Date Of Meeting</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ event.date_of_meeting }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="created_information">
+                    Created by <b>{{ event.created_by }}</b> created on
+                    <b>{{ event.created_on }}</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+
+
+
+{% endfor %}
+
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>

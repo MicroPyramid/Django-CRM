@@ -1,12 +1,13 @@
+import arrow
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
-
-from common.models import User
-from common.utils import (LEAD_STATUS, LEAD_SOURCE,
-                          COUNTRIES, return_complete_address)
 from phonenumber_field.modelfields import PhoneNumberField
+
 from accounts.models import Tags
+from common.models import User
+from common.utils import (COUNTRIES, LEAD_SOURCE, LEAD_STATUS,
+                          return_complete_address)
 from contacts.models import Contact
 
 
@@ -66,3 +67,7 @@ class Lead(models.Model):
 
     def get_complete_address(self):
         return return_complete_address(self)
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()

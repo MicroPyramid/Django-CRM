@@ -144,8 +144,13 @@
                       {% for lead in open_leads %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'leads:view_lead' lead.id %}">
-                            {{ lead.title }} </a></td>
+                        <!-- <td><a href="{% url 'leads:view_lead' lead.id %}">
+                            {{ lead.title }} </a></td> -->
+                        <td>
+                          <a data-toggle="modal" data-target="#exampleModalCenter_lead{{lead.id}}" href="#">
+                            {{ lead.title }}
+                          </a>
+                        </td>
                         <td>
                           {% if lead.created_by %}
                           {% if lead.created_by.profile_pic %}
@@ -198,8 +203,10 @@
                           {% endif %}
                           {% endwith %}
                         </td>
-                        <td>{{ lead.created_on }}</td>
+                        <td title="{{ lead.created_on }}">{{ lead.created_on_arrow }}</td>
                         <td class="actions">
+                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
+                              class="fas fa-eye"></i></a>
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           {% if request.user == lead.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
@@ -256,7 +263,7 @@
                       {% for lead in close_leads %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'leads:view_lead' lead.id %}">
+                        <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_lead{{lead.id}}">
                             {{ lead.title }}</a></td>
                         <td>{{ lead.source }}</td>
                         <td>{{ lead.get_status_display }}</td>
@@ -293,6 +300,8 @@
                         </td>
                         <td>{{ lead.created_on }}</td>
                         <td class="actions">
+                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
+                              class="fas fa-eye"></i></a>
                           <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           {% if request.user == lead.created_by %}
@@ -319,6 +328,334 @@
     </div>
   </div>
 </div>
+
+
+
+{% for lead_record in open_leads %}
+
+<div class="modal fade" id="exampleModalCenter_lead{{lead_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{lead_record.title}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class=" ">
+          <div class="col-md-12" id="">
+            <div class="card">
+
+              <div class="card-body" id="datashow">
+                <div class="card-title text-right">
+                  <h5>
+                    <!-- <span class="float-left title">Overview</span> -->
+                    <span class="" style="margin-top: 0px">
+                      <div class="dropdown buttons_row">
+                        <!-- <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button> -->
+
+                      </div>
+                    </span>
+                  </h5>
+                </div>
+                <div class="row marl">
+                  <div class="col-md-4">
+                    <div class="filter_col col-md-12" id="iname">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_name" data-name="name">Name</label>
+                        <div class="lead_field" id="lead_name" data-name="name"> {% if lead_record.first_name  %}
+                          {{ lead_record.first_name }}{% endif %} {% if lead_record.last_name  %}
+                          {{ lead_record.last_name }}{% endif %}</div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_contact_account" data-name="name">Account Name</label>
+                        {% if lead_record.account_name %}
+                        <div class="lead_field" id="contact_account" data-name="name">{{ lead_record.account_name }}
+                        </div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_title" data-name="name">Title</label>
+                        {% if lead_record.title %}
+                        <div class="lead_field" id="lead_title" data-name="name">{{ lead_record.title }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
+                        {% if lead_record.phone %}
+                        <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
+                        {% else %}
+                        <div class="lead_field">Not specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="col-md-4">
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_email" data-name="name">Email</label>
+                        {% if lead_record.email %}
+                        <div class="lead_field" id="lead_email" data-name="name">{{ lead_record.email }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_status" data-name="name">Status</label>
+                        {% if lead_record.status %}
+                        <div class="lead_field" id="lead_status" data-name="name">{{ lead_record.status }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_source" data-name="name">Source</label>
+                        {% if lead_record.source %}
+                        <div class="lead_field" id="lead_source" data-name="name">{{ lead_record.source }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_website" data-name="name">Website</label>
+                        {% if lead_record.website %}
+                        <div class="lead_field" id="lead_website" data-name="name">{{ lead_record.website }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        {% if lead_record.address_line or lead_record.street or lead_record.city or lead_record.state or lead_record.postcode or lead_record.country %}
+                        <label class="lead_field_label" for="id_address" data-name="name">Billing Address</label>
+                        <div class="lead_field" id="lead_address" data-name="name">
+                          {{lead_record.get_complete_address}}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      {% if lead_record.description %}
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_description" data-name="name">Description</label>
+                        <div class="lead_field" id="lead_description" data-name="name">{{ lead_record.description }}
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="created_information">
+                      Created by <b>{{ lead_record.created_by }}</b> created on <b>{{ lead_record.created_on }}</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+
+{% endfor %}
+
+
+{% for lead_record in close_leads %}
+
+<div class="modal fade" id="exampleModalCenter_lead{{lead_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{lead_record.title}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class=" ">
+          <div class="col-md-12" id="">
+            <div class="card">
+
+              <div class="card-body" id="datashow">
+                <div class="card-title text-right">
+                  <h5>
+                    <!-- <span class="float-left title">Overview</span> -->
+                    <span class="" style="margin-top: 0px">
+                      <div class="dropdown buttons_row">
+                        <!-- <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button> -->
+
+                      </div>
+                    </span>
+                  </h5>
+                </div>
+                <div class="row marl">
+                  <div class="col-md-4">
+                    <div class="filter_col col-md-12" id="iname">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_name" data-name="name">Name</label>
+                        <div class="lead_field" id="lead_name" data-name="name"> {% if lead_record.first_name  %}
+                          {{ lead_record.first_name }}{% endif %} {% if lead_record.last_name  %}
+                          {{ lead_record.last_name }}{% endif %}</div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_contact_account" data-name="name">Account Name</label>
+                        {% if lead_record.account_name %}
+                        <div class="lead_field" id="contact_account" data-name="name">{{ lead_record.account_name }}
+                        </div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_title" data-name="name">Title</label>
+                        {% if lead_record.title %}
+                        <div class="lead_field" id="lead_title" data-name="name">{{ lead_record.title }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
+                        {% if lead_record.phone %}
+                        <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
+                        {% else %}
+                        <div class="lead_field">Not specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="col-md-4">
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_email" data-name="name">Email</label>
+                        {% if lead_record.email %}
+                        <div class="lead_field" id="lead_email" data-name="name">{{ lead_record.email }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_status" data-name="name">Status</label>
+                        {% if lead_record.status %}
+                        <div class="lead_field" id="lead_status" data-name="name">{{ lead_record.status }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_source" data-name="name">Source</label>
+                        {% if lead_record.source %}
+                        <div class="lead_field" id="lead_source" data-name="name">{{ lead_record.source }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_website" data-name="name">Website</label>
+                        {% if lead_record.website %}
+                        <div class="lead_field" id="lead_website" data-name="name">{{ lead_record.website }}</div>
+                        {% else %}
+                        <div class="lead_field">Not Specified</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        {% if lead_record.address_line or lead_record.street or lead_record.city or lead_record.state or lead_record.postcode or lead_record.country %}
+                        <label class="lead_field_label" for="id_address" data-name="name">Billing Address</label>
+                        <div class="lead_field" id="lead_address" data-name="name">
+                          {{lead_record.get_complete_address}}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      {% if lead_record.description %}
+                      <div class="form-group">
+                        <label class="lead_field_label" for="id_description" data-name="name">Description</label>
+                        <div class="lead_field" id="lead_description" data-name="name">{{ lead_record.description }}
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="created_information">
+                      Created by <b>{{ lead_record.created_by }}</b> created on <b>{{ lead_record.created_on }}</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+
+{% endfor %}
+
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>

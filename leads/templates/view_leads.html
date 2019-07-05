@@ -36,8 +36,10 @@
                     <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'leads:edit_lead' lead_record.id %}">Edit</a></li>
-                    <li><a href="{% url 'leads:leads_convert' lead_record.id %}" class="btn btn-info"
+                    <li><a href="{% url 'leads:leads_convert' lead_record.id %}" class=""
                         role="button">Convert</a></li>
+                    <!-- <li><a href="{% url 'leads:leads_convert' lead_record.id %}" class="btn btn-info"
+                        role="button">Convert</a></li> -->
                   </ul>
                 </div>
               </span>

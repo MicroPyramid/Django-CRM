@@ -542,3 +542,14 @@ def create_mail(request, account_id):
             return JsonResponse({'error': False})
         else:
             return JsonResponse({'error': True, 'errors': form.errors})
+
+
+# @login_required
+# def get_account_details(request, account_id):
+#     from django.core import serializers
+#     import json
+#     fields = ['name', 'email', 'phone', 'industry', 'billing_address_line', 'billing_street', 'billing_city',
+#         'billing_state', 'billing_postcode', 'billing_country', 'website', 'description',
+#         'created_by__email', 'created_on', 'tags__name', 'status', 'contacts__email', 'assigned_to__email']
+#     data = serializers.serialize('json', Account.objects.filter(id=account_id), fields=fields)
+#     return JsonResponse({'data': json.loads(data)[0]})

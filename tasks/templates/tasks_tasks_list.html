@@ -116,7 +116,7 @@
                 {% if task.due_date < today and task.status != 'completed' %}
                 <tr id="task_{{task.id}}" class="text-center due-date">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}"
+                  <td>{% if task.title %}<a href="#" data-toggle="modal" data-target="#exampleModalCenter_task{{task.id}}"
                       style="color:red;">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
@@ -165,6 +165,8 @@
                   </td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
+                      class="fas fa-eye"></i></a>
                     <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
@@ -176,7 +178,7 @@
                 {% else %}
                 <tr id="task_{{task.id}}" class="text-center">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  <td>{% if task.title %}<a data-toggle="modal" data-target="#exampleModalCenter_task{{task.id}}">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
                     {% if task.created_by %}
@@ -225,6 +227,8 @@
                   </td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
+                      class="fas fa-eye"></i></a>
                     <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
@@ -236,7 +240,7 @@
                 {% else %}
                 <tr id="task_{{task.id}}" class="text-center">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td>{% if task.title %}<a href="{% url 'tasks:task_detail' task.id %}">{{ task.title }}</a>{% endif %}
+                  <td>{% if task.title %}<a href="#" data-toggle="modal" data-target="#exampleModalCenter_task{{task.id}}">{{ task.title }}</a>{% endif %}
                   </td>
                   <td>
                     {% if task.created_by %}
@@ -284,6 +288,8 @@
                   </td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
+                      class="fas fa-eye"></i></a>
                     <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document"><i
@@ -314,6 +320,138 @@
   <!-- accounts list end -->
 </div>
 <!-- main_container ends here -->
+
+{% for task in tasks %}
+
+<div class="modal fade" id="exampleModalCenter_task{{task.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ task.title }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="opacity_block">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left title">Overview</span> -->
+                      <span style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'tasks:task_edit' task.id %}">Edit</a></li>
+                            <li><a href="{% url 'tasks:task_delete' task.id %}">Delete</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      {% if task.title %}
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name">title</label>
+                          <div class="account_field" id="account_name" data-name="name">{{ task.title }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if task.priority %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_phone" data-name="name">Priority</label>
+                          <div class="account_field" id="account_phone" data-name="name">{{ task.priority }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if task.status %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_status" data-name="name">Status</label>
+                          <div class="account_field" id="account_status" data-name="name">{{ task.status }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if task.due_date %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_due_date" data-name="name">Due Date</label>
+                          <div class="account_field" id="account_email" data-name="name">{{ task.due_date }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if task.account %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_email" data-name="name">Account</label>
+                          <div class="account_field" id="account_email" data-name="name">{{ task.account }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if task.contacts.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                          {% for contact in task.contacts.all %}
+                          <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if task.assigned_to.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
+                          {% for user in task.assigned_to.all %}
+                          <div class="account_field" id="account_website" data-name="name">
+                            <a href="{% url 'common:view_user' user.id %}">
+                              {{ user }}
+                            </a>
+                          </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-12">
+                      <div class="created_information">
+                        Created by <b>{{ task.created_by }}</b>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+
+{% endfor %}
+
+
+
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
