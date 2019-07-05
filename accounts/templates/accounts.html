@@ -115,8 +115,12 @@
                         {% for each_account in open_accounts %}
                         <tr id="account_details{{each_account.id}}" class="text-center">
                           <td scope="row" class="s_no" data-id="{{forloop.counter}}">{{ forloop.counter }}</td>
-                          <td>{% if each_account.name %}<a
+                          <!-- <td>{% if each_account.name %}<a
                               href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
+                          </td> -->
+                          <td>{% if each_account.name %}<a data-toggle="modal"
+                              data-target="#exampleModalCenter_account{{each_account.id}}"
+                              href="#">{{ each_account.name }}</a>{% endif %}
                           </td>
                           <td>
                             {% if each_account.created_by %}
@@ -149,7 +153,8 @@
                             {% endwith %}
                           </td>
                           <td class="actions">
-                            {#  <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
+                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit"><i
+                                class="fas fa-eye"></i></a>
                             <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
                                 class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'accounts:remove_account' each_account.id %}"
@@ -203,8 +208,8 @@
                         {% for each_account in close_accounts %}
                         <tr id="account_details{{each_account.id}}">
                           <td scope="row">{{ forloop.counter }}</td>
-                          <td>{% if each_account.name %}<a
-                              href="{% url 'accounts:view_account' each_account.id %}">{{ each_account.name }}</a>{% endif %}
+                          <td>{% if each_account.name %}<a href="#" data-toggle="modal"
+                              data-target="#exampleModalCenter_account{{each_account.id}}">{{ each_account.name }}</a>{% endif %}
                           </td>
                           <td>
                             {% if each_account.created_by %}
@@ -237,6 +242,8 @@
                             {% endwith %}
                           </td>
                           <td class="actions">
+                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit"><i
+                                class="fas fa-eye"></i></a>
                             <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
                                 class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'accounts:remove_account' each_account.id %}"
@@ -267,6 +274,369 @@
   <!-- accounts list end -->
 </div>
 <!-- main_container ends here -->
+
+
+{% for account_record in open_accounts %}
+
+<div class="modal fade" id="exampleModalCenter_account{{account_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{account_record.name}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modal_body_ajax">
+
+        </div>
+        <!-- <textarea name="modal_data" id="modal_data" cols="30" rows="10"></textarea> -->
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left title">Overview</span> -->
+                      <span style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="#">Edit</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      {% if account_record.name %}
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name">Name</label>
+                          <div class="account_field" id="account_name" data-name="name">{{ account_record.name }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.phone %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_phone" data-name="name">Phone</label>
+                          <div class="account_field" id="account_phone" data-name="name">{{ account_record.phone }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.status %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_status" data-name="name">Status</label>
+                          <div class="account_field" id="account_status" data-name="name">{{ account_record.status }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if account_record.email %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_email" data-name="name">Email</label>
+                          <div class="account_field" id="account_email" data-name="name">{{ account_record.email }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.website %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Website</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ account_record.website }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.contacts.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                          {% for contact in account_record.contacts.all %}
+                          <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.lead %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">lead</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ account_record.lead }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if account_record.billing_address_line or account_record.billing_street or  account_record.billing_city or   account_record.billing_state or account_record.billing_postcode or account_record.billing_country %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_billing_address" data-name="name">Billing
+                            Address</label>
+                          <div class="account_field" id="account_billing_address" data-name="name">
+                            {{account_record.get_complete_address}}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        {% if account_record.assigned_to.all %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_contact" data-name="name">Assigned To</label>
+                          <div class="case_field" id="case_contact" data-name="name">
+                            {% for user in account_record.assigned_to.all %}
+                            <div>
+                              <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
+                            </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      {% if account_record.description %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_description" data-name="name">Description</label>
+                          <div class="account_field" id="account_description" data-name="name">
+                            {{ account_record.description }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.tags.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_tags" data-name="name">Tags</label>
+                          <div class="account_field" id="account_tags" data-name="name">
+                            {% for tag in account_record.tags.all %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-12">
+                      <div class="created_information">
+                        Created by <b>{{ account_record.created_by }}</b> created on
+                        <b>{{ account_record.created_on }}</b>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+{% endfor %}
+
+
+
+{% for account_record in close_accounts %}
+
+<div class="modal fade" id="exampleModalCenter_account{{account_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{account_record.name}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modal_body_ajax">
+
+        </div>
+        <!-- <textarea name="modal_data" id="modal_data" cols="30" rows="10"></textarea> -->
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left title">Overview</span> -->
+                      <span style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="#">Edit</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      {% if account_record.name %}
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_name" data-name="name">Name</label>
+                          <div class="account_field" id="account_name" data-name="name">{{ account_record.name }}</div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.phone %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_phone" data-name="name">Phone</label>
+                          <div class="account_field" id="account_phone" data-name="name">{{ account_record.phone }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.status %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_status" data-name="name">Status</label>
+                          <div class="account_field" id="account_status" data-name="name">{{ account_record.status }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if account_record.email %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_email" data-name="name">Email</label>
+                          <div class="account_field" id="account_email" data-name="name">{{ account_record.email }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.website %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Website</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ account_record.website }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.contacts.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">Contacts</label>
+                          {% for contact in account_record.contacts.all %}
+                          <div class="account_field" id="account_website" data-name="name">{{ contact }}</div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.lead %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_website" data-name="name">lead</label>
+                          <div class="account_field" id="account_website" data-name="name">{{ account_record.lead }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      {% if account_record.billing_address_line or account_record.billing_street or  account_record.billing_city or   account_record.billing_state or account_record.billing_postcode or account_record.billing_country %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_billing_address" data-name="name">Billing
+                            Address</label>
+                          <div class="account_field" id="account_billing_address" data-name="name">
+                            {{account_record.get_complete_address}}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        {% if account_record.assigned_to.all %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_contact" data-name="name">Assigned To</label>
+                          <div class="case_field" id="case_contact" data-name="name">
+                            {% for user in account_record.assigned_to.all %}
+                            <div>
+                              <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
+                            </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      {% if account_record.description %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_description" data-name="name">Description</label>
+                          <div class="account_field" id="account_description" data-name="name">
+                            {{ account_record.description }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if account_record.tags.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_tags" data-name="name">Tags</label>
+                          <div class="account_field" id="account_tags" data-name="name">
+                            {% for tag in account_record.tags.all %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-12">
+                      <div class="created_information">
+                        Created by <b>{{ account_record.created_by }}</b> created on
+                        <b>{{ account_record.created_on }}</b>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+{% endfor %}
+
+
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
@@ -274,6 +644,37 @@
   $("#close-tab").click(function (e) {
     $("#tab_status").val('Closed');
   })
+
+  // $(".account_modal").click(function (e) {
+  //   console.log('clicked')
+  //   console.log(e)
+  //   console.log($(this).attr('data-id'))
+
+  //   $.ajax({
+  //     url:`get-account-details/${$(this).attr('data-id')}/`,
+  //     type: 'GET',
+  //     success:function(data){
+  //       console.log(data)
+  //       console.log((data.data.fields))
+  //       $('#modal_body_ajax').empty()
+  //       for(key in data.data.fields){
+  //         console.log(key, data.data.fields[key])
+  //         $('#modal_body_ajax').append(
+  //           "<div class=''><span>" + key +  "</span>&nbsp;&nbsp;&nbsp;&nbsp;" + "<span>" + data.data.fields[key]  + "</span>" + "</div>"
+  //         )
+  //       }
+  //       // $('textarea#modal_data').val(JSON.stringify(data))
+  //       $('#exampleModalCenter_account').modal()
+  //       if(data.error){
+  //         // TODO
+  //         data.fields
+  //       }
+  //       else{
+
+  //       }
+  //     }
+  //   })
+  // })
 
   $("#open-tab").click(function (e) {
     $("#tab_status").val('Open')

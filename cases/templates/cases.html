@@ -7,30 +7,34 @@
   <!-- heading_create starts here -->
   <div class="row marl">
     <div class="col-lg-12 text-right">
-      <span class="d-inline"><a class="primary_btn" href="{% url 'cases:add_case' %}"><i class="fa fa-plus"></i> Add New Case</a></span>
+      <span class="d-inline"><a class="primary_btn" href="{% url 'cases:add_case' %}"><i class="fa fa-plus"></i> Add New
+          Case</a></span>
     </div>
   </div>
   <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="cases_filter" method="POST" action="" >
+          <form id="cases_filter" method="POST" action="">
             <div class="card-body">
               <div class="card-title">Filters</div>
               <div class="row marl">
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Name</label>
-                    <input type="text" class="form-control" placeholder="Name" name="name" value="{{request.POST.name}}">
+                    <input type="text" class="form-control" placeholder="Name" name="name"
+                      value="{{request.POST.name}}">
                   </div>
                 </div>
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Status</label>
-                    <select class="form-control" id="id_status" name="status" >
+                    <select class="form-control" id="id_status" name="status">
                       <option value="">--Status--</option>
                       {% for each_status in case_status %}
-                      <option value="{{each_status.0}}" {% if request.POST.status %} {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %} >{{each_status.1}} </option>
+                      <option value="{{each_status.0}}" {% if request.POST.status %}
+                        {% ifequal each_status.0 request.POST.status %}selected{% endifequal %}{% endif %}>
+                        {{each_status.1}} </option>
                       {% endfor%}
                     </select>
                   </div>
@@ -38,10 +42,12 @@
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Priority</label>
-                    <select class="form-control" id="id_priority" name="priority" >
+                    <select class="form-control" id="id_priority" name="priority">
                       <option value="">--Priority--</option>
                       {% for each_priority in case_priority %}
-                      <option value="{{each_priority.0}}" {% if request.POST.priority %} {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>{{each_priority.1}} </option>
+                      <option value="{{each_priority.0}}" {% if request.POST.priority %}
+                        {% ifequal each_priority.0 request.POST.priority %}selected{% endifequal %}{% endif %}>
+                        {{each_priority.1}} </option>
                       {% endfor%}
                     </select>
                   </div>
@@ -52,7 +58,7 @@
                     <select class="form-control" id="id_account" name="account">
                       <option value="">--Select Account--</option>
                       {% for ac in accounts %}
-                      <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %} >{{ac.name}}</option>
+                      <option value="{{ac.id}}" {% ifequal acc ac.id %} selected {% endifequal %}>{{ac.name}}</option>
                       {% endfor %}
                     </select>
                     </select>
@@ -79,9 +85,10 @@
       <div class="card">
         <div class="card-body">
           <div class="panel-heading-list card-title text-right">
-            <span class="total_count float-left">Cases - {% if show_pageitems %} {% show_pageitems %}{% else %}{{ cases|length }}{% endif %}</span>
+            <span class="total_count float-left">Cases - {% if show_pageitems %}
+              {% show_pageitems %}{% else %}{{ cases|length }}{% endif %}</span>
             <span class="filter_toggle ">
-            <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
             </span>
           </div>
           <div class="table-responsive">
@@ -107,7 +114,7 @@
                 {% for case in cases %}
                 <tr class="case_row{{case.id}}" style="text-align:center;">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td><a href="{% url 'cases:view_case' case.id %}">{{ case.name }}</a></td>
+                  <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_case{{case.id}}">{{ case.name }}</a></td>
                   <td>
                     {% if case.account %}
                     <a href="{% url  'accounts:view_account' case.account.id %}">{{ case.account }}</a>
@@ -118,12 +125,15 @@
                   <td id="status_id{{case.id}}" status="{{case.status}}">{{ case.status }}</td>
                   <td>{{ case.priority }}</td>
                   <td class="actions">
-                    {#  <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> #}
-                    <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i class="fas fa-pencil-alt"></i></a>
+                    <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i
+                        class="fas fa-pencil-alt"></i></a>
                     {% if request.user == case.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                    <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i class="fas fa-trash-alt"></i></a>
+                    <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i
+                        class="fas fa-trash-alt"></i></a>
                     {% if case.status != 'Closed' %}
-                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-info"><i class="fas fa-times"></i> </a>
+                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-info"><i
+                        class="fas fa-times"></i> </a>
                     {% endif %}
                     {% endif %}
                   </td>
@@ -143,45 +153,176 @@
     </div>
   </div>
 </div>
+
+
+{% for case_record in cases %}
+
+<div class="modal fade" id="exampleModalCenter_case{{case_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ case_record.name }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left title">Overview</span> -->
+                      <span class="" style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'cases:edit_case' case_record.id %}">Edit</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_name" data-name="name">Name</label>
+                          <div class="case_field" id="case_name" data-name="name">{{ case_record.name }}</div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if case_record.account %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_account" data-name="name">Account</label>
+                          <div class="case_field" id="case_account" data-name="name">{{ case_record.account }}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if case_record.contacts.all %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_contact" data-name="name">Contact</label>
+                          <div class="case_field" id="case_contact" data-name="name">
+                            {% for contact in case_record.contacts.all %}
+                            <div>{{ contact }}</div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if case_record.closed_on %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_closedon" data-name="name">Close Date</label>
+                          <div class="case_field" id="case_closedon" data-name="name">{{ case_record.closed_on|date }}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_status" data-name="name">Status</label>
+                          <div class="case_field" id="case_status" data-name="name">{{ case_record.status }}</div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_priority" data-name="name">Priority</label>
+                          <div class="case_field" id="case_priority" data-name="name">{{ case_record.priority }}</div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if case_record.case_type %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_case_type" data-name="name">Type of Case</label>
+                          <div class="case_field" id="case_case_type" data-name="name">{{ case_record.case_type }}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12">
+                        {% if case_record.description %}
+                        <div class="form-group">
+                          <label class="case_field_label" for="id_description" data-name="name">Description</label>
+                          <div class="case_field" id="case_description" data-name="name">{{ case_record.description }}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="created_information">
+                        Created by <b>{{ case_record.created_by }}</b> created on <b>{{ case_record.created_on }}</b>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+
+{% endfor %}
+
+
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
-  function close_case(x, url){
-    var stat = $("#status_id"+x).text()
-    if(stat==="Closed"){
+  function close_case(x, url) {
+    var stat = $("#status_id" + x).text()
+    if (stat === "Closed") {
       alert("Case Already Closed")
     }
-    else{
+    else {
       $.post(url, {
-       "case_id": x
-      }, function(data) {
+        "case_id": x
+      }, function (data) {
         location.reload();
       })
     }
   }
-  
-  $(document).ready(function(){    
-    $(".filter_toggle").click(function(){    
-        $(".list_filter_row").toggle();    
-    });    
+
+  $(document).ready(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
   });
 
   search = "{{search}}"
 
-  if (search == 'True'){
+  if (search == 'True') {
     $(".list_filter_row").show();
   }
 
-  $('.remove_case').click(function(e){
+  $('.remove_case').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
       return;
     window.location = $(this).attr('href')
   });
-  
-  $("a[rel='page']").click(function(e){
+
+  $("a[rel='page']").click(function (e) {
     e.preventDefault();
     $('#cases_filter').attr("action", $(this).attr("href"));
     $('#cases_filter').submit();

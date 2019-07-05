@@ -120,7 +120,7 @@
                       {% for team in teams %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'teams:team_detail' team.id %}">
+                        <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_team{{team.id}}">
                             {{ team.name }} </a></td>
                         <td>{{ team.description }} </td>
                         <td>
@@ -161,6 +161,8 @@
                         <td>{{ team.created_on|date:'d-m-Y' }}</td>
                         <td class="actions">
                           {% if request.user == team.created_by or request.user.role == 'ADMIN' or reques.user.is_superuser %}
+                          <a href="{% url 'teams:team_detail' team.id %}" class="btn btn-info edit"><i
+                            class="fas fa-eye"></i></a>
                           <a href="{% url 'teams:team_edit' team.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'teams:team_delete' team.id %}"
@@ -186,6 +188,114 @@
     </div>
   </div>
 </div>
+
+{% for team_obj in teams %}
+<div class="modal fade" id="exampleModalCenter_team{{team_obj.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ team_obj.name }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="panel-heading card-title view-pad text-center">
+                    <h5>
+                      Team
+                    </h5>
+                  </div>
+                  <div class="row marl no-gutters">
+                    <div class="col-md-8">
+                      {% if team_obj.name %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="contact_field_label" for="id_title" data-name="title">Name</label>
+                          <div class="contact_field" id="doc_title" data-name="name">{{ team_obj.name }}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if team_obj.description %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="contact_field_label" for="id_status" data-name="status">Description</label>
+                          <div class="contact_field" id="doc_status" data-name="status">
+                            {{ team_obj.description }} </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="contact_field_label" for="id_status" data-name="status">Assigned To</label>
+                          <br>
+                          {% with users=team_obj.users.all %}
+                          {% for user in users %}
+                          {% if user.profile_pic %}
+                          {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                          <span>
+                            <a href="{% url 'common:view_user' user.id %}">
+                              <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                                title="{{ user.email }}">
+                            </a>
+                          </span>
+                          {% endthumbnail %}
+                          {% else %}
+                          <span>
+                            <a href="{% url 'common:view_user' user.id %}">
+                              <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                            </a>
+                          </span>
+                          {% endif %}
+                          {% empty %}
+                          None
+                        </div>
+                      </div>
+                      {% endfor %}
+                      {% endwith %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group mt-3">
+                          <label class="contact_field_label" for="id_created_by" data-name="created_by">Created
+                            By</label>
+                          <div class="contact_field" id="created_by" data-name="created_by">
+                            {{ team_obj.created_by }}</div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="contact_field_label" for="id_created_on" data-name="created_on">Created
+                            On</label>
+                          <div class="contact_field" id="created_on" data-name="created_on">
+                            {{ team_obj.created_on }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+</div>
+</div>
+</div>
+
+{% endfor %}
+
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>

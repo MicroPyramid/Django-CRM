@@ -117,7 +117,7 @@
                   <th width="5%">S.No</th>
                   <th width="10%">Name</th>
                   <th width="20%">Assigned To</th>
-                  <th width="15%">Tags</th>
+                  <th width="10%">Tags</th>
                   <th width="15%">Account</th>
                   <!--<th width="15%">Contact(s)</th>-->
                   <th width="15%">Stage</th>
@@ -135,7 +135,9 @@
                 {% for opportunity in opportunity_list %}
                 <tr class="text-center">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td><a href="{% url  'opportunities:opp_view' opportunity.id %}">{{ opportunity.name }}</a></td>
+                  <td><a href="#"
+                    data-toggle="modal"
+                    data-target="#exampleModalCenter_opportunity{{opportunity.id}}">{{ opportunity.name }}</a></td>
                   <td>
                     {% with opportunity_users=opportunity.assigned_to.all %}
                     {% for user in opportunity_users %}
@@ -188,7 +190,7 @@
                   <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}
                   </td>
                   <td class="actions">
-                    <!-- <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i> View</a> -->
+                    <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i></a>
                     <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     {% if request.user == opportunity.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
@@ -216,6 +218,170 @@
   <!-- filter_row starts here -->
 
 </div>
+
+
+{% for opportunity_record in opportunity_list %}
+
+<div class="modal fade" id="exampleModalCenter_opportunity{{opportunity_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">{{ opportunity_record.name }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ... -->
+        <div class="" id="">
+          <div class="">
+            <div class="col-md-12" id="">
+              <div class="card">
+                <div class="card-body" id="datashow">
+                  <div class="card-title text-right">
+                    <h5>
+                      <!-- <span class="float-left">OVERVIEW</span> -->
+                      <span class="" style="margin-top: 0px">
+                        <!-- <div class="dropdown buttons_row">
+                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
+                            <span class="caret"></span></button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}">Edit</a></li>
+                          </ul>
+                        </div> -->
+                      </span>
+                    </h5>
+                  </div>
+                  <div class="row marl">
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12" id="iname">
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_name" data-name="name">Name</label>
+                          <div class="opportunity_field" id="opportunity_name" data-name="name">
+                            {{ opportunity_record.name }}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_opportunity_account"
+                            data-name="name">Account</label>
+                          <div class="opportunity_field" id="opportunity_account" data-name="name">
+                            {{ opportunity_record.account }}</div>
+                        </div>
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.contacts.all %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_contact" data-name="name">Contact(s)</label>
+                          <div class="opportunity_field" id="opportunity_contact" data-name="name">
+                            {% for contact in opportunity_record.contacts.all %}
+                            <li>{{ contact }}</li>
+                            {% endfor %}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.amount %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_amount" data-name="name">Amount</label>
+                          <div class="opportunity_field" id="opportunity_amount" data-name="name">
+                            {{ opportunity_record.currency }} {{ opportunity_record.amount }}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.stage %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_stage" data-name="name">Stage</label>
+                          <div class="opportunity_field" id="opportunity_stage" data-name="name">
+                            {{ opportunity_record.stage }}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.lead_source %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_lead_source" data-name="name">Lead
+                            Source</label>
+                          <div class="opportunity_field" id="opportunity_lead_source" data-name="name">
+                            {{ opportunity_record.lead_source }}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.probability %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_probability"
+                            data-name="name">Probability</label>
+                          <div class="opportunity_field" id="opportunity_probability" data-name="name">
+                            {{opportunity_record.probability}} %</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.closed_on %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_close_date" data-name="name">Close Date</label>
+                          <div class="opportunity_field" id="opportunity_close_date" data-name="name">
+                            {{opportunity_record.closed_on|date}}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="filter_col col-md-12">
+                        {% if opportunity_record.description %}
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_description"
+                            data-name="name">Description</label>
+                          <div class="opportunity_field" id="opportunity_description" data-name="name">
+                            {{opportunity_record.description}}</div>
+                        </div>
+                        {% endif %}
+                      </div>
+                      {% if opportunity_record.tags.all %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="acc_field_label" for="id_tags" data-name="name">Tags</label>
+                          <div class="account_field" id="account_tags" data-name="name">
+                            {% for tag in opportunity_record.tags.all %}
+                            <span class="text-left" id="list_tag">{{ tag.name }}</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-12">
+                      <div class="created_information">
+                        Created by <b>{{ opportunity_record.created_by }}</b> created on
+                        <b>{{ opportunity_record.created_on }}</b>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+  </div>
+</div>
+
+
+{% endfor %}
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
