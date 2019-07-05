@@ -33,16 +33,44 @@
       <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <!-- <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a> -->
         <div class="dropdown">
-          <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+            <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
             Django CRM
-          </a>
+            </a>
+            {% else %}
+            {% if request.user.has_sales_access and request.user.has_marketing_access %}
+            <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+            Django CRM
+            </a>
+            {% elif request.user.has_sales_access and not request.user.has_marketing_access %}
+            <a class="navbar-brand" href="{% url 'common:home' %}" role="button" id="dropdownMenuLink" data-toggle=""
+            aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+            Django CRM
+            </a>
+            {% elif not request.user.has_sales_access and request.user.has_marketing_access %}
+            <a class="navbar-brand" href="{% url 'marketing:dashboard' %}" role="button" id="dropdownMenuLink" data-toggle=""
+            aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+            Django CRM
+            </a>
+            {% else %}
+            {{''}}
+            {% endif %}
+            {% endif %}
+
+          <!-- <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" style="color:#44535c">
+            Django CRM
+          </a> -->
 
           <div class="dropdown-menu mt-2" aria-labelledby="dropdownMenuLink">
             {% if user.is_superuser or user.role == 'ADMIN' %}
             <a class="dropdown-item" href="/">Sales</a>
             <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
-            {% elif user.has_sales_access and user.has_marketing_access %}
+            {% else %}
+            {% if user.has_sales_access and user.has_marketing_access %}
             <a class="dropdown-item" href="/">Sales</a>
             <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
             {% elif user.has_sales_access and not user.has_marketing_access %}
@@ -51,6 +79,7 @@
             <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
             {% else %}
             {{''}}
+            {% endif %}
             {% endif %}
             <!-- <a class="dropdown-item" href="/">Sales</a>
             <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a> -->

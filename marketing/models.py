@@ -293,6 +293,8 @@ class Link(models.Model):
     clicks = models.IntegerField(default='0')
     unique = models.IntegerField(default='0')
 
+    class Meta:
+        ordering = ('id',)
 
 class CampaignLog(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
@@ -305,7 +307,7 @@ class CampaignLog(models.Model):
 
 
 class CampaignLinkClick(models.Model):
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="campaign_link_click")
     link = models.ForeignKey(
         Link, blank=True, null=True, on_delete=models.CASCADE)
     ip_address = models.GenericIPAddressField()

@@ -28,8 +28,8 @@
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Team Name</label>
-                    <input type="text" class="form-control" placeholder="Team Name"
-                      name="team_name" value="{{request.POST.team_name}}">
+                    <input type="text" class="form-control" placeholder="Team Name" name="team_name"
+                      value="{{request.POST.team_name}}">
                   </div>
                 </div>
                 <div class="filter_col col-md-2">
@@ -128,11 +128,15 @@
                           {% for user in users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ user.email }}">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ user.email }}">
+                          </a>
                           {% endthumbnail %}
                           {% else %}
-                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          </a>
                           {% endif %}
                           {% empty %}
                           None
@@ -144,11 +148,11 @@
                           {% if team.created_by.profile_pic %}
                           {% thumbnail team.created_by.profile_pic "40x40" crop="center" as im %}
                           <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                          title="{{ team.created_by }}" style="border-radius: 50%" />
+                            title="{{ team.created_by }}" style="border-radius: 50%" />
                           {% endthumbnail %}
                           {% else %}
-                          <img src="{% static 'images/user.png' %}"
-                          style="width: 40px;height: 40px;border-radius: 50%;" title="{{ team.created_by }}" />
+                          <img src="{% static 'images/user.png' %}" style="width: 40px;height: 40px;border-radius: 50%;"
+                            title="{{ team.created_by }}" />
                           {% endif %}
                           {% else %}
                           None

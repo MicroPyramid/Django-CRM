@@ -1,9 +1,12 @@
 from django import forms
 from leads.models import Lead
 from common.models import Comment, Attachments
+from teams.models import Teams
 
 
 class LeadForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         assigned_users = kwargs.pop('assigned_to', [])
@@ -48,6 +51,8 @@ class LeadForm(forms.ModelForm):
             'placeholder': 'Postcode'})
         self.fields["country"].choices = [
             ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
+        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["teams"].required = False
 
     class Meta:
         model = Lead

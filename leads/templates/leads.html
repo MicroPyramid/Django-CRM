@@ -150,12 +150,16 @@
                           {% if lead.created_by %}
                           {% if lead.created_by.profile_pic %}
                           {% thumbnail lead.created_by.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ lead.created_by }}">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ lead.created_by }}">
+                          </a>
                           {% endthumbnail %}
                           {% else %}
-                          <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                            style="width: 40px;height: 40px;" title="{{ lead.created_by }}" />
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                              style="width: 40px;height: 40px;" title="{{ lead.created_by }}" />
+                          </a>
                           {% endif %}
                           {% else %}
                           None
@@ -168,11 +172,15 @@
                           {% for user in lead_users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ user.email }}">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ user.email }}">
+                          </a>
                           {% endthumbnail %}
                           {% else %}
-                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          </a>
                           {% endif %}
                           {% empty %}
                           None
@@ -255,7 +263,18 @@
                         <td>
                           {% with lead_users=lead.assigned_to.all %}
                           {% for user in lead_users %}
-                          <span class="text-left">{{ user.email }}</span><br>
+                          {% if user.profile_pic %}
+                          {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ user.email }}">
+                          </a>
+                          {% endthumbnail %}
+                          {% else %}
+                          <a href="{% url 'common:view_user' user.id %}">
+                            <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                          </a>
+                          {% endif %}
                           {% empty %}
                           None
                           {% endfor %}

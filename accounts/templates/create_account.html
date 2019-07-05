@@ -67,7 +67,7 @@
                     <option value="" selected="">---------</option>
                     {% for lead in leads %}
                     <option value="{{lead.id}}" {% ifequal account_obj.lead.id lead.id %}selected{% endifequal %}>
-                    {{lead.first_name}} {{lead.last_name}}</option>
+                      {{lead.first_name}} {{lead.last_name}}</option>
                     {% endfor %}
                   </select>
                   <span class="error" id="id__lead">{{ account_form.lead.errors }}</span>
@@ -142,11 +142,20 @@
               </div>
             </div>
             <div class="col-md-4">
+              {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus">Teams{% if account_form.teams.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ account_form.teams }}
+                  <span class="error" id="id__teams">{{ account_form.teams.errors }}</span>
+                </div>
+              </div>
+              {% endif %}
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assign To </label>
-                  <select name="assigned_to" id="id_assigned_to" class="assigned_users form-control"
-                    multiple>
+                  <select name="assigned_to" id="id_assigned_to" class="assigned_users form-control" multiple>
                     {% for user in users %}
                     <option value="{{user.id}}" {% if user in account_obj.assigned_to.all %} selected="" {% endif %}>
                       {{user.email}}</option>
@@ -229,7 +238,8 @@
   $(document).ready(function () {
     $("#id_contacts").select2();
     $("#id_assigned_to").select2()
-    $("#id_assigned_to").change(function(){
+    $("#id_teams").select2()
+    $("#id_assigned_to").change(function () {
       $("#id_assigned_to").attr('name', 'assigned_to')
     })
     // $("#id_assigned_to")

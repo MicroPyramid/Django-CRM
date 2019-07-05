@@ -79,8 +79,8 @@ class UserForm(forms.ModelForm):
                   'has_sales_access', 'has_marketing_access']
 
     def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop('request_user', None)
         super(UserForm, self).__init__(*args, **kwargs)
-
         self.fields['first_name'].required = True
         if not self.instance.pk:
             self.fields['password'].required = True
@@ -107,11 +107,29 @@ class UserForm(forms.ModelForm):
 
     def clean_has_sales_access(self):
         sales = self.cleaned_data.get('has_sales_access', False)
-        marketing = self.data.get('has_marketing_access', False)
-        if not sales and not marketing:
-            raise forms.ValidationError('Select atleast one option')
+        user_role = self.cleaned_data.get('role')
+        if user_role == 'ADMIN':
+            is_admin = True
+        else:
+            is_admin = False
+        if self.request_user.role == 'ADMIN' or self.request_user.is_superuser:
+            if not is_admin:
+                marketing = self.data.get('has_marketing_access', False)
+                if not sales and not marketing:
+                    raise forms.ValidationError('Select atleast one option.')
+            # if not (self.instance.role == 'ADMIN' or self.instance.is_superuser):
+            #     marketing = self.data.get('has_marketing_access', False)
+            #     if not sales and not marketing:
+            #         raise forms.ValidationError('Select atleast one option.')
+        if self.request_user.role == 'USER':
+            sales = self.instance.has_sales_access
         return sales
 
+    def clean_has_marketing_access(self):
+        marketing = self.cleaned_data.get('has_marketing_access', False)
+        if self.request_user.role == 'USER':
+            marketing = self.instance.has_marketing_access
+        return marketing
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
@@ -198,6 +216,8 @@ class PasswordResetEmailForm(PasswordResetForm):
 
 
 class DocumentForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         self.instance = kwargs.get('instance', None)
@@ -214,6 +234,8 @@ class DocumentForm(forms.ModelForm):
         if users:
             self.fields['shared_to'].queryset = users
         self.fields['shared_to'].required = False
+        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["teams"].required = False
 
     class Meta:
         model = Document

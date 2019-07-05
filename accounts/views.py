@@ -22,6 +22,7 @@ from common.tasks import send_email_user_mentions
 from django.contrib.sites.shortcuts import get_current_site
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from teams.models import Teams
 
 class AccountsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Account
@@ -156,6 +157,13 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             attachment.attachment = self.request.FILES.get(
                 'account_attachment')
             attachment.save()
+        if self.request.POST.getlist('teams', []):
+            user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
+            assinged_to_users_ids = account_object.assigned_to.all().values_list('id', flat=True)
+            for user_id in user_ids:
+                if user_id not in assinged_to_users_ids:
+                    account_object.assigned_to.add(user_id)
+
 
         if self.request.POST.get("savenewform"):
             return redirect("accounts:new_account")
@@ -304,6 +312,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             attachment.attachment = self.request.FILES.get(
                 'account_attachment')
             attachment.save()
+        if self.request.POST.getlist('teams', []):
+            user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
+            assinged_to_users_ids = account_object.assigned_to.all().values_list('id', flat=True)
+            for user_id in user_ids:
+                if user_id not in assinged_to_users_ids:
+                    account_object.assigned_to.add(user_id)
 
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy(

@@ -5,7 +5,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'common:doc_list' %}">Documents</a></li>
-    <li class="breadcrumb-item" active >View</li>
+    <li class="breadcrumb-item" active>View</li>
   </ol>
 </nav>
 <!-- OPPORTUNITY VIEW STARTS -->
@@ -50,6 +50,35 @@
                   <div class="contact_field" id="created_on" data-name="created_on">{{ doc_obj.created_on }}</div>
                 </div>
               </div>
+              {% with document_users=document.shared_to.all %}
+              {% if document_users %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_created_on" data-name="created_on">Shared To</label>
+                  <br>
+                  {% for user in document_users %}
+                  {% if user.profile_pic %}
+                  {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                  <span>
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
+                  </span>
+                  {% endthumbnail %}
+                  {% else %}
+                  <span>
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                    </a>
+                  </span>
+                  {% endif %}
+                  {% empty %}
+                  None
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="col-md-4">
               <div class="profile_pic">

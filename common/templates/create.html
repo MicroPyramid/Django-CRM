@@ -70,14 +70,14 @@
                 <label for="id_role">User Role{% if user_form.role.field.required %}<span
                     class="error">*</span>{% endif %}</label>
                 {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
-                <select name="role" class="form-control">
+                <select name="role" class="form-control" id="user_role">
                   {% for key, value in form.role.field.choices %}
                   <option value="{{key}}" {% if value == user_obj.role %}selected="selected"
                     {% elif user_obj.is_superuser and value == "ADMIN" %}selected{% endif %}>{{value}}</option>
                   {% endfor %}
                 </select>
                 {% else %}
-                <select name="role">
+                <select name="role" id="user_roles">
                   <option value="{{user_obj.role}}">{{user_obj.role}}</option>
                 </select>
                 {% endif %}
@@ -109,18 +109,21 @@
             {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
             <div class="filter_col col-md-6">
               <div class="form-group">
-                <label for="exampleInputEmail1">Permissions {% if user_form.profile_pic.field.required %}<span
-                    class="error">*</span>{% endif %}</label>
+                <label for="exampleInputEmail1">Permissions <span class="error">*</span></label>
                 <br>
                 <!-- {{user_form.sales}} -->
                 <div class="btn-group">
                   <label class="btn "> Sales
-                    <input type="checkbox" name="has_sales_access" id="" autocomplete="off"
-                      {% if user_obj.has_sales_access %} checked {% endif %}>
+                    <input type="checkbox" name="has_sales_access" id="has_sales_access_" autocomplete="off"
+                      {% if user_obj.has_sales_access %} checked {% endif %}
+                      {% if user_obj.is_superuser or user_obj.role == 'ADMIN' %} disabled="disabled" readonly="readonly"
+                      checked="checked" {% endif %}>
                   </label>
                   <label class="btn "> Marketing
-                    <input type="checkbox" name="has_marketing_access" id="" autocomplete="off"
-                      {% if user_obj.has_marketing_access %} checked {% endif %}>
+                    <input type="checkbox" name="has_marketing_access" id="has_marketing_access_" autocomplete="off"
+                      {% if user_obj.has_marketing_access %} checked {% endif %}
+                      {% if user_obj.is_superuser or user_obj.role == 'ADMIN' %} disabled="disabled" readonly="readonly"
+                      checked="checked" {% endif %}>
                   </label>
                 </div>
                 <span class="error_ajax" id="id_has_sales_access" style="color: red;"></span>
@@ -163,6 +166,27 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
   $("#id_teams").select2();
+
+  $("#user_role").change(function () {
+    if ($(this).val() == 'ADMIN') {
+      $("#has_marketing_access_").attr('checked', 'true')
+      $("#has_sales_access_").attr('checked', 'true')
+      $("#has_marketing_access_").attr('readonly', 'true')
+      $("#has_marketing_access_").attr('disabled', 'true')
+      $("#has_sales_access_").attr('readonly', 'true')
+      $("#has_sales_access_").attr('disabled', 'true')
+    }
+    else {
+      $("#has_marketing_access_").removeAttr('checked')
+      $("#has_sales_access_").removeAttr('checked')
+      $("#has_marketing_access_").removeAttr('readonly')
+      $("#has_sales_access_").removeAttr('readonly')
+      $("#has_marketing_access_").removeAttr('disabled')
+      $("#has_sales_access_").removeAttr('disabled')
+    }
+  })
+
+
   $('form#add_form').ajaxForm({
     type: 'POST',
     dataType: 'json',

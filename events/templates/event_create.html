@@ -50,15 +50,6 @@
                   <span class="error" id="id__contacts">{{ form.contacts.errors }}</span>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1" class="required">Assigned
-                    To{% if form.assigned_to.field.required %}<span class="error_marker"
-                      style="color:red">*</span>{% endif %}</label>
-                  {{ form.assigned_to }}
-                  <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
-                </div>
-              </div>
             </div>
             <div class="col-md-4">
               <div class="filter_col billing_block col-md-12" style="padding: 0px;">
@@ -101,6 +92,25 @@
               </div>
             </div>
             <div class="col-md-4">
+              {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus">Teams{% if form.teams.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ form.teams }}
+                  <span class="error" id="id__teams">{{ form.teams.errors }}</span>
+                </div>
+              </div>
+              {% endif %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1" class="required">Assigned
+                    To{% if form.assigned_to.field.required %}<span class="error_marker"
+                      style="color:red">*</span>{% endif %}</label>
+                  {{ form.assigned_to }}
+                  <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
+                </div>
+              </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
                   <label for="id_contacts" class="required">Description{% if form.description.field.required %}<span
@@ -186,6 +196,7 @@
     $('#recurring_block').hide()
     $("#id_contacts").select2();
     $("#id_assigned_to").select2();
+    $("#id_teams").select2();
     $("#id_start_date").css('color', 'black');
     $("#id_end_date").css('color', 'black');
     var date = new Date();

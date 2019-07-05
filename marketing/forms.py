@@ -205,12 +205,12 @@ class ContactForm(forms.ModelForm):
         fields = ["name", "email", "contact_number",
                   "last_name", "city", "state", "company_name"]
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if Contact.objects.filter(email=email).exclude(id=self.instance.id).exists():
-            raise forms.ValidationError(
-                'Contact with this Email already exists')
-        return email
+    # def clean_email(self):
+    #     email = self.cleaned_data.get('email')
+    #     if Contact.objects.filter(email=email).exclude(id=self.instance.id).exists():
+    #         raise forms.ValidationError(
+    #             'Contact with this Email already exists')
+    #     return email
 
     # def clean_contact_list(self):
     #     contact_list = self.cleaned_data.get("contact_list")
@@ -321,3 +321,17 @@ class SendCampaignForm(forms.ModelForm):
                         'The contact list "{}" does not have any contacts in it .'.format(contacts_list_obj.name))
 
         return contact_list
+
+    def clean_html(self):
+        html = self.cleaned_data.get('html')
+        count = 0
+        for i in html:
+            if i == "{":
+                count += 1
+            elif i == "}":
+                count -= 1
+            if count < 0:
+                raise forms.ValidationError('Brackets do not match, Enter valid tags.')
+        if count != 0:
+            raise forms.ValidationError('Brackets do not match, Enter valid tags.')
+        return html

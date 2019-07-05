@@ -2,9 +2,12 @@ from django import forms
 from invoices.models import Invoice
 from common.models import User, Comment, Attachments, Address
 from django.db.models import Q
+from teams.models import Teams
 
 
 class InvoiceForm(forms.ModelForm):
+    teams_queryset = []
+    teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
         request_user = kwargs.pop('request_user', None)
@@ -16,6 +19,7 @@ class InvoiceForm(forms.ModelForm):
 
         if request_user.role == 'ADMIN' or request_user.is_superuser:
             self.fields['assigned_to'].queryset = User.objects.all()
+            self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
         elif request_user.google.all():
             self.fields['assigned_to'].queryset = User.objects.none()
         elif request_user.role == 'USER':
@@ -24,6 +28,7 @@ class InvoiceForm(forms.ModelForm):
         else:
             pass
 
+        self.fields["teams"].required = False
         self.fields['phone'].widget.attrs.update({
             'placeholder': '+91-123-456-7890'})
         self.fields['invoice_title'].required = True

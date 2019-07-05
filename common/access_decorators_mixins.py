@@ -26,7 +26,7 @@ def marketing_access_required(function):
 
 
 class SalesAccessRequiredMixin(AccessMixin):
-    """  """  # TODO add docs
+    """ Mixin used to authorize if a user has sales access  """
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -39,6 +39,7 @@ class SalesAccessRequiredMixin(AccessMixin):
 
 
 class MarketingAccessRequiredMixin(AccessMixin):
+    """ Mixin used to authorize if a user has marketing access  """
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:

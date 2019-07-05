@@ -149,7 +149,7 @@
       url = $(this).attr('href')
       var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
       if (contact_lists > 1) {
-        if (!confirm('Are you sure you want to delete? this contact exists in other contact lists, deleting this will delete this contact from other contact lists too!'))
+        if (!confirm('This contact exists in other contact lists too. Are you sure you want to delete this contact?'))
           return;
         window.location = $(this).attr('href');
       } else {

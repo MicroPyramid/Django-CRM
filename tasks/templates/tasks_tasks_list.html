@@ -145,14 +145,22 @@
                   {% endif %}
 
 
-                  <td>{% with users=task.assigned_to.all %}
-                    {% if users %}
-                    {% for user in users %}
-                    <span class="text-left">{{ user.email }}</span><br>
-                    {% endfor %}
+                  <td>{% with task_users=task.assigned_to.all %}
+                    {% for user in task_users %}
+                    {% if user.profile_pic %}
+                    {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
+                    {% endthumbnail %}
                     {% else %}
-                    None
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                    </a>
                     {% endif %}
+                    {% empty %}
+                    None
+                    {% endfor %}
                     {% endwith %}
                   </td>
                   <td class="actions">
@@ -196,14 +204,23 @@
                   {% endif %}
 
 
-                  <td>{% with users=task.assigned_to.all %}
-                    {% if users %}
-                    {% for user in users %}
-                    <span class="text-left">{{ user.email }}</span><br>
-                    {% endfor %}
+                  <td>
+                    {% with task_users=task.assigned_to.all %}
+                    {% for user in task_users %}
+                    {% if user.profile_pic %}
+                    {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
+                    {% endthumbnail %}
                     {% else %}
-                    None
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                    </a>
                     {% endif %}
+                    {% empty %}
+                    None
+                    {% endfor %}
                     {% endwith %}
                   </td>
                   <td class="actions">
@@ -247,14 +264,22 @@
                   {% endif %}
 
 
-                  <td>{% with users=task.assigned_to.all %}
-                    {% if users %}
-                    {% for user in users %}
-                    <span class="text-left">{{ user.email }}</span><br>
-                    {% endfor %}
+                  <td>{% with task_users=task.assigned_to.all %}
+                    {% for user in task_users %}
+                    {% if user.profile_pic %}
+                    {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
+                    {% endthumbnail %}
                     {% else %}
-                    None
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                    </a>
                     {% endif %}
+                    {% empty %}
+                    None
+                    {% endfor %}
                     {% endwith %}
                   </td>
                   <td class="actions">

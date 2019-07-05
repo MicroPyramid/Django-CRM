@@ -137,7 +137,7 @@ def contacts_list(request):
                 name__icontains=data.get('contact_name'))
 
         if data.get('contact_email'):
-            contacts = contacts.filter(email=data.get('contact_email'))
+            contacts = contacts.filter(email__icontains=data.get('contact_email'))
 
         if data.get('created_by'):
             contacts = contacts.filter(created_by=data.get('created_by'))
@@ -303,16 +303,21 @@ def edit_contact(request, pk):
                     if contact_list_obj:
                         contact_obj.contact_list.remove(contact_list_obj)
                     updated_contact = ContactForm(request.POST)
-                    updated_contact_obj = updated_contact.save()
-                    updated_contact_obj.contact_list.add(contact_list_obj)
+                    if updated_contact.is_valid():
+                        updated_contact_obj = updated_contact.save()
+                        updated_contact_obj.created_by = request.user
+                        updated_contact_obj.save()
+                        updated_contact_obj.contact_list.add(contact_list_obj)
                 else:
                     contact = form.save(commit=False)
-                    contact.save()
-                    form.save_m2m()
+                    if form.is_valid():
+                        contact.save()
+                        form.save_m2m()
             else:
                 contact = form.save(commit=False)
-                contact.save()
-                form.save_m2m()
+                if form.is_valid():
+                    contact.save()
+                    form.save_m2m()
             if request.POST.get('from_url'):
                 return JsonResponse({'error': False,
                                      'success_url': reverse('marketing:contact_list_detail', args=(request.POST.get('from_url'),))})
@@ -347,7 +352,7 @@ def contact_list_detail(request, pk):
                 name__icontains=request.POST.get('name'))
         if request.POST.get('email'):
             contacts_list = contacts_list.filter(
-                email=request.POST.get('email'))
+                email__icontains=request.POST.get('email'))
         if request.POST.get('company_name'):
             contacts_list = contacts_list.filter(
                 company_name=request.POST.get('company_name'))
@@ -554,13 +559,14 @@ def campaign_new(request):
 
             # Replace Links with new One
             # domain_url = '%s://%s' % (request.scheme, request.META['HTTP_HOST'])
-            domain_url = settings.URL_FOR_LINKS
+            domain_url = request.scheme + '://' + request.get_host()
             if Link.objects.filter(campaign_id=camp.id):
                 Link.objects.filter(campaign_id=camp.id).delete()
             for l in links:
                 link = Link.objects.create(campaign_id=camp.id, original=l)
                 html = html.replace(
-                    'href="' + l + '"', 'href="' + domain_url + '/m/cm/link/' + str(link.id) + '/e/{{email_id}}"')
+                    'href="' + l + '"', 'href="' + domain_url + '/marketing/cm/link/' + str(link.id) + '/e/{{email_id}}"')
+
             camp.html_processed = html
             camp.sent_status = "scheduled"
             camp.save()
@@ -910,3 +916,28 @@ def create_campaign_from_template(request, template_id):
         url_query_params = '?email_template={}'.format(template_id)
         url = url_location + url_query_params
         return HttpResponseRedirect(url)
+
+
+def download_links_clicked(request, campaign_id):
+    campaign_obj = get_object_or_404(Campaign, pk=campaign_id)
+    campaign_link_click_objects = campaign_obj.campaign_link_click.all().select_related('link', 'campaign', 'contact')
+    csv_row_headers = ['email', 'company', 'first name', 'last name', 'city', 'state', 'original link', 'unique clicks', 'total clicks', 'campaign title']
+    data = []
+    data.append(','.join(csv_row_headers) + '\n')
+    if campaign_link_click_objects:
+        for campaign_link_click_object in campaign_link_click_objects:
+            data.append(
+                campaign_link_click_object.contact.email + ',' +
+                campaign_link_click_object.contact.company_name + ',' +
+                campaign_link_click_object.contact.name + ',' +
+                campaign_link_click_object.contact.last_name + ',' +
+                campaign_link_click_object.contact.city + ',' +
+                campaign_link_click_object.contact.state + ',' +
+                campaign_link_click_object.link.original + ',' +
+                str(campaign_link_click_object.link.unique) + ',' +
+                str(campaign_link_click_object.link.clicks) + ',' +
+                campaign_link_click_object.link.campaign.title + '\n'
+            )
+        response = HttpResponse(data, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename={}'.format('data_downloads.csv')
+        return response

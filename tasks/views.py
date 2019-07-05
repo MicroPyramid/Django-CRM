@@ -20,6 +20,7 @@ from tasks.models import Task
 from tasks.utils import *
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from teams.models import Teams
 
 
 @login_required
@@ -79,6 +80,14 @@ def task_create(request):
             task.save()
             task.assigned_to.add(*request.POST.getlist('assigned_to'))
             task.contacts.add(*request.POST.getlist('contacts'))
+
+            if request.POST.getlist('teams', []):
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                assinged_to_users_ids = task.assigned_to.all().values_list('id', flat=True)
+                for user_id in user_ids:
+                    if user_id not in assinged_to_users_ids:
+                        task.assigned_to.add(user_id)
+
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(task.id, **kwargs)
             return JsonResponse({'error': False, 'success_url': reverse('tasks:tasks_list')})
@@ -141,6 +150,12 @@ def task_edit(request, task_id):
             # task.contacts.clear()
             # task.assigned_to.add(*request.POST.getlist('assigned_to'))
             # task.contacts.add(*request.POST.getlist('contacts'))
+            if request.POST.getlist('teams', []):
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                assinged_to_users_ids = task.assigned_to.all().values_list('id', flat=True)
+                for user_id in user_ids:
+                    if user_id not in assinged_to_users_ids:
+                        task.assigned_to.add(user_id)
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(task.id, **kwargs)
             return JsonResponse({'error': False, 'success_url': reverse('tasks:tasks_list')})

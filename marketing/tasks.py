@@ -155,6 +155,7 @@ def run_campaign(campaign, domain='demo.django-crm.io', protocol='https'):
                               'state': each_contact.state if each_contact.state else '',
                               'first_name': each_contact.name,
                               'email': each_contact.email, 'email_id': each_contact.id,
+                              'name': each_contact.name + ' ' + each_contact.last_name if each_contact.last_name else '',
                               'unsubscribe_from_campaign_url': unsubscribe_from_campaign_url}
 
                 html = Template(html).render(Context(names_dict))

@@ -101,10 +101,14 @@
                   {% for user in contact_users %}
                   {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}
-                        <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    <a href="{% url 'common:view_user' user.id %}">
+                      <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}" title="{{ user.email }}">
+                    </a>
                     {% endthumbnail %}
                   {% else %}
-                        <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                  <a href="{% url 'common:view_user' user.id %}">
+                    <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                  </a>
                   {% endif %}
                   {% empty %}
                   None

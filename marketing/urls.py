@@ -5,7 +5,8 @@ from .views import (
     email_template_detail, campaign_list, campaign_new, campaign_edit, campaign_details, campaign_delete,
     edit_contact_list, delete_contact_list, failed_contact_list_detail, failed_contact_list_download_delete,
     campaign_link_click, campaign_open, demo_file_download, delete_contact, unsubscribe_from_campaign, contact_detail,
-    edit_failed_contact, delete_failed_contact, download_contacts_for_campaign, create_campaign_from_template
+    edit_failed_contact, delete_failed_contact, download_contacts_for_campaign, create_campaign_from_template,
+    download_links_clicked
 )
 
 app_name = 'marketing'
@@ -46,4 +47,5 @@ urlpatterns = [
     path('contacts/<int:contact_id>/view/', contact_detail, name="contact_detail"),
     path('download-contacts-for-campaign/<int:compaign_id>/', download_contacts_for_campaign, name="download_contacts_for_campaign"),
     path('create-campaign-from-template/<int:template_id>/', create_campaign_from_template, name="create_campaign_from_template"),
+    path('download-links-clicked/<int:campaign_id>/', download_links_clicked, name="download_links_clicked"),
 ]

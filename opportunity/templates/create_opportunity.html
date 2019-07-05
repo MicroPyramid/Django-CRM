@@ -91,6 +91,16 @@
                   <span class="error error_message" id="error_id_probability">{{opportunity_form.probability.errors}}</span>
                 </div>
               </div>
+              {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus">Teams{% if opportunity_form.teams.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ opportunity_form.teams }}
+                  <span class="error" id="id__teams">{{ opportunity_form.teams.errors }}</span>
+                </div>
+              </div>
+              {% endif %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
@@ -261,6 +271,7 @@
     $('.assigned_users').select2();
     $("#id_contacts").select2();
     $('#id_currency').select2();
+    $('#id_teams').select2();
   });
   
   $('#id_account').change(function(){

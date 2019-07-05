@@ -101,7 +101,11 @@
                 <div class="form-group">
                   <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
                   {% for user in task.assigned_to.all %}
-                  <div class="account_field" id="account_website" data-name="name">{{ user }}</div>
+                  <div class="account_field" id="account_website" data-name="name">
+                    <a href="{% url 'common:view_user' user.id %}">
+                      {{ user }}
+                    </a>
+                  </div>
                   {% endfor %}
                 </div>
               </div>

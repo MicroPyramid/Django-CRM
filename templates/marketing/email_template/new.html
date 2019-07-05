@@ -81,7 +81,7 @@
       toolbar: [
         [{ header: [1, 2, false] }],
         ['bold', 'italic', 'underline'],
-        ['code-block']
+        ['code-block', 'link']
       ]
     },
     placeholder: 'Compose an epic...',
@@ -98,6 +98,7 @@
   var justHtmlContent = document.getElementById('justHtml');
 
   quill.on('text-change', function () {
+    $('.ql-syntax').css({"background-color":"#23241f","color":"#f8f8f2","overflow":"visible","border-radius":"3px","white-space":"pre-wrap","margin-bottom":"5px","margin-top":"5px","padding":"5px 10px"})
     var delta = quill.getContents();
     var text = quill.getText();
     var justHtml = quill.root.innerHTML;
@@ -118,6 +119,9 @@
     dataType: 'json',
     url: $(this).attr('action'),
     data: $(this).serialize(),
+    beforeSend: function (e) {
+      $('.ql-syntax').css({"background-color":"#23241f","color":"#f8f8f2","overflow":"visible","border-radius":"3px","white-space":"pre-wrap","margin-bottom":"5px","margin-top":"5px","padding":"5px 10px"})
+    },
     success: function (data) {
       console.log("data", data)
       if (data.error == false) {

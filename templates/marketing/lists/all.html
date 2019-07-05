@@ -44,7 +44,7 @@
                     <div class="form-group">
                       <label for="exampleInputEmail1">Email</label>
                       <input type="text" class="form-control" placeholder="Contact Email" name="contact_email"
-                        value="{{request.POST.contact_email}}">
+                        value="{{request.POST.contact_email}}" minlength="2">
                     </div>
                   </div>
                   <input type="hidden" name="tab_status" id="tab_status">
@@ -111,8 +111,8 @@
                       {% endfor %}
                     </td>
                     <td class="actions text-center">
-                      <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a>
+                      <!-- <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
                       <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
                       <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
                       <a href="{% url 'marketing:delete_contact' contact.id %}"
@@ -159,7 +159,7 @@
       url = $(this).attr('href')
       var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
       if (contact_lists > 1) {
-        if (!confirm('Are you sure you want to delete? this contact exists in other contact lists, deleting this will delete this contact from other contact lists too!'))
+        if (!confirm('This contact exists in other contact lists too. Are you sure you want to delete this contact?'))
           return;
         window.location = $(this).attr('href');
       } else {

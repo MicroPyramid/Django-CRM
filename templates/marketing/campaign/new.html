@@ -197,14 +197,14 @@
                               <span id="id_html"></span>
                               <div id="editor-container">
                               </div>
-                              <span class="hint">Use the following tags in your subject, plain text or HTML code and
+                              <!-- <span class="hint">Use the following tags in your subject, plain text or HTML code and
                                 they'll automatically be formatted when your campaign is sent. For web version and
-                                unsubscribe tags, you can style them with inline CSS.</span>
+                                unsubscribe tags, you can style them with inline CSS.</span> -->
                               <input type="hidden" name="html" id="html_content">
                             </div>
                             <div class="col-md-12 no-padding">
-                              <div class="row help_container">
-                                <div class="col-md-6">
+                              <!-- <div class="row help_container"> -->
+                              <!-- <div class="col-md-6">
                                   <div class="heading">Essential tags (HTML only)</div>
                                   <p class="desc">The following tags can only be used on the HTML version</p>
                                   <ul>
@@ -237,42 +237,46 @@
                                       </code>
                                     </li>
                                   </ul>
-                                </div>
-                                <div class="col-md-6">
-                                  <div class="heading">Personalization tags</div>
-                                  <p class="desc">The following tags can be used on both Plain text or HTML version</p>
-                                  <ul>
-                                    <li>
-                                      <strong>Name: </strong>
-                                      <code>[Name,fallback=]</code>
-                                    </li>
-                                    <li>
-                                      <strong>Email: </strong>
-                                      <code>[Email]</code>
-                                    </li>
-                                    <li>
+                                </div> -->
+                              <div class="col-md-12">
+                                <div class="heading">Personalization tags</div>
+                                <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to customize the email template, these tags will be replaced with the associated contact details while the mails are sent.</p>
+                                <ul>
+                                  <li>
+                                    <strong>First Name: </strong>
+                                    <code>{% templatetag openvariable %} first_name {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>Last Name: </strong>
+                                    <code>{% templatetag openvariable %} last_name {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>Full Name: </strong>
+                                    <code>{% templatetag openvariable %} name {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>Email: </strong>
+                                    <code>{% templatetag openvariable %} email {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>Company: </strong>
+                                    <code>{% templatetag openvariable %} company_name {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>City: </strong>
+                                    <code>{% templatetag openvariable %} city {% templatetag closevariable %}</code>
+                                  </li>
+                                  <li>
+                                    <strong>State: </strong>
+                                    <code>{% templatetag openvariable %} state {% templatetag closevariable %}</code>
+                                  </li>
+                                  <!-- <li>
                                       <strong>Two digit day of the month (eg. 01 to 31):</strong>
                                       <code>[currentdaynumber]</code>
-                                    </li>
-                                  </ul>
-                                  <div class="heading">Essential tags</div>
-                                  <p class="desc">The following tags can only be used on the HTML version</p>
-                                  <ul>
-                                    <li>
-                                      <strong>Name: </strong>
-                                      <code>[Name,fallback=]</code>
-                                    </li>
-                                    <li>
-                                      <strong>Email: </strong>
-                                      <code>[Email]</code>
-                                    </li>
-                                    <li>
-                                      <strong>Two digit day of the month (eg. 01 to 31):</strong>
-                                      <code>[currentdaynumber]</code>
-                                    </li>
-                                  </ul>
-                                </div>
+                                    </li> -->
+                                </ul>
                               </div>
+                              <!-- </div> -->
                             </div>
                           </div>
                         </div>
@@ -292,7 +296,8 @@
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<script src="https://malsup.github.com/jquery.form.js"></script>
+<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
+<script src="{% static 'js/ajaxForm.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
@@ -350,7 +355,7 @@
         [{ header: [1, 2, false] }],
         ['bold', 'italic', 'underline'],
         // ['image', 'code-block']
-        ['code-block']
+        ['code-block', 'link']
       ]
     },
     placeholder: 'Compose an epic...',
@@ -358,6 +363,7 @@
   });
 
   quill.on('text-change', function () {
+    $('.ql-syntax').css({ "background-color": "#23241f", "color": "#f8f8f2", "overflow": "visible", "border-radius": "3px", "white-space": "pre-wrap", "margin-bottom": "5px", "margin-top": "5px", "padding": "5px 10px" })
     var justHtml = quill.root.innerHTML;
     $('#html_content').val(justHtml);
   });
