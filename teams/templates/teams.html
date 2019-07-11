@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label{
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -158,7 +163,7 @@
                           None
                           {% endif %}
                         </td>
-                        <td>{{ team.created_on|date:'d-m-Y' }}</td>
+                        <td title="{{ team.created_on|date:'d-m-Y' }}">{{ team.created_on_arrow }}</td>
                         <td class="actions">
                           {% if request.user == team.created_by or request.user.role == 'ADMIN' or reques.user.is_superuser %}
                           <a href="{% url 'teams:team_detail' team.id %}" class="btn btn-info edit"><i

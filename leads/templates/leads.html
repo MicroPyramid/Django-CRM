@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+    .form-group label{
+      font-weight: 800;
+    }
+  </style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -196,7 +201,7 @@
                           {% with tags=lead.tags.all %}
                           {% if tags %}
                           {% for tag in tags %}
-                          <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                          <span class="text-left color{{forloop.counter}} tag_class_lead" data-link="{{tag.id}}" style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
                           {% endfor %}
                           {% else %}
                           No Tags
@@ -291,7 +296,7 @@
                           {% with tags=lead.tags.all %}
                           {% if tags %}
                           {% for tag in tags %}
-                          <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                          <span class="text-left color{{forloop.counter}} tag_class_lead" data-link="{{tag.id}}" style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
                           {% endfor %}
                           {% else %}
                           No Tags
@@ -667,6 +672,14 @@
       $(".list_filter_row").toggle();
     });
   });
+
+  $(".tag_class_lead").click(function () {
+      // $(".tag_class_opp").css('cursor', 'pointer')
+      url = "{% url 'leads:list' %}"
+      url = url + "?tag=" + $(this).attr('data-link')
+      window.location.href = url;
+    });
+
 
   search = "{{search}}"
 

@@ -43,6 +43,9 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
                 Q(assigned_to__in=[self.request.user]) |
                 Q(created_by=self.request.user))
 
+        if self.request.GET.get('tag', None):
+            queryset = queryset.filter(tags__in = self.request.GET.getlist('tag'))
+
         request_post = self.request.POST
         if request_post:
             if request_post.get('name'):

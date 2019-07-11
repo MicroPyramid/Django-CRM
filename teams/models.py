@@ -1,3 +1,5 @@
+import arrow
+
 from django.db import models
 from common.models import User
 from django.utils.translation import ugettext_lazy as _
@@ -16,3 +18,7 @@ class Teams(models.Model):
 
     class Meta:
         ordering = ('id',)
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()

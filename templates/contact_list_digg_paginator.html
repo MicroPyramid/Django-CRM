@@ -1,0 +1,46 @@
+{% spaceless %}
+{% ifnotequal pages 1 %}
+<!-- single page -->
+<!-- "bounced_contacts_page", instead of "page" is the query param, since there are two objects with pagination in the same page 
+and to differentiate between "page" for contacts_list and "bounced_contacts_page" for bounced_contacts_list -->
+{% ifnotequal bounced_contacts_page 1  %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page=1"
+        rel="page">{{"<<"|safe}}</a></li>
+{% endifnotequal %}
+{% if has_previous %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ previous }}"
+        rel="page">{{"<"|safe}}</a></li>
+{% endif %}
+{% if not in_leading_range %}
+{% for p in pages_outside_trailing_range %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ p }}"
+        rel="page">{{ p }}</a></li>
+{% endfor %}
+<!-- <li><span class="ellipsis">...</span></li> -->
+{% endif %}
+{% for p in page_range %}
+{% if p == bounced_contacts_page %}
+<li><span class="active">{{ p }}</span></li>
+{% else %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ p }}"
+        rel="page">{{ p }}</a></li>
+{% endif %}
+{% endfor %}
+{% if not in_trailing_range %}
+<!-- <li><span class="ellipsis">...</span></li> -->
+{% for p in pages_outside_leading_range reversed %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ p }}"
+        rel="page">{{ p }}</a></li>
+{% endfor %}
+{% endif %}
+{% if has_next %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ next }}"
+        rel="page">{{">"|safe}}</a></li>
+{% endif %}
+{% ifnotequal bounced_contacts_page pages  %}
+<li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ pages }}"
+        rel="page">{{">>"|safe}}</a></li>
+{% endifnotequal %}
+
+{% endifnotequal %}
+{% endspaceless %}

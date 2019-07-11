@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label{
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -179,7 +184,7 @@
                         <td>{{ event.start_date }} </td>
                         <td>{{ event.date_of_meeting }} </td>
                         <td>{{ event.end_date }} </td>
-                        <td>{{ event.created_on|date:'d-m-Y' }}</td>
+                        <td title="{{ event.created_on|date:'d-m-Y' }}">{{ event.created_on_arrow }}</td>
                         <td>
                           {% if event.created_by %}
                           {% if event.created_by.profile_pic %}

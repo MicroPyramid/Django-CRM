@@ -1,3 +1,4 @@
+import arrow
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from common.models import Address, User
@@ -93,3 +94,7 @@ class Invoice(models.Model):
             return True
         else:
             return False
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()

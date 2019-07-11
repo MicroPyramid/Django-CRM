@@ -1,3 +1,4 @@
+import arrow
 import os
 from datetime import datetime, timedelta
 from django.db import models
@@ -41,6 +42,10 @@ class EmailTemplate(models.Model):
     @property
     def created_by_user(self):
         return self.created_by if self.created_by else None
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
 
 
 class ContactList(models.Model):
@@ -104,6 +109,14 @@ class ContactList(models.Model):
                 'no_of_clicks'))['no_of_clicks__sum']
         return clicks
 
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
+
+    @property
+    def updated_on_arrow(self):
+        return arrow.get(self.updated_on).humanize()
+
 
 class Contact(models.Model):
     phone_regex = RegexValidator(
@@ -131,6 +144,10 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.email
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
 
     class Meta:
         ordering = ['id', ]
@@ -273,6 +290,18 @@ class Campaign(models.Model):
         return contact_ids.count()
 
 
+    @property
+    def sent_on_arrow(self):
+        if self.schedule_date_time:
+            c_schedule_date_time = convert_to_custom_timezone(
+                self.schedule_date_time, self.timezone)
+            # return c_schedule_date_time.strftime('%b %d, %Y %I:%M %p')
+            return arrow.get(c_schedule_date_time).humanize()
+        else:
+            c_created_on = convert_to_custom_timezone(
+                self.created_on, self.timezone)
+            # return c_created_on.strftime('%b %d, %Y %I:%M %p')
+            return arrow.get(self.created_on).humanize()
 
 @receiver(models.signals.pre_delete, sender=Campaign)
 def comment_attachments_delete(sender, instance, **kwargs):

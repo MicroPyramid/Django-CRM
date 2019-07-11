@@ -1,131 +1,278 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% load digg_paginator %}
 {% block content %}
 {{ block.super }}
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb mb-5">
+  <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'marketing:contact_lists' %}">Contact List</a></li>
     <li class="breadcrumb-item active">{{contact_list.name}}</li>
   </ol>
 </nav>
-<div class="main_container ml-5 mr-5">
+
+<!-- main_container starts here -->
+<div class="main_container">
+  <!-- heading_create starts here -->
   <div class="row marl">
-    <div class="filter_row list_filter_row row marl col-md-12 mb-2">
-      <div class="">
-        <div class="card">
-          <div class="card-body">
-            <form id="leads_filter" action="" method="POST">
-              <div class="card-body ">
-                <div class="card-title">Filters</div>
-                <div class="row marl">
-                  <div class="filter_col col-md-3">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Name</label>
-                      <input type="text" class="form-control" placeholder="Name" name="name"
-                        value="{{request.POST.name}}">
-                    </div>
+    <div class="col-lg-12 text-right">
+      <span class="d-inline">
+        <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact List</a>
+      </span>
+    </div>
+  </div>
+  <div class="filter_row list_filter_row row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="leads_filter" action="" method="POST">
+            <div class="card-body ">
+              <div class="card-title">Filters</div>
+              <div class="row marl">
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label>
+                    <input type="text" class="form-control" placeholder="Name" name="name"
+                      value="{{request.POST.name}}">
                   </div>
-                  <div class="filter_col col-md-3">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Email</label>
-                      <input type="text" class="form-control" placeholder="Email" name="email"
-                        value="{{request.POST.email}}">
-                    </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Email</label>
+                    <input type="text" class="form-control" placeholder="Email" name="email"
+                      value="{{request.POST.email}}">
                   </div>
-                  <div class="filter_col col-md-3">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Company Name</label>
-                      <input type="text" class="form-control" placeholder="Company Name" name="company_name"
-                        value="{{request.POST.company_name}}">
-                    </div>
+                </div>
+                <div class="filter_col col-md-3">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Company Name</label>
+                    <input type="text" class="form-control" placeholder="Company Name" name="company_name"
+                      value="{{request.POST.company_name}}">
                   </div>
-                  <input type="hidden" name="tab_status" id="tab_status">
-                  <div class="filter_col col-2">
-                    <div class="form-group buttons_row">
-                      <button class="btn btn-primary save" type="submit">Search</button>
-                      <a href="" class="btn btn-default clear" onclick="window.location.reload">Clear</a>
-                    </div>
+                </div>
+                <input type="hidden" name="tab_status" id="tab_status">
+                <div class="filter_col col-2">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="" class="btn btn-default clear" onclick="window.location.reload">Clear</a>
                   </div>
                 </div>
               </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-12">
-      <div class="table_container_row no_mar_top">
-        <div class="card">
-          <div class="card-body">
-            <div class="card-title text-right">
-              <span class="float-left">{{ contact_list.name }} - {{ contacts_list|length }}</span>
-              {% if contact_list.failed_contacts.all|length > 0 %}
-              <a href="{% url 'marketing:failed_contact_list_detail' contact_list.id %}" class="primary_btn">Failed
-                Contacts</a>
-              {% endif %}
-              <span class="filter_toggle">
-                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-              </span>
-              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact List</a>
             </div>
-            <div class="table-responsive table-bordered ">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th width="5%">ID</th>
-                    <th width="20%">Name</th>
-                    <th width="20%">Email</th>
-                    <th width="10%">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <span><b>Tags : </b></span>
-                    {% for tag in contact_list.tags.all %}
-                    <span class="text-left color{{forloop.counter}} tag_class_cl" id="list_tag" data-link="{{tag.id}}"
-                      style="cursor: pointer;">{{tag.name}}</span>
-                    {% empty %}
-                    <span class="text-left">No Tags</span>
-                    {% endfor %}
-                  </tr>
-                  {% if per_page %}
-                  {% paginate per_page contacts_list %}
-                  {% else%}
-                  {% paginate 10 contacts_list %}
-                  {% endif %}
-                  {% for contact in contacts_list %}
-                  <tr style="text-align:center;">
-                    <td scope="row">{{ forloop.counter }}</td>
-                    <td>{{ contact.name }}</td>
-                    <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
-                    <td class="actions">
-                      <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
-                        class="btn btn-success edit edit_contact"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a>
-                      <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
-                      <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
-                        class="btn btn-danger delete remove_account"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-trash"></i></a>
-                    </td>
-                  </tr>
-                  {% empty %}
-                  <tr style="text-align:center;">
-                    <td colspan="6">No records found!</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
-  <div class="marl row text-center mt-5">
-    {% show_pages %}
+  <!-- heading_create ends here -->
+  <!-- filter_row starts here -->
+  <div class="filter_row row marl">
+    <div class="col-md-12 col-lg-12 col-xl-12">
+      <div class="table_container_row row marl no-gutters">
+        <div class="col-md-12">
+          <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
+                aria-selected="true">Contacts ({{contacts_list|length}})</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
+                aria-selected="false">Bounced ({{bounced_contacts_list_count}})</a>
+            </li>
+            {% if contact_list.failed_contacts.all %}
+            <li class="nav-item">
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#failed_contacts" role="tab"
+              aria-controls="close" aria-selected="false">Failed Contacts</a>
+            </li>
+            {% endif %}
+          </ul>
+          <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title text-right">
+                    <span class="total_count float-left">Contacts - {% if show_pageitems %}
+                      {% show_pageitems %}{% else %}{{contacts_list|length}}{% endif %}</span>
+                    <span class="filter_toggle ">
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
+                    <button href="#" class="primary_btn" id="delete_all"
+                      style="background:black; color: white;">Delete</button>
+                  </div>
+                  <div class="table-responsive table-bordered ">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th width="1%">
+                            <input type="checkbox" name="check_all" id="check_all">
+                          </th>
+                          <th width="5%">ID</th>
+                          <th width="20%">Name</th>
+                          <th width="20%">Email</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <span><b>Tags : </b></span>
+                          {% for tag in contact_list.tags.all %}
+                          <span class="text-left color{{forloop.counter}} tag_class_cl" id="list_tag"
+                            data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                          {% empty %}
+                          <span class="text-left">No Tags</span>
+                          {% endfor %}
+                        </tr>
+                        {% if per_page %}
+                        {% paginate per_page contacts_list %}
+                        {% else%}
+                        {% paginate 10 contacts_list %}
+                        {% endif %}
+                        {% for contact in contacts_list %}
+                        <tr style="text-align:center;">
+                          <td>
+                            <input type="checkbox" class="check_delete" name="{{contact.name}}" id="{{contact.id}}"
+                              value="{{contact.id}}">
+                          </td>
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{{ contact.name }}</td>
+                          <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
+                          <td class="actions">
+                            <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
+                              class="btn btn-success edit edit_contact"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-edit"></i></a>
+                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
+                              class="btn btn-danger delete remove_account"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-trash"></i></a>
+                          </td>
+                        </tr>
+                        {% empty %}
+                        <tr style="text-align:center;">
+                          <td colspan="6">There are no records</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="text-center row marl mt-3">
+                  {% show_pages %}
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="close" role="tabpanel" aria-labelledby="close">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title text-right">
+                    <span class="total_count float-left">Bounced Contacts - {{bounced_contacts_list_count}}</span>
+                    <span class="filter_toggle ">
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
+                    <button href="#" class="primary_btn" id="delete_all_bounced"
+                      style="background:black; color: white;">Delete</button>
+                  </div>
+                  <div class="table-responsive table-bordered ">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th width="1%">
+                            <input type="checkbox" name="check_all" id="check_all_bounced">
+                          </th>
+                          <th width="5%">ID</th>
+                          <th width="20%">Name</th>
+                          <th width="20%">Email</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <span><b>Tags : </b></span>
+                          {% for tag in contact_list.tags.all %}
+                          <span class="text-left color{{forloop.counter}} tag_class_cl" id="list_tag"
+                            data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                          {% empty %}
+                          <span class="text-left">No Tags</span>
+                          {% endfor %}
+                        </tr>
+                        {% if per_page %}
+                        {% paginate per_page bounced_contacts_list %}
+                        {% else%}
+                        {% paginate 10 bounced_contacts_list %}
+                        {% endif %}
+                        {% for contact in bounced_contacts_list %}
+                        <tr style="text-align:center;">
+                          <td>
+                            <input type="checkbox" class="check_delete_bounced" name="{{contact.name}}"
+                              id="{{contact.id}}" value="{{contact.id}}">
+                          </td>
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{{ contact.name }}</td>
+                          <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
+                          <td class="actions">
+                            <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
+                              class="btn btn-success edit edit_contact"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-edit"></i></a>
+                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
+                              class="btn btn-danger delete remove_account"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-trash"></i></a>
+                          </td>
+                        </tr>
+                        {% empty %}
+                        <tr style="text-align:center;">
+                          <td colspan="6">There are no records</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="text-center row marl mt-3">
+                  <ul class="pagination">
+                    {% digg_paginator %}
+                  </ul>
+                  {% comment %}
+                  {% show_pages %}
+                  {% endcomment %}
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="failed_contacts" role="tabpanel" aria-labelledby="failed_contacts">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title text-right">
+                    <span class="total_count float-left">Failed Contact List</span>
+                    <span class="filter_toggle ">
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
+                  </div>
+                  <div class="table-responsive table-bordered ">
+                    <span>
+                      <h5 class="mt-3 text-center">
+                      <a href="{% url 'marketing:download_failed_contacts' contact_list.id %}"
+                      class="">Download Invalid Contacts</a></span></h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+      </div>
+    </div>
   </div>
+  <!-- filter_row ends here -->
+  <!-- accounts list start -->
+  <!-- accounts list end -->
 </div>
+<!-- main_container ends here -->
+
+
+
 {% endblock %}
 
 {% block js_block %}
@@ -135,6 +282,131 @@
       $(".list_filter_row").toggle();
     });
     $('#id_tag').select2();
+    $('#delete_all').hide()
+    $('#delete_all_bounced').hide()
+
+    $(".tag_class_cl").click(function () {
+      // $(".tag_class_opp").css('cursor', 'pointer')
+      url = "{% url 'marketing:contact_lists' %}"
+      url = url + "?tag=" + $(this).attr('data-link')
+      window.location.href = url;
+    })
+
+    $("#check_all").click(function () {
+      $(".check_delete").prop('checked', $(this).prop('checked'))
+
+      if ($('#check_all').prop('checked')) {
+        $('#delete_all').show()
+      }
+      else {
+        $('#delete_all').hide()
+      }
+    });
+
+    $('.check_delete').on('change', function () {
+      // console.log('changed')
+      if ($('.check_delete:checked').length > 1) {
+        $('#delete_all').show()
+      }
+      else {
+        $('#delete_all').hide()
+      }
+    })
+
+    $('#delete_all').click(function (e) {
+      e.preventDefault()
+      if (!confirm('Are you sure you want to delete the selected contacts ?')) {
+        $('#check_all').prop('checked', false)
+        $('.check_delete').prop('checked', false)
+        $('#delete_all').hide()
+        return;
+      }
+      $('#delete_all').attr('disabled', 'disabled')
+      var selected = [];
+      $('.check_delete:checked').each(function () {
+        selected.push($(this).attr('value'));
+        // console.log(selected)
+      });
+      console.log(selected)
+      $.ajax({
+        url: "{% url 'marketing:delete_multiple_contacts' %}",
+        type: 'POST',
+        data: {
+          'selected_list': selected,
+          'from_contact': "{{contact_list.id}}",
+        },
+        success: function (data) {
+          console.log(data)
+          if (data['error'] === false) {
+            window.location.reload()
+          }
+          else {
+            $('#delete_all').removeAttr('disabled', 'disabled')
+            alert(data['message'])
+          }
+        },
+      });
+    })
+
+    // for bounced
+
+    $("#check_all_bounced").click(function () {
+      $(".check_delete_bounced").prop('checked', $(this).prop('checked'))
+
+      if ($('#check_all_bounced').prop('checked')) {
+        $('#delete_all_bounced').show()
+      }
+      else {
+        $('#delete_all_bounced').hide()
+      }
+    });
+
+    $('.check_delete_bounced').on('change', function () {
+      // console.log('changed')
+      if ($('.check_delete_bounced:checked').length > 1) {
+        $('#delete_all_bounced').show()
+      }
+      else {
+        $('#delete_all_bounced').hide()
+      }
+    })
+
+    $('#delete_all_bounced').click(function (e) {
+      e.preventDefault()
+      if (!confirm('Are you sure you want to delete the selected contacts ?')) {
+        $('#check_all_bounced').prop('checked', false)
+        $('.check_delete_bounced').prop('checked', false)
+        $('#delete_all_bounced').hide()
+        return;
+      }
+      $('#delete_all_bounced').attr('disabled', 'disabled')
+      var selected = [];
+      $('.check_delete_bounced:checked').each(function () {
+        selected.push($(this).attr('value'));
+        // console.log(selected)
+      });
+      console.log(selected)
+      $.ajax({
+        url: "{% url 'marketing:delete_multiple_contacts' %}",
+        type: 'POST',
+        data: {
+          'selected_list': selected,
+          'from_contact': "{{contact_list.id}}",
+        },
+        success: function (data) {
+          console.log(data)
+          if (data['error'] === false) {
+            window.location.reload()
+          }
+          else {
+            $('#delete_all_bounced').removeAttr('disabled', 'disabled')
+            alert(data['message'])
+          }
+        },
+      });
+    })
+
+
 
     // $(".remove_account").click(function (e) {
     //   e.preventDefault()
@@ -148,15 +420,18 @@
       e.preventDefault()
       url = $(this).attr('href')
       var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
-      if (contact_lists > 1) {
-        if (!confirm('This contact exists in other contact lists too. Are you sure you want to delete this contact?'))
-          return;
-        window.location = $(this).attr('href');
-      } else {
-        if (!confirm('Are you sure you want to delete?'))
-          return;
-        window.location = $(this).attr('href');
-      }
+      // if (contact_lists > 1) {
+      //   if (!confirm('This contact exists in other contact lists too. Are you sure you want to delete this contact?'))
+      //     return;
+      //   window.location = $(this).attr('href');
+      // } else {
+      //   if (!confirm('Are you sure you want to delete?'))
+      //     return;
+      //   window.location = $(this).attr('href');
+      // }
+      if (!confirm('Are you sure you want to delete?'))
+        return;
+      window.location = $(this).attr('href');
     })
 
     $(".edit_contact").click(function (e) {
@@ -173,6 +448,16 @@
       $('#leads_filter').attr("action", $(this).attr("href"));
       $('#leads_filter').submit();
     });
+
+    var queryParams = (window.location.search).replace('?', '').split('&').map(param => param.split('=')).reduce((values, [key, value]) => { values[key] = value; return values; }, {})
+
+    if (!queryParams.hasOwnProperty('page') && queryParams.hasOwnProperty('bounced_contacts_page')) {
+      //active the tab
+      // $('#open-tab').removeClass('active')
+      // $('#close-tab').addClass('active')
+      $('#close-tab').trigger('click')
+    }
+
   })
 </script>
 {% endblock js_block %}

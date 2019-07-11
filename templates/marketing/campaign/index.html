@@ -94,8 +94,8 @@
                       <!-- <span class="badge badge-primary">Primary</span> -->
                       <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
                     <td class="text-center">{{campaign.get_all_emails_count}}</td>
-                    <td>
-                      {{ campaign.sent_on_format }}
+                    <td title="{{ campaign.sent_on_format }}">
+                      {{ campaign.sent_on_arrow }}
                     </td>
                     <td>
                       {{ campaign.created_by }}

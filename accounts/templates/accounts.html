@@ -1,9 +1,14 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
-{% block extralinks %}
 {% load thumbnail %}
+{% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label {
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -145,7 +150,8 @@
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
-                            <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                            <span class="text-left color{{forloop.counter}} tag_class_acc" id="list_tag"
+                              data-link="{{tag.id}}" style="cursor: pointer;">{{ tag.name }}</span>
                             {% endfor %}
                             {% else %}
                             No Tags
@@ -234,7 +240,8 @@
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
-                            <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                            <span class="text-left color{{forloop.counter}} tag_class_acc" data-link="{{tag.id}}"
+                              style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
                             {% endfor %}
                             {% else %}
                             No Tags
@@ -644,6 +651,12 @@
   $("#close-tab").click(function (e) {
     $("#tab_status").val('Closed');
   })
+  $(".tag_class_acc").click(function () {
+    // $(".tag_class_acc").css('cursor', 'pointer')
+    url = "{% url 'accounts:list' %}"
+    url = url + "?tag=" + $(this).attr('data-link')
+    window.location.href = url;
+  });
 
   // $(".account_modal").click(function (e) {
   //   console.log('clicked')

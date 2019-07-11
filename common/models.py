@@ -1,3 +1,4 @@
+import arrow
 import binascii
 import os
 import time
@@ -279,6 +280,10 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
 
 
 def generate_key():

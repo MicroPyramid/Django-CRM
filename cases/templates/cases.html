@@ -1,6 +1,13 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+<style>
+  .form-group label{
+    font-weight: 800;
+  }
+</style>
+{% endblock %}
 {% block content %}
 <!-- main_container starts here -->
 <div class="main_container">
