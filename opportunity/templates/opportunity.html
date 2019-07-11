@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label {
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -135,9 +140,8 @@
                 {% for opportunity in opportunity_list %}
                 <tr class="text-center">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td><a href="#"
-                    data-toggle="modal"
-                    data-target="#exampleModalCenter_opportunity{{opportunity.id}}">{{ opportunity.name }}</a></td>
+                  <td><a href="#" data-toggle="modal"
+                      data-target="#exampleModalCenter_opportunity{{opportunity.id}}">{{ opportunity.name }}</a></td>
                   <td>
                     {% with opportunity_users=opportunity.assigned_to.all %}
                     {% for user in opportunity_users %}
@@ -161,7 +165,8 @@
                     {% with tags=opportunity.tags.all %}
                     {% if tags %}
                     {% for tag in tags %}
-                    <span class="text-left color{{forloop.counter}}" id="list_tag">{{ tag.name }}</span>
+                    <span class="text-left color{{forloop.counter}} tag_class_opp" data-link="{{tag.id}}"
+                      style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
                     {% endfor %}
                     {% else %}
                     No Tags
@@ -190,7 +195,8 @@
                   <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}
                   </td>
                   <td class="actions">
-                    <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'opportunities:opp_view' opportunity.id %}" class="btn btn-info view"><i
+                        class="fas fa-eye"></i></a>
                     <a href="{% url 'opportunities:opp_edit' opportunity.id %}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     {% if request.user == opportunity.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
@@ -391,6 +397,13 @@
       $(".list_filter_row").toggle();
     });
     $('#id_tag').select2();
+  });
+
+  $(".tag_class_opp").click(function () {
+    // $(".tag_class_opp").css('cursor', 'pointer')
+    url = "{% url 'opportunity:list' %}"
+    url = url + "?tag=" + $(this).attr('data-link')
+    window.location.href = url;
   });
 
   search = "{{search}}"

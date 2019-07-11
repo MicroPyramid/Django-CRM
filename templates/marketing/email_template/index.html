@@ -89,7 +89,7 @@
                         href="{% url 'marketing:email_template_detail' email_template.id %}">{{ email_template.title }}</a>
                     </td>
                     <td scope="row">{{ email_template.created_by }}</td>
-                    <td scope="row">{{ email_template.created_on }}</td>
+                    <td scope="row" title="{{ email_template.created_on }}">{{ email_template.created_on_arrow }}</td>
                     <td class="text-center"><a
                         href="{% url 'marketing:create_campaign_from_template' email_template.id %}" class="a_color"
                         data-toggle="tooltip" data-placement="bottom"

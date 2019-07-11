@@ -330,12 +330,20 @@ def edit_contact(request, pk):
 @marketing_access_required
 def delete_contact(request, pk):
     contact_obj = get_object_or_404(Contact, pk=pk)
+
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user or
             (contact_obj.id in request.user.marketing_contactlist.all().values_list('contacts', flat=True))):
         raise PermissionDenied
-    contact_obj.delete()
     if request.GET.get('from_contact'):
-        return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
+        if contact_obj.contact_list.count() == 1:
+            contact_obj.delete()
+            return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
+        else:
+            contact_list_obj = get_object_or_404(ContactList, pk=request.GET.get('from_contact'))
+            contact_obj.contact_list.remove(contact_list_obj)
+            return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
+    else:
+        contact_obj.delete()
     return redirect('marketing:contacts_list')
 
 
@@ -345,7 +353,9 @@ def contact_list_detail(request, pk):
     contact_list = get_object_or_404(ContactList, pk=pk)
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_list.created_by == request.user):
         raise PermissionDenied
-    contacts_list = contact_list.contacts.all()
+    contacts_list = contact_list.contacts.filter(is_bounced=False)
+    bounced_contacts_list = contact_list.contacts.filter(is_bounced=True)
+    bounced_contacts_list_count = contact_list.contacts.filter(is_bounced=True).count()
     if request.POST:
         if request.POST.get('name'):
             contacts_list = contacts_list.filter(
@@ -356,7 +366,29 @@ def contact_list_detail(request, pk):
         if request.POST.get('company_name'):
             contacts_list = contacts_list.filter(
                 company_name=request.POST.get('company_name'))
-    data = {'contact_list': contact_list, "contacts_list": contacts_list}
+
+        if request.POST.get('name'):
+            bounced_contacts_list = bounced_contacts_list.filter(
+                name__icontains=request.POST.get('name'))
+        if request.POST.get('email'):
+            bounced_contacts_list = bounced_contacts_list.filter(
+                email__icontains=request.POST.get('email'))
+        if request.POST.get('company_name'):
+            bounced_contacts_list = bounced_contacts_list.filter(
+                company_name=request.POST.get('company_name'))
+
+    page = request.GET.get('bounced_contacts_page', 1)
+    paginator = Paginator(bounced_contacts_list, 10)
+    try:
+        bounced_contacts_list = paginator.page(page)
+    except:
+        bounced_contacts_list = paginator.page(paginator.num_pages)
+
+    data = {'contact_list': contact_list, "contacts_list": contacts_list,
+        "bounced_contacts_list":bounced_contacts_list,
+        'bounced_contacts_list_count': bounced_contacts_list_count,
+        # these two are added for digg pagintor
+        'paginator':paginator,'page_obj': bounced_contacts_list,}
     return render(request, 'marketing/lists/detail.html', data)
 
 
@@ -941,3 +973,55 @@ def download_links_clicked(request, campaign_id):
         response = HttpResponse(data, content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename={}'.format('data_downloads.csv')
         return response
+
+
+@login_required(login_url='/login')
+@marketing_access_required
+def delete_multiple_contacts(request):
+
+    contacts_list = Contact.objects.filter(id__in=request.POST.getlist('selected_list[]'))
+    shared_contact_lists = request.user.marketing_contactlist.all().values_list('contacts', flat=True)
+    cannot_be_deleted = []
+    error = False
+    for contact_obj in contacts_list:
+        if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user or (contact_obj.id in shared_contact_lists)):
+            cannot_be_deleted.append(contact_obj.email)
+            error = True
+    if len(cannot_be_deleted) == 0:
+        error = False
+        for contact_obj in contacts_list:
+            if request.POST.get('from_contact'):
+                if contact_obj.contact_list.count() == 1:
+                    contact_obj.delete()
+                else:
+                    contact_list_obj = get_object_or_404(ContactList, pk=request.POST.get('from_contact'))
+                    contact_obj.contact_list.remove(contact_list_obj)
+        return JsonResponse({'error':False, 'refresh': True})
+    else:
+        message = "You don't have permission to delete {}".format(', '.join(cannot_be_deleted))
+        return JsonResponse({'error': True, 'message' : message })
+
+
+@login_required
+@marketing_access_required
+def download_failed_contacts(request, contact_list_id):
+
+    contact_list_obj = get_object_or_404(ContactList, pk=contact_list_id)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_list_obj.created_by == request.user):
+        raise PermissionDenied
+
+    failed_contacts = contact_list_obj.failed_contacts.values('company_name', 'email', 'name', 'last_name', 'city', 'state')
+    if failed_contacts:
+        data = [
+            'company name,email,first name,last name,city,state\n',
+        ]
+        for contact in failed_contacts:
+            data.append((', '.join(contact.values()) + '\n'))
+        response = HttpResponse(
+            data, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename={}'.format(
+            'failed_contacts.csv')
+        return response
+
+    else:
+        return HttpResponse('No Data')

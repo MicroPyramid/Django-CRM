@@ -17,6 +17,8 @@ email_regex = '^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)
 def csv_doc_validate(document):
     temp_row = []
     invalid_row = []
+    # this stores all the failed csv contacts
+    failed_contacts_csv = []
     reader = csv.reader((document.read().decode("utf-8")).splitlines())
     # csv_headers = ["first name", "last name", "email"]
     csv_headers = ["first name", "email"]
@@ -56,9 +58,11 @@ def csv_doc_validate(document):
                 each[csv_headers[x_index]] = cell_value
         if invalid_each:
             invalid_row.append(each)
+            failed_contacts_csv.append(list(each.values()))
         else:
             temp_row.append(each)
-    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row}
+    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row, "headers":csv_headers,
+        "failed_contacts_csv": failed_contacts_csv}
 
 
 def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
@@ -141,13 +145,20 @@ class ContactListForm(forms.ModelForm):
         self.fields['contacts_file'].widget.attrs.update({
             "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
         })
-        self.fields['contacts_file'].required = True
-        # if self.instance is None:
-        #     self.fields['contacts_file'].required = True
+        if self.instance.id is None:
+            self.fields['contacts_file'].required = True
+        else:
+            self.fields['contacts_file'].required = False
         if self.data.get('contacts_file'):
             self.fields['contacts_file'].widget.attrs.update({
                 "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
             })
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if ContactList.objects.filter(name__iexact=name).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError('Contact List with this Name already exists.')
+        return name
 
     def clean_contacts_file(self):
         document = self.cleaned_data.get("contacts_file")
@@ -158,8 +169,16 @@ class ContactListForm(forms.ModelForm):
             else:
                 self.validated_rows = data.get("validated_rows", [])
                 self.invalid_rows = data.get("invalid_rows", [])
-                if self.invalid_rows:
-                    raise forms.ValidationError('Uploaded file is not valid')
+                if len(self.validated_rows) == 0:
+                    raise forms.ValidationError("All the contacts in the file are invalid.")
+                # self.headers = data.get("headers", [])
+                # self.failed_contacts_csv = data.get("failed_contacts_csv", [])
+                # failed_csv_data = []
+                # failed_csv_data = (self.failed_contacts_csv)
+                # failed_csv_data.insert(0, self.headers)
+                # if self.invalid_rows:
+                #     self.add_error(None, json.dumps(failed_csv_data))
+                #     raise forms.ValidationError('Uploaded file is not valid.')
         return document
 
     def clean_visible_to(self):
@@ -193,11 +212,11 @@ class ContactForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
 
         self.fields['name'].required = True
-        self.fields['last_name'].required = True
-        self.fields['city'].required = True
-        self.fields['state'].required = True
         self.fields['email'].required = True
-        self.fields['company_name'].required = True
+        self.fields['last_name'].required = False
+        self.fields['city'].required = False
+        self.fields['state'].required = False
+        self.fields['company_name'].required = False
         self.fields['contact_list'].required = False
 
     class Meta:

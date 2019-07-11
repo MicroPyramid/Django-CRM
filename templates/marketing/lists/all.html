@@ -102,7 +102,7 @@
                     <td class="text-center">{{ contact.email }}</td>
                     <td class="text-center">{{ contact.company_name }}</td>
                     <td>{{ contact.created_by }}</td>
-                    <td>{{ contact.created_on }}</td>
+                    <td title="{{contact.created_on}}">{{ contact.created_on_arrow }}</td>
                     <td>
                       {% for contact_list in contact.contact_list.all %}
                       <span> <a
@@ -159,7 +159,7 @@
       url = $(this).attr('href')
       var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
       if (contact_lists > 1) {
-        if (!confirm('This contact exists in other contact lists too. Are you sure you want to delete this contact?'))
+        if (!confirm('This contact exists in other Contact List too. Are you sure you want to delete this contact?'))
           return;
         window.location = $(this).attr('href');
       } else {

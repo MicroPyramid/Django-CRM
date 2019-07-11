@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label{
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -183,7 +188,7 @@
                           None
                           {% endif %}
                         </td>
-                        <td>{{ invoice.created_on|date:'d-m-Y' }}</td>
+                        <td title="{{ invoice.created_on|date:'d-m-Y' }}">{{ invoice.created_on_arrow }}</td>
                         <td class="actions">
                           <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>

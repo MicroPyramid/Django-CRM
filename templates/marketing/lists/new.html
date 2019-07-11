@@ -49,7 +49,7 @@
                   </div>
                   <div class="filter_col col-md-12">
                     <div class="form-group">
-                      <label>Contacts File <span class="error">*</span>
+                      <label>Contacts File <span class="error">{% if contact_list %}{% else %}*{% endif %}</span>
                       </label>
                       <input type="file" class="form-control" name="contacts_file">
                       <span id="id_contacts_file"></span>

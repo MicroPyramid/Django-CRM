@@ -1,5 +1,6 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load thumbnail %}
 {% block content %}
 {% load common_tags %}
 <!-- <a href="{% url "common:logout" %}"><button class="btn btn-primary" type="button">Logout</button></a> -->
@@ -57,9 +58,9 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th width="45%">Name</th>
-                    <th width="50%">Tags</th>
-                    <th width="50%">Assigned To</th>
+                    <th width="30%">Name</th>
+                    <th width="30%">Tags</th>
+                    <th width="40%">Assigned To</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,16 +83,27 @@
                     <td>
                       {% with users=account.assigned_to.all %}
                       {% for user in users|slice:'3' %}
-                      <div>
-                          <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
-                      </div>
+                      {% if user.profile_pic %}
+                      {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                      <span>
+                        <a href="{% url 'common:view_user' user.id %}">
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ user.email }}">
+                        </a>
+                        {% endthumbnail %}
+                        {% else %}
+                        <a href="{% url 'common:view_user' user.id %}">
+                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                        </a>
+                      </span>
+                      {% endif %}
                       {% empty %}
                       <span class="text-left">None</span>
                       {% endfor %}
                       {% if users|length > 3 %}
                       <div>
                         <a href="{% url 'accounts:view_account' account.id %}">
-                          <span class="text-left" id="list_tag">{{users|length|subtract:'3'}}<span> more
+                          <span class="text-left mt-2" id="list_tag">{{users|length|subtract:'3'}}<span> more
                             </span></span></a>
                       </div>
                       {% endif %}
@@ -119,9 +131,9 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th width="45%">Name</th>
-                    <th width="50%">Tags</th>
-                    <th width="50%">Assigned To</th>
+                    <th width="30%">Name</th>
+                    <th width="30%">Tags</th>
+                    <th width="40%">Assigned To</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,17 +156,30 @@
                     <td>
                       {% with users=opportunity.assigned_to.all %}
                       {% for user in users|slice:'3'  %}
-                      <span class="text-left" id="list_opp_users_"><a href="{% url 'common:view_user' user.id %}">{{user}}</a><span>
-                          {% empty %}
-                          <span class="text-left">None</span>
-                          {% endfor %}
-                          {% if users|length > 3 %}
-                          <a href="{% url 'opportunity:opp_view' opportunity.id %}">
-                            <span class="text-left" id="list_tag">{{users|length|subtract:'3'}}<span> more
-                              </span></span>
-                          </a>
-                          {% endif %}
-                          {% endwith %}
+                      {% if user.profile_pic %}
+                      {% thumbnail user.profile_pic "40x40" crop="center" as im %}
+                      <span>
+                        <a href="{% url 'common:view_user' user.id %}">
+                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                            title="{{ user.email }}">
+                        </a>
+                        {% endthumbnail %}
+                        {% else %}
+                        <a href="{% url 'common:view_user' user.id %}">
+                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                        </a>
+                      </span>
+                      {% endif %}
+                      {% empty %}
+                      <span class="text-left">None</span>
+                      {% endfor %}
+                      {% if users|length > 3 %}
+                      <a href="{% url 'opportunity:opp_view' opportunity.id %}">
+                        <span class="text-left mt-2" id="list_tag">{{users|length|subtract:'3'}}<span> more
+                          </span></span>
+                      </a>
+                      {% endif %}
+                      {% endwith %}
                     </td>
                   </tr>
                   {% endfor %}

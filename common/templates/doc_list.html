@@ -4,6 +4,11 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+  .form-group label{
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -119,7 +124,7 @@
                     None
                     {% endif %}
                   </td>
-                  <td>{{document.created_on}}</td>
+                  <td title="{{document.created_on}}">{{document.created_on_arrow}}</td>
                   <td>{{document.status}}</td>
                   <td>
                     {% with document_users=document.shared_to.all %}
