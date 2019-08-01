@@ -67,18 +67,18 @@
               </div>
               {% endfor %}
               {% endwith %}
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-12" style="padding: 0;">
                 <div class="form-group mt-3">
                   <label class="contact_field_label" for="id_created_by" data-name="created_by">Created By</label>
                   <div class="contact_field" id="created_by" data-name="created_by">
                     {{ team_obj.created_by }}</div>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
+              <div class="filter_col col-md-12" style="padding: 0;">
                 <div class="form-group">
                   <label class="contact_field_label" for="id_created_on" data-name="created_on">Created On</label>
-                  <div class="contact_field" id="created_on" data-name="created_on">
-                    {{ team_obj.created_on }}</div>
+                  <div class="contact_field" id="created_on" data-name="created_on" title="{{ team_obj.created_on }}">
+                    {{ team_obj.created_on_arrow }}</div>
                 </div>
               </div>
             </div>

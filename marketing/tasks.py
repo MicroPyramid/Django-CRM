@@ -224,3 +224,17 @@ def send_scheduled_campaigns():
                 run_campaign.delay(each.id)
                 CampaignCompleted.objects.create(
                     campaign=each, is_completed=True)
+
+
+@task
+def delete_multiple_contacts_tasks(contact_list_id, bounced=True):
+    """ this method is used to remove all contacts from a contact list based on bounced kwarg """
+    contacts_list_obj = ContactList.objects.filter(id=contact_list_id).first()
+    if contacts_list_obj:
+        contacts_objs = contacts_list_obj.contacts.filter(is_bounced=bounced)
+        if contacts_objs:
+            for contact_obj in contacts_objs:
+                if contact_obj.contact_list.count() > 1:
+                    contact_obj.contact_list.remove(contacts_list_obj)
+                else:
+                    contact_obj.delete()

@@ -1,3 +1,4 @@
+import arrow
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -24,6 +25,10 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.first_name
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
 
     class Meta:
         ordering = ['-created_on']

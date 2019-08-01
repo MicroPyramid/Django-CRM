@@ -121,12 +121,13 @@
                 <tr>
                   <th width="5%">S.No</th>
                   <th width="10%">Name</th>
-                  <th width="20%">Assigned To</th>
+                  <th width="10%">Assigned To</th>
                   <th width="10%">Tags</th>
-                  <th width="15%">Account</th>
+                  <th width="10%">Account</th>
                   <!--<th width="15%">Contact(s)</th>-->
                   <th width="15%">Stage</th>
-                  <th width="10%">Lead Source</th>
+                  <th width="10%">Created On</th>
+                  <th width="5%">Lead Source</th>
                   <th width="10%">Actions</th>
                 </tr>
                 {% endif %}
@@ -192,6 +193,7 @@
                   {% endwith %}
                 </td>-->
                   <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
+                  <td title="{{opportunity.created_on}}">{{opportunity.created_on_arrow}}</td>
                   <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}
                   </td>
                   <td class="actions">
@@ -244,7 +246,7 @@
           <div class="">
             <div class="col-md-12" id="">
               <div class="card">
-                <div class="card-body" id="datashow">
+                <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
                       <!-- <span class="float-left">OVERVIEW</span> -->
@@ -341,16 +343,6 @@
                       </div>
                     </div>
                     <div class="col-md-4">
-                      <div class="filter_col col-md-12">
-                        {% if opportunity_record.description %}
-                        <div class="form-group">
-                          <label class="opportunity_field_label" for="id_description"
-                            data-name="name">Description</label>
-                          <div class="opportunity_field" id="opportunity_description" data-name="name">
-                            {{opportunity_record.description}}</div>
-                        </div>
-                        {% endif %}
-                      </div>
                       {% if opportunity_record.tags.all %}
                       <div class="filter_col col-md-12">
                         <div class="form-group">
@@ -365,9 +357,19 @@
                       {% endif %}
                     </div>
                     <div class="col-md-12">
+                      {% if opportunity_record.description %}
+                      <div class="filter_col col-md-12">
+                        <div class="form-group">
+                          <label class="opportunity_field_label" for="id_description"
+                            data-name="name">Description</label>
+                          <div class="opportunity_field" id="opportunity_description" data-name="name">
+                            {{opportunity_record.description}}</div>
+                        </div>
+                      </div>
+                      {% endif %}
                       <div class="created_information">
                         Created by <b>{{ opportunity_record.created_by }}</b> created on
-                        <b>{{ opportunity_record.created_on }}</b>
+                        <b title="{{ opportunity_record.created_on }}">{{ opportunity_record.created_on_arrow }}</b>
                       </div>
                     </div>
                   </div>
@@ -397,6 +399,7 @@
       $(".list_filter_row").toggle();
     });
     $('#id_tag').select2();
+    $('#id_account').select2();
   });
 
   $(".tag_class_opp").click(function () {

@@ -1,0 +1,12 @@
+{% extends 'root_email_template_new.html' %}
+
+{% block heading %}
+Hi {{email}}
+{% endblock heading %}
+
+
+{% ifequal 'deleted' message  %}
+{% block content_body %}
+Your account has been deleted by {{deleted_by}}. You are no longer able to access your account.
+{% endblock content_body %}
+{% endifequal %}

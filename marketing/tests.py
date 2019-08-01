@@ -14,11 +14,11 @@ class TestMarketingModel(object):
         self.client = Client()
 
         self.user = User.objects.create(
-            username='jorge', email='j@mp.com', role="ADMIN")
-        self.user.set_password('jorge2293')
+            username='john', email='john@example.com', role="ADMIN")
+        self.user.set_password('password')
         self.user.save()
 
-        self.client.login(username='j@mp.com', password='jorge2293')
+        self.client.login(username='john@example.com', password='password')
 
 
 class TestTemplates(TestMarketingModel, TestCase):

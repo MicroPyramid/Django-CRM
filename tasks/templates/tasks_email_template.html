@@ -1,4 +1,4 @@
-{% extends 'root_email_template.html' %}
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
 
@@ -7,12 +7,15 @@ Hello {{ user }}
 
 
 {% block content_body %}
-<h2>You have been assigned to task {{task_title}} by {{task_created_by}}</h2>
+
+{{task_created_by}} assigned a task for you - {{task_title}}
+
 {% endblock content_body %}
 
 {% block button_link %}
 <div style="margin-bottom:20px">
     <a href="{{url}}"
-        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">click here</a>
+        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">click
+        here</a>
 </div>
 {% endblock button_link %}

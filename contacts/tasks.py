@@ -11,9 +11,10 @@ from contacts.models import Contact
 def send_email_to_assigned_user(recipients, contact_id, domain='demo.django-crm.io', protocol='http'):
     """ Send Mail To Users When they are assigned to a contact """
     contact = Contact.objects.get(id=contact_id)
+    created_by = contact.created_by
     for user in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user).first()
+        user = User.objects.filter(id=user, is_active=True).first()
         if user:
             recipients_list.append(user.email)
             context = {}
@@ -21,7 +22,8 @@ def send_email_to_assigned_user(recipients, contact_id, domain='demo.django-crm.
                 reverse('contacts:view_contact', args=(contact.id,))
             context["user"] = user
             context["contact"] = contact
-            subject = 'Assigned to contact.'
+            context["created_by"] = created_by
+            subject = 'Assigned a contact for you.'
             html_content = render_to_string(
                 'assigned_to/contact_assigned.html', context=context)
 

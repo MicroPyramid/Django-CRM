@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'mwx@&97%!$fx_*zgj(2ygi^(s=oh5j(cqb$=+-mkd9scbt!0v0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG_STATUS', True)
 
 ALLOWED_HOSTS = ['*']
 
@@ -171,7 +171,8 @@ elif STORAGE_TYPE == 's3-storage':
     STATIC_S3_PATH = "static"
     COMPRESS_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
-    COMPRESS_CSS_FILTERS = ['compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
+    COMPRESS_CSS_FILTERS = [
+        'compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.CSSMinFilter']
     COMPRESS_JS_FILTERS = ['compressor.filters.jsmin.JSMinFilter']
     COMPRESS_REBUILD_TIMEOUT = 5400
 
@@ -211,7 +212,7 @@ COMPRESS_URL = STATIC_URL
 COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
     ('text/x-sass', 'sass {infile} {outfile}'),
-    ('text/x-scss', 'sass --scss {infile} {outfile}'),
+    ('text/x-scss', 'sass {infile} {outfile}'),
 )
 
 COMPRESS_OFFLINE_CONTEXT = {
@@ -267,3 +268,63 @@ except ImportError:
 GP_CLIENT_ID = os.getenv('GP_CLIENT_ID', False)
 GP_CLIENT_SECRET = os.getenv('GP_CLIENT_SECRET', False)
 ENABLE_GOOGLE_LOGIN = os.getenv('ENABLE_GOOGLE_LOGIN', False)
+
+MARKETING_REPLY_EMAIL = 'djangocrm@micropyramid.com'
+
+PASSWORD_RESET_TIMEOUT_DAYS = 3
+
+SENTRY_ENABLED = os.getenv('SENTRY_ENABLED', False)
+
+if SENTRY_ENABLED and not DEBUG:
+    if os.getenv('SENTRYDSN') is not None:
+        RAVEN_CONFIG = {
+            'dsn': os.getenv('SENTRYDSN', ''),
+        }
+        INSTALLED_APPS = INSTALLED_APPS + [
+            'raven.contrib.django.raven_compat',
+        ]
+        MIDDLEWARE = [
+            'raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware',
+            'raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware',
+         ] + MIDDLEWARE
+        LOGGING = {
+            'version': 1,
+            'disable_existing_loggers': True,
+            'root': {
+                'level': 'WARNING',
+                'handlers': ['sentry'],
+            },
+            'formatters': {
+                'verbose': {
+                    'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+                },
+            },
+            'handlers': {
+                'sentry': {
+                    'level': 'ERROR',
+                    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+                },
+                'console': {
+                    'level': 'DEBUG',
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'verbose'
+                }
+            },
+            'loggers': {
+                'django.db.backends': {
+                    'level': 'ERROR',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+                'raven': {
+                    'level': 'DEBUG',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+                'sentry.errors': {
+                    'level': 'DEBUG',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+            },
+        }

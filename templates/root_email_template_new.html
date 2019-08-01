@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!-- Meta, title, CSS, favicons, etc. -->
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Django Crm</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap" rel="stylesheet">
+</head>
+
+<body
+  style="width:100% !important; margin:0 !important; padding:0 !important; -webkit-text-size-adjust:none; -ms-text-size-adjust:none;font-size:12px; font-family: 'Roboto', sans-serif;color: #45586d; background: #fff; ">
+  <table cellpadding="0" cellspacing="0" border="0" id="backgroundTable"
+    style="height:auto !important; margin:0; padding:0; width:100% !important; font-family: 'Roboto', sans-serif;color: #45586d; background: #fff;">
+    <tr>
+      <td>
+        <table id="contenttable" width="800" align="center" cellpadding="0" cellspacing="0" border="0"
+          style="font-family: 'Roboto', sans-serif;color: #45586d; background: #dfdede; margin-top:0 !important; margin-right: auto !important; margin-bottom:0 !important; margin-left: auto !important; border:none; width: 100% !important; max-width:800px !important;border: 1px solid #ddd !important;">
+          <tr>
+            <td style="padding: 20px;">
+              <table style="width:800px;background:#fff;padding:0;" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 45px 15px;text-align: center;color: #2f5375; font-weight: 500; font-size: 48px;">
+                    <span>DjangoCrm</span>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="text-align:center;font-weight: 300;color:#03759a;font-size:30px;padding-top:15px;">
+                    <!-- Hi Johndoe -->
+
+                    {% block heading %}
+                    Lorem ipsum dolor sit, amet consectetur adipisicing elit. Cum exercitationem placeat assumenda aspernatur nam ut odit omnis harum dicta laboriosam.
+                    {% endblock heading %}
+
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="text-align:center;font-weight: 300;padding:25px 75px;color:#000;font-size:20px;">
+                    <!-- You Have been invited to organisation in DjangoCrm. -->
+
+                    {% block content_body %}
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Minima repellat dolores quaerat minus consequuntur quos alias illo nesciunt iure quod.
+                    {% endblock content_body %}
+
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="text-align:center;padding: 15px 0;">
+                    <!-- <a href="#"
+                    style="display: inline-block; background: #2dc24d; font-size: 20px;font-weight: 500;color:#fff;width: 255px;text-align: center;padding: 18px 0;border-radius:4px;text-decoration: none;"> -->
+                    {% block button_link %}
+                    <!-- Join
+                      Account -->
+
+
+                    {% endblock button_link %}
+
+                    </a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="text-align:center;padding: 15px 0;">
+                    {% block extra_content %}
+
+                    {% endblock extra_content %}
+                  </td>
+                </tr>
+                <!-- <tr>
+                  <td style="text-align:center;padding:25px 75px;font-weight: 300;color:#777;font-size:37px;">
+                    Join into Microtrack to experience <strong style="color: #000;font-weight: 500;">Awesome
+                      features</strong>
+                  </td>
+                </tr> -->
+
+                <!-- <tr>
+                  <td style="padding-left:150px;color: #444;padding-bottom:75px;">
+                    <ul style="margin:0; padding: 0; font-size: 24px; font-weight: 350;line-height:45px;">
+                      <li>Manage employee records.</li>
+                      <li>Leave Management.</li>
+                      <li>Daily updates on employee worklogs, leaves.</li>
+                      <li>One place to manage all of your project activities.</li>
+                      <li>Manage your customers, revenue etc.</li>
+                    </ul>
+                  </td>
+                </tr> -->
+
+                <tr>
+                  <td style="background: #f8f8f8;padding:25px 0; text-align: center;">
+                    <!-- <ul style="margin:0;padding:0;padding:0 8px;text-align:center;">
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="https://micropyramid.com/"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">Home</a>
+                      </li>
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="#"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">Services</a>
+                      </li>
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="https://micropyramid.com/our-portfolio/"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">Portfolio</a>
+                      </li>
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="https://micropyramid.com/blog/"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">Blog</a>
+                      </li>
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="#"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">About
+                          Us</a>
+                      </li>
+                      <li style="list-style:none;display:inline-block;">
+                        <a href="https://micropyramid.com/contact-us/"
+                          style="color:#222;font-size: 16px;padding:15px 12px;text-decoration:none;display:inline-block;font-weight:500;">Contact
+                          Us</a>
+                      </li>
+                    </ul> -->
+                    <!-- <div style="font-weight:400; font-size: 16px;padding-bottom: 5px;">
+                      Copyright &copy; 2019. All Rights Reserved. Powered By <a href="https://micropyramid.com/"
+                        style="text-decoration: none; color: #03759a;">www.micropyramid.com</a>
+                    </div> -->
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+
+</html>

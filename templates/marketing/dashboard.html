@@ -4,8 +4,23 @@
 {% load paginate %}
 {% block extralinks %} 
 <style>
-  .modebar{
+  .modebar {
     display: none
+  }
+
+  .text_ellipsis {
+    width: 22em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .text_ellipsis_1 {
+
+    width: 20em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
 {% endblock %}
@@ -90,7 +105,10 @@
                       <tbody>
                         {% for contact in contacts_list|slice:"5" %}
                         <tr>
-                          <td><a href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a>
+                          <td>
+                            <div class="text_ellipsis">
+                            <a href="{% url 'marketing:contact_list_detail' contact.id %}">{{contact.name}}</a>
+                          </div>
                           </td>
                           <!-- <td>
                             {% with users=contact.visible_to.all %}
@@ -150,7 +168,10 @@
                       <tbody>
                         {% for campaign in campaigns|slice:"5" %}
                         <tr>
-                          <td><a href="{% url 'marketing:campaign_details' campaign.id %}">{{campaign.title}}</a>
+                          <td>
+                            <div class="text_ellipsis_1">
+                            <a href="{% url 'marketing:campaign_details' campaign.id %}">{{campaign.title}}</a>
+                          </div>
                           </td>
 
                           <td style="display: block;">
@@ -289,9 +310,9 @@
 
     var layout = {
       title: 'Campaigns',
-      margin:{
-        b:160,
-        l:120,
+      margin: {
+        b: 160,
+        l: 120,
       },
       xaxis: {
         type: 'category',

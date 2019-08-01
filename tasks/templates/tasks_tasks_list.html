@@ -100,7 +100,8 @@
                   <th width="15%">Status</th>
                   <th width="10%">Priority</th>
                   <th width="10%">Due Date</th>
-                  <th width="20%">Assigned To</th>
+                  <th width="10%">Assigned To</th>
+                  <th width="10%">Created On</th>
                   <th width="10%">Actions</th>
                 </tr>
                 {% endif %}
@@ -166,6 +167,7 @@
                     {% endfor %}
                     {% endwith %}
                   </td>
+                  <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
                     <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
@@ -228,6 +230,7 @@
                     {% endfor %}
                     {% endwith %}
                   </td>
+                  <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
                     <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
@@ -289,6 +292,7 @@
                     {% endfor %}
                     {% endwith %}
                   </td>
+                  <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
                     {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
                     <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit"><i
@@ -342,7 +346,7 @@
           <div class="">
             <div class="col-md-12" id="opacity_block">
               <div class="card">
-                <div class="card-body" id="datashow">
+                <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
                       <!-- <span class="float-left title">Overview</span> -->
@@ -431,7 +435,7 @@
                     </div>
                     <div class="col-md-12">
                       <div class="created_information">
-                        Created by <b>{{ task.created_by }}</b>
+                        Created by <b>{{ task.created_by }}</b> on <b title="{{ task.created_on }}">{{ task.created_on_arrow }}</b>
                       </div>
                     </div>
                   </div>

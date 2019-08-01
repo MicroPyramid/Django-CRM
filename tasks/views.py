@@ -65,12 +65,15 @@ def task_create(request):
     if request.method == 'GET':
         if request.user.role == 'ADMIN' or request.user.is_superuser:
             users = User.objects.filter(is_active=True).order_by('email')
-        elif request.user.google.all():
-            users = []
+            accounts = Account.objects.filter(status="open")
+        # elif request.user.google.all():
+        #     users = []
+        #     accounts = Account.objects.filter(created_by=request.user).filter(status="open")
         else:
             users = User.objects.filter(role='ADMIN').order_by('email')
+            accounts = Account.objects.filter(Q(created_by=request.user) | Q(assigned_to__in=[request.user])).filter(status="open")
         form = TaskForm(request_user=request.user)
-        return render(request, 'task_create.html', {'form': form, 'users': users})
+        return render(request, 'task_create.html', {'form': form, 'users': users, 'accounts':accounts})
 
     if request.method == 'POST':
         form = TaskForm(request.POST, request_user=request.user)
@@ -90,7 +93,10 @@ def task_create(request):
 
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(task.id, **kwargs)
-            return JsonResponse({'error': False, 'success_url': reverse('tasks:tasks_list')})
+            success_url = reverse('tasks:tasks_list')
+            if request.POST.get('from_account'):
+                success_url = reverse('accounts:view_account', args=(request.POST.get('from_account'),))
+            return JsonResponse({'error': False, 'success_url': success_url})
         else:
             return JsonResponse({'error': True, 'errors': form.errors})
 
@@ -111,7 +117,7 @@ def task_detail(request, task_id):
         attachments = task.tasks_attachment.all()
         comments = task.tasks_comments.all()
         if request.user.is_superuser or request.user.role == 'ADMIN':
-            users_mention = list(User.objects.all().values('username'))
+            users_mention = list(User.objects.filter(is_active=True).values('username'))
         elif request.user != task.created_by:
             users_mention = [{'username': task.created_by.username}]
         else:
@@ -125,6 +131,7 @@ def task_detail(request, task_id):
 @sales_access_required
 def task_edit(request, task_id):
     task_obj = get_object_or_404(Task, pk=task_id)
+    accounts = Account.objects.filter(status="open")
 
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or task_obj.created_by == request.user):
         raise PermissionDenied
@@ -138,13 +145,15 @@ def task_edit(request, task_id):
             users = User.objects.filter(role='ADMIN').order_by('email')
         # form = TaskForm(request_user=request.user)
         form = TaskForm(instance=task_obj, request_user=request.user)
-        return render(request, 'task_create.html', {'form': form, 'task_obj': task_obj, 'users': users})
+        return render(request, 'task_create.html', {'form': form, 'task_obj': task_obj,
+            'users': users, 'accounts':accounts})
 
     if request.method == 'POST':
         form = TaskForm(request.POST, instance=task_obj,
                         request_user=request.user)
         if form.is_valid():
             task = form.save(commit=False)
+            task.save()
             form.save_m2m()
             # task.assigned_to.clear()
             # task.contacts.clear()
@@ -158,7 +167,10 @@ def task_edit(request, task_id):
                         task.assigned_to.add(user_id)
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(task.id, **kwargs)
-            return JsonResponse({'error': False, 'success_url': reverse('tasks:tasks_list')})
+            success_url = reverse('tasks:tasks_list')
+            if request.POST.get('from_account'):
+                success_url = reverse('accounts:view_account', args=(request.POST.get('from_account'),))
+            return JsonResponse({'error': False, 'success_url': success_url})
         else:
             return JsonResponse({'error': True, 'errors': form.errors})
 
@@ -173,11 +185,9 @@ def task_delete(request, task_id):
 
     if request.method == 'GET':
         task_obj.delete()
-        if request.GET.get('view_account', None):
-            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'))))
 
         if request.GET.get('view_account', None):
-            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'))))
+            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))
         return redirect('tasks:tasks_list')
 
 
@@ -215,6 +225,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
+            "commented_on_arrow": comment.commented_on_arrow,
             "commented_by": comment.commented_by.email
         })
 
@@ -307,6 +318,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
                                     kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display(),
             "created_on": attachment.created_on,
+            "created_on_arrow": attachment.created_on_arrow,
             "created_by": attachment.created_by.email,
             "file_type": attachment.file_type()
         })

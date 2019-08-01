@@ -6,12 +6,12 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
 <link rel="stylesheet" type="text/css"
   href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
-  <style>
-    .form-group label{
-      font-weight: 800;
-      color:black;
-    }
-  </style>
+<style>
+  .form-group label {
+    font-weight: 800;
+    color: black;
+  }
+</style>
 {% endblock %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -42,18 +42,6 @@
                         <span class="error" id="id__invoice_title">{{ form.invoice_title.errors }}</span>
                       </div>
                     </div>
-                    <div class="form-group row">
-                      <label for="inputPassword" class="col-sm-4 col-form-label"
-                        style="margin:auto; padding:inherit;">Invoice
-                        Number{% if form.invoice_number.field.required %}<span class="error_marker"
-                          style="color:red">*</span>{% endif %}</label>
-                      <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="inputPassword" placeholder="79840PM90"> -->
-                        {{ form.invoice_number }}
-                        <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
-
-                      </div>
-                    </div>
                   </div>
                   <div class="col-md-6">
                     <div class="form-group row">
@@ -68,6 +56,21 @@
                       </div>
                     </div>
                   </div>
+
+                  <div class="col-md-12" style="margin: 0; padding: 0;">
+
+                    <div class="form-group row" style="padding:0; margin:0;">
+                      <label for="inputPassword" class="col-sm-3 col-form-label" style="">Invoice
+                        Number{% if form.invoice_number.field.required %}<span class="error_marker" style="color:red">
+                          *</span>{% endif %}</label>
+                      <div class="col-sm-9 pl-0">
+                        <!-- <input type="text" class="form-control" id="inputPassword" placeholder="79840PM90"> -->
+                        {{ form.invoice_number }}
+                        <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- <div class="col-md-6">
                     <div class="form-group row">
                       <label for="id_contacts" class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
@@ -231,6 +234,15 @@
                         <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
                       </div>
                     </div>
+                    <div class="form-group row">
+                      <label for="staticEmail" class="col-sm-4 col-form-label">Accounts</label>
+                      <div class="col-sm-8 pl-0">
+                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        {{form.accounts}}
+                        <span class="error" id="id__accounts">{{ form.accounts.errors }}</span>
+                      </div>
+                    </div>
+                    <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
                   </div>
                   <div class="col-md-12 mt-5">
                     <div class="row pt-0 pb-4">
@@ -296,12 +308,23 @@
       $("#id_assigned_to").select2();
       $('#id_currency').select2();
       $('#id_teams').select2();
+      {% if request.GET.view_account %}
+      $("#id_accounts option[value=" + '{{request.GET.view_account}}' + "]").attr('selected', true);
+      {% endif %}
+      $('#id_accounts').select2();
+
+      {% if invoice_obj %}
+      $('#id_due_date').datetimepicker({
+        'format': 'YYYY-MM-DD',
+      })
+      {% else %}
       var date = new Date();
       var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       $('#id_due_date').datetimepicker({
         'format': 'YYYY-MM-DD',
         minDate: today
       })
+      {% endif %}
 
 
       $('#id_quantity').keyup(calculate);

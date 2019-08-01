@@ -1,6 +1,16 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load thumbnail %}
+{% block extralinks %} 
+<style>
+  .text_ellipsis {
+    width: 16em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+{% endblock %}
 {% block content %}
 {% load common_tags %}
 <!-- <a href="{% url "common:logout" %}"><button class="btn btn-primary" type="button">Logout</button></a> -->
@@ -66,7 +76,11 @@
                 <tbody>
                   {% for account in accounts|slice:"10" %}
                   <tr>
-                    <td><a href="{% url 'accounts:view_account' account.id %}">{{account.name}}</a></td>
+                    <td>
+                      <div class="text_ellipsis">
+                      <a href="{% url 'accounts:view_account' account.id %}">{{account.name}}</a>
+                    </div>
+                    </td>
                     <td style="display: block;">
                       {% for tag in account.tags.all|slice:'3' %}
                       <span class="text-left color{{forloop.counter}} tag_class_acc" id="list_tag"
@@ -139,7 +153,10 @@
                 <tbody>
                   {% for opportunity in opportunities|slice:"10" %}
                   <tr>
-                    <td><a href="{% url 'opportunity:opp_view' opportunity.id %}">{{opportunity.name}}</a></td>
+                    <td>
+                      <div class="text_ellipsis">
+                      <a href="{% url 'opportunity:opp_view' opportunity.id %}">{{opportunity.name}}</a>
+                    </div></td>
                     <td style="display: block;">
                       {% for tag in opportunity.tags.all|slice:'3' %}
                       <span class="text-left color{{forloop.counter}} tag_class_opp" id="list_tag"

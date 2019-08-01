@@ -9,33 +9,33 @@ class UserCreation(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create(
-            first_name="nicole",
-            username='nicole',
-            email="n@mp.com", role="ADMIN")
-        self.user.set_password('navi123')
+            first_name="janeEmail@example.com",
+            username='jane',
+            email="janeEmail@example.com", role="ADMIN")
+        self.user.set_password('password')
         self.user.save()
         self.email = Email.objects.create(
             from_email="admin@micropyramid.com",
-            to_email="nike@micropyramid.com",
-            subject="wish", message="haii",
+            to_email="janeEmail@example.com",
+            subject="subject ", message="message",
             important=False)
-        self.client.login(username='n@mp.com', password='navi123')
+        self.client.login(username='janeEmail@example.com', password='password')
 
 
 class EmailSentEdit(UserCreation, TestCase):
     def test_edit_form_valid(self):
-        form = EmailForm(data={'from_email': "abc@mp.com",
-                               'to_email': "xyz@mp.com",
-                               'subject': "hello hi",
-                               'message': 'simple mail'})
+        form = EmailForm(data={'from_email': "john@doe.com",
+                               'to_email': "jane@doe.com",
+                               'subject': "test subject",
+                               'message': 'test message'})
         # print('yes')
         self.assertTrue(form.is_valid())
 
     def test_edit_form_invalid(self):
-        form = EmailForm(data={'from_email': "abc@mp.com",
+        form = EmailForm(data={'from_email': "john@doe.com",
                                'to_email': "",
-                               'subject': "hello hi",
-                               'message': 'simple mail'})
+                               'subject': "test subject",
+                               'message': 'test message'})
         # print('yes2')
         self.assertFalse(form.is_valid())
 
@@ -62,8 +62,8 @@ class EmailTestCase(UserCreation, TestCase):
     def test_email_send_fail(self):
         url = "/emails/compose/"
         data = {
-            'from_email': "abc@micropyramid.com", 'to_email': "",
-            'subject': 'act', 'message': "Hello"
+            'from_email': "john@doe.com", 'to_email': "",
+            'subject': 'sample subject', 'message': "sample message"
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
@@ -72,11 +72,11 @@ class EmailTestCase(UserCreation, TestCase):
     def test_email_send(self):
         url = "/emails/compose/"
         data = {
-            'from_email': "abc@micropyramid.com", 'to_email': "meg@gmail.com",
-            'subject': 'act', 'message': "Hello"
+            'from_email': "john@doe.com", 'to_email': "jane@doe.com",
+            'subject': 'sample subject', 'message': "sample message"
         }
         response = self.client.post(url, data)
-        get_email = Email.objects.get(subject="wish")
+        get_email = Email.objects.get(subject="sample subject")
         # boo = Email.objects.get(important=True)
         # print('yes')
         self.assertFalse(get_email.important)
@@ -122,12 +122,12 @@ class EmailTestCase(UserCreation, TestCase):
     def test_email_sent_edit_post(self):
         url = "/emails/email_sent_edit/" + str(self.email.pk) + "/"
         data = {
-            'from_email': "abc@micropyramid.com", 'to_email': "meg@gmail.com",
-            'subject': 'act', 'message': "Hello"
+            'from_email': "john@doe.com", 'to_email': "jane@doe.com",
+            'subject': 'subject', 'message': "message"
         }
         data1 = {
-            'from_email': "abc@micropyramid.com", 'to_email': "",
-            'subject': 'act', 'message': "Hello"
+            'from_email': "john@doe.com", 'to_email': "",
+            'subject': 'subject', 'message': "message"
         }
         response = self.client.post(url, data)
         response1 = self.client.post(url, data1)

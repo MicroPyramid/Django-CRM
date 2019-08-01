@@ -13,15 +13,16 @@ from tasks.models import Task
 @task
 def send_email(task_id, domain='demo.django-crm.io', protocol='http'):
     task = Task.objects.filter(id=task_id).first()
+    created_by = task.created_by
     if task:
-        subject = 'CRM Task : {0}'.format(task.title)
+        subject = ' Assigned a task for you .'
         context = {}
         context['task_title'] = task.title
         context['task_id'] = task.id
         context['task_created_by'] = task.created_by
         context["url"] = protocol + '://' + domain + \
                 reverse('tasks:task_detail', args=(task.id,))
-        recipients = task.assigned_to.all()
+        recipients = task.assigned_to.filter(is_active=True)
         if recipients.count() > 0:
             for recipient in recipients:
                 context['user'] = recipient.email

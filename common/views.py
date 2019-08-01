@@ -16,7 +16,7 @@ from django.views.generic import (
 from common.models import (User, Document, Attachments,
                            Comment,
                            APISettings,
-                           Google)
+                           Google, Profile)
 from common.forms import (
     UserForm, LoginForm,
     ChangePasswordForm, PasswordResetEmailForm,
@@ -39,10 +39,15 @@ import boto3
 import botocore
 
 from common.utils import ROLES
-from common.tasks import send_email_user_status, send_email_user_delete, send_email_to_new_user
+from common.tasks import send_email_user_status, send_email_user_delete, send_email_to_new_user, resend_activation_link_to_user
 from teams.models import Teams
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from common.token_generator import account_activation_token
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_text
+from django.utils import timezone
+from django.contrib import messages
 
 
 def handler404(request, exception):
@@ -79,7 +84,9 @@ class HomeView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
         else:
-            accounts = accounts.filter(created_by=self.request.user.id)
+            accounts = accounts.filter(
+                Q(assigned_to__id__in=[self.request.user.id]) |
+                Q(created_by=self.request.user.id))
             contacts = contacts.filter(
                 Q(assigned_to__id__in=[self.request.user.id]) |
                 Q(created_by=self.request.user.id))
@@ -301,7 +308,6 @@ class CreateUserView(AdminRequiredMixin, CreateView):
         kwargs.update({"request_user": self.request.user})
         return kwargs
 
-
     def get_context_data(self, **kwargs):
         context = super(CreateUserView, self).get_context_data(**kwargs)
         context["user_form"] = context["form"]
@@ -370,6 +376,10 @@ class UpdateUserView(LoginRequiredMixin, UpdateView):
             if self.request.is_ajax():
                 data = {'success_url': reverse_lazy(
                     'common:users_list'), 'error': False}
+                if self.request.user.id == user.id:
+                    data = {'success_url': reverse_lazy(
+                        'common:profile'), 'error': False}
+                    return JsonResponse(data)
                 return JsonResponse(data)
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy(
@@ -407,8 +417,9 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         current_site = request.get_host()
+        deleted_by = self.request.user.email
         send_email_user_delete.delay(
-            self.object.email, domain=current_site, protocol=request.scheme)
+            self.object.email, deleted_by=deleted_by, domain=current_site, protocol=request.scheme)
         self.object.delete()
         return redirect("common:users_list")
 
@@ -417,6 +428,7 @@ class PasswordResetView(PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     form_class = PasswordResetEmailForm
     email_template_name = 'registration/password_reset_email.html'
+    html_email_template_name = 'registration/password_reset_email.html'
 
 
 @login_required
@@ -441,7 +453,8 @@ def document_create(request):
                 doc.shared_to.add(*request.POST.getlist('shared_to'))
 
             if request.POST.getlist('teams', []):
-                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                    'teams')).values_list('users', flat=True)
                 assinged_to_users_ids = doc.shared_to.all().values_list('id', flat=True)
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
@@ -460,10 +473,10 @@ def document_create(request):
     return render(request, template_name, context)
 
 
-class DocumentListView(SalesAccessRequiredMixin,LoginRequiredMixin, TemplateView):
+class DocumentListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Document
     context_object_name = "documents"
-    template_name = "doc_list.html"
+    template_name = "doc_list_1.html"
 
     def get_queryset(self):
         queryset = self.model.objects.all()
@@ -533,6 +546,7 @@ class DocumentDeleteView(LoginRequiredMixin, DeleteView):
         self.object.delete()
         return redirect("common:doc_list")
 
+
 @login_required
 @sales_access_required
 def document_update(request, pk):
@@ -559,7 +573,8 @@ def document_update(request, pk):
                 doc.shared_to.add(*request.POST.getlist('shared_to'))
 
             if request.POST.getlist('teams', []):
-                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                    'teams')).values_list('users', flat=True)
                 assinged_to_users_ids = doc.shared_to.all().values_list('id', flat=True)
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
@@ -605,7 +620,8 @@ class DocumentDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailVie
 
 
 def download_document(request, pk):
-    doc_obj = Document.objects.filter(id=pk).last()
+    # doc_obj = Document.objects.filter(id=pk).last()
+    doc_obj = Document.objects.get(id=pk)
     if doc_obj:
         if not request.user.role == 'ADMIN':
             if (not request.user == doc_obj.created_by and
@@ -698,8 +714,9 @@ def change_user_status(request, pk):
         user.is_active = True
     user.save()
     current_site = request.get_host()
+    status_changed_user = request.user.email
     send_email_user_status.delay(
-        pk, domain=current_site, protocol=request.scheme)
+        pk, status_changed_user=status_changed_user, domain=current_site , protocol=request.scheme)
     return HttpResponseRedirect('/users/list/')
 
 
@@ -946,7 +963,12 @@ def google_login(request):
 
         if request.GET.get('state') != '1235dfghjkf123':
             return HttpResponseRedirect(request.GET.get('state'))
-        return HttpResponseRedirect(reverse("common:home"))
+        if user.has_sales_access:
+            return HttpResponseRedirect('/')
+        elif user.has_marketing_access:
+            return redirect('marketing:dashboard')
+        else:
+            return HttpResponseRedirect('/')
     if request.GET.get('next'):
         next_url = request.GET.get('next')
     else:
@@ -977,3 +999,42 @@ def create_lead_from_site(request):
                 return HttpResponse('Lead Created')
     from django.http import HttpResponseBadRequest
     return HttpResponseBadRequest('Bad Request')
+
+
+def activate_user(request, uidb64, token, activation_key):
+    profile = get_object_or_404(Profile, activation_key=activation_key)
+    if profile.user:
+        if timezone.now() > profile.key_expires:
+            resend_url = reverse('common:resend_activation_link', args=(profile.user.id,))
+            link_content = '<a href="{}">click here</a> to resend the activation link.'.format(
+                resend_url)
+            message_content = 'Your activation link has expired, {}'.format(
+                link_content)
+            messages.info(request, message_content)
+            return render(request, 'login.html')
+        else:
+            try:
+                uid = force_text(urlsafe_base64_decode(uidb64))
+                user = User.objects.get(pk=uid)
+            except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+                user = None
+            if user is not None and account_activation_token.check_token(user, token):
+                user.is_active = True
+                user.save()
+                login(request, user)
+                if user.has_sales_access:
+                    return HttpResponseRedirect('/')
+                elif user.has_marketing_access:
+                    return redirect('marketing:dashboard')
+                else:
+                    return HttpResponseRedirect('/')
+                # return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
+            else:
+                return HttpResponse('Activation link is invalid!')
+
+
+def resend_activation_link(request, userId):
+    user = get_object_or_404(User, pk=userId)
+    kwargs = {'user_email': user.email, 'domain': request.get_host(), 'protocol': request.scheme}
+    resend_activation_link_to_user.delay(**kwargs)
+    return HttpResponseRedirect('/')

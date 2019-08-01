@@ -2,6 +2,7 @@ import io
 import os
 
 import pdfkit
+from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
@@ -18,7 +19,7 @@ from common.tasks import send_email_user_mentions
 from invoices.forms import (InvoiceAddressForm, InvoiceAttachmentForm,
                             InvoiceCommentForm, InvoiceForm)
 from invoices.models import Invoice
-from invoices.tasks import send_email, send_invoice_email, send_invoice_email_cancel
+from invoices.tasks import send_email, send_invoice_email, send_invoice_email_cancel, create_invoice_history
 from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 from teams.models import Teams
@@ -31,10 +32,11 @@ def invoices_list(request):
     if request.user.role == 'ADMIN' or request.user.is_superuser:
         users = User.objects.all()
     elif request.user.google.all():
-        users = User.objects.none()
+        # users = User.objects.none()
+        # users = User.objects.filter(id=request.user.id)
+        users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
     elif request.user.role == 'USER':
-        users = User.objects.filter(role='ADMIN')
-
+        users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
     status = (
         ('Draft', 'Draft'),
         ('Sent', 'Sent'),
@@ -53,6 +55,11 @@ def invoices_list(request):
         context['invoices'] = invoices.order_by('id')
         context['status'] = status
         context['users'] = users
+        user_ids = list(invoices.values_list('created_by', flat=True))
+        user_ids.append(request.user.id)
+        context['created_by_users'] = users.filter(is_active=True, id__in=user_ids)
+        today = datetime.today().date()
+        context['today'] = today
         return render(request, 'invoices_list.html', context)
 
     if request.method == 'POST':
@@ -87,7 +94,12 @@ def invoices_list(request):
             invoices = invoices.filter(
                 total_amount=request.POST.get('total_amount'))
 
+        user_ids = list(invoices.values_list('created_by', flat=True))
+        user_ids.append(request.user.id)
+        context['created_by_users'] = users.filter(is_active=True, id__in=user_ids)
         context['invoices'] = invoices.distinct().order_by('id')
+        today = datetime.today().date()
+        context['today'] = today
         return render(request, 'invoices_list.html', context)
 
 
@@ -130,8 +142,12 @@ def invoices_create(request):
                     if user_id not in assinged_to_users_ids:
                         invoice_obj.assigned_to.add(user_id)
 
+            create_invoice_history(invoice_obj.id, request.user.id, [])
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(invoice_obj.id, **kwargs)
+            if request.POST.get('from_account'):
+                return JsonResponse({'error': False, 'success_url': reverse('accounts:view_account',
+                    args=(request.POST.get('from_account'),))})
             return JsonResponse({'error': False, 'success_url': reverse('invoices:invoices_list')})
         else:
             return JsonResponse({'error': True, 'errors': form.errors,
@@ -152,9 +168,10 @@ def invoice_details(request, invoice_id):
         context['invoice'] = invoice
         context['attachments'] = invoice.invoice_attachment.all()
         context['comments'] = invoice.invoice_comments.all()
+        context['invoice_history'] = invoice.invoice_history.all()
         if request.user.is_superuser or request.user.role == 'ADMIN':
             context['users_mention'] = list(
-                User.objects.all().values('username'))
+                User.objects.filter(is_active=True).values('username'))
         elif request.user != invoice.created_by:
             context['users_mention'] = [
                 {'username': invoice.created_by.username}]
@@ -191,6 +208,13 @@ def invoice_edit(request, invoice_id):
         to_address_form = InvoiceAddressForm(
             request.POST, instance=invoice_obj.to_address, prefix='to')
         if form.is_valid() and from_address_form.is_valid() and to_address_form.is_valid():
+            form_changed_data = form.changed_data
+            form_changed_data.remove('from_address')
+            form_changed_data.remove('to_address')
+            form_changed_data = form_changed_data + ['from_' + field for field in from_address_form.changed_data]
+            form_changed_data = form_changed_data + ['to_' + field for field in to_address_form.changed_data]
+            # if form_changed_data:
+            #     create_invoice_history(invoice_obj.id, request.user.id, form_changed_data)
             from_address_obj = from_address_form.save()
             to_address_obj = to_address_form.save()
             invoice_obj = form.save(commit=False)
@@ -199,6 +223,8 @@ def invoice_edit(request, invoice_id):
             invoice_obj.to_address = to_address_obj
             invoice_obj.save()
             form.save_m2m()
+            if form_changed_data:
+                create_invoice_history(invoice_obj.id, request.user.id, form_changed_data)
 
             if request.POST.getlist('teams', []):
                 user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
@@ -209,6 +235,9 @@ def invoice_edit(request, invoice_id):
 
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
             send_email.delay(invoice_obj.id, **kwargs)
+            if request.POST.get('from_account'):
+                return JsonResponse({'error': False, 'success_url': reverse('accounts:view_account',
+                    args=(request.POST.get('from_account'),))})
             return JsonResponse({'error': False, 'success_url': reverse('invoices:invoices_list')})
         else:
             return JsonResponse({'error': True, 'errors': form.errors,
@@ -225,6 +254,8 @@ def invoice_delete(request, invoice_id):
 
     if request.method == 'GET':
         invoice.delete()
+        if request.GET.get('view_account'):
+            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))
         return redirect('invoices:invoices_list')
 
 
@@ -324,6 +355,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
+            "commented_on_arrow": comment.commented_on_arrow,
             "commented_by": comment.commented_by.email
         })
 
@@ -416,6 +448,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
                                     kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display(),
             "created_on": attachment.created_on,
+            "created_on_arrow": attachment.created_on_arrow,
             "created_by": attachment.created_by.email,
             "file_type": attachment.file_type()
         })

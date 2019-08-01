@@ -28,7 +28,7 @@
                   <div class="filter_col col-md-3">
                     <div class="form-group">
                       <label for="exampleInputEmail1">Created By</label>
-                      <select name="created_by" id="" class="assigned_users_ form-control">
+                      <select name="created_by" id="created_by" class="assigned_users_ form-control">
                         <option value="">
                           ------------------</option>
                         {% for user in users %}
@@ -90,7 +90,7 @@
                   {% endif %}
                   {% for campaign in campaigns_list %}
                   <tr style="text-align:center;">
-                    <td scope="row">
+                    <td scope="row" style="text-align: center;">
                       <!-- <span class="badge badge-primary">Primary</span> -->
                       <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
                     <td class="text-center">{{campaign.get_all_emails_count}}</td>
@@ -164,6 +164,7 @@
       $(".list_filter_row").toggle();
     });
     $('#id_tag').select2();
+    $('#created_by').select2();
 
     $(".remove_account").click(function (e) {
       e.preventDefault()

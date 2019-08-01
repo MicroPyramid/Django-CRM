@@ -12,66 +12,66 @@ class AccountCreateTest(object):
 
     def setUp(self):
         self.user = User.objects.create(
-            first_name="mike", username='mike', email='u@mp.com', role='ADMIN')
-        self.user.set_password('mike2293')
+            first_name="johnAccount", username='johnDoeAccount', email='johnAccount@example.com', role='ADMIN')
+        self.user.set_password('password')
         self.user.save()
 
         self.user1 = User.objects.create(
-            first_name="mp",
-            username='mp',
-            email='mp@micropyramid.com',
+            first_name="jane",
+            username='janeAccount',
+            email='janeAccount@example.com',
             role="USER")
-        self.user1.set_password('mp')
+        self.user1.set_password('password')
         self.user1.save()
 
         self.account = Account.objects.create(
-            name="mike", email="mike@micropyramid.com", phone="8333855552",
-            billing_address_line="", billing_street="KPHB",
-            billing_city="New York",
-            billing_state="usa", billing_postcode="500073",
-            billing_country="IN",
-            website="www.mike.com", created_by=self.user, status="open",
-            industry="SOFTWARE", description="Yes.. Testing Done")
+            name="john doe", email="johndoe@example.com", phone="123456789",
+            billing_address_line="", billing_street="street name",
+            billing_city="city name",
+            billing_state="state", billing_postcode="1234",
+            billing_country="US",
+            website="www.example.como", created_by=self.user, status="open",
+            industry="SOFTWARE", description="Testing")
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem",
+            name="Jane doe", case_type="Problem",
             status="New", account=self.account,
-            priority="Low", description="something",
+            priority="Low", description="case description",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
-            comment='testikd', case=self.case,
+            comment='test comment', case=self.case,
             commented_by=self.user
         )
         self.attachment = Attachments.objects.create(
             attachment='image.png', case=self.case,
             created_by=self.user, account=self.account
         )
-        self.client.login(email='u@mp.com', password='mike2293')
+        self.client.login(email='johnAccount@example.com', password='password')
         self.lead = Lead.objects.create(title="LeadCreation",
-                                        first_name="Alisa",
-                                        last_name="k",
-                                        email="Alisak1993@gmail.com",
+                                        first_name="john lead",
+                                        last_name="doe",
+                                        email="johnLead@example.com",
                                         address_line="",
-                                        street="Arcade enclave colony",
-                                        city="NewTown",
-                                        state="California",
+                                        street="street name",
+                                        city="city name",
+                                        state="state",
                                         postcode="5079",
-                                        country="AD",
-                                        website="www.gmail.com",
+                                        country="IN",
+                                        website="www.example.com",
                                         status="assigned",
                                         source="Call",
                                         opportunity_amount="700",
-                                        description="Iam an Lead",
+                                        description="lead description",
                                         created_by=self.user)
         self.lead.assigned_to.add(self.user)
         self.address = Address.objects.create(
-            street="5th phase",
-            city="Orlando",
-            state="Florida",
-            postcode=502279, country="AD")
+            street="street number",
+            city="city",
+            state="state",
+            postcode=12346, country="IN")
 
         self.contact = Contact.objects.create(
             first_name="contact",
-            email="contact@gmail.com",
+            email="contact@example.com",
             phone="12345",
             address=self.address,
             description="contact",
@@ -82,29 +82,29 @@ class AccountsCreateTestCase(AccountCreateTest, TestCase):
 
     def test_account_create_url(self):
         response = self.client.get('/accounts/create/', {
-            'name': "mike", 'email': "mike@micropyramid.com",
-            'phone': "",
-            'billing_address_line': "",
-            'billing_street': "KPHB",
-            'billing_city': "New York",
-            'billing_state': "usa",
-            'billing_postcode': "500073",
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "1234567891",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
             'billing_country': "IN",
-            'website': "www.mike.com",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing"})
         self.assertEqual(response.status_code, 200)
 
     def test_account_create_html(self):
         response = self.client.get('/accounts/create/', {
-            'name': "mike", 'email': "mike@micropyramid.com", 'phone': "",
+            'name': "account", 'email': "accountEmail@example.com", 'phone': "",
             'billing_address_line': "",
-            'billing_street': "KPHB",
-            'billing_city': "New York",
-            'billing_state': "usa",
-            'billing_postcode': "500073",
+            'billing_street': "",
+            'billing_city': "city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
             'billing_country': "IN",
-            'website': "www.mike.com",
-            'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing Done"})
         self.assertTemplateUsed(response, 'create_account.html')
 
 
@@ -165,17 +165,17 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
     def test_accounts_update(self):
         response = self.client.get(
             '/accounts/' + str(self.account.id) + '/edit/', {
-                'name': "mike",
-                'email': "mike@micropyramid.com", 'phone': "8333855552",
+                'name': "janedoe",
+                'email': "janeDoe@example.com", 'phone': "1234567891",
                 'billing_address_line': "",
-                'billing_street': "KPHB",
-                'billing_city': "New York",
-                'billing_state': "usa",
-                'billing_postcode': "500073",
+                'billing_street': "street",
+                'billing_city': "city",
+                'billing_state': "state",
+                'billing_postcode': "1234",
                 'billing_country': "IN",
-                'website': "www.mike.com",
+                'website': "www.example.com",
                 'industry': "SOFTWARE",
-                'description': "Yes.. Testing Done"})
+                'description': "Test description"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create_account.html')
 
@@ -183,16 +183,16 @@ class AccountsUpdateUrlTestCase(AccountCreateTest, TestCase):
         response = self.client.post(
             '/accounts/' + str(self.account.id) + '/edit/',
             {
-                'name': "dolly", 'email': "dolly@micropyramid.com",
-                'phone': "9555333123",
+                'name': "janeDoe", 'email': "janeDoe@example.com",
+                'phone': "1234567891",
                 'billing_address_line': "",
-                'billing_street': "KPHB",
-                'billing_city': "New York",
-                'billing_state': "usa",
-                'billing_postcode': "500073",
+                'billing_street': "Stree",
+                'billing_city': "city",
+                'billing_state': "state",
+                'billing_postcode': "1234",
                 'billing_country': "IN",
-                'website': "www.dolly.com",
-                'industry': "SOFTWARE", 'description': "Yes.. Testing Done"})
+                'website': "www.example.com",
+                'industry': "SOFTWARE", 'description': "Testing Description"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create_account.html')
 
@@ -214,10 +214,10 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
                 'website': "", 'industry': "",
                 'description': "",
                 'billing_address_line': "",
-                'billing_street': "KPHB",
-                'billing_city': "New York",
-                'billing_state': "usa",
-                'billing_postcode': "500073",
+                'billing_street': "",
+                'billing_city': "city",
+                'billing_state': "state",
+                'billing_postcode': "1234567897",
                 'billing_country': "IN"}
         response = self.client.post('/accounts/create/', data)
         self.assertEqual(response.status_code, 200)
@@ -226,7 +226,7 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 class AccountModelTest(AccountCreateTest, TestCase):
 
     def test_string_representation(self):
-        account = Account(name="My entry title", )
+        account = Account(name="Account name", )
         self.assertEqual(str(account), account.name)
 
     def setUp(self):
@@ -290,7 +290,7 @@ class CommentTestCase(AccountCreateTest, TestCase):
 class AttachmentTestCase(AccountCreateTest, TestCase):
 
     def test_attachment_add(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='janeAccount@example.com', password='password')
         response = self.client.post(
             '/accounts/attachment/add/', {'accountid': self.account.id})
         self.assertEqual(response.status_code, 200)
@@ -310,7 +310,7 @@ class AttachmentTestCase(AccountCreateTest, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_deletion(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='janeAccount@example.com', password='password')
         response = self.client.post(
             '/accounts/attachment/remove/',
             {'attachment_id': self.attachment.id})
@@ -336,20 +336,20 @@ class TestCreateLeadPostView(AccountCreateTest, TestCase):
     def test_create_lead_post_status(self):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post(reverse(
-            'accounts:new_account'), {"name": "mike",
-                                      "email": "mike@micropyramid.com",
-                                      "phone": "+91-833-385-5552",
-                                      "billing_address_line": "sddsv",
-                                      "billing_street": "KPHB",
-                                      "billing_city": "New York",
+            'accounts:new_account'), {"name": "janeLead",
+                                      "email": "janeLead@example.com",
+                                      "phone": "+911234567891",
+                                      "billing_address_line": "address line",
+                                      "billing_street": "street name",
+                                      "billing_city": "city name",
                                       "billing_state": "usa",
-                                      "billing_postcode": "500073",
+                                      "billing_postcode": "1234",
                                       "billing_country": "IN",
-                                      "website": "www.mike.com",
+                                      "website": "www.example.com",
                                       "created_by": self.user,
                                       "status": "open",
                                       "industry": "SOFTWARE",
-                                      "description": "Yes.. Testing Done",
+                                      "description": "Test description",
                                       "lead": str(self.lead.id),
                                       'contacts': str(self.contact.id),
                                       'tags': 'tag1',
@@ -363,24 +363,24 @@ class TestCreateLeadPostView(AccountCreateTest, TestCase):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post(reverse(
             'accounts:edit_account', kwargs={'pk': self.account.id}),
-            {"name": "mike",
-             "email": "mike@micropyramid.com",
-             "phone": "+91-833-385-5552",
-             "billing_address_line": "sddsv",
-             "billing_street": "KPHB",
-             "billing_city": "New York",
-             "billing_state": "usa",
-             "billing_postcode": "500073",
+            {"name": "janedoeLead",
+             "email": "janelead@example.com",
+             "phone": "91123456789",
+             "billing_address_line": "",
+             "billing_street": "stree",
+             "billing_city": "city",
+             "billing_state": "state name",
+             "billing_postcode": "123456",
              "billing_country": "IN",
-             "website": "www.mike.com",
+             "website": "www.example.com",
              "created_by": self.user,
              "status": "open",
              "industry": "SOFTWARE",
-             "description": "Yes.. Testing Done",
+             "description": "Testing Description",
              "lead": str(self.lead.id),
              'contacts': str(self.contact.id),
              'tags': 'tag1',
              'account_attachment': SimpleUploadedFile(
                  upload_file.name, upload_file.read())
              })
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)

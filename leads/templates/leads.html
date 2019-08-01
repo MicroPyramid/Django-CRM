@@ -5,10 +5,18 @@
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 <style>
-    .form-group label{
-      font-weight: 800;
-    }
-  </style>
+  .form-group label {
+    font-weight: 800;
+  }
+
+  .add_opacity {
+    opacity: 0.2;
+  }
+
+  .opacity_block {
+    opacity: 0.2;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -16,12 +24,14 @@
   <!-- heading_create starts here -->
   <div class="row marl">
     <div class="col-lg-12 text-right">
+      <span class="d-inline"><a class="primary_btn btn-info edit" data-toggle="modal" data-target="#uploadleadfile"
+          href="#"><i class="fas fa-upload"></i>Upload Lead csv file</a></span>
       <span class="d-inline"><a class="primary_btn" href="{% url 'leads:add_lead'%}"><i class="fa fa-plus"></i> Add New
           Lead</a></span>
     </div>
   </div>
   <!-- heading_create ends here -->
-  <div class="filter_row list_filter_row row marl">
+  <div class="filter_row list_filter_row row marl" id="opacity_block">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
@@ -131,10 +141,11 @@
                         <th width="5%">ID</th>
                         <th width="10%">Title</th>
                         <th width="8%">Created By</th>
-                        <th width="10%">Source</th>
-                        <th width="10%">Status</th>
-                        <th width="20%">Assigned To</th>
+                        <th width="5%">Source</th>
+                        <th width="5%">Status</th>
+                        <th width="15%">Assigned To</th>
                         <th width="15%">Tags</th>
+                        <th width="5%">Country </th>
                         <th width="10%">Created On</th>
                         <th width="10%">Actions</th>
                       </tr>
@@ -198,16 +209,31 @@
                           {% endwith %}
                         </td>
                         <td>
-                          {% with tags=lead.tags.all %}
-                          {% if tags %}
-                          {% for tag in tags %}
-                          <span class="text-left color{{forloop.counter}} tag_class_lead" data-link="{{tag.id}}" style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
-                          {% endfor %}
-                          {% else %}
-                          No Tags
-                          {% endif %}
-                          {% endwith %}
+                          <div class="tag_content" id="leadtag{{lead.id}}" data-leadTagContent="{{lead.id}}">
+                            {% with tags=lead.tags.all %}
+                            {% if tags %}
+                            {% for tag in tags %}
+                            <span style="cursor: pointer;" class="tag_class_lead_" data-leadTag="{{lead.id}}{{tag.id}}">
+                              <span class="text-left color{{forloop.counter}}" id="list_tag">
+                                <span data-link="{{tag.id}}" class="tag_class_lead">
+                                  {{ tag.name }}
+                                </span>
+                                <span class="remove_tag" data-tag={{tag.id}} data-lead="{{lead.id}}"><i
+                                    class="fas fa-times" style="color: rgb(255, 255, 255);"></i></span>
+                              </span>
+                            </span>
+                            {% endfor %}
+                            <!-- <span title="Update Tags" data-toggle="modal" data-target=".modal_tags{{lead.id}}"><i
+                              class="fas fa-pencil-alt"></i></span> -->
+                            {% else %}
+                            No Tags
+                            {% endif %}
+                            {% endwith %}
+                            <!-- <span class="ml-2" title="Update Tags" data-toggle="modal"
+                              data-target=".modal_tags{{lead.id}}"><i class="fas fa-plus"></i></span> -->
+                          </div>
                         </td>
+                        <td>{{ lead.country }}</td>
                         <td title="{{ lead.created_on }}">{{ lead.created_on_arrow }}</td>
                         <td class="actions">
                           <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
@@ -251,9 +277,10 @@
                         <th width="5%">ID</th>
                         <th width="10%">Title</th>
                         <th width="10%">Source</th>
-                        <th width="10%">Status</th>
+                        <th width="5%">Status</th>
                         <th width="20%">Assigned User</th>
                         <th width="20%">Tags</th>
+                        <th width="5%">Country</th>
                         <th width="15%">Created On</th>
                         <th width="10%">Actions</th>
                       </tr>
@@ -293,17 +320,32 @@
                           {% endwith %}
                         </td>
                         <td>
-                          {% with tags=lead.tags.all %}
-                          {% if tags %}
-                          {% for tag in tags %}
-                          <span class="text-left color{{forloop.counter}} tag_class_lead" data-link="{{tag.id}}" style="cursor: pointer;" id="list_tag">{{ tag.name }}</span>
-                          {% endfor %}
-                          {% else %}
-                          No Tags
-                          {% endif %}
-                          {% endwith %}
+                          <div class="tag_content" id="leadtag{{lead.id}}" data-leadTagContent="{{lead.id}}">
+                            {% with tags=lead.tags.all %}
+                            {% if tags %}
+                            {% for tag in tags %}
+                            <span style="cursor: pointer;" class="tag_class_lead_" data-leadTag="{{lead.id}}{{tag.id}}">
+                              <span class="text-left color{{forloop.counter}}" id="list_tag">
+                                <span data-link="{{tag.id}}" class="tag_class_lead">
+                                  {{ tag.name }}
+                                </span>
+                                <span class="remove_tag" data-tag={{tag.id}} data-lead="{{lead.id}}"><i
+                                    class="fas fa-times" style="color: rgb(255, 255, 255);"></i></span>
+                              </span>
+                            </span>
+                            {% endfor %}
+                            <!-- <span title="Update Tags" data-toggle="modal" data-target=".modal_tags{{lead.id}}"><i
+                                  class="fas fa-pencil-alt"></i></span> -->
+                            {% else %}
+                            No Tags
+                            {% endif %}
+                            {% endwith %}
+                            <!-- <span class="ml-2" title="Update Tags" data-toggle="modal"
+                                  data-target=".modal_tags{{lead.id}}"><i class="fas fa-plus"></i></span> -->
+                          </div>
                         </td>
-                        <td>{{ lead.created_on }}</td>
+                        <td>{{ lead.country }}</td>
+                        <td title="{{ lead.created_on_arrow }}">{{ lead.created_on_arrow }}</td>
                         <td class="actions">
                           <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
                               class="fas fa-eye"></i></a>
@@ -334,9 +376,39 @@
   </div>
 </div>
 
-
-
 {% for lead_record in open_leads %}
+
+{% comment %}
+<!-- modal for editing and deleting tags -->
+
+<div class="modal fade bd-example-modal-lg modal_tags{{lead_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="mySmallModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="padding:20px 50px;">
+        <h4><span class="glyphicon glyphicon-lock"></span>Update Tags</h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:20px 50px;">
+        <form role="form" id="" method="POST" action="{% url 'leads:update_lead_tags' lead_record.id %}">
+          <div class="form-group">
+            <label>Tags</label>
+            <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1"
+                value="{% for t in lead_record.tags.all %}{{t.name}}, {% endfor %}" class="tags tags_1" />
+            </div>
+          </div>
+          <input type="hidden" name="full_path" value="{{request.get_full_path}}">
+          <div class="text-center">
+            <button id="" class="btn btn-success">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal for editing and deleting tags -->
+{% endcomment %}
 
 <div class="modal fade" id="exampleModalCenter_lead{{lead_record.id}}" tabindex="-1" role="dialog"
   aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -354,7 +426,7 @@
           <div class="col-md-12" id="">
             <div class="card">
 
-              <div class="card-body" id="datashow">
+              <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                 <div class="card-title text-right">
                   <h5>
                     <!-- <span class="float-left title">Overview</span> -->
@@ -464,19 +536,20 @@
                         {% endif %}
                       </div>
                     </div>
+                  </div>
+                  <div class="col-md-12">
+                    {% if lead_record.description %}
                     <div class="filter_col col-md-12">
-                      {% if lead_record.description %}
                       <div class="form-group">
                         <label class="lead_field_label" for="id_description" data-name="name">Description</label>
                         <div class="lead_field" id="lead_description" data-name="name">{{ lead_record.description }}
                         </div>
                       </div>
-                      {% endif %}
                     </div>
-                  </div>
-                  <div class="col-md-12">
+                    {% endif %}
                     <div class="created_information">
-                      Created by <b>{{ lead_record.created_by }}</b> created on <b>{{ lead_record.created_on }}</b>
+                      Created by <b>{{ lead_record.created_by }}</b> created on <b
+                        title="{{ lead_record.created_on }}">{{ lead_record.created_on_arrow }}</b>
                     </div>
                   </div>
                 </div>
@@ -501,6 +574,38 @@
 
 {% for lead_record in close_leads %}
 
+
+<!-- modal for editing and deleting tags -->
+
+<div class="modal fade bd-example-modal-lg modal_tags{{lead_record.id}}" tabindex="-1" role="dialog"
+  aria-labelledby="mySmallModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="padding:20px 50px;">
+        <h4><span class="glyphicon glyphicon-lock"></span>Update Tags</h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:20px 50px;">
+        <form role="form" id="" method="POST" action="{% url 'leads:update_lead_tags' lead_record.id %}">
+          <div class="form-group">
+            <label>Tags</label>
+            <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1"
+                value="{% for t in lead_record.tags.all %}{{t.name}}, {% endfor %}" class="tags tags_1" />
+            </div>
+          </div>
+          <input type="hidden" name="full_path" value="{{request.get_full_path}}">
+          <div class="text-center">
+            <button id="" class="btn btn-success">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal for editing and deleting tags -->
+
+
 <div class="modal fade" id="exampleModalCenter_lead{{lead_record.id}}" tabindex="-1" role="dialog"
   aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
@@ -517,7 +622,7 @@
           <div class="col-md-12" id="">
             <div class="card">
 
-              <div class="card-body" id="datashow">
+              <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                 <div class="card-title text-right">
                   <h5>
                     <!-- <span class="float-left title">Overview</span> -->
@@ -627,19 +732,20 @@
                         {% endif %}
                       </div>
                     </div>
+                  </div>
+                  <div class="col-md-12">
+                    {% if lead_record.description %}
                     <div class="filter_col col-md-12">
-                      {% if lead_record.description %}
                       <div class="form-group">
                         <label class="lead_field_label" for="id_description" data-name="name">Description</label>
                         <div class="lead_field" id="lead_description" data-name="name">{{ lead_record.description }}
                         </div>
                       </div>
-                      {% endif %}
                     </div>
-                  </div>
-                  <div class="col-md-12">
+                    {% endif %}
                     <div class="created_information">
-                      Created by <b>{{ lead_record.created_by }}</b> created on <b>{{ lead_record.created_on }}</b>
+                      Created by <b>{{ lead_record.created_by }}</b> created on <b
+                        title="{{ lead_record.created_on }}">{{ lead_record.created_on_arrow }}</b>
                     </div>
                   </div>
                 </div>
@@ -655,33 +761,178 @@
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary">Save changes</button>
       </div> -->
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+      style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
+
+      <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
+        <span class="sr-only">Processing File...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endfor %}
+
+<div class="modal fade" id="uploadleadfile" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Upload Leads CSV File</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form action="" method="POST" enctype="multipart/form-data">
+          <div class="filter_col col-md-12">
+            <div class="form-group">
+              <label>Leads File <span class="error">{% if contact_list %}{% else %}*{% endif %}</span>
+              </label>
+              <input type="file" class="form-control" name="leads_file" accept=".csv" id="leads_file_input">
+              <span id="id_leads_file"></span>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="row marl buttons_row text-center form_btn_row">
+              <button type="submit" class="btn btn-default save">Save</button>
+              <button type="button" class="btn btn-default clear" data-dismiss="modal"
+                id="close_upload_form">Cancel</button>
+              <!-- <a href="{{request.get_full_path}}" class="btn btn-default clear">Cancel</a> -->
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer text-center">
+        <div class="text-center">
+          <a href="{% url 'leads:sample_lead_file' %}">Download Sample File</a>
+        </div>
+      </div>
+    </div>
+    <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
+      style="z-index: 1000; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: -16%;">
+      <div class="spinner-border text-primary" style="width: 3em; height: 3em;" role="status" id="spinner_body">
+        <span class="sr-only">Processing File...</span>
+      </div>
+    </div>
   </div>
 </div>
 
 
-{% endfor %}
-
 {% endblock %}
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
+<script src="{% static 'js/ajaxForm.js' %}"></script>
 <script type="text/javascript">
   $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_tag').select2();
+    $('#loading_spinner').hide()
+    $('#spinner_body').hide()
+    $('#tags_1').tagsInput({ width: 'auto' });
+    $('.tags_1').tagsInput({ width: 'auto' });
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+    $('.remove_tag').hide()
   });
 
-  $(".tag_class_lead").click(function () {
-      // $(".tag_class_opp").css('cursor', 'pointer')
-      url = "{% url 'leads:list' %}"
-      url = url + "?tag=" + $(this).attr('data-link')
-      window.location.href = url;
+  $("#uploadleadfile").on("hidden.bs.modal", function () {
+    // put your default event here
+    $('#loading_spinner').hide()
+    $('#spinner_body').hide()
+    $('p.failure').remove();
+    $('#leads_file_input').val('');
+  });
+
+  $(".tag_class_lead_").hover(
+    function () {
+      $('.remove_tag').hide()
+      $(this).find(".remove_tag").show();
+    },
+    function () {
+      $(this).find('.remove_tag').hide();
     });
 
+  $(".tag_class_lead").click(function () {
+    // $(".tag_class_opp").css('cursor', 'pointer')
+    url = "{% url 'leads:list' %}"
+    url = url + "?tag=" + $(this).attr('data-link')
+    window.location.href = url;
+  });
+
+  $(".remove_tag").click(function () {
+    // $(".tag_class_opp").css('cursor', 'pointer')
+    url = "{% url 'leads:list' %}"
+    console.log($(this).attr('data-tag'))
+    console.log($(this).attr('data-lead'))
+    const data = { 'tag': $(this).attr('data-tag'), 'lead': $(this).attr('data-lead') }
+    const tagToRemove = $(this).attr('data-lead') + $(this).attr('data-tag')
+    const lead = $(this).attr('data-lead')
+    $.ajax({
+      url: "{% url 'leads:remove_lead_tag' %}",
+      type: "POST",
+      data: data,
+      beforeSend: function () {
+        // $('#loading_spinner').show()
+        // $('#opacity_block').addClass('opacity_block')
+      },
+      success: function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          // TODO remove the tag based on attributes
+          $('[data-leadTag="' + tagToRemove + '"]').remove()
+          if ($(('#leadtag' + lead) + '> span').length < 1) {
+            $('#leadtag' + lead).html('No Tags')
+          }
+          setTimeout(() => {
+            alert("Tag Removed")
+          }, 100);
+        }
+      }
+    })
+
+
+    // url = url + "?tag=" + $(this).attr('data-link')
+    // window.location.href = url;
+  });
 
   search = "{{search}}"
+
+  $('#uploadleadfile').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: "{% url 'leads:upload_lead_csv_file' %}",
+    data: $(this).serialize(),
+    beforeSend: function () {
+      $('#loading_spinner').show()
+      $('#spinner_body').show()
+      $('#cover_screen').addClass('add_opacity')
+    },
+    success: function (data) {
+      if (data.error == false) {
+        $('#close_upload_form').click()
+        window.location.reload()
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+          $('#loading_spinner').hide()
+          $('#spinner_body').hide()
+          $('#cover_screen').removeClass('add_opacity')
+
+        }
+      }
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+  });
 
   if (search == 'True') {
     $(".list_filter_row").show();

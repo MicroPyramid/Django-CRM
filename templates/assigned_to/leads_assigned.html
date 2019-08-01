@@ -1,13 +1,13 @@
-{% extends 'root_email_template.html' %}
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
 
-Hello {{ user.get_username }}
+Hi {{ user.get_username }}
 {% endblock heading %}
 
 
 {% block content_body %}
-you are assigned to lead {{ lead.name }}<br>
+{{created_by}} assigned a lead for you - {{ lead.title }}<br>
 {% endblock content_body %}
 
 {% block button_link %}
