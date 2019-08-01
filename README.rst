@@ -93,6 +93,16 @@ Installation
       python manage.py runserver
 
   This will install all the required dependencies for django-crm.
+
+  Then update the settings.py file with your email host server credentials.
+
+   .. code-block:: python
+
+      EMAIL_HOST = <your email host>
+      EMAIL_HOST_USER = <your username>
+      EMAIL_HOST_PASSWORD = <your password>
+
+  These settings allow django-crm to send emails.
   After this download and install the System Requirements.
 
 

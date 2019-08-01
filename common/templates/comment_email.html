@@ -1,11 +1,11 @@
-{% extends 'root_email_template.html' %}
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
-{{name}} mentioned you in a comment
+Hi {{mentioned_user}}
 {% endblock heading %}
 
 {% block content_body %}
-{{comment_description}}
+You have been tagged for the comment posted by {{commented_by}}
 {% endblock content_body %}
 
 {% block button_link %}

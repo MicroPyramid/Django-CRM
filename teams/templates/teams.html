@@ -5,7 +5,7 @@
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 <style>
-  .form-group label{
+  .form-group label {
     font-weight: 800;
   }
 </style>
@@ -40,10 +40,10 @@
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Created By</label>
-                    <select name="created_by" id="" class="assigned_users_ form-control">
+                    <select name="created_by" id="created_by" class="assigned_users_ form-control">
                       <option value="">
                         ------------------</option>
-                      {% for user in users %}
+                      {% for user in created_by_users %}
                       <option value="{{user.id}}" {% if user.id|slugify == request.POST.created_by %} selected=""
                         {% endif %}>
                         {{user.email}}</option>
@@ -127,7 +127,13 @@
                         <td scope="row">{{ forloop.counter }}</td>
                         <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_team{{team.id}}">
                             {{ team.name }} </a></td>
-                        <td>{{ team.description }} </td>
+                        <td class="">
+                          {% if team.description %}
+                          {{ team.description }}
+                          {% else %}
+                          None
+                          {% endif %}
+                        </td>
                         <td>
                           {% with users=team.users.all %}
                           {% for user in users %}
@@ -163,11 +169,11 @@
                           None
                           {% endif %}
                         </td>
-                        <td title="{{ team.created_on|date:'d-m-Y' }}">{{ team.created_on_arrow }}</td>
+                        <td title="{{ team.created_on }}">{{ team.created_on_arrow }}</td>
                         <td class="actions">
                           {% if request.user == team.created_by or request.user.role == 'ADMIN' or reques.user.is_superuser %}
                           <a href="{% url 'teams:team_detail' team.id %}" class="btn btn-info edit"><i
-                            class="fas fa-eye"></i></a>
+                              class="fas fa-eye"></i></a>
                           <a href="{% url 'teams:team_edit' team.id %}" class="btn btn-success edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'teams:team_delete' team.id %}"
@@ -210,22 +216,22 @@
           <div class="">
             <div class="col-md-12">
               <div class="card">
-                <div class="card-body" id="datashow">
-                  <div class="panel-heading card-title view-pad text-center">
+                <div class="card-body" id="datashow" >
+                  <!-- <div class="panel-heading card-title view-pad text-center">
                     <h5>
                       Team
                     </h5>
-                  </div>
+                  </div> -->
                   <div class="row marl no-gutters">
                     <div class="col-md-8">
                       {% if team_obj.name %}
-                      <div class="filter_col col-md-12">
+                      <!-- <div class="filter_col col-md-12">
                         <div class="form-group">
                           <label class="contact_field_label" for="id_title" data-name="title">Name</label>
                           <div class="contact_field" id="doc_title" data-name="name">{{ team_obj.name }}
                           </div>
                         </div>
-                      </div>
+                      </div> -->
                       {% endif %}
                       {% if team_obj.description %}
                       <div class="filter_col col-md-12">
@@ -264,7 +270,7 @@
                       </div>
                       {% endfor %}
                       {% endwith %}
-                      <div class="filter_col col-md-12">
+                      <div class="filter_col col-md-12" style="margin-left: -1em;">
                         <div class="form-group mt-3">
                           <label class="contact_field_label" for="id_created_by" data-name="created_by">Created
                             By</label>
@@ -272,12 +278,12 @@
                             {{ team_obj.created_by }}</div>
                         </div>
                       </div>
-                      <div class="filter_col col-md-12">
+                      <div class="filter_col col-md-12" style="margin-left: -1em;">
                         <div class="form-group">
                           <label class="contact_field_label" for="id_created_on" data-name="created_on">Created
                             On</label>
-                          <div class="contact_field" id="created_on" data-name="created_on">
-                            {{ team_obj.created_on }}</div>
+                          <div class="contact_field" id="created_on" data-name="created_on" title="{{team_obj.created_on}}">
+                            {{ team_obj.created_on_arrow }}</div>
                         </div>
                       </div>
                     </div>
@@ -308,6 +314,7 @@
   $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_tag').select2();
+    $('#created_by').select2();
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });

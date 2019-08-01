@@ -5,10 +5,10 @@
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 <style>
-    .form-group label{
-      font-weight: 800;
-    }
-  </style>
+  .form-group label {
+    font-weight: 800;
+  }
+</style>
 {% endblock %}
 {% block content %}
 <!-- main_container starts here -->
@@ -92,6 +92,7 @@
                   <th width="20%">Assigned To</th>
                   <th width="15%">City</th>
                   <th width="15%">State</th>
+                  <th width="15%">Created On</th>
                   <th width="15%">Actions</th>
                 </tr>
                 {% endif %}
@@ -105,7 +106,8 @@
                 {% for contact in contact_obj_list %}
                 <tr style="text-align:center;">
                   <td scope="row">{{ forloop.counter }}</td>
-                  <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_contact{{contact.id}}">{{contact.first_name}}
+                  <td><a href="#" data-toggle="modal"
+                      data-target="#exampleModalCenter_contact{{contact.id}}">{{contact.first_name}}
                       {{contact.last_name}}</a></td>
                   <td>
                     {% with contact_users=contact.assigned_to.all %}
@@ -140,8 +142,10 @@
                     Not Specified
                     {% endif %}
                   </td>
+                  <td title="{{contact.created_on}}">{{contact.created_on_arrow}}</td>
                   <td class="actions">
-                    <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i
+                        class="fas fa-eye"></i></a>
                     <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     {% if request.user == contact.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
@@ -178,7 +182,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLongTitle">{{ contact_record.first_name }}
-            {{ contact_record.last_name }}</h5>
+          {{ contact_record.last_name }}</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -189,7 +193,7 @@
             <div class="col-md-12" id="">
               <div class="card">
 
-                <div class="card-body" id="datashow">
+                <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
 
                   <div class="card-title text-right">
                     <h5>
@@ -245,20 +249,28 @@
                         </div>
                       </div>
                       <div class="filter_col col-md-12">
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                           {% if contact_record.description %}
                           <label class="contact_field_label" for="id_description" data-name="name">Description</label>
                           <div class="contact_field" id="contact_description" data-name="name">
                             {{ contact_record.description }}
                           </div>
                           {% endif %}
-                        </div>
+                        </div> -->
                       </div>
                     </div>
-                    <div class="col-md-12">
+                    <div class=" ml-2 col-md-12">
+                      <div class="form-group">
+                        {% if contact_record.description %}
+                        <label class="contact_field_label" for="id_description" data-name="name">Description</label>
+                        <div class="contact_field ml-1" id="contact_description" data-name="name">
+                          {{ contact_record.description }}
+                        </div>
+                        {% endif %}
+                      </div>
                       <div class="created_information">
                         Created by <b>{{ contact_record.created_by }}</b> created on
-                        <b>{{ contact_record.created_on }}</b>
+                        <b title="{{ contact_record.created_on }}">{{ contact_record.created_on_arrow }}</b>
                       </div>
                     </div>
                   </div>

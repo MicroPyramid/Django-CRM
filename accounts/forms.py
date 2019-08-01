@@ -43,13 +43,13 @@ class AccountForm(forms.ModelForm):
         # ).exclude(status='closed')
         if request_user.role == 'ADMIN':
             self.fields["lead"].queryset = Lead.objects.filter().exclude(
-                status='closed')
+                status='closed').order_by('title')
             self.fields["contacts"].queryset = Contact.objects.filter()
             self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
             self.fields["teams"].required = False
         else:
             self.fields["lead"].queryset = Lead.objects.filter(
-                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)).exclude(status='closed')
+                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)).exclude(status='closed').order_by('title')
             self.fields["contacts"].queryset = Contact.objects.filter(
                 Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
             self.fields["teams"].required = False
@@ -66,6 +66,7 @@ class AccountForm(forms.ModelForm):
         # lead is not mandatory while editing
         if self.instance.id:
             self.fields['lead'].required = False
+        self.fields['lead'].required = False
 
     class Meta:
         model = Account
@@ -77,7 +78,7 @@ class AccountForm(forms.ModelForm):
 
 
 class AccountCommentForm(forms.ModelForm):
-    comment = forms.CharField(max_length=64, required=True)
+    comment = forms.CharField(max_length=255, required=True)
 
     class Meta:
         model = Comment

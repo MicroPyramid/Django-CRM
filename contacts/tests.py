@@ -15,36 +15,36 @@ class ContactObjectsCreation(object):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create(
-            first_name="Nathan",
-            username='Nathan',
-            email="n@mp.com",
+            first_name="johnContact",
+            username='johnDoeContact',
+            email="johnContact@example.com",
             role="ADMIN")
-        self.user.set_password('navi123')
+        self.user.set_password('password')
         self.user.save()
         self.address = Address.objects.create(
-            street="5th phase",
-            city="Orlando",
-            state="Florida",
-            postcode=502279, country="AD")
+            street="street",
+            city="city name",
+            state="state name",
+            postcode=12345, country="IN")
 
         self.contact = Contact.objects.create(
             first_name="contact",
-            email="contact@gmail.com",
+            email="contact@example.com",
             phone="12345",
             address=self.address,
             description="contact",
             created_by=self.user)
         self.contact.assigned_to.add(self.user)
         self.case = Case.objects.create(
-            name="lucy",
+            name="jane doe case",
             case_type="Problem",
             status="New",
             priority="Low",
-            description="something",
+            description="description for case",
             created_by=self.user,
             closed_on="2016-05-04")
         self.comment = Comment.objects.create(
-            comment='testikd', case=self.case,
+            comment='test comment', case=self.case,
             commented_by=self.user
         )
         self.attachment = Attachments.objects.create(
@@ -53,12 +53,12 @@ class ContactObjectsCreation(object):
         )
 
         self.user_contacts_mp = User.objects.create(
-            first_name="mp",
-            username='mp',
-            email="mp@mp.com",
+            first_name="janeUser@example.com",
+            username='janeUserContact',
+            email="janeUser@example.com",
             role="USER")
 
-        self.client.login(username='n@mp.com', password='navi123')
+        self.client.login(username='johnContact@example.com', password='password')
 
 
 class ContactObjectsCreation_Count(ContactObjectsCreation, TestCase):
@@ -92,10 +92,10 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_create(self):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post('/contacts/create/', {
-            'first_name': 'contact',
-            'last_name': 'george',
-            'email': 'meg@gmail.com',
-            'phone': '+917898901234',
+            'first_name': 'john contact',
+            'last_name': 'doe',
+            'email': 'johnDoeContact@example.com',
+            'phone': '+911234567892',
             'address': self.address.id,
             'description': 'contact',
             'created_by': self.user,
@@ -108,10 +108,10 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contact_create(self):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post('/contacts/create/', {
-            'first_name': 'contact',
-            'last_name': 'george',
-            'email': 'meg@gmail.com',
-            'phone': '+917898901234',
+            'first_name': 'janeDoe',
+            'last_name': 'contact doe',
+            'email': 'janeDoeContact@example.com',
+            'phone': '+911234567892',
             'address': self.address.id,
             'description': 'contact',
             'created_by': self.user,
@@ -125,10 +125,10 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         upload_file = open('static/images/user.png', 'rb')
         url = '/contacts/' + str(self.contact.id) + '/edit/'
         data = {
-            'first_name': 'contact',
-            'last_name': 'george',
-            'email': 'meg@gmail.com',
-            'phone': '+917898901234',
+            'first_name': 'john Contact',
+            'last_name': 'doe',
+            'email': 'johnDoeContact@example.com',
+            'phone': '+911234561255',
             'address': self.address.id,
             'description': 'contact',
             'created_by': self.user,
@@ -141,7 +141,7 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
 
     def test_contacts_create_html(self):
         response = self.client.post('/contacts/create/', {
-            'name': 'contact', 'email': 'contact@gmail.com', 'phone': '12345',
+            'name': 'contact', 'email': 'contact@example.com', 'phone': '12345',
             'address': self.address,
             'description': 'contact'})
         self.assertTemplateUsed(response, 'create_contact.html')
@@ -164,8 +164,8 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_edit(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/edit/', {
-                'name': 'Preston',
-                'email': 'contact@gmail.com',
+                'name': 'contact name',
+                'email': 'contact@example.com',
                 'phone': '12345',
                 'pk': self.contact.id,
                 'address': self.address.id})
@@ -174,8 +174,8 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
     def test_contacts_edit_html(self):
         response = self.client.post(
             '/contacts/' + str(self.contact.id) + '/edit/', {
-                'name': 'Preston',
-                'email': 'contact@gmail.com',
+                'name': 'contact Name',
+                'email': 'contact@example.com',
                 'phone': '12345',
                 'pk': self.contact.id,
                 'address': self.address.id})
@@ -208,26 +208,26 @@ class ContactsListTestCase(ContactObjectsCreation, TestCase):
         self.assertTemplateUsed(response, 'contacts.html')
 
     def test_contacts_list_queryset(self):
-        data = {'fist_name': 'contact',
-                'city': "Orlando", 'phone': '12345',
-                'email': "contact@gmail.com", 'assigned_to': str(self.user.id)}
+        data = {'fist_name': 'jane contact',
+                'city': "city name", 'phone': '12345',
+                'email': "contact@example.com", 'assigned_to': str(self.user.id)}
         response = self.client.post(reverse('contacts:list'), data)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'contacts.html')
 
     def test_contacts_list_user_role(self):
-        self.client.login(username='mp@mp.com', password='mp')
+        self.client.login(username='janeUser@example.com', password='password')
         self.contact = Contact.objects.create(
-            first_name="contactmp",
-            email="contact@gmmpail.com",
+            first_name="jane contact",
+            email="janecontact@example.com",
             created_by=self.user_contacts_mp)
         response = self.client.get(reverse('contacts:list'))
         self.assertEqual(response.status_code, 200)
         self.contact.delete()
 
         response = self.client.post(
-            reverse('contacts:list'), {'first_name': 'contactmp', 'assigned_to': str(self.user.id)})
+            reverse('contacts:list'), {'first_name': 'john contact', 'assigned_to': str(self.user.id)})
         self.assertEqual(response.status_code, 200)
 
 
@@ -249,7 +249,7 @@ class CommentTestCase(ContactObjectsCreation, TestCase):
         self.assertEqual(response.status_code, 200)
         resp = self.client.post(
             '/contacts/comment/edit/',
-            {'commentid': self.comment.id, 'comment': 'hello123'})
+            {'commentid': self.comment.id, 'comment': 'test comment'})
         self.assertEqual(resp.status_code, 200)
 
     def test_comment_delete(self):
@@ -260,7 +260,7 @@ class CommentTestCase(ContactObjectsCreation, TestCase):
     def test_form_valid(self):
         response = self.client.post(
             '/contacts/comment/add/', {'contactid': self.contact.id,
-                                       'comment': 'hello'})
+                                       'comment': 'test comment'})
         # print(response , "response")
         self.assertEqual(response.status_code, 200)
 
@@ -292,25 +292,25 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
     def test_create_new_contact(self):
         upload_file = open('static/images/user.png', 'rb')
         response = self.client.post('/contacts/create/', {
-            'first_name': 'contact',
-            'last_name': 'george',
-            'email': 'meg@gmail.com',
-            'phone': '+917898901234',
+            'first_name': 'john doe contact',
+            'last_name': 'doe',
+            'email': 'johnDContact@example.com',
+            'phone': '+911234561256',
             'address': self.address.id,
             'description': 'contact',
             'created_by': self.user,
             'assigned_to': str(self.user.id),
             'savenewform': True,
-            'address_line': 'address one'
+            'address_line': 'address line'
         })
         self.assertEqual(response.status_code, 302)
 
     def test_contact_detail_view_error(self):
-        self.client.login(username='mp@mp.com', password='mp')
+        self.client.login(username='janeUser@example.com', password='password')
         self.contact = Contact.objects.create(created_by=self.user)
 
     def test_contact_update_view(self):
-        self.client.login(username='n@mp.com', password='navi123')
+        self.client.login(username='johnContact@example.com', password='password')
         response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)), {
             'first_name': 'first name',
             'last_name': 'last name',
@@ -321,7 +321,7 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
         self.assertEqual(200, response.status_code)
 
     def test_contact_update_view_assigned_Users(self):
-        self.client.login(username='n@mp.com', password='navi123')
+        self.client.login(username='johnContact@example.com', password='password')
         response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)), {
             'first_name': 'first name',
             'last_name': 'last name',
@@ -341,17 +341,17 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
 
     def test_contact_update_view_error(self):
         self.usermp1 = User.objects.create(
-            first_name="mp1",
-            username='mp1',
-            email="mp1@mp.com",
+            first_name="janeDoe@example.com",
+            username='janeDoe',
+            email="janeDoe@example.com",
             role="USER")
-        self.usermp1.set_password('mp')
+        self.usermp1.set_password('password')
         self.usermp1.save()
         self.contact = Contact.objects.create(
-            first_name="contactmp",
-            email="contact@gmmpail.com",
+            first_name="jane doe contact",
+            email="contactJaneDoe@example.com",
             created_by=self.user_contacts_mp)
-        self.client.login(username='mp1@mp.com', password='mp')
+        self.client.login(username='janeDoe@example.com', password='password')
         response = self.client.get(
             reverse('contacts:edit_contact', args=(self.contact.id,)), {})
         self.assertEqual(403, response.status_code)

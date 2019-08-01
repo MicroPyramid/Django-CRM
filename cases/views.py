@@ -205,7 +205,7 @@ class CaseDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
             assigned_data.append(assigned_dict)
 
         if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
-            users_mention = list(User.objects.all().values('username'))
+            users_mention = list(User.objects.filter(is_active=True).values('username'))
         elif self.request.user != context['object'].created_by:
             users_mention = [{'username': context['object'].created_by.username}]
         else:
@@ -348,16 +348,16 @@ class RemoveCaseView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
         self.object = get_object_or_404(Case, id=case_id)
-        if request.GET.get('view_account'):
-            account = request.GET.get('view_account')
-            return redirect("accounts:view_account", pk=account)
         if (
             self.request.user.role == "ADMIN" or
             self.request.user.is_superuser or
             self.request.user == self.object.created_by
         ):
             self.object.delete()
-            return redirect("cases:list")
+        if request.GET.get('view_account'):
+            account = request.GET.get('view_account')
+            return redirect("accounts:view_account", pk=account)
+        return redirect("cases:list")
         raise PermissionDenied
 
     def post(self, request, *args, **kwargs):
@@ -445,6 +445,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
+            "commented_on_arrow": comment.commented_on_arrow,
             "commented_by": comment.commented_by.email
         })
 
@@ -547,6 +548,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
             reverse('common:download_attachment',
                     kwargs={'pk': attachment.id}),
             "created_on": attachment.created_on,
+            "created_on_arrow": attachment.created_on_arrow,
             "created_by": attachment.created_by.email,
             "message": "attachment Created",
             "attachment_display": attachment.get_file_type_display(),

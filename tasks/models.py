@@ -1,3 +1,4 @@
+import arrow
 from django.db import models
 from common.models import User
 from accounts.models import Account
@@ -25,7 +26,7 @@ class Task(models.Model):
     priority = models.CharField(
         _("priority"), max_length=50, choices=PRIORITY_CHOICES)
     due_date = models.DateField(blank=True, null=True)
-
+    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     account = models.ForeignKey(
         Account, related_name='accounts_tasks', null=True, blank=True, on_delete=models.SET_NULL)
 
@@ -40,6 +41,10 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
 
     class Meta:
         ordering = ['-due_date']

@@ -17,7 +17,7 @@ from leads.models import Lead
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
-from accounts.tasks import send_email
+from accounts.tasks import send_email, send_email_to_assigned_user
 from common.tasks import send_email_user_mentions
 from django.contrib.sites.shortcuts import get_current_site
 from common.access_decorators_mixins import (
@@ -32,7 +32,8 @@ class AccountsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateVie
     def get_queryset(self):
         queryset = self.model.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            queryset = queryset.filter(created_by=self.request.user.id)
+            queryset = queryset.filter(
+                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)).distinct()
 
         if self.request.GET.get('tag', None):
             queryset = queryset.filter(tags__in = self.request.GET.getlist('tag'))
@@ -164,6 +165,11 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                 if user_id not in assinged_to_users_ids:
                     account_object.assigned_to.add(user_id)
 
+        assigned_to_list = list(account_object.assigned_to.all().values_list('id', flat=True))
+        current_site = get_current_site(self.request)
+        recipients = assigned_to_list
+        send_email_to_assigned_user.delay(recipients, account_object.id, domain=current_site.domain,
+            protocol=self.request.scheme)
 
         if self.request.POST.get("savenewform"):
             return redirect("accounts:new_account")
@@ -188,10 +194,11 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
         context["users"] = self.users
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
-        context["contact_count"] = Contact.objects.count()
+        # context["contact_count"] = Contact.objects.count()
         if self.request.user.role == 'ADMIN':
             context["leads"] = Lead.objects.exclude(
                 status__in=['converted', 'closed'])
+            context["contacts"] = Contact.objects.all()
         else:
             context["leads"] = Lead.objects.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(
@@ -200,6 +207,9 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='closed').count()
+            context["contacts"] = Contact.objects.filter(
+                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
+        context["contact_count"] = context["contacts"].count()
         return context
 
 
@@ -212,7 +222,8 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
         context = super(AccountDetailView, self).get_context_data(**kwargs)
         account_record = context["account_record"]
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user != account_record.created_by:
+            if not ((self.request.user == account_record.created_by) or
+                (self.request.user in account_record.assigned_to.all())):
                 raise PermissionDenied
 
         comment_permission = True if (
@@ -221,9 +232,12 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
         ) else False
 
         if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
-            users_mention = list(User.objects.all().values('username'))
+            users_mention = list(User.objects.filter(is_active=True).values('username'))
         elif self.request.user != account_record.created_by:
-            users_mention = [{'username': account_record.created_by.username}]
+            if account_record.created_by:
+                users_mention = [{'username': account_record.created_by.username}]
+            else:
+                users_mention = []
         else:
             users_mention = []
 
@@ -244,6 +258,7 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
             "case_status": STATUS_CHOICE,
             'comment_permission': comment_permission,
             'tasks':account_record.accounts_tasks.all(),
+            'invoices':account_record.accounts_invoices.all(),
             'users_mention': users_mention,
         })
         return context
@@ -255,12 +270,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
     template_name = "create_account.html"
 
     def dispatch(self, request, *args, **kwargs):
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True).order_by('email')
-        elif request.user.google.all():
-            self.users = []
-        else:
-            self.users = User.objects.filter(role='ADMIN').order_by('email')
+        self.users = User.objects.filter(is_active=True).order_by('email')
+        # if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+        # elif request.user.google.all():
+        #     self.users = []
+        # else:
+        #     self.users = User.objects.filter(role='ADMIN').order_by('email')
         return super(AccountUpdateView, self).dispatch(
             request, *args, **kwargs)
 
@@ -312,6 +327,13 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             attachment.attachment = self.request.FILES.get(
                 'account_attachment')
             attachment.save()
+
+        assigned_to_list = list(account_object.assigned_to.all().values_list('id', flat=True))
+        current_site = get_current_site(self.request)
+        recipients = assigned_to_list
+        send_email_to_assigned_user.delay(recipients, account_object.id, domain=current_site.domain,
+            protocol=self.request.scheme)
+
         if self.request.POST.getlist('teams', []):
             user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
             assinged_to_users_ids = account_object.assigned_to.all().values_list('id', flat=True)
@@ -336,9 +358,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         context = super(AccountUpdateView, self).get_context_data(**kwargs)
         context["account_obj"] = self.object
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user != context['account_obj'].created_by:
+            if ((self.request.user != context['account_obj'].created_by ) and
+                (self.request.user not in context['account_obj'].assigned_to.all())):
                 raise PermissionDenied
         context["account_form"] = context["form"]
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            self.users = self.users.filter(Q(role='ADMIN') | Q(id__in=[self.request.user.id,]))
         context["users"] = self.users
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
@@ -405,6 +430,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
+            "commented_on_arrow": comment.commented_on_arrow,
             "commented_by": comment.commented_by.email
         })
 
@@ -497,6 +523,7 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
                                     kwargs={'pk': attachment.id}),
             "attachment_display": attachment.get_file_type_display(),
             "created_on": attachment.created_on,
+            "created_on_arrow": attachment.created_on_arrow,
             "created_by": attachment.created_by.email,
             "file_type": attachment.file_type()
         })

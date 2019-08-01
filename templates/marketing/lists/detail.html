@@ -82,7 +82,7 @@
             {% if contact_list.failed_contacts.all %}
             <li class="nav-item">
               <a class="nav-link" id="close-tab" data-toggle="tab" href="#failed_contacts" role="tab"
-              aria-controls="close" aria-selected="false">Failed Contacts</a>
+                aria-controls="close" aria-selected="false">Failed Contacts</a>
             </li>
             {% endif %}
           </ul>
@@ -96,8 +96,10 @@
                     <span class="filter_toggle ">
                       <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
-                    <button href="#" class="primary_btn" id="delete_all"
-                      style="background:black; color: white;">Delete</button>
+                    <button href="#" class="primary_btn" id="delete_all" style="background:black; color: white;">Delete
+                      Selected</button>
+                    <button href="#" class="primary_btn" id="delete_all_complete"
+                      style="background:black; color: white;">Delete All</button>
                   </div>
                   <div class="table-responsive table-bordered ">
                     <table class="table">
@@ -171,7 +173,9 @@
                       <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
                     <button href="#" class="primary_btn" id="delete_all_bounced"
-                      style="background:black; color: white;">Delete</button>
+                      style="background:black; color: white;">Delete Selected</button>
+                    <button href="#" class="primary_btn" id="delete_all_bounced_complete"
+                      style="background:black; color: white;">Delete All</button>
                   </div>
                   <div class="table-responsive table-bordered ">
                     <table class="table">
@@ -253,8 +257,9 @@
                   <div class="table-responsive table-bordered ">
                     <span>
                       <h5 class="mt-3 text-center">
-                      <a href="{% url 'marketing:download_failed_contacts' contact_list.id %}"
-                      class="">Download Invalid Contacts</a></span></h5>
+                        <a href="{% url 'marketing:download_failed_contacts' contact_list.id %}" class="">Download
+                          Invalid Contacts</a>
+                    </span></h5>
                   </div>
                 </div>
               </div>
@@ -284,6 +289,8 @@
     $('#id_tag').select2();
     $('#delete_all').hide()
     $('#delete_all_bounced').hide()
+    $('#delete_all_complete').hide()
+    $('#delete_all_bounced_complete').hide()
 
     $(".tag_class_cl").click(function () {
       // $(".tag_class_opp").css('cursor', 'pointer')
@@ -297,9 +304,11 @@
 
       if ($('#check_all').prop('checked')) {
         $('#delete_all').show()
+        $('#delete_all_complete').show()
       }
       else {
         $('#delete_all').hide()
+        $('#delete_all_complete').hide()
       }
     });
 
@@ -313,12 +322,24 @@
       }
     })
 
+    $('#delete_all_complete').click(function(){
+      if (!confirm('Are you sure you want to delete all the {{contacts_list_count}} contacts ?')) {
+        $('#check_all').prop('checked', false)
+        $('.check_delete').prop('checked', false)
+        $('#delete_all').hide()
+        $('#delete_all_complete').hide()
+        return;
+      }
+      window.location.href = "{% url 'marketing:delete_all_contacts' contact_list.id %}"
+    })
+
     $('#delete_all').click(function (e) {
       e.preventDefault()
       if (!confirm('Are you sure you want to delete the selected contacts ?')) {
         $('#check_all').prop('checked', false)
         $('.check_delete').prop('checked', false)
         $('#delete_all').hide()
+        $('#delete_all_complete').hide()
         return;
       }
       $('#delete_all').attr('disabled', 'disabled')
@@ -355,9 +376,11 @@
 
       if ($('#check_all_bounced').prop('checked')) {
         $('#delete_all_bounced').show()
+        $('#delete_all_bounced_complete').show()
       }
       else {
         $('#delete_all_bounced').hide()
+        $('#delete_all_bounced_complete').hide()
       }
     });
 
@@ -371,12 +394,24 @@
       }
     })
 
+    $('#delete_all_bounced_complete').click(function(){
+      if (!confirm('Are you sure you want to delete all the {{bounced_contacts_list_count}} contacts ?')) {
+        $('#check_all_bounced').prop('checked', false)
+        $('.check_delete_bounced').prop('checked', false)
+        $('#delete_all_bounced').hide()
+        $('#delete_all_bounced_complete').hide()
+        return;
+      }
+      window.location.href = "{% url 'marketing:delete_all_contacts' contact_list.id %}?bounced=true"
+    })
+
     $('#delete_all_bounced').click(function (e) {
       e.preventDefault()
       if (!confirm('Are you sure you want to delete the selected contacts ?')) {
         $('#check_all_bounced').prop('checked', false)
         $('.check_delete_bounced').prop('checked', false)
         $('#delete_all_bounced').hide()
+        $('#delete_all_bounced_complete').hide()
         return;
       }
       $('#delete_all_bounced').attr('disabled', 'disabled')

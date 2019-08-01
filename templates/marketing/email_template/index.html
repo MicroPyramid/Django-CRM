@@ -1,6 +1,9 @@
 {% extends 'marketing/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock extralinks %}
 {% block content %}
 {{ block.super }}
 <div class="main_container ml-5 mr-5">
@@ -24,7 +27,7 @@
                   <div class="filter_col col-md-3">
                     <div class="form-group">
                       <label for="exampleInputEmail1">Created By</label>
-                      <select name="created_by" id="" class="assigned_users_ form-control">
+                      <select name="created_by" id="created_by" class="assigned_users_ form-control">
                         <option value="">
                           ------------------</option>
                         {% for user in users %}
@@ -97,8 +100,8 @@
                     <!-- <td><a href="{% url 'marketing:email_template_detail' email_template.id %}" class="a_color"><i
                           class="fas fa-eye"></i> View Template</a></td> -->
                     <td class="actions text-center">
-                      <a href="{% url 'marketing:email_template_detail' email_template.id %}" class="btn btn-info edit"><i
-                          class="fas fa-eye"></i></a>
+                      <a href="{% url 'marketing:email_template_detail' email_template.id %}"
+                        class="btn btn-info edit"><i class="fas fa-eye"></i></a>
                       <a href="{% url 'marketing:email_template_edit' email_template.id %}"
                         class="btn btn-success edit"><i class="fas fa-edit"></i></a>
                       <a href="{% url 'marketing:email_template_delete' email_template.id %}"
@@ -203,6 +206,7 @@
       $(".list_filter_row").toggle();
     });
     $('#id_tag').select2();
+    $('#created_by').select2();
 
     $(".remove_account").click(function (e) {
       e.preventDefault()

@@ -1,3 +1,4 @@
+import arrow
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -81,3 +82,7 @@ class Case(models.Model):
 
     def get_assigned_user(self):
         return User.objects.get(id=self.assigned_to.id)
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()

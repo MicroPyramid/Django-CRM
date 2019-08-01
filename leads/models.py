@@ -60,10 +60,7 @@ class Lead(models.Model):
         ordering = ['-created_on']
 
     def __str__(self):
-        if self.first_name and self.last_name:
-            return self.first_name + self.last_name
-        else:
-            return self.title
+        return self.title
 
     def get_complete_address(self):
         return return_complete_address(self)

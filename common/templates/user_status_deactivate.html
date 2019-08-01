@@ -1,0 +1,15 @@
+{% extends 'root_email_template_new.html' %}
+
+{% block heading %}
+Hi {{email}}
+{% endblock heading %}
+
+{% ifequal 'deactivated' message  %}
+{% block content_body %}
+You account has been deactivated by {{status_changed_user}}. You will receive an email if your account has been
+activated.
+{% endblock content_body %}
+{% block extra_content %}
+Please contact your admin if you have any queries.
+{% endblock extra_content %}
+{% endifequal %}

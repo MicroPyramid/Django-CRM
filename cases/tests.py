@@ -15,54 +15,52 @@ class CaseCreation(object):
 
     def setUp(self):
         self.address = Address.objects.create(
-            street="6th phase",
-            city="LosVegas",
-            postcode="506344",
+            street="street name",
+            city="city name",
+            postcode="1234",
             country='US')
 
         self.user = User.objects.create(
-            first_name="robert",
-            username='robert',
-            email='r@mp.com',
+            first_name="john",
+            username='johnDoeCase',
+            email='johnDoeCase@example.com',
             role="ADMIN")
-        self.user.set_password('robert')
+        self.user.set_password('password')
         self.user.save()
         self.user1 = User.objects.create(
-            first_name="mp",
-            username='mp',
-            email='mp@micropyramid.com',
+            first_name="jane",
+            username='janeDoeCase',
+            email='janeDoeCase@example.com',
             role="USER")
-        self.user1.set_password('mp')
+        self.user1.set_password('password')
         self.user1.save()
-        self.client.login(email='r@mp.com', password='robert')
-
-        self.client.login(email='r@mp.com', password='robert')
+        self.client.login(email='johnDoeCase@example.com', password='password')
 
         self.account = Account.objects.create(
-            name="account",
-            email="account@gmail.com", phone="12345",
+            name="account name",
+            email="account@example.com", phone="12345",
             billing_address_line="",
-            billing_street="6th phase",
-            billing_city="LosVegas",
-            billing_postcode="506344",
+            billing_street="street",
+            billing_city="city",
+            billing_postcode="1234",
             billing_country='US',
-            website="www.account.com", description="account",
+            website="www.example.com", description="account",
             created_by=self.user)
 
         self.contacts = Contact.objects.create(
-            first_name="contact", email="contact@gmail.com", phone="12345",
+            first_name="john doe", email="johnD@example.com", phone="12345",
             description="contact",
             created_by=self.user,
             address=self.address
         )
 
         self.case = Case.objects.create(
-            name="robert", case_type="Problem", status="New",
+            name="case name", case_type="Problem", status="New",
             account=self.account,
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
-            comment='testikd', case=self.case,
+            comment='sample comment', case=self.case,
             commented_by=self.user
         )
         self.attachment = Attachments.objects.create(
@@ -191,24 +189,24 @@ class CaseFormTestCase(CaseCreation, TestCase):
 
     def test_case_creation_same_name(self):
         response = self.client.post('/cases/create/',
-                                    {'name': 'robert',
+                                    {'name': 'john doe',
                                      'case_type': 'type',
                                      'status': 'status',
                                      'account': self.account,
                                      'contacts': [self.contacts.id],
                                      'priority': 'priority',
-                                     'description': 'testingskdjf'})
+                                     'description': 'description content'})
         self.assertEqual(response.status_code, 200)
 
     def test_case_create_valid(self):
         response = self.client.post('/cases/create/',
-                                    {'name': 'name',
+                                    {'name': 'john doe',
                                      'case_type': 'case',
                                      'status': 'status',
                                      'account': self.account,
                                      'contacts': [self.contacts.id],
                                      'priority': 'priotiy',
-                                     'description': 'tejkskjdsa'
+                                     'description': 'description content'
                                      })
         self.assertEqual(response.status_code, 200)
 
@@ -218,7 +216,7 @@ class CaseFormTestCase(CaseCreation, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_comment_add(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='janeDoeCase@example.com', password='password')
         response = self.client.post(
             '/cases/comment/add/', {'caseid': self.case.id})
         self.assertEqual(response.status_code, 200)
@@ -252,7 +250,7 @@ class AttachmentTestCase(CaseCreation, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_creation(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='janeDoeCase@example.com', password='password')
         response = self.client.post(
             '/cases/attachment/add/', {'caseid': self.case.id})
         self.assertEqual(response.status_code, 200)
@@ -263,7 +261,7 @@ class AttachmentTestCase(CaseCreation, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_deletion(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='janeDoeCase@example.com', password='password')
         response = self.client.post(
             '/cases/attachment/remove/', {'attachment_id': self.attachment.id})
         self.assertEqual(response.status_code, 200)
@@ -281,20 +279,20 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
     def test_queryset_for_user(self):
 
         self.usermp = User.objects.create(
-                        first_name="mpmp",
-                        username='mpmp',
-                        email='mpmp@micropyramid.com',
+                        first_name="jane",
+                        username='janeDoe@user.com',
+                        email='janeDoe@user.com',
                         role="USER",
                         has_sales_access=True)
-        self.usermp.set_password('mp')
+        self.usermp.set_password('password')
         self.usermp.save()
 
         self.usermp1 = User.objects.create(
-                        first_name="mpmp1",
-                        username='mpmp1',
-                        email='mpmp1@micropyramid.com',
+                        first_name="john",
+                        username='johnDoe@user.com',
+                        email='johnDoe@user.com',
                         role="USER")
-        self.usermp1.set_password('mp')
+        self.usermp1.set_password('password')
         self.usermp1.save()
 
         self.comment_1 = Comment.objects.create(
@@ -303,32 +301,32 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
         )
 
         self.account_mp = Account.objects.create(
-                            name="mike", email="mike@micropyramid.com", phone="8322855552",
-                            billing_address_line="", billing_street="KPHB",
-                            billing_city="New York",
-                            billing_state="usa", billing_postcode="500073",
+                            name="account name", email="johndoe@account.com", phone="911234567892",
+                            billing_address_line="", billing_street="street name",
+                            billing_city="city name",
+                            billing_state="state name", billing_postcode="1234",
                             billing_country="IN",
-                            website="www.mike.com", created_by=self.usermp, status="open",
-                            industry="SOFTWARE", description="Yes.. Testing Done")
+                            website="www.example.com", created_by=self.usermp, status="open",
+                            industry="SOFTWARE", description="test description")
         self.case_user = Case.objects.create(
-                            name="mp_case", case_type="Problem", status="New",
+                            name="case name", case_type="Problem", status="New",
                             account=self.account_mp,
                             priority="Low", description="something",
                             created_by=self.usermp, closed_on="2016-05-04")
-        self.client.login(email='mpmp@micropyramid.com', password='mp')
+        self.client.login(email='janeDoe@user.com', password='password')
         response = self.client.get(reverse('cases:list'))
         self.assertEqual(response.status_code, 200)
 
 
         self.address = Address.objects.create(
-                        street="5th phase",
-                        city="Orlando",
-                        state="Florida",
-                        postcode=502279, country="AD")
+                        street="street name",
+                        city="city",
+                        state="state",
+                        postcode=1234, country="AD")
 
         self.contact_mp = Contact.objects.create(
-                            first_name="contact_mp",
-                            email="contactmp1@gmail.com",
+                            first_name="jane doe",
+                            email="janeDoe@contact.com",
                             address=self.address,
                             description="contact",
                             created_by=self.usermp)
@@ -353,13 +351,13 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
 
     def test_case_detail_view_error(self):
         self.usermp1 = User.objects.create(
-                        first_name="mpmp3",
-                        username='mpmp3',
-                        email='mpmp3@micropyramid.com',
+                        first_name="joe doe",
+                        username='joedoe',
+                        email='joeDoeCase@user.com',
                         role="USER")
-        self.usermp1.set_password('mp')
+        self.usermp1.set_password('password')
         self.usermp1.save()
-        self.client.login(email='mpmp3@micropyramid.com', password='mp')
+        self.client.login(email='joeDoeCase@user.com', password='password')
         response = self.client.get(reverse('cases:view_case', args=(self.case.id,)))
         self.assertEqual(response.status_code, 403)
 
@@ -400,26 +398,26 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
     def test_permissions(self):
 
         self.user = User.objects.create(
-                        first_name="mpmp6",
-                        username='mpmp6',
-                        email='mpmp6@micropyramid.com',
+                        first_name="joedoe",
+                        username='joedoeCase6@user.com',
+                        email='joedoeCase6@user.com',
                         role="USER")
-        self.user.set_password('mp')
+        self.user.set_password('password')
         self.user.save()
 
         self.case_new = Case.objects.create(
-            name="robert", case_type="Problem", status="New",
+            name="joe doe", case_type="Problem", status="New",
             priority="Low", description="something",
             created_by=self.user, closed_on="2016-05-04")
 
         self.usermp = User.objects.create(
-                        first_name="mpmp7",
-                        username='mpmp7',
-                        email='mpmp7@micropyramid.com',
+                        first_name="joedoe",
+                        username='joedoeCase7@user.com',
+                        email='joedoeCase7@user.com',
                         role="USER")
-        self.usermp.set_password('mp')
+        self.usermp.set_password('password')
         self.usermp.save()
-        self.client.login(username='mpmp7@micropyramid.com', password='mp')
+        self.client.login(username='joedoeCase7@user.com', password='password')
         response = self.client.get(reverse('cases:edit_case', args=(self.case_new.id,)), {
             'name':'some case',
             'status':'New',

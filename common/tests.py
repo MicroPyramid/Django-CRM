@@ -20,49 +20,49 @@ class ObjectsCreation(object):
         #                                 is_admin=True,
         #                                 is_superuser=True, is_active=True)
 
-        self.user_admin = User.objects.create(first_name="admin",
-                                              username='admin',
-                                              email='admin@micropyramid.com',
+        self.user_admin = User.objects.create(first_name="john",
+                                              username='johndoeAdmin',
+                                              email='johndoe@admin.com',
                                               is_staff=True,
                                               is_admin=True,
                                               is_superuser=True,
                                               is_active=True, role='ADMIN')
 
-        self.user_admin.set_password('admin123')
+        self.user_admin.set_password('password')
         self.user_admin.save()
-        self.user = User.objects.create(first_name="paul",
-                                        username='paul',
-                                        email='paul@micropyramid.com',
+        self.user = User.objects.create(first_name="jane",
+                                        username='janedoe',
+                                        email='janedoe@admin.com',
                                         is_staff=True, is_admin=True,
                                         is_superuser=True, is_active=False)
-        self.user.set_password('paul123')
+        self.user.set_password('password')
         self.user.save()
         self.user1 = User.objects.create(
-            first_name="mp",
-            username='mp',
-            email='mp@micropyramid.com',
+            first_name="johnDoeCommon",
+            username='johnDoeCommon',
+            email='johnDoeCommon@user.com',
             role="USER",
             has_sales_access=True)
-        self.user1.set_password('mp')
+        self.user1.set_password('password')
         self.user1.save()
         # self.user
         self.client.login(
-            username='admin@micropyramid.com', password='admin123')
+            username='johndoe@admin.com', password='password')
         self.document = Document.objects.create(
             title="abc", document_file="1.png", created_by=self.user)
 
         self.comment = Comment.objects.create(
-            comment='testikd', user=self.user,
+            comment='comment', user=self.user,
             commented_by=self.user
         )
 
         self.user2 = User.objects.create(
-            first_name="mp2",
-            username='mp2',
-            email='mp2@micropyramid.com',
+            first_name="janeDoeCommon",
+            username='janeDoeCommon',
+            email='janeDoeCommon@user.com',
             role="USER",
             has_sales_access=True)
-        self.user2.set_password('mp')
+        self.user2.set_password('password')
         self.user2.save()
 
 
@@ -106,7 +106,7 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
 
     def test_user_create_invalid(self):
         response = self.client.post('/users/create/', {
-            'email': 'admin@micropyramid.com',
+            'email': 'john@doe.com',
             'first_name': '',
             'last_name': '',
             'username': '',
@@ -117,17 +117,17 @@ class UserCreateTestCase(ObjectsCreation, TestCase):
 class PasswordChangeTestCase(ObjectsCreation, TestCase):
 
     def test_password_change(self):
-        self.client.login(username="admin@micropyramid.com",
-                          password="admin123")
+        self.client.login(username="johndoe@admin.com",
+                          password="password")
         url = "/change-password/"
-        data = {'CurrentPassword': "admin123",
+        data = {'CurrentPassword': "password",
                 'Newpassword': "strongpassword", 'confirm': 'strongpassword'}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
 
     def test_password_invalid(self):
-        self.client.login(username="admin@micropyramid.com",
-                          password="admin123")
+        self.client.login(username="johndoe@admin.com",
+                          password="password")
         url = "/change-password/"
         data = {'CurrentPassword': " ",
                 'Newpassword': "test123", 'confirm': " "}
@@ -137,7 +137,7 @@ class PasswordChangeTestCase(ObjectsCreation, TestCase):
     def change_passsword_by_admin(self):
         response = self.client.post('/change-password-by-admin//', {
             'useer_id': self.user.id,
-            'new_passwoord': "admin123"
+            'new_passwoord': "password"
         })
         self.assertEqual(response.status_code, 302)
 
@@ -156,26 +156,26 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 
     def test_login_post(self):
         self.client.logout()
-        data = {"email": "admin@micropyramid.com", "password": "admin123"}
+        data = {"email": "johndoe@admin.com", "password": "password"}
         response = self.client.post('/login/', data)
         self.assertEqual(response.status_code, 302)
 
     def test_login_get_request(self):
-        data = {"email": "admin@micropyramid.com", "password": "admin123"}
+        data = {"email": "johndoe@admin.com", "password": "password"}
         response = self.client.post('/login/', data)
         self.assertEqual(response.status_code, 302)
 
     def test_login_post_invalid(self):
         self.client.logout()
-        data = {"email": "admin@micropyramid.com", "password": "test123"}
+        data = {"email": "johndoe@admin.com", "password": "test123"}
         response = self.client.post('/login/', data)
         self.assertEqual(response.status_code, 200)
 
     def test_login_inactive(self):
         self.client.logout()
         data = {
-            "email": "admin@micropyramid.com",
-            "password": "admin123",
+            "email": "johndoe@admin.com",
+            "password": "password",
             'is_active': False
         }
         response = self.client.post('/login/', data)
@@ -189,8 +189,8 @@ class LoginViewTestCase(ObjectsCreation, TestCase):
 
     def test_logout(self):
         self.client = Client()
-        self.client.login(username="admin@micropyramid.com",
-                          password="admin123")
+        self.client.login(username="johndoe@admin.com",
+                          password="password")
         response = self.client.get("/logout/")
         self.assertEqual(response.status_code, 302)
 
@@ -199,21 +199,21 @@ class UserTestCase(ObjectsCreation, TestCase):
 
     def test_user_create_url(self):
         response = self.client.get('/users/create/', {
-            'first_name': 'micheal',
-            'last_name': "clark",
-            'username': 'micheal',
-            'email': 'micheal@micropyramid.com',
-            'password': 'micheal123',
+            'first_name': 'john',
+            'last_name': "doe",
+            'username': 'john doe c',
+            'email': 'johnC@doe.com',
+            'password': 'password',
             'role': 'USER'})
         self.assertEqual(response.status_code, 200)
 
     def test_user_create_html(self):
         response = self.client.get('/users/create/', {
-            'first_name': 'micheal',
+            'first_name': 'jane',
             'last_name': "",
-            'username': 'micheal',
+            'username': 'jane doe',
             'email': '',
-            'password': 'micheal123'})
+            'password': 'password'})
 
         self.assertTemplateUsed(response, 'create.html')
 
@@ -224,15 +224,15 @@ class UserListTestCase(ObjectsCreation, TestCase):
         self.users = User.objects.all()
         response = self.client.get('/users/list/')
         # get_img_url = self.users.filter()
-        get_user = User.objects.get(email='admin@micropyramid.com')
+        get_user = User.objects.get(email='johndoe@admin.com')
         self.assertEqual(get_user.email, get_user.__str__())
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
 
     def test_users_list_queryset(self):
         self.user = User.objects.all()
-        data = {'first_name': 'admin', 'username': 'admin',
-                'email': 'admin@micropyramid.com'}
+        data = {'first_name': 'john', 'username': 'johndoeAdmin',
+                'email': 'johndoe@admin.com'}
         response = self.client.post('/users/list/', data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
@@ -254,17 +254,17 @@ class UserUpdateTestCase(ObjectsCreation, TestCase):
 
     def test_users_update(self):
         response = self.client.get('/users/' + str(self.user.id) + '/edit/', {
-            'first_name': "admin",
-            'user_name': 'admin',
-            'email': "admin@micropyramid"})
+            'first_name': "john",
+            'user_name': 'johndoeAdmin',
+            'email': "johndoe@admin.com"})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'create.html')
 
     def test_accounts_update_post(self):
         response = self.client.post('/users/' + str(self.user.id) + '/edit/',
-                                    {'first_name': "micheal",
-                                     'user_name': 'micheal',
-                                     'email': "abc@micropyramid",
+                                    {'first_name': "john",
+                                     'user_name': 'john doe search',
+                                     'email': "johnDoe@search.com",
                                      'role': "USER",
                                      'is_superuser': False})
         self.assertEqual(response.status_code, 200)
@@ -329,22 +329,22 @@ class DocumentDetailView(ObjectsCreation, TestCase):
 class CreateCommentFile(TestCase):
 
     def test_invalid_user_form(self):
-        user1 = User.objects.create(username='robert',
-                                    first_name='robert',
-                                    last_name='clark',
-                                    email='tr@mp.com',
+        user1 = User.objects.create(username='janedoeUser',
+                                    first_name='jane',
+                                    last_name='doe',
+                                    email='janedoeUser@example.com',
                                     role='USER',
                                     profile_pic="",
-                                    password='123')
+                                    password='password')
         data = {'email': user1.email, 'first_name': user1.first_name,
                 'last_name': user1.last_name,
                 'username': user1.username, 'role': user1.role,
                 'profile_pic': user1.profile_pic,
                 'password': user1.password}
         form = UserForm(data=data, request_user=user1)
-        userr = User.objects.get(username='robert')
+        userr = User.objects.get(username='janedoeUser')
         # print(userr)
-        self.assertEqual(len(userr.password), 3)
+        self.assertEqual(len(userr.password), 8)
         self.assertFalse(form.is_valid())
         # self.assertTrue(form.)
 
@@ -473,7 +473,7 @@ class TestViewApiSettings(ObjectsCreation, TestCase):
 class TestDocumentDetailViewPermissionDenied(ObjectsCreation, TestCase):
 
     def test_document_detail_view_permission(self):
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         response = self.client.get(
             reverse('common:view_doc', args=(self.document.id,)))
         self.assertEqual(response.status_code, 403)
@@ -490,7 +490,7 @@ class TestChangePasswordByAdmin(ObjectsCreation, TestCase):
 class TestChangePasswordByAdminPermission(ObjectsCreation, TestCase):
 
     def test_change_password_by_admin_permission(self):
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         response = self.client.post(reverse('common:change_passsword_by_admin'),
                                     {'useer_id': self.user2.id, 'new_passwoord': 'new password'})
         self.assertEqual(response.status_code, 403)
@@ -511,23 +511,23 @@ class TestDocumentCreateForm(ObjectsCreation, TestCase):
 class TestCommentDelete(ObjectsCreation, TestCase):
 
     def test_comment_delete_form(self):
-        self.lead = Lead.objects.create(title="LeadCreation",
-                                        first_name="Alisa",
-                                        last_name="k",
-                                        email="Alisak1993@gmail.com",
+        self.lead = Lead.objects.create(title="Sample lead title",
+                                        first_name="jan doe",
+                                        last_name="doe",
+                                        email="janeDoe@email.com",
                                         address_line="",
-                                        street="Arcade enclave colony",
-                                        city="NewTown",
-                                        state="California",
-                                        postcode="5079",
+                                        street="street name",
+                                        city="city name",
+                                        state="state name",
+                                        postcode="1234",
                                         country="AD",
-                                        website="www.gmail.com",
+                                        website="www.example.com",
                                         status="assigned",
                                         source="Call",
                                         opportunity_amount="700",
-                                        description="Iam an Lead",
+                                        description="description lead",
                                         created_by=self.user_admin)
-        self.comment_user = Comment.objects.create(comment='comment 1',
+        self.comment_user = Comment.objects.create(comment='test comment',
                                                    commented_by=self.user_admin, lead=self.lead)
         response = self.client.post(reverse('common:remove_comment'),
                                     {'comment_id': self.comment_user.id})
@@ -538,23 +538,23 @@ class TestCommentDelete(ObjectsCreation, TestCase):
 class TestCommentEditErrors(ObjectsCreation, TestCase):
 
     def test_comment_edit_form(self):
-        self.lead = Lead.objects.create(title="LeadCreation",
-                                        first_name="Alisa",
-                                        last_name="k",
-                                        email="Alisak1993@gmail.com",
+        self.lead = Lead.objects.create(title="Sample lead title",
+                                        first_name="jan doe",
+                                        last_name="doe",
+                                        email="janeDoe@email.com",
                                         address_line="",
-                                        street="Arcade enclave colony",
-                                        city="NewTown",
-                                        state="California",
-                                        postcode="5079",
+                                        street="street name",
+                                        city="city name",
+                                        state="state name",
+                                        postcode="1234",
                                         country="AD",
-                                        website="www.gmail.com",
+                                        website="www.example.com",
                                         status="assigned",
                                         source="Call",
                                         opportunity_amount="700",
-                                        description="Iam an Lead",
+                                        description="description lead",
                                         created_by=self.user_admin)
-        self.comment_user = Comment.objects.create(comment='comment 1',
+        self.comment_user = Comment.objects.create(comment='comment test',
                                                    commented_by=self.user_admin, lead=self.lead)
         response = self.client.post(reverse('common:edit_comment', args=(self.comment_user.id,)),
                                     {'pk': self.comment_user.id, 'comment': ''})
@@ -562,16 +562,16 @@ class TestCommentEditErrors(ObjectsCreation, TestCase):
                              "error": ['This field is required.']})
 
         response = self.client.post(reverse('common:edit_comment', args=(self.comment_user.id,)),
-                                    {'pk': self.comment_user.id, 'comment': 'asdf'})
+                                    {'pk': self.comment_user.id, 'comment': 'comment'})
 
         self.assertJSONEqual(force_text(response.content), {
-                             "comment_id": self.comment_user.id, "comment": 'asdf'})
+                             "comment_id": self.comment_user.id, "comment": 'comment'})
 
 
 class TestDocumentListUser(ObjectsCreation, TestCase):
 
     def test_doc_list_user(self):
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         response = self.client.get(reverse('common:doc_list'))
         self.assertEqual(response.status_code, 200)
 
@@ -579,7 +579,7 @@ class TestDocumentListUser(ObjectsCreation, TestCase):
 class TestDocumentDelete(ObjectsCreation, TestCase):
 
     def test_document_delete(self):
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         response = self.client.get(
             reverse('common:remove_doc', args=(self.document.id,)))
         self.assertEqual(response.status_code, 403)
@@ -589,7 +589,7 @@ class TestDocumentUpdate(ObjectsCreation, TestCase):
 
     def test_document_update(self):
         response = self.client.get(
-            reverse('common:edit_doc', args=(self.document.id,)), {'title': "abc"})
+            reverse('common:edit_doc', args=(self.document.id,)), {'title': "title name"})
         self.assertEqual(response.status_code, 200)
 
 
@@ -600,11 +600,11 @@ class TestUserUpdate(ObjectsCreation, TestCase):
             reverse('common:edit_user', args=(self.user2.id,)), {})
         self.assertTrue('error' in str(response.content))
         response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {
-            'first_name': 'mp2',
-            'last_name': 'mp22',
-            'username': 'mp2',
+            'first_name': 'janeDoe',
+            'last_name': '',
+            'username': 'jane doe@common',
             'role': 'USER',
-            'email': 'mp2@micropyramid.com',
+            'email': 'janeDoeCommon@user.com',
             'has_sales_access': 'true'
         }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(force_text(response.content), json.dumps(
@@ -620,30 +620,30 @@ class TestUserUpdate(ObjectsCreation, TestCase):
 
     def test_user_update_permissions(self):
         self.user_obj = User.objects.create(
-            first_name="mpo",
-            username='mpo',
-            email='mpo@micropyramid.com',
+            first_name="joe",
+            username='doe',
+            email='joedoe@common.com',
             role="USER")
-        self.user_obj.set_password('mp')
+        self.user_obj.set_password('password')
         self.user_obj.save()
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         response = self.client.post(reverse('common:edit_user', args=(self.user_obj.id,)), {
-            'first_name': 'mp2',
-            'last_name': 'mp22',
-            'username': 'mp222',
+            'first_name': 'joe',
+            'last_name': 'doe',
+            'username': 'joe d',
             'role': 'USER',
-            'email': 'mp2@mssicropyramid.com',
+            'email': 'jodoe@common.com',
             'has_sales_access': 'true'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertJSONEqual(force_text(response.content),
                              json.dumps({"error_403": True, "error": True}))
 
         response = self.client.post(reverse('common:edit_user', args=(self.user2.id,)), {
-            'first_name': 'mp2',
-            'last_name': 'mp22',
-            'username': 'mp2',
+            'first_name': 'janeDoeCommon',
+            'last_name': 'jane doe',
+            'username': 'janeDoeCommon',
             'role': 'USER',
-            'email': 'mp2@micropyramid.com',
+            'email': 'janeDoeCommon@user.com',
             'has_sales_access': 'true'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertJSONEqual(force_text(response.content),
@@ -669,7 +669,7 @@ class TestAPISettingsDelete(ObjectsCreation, TestCase):
 class TestGetFullNameModel(ObjectsCreation, TestCase):
 
     def test_get_full_name(self):
-        self.assertEqual('mp2 ', self.user2.get_full_name())
+        self.assertEqual('janeDoeCommon ', self.user2.get_full_name())
 
     def test_file_extensions(self):
         self.document_txt = Document.objects.create(
@@ -733,8 +733,8 @@ class TestUserCreationView(ObjectsCreation, TestCase):
                                     "password": ["This field is required."]}}))
 
         response=self.client.post(reverse('common:create_user'), {
-            'email': 'user@create.com',
-            'first_name': 'first name?',
+            'email': 'johndoe@commonUser.com',
+            'first_name': 'first name',
             'username': 'joe',
             'role': 'USER',
             'password': 'testpassword',
@@ -797,7 +797,7 @@ class TestUserCreationView(ObjectsCreation, TestCase):
                              json.dumps({"error": True, "errors": {"title": ["This field is required."], "website": ["Please provide valid schema"]}}))
 
     def test_document_list_user_view(self):
-        self.client.login(username='mp2@micropyramid.com', password='mp')
+        self.client.login(username='janeDoeCommon@user.com', password='password')
         self.document=Document.objects.create(
             title="user 2 doc", document_file="1.png", created_by=self.user2)
         self.document.shared_to.add(self.user2.id)
@@ -823,20 +823,20 @@ class TestUserCreationView(ObjectsCreation, TestCase):
             reverse('common:download_attachment', kwargs=({'pk': self.attachment.id})))
 
     def test_document_update(self):
-        self.client.login(username='mp@micropyramid.com', password='mp')
+        self.client.login(username='johnDoeCommon@user.com', password='password')
         response=self.client.get(
             reverse('common:download_document', args=(self.document.id,)))
         self.assertEqual(403, response.status_code)
 
     def test_user_status(self):
         self.user_status=User.objects.create(
-            first_name="mpus",
-            username='mpus',
-            email='mpus@micropyramid.com',
+            first_name="joedoe",
+            username='joedoe@commonUser',
+            email='joedoe@commonUser.com',
             role="USER",
             is_active=False
         )
-        self.user_status.set_password('mp')
+        self.user_status.set_password('password')
         self.user_status.save()
         response=self.client.get(
             reverse('common:change_user_status', kwargs={'pk': self.user_status.id}))

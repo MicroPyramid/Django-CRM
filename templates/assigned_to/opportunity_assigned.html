@@ -1,4 +1,4 @@
-{% extends 'root_email_template.html' %}
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
 
@@ -7,7 +7,7 @@ Hello {{ user.get_username }}
 
 
 {% block content_body %}
-you are assigned to opportunity {{ opportunity.name }}<br>
+{{created_by}} assigned an opportunity for you - {{ opportunity.name }}<br>
 {% endblock content_body %}
 
 {% block button_link %}

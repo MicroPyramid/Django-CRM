@@ -1,6 +1,8 @@
+import re
+
 from celery.task import task
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
@@ -68,9 +70,10 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
 def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io', protocol='http'):
     """ Send Mail To Users When they are assigned to a lead """
     lead = Lead.objects.get(id=lead_id)
+    created_by = lead.created_by
     for user in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user).first()
+        user = User.objects.filter(id=user, is_active=True).first()
         if user:
             recipients_list.append(user.email)
             context = {}
@@ -78,7 +81,8 @@ def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io'
                 reverse('leads:view_lead', args=(lead.id,))
             context["user"] = user
             context["lead"] = lead
-            subject = 'Assigned to lead.'
+            context["created_by"] = created_by
+            subject = 'Assigned a lead for you. '
             html_content = render_to_string(
                 'assigned_to/leads_assigned.html', context=context)
 
@@ -89,3 +93,29 @@ def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io'
             )
             msg.content_subtype = "html"
             msg.send()
+
+@task
+def create_lead_from_file(validated_rows, invalid_rows, user_id):
+    """Parameters : validated_rows, invalid_rows, user_id.
+    This function is used to create leads from a given file.
+    """
+    email_regex = '^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
+    user = User.objects.get(id=user_id)
+    for row in validated_rows:
+        if not Lead.objects.filter(title=row.get('title')).exists():
+            if re.match(email_regex, row.get('email')) is not None:
+                lead = Lead()
+                lead.title = row.get('title')
+                lead.first_name = row.get('first name')
+                lead.last_name = row.get('last name')
+                lead.website = row.get('website')
+                lead.email = row.get('email')
+                lead.phone = row.get('phone')
+                lead.address_line = row.get('address')
+                # lead.street = row.get('street')
+                # lead.city = row.get('city')
+                # lead.state = row.get('state')
+                # lead.postcode = row.get('postcode')
+                # lead.country = row.get('country')
+                lead.created_by = user
+                lead.save()

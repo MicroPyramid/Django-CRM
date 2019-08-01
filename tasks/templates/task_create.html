@@ -65,6 +65,7 @@
                     <span class="error" id="id__due_date">{{ form.due_date.errors }}</span>
                   </div>
                 </div>
+                <input type="hidden" name="from_account" value="{{request.GET.view_account}}">
                 <div class="filter_col col-md-12">
                   <div class="form-group ">
                     <label for="exampleInputEmail1" class="required">Account{% if form.account.field.required %}<span
@@ -72,8 +73,8 @@
                     <!-- <select name="account" class="form-control" placeholder="Account" required="" id="id_account">
                       <option value="" selected="">---------</option>
                       {% for account in accounts %}
-                      <option value="{{account.id}}" {% ifequal account_obj.lead.id lead.id %}selected{% endifequal %}>
-                        {{lead.first_name}} {{lead.last_name}}</option>
+                      <option value="{{account.id}}" data-contact="{{account.contact_values}}">
+                        {{account.name}}</option>
                       {% endfor %}
                     </select> -->
                     {{ form.account }}
@@ -145,14 +146,27 @@
   // });
   $(document).ready(function () {
     $("#id_contacts").select2();
+    {% if request.GET.view_account %}
+    $("#id_account option[value=" + '{{request.GET.view_account}}' + "]").attr('selected', true);
+    {% endif %}
     $("#id_assigned_to").select2();
     $("#id_teams").select2();
-    var date = new Date();
-    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    {% if task_obj %}
     $('#id_due_date').datetimepicker({
       'format': 'YYYY-MM-DD',
       minDate: today
     })
+    {% else %}
+    $('#id_due_date').datetimepicker({
+      'format': 'YYYY-MM-DD',
+      minDate: today
+    })
+    var date = new Date();
+    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    {% endif %}
+
+
   });
 
   $('form#formid').ajaxForm({

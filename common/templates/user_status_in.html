@@ -1,17 +1,39 @@
-{% extends 'root_email_template.html' %}
-
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
-Hello {{user_email}}
+Hi {{user_email}}
 {% endblock heading %}
 
-
 {% block content_body %}
-Your account has been successfully created in Django CRM by {{created_by}}
+Thanks for creating an account in Django CRM. Please click on the below link to activate your account.
 {% endblock content_body %}
 
 {% block button_link %}
-<div style="margin-bottom:20px"><a href="{{url}}"
-        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Login</a>
-</div>
+<a href="{{complete_url}}"
+  style="display: inline-block; background: #2dc24d; font-size: 20px;font-weight: 500;color:#fff;width: 255px;text-align: center;padding: 18px 0;border-radius:4px;text-decoration: none;">
+  Verify Your Email</a>
 {% endblock button_link %}
+
+
+{% block extra_content %}
+<tr>
+  <td style="text-align:center;padding:25px 75px;font-weight: 300;color:#000000;font-size:37px;">
+    This link will be valid for 2 hours.
+  </td>
+</tr>
+<tr>
+  <td style="text-align:center;padding:25px 75px;font-weight: 300;color:#000000;font-size:30px;">
+    Once your account is activated, you will be able to access all of the features in Django CRM
+  </td>
+</tr>
+{% endblock extra_content %}
+
+{% comment %}
+<div style="margin-bottom:20px"><a href="{{complete_url}}"
+    style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Click
+    Here to Activate your Account</a>
+</div>
+<div style="margin-bottom:20px"><a href="{{url}}"
+    style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Login</a>
+</div>
+{% endcomment %}

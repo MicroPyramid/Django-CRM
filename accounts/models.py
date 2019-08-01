@@ -1,3 +1,4 @@
+import arrow
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -105,6 +106,15 @@ class Account(models.Model):
             else:
                 address += self.get_billing_country_display()
         return address
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
+
+    @property
+    def contact_values(self):
+        contacts = list(self.contacts.values_list('id', flat=True))
+        return ','.join(str(contact) for contact in contacts)
 
 
 class Email(models.Model):

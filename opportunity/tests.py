@@ -16,55 +16,55 @@ class OpportunityModel(object):
     def setUp(self):
 
         self.user = User.objects.create(
-            first_name="meghan", username='meghan',
-            email="m@mp.com", role="ADMIN")
-        self.user.set_password('madhu123')
+            first_name="jane doe", username='jane doe Opp',
+            email="janeOpp@example.com", role="ADMIN")
+        self.user.set_password('password')
         self.user.save()
 
         self.user1 = User.objects.create(
-            first_name="mp",
-            username='mp',
-            email='mp@micropyramid.com',
+            first_name="john doe",
+            username='john doe opportunity',
+            email='johnOpp@example.com',
             role="USER")
-        self.user1.set_password('mp')
+        self.user1.set_password('password')
         self.user1.save()
 
         self.address = Address.objects.create(
-            street="kphb", city="canada", postcode="584",
+            street="", city="city name", postcode="1234",
             country='IN')
 
-        self.client.login(email='m@mp.com', password='madhu123')
+        self.client.login(email='janeOpp@example.com', password='password')
 
         self.account = Account.objects.create(
-            name="john", email="john@gmail.com",
-            phone="58964",
+            name="john", email="johndoe@example.com",
+            phone="1234",
             billing_address_line="",
-            billing_street="kphb", billing_city="canada",
-            billing_postcode="584", billing_country='US',
-            website="hello.com", industry="sw",
-            description="bgyyr", created_by=self.user)
+            billing_street="street", billing_city="city",
+            billing_postcode="1234", billing_country='IN',
+            website="example.com", industry="",
+            description="account description", created_by=self.user)
 
         self.contacts = Contact.objects.create(
-            first_name="navi",
-            last_name="s",
-            email="navi@gmail.com", phone="8547",
-            description="defyj",
+            first_name="joe",
+            last_name="doe",
+            email="joedoe@example", phone="1234",
+            description="description for contact",
             address=self.address,
             created_by=self.user)
 
         self.opportunity = Opportunity.objects.create(
-            name="meghan", amount="478",
+            name="jane opportunity", amount="478",
             stage="negotiation/review", lead_source="Call", probability="58",
             closed_on="2016-05-04",
-            description="hgfdxc",
+            description="opportunity description",
             created_by=self.user)
         self.opportunity.assigned_to.add(self.user)
         self.case = Case.objects.create(
-            name="raghu", case_type="Problem", status="New", account=self.account,
-            priority="Low", description="something",
+            name="case name", case_type="Problem", status="New", account=self.account,
+            priority="Low", description="case description",
             created_by=self.user, closed_on="2016-05-04")
         self.comment = Comment.objects.create(
-            comment='testikd', case=self.case, commented_by=self.user)
+            comment='test comment', case=self.case, commented_by=self.user)
         self.attachment = Attachments.objects.create(
             attachment='image.png', case=self.case,
             created_by=self.user, account=self.account, opportunity=self.opportunity)
@@ -78,16 +78,16 @@ class OpportunityCreateTestCase(OpportunityModel, TestCase):
 
     def test_opportunity_create(self):
         response = self.client.get('/opportunities/create/', {
-            'name': "meghan", 'amount': "478",
+            'name': "opportunity test", 'amount': "478",
             'stage': "NEGOTIATION/REVIEW",
             'lead_source': "Call", 'probability': "58",
-            'closed_on': "2016-05-04", 'description': "hgfdxc"})
+            'closed_on': "2016-05-04", 'description': "description"})
         self.assertEqual(response.status_code, 200)
 
     def test_opportunity_create_post(self):
         upload_file = open('static/images/user.png', 'rb')
         url = '/opportunities/create/'
-        data = {'name': "micky", 'amount': "500", 'stage': "CLOSED WON",
+        data = {'name': "jane opportunity", 'amount': "500", 'stage': "CLOSED WON",
                 'assigned_to': str(self.user.id),
                 'contacts': str(self.contacts.id),
                 'tags': 'tag', 'from_account': self.account.id,
@@ -99,7 +99,7 @@ class OpportunityCreateTestCase(OpportunityModel, TestCase):
 
     def test_opportunity_invalid(self):
         url = '/opportunities/create/'
-        data = {'name': "micky", 'amount': "", 'stage': ""}
+        data = {'name': "jane", 'amount': "", 'stage': ""}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
 
@@ -133,10 +133,10 @@ class EditOpportunityTestCase(OpportunityModel, TestCase):
 
     def test_edit_opportunity(self):
         response = self.client.get('/opportunities/' + str(self.opportunity.id) + '/edit/', {
-            'name': "meghan", 'amount': "478",
+            'name': "joe", 'amount': "478",
             'stage': "negotiation/review",
             'lead_source': "Call", 'probability': "58",
-            'closed_on': "2016-05-04", 'description': "hgfdxc"})
+            'closed_on': "2016-05-04", 'description': "description"})
         resp = self.client.post('/opportunities/' + str(self.opportunity.id) +
                                 '/edit/', **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
         self.assertEqual(resp.status_code, 200)
@@ -148,9 +148,9 @@ class EditOpportunityTestCase(OpportunityModel, TestCase):
         upload_file = open('static/images/user.png', 'rb')
         url = '/opportunities/' + str(self.opportunity.id) + '/edit/'
         data = {
-            'name': "meghan", 'amount': "478", 'stage': "QUALIFICATION",
+            'name': "jane", 'amount': "478", 'stage': "QUALIFICATION",
             'probability': "58", 'closed_on': "2016-05-04",
-            'description': "hgfdxc",
+            'description': "description",
             'tags': 'tag', 'assigned_to': str(self.user.id),
             'contacts': str(self.contacts.id),
             'oppurtunity_attachment': SimpleUploadedFile(
@@ -163,7 +163,7 @@ class EditOpportunityTestCase(OpportunityModel, TestCase):
         url = '/opportunities/' + str(self.opportunity.id) + '/edit/'
         data = {
             'name': "", 'amount': "478", 'stage': "", 'probability': "58",
-            'closed_on': "2016-05-04", 'description': "hgfdxc"}
+            'closed_on': "2016-05-04", 'description': "description"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
 
@@ -179,17 +179,17 @@ class OpportunityListView(OpportunityModel, TestCase):
     def test_opportunity_list_queryset(self):
         self.account = Account.objects.all()
         data = {
-            'name': 'meghan', 'stage': 'city',
+            'name': 'joe', 'stage': 'city',
             'lead_source': 'Call', 'accounts': self.account}
         response = self.client.post(reverse('opportunity:list'), data)
         get_opp_val = Opportunity.objects.get(lead_source='Call')
         self.assertEqual(get_opp_val.lead_source, 'Call')
         self.assertEqual(get_opp_val.name, str(get_opp_val))
-        get_contact = Contact.objects.get(last_name="s")
+        get_contact = Contact.objects.get(last_name="doe")
         # get_account = Account.objects.get(name='john')           #  not done
         # print(get_account.name,"wqieoruopwqeiruqrewiou")
         # print(self.account.last())
-        self.assertEqual(get_contact.last_name, "s")
+        self.assertEqual(get_contact.last_name, "doe")
         # self.assertEqual(get_account, self.account.last())      #  not done
         # self.assertEqual(get_opp_val.lead_source,'call')
         self.assertEqual(response.status_code, 200)
@@ -201,8 +201,8 @@ class ContactGetViewTestCase(OpportunityModel, TestCase):
     def test_get_contact(self):
         url = '/opportunities/contacts/'
         response = self.client.get(url)
-        get_contact = Contact.objects.get(last_name="s")
-        self.assertEqual(get_contact.last_name, "s")
+        get_contact = Contact.objects.get(last_name="doe")
+        self.assertEqual(get_contact.last_name, "doe")
         self.assertEqual(response.status_code, 200)
 
 
@@ -246,7 +246,7 @@ class CommentTestCase(OpportunityModel, TestCase):
 class AttachmentTestCase(OpportunityModel, TestCase):
 
     def test_attachment_create(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='johnOpp@example.com', password='password')
         url = "/opportunities/attachment/add/"
         data = {'opportunityid': self.opportunity.id}
         response = self.client.post(url, data)
@@ -270,7 +270,7 @@ class AttachmentTestCase(OpportunityModel, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attachment_deletion(self):
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='johnOpp@example.com', password='password')
         url = "/opportunities/attachment/remove/"
         data = {'attachment_id': self.attachment.id}
         response = self.client.post(url, data)
@@ -291,30 +291,30 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
     def test_queryset_for_user(self):
 
         self.usermp = User.objects.create(
-            first_name="mpmp",
-            username='mpmp',
-            email='mpmp@micropyramid.com',
+            first_name="john",
+            username='johndoeopportunity@example.com',
+            email='johndoeopportunity@example.com',
             role="USER",
             has_sales_access=True)
-        self.usermp.set_password('mp')
+        self.usermp.set_password('password')
         self.usermp.save()
 
         self.usermp1 = User.objects.create(
-            first_name="mpmp1",
-            username='mpmp1',
-            email='mpmp1@micropyramid.com',
+            first_name="jane",
+            username='johndoeopportunity1@example.com',
+            email='johndoeopportunity1@example.com',
             role="USER")
-        self.usermp1.set_password('mp')
+        self.usermp1.set_password('password')
         self.usermp1.save()
 
         self.opportunity = Opportunity.objects.create(
-            name="meghan", amount="478",
+            name="john jane doe", amount="478",
             stage="negotiation/review", lead_source="Call", probability="58",
             closed_on="2016-05-04",
-            description="hgfdxc",
+            description="sample description",
             created_by=self.usermp)
 
-        self.client.login(email='mpmp@micropyramid.com', password='mp')
+        self.client.login(email='johndoeopportunity@example.com', password='password')
         response = self.client.get(reverse('opportunity:list'))
         self.assertEqual(response.status_code, 200)
 
@@ -323,25 +323,25 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.account_mp = Account.objects.create(
-            name="mike", email="mike@micropyramid.com", phone="8322855552",
-            billing_address_line="", billing_street="KPHB",
-            billing_city="New York",
-            billing_state="usa", billing_postcode="500073",
+            name="john doe", email="johnAccount@example.com", phone="911234567892",
+            billing_address_line="", billing_street="",
+            billing_city="city ",
+            billing_state="state", billing_postcode="12345",
             billing_country="IN",
-            website="www.mike.com", created_by=self.usermp, status="open",
-            industry="SOFTWARE", description="Yes.. Testing Done")
+            website="www.example.com", created_by=self.usermp, status="open",
+            industry="SOFTWARE", description="test description")
 
         self.address = Address.objects.create(
-            street="5th phase",
-            city="Orlando",
-            state="Florida",
-            postcode=502279, country="AD")
+            street="street name",
+            city="city name",
+            state="state name",
+            postcode=1234, country="IN")
 
         self.contact_mp = Contact.objects.create(
-            first_name="contact_mp",
-            email="contactmp1@gmail.com",
+            first_name="john contact",
+            email="johnDoeContact@example.com",
             address=self.address,
-            description="contact",
+            description="contact description",
             created_by=self.usermp)
         # self.contact_mp.assigned_to.add(self.usermp)
 
@@ -383,13 +383,13 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
 
     def test_detail_view_error(self):
         self.usermp_2 = User.objects.create(
-            first_name="mpmp_2",
-            username='mpmp_2',
-            email='mpmp2@micropyramid.com',
+            first_name="johnDoe",
+            username='johnDoe@user.com',
+            email='johnDoe@user.com',
             role="USER")
-        self.usermp_2.set_password('mp')
+        self.usermp_2.set_password('password')
         self.usermp_2.save()
-        self.client.login(email='mpmp2@micropyramid.com', password='mp')
+        self.client.login(email='johnDoe@user.com', password='password')
 
         response = self.client.get(
             reverse('opportunity:opp_view', args=(self.opportunity.id,)))
@@ -402,27 +402,27 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
 
     def test_update_opportunity_error(self):
         self.usermp_3 = User.objects.create(
-            first_name="mpmp_3",
-            username='mpmp_3',
-            email='mpmp3@micropyramid.com',
+            first_name="janedoe",
+            username='janedoe@user.com',
+            email='janedoe@user.com',
             role="USER")
-        self.usermp_3.set_password('mp')
+        self.usermp_3.set_password('password')
         self.usermp_3.save()
-        self.client.login(email='mpmp3@micropyramid.com', password='mp')
+        self.client.login(email='janedoe@user.com', password='password')
 
         self.usermp4 = User.objects.create(
-            first_name="mpmp4",
-            username='mpmp4',
-            email='mpmp4@micropyramid.com',
+            first_name="johnDoe",
+            username='janeJohn@user.com',
+            email='janeJohn@user.com',
             role="USER")
-        self.usermp4.set_password('mp')
+        self.usermp4.set_password('password')
         self.usermp4.save()
 
         self.opportunity2 = Opportunity.objects.create(
-            name="meghansad", amount="478",
+            name="jane oppurtunity", amount="478",
             stage="negotiation/review", lead_source="Call", probability="58",
             closed_on="2016-05-04",
-            description="hgfdxc",
+            description="description",
             created_by=self.usermp4)
 
         response = self.client.get(
@@ -434,22 +434,22 @@ class CommentTestCaseError(OpportunityModel, TestCase):
 
     def test_comment_add(self):
 
-        self.client.login(email='mp@micropyramid.com', password='mp')
+        self.client.login(email='johnOpp@example.com', password='password')
         response = self.client.post(
             '/opportunities/comment/add/', {'opportunityid': self.opportunity.id})
         self.assertJSONEqual(force_text(response.content), {
                              'error': "You don't have permission to comment."})
 
         self.usermp5 = User.objects.create(
-            first_name="mpmp5",
-            username='mpmp5',
-            email='mpmp5@micropyramid.com',
+            first_name="janeD",
+            username='joeDoe@user.com',
+            email='joeDoe@user.com',
             role="USER")
-        self.usermp5.set_password('mp')
+        self.usermp5.set_password('password')
         self.usermp5.save()
 
         self.comment_mp = Comment.objects.create(
-            comment='testikd', case=self.case, commented_by=self.user)
+            comment='comment', case=self.case, commented_by=self.user)
 
         response = self.client.post(
             '/opportunities/comment/edit/', {'commentid': self.comment_mp.id})

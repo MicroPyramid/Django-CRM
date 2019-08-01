@@ -4,15 +4,15 @@
 {% block content%}
 
 <!-- OPPORTUNITY VIEW STARTS -->
-  <div class="main_container" id="maincontainer">
-    <div class="overview_form_block row marl justify-content-center">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body" id="datashow">
-            <div class="panel-heading card-title view-pad text-center">
-              <h5>
-                Profile
-                <!-- <span class="float-right" style="margin-top: 0px">
+<div class="main_container" id="maincontainer">
+  <div class="overview_form_block row marl justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body" id="datashow">
+          <div class="panel-heading card-title view-pad text-center">
+            <h5>
+              Profile
+              <!-- <span class="float-right" style="margin-top: 0px">
                   <div class="dropdown buttons_row">
                     <button class="btn btn-primary dropdown-toggle save" type="button" data-toggle="dropdown">Actions
                     <span class="caret"></span></button>
@@ -22,42 +22,63 @@
                     </ul>
                   </div>
                 </span> -->
-              </h5>
-              <a href="{% url 'common:edit_user' user_obj.id %}" class="btn btn-success edit">Edit</a>
-            </div>
-            <div class="row marl no-gutters">
-              <div class="col-md-8">
-                {% if user_obj.first_name %}
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_name" data-name="name">Name</label>
-                    <div class="contact_field" id="contact_name" data-name="name">{{ user_obj.first_name }} {{ user_obj.last_name }}</div>
-                  </div>
+            </h5>
+            <a href="{% url 'common:edit_user' user_obj.id %}" class="btn btn-success edit">Edit</a>
+          </div>
+          <div class="row marl no-gutters">
+            <div class="col-md-8">
+              {% if user_obj.first_name %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_name" data-name="name">Name</label>
+                  <div class="contact_field" id="contact_name" data-name="name">{{ user_obj.first_name }}
+                    {{ user_obj.last_name }}</div>
                 </div>
-                {% endif %}
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_contact_account" data-name="name">UserName</label>
-                    <div class="contact_field" id="contact_account" data-name="name">{{ user_obj.username }}</div>
-                  </div>
+              </div>
+              {% endif %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_contact_account" data-name="name">UserName</label>
+                  <div class="contact_field" id="contact_account" data-name="name">{{ user_obj.username }}</div>
                 </div>
-                <div class="filter_col col-md-12">
-                  <div class="form-group">
-                    <label class="contact_field_label" for="id_email" data-name="name">Email</label>
-                    <div class="contact_field" id="contact_email" data-name="name">{{ user_obj.email }}</div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_email" data-name="name">Email</label>
+                  <div class="contact_field" id="contact_email" data-name="name">{{ user_obj.email }}</div>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="contact_field_label" for="id_email" data-name="name">Permissions</label>
+                  <div class="contact_field" id="contact_email" data-name="name">
+                    {% if user_obj.is_superuser or user_obj.role == 'ADMIN' %}
+                    Sales and Marketing
+                    {% else %}
+                    {% if user_obj.has_sales_access and user_obj.has_marketing_access %}
+                    Sales and Marketing
+                    {% elif user_obj.has_sales_access and not user_obj.has_marketing_access %}
+                    Sales
+                    {% elif not user_obj.has_sales_access and user_obj.has_marketing_access %}
+                    Marketing
+                    {% else %}
+                    {{''}}
+                    {% endif %}
+                    {% endif %}
+
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
-                <div class="profile_pic">
-                  {% if user_obj.profile_pic %}
-                    {% thumbnail request.user.profile_pic "125x125" as im %}
-                    <img src="{{ im.url }}">
-                    {% endthumbnail %}
-                  {% else %}
-                  <img src="{% static 'images/user.png' %}" alt="Micro profile pic" />
-                  {% endif %}
-                </div>
+            </div>
+            <div class="col-md-4">
+              <div class="profile_pic">
+                {% if user_obj.profile_pic %}
+                {% thumbnail request.user.profile_pic "125x125" as im %}
+                <img src="{{ im.url }}">
+                {% endthumbnail %}
+                {% else %}
+                <img src="{% static 'images/user.png' %}" alt="Micro profile pic" />
+                {% endif %}
               </div>
             </div>
           </div>
@@ -65,5 +86,6 @@
       </div>
     </div>
   </div>
+</div>
 <!-- OPPORTUNITY VIEW ENDS -->
 {% endblock %}

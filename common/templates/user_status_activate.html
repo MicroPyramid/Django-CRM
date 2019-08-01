@@ -1,0 +1,21 @@
+{% extends 'root_email_template_new.html' %}
+
+{% block heading %}
+Hi {{email}}
+{% endblock heading %}
+
+
+{% ifequal 'activated' message %}
+{% block content_body %}
+You account has been activated by {{status_changed_user}}. You can login to your account and access all the features of
+Django CRM.
+{% endblock content_body %}
+{% block button_link %}
+{% if url %}
+<div style="margin-bottom:20px">
+    <a href="{{url}}"
+        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Login</a>
+</div>
+{% endif %}
+{% endblock button_link %}
+{% endifequal %}

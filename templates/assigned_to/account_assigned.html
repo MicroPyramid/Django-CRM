@@ -1,8 +1,18 @@
-{% autoescape off %}
-Hello {{ user.get_username }}<br>,
-you are assigned to account {{ account.name }}<br>
-click the link below to access it:<br>
-{{ protocol }}://{{ domain }}{% url 'accounts:view_account' pk=account.id %}<br>
-<br>
-Django-CRM
-{% endautoescape %}
+{% extends 'root_email_template_new.html' %}
+
+{% block heading %}
+
+Hi {{ user.get_username }}
+{% endblock heading %}
+
+
+{% block content_body %}
+{{created_by}} assigned a account for you - {{account}}<br>
+{% endblock content_body %}
+
+{% block button_link %}
+<div style="margin-bottom:20px">
+    <a href="{{url}}"
+        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">click here</a>
+</div>
+{% endblock button_link %}

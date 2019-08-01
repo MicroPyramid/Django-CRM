@@ -1,4 +1,4 @@
-{% extends 'root_email_template.html' %}
+{% extends 'root_email_template_new.html' %}
 
 {% block heading %}
 
@@ -7,7 +7,7 @@ Hello {{ user }}
 
 
 {% block content_body %}
-<h2>You have been assigned to invoice {{invoice_title}} by {{invoice_created_by}}</h2>
+{{invoice_created_by}} shared an invoice with you - {{invoice_title}}
 {% endblock content_body %}
 
 {% block button_link %}

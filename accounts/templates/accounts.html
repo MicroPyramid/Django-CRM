@@ -106,6 +106,7 @@
                           <th width="10%">Created By</th>
                           <th width="15%">City</th>
                           <th width="15%">State</th>
+                          <th width="15%">Created On</th>
                           <th width="10%">Tags</th>
                           <th width="10%">Actions</th>
                         </tr>
@@ -146,6 +147,7 @@
                             {% endif %}</td>
                           <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
                             specified {% endif %}</td>
+                          <td title="{{each_account.created_on}}">{{ each_account.created_on_arrow }}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
@@ -200,6 +202,7 @@
                           <th width="10%">Created By</th>
                           <th width="10%">City</th>
                           <th width="10%">State</th>
+                          <th width="10%">Created On</th>
                           <th width="18%">Tags</th>
                           <th width="15%">Actions</th>
                         </tr>
@@ -236,6 +239,7 @@
                             {% endif %}</td>
                           <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
                             specified {% endif %}</td>
+                          <td title="{{each_account.created_on}}">{{ each_account.created_on_arrow }}</td>
                           <td style="display: block;">
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
@@ -305,7 +309,7 @@
           <div class="">
             <div class="col-md-12" id="">
               <div class="card">
-                <div class="card-body" id="datashow">
+                <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
                       <!-- <span class="float-left title">Overview</span> -->
@@ -440,7 +444,7 @@
                     <div class="col-md-12">
                       <div class="created_information">
                         Created by <b>{{ account_record.created_by }}</b> created on
-                        <b>{{ account_record.created_on }}</b>
+                        <b title="{{ account_record.created_on }}">{{ account_record.created_on_arrow }}</b>
                       </div>
                     </div>
                   </div>
@@ -486,7 +490,7 @@
           <div class="">
             <div class="col-md-12" id="">
               <div class="card">
-                <div class="card-body" id="datashow">
+                <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
                       <!-- <span class="float-left title">Overview</span> -->
@@ -621,7 +625,7 @@
                     <div class="col-md-12">
                       <div class="created_information">
                         Created by <b>{{ account_record.created_by }}</b> created on
-                        <b>{{ account_record.created_on }}</b>
+                        <b title="{{ account_record.created_on }}">{{ account_record.created_on_arrow }}</b>
                       </div>
                     </div>
                   </div>

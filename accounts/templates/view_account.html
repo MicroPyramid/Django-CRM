@@ -31,11 +31,12 @@
             <h5>
               <span class="float-left title">Overview</span>
               <span style="margin-top: 0px">
-                <div class="dropdown buttons_row">
+                <div class="dropdown buttons_row" style="width:auto; display:inline-block; left:0">
                   <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
                     <span class="caret"></span></button>
-                  <ul class="dropdown-menu">
-                    <li><a href="{% url 'accounts:edit_account' account_record.id %}">Edit</a></li>
+                  <ul class="dropdown-menu" style="width:fit-content; min-width:-webkit-fill-available; margin-top: 0;">
+                    <li><a href="{% url 'accounts:edit_account' account_record.id %}"
+                        style="background:#17a2b8; color: white; font-weight: 600;">Edit</a></li>
                   </ul>
                 </div>
               </span>
@@ -154,7 +155,7 @@
             <div class="col-md-12">
               <div class="created_information">
                 Created by <b>{{ account_record.created_by }}</b> created on
-                <b>{{ account_record.created_on }}</b>
+                <b title="{{ account_record.created_on }}">{{ account_record.created_on_arrow }}</b>
               </div>
             </div>
             <div class="col-md-12 " style="padding:0">
@@ -202,7 +203,8 @@
                         </div>
                         <div class="stream-container">
                           <pre class="float-left">Uploaded by :{{ attachment.created_by }}</pre>
-                          <pre class="float-right date">{{ attachment.created_on|date:'m/d/Y,  h:i A' }}</pre>
+                          <pre class="float-right date"
+                            title="{{ attachment.created_on }}">{{ attachment.created_on_arrow }}</pre>
                         </div>
                       </li>
                       {% endfor %}
@@ -212,13 +214,13 @@
               </div>
               <!-- Attachment Section end -->
               <!-- Comments Section starts-->
+              {% if comment_permission %}
               <div class="card-body" id="datashow">
                 <div class="card-title">
                   <h5>Comments</h5>
                 </div>
                 <div class="row marl">
                   <div class="col-md-12">
-                    {% if comment_permission %}
                     <form id="comment_form" method="POST" enctype="multipart/form-data">
                       <div class="form-group">
                         <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_comments"
@@ -234,7 +236,6 @@
                       </div>
                       <input type="hidden" value="{{ account_record.id }}" name="accountid">
                     </form>
-                    {% endif %}
                     <ul class="list-group" id="comments_div">
                       {% for comment in comments %}
                       <li class="list-group-item list-row" id="comment{{comment.id}}">
@@ -242,12 +243,15 @@
                         <div class="list-row-buttons btn-group float-right">
                           <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown"
                             type="button">Actions<span class="caret"></span></button>
-                          <ul class="dropdown-menu text-center">
+                          <ul class="dropdown-menu text-center"
+                            style="width: fit-content; min-width: -webkit-fill-available;">
                             <li>
-                              <a class="action" onclick="edit_comment({{comment.id}})">Edit</a>
+                              <a class="action" onclick="edit_comment({{comment.id}})"
+                                style="padding: 0.5em; background: #17a2b8; color:white; font-weight: 600;">Edit</a>
                             </li>
                             <li>
-                              <a class="action" onclick="remove_comment({{comment.id}})">Remove</a>
+                              <a class="action" onclick="remove_comment({{comment.id}})"
+                                style="padding: 0.5em; background: #17a2b8; color:white; font-weight: 600;">Remove</a>
                             </li>
                           </ul>
                         </div>
@@ -257,7 +261,8 @@
                         </div>
                         <div class="stream-container">
                           <pre class="float-left">{{ comment.commented_by }}</pre>
-                          <pre class="float-right date">{{ comment.commented_on|date:'m/d/Y,  h:i:s A' }}</pre>
+                          <pre class="float-right date"
+                            title="{{ comment.commented_on }}">{{ comment.commented_on_arrow }}</pre>
                         </div>
                       </li>
                       {% endfor %}
@@ -291,6 +296,8 @@
                   </div>
                 </div>
               </div>
+              {% endif %}
+
               <!-- Comments Section Ends-->
             </div>
           </div>
@@ -328,11 +335,11 @@
                     <tbody>
                       {% for contact in contacts %}
                       <tr id="contacts_details{{contact.id}}" class="text-center">
-                        <td scope="row">{{ forloop.counter }}</td>
-                        <td>{{ contact.first_name }} {{ contact.last_name }}</td>
-                        <td>{{ contact.phone }}</td>
-                        <td>{{ contact.email }}</td>
-                        <td class="actions">
+                        <td class="text-center" scope="row">{{ forloop.counter }}</td>
+                        <td class="text-center">{{ contact.first_name }} {{ contact.last_name }}</td>
+                        <td class="text-center">{{ contact.phone }}</td>
+                        <td class="text-center">{{ contact.email }}</td>
+                        <td class="actions text-center">
                           <a href="{% url 'contacts:view_contact' pk=contact.id %}" class="btn btn-primary"
                             style="color: white;">View</a>
                           <a href="{% url 'contacts:edit_contact' pk=contact.id %}?view_account={{account_record.id}}"
@@ -380,11 +387,12 @@
                     <tbody>
                       {% for opportunity in opportunity_list %}
                       <tr id="opp_details{{opportunity.id}}" class="text-center">
-                        <td scope="row">{{ forloop.counter }}</td>
-                        <td>{{opportunity.name}}</td>
-                        <td>{{opportunity.stage}}</td>
-                        <td>{{opportunity.probability}} {% if opportunity.probability %} % {% endif %}</td>
-                        <td class="actions">
+                        <td scope="row" class="text-center">{{ forloop.counter }}</td>
+                        <td class="text-center">{{opportunity.name}}</td>
+                        <td class="text-center">{{opportunity.stage}}</td>
+                        <td class="text-center">{{opportunity.probability}} {% if opportunity.probability %} %
+                          {% endif %}</td>
+                        <td class="actions text-center">
                           <a href="{% url 'opportunities:opp_view' pk=opportunity.id %}" class="btn btn-primary"
                             style="color: white;">View</a>
                           <a href="{% url 'opportunities:opp_edit' pk=opportunity.id %}?view_account={{account_record.id}}"
@@ -432,12 +440,12 @@
                     <tbody>
                       {% for case in cases %}
                       <tr id="cases_details{{case.id}}" class="text-center">
-                        <td scope="row">{{ forloop.counter }}</td>
-                        <td>{{ case.name }}</td>
-                        <td>{{ case.status }}</td>
-                        <td>{{ case.priority }}</td>
-                        <td class="actions">
-                          <a href="{% url 'cases:view_case' pk=case.id %}" class="btn btn-primary"
+                        <td scope="row" class="text-center">{{ forloop.counter }}</td>
+                        <td class="text-center">{{ case.name }}</td>
+                        <td class="text-center">{{ case.status }}</td>
+                        <td class="text-center">{{ case.priority }}</td>
+                        <td class="actions text-center">
+                          <a href="{% url 'cases:view_case' pk=case.id %}" class="text-center btn btn-primary"
                             style="color: white;">View</a>
                           <a href="{% url 'cases:edit_case' pk=case.id %}?view_account={{account_record.id}}"
                             class="btn btn-success">Edit</a>
@@ -465,8 +473,8 @@
               <div class="card-body">
                 <div class="panel-heading-list card-title view-pad">
                   Tasks
-                  <!-- <a href="{% url 'opportunity:save' %}?view_account={{account_record.id}}"><span
-                      class="fa fa-plus pull-right" style="color:black;"></span></a> -->
+                  <a href="{% url 'tasks:task_create' %}?view_account={{account_record.id}}"><span
+                    class="fa fa-plus pull-right" style="color:black;"></span></a>
                 </div>
                 <div class="table-responsive">
                   <table class="table table-bordered table-striped table-condensed">
@@ -484,11 +492,11 @@
                     <tbody>
                       {% for task in tasks %}
                       <tr id="task_{{task.id}}" class="text-center">
-                        <td scope="row">{{ forloop.counter }}</td>
-                        <td>{{task.title}}</td>
-                        <td>{{task.status}}</td>
-                        <td>{{task.priority}} {% if task.probability %} % {% endif %}</td>
-                        <td class="actions">
+                        <td class="text-center" scope="row">{{ forloop.counter }}</td>
+                        <td class="text-center">{{task.title}}</td>
+                        <td class="text-center">{{task.status}}</td>
+                        <td class="text-center">{{task.priority}} {% if task.probability %} % {% endif %}</td>
+                        <td class="actions text-center">
                           <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-primary"
                             style="color: white;">View</a>
                           <a href="{% url 'tasks:task_edit' task.id %}?view_account={{account_record.id}}"
@@ -503,6 +511,58 @@
                 </div>
                 {% ifequal tasks|length 0 %}
                 <h6 class="text-center">No tasks Records Found</h6>
+                {% endifequal %}
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </form>
+      <form method='GET' class="accountdetails_row">
+        <div class="table_container_row row marl no-gutters">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <div class="panel-heading-list card-title view-pad">
+                  Invoices
+                  <a href="{% url 'invoices:invoices_create' %}?view_account={{account_record.id}}"><span
+                      class="fa fa-plus pull-right" style="color:black;"></span></a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-condensed">
+                    {% if invoices|length > 0 %}
+                    <thead>
+                      <tr>
+                        <th width="5%" style="text-align:center;">S.No</th>
+                        <th width="30%" style="text-align:center;">Title</th>
+                        <th width="20%" style="text-align:center;">Email</th>
+                        <th width="20%" style="text-align:center;">Status</th>
+                        <th width="25%" style="text-align:center;">Actions </th>
+                      </tr>
+                    </thead>
+                    {% endif %}
+                    <tbody>
+                      {% for invoice in invoices %}
+                      <tr id="invoice_{{invoice.id}}" class="text-center">
+                        <td class="text-center" scope="row">{{ forloop.counter }}</td>
+                        <td class="text-center">{{invoice.invoice_title}}</td>
+                        <td class="text-center">{{invoice.email}}</td>
+                        <td class="text-center">{{invoice.status}} {% if task.probability %} % {% endif %}</td>
+                        <td class="actions text-center">
+                          <a href="{% url 'invoices:invoice_details' invoice.id %}" class="btn btn-primary"
+                            style="color: white;">View</a>
+                          <a href="{% url 'invoices:invoice_edit' invoice.id %}?view_account={{account_record.id}}"
+                            class="btn btn-success">Edit</a>
+                          <a href="{% url 'invoices:invoice_delete' invoice.id %}?view_account={{account_record.id}}"
+                            class="btn btn-danger">Remove</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% ifequal invoices|length 0 %}
+                <h6 class="text-center">No invoices Records Found</h6>
                 {% endifequal %}
               </div>
             </div>
@@ -543,15 +603,23 @@
           $("#CommentError").html(data.error).show()
         } else {
           d = new Date(data.commented_on);
+          let options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          };
+          d = d.toLocaleString('en-us', options);
           $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
             "<div class='float-right right-container'>" +
             "<div class='list-row-buttons btn-group float-right'>" +
             "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>" +
-            "<ul class='dropdown-menu text-center'>" +
-            "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
-            "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
+            "<ul class='dropdown-menu text-center' style='width: fit-content; min-width: -webkit-fill-available;'>" +
+            "<li><a class='action' style='padding: 0.5em; background: #17a2b8; color:white; font-weight: 600;' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
+            "<li><a class='action' style='padding: 0.5em; background: #17a2b8; color:white; font-weight: 600;' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
             "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
-            "<div class='stream-container'><pre class='float-left'>" + data.commented_by + "</pre><pre class='float-right'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>"
+            "<div class='stream-container'><pre class='float-left'>" + data.commented_by + "</pre><pre class='float-right' title='" + d + "'>" + data.commented_on_arrow + "</pre></div>"
           )
           $("#id_comments").val("")
           alert("Comment Submitted")
@@ -653,13 +721,21 @@
           $('#opacity_block').removeClass('opacity_block')
         } else {
           d = new Date(data.created_on)
+          let options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          };
+          d = d.toLocaleString('en-us', options);
           $("#attachment_div").prepend(
             "<li class='list-group-item list-row' id='attachment" + data.attachment_id + "'>" +
             "<div class='float-right right-container'><div class='list-row-buttons btn-group float-right'><button class='action btn primary_btn' onclick='remove_attachment(" + data.attachment_id + ")''>Remove</button></div></div>" +
             "<div class='stream-post-container' id='attachment_name" + data.attachment_id + "'>" +
             `${(data.file_type[0]).startsWith('image') ? `<img src=${data.attachment_url} width="80px" height="80px" class="mb-2">` : ''}` +
             "<pre><span class='icon'><i style='font-size:1.5rem;' class='" + data.attachment_display + "'></i>&nbsp;&nbsp;</span>" + data.attachment + "&nbsp; &nbsp;<a href='" + data.download_url + "'>Download</a></pre></div>" +
-            "<div class='stream-container'><pre class='float-left'>" + data.created_by + "</pre><pre class='float-right date'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.created_by + "</pre><pre class='float-right date' title='" + d.toLocaleString('en-US', { hour12: true }) + "'>" + data.created_on_arrow + "</pre></div>" +
             "</li>"
           )
           $("#AttachmentError").html("")

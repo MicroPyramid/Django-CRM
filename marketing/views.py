@@ -24,7 +24,7 @@ from marketing.forms import (ContactForm, ContactListForm, EmailTemplateForm,
 from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
                               CampaignOpen, Contact, ContactList,
                               EmailTemplate, Link, Tag, FailedContact, ContactUnsubscribedCampaign)
-from marketing.tasks import run_campaign, upload_csv_file
+from marketing.tasks import run_campaign, upload_csv_file, delete_multiple_contacts_tasks
 from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin
 
 TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
@@ -53,8 +53,10 @@ def dashboard(request):
         campaign = Campaign.objects.filter(created_by=request.user)
         contacts_list = ContactList.objects.filter(created_by=request.user)
 
+    # x_axis_titles = [
+    #     campaign_obj.title for campaign_obj in campaign[:5]]
     x_axis_titles = [
-        campaign_obj.title for campaign_obj in campaign[:5]]
+        campaign_obj.title[0:10] + '...' if len(campaign_obj.title) > 15 else campaign_obj.title for campaign_obj in campaign[:5]]
     y_axis_bounces = [
         campaign_obj.get_all_email_bounces_count for campaign_obj in campaign[:5]]
     y_axis_unsubscribed = [
@@ -354,6 +356,7 @@ def contact_list_detail(request, pk):
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_list.created_by == request.user):
         raise PermissionDenied
     contacts_list = contact_list.contacts.filter(is_bounced=False)
+    contacts_list_count = contact_list.contacts.filter(is_bounced=False).count()
     bounced_contacts_list = contact_list.contacts.filter(is_bounced=True)
     bounced_contacts_list_count = contact_list.contacts.filter(is_bounced=True).count()
     if request.POST:
@@ -387,6 +390,7 @@ def contact_list_detail(request, pk):
     data = {'contact_list': contact_list, "contacts_list": contacts_list,
         "bounced_contacts_list":bounced_contacts_list,
         'bounced_contacts_list_count': bounced_contacts_list_count,
+        'contacts_list_count': contacts_list_count,
         # these two are added for digg pagintor
         'paginator':paginator,'page_obj': bounced_contacts_list,}
     return render(request, 'marketing/lists/detail.html', data)
@@ -558,8 +562,11 @@ def campaign_new(request):
                 instance.from_email = request.POST['from_email']
             if request.POST.get('from_name'):
                 instance.from_name = request.POST['from_name']
-            if request.POST.get('reply_to_email'):
-                instance.reply_to_email = request.POST['reply_to_email']
+            if request.POST.get('reply_to_crm') == 'true':
+                instance.reply_to_email = settings.MARKETING_REPLY_EMAIL
+            else:
+                if request.POST.get('reply_to_email'):
+                    instance.reply_to_email = request.POST['reply_to_email']
             # if request.FILES.get('attachment'):
             #     instance.attachment = request.FILES.get('attachment')
             instance.save()
@@ -568,6 +575,9 @@ def campaign_new(request):
             # contacts = Contact.objects.filter(contact_list__in=json.loads(request.POST['contact_list'])).distinct()
             # for each_contact in contacts:
             #     instance.contacts.add(each_contact)
+            instance.original_contact_count = instance.contact_lists.exclude(
+                contacts__email=None).values_list('contacts__email').count()
+            instance.save()
             tags = request.POST['tags'].split(
                 ',') if request.POST['tags'] else []
             for each in tags:
@@ -907,8 +917,8 @@ def download_contacts_for_campaign(request, compaign_id):
         raise PermissionDenied
     if request.method == 'GET':
         if request.GET.get('is_bounced') == 'true':
-            contact_ids = campaign_obj.contact_lists.filter(contacts__is_bounced=True).values_list(
-                'contacts__id', flat=True)
+            contact_ids = campaign_obj.campaign_log_contacts.filter(contact__is_bounced=True).values_list(
+                'contact__id', flat=True)
             contacts = Contact.objects.filter(id__in=contact_ids).values(
                 'company_name', 'email', 'name', 'last_name', 'city', 'state')
 
@@ -916,8 +926,8 @@ def download_contacts_for_campaign(request, compaign_id):
 
             # unsubscribe_contacts_ids = ContactUnsubscribedCampaign.objects.filter(
             #     campaigns=campaign_obj, is_unsubscribed=True).values_list('contacts_id', flat=True)
-            contact_ids = campaign_obj.contact_lists.filter(contacts__is_unsubscribed=True).values_list(
-                'contacts__id', flat=True)
+            contact_ids = campaign_obj.campaign_log_contacts.filter(contact__is_unsubscribed=True).values_list(
+                'contact__id', flat=True)
             contacts = Contact.objects.filter(id__in=contact_ids).values(
                 'company_name', 'email', 'name', 'last_name', 'city', 'state')
 
@@ -1000,6 +1010,29 @@ def delete_multiple_contacts(request):
     else:
         message = "You don't have permission to delete {}".format(', '.join(cannot_be_deleted))
         return JsonResponse({'error': True, 'message' : message })
+
+
+@login_required(login_url='/login')
+@marketing_access_required
+def delete_all_contacts(request, contact_list_id):
+
+    contacts_list_obj = get_object_or_404(ContactList, pk=contact_list_id)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or contacts_list_obj.created_by == request.user):
+        raise PermissionDenied
+    if request.GET.get('bounced','') == 'true':
+        bounced = True
+    else:
+        bounced = False
+    contacts_objs = contacts_list_obj.contacts.filter(is_bounced=bounced)
+    if contacts_objs:
+        for contact_obj in contacts_objs:
+            if contact_obj.contact_list.count() > 1:
+                contact_obj.contact_list.remove(contacts_list_obj)
+            else:
+                contact_obj.delete()
+    # delete_multiple_contacts_tasks.delay(contact_list_id, bounced)
+    redirect_to = reverse('marketing:contact_list_detail', args=(contact_list_id,))
+    return HttpResponseRedirect(redirect_to)
 
 
 @login_required

@@ -27,14 +27,22 @@
                 </div>
                 <div class="campaign_det row marl">
                   <div class="col-md-12">
-                    <div class="title">Title: <span class="content">{{ campaign.title }}</span> <span
+                    <div class="title"><b>Title:</b> <span class="content">{{ campaign.title }}</span> <span
                         class="icon"></span></div>
                     <div class="subject"><a href="#">Subject: <span class="content">{{ campaign.subject }}</span></a>
                       <span class="icon"></span></div>
                     <div class="recievers">
-                      To: {% for contact_list in campaign.contact_lists.all %}<span
-                        class="badge badge-secondary mr-1">List: {{ contact_list.name }}</span>{% endfor %}
+                      <b>To:</b> {% for contact_list in campaign.contact_lists.all %}<span class=""> <a
+                          href="{% url 'marketing:contact_list_detail' contact_list.id %}"
+                          style="text-decoration: underline;">{{ contact_list.name }}</a> </span>{% endfor %}
                     </div>
+                    <div class="title"> <b>From Name:</b> <span class="content">{{ campaign.from_name }}</span>
+                      <span class="icon"></span></div>
+                    <div class="title"> <b> From Email: </b> <span class="content">{{ campaign.from_email }}</span>
+                      <span class="icon"></span></div>
+                    <div class="title"> <b>Reply To Email: </b><span
+                        class="content">{{ campaign.reply_to_email }}</span>
+                      <span class="icon"></span></div>
                   </div>
                 </div>
                 <div class="row marl count_status">
@@ -95,7 +103,8 @@
                         <div class="card-body">
                           <div class="card-title text-right">
                             <span class="float-left">Last Activity</span>
-                            <a href="{% url 'marketing:download_links_clicked' campaign.id  %}" class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
+                            <a href="{% url 'marketing:download_links_clicked' campaign.id  %}"
+                              class="primary_btn text-center"><i class="fas fa-download mar_right_0"></i></a>
                           </div>
                           <div class="table-responsive table-bordered">
                             <table class="table">
@@ -174,7 +183,7 @@
                                     {% if contact in campaign.contact_lists.all %}
                                     <div>
                                       <a href="{% url 'marketing:contact_list_detail' contact.id %}"
-                                      class="anchor">{{contact.name}} </a>
+                                        class="anchor">{{contact.name}} </a>
                                     </div>
                                     {% endif %}
                                     {% endfor %}

@@ -265,17 +265,23 @@ class Campaign(models.Model):
 
     @property
     def get_all_emails_count(self):
-        return self.contact_lists.exclude(contacts__email=None).values_list('contacts__email').count()
+        email_count = CampaignLog.objects.filter(campaign=self).count()
+        return email_count
+        # return self.contact_lists.exclude(contacts__email=None).values_list('contacts__email').count()
 
     @property
     def get_all_email_bounces_count(self):
-        return self.contact_lists.filter(contacts__is_bounced=True
-                                         ).exclude(contacts__email=None).values_list('contacts__email').count()
+        # return self.contact_lists.filter(contacts__is_bounced=True
+        #                                  ).exclude(contacts__email=None).values_list('contacts__email').count()
+        email_count = CampaignLog.objects.filter(campaign=self,contact__is_bounced=True).count()
+        return email_count
 
     @property
     def get_all_emails_unsubscribed_count(self):
-        return self.contact_lists.filter(contacts__is_unsubscribed=True
-                                         ).exclude(contacts__email=None).values_list('contacts__email').count()
+        # return self.contact_lists.filter(contacts__is_unsubscribed=True
+        #                                  ).exclude(contacts__email=None).values_list('contacts__email').count()
+        email_count = CampaignLog.objects.filter(campaign=self,contact__is_unsubscribed=True).count()
+        return email_count
 
     @property
     def get_all_emails_subscribed_count(self):
@@ -289,7 +295,6 @@ class Campaign(models.Model):
         # return opened_contacts
         return contact_ids.count()
 
-
     @property
     def sent_on_arrow(self):
         if self.schedule_date_time:
@@ -302,6 +307,7 @@ class Campaign(models.Model):
                 self.created_on, self.timezone)
             # return c_created_on.strftime('%b %d, %Y %I:%M %p')
             return arrow.get(self.created_on).humanize()
+
 
 @receiver(models.signals.pre_delete, sender=Campaign)
 def comment_attachments_delete(sender, instance, **kwargs):
@@ -325,10 +331,11 @@ class Link(models.Model):
     class Meta:
         ordering = ('id',)
 
+
 class CampaignLog(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     campaign = models.ForeignKey(
-        Campaign, related_name='campaign_contacts', on_delete=models.CASCADE)
+        Campaign, related_name='campaign_log_contacts', on_delete=models.CASCADE)
     contact = models.ForeignKey(
         Contact, related_name="marketing_campaign_logs",
         null=True, on_delete=models.SET_NULL)
@@ -336,7 +343,8 @@ class CampaignLog(models.Model):
 
 
 class CampaignLinkClick(models.Model):
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="campaign_link_click")
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="campaign_link_click")
     link = models.ForeignKey(
         Link, blank=True, null=True, on_delete=models.CASCADE)
     ip_address = models.GenericIPAddressField()

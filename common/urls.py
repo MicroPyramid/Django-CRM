@@ -12,11 +12,11 @@ from common.views import (
     add_comment, edit_comment, remove_comment,
     api_settings, add_api_settings, view_api_settings,
     update_api_settings, delete_api_settings,
-    change_passsword_by_admin, google_login, create_lead_from_site
+    change_passsword_by_admin, google_login, create_lead_from_site,
+    activate_user, resend_activation_link
 )
 from django.conf.urls.static import static
 from django.conf import settings
-
 
 app_name = 'common'
 
@@ -88,7 +88,11 @@ urlpatterns = [
          name="change_passsword_by_admin"),
     path('google/login/', google_login, name="google_login"),
     path('create-lead-from-site/', create_lead_from_site,
-         name='create_lead_from_site')
+         name='create_lead_from_site'),
+
+    # user activate link
+    path('activate-user/<uidb64>/<token>/<activation_key>/', activate_user, name='activate_user'),
+    path('resend_activation_link/<userId>/', resend_activation_link, name='resend_activation_link'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

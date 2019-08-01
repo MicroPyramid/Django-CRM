@@ -30,7 +30,7 @@ class EventForm(forms.ModelForm):
             field.widget.attrs = {"class": "form-control"}
 
         if request_user.role == 'ADMIN' or request_user.is_superuser:
-            self.fields['assigned_to'].queryset = User.objects.all()
+            self.fields['assigned_to'].queryset = User.objects.filter(is_active=True)
             self.fields["contacts"].queryset = Contact.objects.filter()
             self.fields['assigned_to'].required = True
             self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
@@ -126,7 +126,7 @@ class EventForm(forms.ModelForm):
 
 
 class EventCommentForm(forms.ModelForm):
-    comment = forms.CharField(max_length=64, required=True)
+    comment = forms.CharField(max_length=255, required=True)
 
     class Meta:
         model = Comment
