@@ -6,6 +6,7 @@ from django.urls import reverse
 from leads.models import Lead
 from contacts.models import Contact
 from django.core.files.uploadedfile import SimpleUploadedFile
+from teams.models import Teams
 
 
 class AccountCreateTest(object):
@@ -20,7 +21,8 @@ class AccountCreateTest(object):
             first_name="jane",
             username='janeAccount',
             email='janeAccount@example.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.user1.set_password('password')
         self.user1.save()
 
@@ -76,6 +78,13 @@ class AccountCreateTest(object):
             address=self.address,
             description="contact",
             created_by=self.user)
+
+        self.contact_user1 = Contact.objects.create(
+            first_name="contact",
+            email="contactUser1@example.com",
+            address=self.address,
+            description="contact",
+            created_by=self.user1)
 
 
 class AccountsCreateTestCase(AccountCreateTest, TestCase):
@@ -384,3 +393,155 @@ class TestCreateLeadPostView(AccountCreateTest, TestCase):
                  upload_file.name, upload_file.read())
              })
         self.assertEqual(response.status_code, 200)
+
+class test_account_forms(AccountCreateTest, TestCase):
+
+    def test_account_form(self):
+        self.client.login(email='janeAccount@example.com', password='password')
+        response = self.client.get(reverse('accounts:new_account'))
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(reverse('accounts:create_mail', args=(self.account.id,)))
+        self.assertEqual(200, response.status_code)
+
+class test_account_models(AccountCreateTest, TestCase):
+
+    def test_account_model(self):
+        self.account.billing_address_line = 'billing address line'
+        self.account.save()
+        self.assertEqual('billing address line, street name, city name, state, 1234, United States',
+            self.account.get_complete_address())
+        self.account.billing_street = 'billing street'
+        self.account.save()
+        self.assertEqual('billing address line, billing street, city name, state, 1234, United States',
+            self.account.get_complete_address())
+        self.account.billing_city = None
+        self.account.billing_address_line = None
+        self.account.billing_street = None
+        self.account.save()
+        self.assertEqual('state, 1234, United States',
+            self.account.get_complete_address())
+        self.account.billing_state = None
+        self.account.save()
+        self.assertEqual('1234, United States',
+            self.account.get_complete_address())
+        self.account.billing_postcode = None
+        self.account.save()
+        self.assertEqual('United States',self.account.get_complete_address())
+        self.account.billing_country = None
+        self.account.save()
+        self.assertEqual('', self.account.get_complete_address())
+        self.account.billing_city = 'city'
+        self.account.save()
+        self.assertEqual('city', self.account.get_complete_address())
+        self.assertEqual('' ,self.account.contact_values)
+
+class test_account_views_list(AccountCreateTest, TestCase):
+
+    def test_account_views(self):
+        self.client.login(email='janeAccount@example.com', password='password')
+        response = self.client.get(reverse('accounts:list'))
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(reverse('accounts:list')+'?tag=1')
+        self.assertEqual(200, response.status_code)
+        response = self.client.post(reverse('accounts:list'), {'industry': 'industry',
+            'tag': [1, ], 'tab_status': 'true'})
+        self.assertEqual(200, response.status_code)
+        self.tag_name = Tags.objects.create(name='tag name')
+        self.team_account = Teams.objects.create(name='dev team')
+        self.team_account.users.add(self.user1.id)
+        self.client.logout()
+        self.client.login(email='johnAccount@example.com', password='password')
+        response = self.client.post(reverse('accounts:new_account'), {
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "+91-123-456-7894",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
+            'billing_country': "IN",
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing",
+            'contacts':[self.contact_user1.id,],
+            'tags': self.tag_name.name,
+            'assigned_to' : [self.user.id, ],
+            'teams': [self.team_account.id,]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        response = self.client.post(reverse('accounts:new_account'), {
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "+91-123-456-7894",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
+            'billing_country': "IN",
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing",
+            'contacts':[self.contact_user1.id,],
+            'tags': self.tag_name.name,
+            'assigned_to' : [self.user.id, ],
+            'teams': [self.team_account.id,]})
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.post(reverse('accounts:new_account'), {
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "+91-123-456-7894",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
+            'billing_country': "IN",
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing",
+            'contacts':[self.contact_user1.id,],
+            'tags': self.tag_name.name,
+            'assigned_to' : [self.user.id, ],
+            'teams': [self.team_account.id,],
+            'savenewform': 'true'})
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.post(reverse('accounts:new_account'), {
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "+91-123-456-789",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
+            'billing_country': "IN",
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing",
+            'tags': self.tag_name.name,
+            'assigned_to' : [0, ],
+            'teams': [0,],},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='janeAccount@example.com', password='password')
+        response = self.client.get(reverse('accounts:view_account', args=(self.account.id,)))
+        self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='johnAccount@example.com', password='password')
+        response = self.client.post(reverse('accounts:new_account'), {
+            'name': "account", 'email': "johndoe@example.com",
+            'phone': "+91-123-456-789",
+            'billing_address_line': "address line",
+            'billing_street': "billing street",
+            'billing_city': "billing city",
+            'billing_state': "state",
+            'billing_postcode': "1234",
+            'billing_country': "IN",
+            'website': "www.example.com",
+            'industry': "SOFTWARE", 'description': "Testing",
+            'contacts':[self.contact_user1.id,],
+            'tags': self.tag_name.name,
+            'assigned_to' : [self.user.id, ],
+            'teams': [self.team_account.id,]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)

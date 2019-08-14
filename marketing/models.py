@@ -382,3 +382,18 @@ class ContactUnsubscribedCampaign(models.Model):
     contacts = models.ForeignKey(
         Contact, on_delete=models.Case, related_name='contact_is_unsubscribed')
     is_unsubscribed = models.BooleanField(default=False)
+
+class ContactEmailCampaign(models.Model):
+    """
+    send all campaign emails to this contact
+    """
+    name = models.CharField(max_length=500)
+    email = models.EmailField()
+    last_name = models.CharField(max_length=500, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, related_name="marketing_contacts_emails_campaign_created_by",
+        null=True, on_delete=models.SET_NULL)
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()

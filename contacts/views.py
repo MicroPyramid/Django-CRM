@@ -208,6 +208,10 @@ class ContactDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
         context = super(ContactDetailView, self).get_context_data(**kwargs)
         user_assgn_list = [
             assigned_to.id for assigned_to in context['object'].assigned_to.all()]
+        user_assigned_accounts = set(self.request.user.account_assigned_users.values_list('id', flat=True))
+        contact_accounts = set(context['object'].account_contacts.values_list('id', flat=True))
+        if user_assigned_accounts.intersection(contact_accounts):
+            user_assgn_list.append(self.request.user.id)
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if (self.request.user.role != "ADMIN" and not

@@ -1,15 +1,14 @@
 import csv
 import datetime
-import re
 import json
+import re
+
 import openpyxl
+import xlrd
 from django import forms
 
 from common.models import User
-from marketing.models import (
-    ContactList, Contact,
-    EmailTemplate, Campaign, Tag
-)
+from marketing.models import Campaign, Contact, ContactList, EmailTemplate, Tag, ContactEmailCampaign
 
 email_regex = '^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
 
@@ -65,71 +64,160 @@ def csv_doc_validate(document):
         "failed_contacts_csv": failed_contacts_csv}
 
 
+# def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
+#     # headers = ["first name", "last name", "email"]
+#     # required_headers = ["first name", "last name", "email"]
+#     headers = ["first name", "email"]
+#     required_headers = ["first name", "email"]
+#     work_sheet = wb.get_sheet_by_name(name=sheet_name)
+#     for y_index, row in enumerate(work_sheet.iter_rows()):
+#         if y_index == 0:
+#             missing_headers = set(required_headers) - \
+#                 set([str(cell.value).lower() for cell in row])
+#             if missing_headers:
+#                 missing_headers_str = ', '.join(missing_headers)
+#                 message = "Missing headers: %s %s" % (
+#                     missing_headers_str, sheet_name)
+#                 return {"error": True, "message": message}
+#             continue
+#         elif not ''.join(str(cell.value) for cell in row):
+#             continue
+#         else:
+#             temp_row = []
+#             invalid_row = []
+#             for x_index, cell in enumerate(row):
+#                 try:
+#                     headers[x_index]
+#                 except IndexError:
+#                     continue
+#                 if headers[x_index] in required_headers:
+#                     if not cell.value:
+#                         # message = 'Missing required \
+#                         #             value %s for row %s in sheet %s'\
+#                         #     % (headers[x_index], y_index + 1, sheet_name)
+#                         # return {"error": True, "message": message}
+#                         invalid_row.append(headers[x_index])
+#                 temp_row.append(cell.value)
+#             if len(invalid_row) > 0:
+#                 invalid_rows.append(temp_row)
+#             else:
+#                 if len(temp_row) >= len(required_headers):
+#                     validated_rows.append(temp_row)
+#     return validated_rows, invalid_rows
+
 def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
-    # headers = ["first name", "last name", "email"]
-    # required_headers = ["first name", "last name", "email"]
-    headers = ["first name", "email"]
+    wb_sheet = wb[sheet_name]
+    sheet_headers = [cell.value for cell in wb_sheet[1]]
     required_headers = ["first name", "email"]
-    work_sheet = wb.get_sheet_by_name(name=sheet_name)
-    for y_index, row in enumerate(work_sheet.iter_rows()):
-        if y_index == 0:
-            missing_headers = set(required_headers) - \
-                set([str(cell.value).lower() for cell in row])
-            if missing_headers:
-                missing_headers_str = ', '.join(missing_headers)
-                message = "Missing headers: %s %s" % (
-                    missing_headers_str, sheet_name)
-                return {"error": True, "message": message}
-            continue
-        elif not ''.join(str(cell.value) for cell in row):
-            continue
-        else:
-            temp_row = []
-            invalid_row = []
-            for x_index, cell in enumerate(row):
-                try:
-                    headers[x_index]
-                except IndexError:
-                    continue
-                if headers[x_index] in required_headers:
-                    if not cell.value:
-                        # message = 'Missing required \
-                        #             value %s for row %s in sheet %s'\
-                        #     % (headers[x_index], y_index + 1, sheet_name)
-                        # return {"error": True, "message": message}
-                        invalid_row.append(headers[x_index])
-                temp_row.append(cell.value)
-            if len(invalid_row) > 0:
-                invalid_rows.append(temp_row)
-            else:
-                if len(temp_row) >= len(required_headers):
-                    validated_rows.append(temp_row)
-    return validated_rows, invalid_rows
+
+    # this condition will check if the both fields in required_headers exist
+    if not len(set(sheet_headers).intersection(required_headers)) == 2:
+        missing_headers = set(required_headers) - set(sheet_headers)
+        missing_headers_str = ', '.join(missing_headers)
+        message = 'Missing headers: {}'.format(missing_headers_str)
+        return {"error": True, "message": message}, message
+    else:
+        data = []
+        for row in wb_sheet.rows:
+            d = {}
+            for key,cell_value in zip(sheet_headers,row):
+                d[key] = cell_value.value
+            data.append(d)
+        # remove the first element, it contains no values
+        data.pop(0)
+        if len(data):
+            validated_rows = []
+            invalid_rows = []
+            for row in data:
+                if row.get('email', None):
+                    if re.match(email_regex, row.get('email', None)) is None:
+                        invalid_rows.append(row)
+                    else:
+                        validated_rows.append(row)
+            return validated_rows, invalid_rows
 
 
-def xls_doc_validate(document):
+def xlsx_doc_validate(document):
     wb = openpyxl.load_workbook(document)
-    sheets = wb.get_sheet_names()
+    sheets = wb.sheetnames
     validated_rows = []
     invalid_rows = []
     for sheet_name in sheets:
-        validated_rows, invalid_rows = get_validated_rows(
+        valid_data, invalid_data = get_validated_rows(
             wb, sheet_name, validated_rows, invalid_rows)
+        if type(valid_data) == dict:
+            return valid_data
+        validated_rows = validated_rows + valid_data
+        invalid_rows = invalid_rows + invalid_data
     return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
 
+
+def get_validated_rows_xls(wb, sheet_name, validated_rows, invalid_rows):
+    wb_sheet = wb.sheet_by_name(sheet_name)
+    sheet_headers = [cell.value for cell in wb_sheet.row(0)]
+    required_headers = ["first name", "email"]
+
+    # this condition will check if the both fields in required_headers exist
+    if not len(set(sheet_headers).intersection(required_headers)) == 2:
+        missing_headers = set(required_headers) - set(sheet_headers)
+        missing_headers_str = ', '.join(missing_headers)
+        message = 'Missing headers: {}'.format(missing_headers_str)
+        return {"error": True, "message": message}, message
+    else:
+        no_of_rows = wb_sheet.nrows
+        data = []
+        for nrow in range(no_of_rows):
+            d = {}
+            for key,cell_value in zip(sheet_headers, [cell.value for cell in wb_sheet.row(nrow)]):
+                d[key] = cell_value
+            data.append(d)
+        # remove the first element, it contains no values
+        data.pop(0)
+        if len(data):
+            validated_rows = []
+            invalid_rows = []
+            for row in data:
+                if row.get('email', None):
+                    if re.match(email_regex, row.get('email', None)) is None:
+                        invalid_rows.append(row)
+                    else:
+                        validated_rows.append(row)
+            return validated_rows, invalid_rows
+
+def xls_doc_validate(document):
+    wb = xlrd.open_workbook(file_contents=document.open().read())
+    sheets = wb.sheet_names()
+    validated_rows = []
+    invalid_rows = []
+    for sheet_name in sheets:
+        valid_data, invalid_data = get_validated_rows_xls(
+            wb, sheet_name, validated_rows, invalid_rows)
+        # if the data is valid data we'll get a list or else a dict
+        if type(valid_data) == dict:
+            return valid_data
+        validated_rows = validated_rows + valid_data
+        invalid_rows = invalid_rows + invalid_data
+        return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
 
 def import_document_validator(document):
     try:
         # dialect = csv.Sniffer().sniff(document.read(1024).decode("ascii"))
-        document.seek(0, 0)
+        document.seek(0, 0) # csv file
         return csv_doc_validate(document)
     except Exception as e:
         print(e)
+        print('csv')
         try:
-            return xls_doc_validate(document)
+            return xlsx_doc_validate(document) # xlsx file
         except Exception as e:
             print(e)
-            return {"error": True, "message": "Not a valid CSV/XLS file"}
+            print('xlsx')
+            try:
+                return xls_doc_validate(document) # xls file
+            except Exception as e:
+                print(e)
+                print('xls')
+                return {"error": True, "message": "Not a valid CSV/XLS file"}
 
 
 class ContactListForm(forms.ModelForm):
@@ -360,3 +448,27 @@ class SendCampaignForm(forms.ModelForm):
         if Campaign.objects.filter(title__iexact=title).exclude(id=self.instance.id).exists():
             raise forms.ValidationError('Campaign with this title already exists.')
         return title
+
+
+class EmailCampaignForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        self.obj_instance = kwargs.get('instance', None)
+        super(EmailCampaignForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs = {"class": "form-control"}
+
+        self.fields['name'].required = True
+        self.fields['email'].required = True
+        self.fields['last_name'].required = False
+
+    class Meta:
+        model = ContactEmailCampaign
+        fields = ["name", "email", "last_name",]
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if ContactEmailCampaign.objects.filter(email=email).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError(
+                'Contact with this Email already exists.')
+        return email

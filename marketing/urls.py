@@ -6,7 +6,8 @@ from .views import (
     edit_contact_list, delete_contact_list, failed_contact_list_detail, failed_contact_list_download_delete,
     campaign_link_click, campaign_open, demo_file_download, delete_contact, unsubscribe_from_campaign, contact_detail,
     edit_failed_contact, delete_failed_contact, download_contacts_for_campaign, create_campaign_from_template,
-    download_links_clicked, delete_multiple_contacts, download_failed_contacts, delete_all_contacts
+    download_links_clicked, delete_multiple_contacts, download_failed_contacts, delete_all_contacts,
+    add_email_for_campaigns, list_all_emails_for_campaigns, edit_email_for_campaigns, delete_email_for_campaigns
 )
 
 app_name = 'marketing'
@@ -51,4 +52,8 @@ urlpatterns = [
     path('delete_multiple_contacts/', delete_multiple_contacts, name="delete_multiple_contacts"),
     path('download-failed-contacts/<int:contact_list_id>/', download_failed_contacts, name="download_failed_contacts"),
     path('delete_all_contacts/<int:contact_list_id>/', delete_all_contacts, name="delete_all_contacts"),
+    path('add-email-for-campaigns/', add_email_for_campaigns, name="add_email_for_campaigns"),
+    path('list-all-emails-for-campaigns/', list_all_emails_for_campaigns, name="list_all_emails_for_campaigns"),
+    path('edit-email-for-campaigns/<int:pk>/', edit_email_for_campaigns, name="edit_email_for_campaigns"),
+    path('delete-email-for-campaigns/<int:pk>/', delete_email_for_campaigns, name="delete_email_for_campaigns"),
 ]

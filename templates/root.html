@@ -115,6 +115,7 @@
                 {% if request.user.role == "ADMIN"  or request.user.is_superuser %}
                 <a class="dropdown-item" href="{% url 'common:users_list' %}">Users</a>
                 <a class="dropdown-item" href="{% url 'common:api_settings' %}">Settings</a>
+                <a class="dropdown-item" href="{% url 'marketing:list_all_emails_for_campaigns' %}">Contacts</a>
                 {% endif %}
                 {% if request.user.email != "admin@micropyramid.com" %}
                 <a class="dropdown-item" href="/change-password/">Change Password</a>
