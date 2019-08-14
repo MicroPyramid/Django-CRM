@@ -89,8 +89,6 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
     def dispatch(self, request, *args, **kwargs):
         if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
             self.users = User.objects.filter(is_active=True).order_by('email')
-        elif request.user.google.all():
-            self.users = []
         else:
             self.users = User.objects.filter(role='ADMIN').order_by('email')
         return super(CreateContactView, self).dispatch(
@@ -251,8 +249,6 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
     def dispatch(self, request, *args, **kwargs):
         if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
             self.users = User.objects.filter(is_active=True).order_by('email')
-        elif request.user.google.all():
-            self.users = []
         else:
             self.users = User.objects.filter(role='ADMIN').order_by('email')
         return super(UpdateContactView, self).dispatch(

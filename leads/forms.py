@@ -138,60 +138,6 @@ def csv_doc_validate(document):
     return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row, "headers":csv_headers,
         "failed_leads_csv": failed_leads_csv}
 
-
-def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
-    # headers = ["first name", "last name", "email"]
-    # required_headers = ["first name", "last name", "email"]
-    headers = ["title"]
-    required_headers = ["title"]
-    work_sheet = wb.get_sheet_by_name(name=sheet_name)
-    for y_index, row in enumerate(work_sheet.iter_rows()):
-        if y_index == 0:
-            missing_headers = set(required_headers) - \
-                set([str(cell.value).lower() for cell in row])
-            if missing_headers:
-                missing_headers_str = ', '.join(missing_headers)
-                message = "Missing headers: %s %s" % (
-                    missing_headers_str, sheet_name)
-                return {"error": True, "message": message}
-            continue
-        elif not ''.join(str(cell.value) for cell in row):
-            continue
-        else:
-            temp_row = []
-            invalid_row = []
-            for x_index, cell in enumerate(row):
-                try:
-                    headers[x_index]
-                except IndexError:
-                    continue
-                if headers[x_index] in required_headers:
-                    if not cell.value:
-                        # message = 'Missing required \
-                        #             value %s for row %s in sheet %s'\
-                        #     % (headers[x_index], y_index + 1, sheet_name)
-                        # return {"error": True, "message": message}
-                        invalid_row.append(headers[x_index])
-                temp_row.append(cell.value)
-            if len(invalid_row) > 0:
-                invalid_rows.append(temp_row)
-            else:
-                if len(temp_row) >= len(required_headers):
-                    validated_rows.append(temp_row)
-    return validated_rows, invalid_rows
-
-
-def xls_doc_validate(document):
-    wb = openpyxl.load_workbook(document)
-    sheets = wb.get_sheet_names()
-    validated_rows = []
-    invalid_rows = []
-    for sheet_name in sheets:
-        validated_rows, invalid_rows = get_validated_rows(
-            wb, sheet_name, validated_rows, invalid_rows)
-    return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
-
-
 def import_document_validator(document):
     try:
         # dialect = csv.Sniffer().sniff(document.read(1024).decode("ascii"))
@@ -199,11 +145,7 @@ def import_document_validator(document):
         return csv_doc_validate(document)
     except Exception as e:
         print(e)
-        try:
-            return xls_doc_validate(document)
-        except Exception as e:
-            print(e)
-            return {"error": True, "message": "Not a valid CSV/XLS file"}
+        return {"error": True, "message": "Not a valid CSV file"}
 
 
 class LeadListForm(forms.Form):
@@ -212,12 +154,12 @@ class LeadListForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(LeadListForm, self).__init__(*args, **kwargs)
         self.fields['leads_file'].widget.attrs.update({
-            "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
+            "accept": ".csv",
         })
         self.fields['leads_file'].required = True
         if self.data.get('leads_file'):
             self.fields['leads_file'].widget.attrs.update({
-                "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
+                "accept": ".csv",
             })
 
     def clean_leads_file(self):

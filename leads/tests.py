@@ -1,13 +1,15 @@
-from django.test import TestCase, Client
-from cases.models import Case
-from leads.models import Lead
-from common.models import User, Comment, Attachments, APISettings
-from accounts.models import Account, Tags
-from leads.tasks import *
-from leads.forms import *
-from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils.encoding import force_text
+
+from accounts.models import Account, Tags
+from cases.models import Case
+from common.models import APISettings, Attachments, Comment, User
+from leads.forms import *
+from leads.models import Lead
+from leads.tasks import *
+from teams.models import Teams
 
 
 class TestLeadModel(object):
@@ -32,7 +34,8 @@ class TestLeadModel(object):
             first_name="janeLead2",
             username='janeLead2',
             email='janeLead2@example.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.user2.set_password('password')
         self.user2.save()
 
@@ -40,7 +43,8 @@ class TestLeadModel(object):
             first_name="janeLead3",
             username='janeLead3',
             email='janeLead3@example.com',
-            role="USER")
+            role="USER",
+            has_sales_access=True)
         self.user3.set_password('password')
         self.user3.save()
 
@@ -82,6 +86,7 @@ class TestLeadModel(object):
         self.lead1 = Lead.objects.create(
             title="jane doe lead", created_by=self.user3)
         self.lead.assigned_to.add(self.user)
+        self.lead.assigned_to.add(self.user2)
         self.lead.assigned_to.add(self.user3)
         self.case = Case.objects.create(
             name="john case", case_type="Problem",
@@ -513,7 +518,7 @@ class TestLeadDetailView1(TestLeadModel, TestCase):
     def test_lead_detail_view(self):
         self.client.login(username='janeLead2@example.com', password='password')
         resp = self.client.get(reverse('leads:view_lead', args=(self.lead.id,)))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 200)
         self.client.logout()
 
 
@@ -536,25 +541,170 @@ class TestCommentAddResponse(TestLeadModel, TestCase):
         self.assertJSONEqual(force_text(response.content), {"error": ["This field is required."]})
 
 
-# # class TestAddAttachmentView(TestLeadModel, TestCase):
+    def test_file_upload_for_leads(self):
+        self.client.logout()
+        self.client.login(email='johnLead@example.com', password="password")
 
-# #     def test_convert_lead_view(self):
-# #         response = self.client.post(reverse('leads:add_attachment'),{})
-# #         self.assertEqual(response.status_code, 200)
-# #         self.assertJSONEqual(
-# #             str(response.content, encoding='utf8'),
-# #             {'status': 'success'}
-# #         )
+        file_content = [
+            'title,first name,last name,website,phone,email,address\n',
+            'lead1,john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
+            'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+            'lead3,joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
+            'lead4,john,doe,www.sample.com,911234567893,user4@email.com,address for lead4\n',
+        ]
+        file_content = bytes(''.join(file_content), 'utf-8')
+        data = {'leads_file': SimpleUploadedFile('file name', file_content)}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
+        self.assertEqual(201, response.status_code)
 
+        file_content_missing_headers = [
+            ',first name,last name,website,phone,,address\n',
+            'lead1,john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
+            'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+            'lead3,joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
+            'lead4,john,doe,www.sample.com,911234567893,user4@email.com,address for lead4\n',
+        ]
+        file_content_missing_headers = bytes(''.join(file_content_missing_headers), 'utf-8')
+        data = {'leads_file': SimpleUploadedFile('file name', file_content_missing_headers)}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
 
-# # class TestAddLeadViewFormError(TestLeadModel, TestCase):
+        # for invalid lead titles
+        file_content = [
+            'title,first name,last name,website,phone,email,address\n',
+            ',john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
+            ',jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+            ',joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
+            ',john,doe,www.sample.com,911234567893,user4@email.com,address for lead4\n',
+        ]
+        file_content = bytes(''.join(file_content), 'utf-8')
+        data = {'leads_file': SimpleUploadedFile('file name', file_content)}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
+        self.assertEqual(200, response.status_code)
 
-# #     def test_add_lead_view_form_error(self):
-# #         response = self.client.post(reverse('leads:add_lead'),{})
-# #         # self.assertEqual(response.status_code, 200)
-# #         print(response.json())
-# #         print(dir(response))
-# #         self.assertJSONEqual(
-# #             str(response.json(), encoding='utf8'),
-# #             {'status': 'success'}
-# #         )
+        # for invalid email
+        file_content = [
+            'title,first name,last name,website,phone,email,address\n',
+            'lead1,john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
+            'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+            'lead3,joe,doe,www.test.com,911234567892,useremail.com,address for lead3\n',
+            'lead4,john,doe,www.sample.com,911234567893,user4@email,address for lead4\n',
+        ]
+        file_content = bytes(''.join(file_content), 'utf-8')
+        data = {'leads_file': SimpleUploadedFile('file name', file_content)}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
+        self.assertEqual(201, response.status_code)
+
+        # for invalid file type
+        data = {'leads_file': b''}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
+        self.assertEqual(200, response.status_code)
+
+        file_content_missing_headers = [
+            ',first name,last name,website,phone,,address\n',
+            'lead1,john,doe,www.example.com,911234567890,user1@email,address for lead1\n',
+            'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+            'lead3,joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
+            'lead4,john,doe,www.sample.com,911234567893,user4@email,address for lead4\n',
+        ]
+        file_content_missing_headers = bytes(''.join(file_content_missing_headers), 'utf-8')
+        data = {'leads_file': SimpleUploadedFile('file name', file_content_missing_headers)}
+        response = self.client.post(reverse('leads:upload_lead_csv_file'), data)
+
+        response = self.client.post(reverse('leads:list') + '?tag=0', {'city': 'city'})
+        self.assertEqual(response.status_code, 200)
+
+        self.teams_leads = Teams.objects.create(name='teams leads')
+        self.teams_leads.users.add(self.user1)
+        response = self.client.post(reverse('leads:add_lead'), {'title': 'new lead title', 'teams': [self.teams_leads.id, ],
+            'savenewform':'true'})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(reverse('leads:add_lead'), {'title': ''})
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='janeLead3@example.com', password="password")
+
+        response = self.client.get(reverse('leads:view_lead', args=(self.lead_1.id,)))
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.get(reverse('leads:view_lead', args=(self.lead1.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='janeLead2@example.com', password="password")
+        self.lead_user = Lead.objects.create(title="jane doe lead 2", created_by=self.user2)
+        response = self.client.get(reverse('leads:view_lead', args=(self.lead_user.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='johnLead@example.com', password="password")
+        response = self.client.get(reverse('leads:edit_lead', args=(self.lead_1.id,)) + '?status=converted')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse('leads:edit_lead', args=(self.lead_1.id,)) + '?status=c')
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse('leads:edit_lead', args=(self.lead_1.id,)) + '?status=converted')
+        self.assertEqual(response.status_code, 200)
+
+        self.teams_leads.users.add(self.user3)
+        data = {
+            'title': self.lead_1.title,
+            'teams': [self.teams_leads.id, ],
+            'status':'converted',
+            'account_name': 'lead_conversion',
+            'email':'account@lead.com'
+        }
+        comment = Comment.objects.create(comment='comment text lead', lead=self.lead_1, commented_by=self.user)
+        response = self.client.post(reverse('leads:edit_lead', args=(self.lead_1.id,)) + '?status=converted', data)
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='janeLead3@example.com', password="password")
+
+        response = self.client.get(reverse('leads:remove_lead', args=(self.lead_1.id,)))
+        self.assertEqual(response.status_code, 403)
+
+        self.client.logout()
+        self.client.login(email='johnLead@example.com', password="password")
+        self.lead.email = None
+        self.lead.save()
+        response = self.client.get(reverse('leads:leads_convert', args=(self.lead.id,)) + '?status=converted')
+        self.assertEqual(response.status_code, 302)
+
+        self.tag_for_lead = Tags.objects.create(name='tag for lead')
+        data = {
+            'tags':'tag1 lead,tag2 lead,tag for lead'
+        }
+        response = self.client.post(reverse('leads:update_lead_tags', args=(self.lead.id,)), data)
+        self.assertEqual(response.status_code, 302)
+
+        self.client.logout()
+        self.client.login(email='janeLead3@example.com', password="password")
+        response = self.client.post(reverse('leads:update_lead_tags', args=(self.lead.id,)), data)
+        self.assertEqual(response.status_code, 403)
+
+        self.client.logout()
+        self.client.login(email='johnLead@example.com', password="password")
+        data = {
+            'lead': self.lead.id,
+            'tag': self.tag_for_lead.id
+        }
+        response = self.client.post(reverse('leads:remove_lead_tag'), data)
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(email='janeLead3@example.com', password="password")
+        response = self.client.post(reverse('leads:remove_lead_tag'), data)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse('leads:sample_lead_file'))
+        sample_data = [
+        'title,first name,last name,website,phone,email,address\n',
+        'lead1,john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
+        'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
+        'lead3,joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
+        'lead4,john,doe,www.sample.com,911234567893,user4@email.com,address for lead4\n',
+        ]
+        content = bytes(''.join(sample_data), 'utf-8')
+        self.assertEqual(response.content, content)

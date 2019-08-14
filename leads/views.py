@@ -302,8 +302,6 @@ def update_lead(request, pk):
     users = []
     if request.user.role == 'ADMIN' or request.user.is_superuser:
         users = User.objects.filter(is_active=True).order_by('email')
-    elif request.user.google.all():
-        users = []
     else:
         users = User.objects.filter(role='ADMIN').order_by('email')
     status = request.GET.get('status', None)

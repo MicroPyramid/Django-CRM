@@ -3,8 +3,23 @@
 {% load paginate %}
 {% block extralinks %}
 {% load thumbnail %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 {% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'accounts:list' %}">Accounts</a></li>
+      <li class="breadcrumb-item active">Create Mail</li>
+    </ol>
+  </nav>
+{% endblock breadcrumb %}
+
 {% block content %}
 <!-- main_container starts here -->
 <div class="main_container">
@@ -36,9 +51,50 @@
                     <div class="col-md-12">
                       <div class="form-group">
                         <label for="">Subject</label>
-                        <input type="text" class="form-control" name="message_subject"  placeholder="Enter Subject">
+                        <input type="text" class="form-control" name="message_subject" placeholder="Enter Subject">
                       </div>
                       <span id="id_message_subject"></span>
+                    </div>
+                    <div class="col-md-9">
+                      <div class="row">
+                        <div class="col-md-4">
+                          <div class="form-group">
+                            <label><input type="checkbox" name="scheduled_later" value="true" class="scheduled_later">
+                              Schedule Later</label>
+                            <span id="id_schedule_later"></span>
+                          </div>
+                        </div>
+                        <div class="col-md-4 timezone-div" style="display: none;">
+                          <div class="form-group">
+                            <label>Timezone</label>
+                            <select name="timezone" id="timezone"
+                              class="form-control timezone-select js-example-basic-single">
+                              <option value="">Select a Timezone</option>
+                              {% for timezone in timezones %}
+                              <option value="{{timezone.0}}"
+                                {% if timezone.0 == settings_timezone %}selected{% endif %}>{{timezone.1}}</option>
+                              {% endfor %}
+                            </select>
+                            <span id="id_timezone"></span>
+                          </div>
+                        </div>
+                        <div class="col-md-4 timezone-div" style="display: none;">
+                          <div class="form-group">
+                            <label for="">Schedule Date Time</label><span class="error_marker" style="color:red">
+                              *</span>
+                            <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                              <input type="text" class="form-control datetimepicker-input"
+                                data-target="#datetimepicker1" name="scheduled_date_time" />
+                              <div class="input-group-append" data-target="#datetimepicker1"
+                                data-toggle="datetimepicker">
+                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                              </div>
+                            </div>
+                            <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
+                            <span id="id_scheduled_date_time"></span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <div class="col-md-12">
                       <div class="form-group">
@@ -53,9 +109,29 @@
                             <div id="justText"></div>
                             <div id="justHtml"></div>
                         </div> -->
+                    <div class="col-md-12">
+                      <div class="heading">Personalization tags</div>
+                      <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to
+                        customize the email template, these tags will be replaced with the associated contact details
+                        while the mails are sent.</p>
+                      <ul>
+                        <li>
+                          <strong>Name: </strong>
+                          <code>{% templatetag openvariable %} name {% templatetag closevariable %}</code>
+                        </li>
+                        <li>
+                          <strong>Email: </strong>
+                          <code>{% templatetag openvariable %} email {% templatetag closevariable %}</code>
+                        </li>
+                        <!-- <li>
+                                      <strong>Two digit day of the month (eg. 01 to 31):</strong>
+                                      <code>[currentdaynumber]</code>
+                                    </li> -->
+                      </ul>
+                    </div>
                     <div class="col-md-12 text-center">
                       <button type="submit" class="primary_btn mar_btm save_btn">Send</button>
-                      <a href="{% url 'accounts:create_mail' account_id %}" class="primary_btn">Cancel</a>
+                      <a href="#" class="primary_btn">Cancel</a>
                     </div>
                   </div>
                 </form>
@@ -71,64 +147,121 @@
 {% block js_block %}
 <script src="https://malsup.github.com/jquery.form.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
+<script src="{% static 'js/ajaxForm.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
 <script>
   $(document).ready(function () {
+
+    // $('[name="schedule_later"]').on('change', function (e) {
+    //   if ($(this).is(":checked")) {
+    //     $('.timezone-div').show();
+    //   } else {
+    //     $('.timezone-div').hide();
+    //   }
+    //   console.log($(this))
+    //   console.log($(this).is(':checked'))
+    // })
+    $(".timezone-select").select2({
+      placeholder: "Select a Timezone",
+    });
+
+    $('.scheduled_later').on('change', function () {
+      // console.log('changed')
+      if ($('.check_delete:checked').length > 1) {
+        $('.timezone-div').show();
+      }
+      else {
+        $('.timezone-div').hide();
+      }
+      if ($(this).is(":checked")) {
+        $('.timezone-div').show();
+      } else {
+        $('.timezone-div').hide();
+      }
+      console.log($(this))
+      console.log($(this).is(':checked'))
+    })
+
+    $.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
+      icons: {
+        time: 'fa fa-clock',
+        date: 'fa fa-calendar',
+        up: 'fa fa-arrow-up',
+        down: 'fa fa-arrow-down',
+        previous: 'fa fa-chevron-left',
+        next: 'fa fa-chevron-right',
+        today: 'far fa-calendar-check-o',
+        clear: 'fa fa-trash',
+        close: 'fa fa-times'
+      }
+    });
+    $('#datetimepicker1').datetimepicker({
+      format: "YYYY-MM-DD HH:mm"
+    });
+
     // $("#id_contacts").select2();
     var REGEX_EMAIL = '([a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*@' +
-    '(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)';
+      '(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)';
 
     $('#_id_recipients').selectize({
-    persist: false,
-    maxItems: null,
-    valueField: 'email',
-    labelField: 'name',
-    searchField: ['name', 'email'],
-    // options: [
-    // {email: 'brian@thirdroute.com', name: 'Brian Reavis'},
-    // {email: 'nikola@tesla.com', name: 'Nikola Tesla'},
-    // {email: 'someone@gmail.com'}
-    // ],
-    options: {{contacts_list|safe}},
+      persist: false,
+      maxItems: null,
+      valueField: 'email',
+      labelField: 'name',
+      searchField: ['name', 'email'],
+      // options: [
+      // {email: 'brian@thirdroute.com', name: 'Brian Reavis'},
+      // {email: 'nikola@tesla.com', name: 'Nikola Tesla'},
+      // {email: 'someone@gmail.com'}
+      // ],
+      options: {{ contacts_list| safe}},
     render: {
-    item: function(item, escape) {
-    return '<div>' +
-      (item.name ? '<span class="name">' + escape(item.name) + '</span>' : '') +
-      (item.email ? '<span class="email">' + escape(item.email) + '</span>' : '') +
-      '</div>';
+      item: function (item, escape) {
+        return '<div>' +
+          (item.name ? '<span class="name">' + escape(item.name) + '</span>' : '') +
+          (item.email ? '<span class="email">' + escape(item.email) + '</span>' : '') +
+          '</div>';
+      },
+      option: function (item, escape) {
+        var label = item.name || item.email;
+        var caption = item.name ? item.email : null;
+        return '<div>' +
+          '<span class="label">' + escape(label) + '</span>' +
+          (caption ? '<span class="caption">' + escape(caption) + '</span>' : '') +
+          '</div>';
+      }
     },
-    option: function(item, escape) {
-    var label = item.name || item.email;
-    var caption = item.name ? item.email : null;
-    return '<div>' +
-      '<span class="label">' + escape(label) + '</span>' +
-      (caption ? '<span class="caption">' + escape(caption) + '</span>' : '') +
-      '</div>';
-    }
-    },
-    createFilter: function(input) {
-    var match, regex;
+    createFilter: function (input) {
+      var match, regex;
 
-    // email@address.com
-    regex = new RegExp('^' + REGEX_EMAIL + '$', 'i');
-    match = input.match(regex);
-    if (match) return !this.options.hasOwnProperty(match[0]);
+      // email@address.com
+      regex = new RegExp('^' + REGEX_EMAIL + '$', 'i');
+      match = input.match(regex);
+      if (match) return !this.options.hasOwnProperty(match[0]);
 
-    // name <email@address.com>
-      regex = new RegExp('^([^<]*)\<' + REGEX_EMAIL + '\>$' , 'i' ); match=input.match(regex); if (match) return
-        !this.options.hasOwnProperty(match[2]); return false; }, create: function(input) { if ((new RegExp('^' +
-        REGEX_EMAIL + '$' , 'i' )).test(input)) { return {email: input}; } var match=input.match(new RegExp('^([^<]*)\<'
-        + REGEX_EMAIL + '\>$' , 'i' )); if (match) { return { email : match[2], name : $.trim(match[1]) }; }
-        alert('Invalid email address.'); return false; } });
+      // name <email@address.com>
+      regex = new RegExp('^([^<]*)\<' + REGEX_EMAIL + '\>$', 'i'); match = input.match(regex); if (match) return
+      !this.options.hasOwnProperty(match[2]); return false;
+    }, create: function (input) {
+      if ((new RegExp('^' +
+        REGEX_EMAIL + '$', 'i')).test(input)) { return { email: input }; } var match = input.match(new RegExp('^([^<]*)\<'
+          + REGEX_EMAIL + '\>$', 'i')); if (match) { return { email: match[2], name: $.trim(match[1]) }; }
+      alert('Invalid email address.'); return false;
+    } });
   });
   var quill = new Quill('#editor-container', {
     modules: {
       toolbar: [
         [{ header: [1, 2, false] }],
         ['bold', 'italic', 'underline'],
-        ['image', 'code-block']
+        ['code-block', 'link']
       ]
     },
-    placeholder: 'Compose an epic...',
+    placeholder: 'Compose mail...',
     theme: 'snow' // or 'bubble'
   });
 

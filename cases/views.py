@@ -361,10 +361,10 @@ class RemoveCaseView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
             self.request.user == self.object.created_by
         ):
             self.object.delete()
-        if request.GET.get('view_account'):
-            account = request.GET.get('view_account')
-            return redirect("accounts:view_account", pk=account)
-        return redirect("cases:list")
+            if request.GET.get('view_account'):
+                account = request.GET.get('view_account')
+                return redirect("accounts:view_account", pk=account)
+            return redirect("cases:list")
         raise PermissionDenied
 
     def post(self, request, *args, **kwargs):
