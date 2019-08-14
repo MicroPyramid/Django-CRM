@@ -406,7 +406,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
             Account, id=request.POST.get('accountid'))
         if (
             request.user == self.account.created_by or request.user.is_superuser or
-            request.user.role == 'ADMIN'
+            request.user.role == 'ADMIN' or request.user in self.account.assigned_to.all()
         ):
             form = self.get_form()
             if form.is_valid():
@@ -496,7 +496,8 @@ class AddAttachmentView(LoginRequiredMixin, CreateView):
         if (
             request.user == self.account.created_by or
             request.user.is_superuser or
-            request.user.role == 'ADMIN'
+            request.user.role == 'ADMIN' or
+            request.user in self.account.assigned_to.all()
         ):
             form = self.get_form()
             if form.is_valid():

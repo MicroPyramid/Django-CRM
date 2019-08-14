@@ -20,12 +20,15 @@ from common import status
 from common.utils import convert_to_custom_timezone
 from common.models import User
 from marketing.forms import (ContactForm, ContactListForm, EmailTemplateForm,
-                             SendCampaignForm)
+                             SendCampaignForm, EmailCampaignForm)
 from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
                               CampaignOpen, Contact, ContactList,
-                              EmailTemplate, Link, Tag, FailedContact, ContactUnsubscribedCampaign)
-from marketing.tasks import run_campaign, upload_csv_file, delete_multiple_contacts_tasks
-from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin
+                              EmailTemplate, Link, Tag, FailedContact, ContactUnsubscribedCampaign,
+                              ContactEmailCampaign)
+from marketing.tasks import (run_campaign, upload_csv_file,
+                            delete_multiple_contacts_tasks,
+                            send_campaign_email_to_admin_contact)
+from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin, admin_login_required
 
 TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
 
@@ -624,10 +627,13 @@ def campaign_new(request):
                 instance.schedule_date_time = schedule_date_time
                 instance.timezone = user_timezone
                 instance.save()
+                send_campaign_email_to_admin_contact.delay(
+                    instance.id, domain=request.get_host(), protocol=request.scheme)
             else:
                 run_campaign.delay(
                     instance.id, domain=request.get_host(), protocol=request.scheme)
-
+                send_campaign_email_to_admin_contact.delay(
+                    instance.id, domain=request.get_host(), protocol=request.scheme)
             return JsonResponse({'error': False, 'data': form.data}, status=status.HTTP_201_CREATED)
         return JsonResponse({'error': True, 'errors': form.errors}, status=status.HTTP_200_OK)
 
@@ -808,7 +814,8 @@ def campaign_link_click(request, link_id, email_id):
         campaign_link_click.save()
         url = link.original
     else:
-        url = settings.URL_FOR_LINKS
+        # url = settings.URL_FOR_LINKS
+        url = link.original
     return redirect(url)
 
 
@@ -1058,3 +1065,62 @@ def download_failed_contacts(request, contact_list_id):
 
     else:
         return HttpResponse('No Data')
+
+
+@login_required
+@admin_login_required
+def list_all_emails_for_campaigns(request):
+    context = {}
+    if request.method == 'GET':
+        queryset = ContactEmailCampaign.objects.all()
+        context['contacts'] = queryset
+        return render(request, 'email_for_campaigns_list.html', context)
+
+
+@login_required
+@admin_login_required
+def add_email_for_campaigns(request):
+    context = {}
+    if request.method == 'GET':
+        form = EmailCampaignForm()
+        context['form'] = form
+        return render(request, 'add_email_for_campaign.html', context)
+    if request.method == 'POST':
+        form = EmailCampaignForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.created_by = request.user
+            obj.save()
+            return JsonResponse({'error':False, 'success_url':reverse('marketing:list_all_emails_for_campaigns')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+
+@login_required
+@admin_login_required
+def edit_email_for_campaigns(request, pk):
+    edit_contact_obj = get_object_or_404(ContactEmailCampaign, pk=pk)
+    context = {}
+    if request.method == 'GET':
+        form = EmailCampaignForm(instance=edit_contact_obj)
+        context['form'] = form
+        context['edit_obj'] = edit_contact_obj
+        return render(request, 'add_email_for_campaign.html', context)
+    if request.method == 'POST':
+        form = EmailCampaignForm(request.POST, instance=edit_contact_obj)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.save()
+            return JsonResponse({'error':False, 'success_url':reverse('marketing:list_all_emails_for_campaigns')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+
+@login_required
+@admin_login_required
+def delete_email_for_campaigns(request, pk):
+    contact_obj = get_object_or_404(ContactEmailCampaign, pk=pk)
+    context = {}
+    if request.method == 'GET':
+        contact_obj.delete()
+        return HttpResponseRedirect(reverse('marketing:list_all_emails_for_campaigns'))

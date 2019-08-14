@@ -243,7 +243,7 @@ class DocumentForm(forms.ModelForm):
 
     def clean_title(self):
         title = self.cleaned_data.get('title')
-        if not self.instance:
+        if not self.instance.id:
             if Document.objects.filter(title=title).exists():
                 raise forms.ValidationError(
                     'Document with this Title already exists')
@@ -303,6 +303,5 @@ class APISettingsForm(forms.ModelForm):
             raise forms.ValidationError("Please provide valid schema")
         if not len(find_urls(website)) > 0:
             raise forms.ValidationError(
-                "Please provide a valid URL with schema and without trailing \
-                slash - Example: http://google.com")
+                "Please provide a valid URL with schema and without trailing slash - Example: http://google.com")
         return website

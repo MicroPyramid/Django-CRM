@@ -107,7 +107,20 @@ def task_detail(request, task_id):
 
     task = get_object_or_404(Task, pk=task_id)
 
-    if not (request.user.role == 'ADMIN' or request.user.is_superuser or task.created_by == request.user or request.user in task.assigned_to.all()):
+    user_assigned_account = False
+    user_assigned_accounts = set(request.user.account_assigned_users.values_list('id', flat=True))
+    if task.account:
+        task_accounts = set([task.account.id])
+    else:
+        task_accounts = set()
+    if user_assigned_accounts.intersection(task_accounts):
+        user_assigned_account = True
+
+    if not ((request.user.role == 'ADMIN') or
+            (request.user.is_superuser) or
+            (task.created_by == request.user) or
+            (request.user in task.assigned_to.all()) or
+            user_assigned_account):
         raise PermissionDenied
 
     if request.method == 'GET':

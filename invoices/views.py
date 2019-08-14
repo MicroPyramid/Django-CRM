@@ -160,7 +160,18 @@ def invoices_create(request):
 def invoice_details(request, invoice_id):
     invoice = get_object_or_404(Invoice.objects.select_related(
         'from_address', 'to_address'), pk=invoice_id)
-    if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user or request.user in invoice.assigned_to.all()):
+
+    user_assigned_account = False
+    user_assigned_accounts = set(request.user.account_assigned_users.values_list('id', flat=True))
+    invoice_accounts = set(invoice.accounts.values_list('id', flat=True))
+    if user_assigned_accounts.intersection(invoice_accounts):
+        user_assigned_account = True
+
+    if not ((request.user.role == 'ADMIN') or
+        (request.user.is_superuser) or
+        (invoice.created_by == request.user) or
+        (request.user in invoice.assigned_to.all()) or
+        user_assigned_account):
         raise PermissionDenied
 
     if request.method == 'GET':

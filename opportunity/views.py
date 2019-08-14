@@ -223,6 +223,13 @@ class OpportunityDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, Detail
         user_assgn_list = [
             assigned_to.id for assigned_to in
             context['object'].assigned_to.all()]
+        user_assigned_accounts = set(self.request.user.account_assigned_users.values_list('id', flat=True))
+        if context['object'].account:
+            opportunity_account = set([context['object'].account.id])
+        else:
+            opportunity_account = set()
+        if user_assigned_accounts.intersection(opportunity_account):
+            user_assgn_list.append(self.request.user.id)
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not \

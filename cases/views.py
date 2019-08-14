@@ -192,6 +192,13 @@ class CaseDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView):
         context = super(CaseDetailView, self).get_context_data(**kwargs)
         user_assgn_list = [
             assigned_to.id for assigned_to in context['object'].assigned_to.all()]
+        user_assigned_accounts = set(self.request.user.account_assigned_users.values_list('id', flat=True))
+        if context['object'].account:
+            case_account = set([context['object'].account.id])
+        else:
+            case_account = set()
+        if user_assigned_accounts.intersection(case_account):
+            user_assgn_list.append(self.request.user.id)
         if self.request.user == context['object'].created_by:
             user_assgn_list.append(self.request.user.id)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
