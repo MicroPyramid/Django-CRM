@@ -1,12 +1,14 @@
-from django.test import TestCase
-from opportunity.models import Opportunity
-from accounts.models import Account, Tags
-from contacts.models import Contact
-from common.models import User, Comment, Attachments, Address
-from cases.models import Case
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.shortcuts import reverse
+from django.test import TestCase
 from django.utils.encoding import force_text
+
+from accounts.models import Account, Tags
+from cases.models import Case
+from common.models import Address, Attachments, Comment, User
+from contacts.models import Contact
+from opportunity.models import Opportunity
+from teams.models import Teams
 
 # Create your tests here.
 
@@ -28,6 +30,24 @@ class OpportunityModel(object):
             role="USER")
         self.user1.set_password('password')
         self.user1.save()
+
+        self.user2 = User.objects.create(
+            first_name="john doe",
+            username='jane doe opportunity',
+            email='janeDoeOpp@example.com',
+            role="USER",
+            has_sales_access=True)
+        self.user2.set_password('password')
+        self.user2.save()
+
+        self.user3 = User.objects.create(
+            first_name="john doe",
+            username='joe doe opportunity',
+            email='joeDoeOpp@example.com',
+            role="USER",
+            has_sales_access=True)
+        self.user3.set_password('password')
+        self.user3.save()
 
         self.address = Address.objects.create(
             street="", city="city name", postcode="1234",
@@ -55,10 +75,23 @@ class OpportunityModel(object):
         self.opportunity = Opportunity.objects.create(
             name="jane opportunity", amount="478",
             stage="negotiation/review", lead_source="Call", probability="58",
-            closed_on="2016-05-04",
+            closed_on="2016-05-04", account=self.account,
             description="opportunity description",
             created_by=self.user)
         self.opportunity.assigned_to.add(self.user)
+
+        self.opportunity_1 = Opportunity.objects.create(
+            name="new opportunity", amount="478",
+            stage="negotiation/review", probability="92",
+            closed_on="2016-05-04", description="opportunity description",
+            created_by=self.user)
+
+        self.opportunity_2 = Opportunity.objects.create(
+            name="joe opportunity", amount="478",
+            stage="negotiation/review", probability="92",
+            closed_on="2016-05-04", description="opportunity description",
+            created_by=self.user3)
+
         self.case = Case.objects.create(
             name="case name", case_type="Problem", status="New", account=self.account,
             priority="Low", description="case description",
@@ -468,3 +501,82 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
         url = "/opportunities/attachment/add/"
         response = self.client.post(url, {'opportunityid': self.opportunity.id})
         self.assertJSONEqual(force_text(response.content),{"error": ["This field is required."]})
+
+        response = self.client.get(reverse('opportunity:list') + '?tag={}'.format(self.tag_1.id))
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.post(reverse('opportunity:list') + '?tag={}'.format(self.tag_1.id), {
+            'tag': self.tag_1.id,
+        })
+        self.assertEqual(200, response.status_code)
+
+        self.team_opp = Teams.objects.create(name='opp team')
+        self.team_opp.users.add(self.user1.id)
+        self.client.logout()
+        self.client.login(email='janeOpp@example.com', password='password')
+        data = {
+            'name': 'opportunity teams',
+            'stage': 'QUALIFICATION',
+            'teams': self.team_opp.id,
+            'savenewform':'true',
+        }
+        response = self.client.post(reverse('opportunity:save'), data)
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(reverse('opportunity:save') + '?view_account={}'.format(self.account.id))
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(reverse('opportunity:opp_view', args=(self.opportunity_1.id,)))
+        self.assertEqual(200, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='janeDoeOpp@example.com', password='password')
+        response = self.client.get(reverse('opportunity:opp_view', args=(self.opportunity.id,)))
+        self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='joeDoeOpp@example.com', password='password')
+        response = self.client.get(reverse('opportunity:opp_view', args=(self.opportunity_2.id,)))
+        self.assertEqual(200, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='janeOpp@example.com', password='password')
+        data = {
+            'name': 'opportunity teams edit',
+            'stage': 'QUALIFICATION',
+            'teams': self.team_opp.id,
+            'savenewform':'true',
+            'from_account': self.account.id,
+        }
+        response = self.client.post(reverse('opportunity:opp_edit', args=(self.opportunity_2.id,)), data)
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(reverse('opportunity:opp_edit', args=(self.opportunity_2.id,)) + '?view_account={}'.format(self.account.id))
+        self.assertEqual(200, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='joeDoeOpp@example.com', password='password')
+        response = self.client.get(reverse('opportunity:opp_edit', args=(self.opportunity_1.id,)), data)
+        self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='janeOpp@example.com', password='password')
+        response = self.client.get(reverse('opportunity:opp_remove', args=(self.opportunity_1.id,)), {
+            'pk':self.opportunity_1.id,
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.client.logout()
+        self.client.login(email='joeDoeOpp@example.com', password='password')
+        response = self.client.post(reverse('opportunity:opp_remove', args=(self.opportunity.id,)) + '?view_account={}'.format(self.account.id), {
+            'pk':self.opportunity.id})
+        self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(email='janeOpp@example.com', password='password')
+        response = self.client.post(reverse('opportunity:opp_remove', args=(self.opportunity_2.id,)) + '?view_account={}'.format(self.account.id), {
+            'pk':self.opportunity_2.id})
+        self.assertEqual(302, response.status_code)
+
+        response = self.client.get(reverse('opportunity:contacts') + '?account={}'.format(self.account.id))
+        self.assertEqual(200, response.status_code)
+

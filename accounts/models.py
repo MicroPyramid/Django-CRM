@@ -118,20 +118,27 @@ class Account(models.Model):
 
 
 class Email(models.Model):
-    sender = models.ForeignKey(
+    from_account = models.ForeignKey(
         Account, related_name='sent_email', on_delete=models.SET_NULL, null=True)
-
-    recipient = models.ForeignKey(
-        Contact, related_name='recieved_email', on_delete=models.SET_NULL, null=True)
-
-    sent_at = models.DateTimeField(auto_now_add=True)
+    recipients = models.ManyToManyField(Contact, related_name='recieved_email')
     message_subject = models.TextField(null=True)
     message_body = models.TextField(null=True)
+    timezone = models.CharField(max_length=100, default='UTC')
+    scheduled_date_time = models.DateTimeField(null=True)
+    scheduled_later = models.BooleanField(default=False)
+    created_on = models.DateTimeField(auto_now_add=True)
+    from_email = models.EmailField()
+    rendered_message_body = models.TextField(null=True)
+
 
     def __str__(self):
-        return self.message_body
+        return self.message_subject
 
-    def save(self, *args, **kwargs):
-        # prevent user from sending messages to themselves
-        if self.sender.email != self.recipient.email:
-            super(Email, self).save(*args, **kwargs)
+
+
+class EmailLog(models.Model):
+    """ this model is used to track if the email is sent or not """
+
+    email = models.ForeignKey(Email, related_name='email_log', on_delete=models.SET_NULL, null=True)
+    contact = models.ForeignKey(Contact, related_name='contact_email_log', on_delete=models.SET_NULL, null=True)
+    is_sent = models.BooleanField(default=False)

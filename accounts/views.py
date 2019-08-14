@@ -1,28 +1,34 @@
+import pytz
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.generic import (
-    CreateView, UpdateView, DetailView, TemplateView, View, DeleteView, FormView)
-from accounts.forms import AccountForm, AccountCommentForm, \
-    AccountAttachmentForm, EmailForm
-from accounts.models import Account, Tags, Email
-from common.models import User, Comment, Attachments
-from common.utils import INDCHOICES, COUNTRIES, \
-    CURRENCY_CODES, CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
-from contacts.models import Contact
-from opportunity.models import Opportunity, STAGES, SOURCES
-from cases.models import Case
-from django.urls import reverse_lazy, reverse
-from leads.models import Lead
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (CreateView, DeleteView, DetailView, FormView,
+                                  TemplateView, UpdateView, View)
+
+from accounts.forms import (AccountAttachmentForm, AccountCommentForm,
+                            AccountForm, EmailForm)
+from accounts.models import Account, Email, Tags
 from accounts.tasks import send_email, send_email_to_assigned_user
+from cases.models import Case
+from common.access_decorators_mixins import (MarketingAccessRequiredMixin,
+                                             SalesAccessRequiredMixin,
+                                             marketing_access_required,
+                                             sales_access_required)
+from common.models import Attachments, Comment, User
 from common.tasks import send_email_user_mentions
-from django.contrib.sites.shortcuts import get_current_site
-from common.access_decorators_mixins import (
-    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from common.utils import (CASE_TYPE, COUNTRIES, CURRENCY_CODES, INDCHOICES,
+                          PRIORITY_CHOICE, STATUS_CHOICE)
+from contacts.models import Contact
+from leads.models import Lead
+from opportunity.models import SOURCES, STAGES, Opportunity
 from teams.models import Teams
+
 
 class AccountsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Account
@@ -87,6 +93,10 @@ class AccountsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateVie
         if self.request.POST.get('tab_status'):
             tab_status = self.request.POST.get('tab_status')
         context['tab_status'] = tab_status
+        TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
+        context["timezones"] = TIMEZONE_CHOICES
+        context["settings_timezone"] = settings.TIME_ZONE
+
         return context
 
     def get(self, request, *args, **kwargs):
@@ -195,7 +205,7 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
         context["industries"] = INDCHOICES
         context["countries"] = COUNTRIES
         # context["contact_count"] = Contact.objects.count()
-        if self.request.user.role == 'ADMIN':
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
             context["leads"] = Lead.objects.exclude(
                 status__in=['converted', 'closed'])
             context["contacts"] = Contact.objects.all()
@@ -259,6 +269,7 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
             'comment_permission': comment_permission,
             'tasks':account_record.accounts_tasks.all(),
             'invoices':account_record.accounts_invoices.all(),
+            'emails':account_record.sent_email.all(),
             'users_mention': users_mention,
         })
         return context
@@ -552,32 +563,75 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
         return JsonResponse(data)
 
 @login_required
-def create_mail(request, account_id):
-
+def create_mail(request):
     if request.method == 'GET':
-        account = get_object_or_404(Account, pk=account_id)
+        account = get_object_or_404(Account, pk=request.GET.get('account_id'))
         contacts_list = list(account.contacts.all().values('email'))
-        email_form = EmailForm()
-        return render(request, 'create_mail_accounts.html', {'account_id': account_id,
-            'contacts_list': contacts_list, 'email_form': email_form})
+        TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
+        email_form = EmailForm(account=account)
+        return render(request, 'create_mail_accounts.html', {'account_id': request.GET.get('account_id'),
+            'contacts_list': contacts_list, 'email_form': email_form,
+            "timezones": TIMEZONE_CHOICES, "settings_timezone": settings.TIME_ZONE})
 
     if request.method == 'POST':
-        form = EmailForm(request.POST)
-        if form.is_valid():
-            send_email.delay(form.data.get('message_subject'), form.data.get('message_body'),
-                from_email=account_id, recipients=form.data.get('recipients').split(','))
+        account = Account.objects.filter(id=request.POST.get('account_id')).first()
+        if account:
+            form = EmailForm(request.POST, account=account)
+            if form.is_valid():
+                contacts = form.data.get('recipients').split(',')
+                email_obj = Email.objects.create(
+                    from_account=account,
+                    message_body=form.cleaned_data.get('message_body'),
+                    message_subject=form.cleaned_data.get('message_subject'),
+                    from_email=form.cleaned_data.get('from_email'),
+                    timezone=form.cleaned_data.get('timezone'),
+                )
+                email_obj.recipients.add(*contacts)
+                if request.POST.get('scheduled_later') != 'true':
+                    send_email.delay(email_obj.id)
+                else:
+                    email_obj.scheduled_later = True
+                    email_obj.scheduled_date_time = form.cleaned_data.get('scheduled_date_time')
+                    email_obj.save()
 
-            return JsonResponse({'error': False})
+                return JsonResponse({'error': False})
+            else:
+                return JsonResponse({'error': True, 'errors': form.errors})
         else:
-            return JsonResponse({'error': True, 'errors': form.errors})
-
+            return JsonResponse({'error':True, 'message': "Account does not exist."})
 
 # @login_required
-# def get_account_details(request, account_id):
-#     from django.core import serializers
-#     import json
-#     fields = ['name', 'email', 'phone', 'industry', 'billing_address_line', 'billing_street', 'billing_city',
-#         'billing_state', 'billing_postcode', 'billing_country', 'website', 'description',
-#         'created_by__email', 'created_on', 'tags__name', 'status', 'contacts__email', 'assigned_to__email']
-#     data = serializers.serialize('json', Account.objects.filter(id=account_id), fields=fields)
-#     return JsonResponse({'data': json.loads(data)[0]})
+# @sales_access_required
+# def create_mail(request, pk):
+#     account_obj = get_object_or_404(Account, pk=pk)
+#     if request.method == 'GET':
+#         context = {}
+#         context['account_obj'] = account_obj
+#         return render(request, 'create_email_for_contacts.html')
+
+
+def get_contacts_for_account(request):
+    account_id = request.POST.get('account_id')
+    if account_id:
+        account_obj = Account.objects.filter(pk=account_id).first()
+        if account_obj:
+            if account_obj.contacts.all():
+                data = list(account_obj.contacts.values('id', 'email'))
+                import json
+                return HttpResponse(json.dumps(data))
+        return JsonResponse({})
+    return JsonResponse({})
+
+
+def get_email_data_for_account(request):
+    email_obj = Email.objects.filter(id=request.POST.get('email_account_id')).first()
+    if email_obj:
+        ctx  = {}
+        ctx['subject'] = email_obj.message_subject
+        ctx['body'] = email_obj.message_body
+        ctx['created_on'] = email_obj.created_on
+        ctx['contacts'] = list(email_obj.recipients.values('email'))
+        ctx['error'] = False
+        return JsonResponse(ctx)
+    else:
+        return JsonResponse({'error': True, 'data' : 'No emails found.'})

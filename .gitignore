@@ -17,3 +17,4 @@ ref.css.map
 crm/dev_settings\.py
 env
 docs/build
+celerybeat-schedule

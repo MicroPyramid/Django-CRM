@@ -8,9 +8,11 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.generic import (CreateView, DeleteView, DetailView, FormView,
-                                  TemplateView, UpdateView, View)
+    TemplateView, UpdateView, View)
 
 from accounts.models import Account
+from common.access_decorators_mixins import (MarketingAccessRequiredMixin,
+    SalesAccessRequiredMixin, marketing_access_required, sales_access_required)
 from common.models import Attachments, Comment, User
 from common.tasks import send_email_user_mentions
 from contacts.models import Contact
@@ -18,8 +20,6 @@ from tasks.celery_tasks import send_email
 from tasks.forms import TaskAttachmentForm, TaskCommentForm, TaskForm
 from tasks.models import Task
 from tasks.utils import *
-from common.access_decorators_mixins import (
-    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 from teams.models import Teams
 
 

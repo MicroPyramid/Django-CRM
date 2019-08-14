@@ -1,13 +1,14 @@
-from django.test import TestCase
-from contacts.models import Contact
-from common.models import Address, User, Comment, Attachments
-from cases.models import Case
-from django.test import Client
-from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from contacts.forms import ContactAttachmentForm
-from accounts.models import Account
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils.encoding import force_text
+
+from accounts.models import Account
+from cases.models import Case
+from common.models import Address, Attachments, Comment, User
+from contacts.forms import ContactAttachmentForm
+from contacts.models import Contact
+from teams.models import Teams
 
 
 class ContactObjectsCreation(object):
@@ -56,7 +57,10 @@ class ContactObjectsCreation(object):
             first_name="janeUser@example.com",
             username='janeUserContact',
             email="janeUser@example.com",
-            role="USER")
+            role="USER",
+            has_sales_access=True)
+        self.user_contacts_mp.set_password('password')
+        self.user_contacts_mp.save()
 
         self.client.login(username='johnContact@example.com', password='password')
 
@@ -344,7 +348,9 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
             first_name="janeDoe@example.com",
             username='janeDoe',
             email="janeDoe@example.com",
-            role="USER")
+            role="USER",
+            is_active=True,
+            has_sales_access=True)
         self.usermp1.set_password('password')
         self.usermp1.save()
         self.contact = Contact.objects.create(
@@ -390,3 +396,145 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
             '/contacts/attachment/remove/', {'attachment_id': self.attachment.id})
         self.assertJSONEqual(force_text(response.content), {
                              'error': "You don't have permission to delete this attachment."})
+
+
+class TestContactViews(ContactObjectsCreation, TestCase):
+
+    def test_create_contact(self):
+        self.client.logout()
+        self.client.login(username='janeUser@example.com', password='password')
+        response = self.client.get(reverse('contacts:list'),{})
+        self.assertEqual(200, response.status_code)
+
+        self.client.logout()
+        self.client.login(username='johnContact@example.com', password='password')
+        self.account_by_user = Account.objects.create(
+            name="account edit", email="johndoe@example.com", phone="123456789",
+            billing_address_line="", billing_street="street name",
+            billing_city="city name",
+            billing_state="state", billing_postcode="1234",
+            billing_country="US",
+            website="www.example.como", created_by=self.user, status="open",
+            industry="SOFTWARE", description="Testing")
+        self.teams_contacts = Teams.objects.create(name='teams contacts')
+        self.teams_contacts.users.add(self.user)
+        data = {
+            'first_name':'first name',
+            'last_name':'last name',
+            'phone':'+91-123-456-7854',
+            'email':'example@user.com',
+            'teams':[self.teams_contacts.id,]
+        }
+        response = self.client.post(reverse('contacts:add_contact') + '?view_account={}&address_form='.format(self.account_by_user.id), data)
+        self.assertEqual(302, response.status_code)
+
+        data = {
+            'first_name':'first name',
+            'last_name':'last name',
+            'phone':'+91-123-456-7858',
+            'email':'example@mail.com',
+            'teams':[self.teams_contacts.id,]
+        }
+        response = self.client.post(reverse('contacts:add_contact') + '?view_account={}'.format(self.account_by_user.id), data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)
+
+        data = {
+            'first_name':'first name',
+            'last_name':'last name',
+            'phone':'+91-123-456-7854',
+            'email':'example@user',
+            'teams':[self.teams_contacts.id,]
+        }
+        response = self.client.post(reverse('contacts:add_contact') + '?view_account={}'.format(self.account_by_user.id), data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(reverse('contacts:add_contact') + '?address_form=')
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)),{
+            'first_name':'contact',
+            'last_name':'contact@example.com',
+            'phone':'+91-123-456-7856',
+            'email':'contact@example.com',
+            'teams':[self.teams_contacts.id,]
+        })
+        self.assertEqual(302, response.status_code)
+
+        self.user_contacts_mp = User.objects.create(
+            first_name="joeUser@contact.com",
+            username='joeUser@contact.com',
+            email="joeUser@contact.com",
+            role="USER",
+            has_sales_access=True)
+        self.user_contacts_mp.set_password('password')
+        self.user_contacts_mp.save()
+
+        self.client.logout()
+        self.client.login(username='joeUser@contact.com', password='password')
+        response = self.client.get(reverse('contacts:view_contact', args=(self.contact.id,)))
+        self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(username='janeUser@example.com', password='password')
+        response = self.client.get(reverse('contacts:view_contact', args=(self.contact.id,)))
+        # self.assertEqual(403, response.status_code)
+
+        self.client.logout()
+        self.client.login(username='johnContact@example.com', password='password')
+        self.teams_contacts.users.add(self.user)
+        data = {
+            'first_name':'contact',
+            'last_name':'contact',
+            'phone':'+91-123-456-7852',
+            'email':'contact@example.com',
+            'teams':[self.teams_contacts.id,]
+        }
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)) + '?from_account={}'.format(self.account_by_user.id), data)
+        self.assertEqual(302, response.status_code)
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)) + '?from_account={}&address_form='.format(self.account_by_user.id), data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(200, response.status_code)
+
+        data = {
+            'first_name':'contact',
+            'last_name':'contact',
+            'phone':'+91-123-456',
+            'email':'contact@example',
+            'teams':[self.teams_contacts.id,]
+        }
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)) + '?from_account={}'.format(self.account_by_user.id), data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.post(reverse('contacts:edit_contact', args=(self.contact.id,)) + '?from_account={}'.format(self.account_by_user.id), data,)
+        self.assertEqual(200, response.status_code)
+
+        self.client.logout()
+        self.client.login(username='johnContact@example.com', password='password')
+        self.contact_delete = Contact.objects.create(
+            first_name="contact",
+            email="contact_delete@example.com",
+            phone="12345",
+            address=self.address,
+            description="contact",
+            created_by=self.user)
+        response = self.client.post(reverse('contacts:remove_contact', args=(self.contact_delete.id,)), {'pk': self.contact_delete.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)
+
+        self.contact_edit = Contact.objects.create(
+            first_name="contact",
+            email="contact_edit@example.com",
+            phone="12345",
+            description="contact",
+            created_by=self.user_contacts_mp)
+
+        self.client.logout()
+        self.client.login(username='joeUser@contact.com', password='password')
+        response = self.client.get(reverse('contacts:view_contact', args=(self.contact_edit.id,)), {'pk': self.contact_edit.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(reverse('contacts:add_contact'))
+        self.assertEqual(200, response.status_code)

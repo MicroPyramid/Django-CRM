@@ -4,9 +4,18 @@
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
+
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 <style>
   .form-group label {
     font-weight: 800;
+  }
+
+  #editor-container {
+    height: 20rem;
   }
 </style>
 {% endblock %}
@@ -102,11 +111,11 @@
                         {% if open_accounts|length > 0 %}
                         <tr>
                           <th width="5%">ID</th>
-                          <th width="15%">Name</th>
-                          <th width="10%">Created By</th>
-                          <th width="15%">City</th>
-                          <th width="15%">State</th>
-                          <th width="15%">Created On</th>
+                          <th width="12%">Name</th>
+                          <th width="8%">Created By</th>
+                          <th width="5%">City</th>
+                          <th width="5%">State</th>
+                          <th width="10%">Created On</th>
                           <th width="10%">Tags</th>
                           <th width="10%">Actions</th>
                         </tr>
@@ -161,6 +170,13 @@
                             {% endwith %}
                           </td>
                           <td class="actions">
+                            {% if each_account.contacts.all %}
+                            <a href="{% url 'accounts:create_mail' %}" class="btn btn-primary edit account_send_mail"
+                              data-account="{{each_account.id}}" data-account-email="{{each_account.email}}"
+                              data-toggle="modal" data-target="#send_email_to_contacts"><i
+                                class="fas fa-paper-plane"></i>
+                            </a>
+                            {% endif %}
                             <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit"><i
                                 class="fas fa-eye"></i></a>
                             <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
@@ -647,10 +663,151 @@
 
 {% endfor %}
 
+<div id="send_email_to_contacts" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog"
+  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="col-md-12">
+        <form id="add_form_mail" method="POST" action="{% url 'accounts:create_mail' %}" novalidate>
+          <div class="overview_form_block row marl justify-content-center">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-body">
+                  <div class="card-title text-center">
+                    Send Mail
+                  </div>
+                  <form>
+                    <div class="row marl">
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label for="">From Email</label>
+                          <!-- <input type="text" class="form-control" name="contacts_list" id="id_contacts"> -->
+                          <!-- <select name="recipients" id="_id_recipients">
+                                    <option value="">email</option>
+                                  </select> -->
+                          <input class="form-control" type="text" placeholder="From Email" name="from_email" id="set_from_email">
+                        <span id="id_from_email"></span>
+                        </div>
+                        <span id="id_recipientsa"></span>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label for="">Contacts</label>
+                          <!-- <input type="text" class="form-control" name="contacts_list" id="id_contacts"> -->
+                          <!-- <select name="recipients" id="_id_recipients">
+                                <option value="">email</option>
+                              </select> -->
+                          <input type="text" placeholder="Contacts" name="recipients" id="_id_recipients">
+                        </div>
+                        <span id="id_recipients"></span>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label for="">Subject</label>
+                          <input type="text" class="form-control" name="message_subject" placeholder="Enter Subject">
+                        </div>
+                        <span id="id_message_subject"></span>
+                        <input type="hidden" value="" name="account_id" id="mail_account_id">
+                      </div>
+                      <div class="col-md-12">
+                        <div class="row">
+                          <div class="col-md-4">
+                            <div class="form-group">
+                              <label><input type="checkbox" name="scheduled_later" value="true" class="scheduled_later">
+                                Schedule Later</label>
+                              <span id="id_schedule_later"></span>
+                            </div>
+                          </div>
+                          <div class="col-md-4 timezone-div" style="display: none;">
+                            <div class="form-group">
+                              <label>Timezone</label>
+                              <select name="timezone" id="timezone"
+                                class="form-control timezone-select js-example-basic-single">
+                                <option value="">Select a Timezone</option>
+                                {% for timezone in timezones %}
+                                <option value="{{timezone.0}}"
+                                  {% if timezone.0 == settings_timezone %}selected{% endif %}>{{timezone.1}}</option>
+                                {% endfor %}
+                              </select>
+                              <span id="id_timezone"></span>
+                            </div>
+                          </div>
+                          <div class="col-md-4 timezone-div" style="display: none;">
+                            <div class="form-group">
+                              <label for="">Schedule Date Time</label><span class="error_marker" style="color:red">
+                                *</span>
+                              <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                <input type="text" class="form-control datetimepicker-input"
+                                  data-target="#datetimepicker1" name="scheduled_date_time" />
+                                <div class="input-group-append" data-target="#datetimepicker1"
+                                  data-toggle="datetimepicker">
+                                  <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                </div>
+                              </div>
+                              <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
+                              <span id="id_scheduled_date_time"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label>Message</label>
+                          <div id="editor-container"></div>
+                        </div>
+                        <input type="hidden" name="message_body" id="html_content">
+                        <span id="id_message_body"></span>
+                      </div>
+                      <!-- <div class="col-md-12 text-center">
+                                  <pre id="myPrecious"></pre>
+                                  <div id="justText"></div>
+                                  <div id="justHtml"></div>
+                              </div> -->
+                      <div class="col-md-12">
+                        <div class="heading">Personalization tags</div>
+                        <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to
+                          customize the email template, these tags will be replaced with the associated contact details
+                          while the mails are sent.</p>
+                        <ul>
+                          <li>
+                            <strong>Name: </strong>
+                            <code>{% templatetag openvariable %} name {% templatetag closevariable %}</code>
+                          </li>
+                          <li>
+                            <strong>Email: </strong>
+                            <code>{% templatetag openvariable %} email {% templatetag closevariable %}</code>
+                          </li>
+                          <!-- <li>
+                                            <strong>Two digit day of the month (eg. 01 to 31):</strong>
+                                            <code>[currentdaynumber]</code>
+                                          </li> -->
+                        </ul>
+                      </div>
+                      <div class="col-md-12 text-center">
+                        <button type="submit" class="primary_btn mar_btm save_btn">Send</button>
+                        <a href="#" class="primary_btn" data-dismiss="modal">Cancel</a>
+
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 {% block js_block %}
+<script src="{% static 'js/ajaxForm.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
 <script type="text/javascript">
   $("#close-tab").click(function (e) {
     $("#tab_status").val('Closed');
@@ -661,37 +818,6 @@
     url = url + "?tag=" + $(this).attr('data-link')
     window.location.href = url;
   });
-
-  // $(".account_modal").click(function (e) {
-  //   console.log('clicked')
-  //   console.log(e)
-  //   console.log($(this).attr('data-id'))
-
-  //   $.ajax({
-  //     url:`get-account-details/${$(this).attr('data-id')}/`,
-  //     type: 'GET',
-  //     success:function(data){
-  //       console.log(data)
-  //       console.log((data.data.fields))
-  //       $('#modal_body_ajax').empty()
-  //       for(key in data.data.fields){
-  //         console.log(key, data.data.fields[key])
-  //         $('#modal_body_ajax').append(
-  //           "<div class=''><span>" + key +  "</span>&nbsp;&nbsp;&nbsp;&nbsp;" + "<span>" + data.data.fields[key]  + "</span>" + "</div>"
-  //         )
-  //       }
-  //       // $('textarea#modal_data').val(JSON.stringify(data))
-  //       $('#exampleModalCenter_account').modal()
-  //       if(data.error){
-  //         // TODO
-  //         data.fields
-  //       }
-  //       else{
-
-  //       }
-  //     }
-  //   })
-  // })
 
   $("#open-tab").click(function (e) {
     $("#tab_status").val('Open')
@@ -759,5 +885,168 @@
     $('#accounts_filter').attr("action", $(this).attr("href"));
     $('#accounts_filter').submit();
   });
+
+
+  $(".timezone-select").select2({
+    placeholder: "Select a Timezone",
+  });
+
+  $('.scheduled_later').on('change', function () {
+    // console.log('changed')
+    if ($('.check_delete:checked').length > 1) {
+      $('.timezone-div').show();
+    }
+    else {
+      $('.timezone-div').hide();
+    }
+    if ($(this).is(":checked")) {
+      $('.timezone-div').show();
+    } else {
+      $('.timezone-div').hide();
+    }
+    console.log($(this))
+    console.log($(this).is(':checked'))
+  })
+
+  $.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
+    icons: {
+      time: 'fa fa-clock',
+      date: 'fa fa-calendar',
+      up: 'fa fa-arrow-up',
+      down: 'fa fa-arrow-down',
+      previous: 'fa fa-chevron-left',
+      next: 'fa fa-chevron-right',
+      today: 'far fa-calendar-check-o',
+      clear: 'fa fa-trash',
+      close: 'fa fa-times'
+    }
+  });
+  $('#datetimepicker1').datetimepicker({
+    format: "YYYY-MM-DD HH:mm"
+  });
+
+  var selectedAccountId = '';
+  var contactOptions = [];
+  // $("#id_contacts").select2();
+  $('.account_send_mail').click(function (e) {
+    // console.log($(this).attr('data-account'))
+    selectedAccountId = $(this).attr('data-account')
+    $('#mail_account_id').val(selectedAccountId)
+    $('#set_from_email').val($(this).attr('data-account-email'))
+    $.ajax({
+      url: "{% url 'accounts:get_contacts_for_account' %}",
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        'account_id': selectedAccountId,
+      },
+      error: function (err) {
+        console.log(err)
+      },
+      success: function (res) {
+        contactOptions = [];
+        contactOptions = res;
+        $('#_id_recipients').selectize({
+          valueField: 'id',
+          labelField: 'name',
+          searchField: ['name', 'email'],
+          // options: [
+          // {email: 'brian@thirdroute.com', name: 'Brian Reavis'},
+          // {email: 'nikola@tesla.com', name: 'Nikola Tesla'},
+          // {email: 'someone@gmail.com'}
+          // ],
+          options: res,
+          render: {
+            item: function (item, escape) {
+              return '<div class="selectize_options_remove">' +
+                (item.name ? '<span class="name">' + escape(item.name) + '</span>' : '') +
+                (item.email ? '<span class="email">' + escape(item.email) + '</span>' : '') +
+                '</div>';
+            },
+            option: function (item, escape) {
+              var label = item.name || item.email;
+              var caption = item.name ? item.email : null;
+              return '<div class="selectize_options_remove">' +
+                '<span class="label">' + escape(label) + '</span>' +
+                (caption ? '<span class="caption">' + escape(caption) + '</span>' : '') +
+                '</div>';
+            }
+          },
+        });
+      }
+    });
+  })
+
+  $("#send_email_to_contacts").on('hidden.bs.modal', function () {
+    $('#_id_recipients')[0].selectize.destroy()
+    $('p.failure').remove();
+    $('#_id_recipients').val('')
+
+  })
+
+  $("#send_email_to_contacts").on('shown.bs.modal', function () {
+  });
+
+  var quill = new Quill('#editor-container', {
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, false] }],
+        ['bold', 'italic', 'underline'],
+        ['code-block', 'link']
+      ]
+    },
+    placeholder: 'Compose mail...',
+    theme: 'snow' // or 'bubble'
+  });
+
+  var preciousContent = document.getElementById('myPrecious');
+  var justTextContent = document.getElementById('justText');
+  var justHtmlContent = document.getElementById('justHtml');
+
+  quill.on('text-change', function () {
+    var delta = quill.getContents();
+    var text = quill.getText();
+    var justHtml = quill.root.innerHTML;
+    /*preciousContent.innerHTML = JSON.stringify(delta);
+    justTextContent.innerHTML = text;
+    justHtmlContent.innerHTML = justHtml;*/
+    $('#html_content').val(justHtml);
+    $('.ql-syntax').css({"background-color":"#23241f","color":"#f8f8f2","overflow":"visible","border-radius":"3px","white-space":"pre-wrap","margin-bottom":"5px","margin-top":"5px","padding":"5px 10px"})
+
+  });
+
+
+  $('.save_btn').click(function (e) {
+    e.preventDefault();
+    $("form#add_form_mail").submit()
+  })
+
+  $('form#add_form_mail').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: $(this).attr('action'),
+    data: $(this).serialize(),
+    beforeSend: function (e) {
+      $('.ql-syntax').css({"background-color":"#23241f","color":"#f8f8f2","overflow":"visible","border-radius":"3px","white-space":"pre-wrap","margin-bottom":"5px","margin-top":"5px","padding":"5px 10px"})
+    },
+    success: function (data) {
+      console.log("data", data)
+      if (data.error == false) {
+        window.location = "{% url 'accounts:list' %}";
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+        }
+      }
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+
+  })
+
 </script>
 {% endblock js_block %}

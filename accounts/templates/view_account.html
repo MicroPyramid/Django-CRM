@@ -9,6 +9,10 @@
   .opacity_block {
     opacity: 0.2;
   }
+  label {
+    font-weight: 600;
+    color: black;
+  }
 </style>
 {% endblock extralinks %}
 
@@ -312,8 +316,8 @@
                   <a href="{% url 'contacts:add_contact' %}?view_account={{account_record.id}}"><span
                       class="fa fa-plus pull-right" style="color:black;"></span></a>
                   {% if contacts|length > 0 %}
-                  <a href="{% url 'accounts:create_mail' account_record.id %}" style="color:black">
-                    <span class="pull-right mr-2">Send Mail</span>
+                  <!-- <a href="{% url 'accounts:create_mail' %}" style="color:black">
+                    <span class="pull-right mr-2">Send Mail</span> -->
                   </a>
                   {% endif %}
                 </div>
@@ -472,7 +476,7 @@
                 <div class="panel-heading-list card-title view-pad">
                   Tasks
                   <a href="{% url 'tasks:task_create' %}?view_account={{account_record.id}}"><span
-                    class="fa fa-plus pull-right" style="color:black;"></span></a>
+                      class="fa fa-plus pull-right" style="color:black;"></span></a>
                 </div>
                 <div class="table-responsive">
                   <table class="table table-bordered table-striped table-condensed">
@@ -568,12 +572,113 @@
           </div>
         </div>
       </form>
+
+      <form method='GET' class="accountdetails_row">
+        <div class="table_container_row row marl no-gutters">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-body">
+                <div class="panel-heading-list card-title view-pad">
+                  Sent Mails
+                  <a href="#"><span></span></a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-condensed">
+                    {% if emails|length > 0 %}
+                    <thead>
+                      <tr>
+                        <th width="5%" style="text-align:center;">S.No</th>
+                        <th width="30%" style="text-align:center;">From mail</th>
+                        <th width="20%" style="text-align:center;">Contact</th>
+                        <th width="20%" style="text-align:center;">Subject</th>
+                        <th width="25%" style="text-align:center;">Created On </th>
+                        <th width="25%" style="text-align:center;">View </th>
+                      </tr>
+                    </thead>
+                    {% endif %}
+                    <tbody>
+                      {% for email in emails %}
+                      <tr id="invoice_{{invoice.id}}" class="text-center">
+                        <td class="text-center" scope="row">{{ forloop.counter }}</td>
+                        <td class="text-center">{{email.from_email}}</td>
+                        <td class="text-center">{{email.recipients.count}}</td>
+                        <td class="text-center">{{email.message_subject}}</td>
+                        <td class="text-center">{{email.created_on}}</td>
+                        <td class="text-center">
+                          <a href="#" class="btn btn-primary get_email_info" style="color: white;" data-toggle="modal"
+                            data-target="#email_info_ajax" data-account="{{email.id}}">View</a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% ifequal emails|length 0 %}
+                <h6 class="text-center">No Emails Records Found</h6>
+                {% endifequal %}
+              </div>
+            </div>
+            <br clear="all">
+          </div>
+        </div>
+      </form>
+
     </div>
     <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
       style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
 
       <div class="spinner-border text-primary" style="width: 5em; height: 5em;" role="status">
         <span class="sr-only">Processing File...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="modal fade bd-example-modal-lg" id="email_info_ajax" tabindex="-1" role="dialog"
+  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="" id="">
+        <div class="" style="padding: 1em;">
+          <div class="col-md-12">
+            <div class="card" style="padding: 1em;">
+              <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
+                <div class="row marl no-gutters">
+                  <div class="col-md-12">
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="contact_field_label" for="id_title" data-name="title">Subject</label>
+                        <div class="contact_field" id="mail_subject" data-name="name"> </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="contact_field_label" for="id_status" data-name="status">Body</label>
+                        <div class="contact_field" id="mail_body" data-name="status"> </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="contact_field_label" for="id_status" data-name="status">Contacts</label>
+                        <div class="contact_field" id="mail_contacts" data-name="status"> </div>
+                      </div>
+                    </div>
+                    <div class="filter_col col-md-12">
+                      <div class="form-group">
+                        <label class="contact_field_label" for="id_created_on" data-name="created_on">Created
+                          On</label>
+                        <div class="contact_field" id="mail_created_on" data-name="created_on">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -760,5 +865,52 @@
       }
     }
 })
+</script>
+<script>
+  $('.get_email_info').click(function (e) {
+    var email_account_id = $(this).attr('data-account')
+    $.ajax({
+      url: "{% url 'accounts:get_email_data_for_account' %}",
+      type: "POST",
+      dataType: 'json',
+      data: { 'email_account_id': email_account_id, },
+      success: function (data) {
+        if (data.error) {
+          alert('No Data found.')
+        } else {
+
+          $('#mail_subject').html(data.subject);
+          $('#mail_body').html(data.body);
+          d = new Date(data.created_on)
+          let options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          };
+          d = d.toLocaleString('en-us', options);
+          $('#mail_created_on').html(d);
+          // $('#mail_emails').html(data.contacts);
+          if (data.contacts.length >= 1) {
+            var contacts = data.contacts.map((value) => `<p>
+              ${value.email}
+              </p>`)
+            $('#mail_contacts').html(contacts);
+
+          }
+        }
+      }
+    })
+  })
+
+  // $('#email_info_ajax').on('hidden.bs.modal', function () {
+  //   // $('#mail_subject').html('');
+  //   // $('#mail_body').html('');
+  //   // $('#mail_emails').html('');
+  //   // do something…
+  // })
+
+
 </script>
 {% endblock js_block %}
