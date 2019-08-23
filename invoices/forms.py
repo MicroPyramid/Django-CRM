@@ -25,10 +25,10 @@ class InvoiceForm(forms.ModelForm):
                 'name')) for team in Teams.objects.all().values('id', 'name')]
             self.fields['accounts'].queryset = Account.objects.filter(
                 status='open')
-        elif request_user.google.all():
-            self.fields['assigned_to'].queryset = User.objects.none()
-            self.fields['accounts'].queryset = Account.objects.filter(status='open').filter(
-                Q(created_by=request_user) | Q(assigned_to=request_user))
+        # elif request_user.google.all():
+        #     self.fields['assigned_to'].queryset = User.objects.none()
+        #     self.fields['accounts'].queryset = Account.objects.filter(status='open').filter(
+        #         Q(created_by=request_user) | Q(assigned_to=request_user))
         elif request_user.role == 'USER':
             self.fields['assigned_to'].queryset = User.objects.filter(
                 role='ADMIN')

@@ -34,11 +34,11 @@ class EventForm(forms.ModelForm):
             self.fields["contacts"].queryset = Contact.objects.filter()
             self.fields['assigned_to'].required = True
             self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
-        elif request_user.google.all():
-            self.fields['assigned_to'].queryset = User.objects.none()
-            self.fields["contacts"].queryset = Contact.objects.filter(
-                Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
-            self.fields['assigned_to'].required = False
+        # elif request_user.google.all():
+        #     self.fields['assigned_to'].queryset = User.objects.none()
+        #     self.fields["contacts"].queryset = Contact.objects.filter(
+        #         Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
+        #     self.fields['assigned_to'].required = False
         elif request_user.role == 'USER':
             self.fields['assigned_to'].queryset = User.objects.filter(
                 role='ADMIN')

@@ -65,13 +65,13 @@ class Invoice(models.Model):
         return self.invoice_number
 
     def formatted_total_amount(self):
-        return self.currency + '   ' + str(self.total_amount)
+        return self.currency + ' ' + str(self.total_amount)
 
     def formatted_rate(self):
-        return self.rate + '   ' + self.currency
+        return str(self.rate) + ' ' + self.currency
 
     def formatted_total_quantity(self):
-        return self.currency + ' ' + 'Hours'
+        return str(self.quantity) + ' ' + 'Hours'
 
     def is_draft(self):
         if self.status == 'Draft':
@@ -159,13 +159,13 @@ class InvoiceHistory(models.Model):
         return self.invoice_number
 
     def formatted_total_amount(self):
-        return self.currency + '   ' + str(self.total_amount)
+        return self.currency + ' ' + str(self.total_amount)
 
     def formatted_rate(self):
-        return self.rate + '   ' + self.currency
+        return str(self.rate) + ' ' + self.currency
 
     def formatted_total_quantity(self):
-        return self.currency + ' ' + 'Hours'
+        return str(self.quantity) + ' ' + 'Hours'
 
     @property
     def created_on_arrow(self):
