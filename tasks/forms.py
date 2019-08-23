@@ -52,15 +52,9 @@ class TaskForm(forms.ModelForm):
 
     def clean_title(self):
         title = self.cleaned_data.get('title')
-        if not self.obj_instance:
-            if Task.objects.filter(title=title).exists():
-                raise forms.ValidationError(
-                    'Task with this Title already exists')
-            return title
-        if Task.objects.filter(title=title).exclude(id=self.obj_instance.id).exists():
+        if Task.objects.filter(title=title).exclude(id=self.instance.id).exists():
             raise forms.ValidationError(
-                'Task with this Title already exists')
-            return title
+                'Task with this Title already exists.')
         return title
 
     class Meta:

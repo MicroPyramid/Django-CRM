@@ -31,10 +31,10 @@ def invoices_list(request):
 
     if request.user.role == 'ADMIN' or request.user.is_superuser:
         users = User.objects.all()
-    elif request.user.google.all():
-        # users = User.objects.none()
-        # users = User.objects.filter(id=request.user.id)
-        users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
+    # elif request.user.google.all():
+    #     # users = User.objects.none()
+    #     # users = User.objects.filter(id=request.user.id)
+    #     users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
     elif request.user.role == 'USER':
         users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
     status = (

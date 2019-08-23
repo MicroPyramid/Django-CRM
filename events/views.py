@@ -26,12 +26,14 @@ def events_list(request):
 
     if request.user.role == 'ADMIN' or request.user.is_superuser:
         users = User.objects.all()
-    elif request.user.google.all():
-        # users = User.objects.none()
-        users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
+    # elif request.user.google.all():
+    #     # users = User.objects.none()
+    #     users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
     elif request.user.role == 'USER':
         # users = User.objects.filter(role='ADMIN')
         users = User.objects.filter(Q(role='ADMIN') | Q(id=request.user.id))
+    else:
+        pass
 
 
     if request.method == 'GET':
@@ -201,8 +203,7 @@ def event_update(request, event_id):
             end_date = form.cleaned_data.get('end_date')
             # recurring_days
             # recurring_days = request.POST.getlist('days')
-
-            if form.cleaned_data.get('event_type') == 'Non-Recurring':
+            if form.data.get('event_type') == 'Non-Recurring':
                 event = form.save(commit=False)
                 event.date_of_meeting = start_date
                 # event.created_by = request.user
@@ -217,7 +218,7 @@ def event_update(request, event_id):
                 send_email.delay(
                     event.id, domain=request.get_host(), protocol=request.scheme)
 
-            if form.cleaned_data.get('event_type') == 'Recurring':
+            if form.data.get('event_type') == 'Recurring':
                 event = form.save(commit=False)
                 event.save()
                 form.save_m2m()
