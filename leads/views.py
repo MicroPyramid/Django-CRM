@@ -374,8 +374,8 @@ def update_lead(request, pk):
 
                 lead_obj.assigned_to.clear()
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
-            else:
-                lead_obj.assigned_to.clear()
+            # else:
+            #     lead_obj.assigned_to.clear()
 
             if request.POST.getlist('teams', []):
                 user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
