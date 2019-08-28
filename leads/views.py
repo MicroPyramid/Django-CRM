@@ -95,7 +95,7 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
 
         context["search"] = search
 
-        tag_ids = list(set(Lead.objects.values_list('tags', flat=True)))
+        tag_ids = list(set(self.get_queryset().values_list('tags', flat=True,)))
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
 
         tab_status = 'Open'
