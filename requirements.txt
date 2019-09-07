@@ -17,3 +17,4 @@ pdfkit
 redis
 coverage
 raven
+sorl-thumbnail
