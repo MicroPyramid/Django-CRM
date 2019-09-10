@@ -99,7 +99,7 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
 
         context["search"] = search
 
-        tag_ids = list(set(Lead.objects.values_list('tags', flat=True)))
+        tag_ids = list(set(self.get_queryset().values_list('tags', flat=True,)))
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
 
         tab_status = 'Open'
@@ -378,8 +378,8 @@ def update_lead(request, pk):
 
                 lead_obj.assigned_to.clear()
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
-            else:
-                lead_obj.assigned_to.clear()
+            # else:
+            #     lead_obj.assigned_to.clear()
 
             if request.POST.getlist('teams', []):
                 user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)

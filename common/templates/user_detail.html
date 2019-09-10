@@ -80,7 +80,7 @@
                   <label class="acc_field_label" for="id_shipping_address" data-name="name">Profile pic</label>
                   <div class="profile_pic" style="text-align: left;">
                     {% if user_obj.profile_pic %}
-                    {% thumbnail request.user.profile_pic "125x125" as im %}
+                    {% thumbnail user_obj.profile_pic "125x125" as im %}
                     <img src="{{ im.url }}">
                     {% endthumbnail %}
                     {% else %}

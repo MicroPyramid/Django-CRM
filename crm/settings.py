@@ -5,7 +5,8 @@ from celery.schedules import crontab
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'mwx@&97%!$fx_*zgj(2ygi^(s=oh5j(cqb$=+-mkd9scbt!0v0'
+# Set in local_settings.py
+SECRET_KEY = 'SECRET_SECRET_SECRET'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG_STATUS', True)
@@ -332,3 +333,9 @@ if SENTRY_ENABLED and not DEBUG:
                 },
             },
         }
+
+# Load the local settings file if it exists
+if os.path.isfile('crm/local_settings.py'):
+    from .local_settings import *
+else:
+    print("No local settings file found")

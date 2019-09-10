@@ -18,3 +18,4 @@ crm/dev_settings\.py
 env
 docs/build
 celerybeat-schedule
+local_settings.py

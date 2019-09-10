@@ -2,6 +2,9 @@ language: python
 python:
   - "3.5.2"
 
+services:
+  - redis-server
+
 #Django & Database
 addons:
   postgresql: "9.4"
