@@ -85,13 +85,15 @@
                 <thead>
                   <tr>
                     <th width="5%">S. No</th>
-                    <th width="20%">Name</th>
+                    <th width="10%">Name</th>
                     <th width="10%">No. of Contacts</th>
                     <th width="15%">No. of Bounced Contacts</th>
+                    <th width="15%">No. of Failed Contacts</th>
+                    <th width="15%">No. of Duplicates Contacts</th>
                     <th width="20%" class="text-center">Created by</th>
                     <th width="10%">Last Activity</th>
                     <th width="15%" class="text-center">Tags</th>
-                    <th width="10%">Actions</th>
+                    <th width="5%">Actions</th>
                   </tr>
                 </thead>
                 {% endif %}
@@ -115,6 +117,16 @@
                         {{ contact_list.bounced_contacts }}
                       </a>
                     </td>
+                    <td class="text-center">
+                      <a href="{% url 'marketing:contact_list_detail' contact_list.id %}?failed_contacts">
+                        {{ contact_list.failed_contacts.count }}
+                      </a>
+                    </td>
+                    <td class="text-center">
+                      <a href="{% url 'marketing:contact_list_detail' contact_list.id %}?duplicate_contacts">
+                        {{ contact_list.duplicate_contact_contact_list.count }}
+                      </a>
+                    </td>
                     <td class="text-center">{{ contact_list.created_by }}</td>
                     <td title="{{ contact_list.updated_on }}">
                       {{ contact_list.updated_on_arrow }}
@@ -127,7 +139,7 @@
                       {% endfor %}
                     </td>
                     <td class="actions text-center">
-                      <a href="{% url 'marketing:edit_contact_list' contact_list.id %}" class="btn btn-success edit"><i
+                      <a href="{% url 'marketing:edit_contact_list' contact_list.id %}" class="btn btn-success edit" title="Edit"><i
                           class="fas fa-edit"></i></a>
                       <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
                       {% comment %}

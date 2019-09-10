@@ -155,15 +155,14 @@
     {% if task_obj %}
     $('#id_due_date').datetimepicker({
       'format': 'YYYY-MM-DD',
-      minDate: today
     })
     {% else %}
+    var date = new Date();
+    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     $('#id_due_date').datetimepicker({
       'format': 'YYYY-MM-DD',
       minDate: today
     })
-    var date = new Date();
-    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     {% endif %}
 
 

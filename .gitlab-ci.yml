@@ -4,8 +4,8 @@ Python 3.5.2:
     - virtualenv -p python3 env
     - source env/bin/activate
     - pip install --no-cache-dir -r requirements.txt
-    - python manage.py test --noinput
-    - coverage run --source=accounts,cases,common,contacts,emails,leads,opportunity,planner,tasks,invoices,events,teams manage.py test --noinput
+    - python manage.py test --keepdb --noinput
+    - coverage run --source=accounts,cases,common,contacts,leads,opportunity,tasks,invoices,events,teams,marketing manage.py test --keepdb --noinput
     - coverage report -m
     except:
     - tags

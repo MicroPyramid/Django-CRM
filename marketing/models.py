@@ -71,16 +71,16 @@ class ContactList(models.Model):
     def created_on_format(self):
         return self.created_on.strftime('%b %d, %Y %I:%M %p')
 
-    @property
-    def created_on_since(self):
-        now = datetime.now()
-        difference = now.replace(tzinfo=None) - \
-            self.created_on.replace(tzinfo=None)
+    # @property
+    # def created_on_since(self):
+    #     now = datetime.now()
+    #     difference = now.replace(tzinfo=None) - \
+    #         self.created_on.replace(tzinfo=None)
 
-        if difference <= timedelta(minutes=1):
-            return 'just now'
-        return '%(time)s ago' % {
-            'time': timesince(self.created_on).split(', ')[0]}
+    #     if difference <= timedelta(minutes=1):
+    #         return 'just now'
+    #     return '%(time)s ago' % {
+    #         'time': timesince(self.created_on).split(', ')[0]}
 
     @property
     def tags_data(self):
@@ -102,12 +102,12 @@ class ContactList(models.Model):
     def bounced_contacts(self):
         return self.contacts.filter(is_bounced=True).count()
 
-    @property
-    def no_of_clicks(self):
-        clicks = CampaignLog.objects.filter(
-            contact__contact_list__in=[self]).aggregate(Sum(
-                'no_of_clicks'))['no_of_clicks__sum']
-        return clicks
+    # @property
+    # def no_of_clicks(self):
+    #     clicks = CampaignLog.objects.filter(
+    #         contact__contact_list__in=[self]).aggregate(Sum(
+    #             'no_of_clicks'))['no_of_clicks__sum']
+    #     return clicks
 
     @property
     def created_on_arrow(self):
@@ -226,31 +226,31 @@ class Campaign(models.Model):
     class Meta:
         ordering = ('-created_on', )
 
-    @property
-    def no_of_unsubscribers(self):
-        unsubscribers = self.campaign_contacts.filter(
-            contact__is_unsubscribed=True).count()
-        return unsubscribers
+    # @property
+    # def no_of_unsubscribers(self):
+    #     unsubscribers = self.campaign_contacts.filter(
+    #         contact__is_unsubscribed=True).count()
+    #     return unsubscribers
 
-    @property
-    def no_of_bounces(self):
-        bounces = self.campaign_contacts.filter(
-            contact__is_bounced=True).count()
-        return bounces
+    # @property
+    # def no_of_bounces(self):
+    #     bounces = self.campaign_contacts.filter(
+    #         contact__is_bounced=True).count()
+    #     return bounces
 
     @property
     def no_of_clicks(self):
         clicks = self.marketing_links.aggregate(Sum('clicks'))['clicks__sum']
         return clicks
 
-    @property
-    def no_of_sent_emails(self):
-        contacts = self.campaign_contacts.count()
-        return contacts
+    # @property
+    # def no_of_sent_emails(self):
+    #     contacts = self.campaign_contacts.count()
+    #     return contacts
 
-    @property
-    def created_on_format(self):
-        return self.created_on.strftime('%b %d, %Y %I:%M %p')
+    # @property
+    # def created_on_format(self):
+    #     return self.created_on.strftime('%b %d, %Y %I:%M %p')
 
     @property
     def sent_on_format(self):
@@ -273,14 +273,16 @@ class Campaign(models.Model):
     def get_all_email_bounces_count(self):
         # return self.contact_lists.filter(contacts__is_bounced=True
         #                                  ).exclude(contacts__email=None).values_list('contacts__email').count()
-        email_count = CampaignLog.objects.filter(campaign=self,contact__is_bounced=True).count()
+        email_count = CampaignLog.objects.filter(
+            campaign=self, contact__is_bounced=True).count()
         return email_count
 
     @property
     def get_all_emails_unsubscribed_count(self):
         # return self.contact_lists.filter(contacts__is_unsubscribed=True
         #                                  ).exclude(contacts__email=None).values_list('contacts__email').count()
-        email_count = CampaignLog.objects.filter(campaign=self,contact__is_unsubscribed=True).count()
+        email_count = CampaignLog.objects.filter(
+            campaign=self, contact__is_unsubscribed=True).count()
         return email_count
 
     @property
@@ -383,6 +385,7 @@ class ContactUnsubscribedCampaign(models.Model):
         Contact, on_delete=models.Case, related_name='contact_is_unsubscribed')
     is_unsubscribed = models.BooleanField(default=False)
 
+
 class ContactEmailCampaign(models.Model):
     """
     send all campaign emails to this contact
@@ -397,3 +400,19 @@ class ContactEmailCampaign(models.Model):
 
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
+
+    class Meta:
+        ordering = ('created_on',)
+
+
+class DuplicateContacts(models.Model):
+    """
+    this model is used to store duplicate contacts
+    """
+    contacts = models.ForeignKey(
+        Contact, related_name='duplicate_contact', on_delete=models.SET_NULL, null=True)
+    contact_list = models.ForeignKey(
+        ContactList, related_name='duplicate_contact_contact_list', on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        ordering = ('id', )

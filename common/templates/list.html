@@ -75,6 +75,19 @@
                     </select>
                   </div>
                 </div>
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">User Status</label>
+                    <select class="form-control" id="id_user_status" name="status">
+                      <option value="">--Select Status--</option>
+                      {% for value in status %}
+                      <option value="{{value.0}}" {% if request.POST.status %}
+                        {% ifequal value.0 request.POST.status %}selected{% endifequal %}{% endif %}>{{ value.1 }}
+                      </option>
+                      {% endfor%}
+                    </select>
+                  </div>
+                </div>
                 <div class="filter_col col-lg-2">
                   <div class="form-group buttons_row">
                     <button class="btn btn-primary save" type="submit">Search</button>
@@ -184,7 +197,7 @@
                                 class="fas fa-trash-alt"></i>Delete</a>
                             {% if user.email != admin_email and request.user != user %}
                             <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href=""
-                              class="fa-passwd-reset fa-stack"><i class="fa fa-undo fa-stack-2x"></i><i
+                              class="fa-passwd-reset fa-stack" title="Change Password"><i class="fa fa-undo fa-stack-2x"></i><i
                                 class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
                           </td>
                         </tr>
@@ -264,7 +277,7 @@
                                 class="fas fa-trash-alt"></i>Delete</a>
                             {% if user.email != admin_email and request.user != user %}
                             <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href=""
-                              class="fa-passwd-reset fa-stack"><i class="fa fa-undo fa-stack-2x"></i><i
+                              class="fa-passwd-reset fa-stack" title="Change Password"><i class="fa fa-undo fa-stack-2x"></i><i
                                 class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
                           </td>
                         </tr>
@@ -296,6 +309,9 @@
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+    if ($('#id_user_status').val() === 'False') {
+      $('#close-tab').click()
+    }
   });
 
   $('.trash').click(function (e) {

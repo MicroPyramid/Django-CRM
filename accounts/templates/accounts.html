@@ -173,16 +173,16 @@
                             {% if each_account.contacts.all %}
                             <a href="{% url 'accounts:create_mail' %}" class="btn btn-primary edit account_send_mail"
                               data-account="{{each_account.id}}" data-account-email="{{each_account.email}}"
-                              data-toggle="modal" data-target="#send_email_to_contacts"><i
-                                class="fas fa-paper-plane"></i>
+                              data-toggle="modal" data-target="#send_email_to_contacts" title="Send Mail"><i
+                                class="fas fa-paper-plane" ></i>
                             </a>
                             {% endif %}
-                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit"><i
+                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit" title="View"><i
                                 class="fas fa-eye"></i></a>
-                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit" title="Edit"><i
                                 class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'accounts:remove_account' each_account.id %}"
-                              class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                              class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash-alt"></i></a>
                           </td>
                         </tr>
                         {% endfor %}
@@ -269,12 +269,12 @@
                             {% endwith %}
                           </td>
                           <td class="actions">
-                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit"><i
+                            <a href="{% url 'accounts:view_account' each_account.id %}" class="btn btn-info edit" title="View"><i
                                 class="fas fa-eye"></i></a>
-                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit"><i
+                            <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit" title="Edit" ><i
                                 class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'accounts:remove_account' each_account.id %}"
-                              class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                              class="btn btn-danger delete remove_account" title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           </td>
                         </tr>
                         {% endfor %}

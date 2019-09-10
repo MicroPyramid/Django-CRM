@@ -81,7 +81,8 @@ class TestLeadModel(object):
                                         description="lead description",
                                         created_by=self.user,
                                         account_name="account",
-                                        phone="+91-123-456-7890")
+                                        phone="+91-123-456-7890",
+                                        is_active=True)
 
         self.lead1 = Lead.objects.create(
             title="jane doe lead", created_by=self.user3)

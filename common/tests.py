@@ -237,7 +237,7 @@ class UserListTestCase(ObjectsCreation, TestCase):
     def test_users_list_queryset(self):
         self.user = User.objects.all()
         data = {'first_name': 'john', 'username': 'johndoeAdmin',
-                'email': 'johndoe@admin.com'}
+                'email': 'johndoe@admin.com', 'role':'ADMIN', 'status':'True'}
         response = self.client.post('/users/list/', data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')

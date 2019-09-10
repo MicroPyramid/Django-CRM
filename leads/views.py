@@ -1,32 +1,36 @@
 import json
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.forms.models import modelformset_factory
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.views.generic import (
-    CreateView, DetailView, ListView, TemplateView, View)
+from django.views.generic import (CreateView, DetailView, ListView,
+                                  TemplateView, View)
 
 from accounts.models import Account, Tags
-from common.models import User, Comment, Attachments, APISettings
-from common.utils import LEAD_STATUS, LEAD_SOURCE, COUNTRIES
 from common import status
-from contacts.models import Contact
-from leads.models import Lead
-from leads.forms import LeadCommentForm, LeadForm, LeadAttachmentForm, LeadListForm
-from planner.models import Event, Reminder
-from planner.forms import ReminderForm
-from leads.tasks import send_lead_assigned_emails
-from django.core.exceptions import PermissionDenied
+from common.access_decorators_mixins import (MarketingAccessRequiredMixin,
+                                             SalesAccessRequiredMixin,
+                                             marketing_access_required,
+                                             sales_access_required)
+from common.models import APISettings, Attachments, Comment, User
 from common.tasks import send_email_user_mentions
-from leads.tasks import send_email_to_assigned_user, create_lead_from_file
-from common.access_decorators_mixins import (
-    sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
+from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS
+from contacts.models import Contact
+from leads.forms import (LeadAttachmentForm, LeadCommentForm, LeadForm,
+                         LeadListForm)
+from leads.models import Lead
+from leads.tasks import (create_lead_from_file, send_email_to_assigned_user,
+                         send_lead_assigned_emails)
+from planner.forms import ReminderForm
+from planner.models import Event, Reminder
 from teams.models import Teams
 
 
@@ -95,7 +99,7 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
 
         context["search"] = search
 
-        tag_ids = list(set(Lead.objects.values_list('tags', flat=True)))
+        tag_ids = list(set(self.get_queryset().values_list('tags', flat=True,)))
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
 
         tab_status = 'Open'
@@ -374,8 +378,8 @@ def update_lead(request, pk):
 
                 lead_obj.assigned_to.clear()
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
-            else:
-                lead_obj.assigned_to.clear()
+            # else:
+            #     lead_obj.assigned_to.clear()
 
             if request.POST.getlist('teams', []):
                 user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)

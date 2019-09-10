@@ -4,7 +4,7 @@
 {% load thumbnail %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li  class="breadcrumb-item"><a href="{% url 'common:users_list' %}">Users</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'common:users_list' %}">Users</a></li>
     <li class="active breadcrumb-item">{{user_obj.username}}</li>
   </ol>
 </nav>
@@ -18,14 +18,14 @@
       <div class="card">
         <div class="card-body" id="datashow">
           <div class="card-title text-right">
-            <h5 >
+            <h5>
               <span class="float-left title">Overview</span>
               <span class="" style="margin-top: 0px">
                 <div class="dropdown buttons_row">
                   <button class="btn primary_btn dropdown-toggle " type="button" data-toggle="dropdown">Actions
-                  <span class="caret"></span></button>
+                    <span class="caret"></span></button>
                   <ul class="dropdown-menu">
-                    <li><a href="{% url 'common:edit_user' user_obj.id %}" >Edit</a></li>
+                    <li><a href="{% url 'common:edit_user' user_obj.id %}">Edit</a></li>
                   </ul>
                 </div>
               </span>
@@ -35,7 +35,7 @@
             <div class="col-md-6">
               {% if user_obj.first_name %}
               <div class="filter_col col-md-12" id="iname">
-                <div class="form-group" >
+                <div class="form-group">
                   <label class="acc_field_label" for="id_name" data-name="name">First Name</label>
                   <div class="account_field" id="account_name" data-name="name">{{ user_obj.first_name }}</div>
                 </div>
@@ -69,7 +69,7 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="acc_field_label" for="id_industry" data-name="name">Role</label>
-                  <div class="account_field" id ="account_industry" data-name="name">{{ user_obj.role }}</div>
+                  <div class="account_field" id="account_industry" data-name="name">{{ user_obj.role }}</div>
                 </div>
               </div>
               {% endif %}
@@ -80,7 +80,7 @@
                   <label class="acc_field_label" for="id_shipping_address" data-name="name">Profile pic</label>
                   <div class="profile_pic" style="text-align: left;">
                     {% if user_obj.profile_pic %}
-                    {% thumbnail request.user.profile_pic "125x125" as im %}
+                    {% thumbnail user_obj.profile_pic "125x125" as im %}
                     <img src="{{ im.url }}">
                     {% endthumbnail %}
                     {% else %}
@@ -89,6 +89,18 @@
                   </div>
                 </div>
               </div>
+              {% with teams=user_obj.user_teams.all %}
+              {% if teams %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_industry" data-name="name">Teams</label>
+                  {% for team in teams %}
+                  <div class="account_field" id="account_industry" data-name="name">{{ team }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% endwith %}
             </div>
           </div>
         </div>
@@ -106,11 +118,13 @@
                 <div class="col-md-12">
                   <form id="comment_form" method="POST" enctype="multipart/form-data">
                     <div class="form-group">
-                      <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment" placeholder="Submit Your Comments Here"></textarea>
+                      <textarea class="form-control" textarea cols="40" rows="3" id="id_comments" name="comment"
+                        placeholder="Submit Your Comments Here"></textarea>
                       <div><i id="CommentError" style="display:none; color:red"></i></div>
                       </br>
                       <div class="buttons_row">
-                        <button class="btn btn-default save" style="text-align: center;" id="comment_submit" type="submit">Submit</button>
+                        <button class="btn btn-default save" style="text-align: center;" id="comment_submit"
+                          type="submit">Submit</button>
                       </div>
                     </div>
                     <input type="hidden" value="{{ user_obj.id }}" name="userid">
@@ -120,10 +134,12 @@
                     <li class="list-group-item list-row" id="comment{{comment.id}}">
                       {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user == comment.commented_by %}
                       <div class="list-row-buttons btn-group float-right">
-                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown" type="button">Actions<span class="caret"></span></button>
+                        <button class="btn primary_btn btn-sm dropdown-toggle" data-toggle="dropdown"
+                          type="button">Actions<span class="caret"></span></button>
                         <ul class="dropdown-menu text-center comment_actions">
                           <li>
-                            <a class="action edit_comment" onclick="edit_comment({{comment.id}})" id="{% url 'common:edit_comment' comment.id %}">Edit</a>
+                            <a class="action edit_comment" onclick="edit_comment({{comment.id}})"
+                              id="{% url 'common:edit_comment' comment.id %}">Edit</a>
                           </li>
                           <li>
                             <a class="action remove_comment" onclick="remove_comment({{comment.id}})">Remove</a>
@@ -143,17 +159,20 @@
                   </ul>
                 </div>
               </div>
-              <div class="modal fade" id="Comments_Accounts_Modal" role="dialog" data-keyboard="false" data-backdrop="static">
+              <div class="modal fade" id="Comments_Accounts_Modal" role="dialog" data-keyboard="false"
+                data-backdrop="static">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
                       <h4 class="modal-title">Update Your Comment</h4>
                       <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
                     </div>
-                    <form id="comment_edit_form" method="POST" >
+                    <form id="comment_edit_form" method="POST">
                       <div class="modal-body">
                         <div class="form-group">
-                          <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment" placeholder="Submit Your Comments"></textarea><span><i id="CommentEditError" style="display:none; color:red"></i></span>
+                          <textarea class="form-control" textarea cols="40" rows="3" id="id_editcomment" name="comment"
+                            placeholder="Submit Your Comments"></textarea><span><i id="CommentEditError"
+                              style="display:none; color:red"></i></span>
                           <input type="hidden" value="{{ user_obj.id }}" name="accountid">
                           <input type="hidden" value="" name="commentid" id="commentid">
                         </div>
@@ -182,10 +201,10 @@
                     {% if accounts|length > 0 %}
                     <thead>
                       <tr>
-                        <th width="5%" >S.No</th>
-                        <th width="25%" >Account Name</th>
-                        <th width="20%" >Phone</th>
-                        <th width="25%" >Email</th>
+                        <th width="5%">S.No</th>
+                        <th width="25%">Account Name</th>
+                        <th width="20%">Phone</th>
+                        <th width="25%">Email</th>
                       </tr>
                     </thead>
                     {% endif %}
@@ -223,10 +242,10 @@
                     {% if contacts|length > 0 %}
                     <thead>
                       <tr>
-                        <th width="5%" >S.No</th>
-                        <th width="25%" >Contact Name</th>
-                        <th width="20%" >Phone</th>
-                        <th width="25%" >Email</th>
+                        <th width="5%">S.No</th>
+                        <th width="25%">Contact Name</th>
+                        <th width="20%">Phone</th>
+                        <th width="25%">Email</th>
                       </tr>
                     </thead>
                     {% endif %}
@@ -234,7 +253,8 @@
                       {% for contact in contacts %}
                       <tr id="contacts_details{{contact.id}}" class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="{% url 'contacts:view_contact' contact.id %}">{{ contact.first_name }} {{ contact.last_name }}</a></td>
+                        <td><a href="{% url 'contacts:view_contact' contact.id %}">{{ contact.first_name }}
+                            {{ contact.last_name }}</a></td>
                         <td>{{ contact.phone }}</td>
                         <td>{{ contact.email }}</td>
                       </tr>
@@ -341,108 +361,108 @@
 {% block js_block %}
 <script type="text/javascript">
   var assigned_to_list = "{{ assigned_data }}";
-   assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function(a,b){
-          return {
-               l   : '<',
-               g   : '>',
-               quo : '"'
-           }[b];
-       }));
-   
-     /*Comment Add Js Start*/
-   $("#comment_form").submit(function(e){
-     e.preventDefault()
-     var formData = new FormData($("#comment_form")[0]);
-     $.ajax({
-       url : "{% url 'common:add_comment' %}",
-       type : "POST",
-       data : formData,
-       cache: false,
-       contentType: false,
-       processData: false,
-       success: function(data){
-         if(data.error){
-           for (var key in data.error) {
-           $("#CommentError").html(data.error[key]).show()
-         }
-         } else {
-           d = new Date(data.commented_on);
-           $("#comments_div").prepend("<li class='list-group-item list-row' id='comment"+data.comment_id+"'>"+
-                                "<div class='float-right right-container'>"+
-                                "<div class='list-row-buttons btn-group float-right'>"+
-                                "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>"+
-                                "<ul class='dropdown-menu text-center'>"+
-                                "<li><a class='action' onclick='edit_comment("+data.comment_id+")'>Edit</a></li>"+
-                                "<li><a class='action' onclick='remove_comment("+data.comment_id+")''>Remove</a></li></ul></div></div>"+
-                                "<div class='stream-post-container' id='comment_name"+data.comment_id+"'><pre>"+data.comment+"</pre></div>"+
-                                "<div class='stream-container'><pre class='float-left'>"+data.commented_by+"</pre><pre class='float-right'>"+d.toLocaleString('en-US', { hour12: true })+"</pre></div>"
-                                )
-           $("#id_comments").val("")
-           alert("Comment Submitted")
-           $("#CommentError").html("")
-         }
-       }
-     });
-   });
-   
-  
-   function edit_comment(x) {
-     $('#Comments_Accounts_Modal').modal('show');
-     comment = $("#comment_name" + x).text()
-     $("#commentid").val(x)
-     $("#id_editcomment").val(comment)
-     $("#edit_file_field").html($("#comment_file_div" + x).clone())
-   }
-   
-   $("#comment_edit").click(function (e) {
-     e.preventDefault()
-     var formData = new FormData($("#comment_edit_form")[0]);
-     var commentid = $("#commentid").val()
-     $.ajax({
-       url: "{% url 'common:edit_comment' 123456 %}".replace(123456, commentid),
-       type: "POST",
-       data: formData,
-       cache: false,
-       contentType: false,
-       processData: false,
-       success: function (data) {
-         if (data.error) {
-           $("#CommentEditError").html(data.error).show()
-         } else {
-           console.log($("#comment_name" + data.comment_id))
-           $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
-           $('#Comments_Accounts_Modal').modal('hide');
-           $("#id_editcomment").val("")
-           $("#CommentEditError").html('')
-         }
-       }
-     })
-   })
-   
-   /*Comment Edit Js Ends*/
-   
-   function HideError(e) {
-     $("#CommentError").hide()
-     $("#CommentEditError").hide()
-   }
-   
-   /*Comment Remove Js Start*/
-   
-   function remove_comment(x) {
-     var con = confirm("Do you want to Delete it for Sure!?")
-     if (con == true) {
-       $.post('{% url "common:remove_comment" %}', {
-         "comment_id": x
-       }, function (data) {
-         if (data.error) {
-           alert(data.error)
-         } else {
-           $("#comment" + data.cid).remove()
-         }
-       })
-     }
-   }
-   
+  assigned_to_list = JSON.parse(assigned_to_list.replace(/&(l|g|quo)t;/g, function (a, b) {
+    return {
+      l: '<',
+      g: '>',
+      quo: '"'
+    }[b];
+  }));
+
+  /*Comment Add Js Start*/
+  $("#comment_form").submit(function (e) {
+    e.preventDefault()
+    var formData = new FormData($("#comment_form")[0]);
+    $.ajax({
+      url: "{% url 'common:add_comment' %}",
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.error) {
+          for (var key in data.error) {
+            $("#CommentError").html(data.error[key]).show()
+          }
+        } else {
+          d = new Date(data.commented_on);
+          $("#comments_div").prepend("<li class='list-group-item list-row' id='comment" + data.comment_id + "'>" +
+            "<div class='float-right right-container'>" +
+            "<div class='list-row-buttons btn-group float-right'>" +
+            "<button class='btn primary_btn btn-sm dropdown-toggle' data-toggle='dropdown' type='button'><span class='caret'></span>Actions</button>" +
+            "<ul class='dropdown-menu text-center'>" +
+            "<li><a class='action' onclick='edit_comment(" + data.comment_id + ")'>Edit</a></li>" +
+            "<li><a class='action' onclick='remove_comment(" + data.comment_id + ")''>Remove</a></li></ul></div></div>" +
+            "<div class='stream-post-container' id='comment_name" + data.comment_id + "'><pre>" + data.comment + "</pre></div>" +
+            "<div class='stream-container'><pre class='float-left'>" + data.commented_by + "</pre><pre class='float-right'>" + d.toLocaleString('en-US', { hour12: true }) + "</pre></div>"
+          )
+          $("#id_comments").val("")
+          alert("Comment Submitted")
+          $("#CommentError").html("")
+        }
+      }
+    });
+  });
+
+
+  function edit_comment(x) {
+    $('#Comments_Accounts_Modal').modal('show');
+    comment = $("#comment_name" + x).text()
+    $("#commentid").val(x)
+    $("#id_editcomment").val(comment)
+    $("#edit_file_field").html($("#comment_file_div" + x).clone())
+  }
+
+  $("#comment_edit").click(function (e) {
+    e.preventDefault()
+    var formData = new FormData($("#comment_edit_form")[0]);
+    var commentid = $("#commentid").val()
+    $.ajax({
+      url: "{% url 'common:edit_comment' 123456 %}".replace(123456, commentid),
+      type: "POST",
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      success: function (data) {
+        if (data.error) {
+          $("#CommentEditError").html(data.error).show()
+        } else {
+          console.log($("#comment_name" + data.comment_id))
+          $("#comment_name" + data.comment_id).html('<pre>' + data.comment + '</pre>')
+          $('#Comments_Accounts_Modal').modal('hide');
+          $("#id_editcomment").val("")
+          $("#CommentEditError").html('')
+        }
+      }
+    })
+  })
+
+  /*Comment Edit Js Ends*/
+
+  function HideError(e) {
+    $("#CommentError").hide()
+    $("#CommentEditError").hide()
+  }
+
+  /*Comment Remove Js Start*/
+
+  function remove_comment(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "common:remove_comment" %}', {
+        "comment_id": x
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#comment" + data.cid).remove()
+        }
+      })
+    }
+  }
+
 </script>
 <script src="{% static 'js/mention.js' %}"></script>
 {% endblock js_block %}

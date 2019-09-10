@@ -33,13 +33,13 @@ from common.access_decorators_mixins import marketing_access_required, Marketing
 TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
 
 
-def get_exact_match(query, m2m_field, ids):
-    # query = tasks_list.annotate(count=Count(m2m_field))\
-    #             .filter(count=len(ids))
-    query = query
-    for _id in ids:
-        query = query.filter(**{m2m_field: _id})
-    return query
+# def get_exact_match(query, m2m_field, ids):
+#     # query = tasks_list.annotate(count=Count(m2m_field))\
+#     #             .filter(count=len(ids))
+#     query = query
+#     for _id in ids:
+#         query = query.filter(**{m2m_field: _id})
+#     return query
 
 
 @login_required(login_url='/login')
@@ -123,16 +123,18 @@ def contact_lists(request):
 def contacts_list(request):
     if (request.user.role == "ADMIN"):
         contacts = Contact.objects.all()
+        contact_lists = ContactList.objects.all()
     else:
         contact_ids = request.user.marketing_contactlist.all().values_list('contacts',
                                                                            flat=True)
         contacts = Contact.objects.filter(id__in=contact_ids)
+        contact_lists = ContactList.objects.filter(created_by=request.user)
         # contacts = Contact.objects.filter(created_by=request.user)
     users = User.objects.filter(
         id__in=contacts.values_list('created_by_id', flat=True))
 
     if request.method == 'GET':
-        context = {'contacts': contacts, 'users': users}
+        context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists}
         return render(request, 'marketing/lists/all.html', context)
 
     if request.method == 'POST':
@@ -147,7 +149,11 @@ def contacts_list(request):
         if data.get('created_by'):
             contacts = contacts.filter(created_by=data.get('created_by'))
 
-        context = {'contacts': contacts, 'users': User.objects.all()}
+        if data.get('contact_list'):
+            contacts = contacts.filter(contact_list=data.get('contact_list'))
+
+        context = {'contacts': contacts, 'users': User.objects.all(),
+            'contact_lists': contact_lists}
         return render(request, 'marketing/lists/all.html', context)
 
 
@@ -188,15 +194,10 @@ def contact_list_new(request):
 @marketing_access_required
 def edit_contact_list(request, pk):
     user = request.user
-    try:
-        contact_list = ContactList.objects.get(pk=pk)
-    except ContactList.DoesNotExist:
-        contact_list = ContactList.objects.none()
-        return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
-
+    contact_list = get_object_or_404(ContactList, pk=pk)
     if request.method == 'GET':
         # contact_lists = ContactList.objects.filter(company=request.company)
-        if (user.is_superuser):
+        if (user.is_superuser or request.user.role == 'ADMIN'):
             contact_lists = ContactList.objects.all()
         else:
             contact_lists = ContactList.objects.filter(created_by=request.user)
@@ -225,65 +226,65 @@ def edit_contact_list(request, pk):
                              'errors': form.errors}, status=status.HTTP_200_OK)
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def view_contact_list(request, pk):
-    contact_list = get_object_or_404(ContactList, pk=pk)
-    contacts = Contact.objects.filter(contact_list__in=[contact_list])
-    if request.POST and request.POST.get("search"):
-        contacts = contacts.filter(
-            Q(name__icontains=request.POST['search']) |
-            Q(email__icontains=request.POST['search']))
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def view_contact_list(request, pk):
+#     contact_list = get_object_or_404(ContactList, pk=pk)
+#     contacts = Contact.objects.filter(contact_list__in=[contact_list])
+#     if request.POST and request.POST.get("search"):
+#         contacts = contacts.filter(
+#             Q(name__icontains=request.POST['search']) |
+#             Q(email__icontains=request.POST['search']))
 
-    per_page = request.GET.get("per_page", 10)
-    paginator = Paginator(contacts.order_by('id'), per_page)
-    page = request.GET.get('page', 1)
-    try:
-        contacts = paginator.page(page)
-    except PageNotAnInteger:
-        contacts = paginator.page(1)
-    except EmptyPage:
-        contacts = paginator.page(paginator.num_pages)
+#     per_page = request.GET.get("per_page", 10)
+#     paginator = Paginator(contacts.order_by('id'), per_page)
+#     page = request.GET.get('page', 1)
+#     try:
+#         contacts = paginator.page(page)
+#     except PageNotAnInteger:
+#         contacts = paginator.page(1)
+#     except EmptyPage:
+#         contacts = paginator.page(paginator.num_pages)
 
-    data = {'contact_list': contact_list, "contacts": contacts}
-    template_name = "marketing/lists/all.html"
-    return render(request, template_name, data)
-
-
-@login_required(login_url='/login')
-@marketing_access_required
-def delete_contact_list(request, pk):
-    contact_list_obj = get_object_or_404(ContactList, pk=pk)
-    if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_list_obj.created_by == request.user):
-        raise PermissionDenied
-
-    contact_list_obj.delete()
-    redirect_to = reverse('marketing:contact_lists')
-    return HttpResponseRedirect(redirect_to)
+#     data = {'contact_list': contact_list, "contacts": contacts}
+#     template_name = "marketing/lists/all.html"
+#     return render(request, template_name, data)
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def contacts_list_new(request):
-    if request.POST:
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            instance = form.save(commit=False)
-            instance.created_by = request.user
-            instance.save()
-            for each in json.loads(request.POST['contact_list']):
-                instance.contact_list.add(ContactList.objects.get(id=each))
-            # return JsonResponse(form.data, status=status.HTTP_201_CREATED)
-            return reverse('marketing:contact_list')
-        else:
-            data = {'error': True, 'errors': form.errors}
-    else:
-        if (request.user.is_superuser):
-            queryset = ContactList.objects.all()
-        else:
-            queryset = ContactList.objects.filter(created_by=request.user)
-        data = {"contact_list": queryset}
-    return render(request, 'marketing/lists/cnew.html', data)
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def delete_contact_list(request, pk):
+#     contact_list_obj = get_object_or_404(ContactList, pk=pk)
+#     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_list_obj.created_by == request.user):
+#         raise PermissionDenied
+
+#     contact_list_obj.delete()
+#     redirect_to = reverse('marketing:contact_lists')
+#     return HttpResponseRedirect(redirect_to)
+
+
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def contacts_list_new(request):
+#     if request.POST:
+#         form = ContactForm(request.POST)
+#         if form.is_valid():
+#             instance = form.save(commit=False)
+#             instance.created_by = request.user
+#             instance.save()
+#             for each in json.loads(request.POST['contact_list']):
+#                 instance.contact_list.add(ContactList.objects.get(id=each))
+#             # return JsonResponse(form.data, status=status.HTTP_201_CREATED)
+#             return reverse('marketing:contact_list')
+#         else:
+#             data = {'error': True, 'errors': form.errors}
+#     else:
+#         if (request.user.is_superuser):
+#             queryset = ContactList.objects.all()
+#         else:
+#             queryset = ContactList.objects.filter(created_by=request.user)
+#         data = {"contact_list": queryset}
+#     return render(request, 'marketing/lists/cnew.html', data)
 
 
 @login_required(login_url='/login')
@@ -362,6 +363,7 @@ def contact_list_detail(request, pk):
     contacts_list_count = contact_list.contacts.filter(is_bounced=False).count()
     bounced_contacts_list = contact_list.contacts.filter(is_bounced=True)
     bounced_contacts_list_count = contact_list.contacts.filter(is_bounced=True).count()
+    duplicate_contacts = contact_list.duplicate_contact_contact_list.all()
     if request.POST:
         if request.POST.get('name'):
             contacts_list = contacts_list.filter(
@@ -394,19 +396,20 @@ def contact_list_detail(request, pk):
         "bounced_contacts_list":bounced_contacts_list,
         'bounced_contacts_list_count': bounced_contacts_list_count,
         'contacts_list_count': contacts_list_count,
+        'duplicate_contacts': duplicate_contacts,
         # these two are added for digg pagintor
         'paginator':paginator,'page_obj': bounced_contacts_list,}
     return render(request, 'marketing/lists/detail.html', data)
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def failed_contact_list_detail(request, pk):
-    contact_list = get_object_or_404(ContactList, pk=pk)
-    failed_contacts_list = contact_list.failed_contacts.all()
-    data = {'contact_list': contact_list,
-            "failed_contacts_list": failed_contacts_list}
-    return render(request, 'marketing/lists/failed_detail.html', data)
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def failed_contact_list_detail(request, pk):
+#     contact_list = get_object_or_404(ContactList, pk=pk)
+#     failed_contacts_list = contact_list.failed_contacts.all()
+#     data = {'contact_list': contact_list,
+#             "failed_contacts_list": failed_contacts_list}
+#     return render(request, 'marketing/lists/failed_detail.html', data)
 
 
 @login_required(login_url='/login')
@@ -427,14 +430,14 @@ def failed_contact_list_download_delete(request, pk):
         failed_contacts_list.delete()
         return response
     else:
-        return HttpResponseRedirect(reverse('marketing:contact_lists', kwargs={"pk": pk}))
+        return HttpResponseRedirect(reverse('marketing:contact_list_detail', kwargs={"pk": pk}))
 
 
 @login_required(login_url='/login')
 @marketing_access_required
 def email_template_list(request):
     # users = User.objects.all()
-    if (request.user.is_admin or request.user.is_superuser):
+    if (request.user.role == 'ADMIN' or request.user.is_superuser):
         queryset = EmailTemplate.objects.all()
     else:
         queryset = EmailTemplate.objects.filter(
@@ -475,6 +478,9 @@ def email_template_new(request):
 def email_template_edit(request, pk):
     email_template = get_object_or_404(EmailTemplate, pk=pk)
 
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == email_template.created_by):
+        raise PermissionDenied
+
     if request.method == 'GET':
         data = {'email_template': email_template}
         return render(request, 'marketing/email_template/new.html', data)
@@ -492,6 +498,8 @@ def email_template_edit(request, pk):
 @marketing_access_required
 def email_template_detail(request, pk):
     queryset = get_object_or_404(EmailTemplate, id=pk)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == queryset.created_by):
+        raise PermissionDenied
     data = {'email_template': queryset}
     return render(request, 'marketing/email_template/details.html', data)
 
@@ -499,11 +507,11 @@ def email_template_detail(request, pk):
 @login_required(login_url='/login')
 @marketing_access_required
 def email_template_delete(request, pk):
-    try:
-        EmailTemplate.objects.get(id=pk).delete()
-        redirect_to = reverse('marketing:email_template_list')
-    except ContactList.DoesNotExist:
-        redirect_to = reverse('marketing:email_template_list')
+    email_template_obj = get_object_or_404(EmailTemplate, pk=pk)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == email_template_obj.created_by):
+        raise PermissionDenied
+    email_template_obj.delete()
+    redirect_to = reverse('marketing:email_template_list')
     return HttpResponseRedirect(redirect_to)
 
 
@@ -536,12 +544,12 @@ def campaign_list(request):
 @marketing_access_required
 def campaign_new(request):
     if request.method == 'GET':
-        if request.user.is_admin or request.user.is_superuser:
+        if request.user.role == 'ADMIN' or request.user.is_superuser:
             email_templates = EmailTemplate.objects.all()
         else:
             email_templates = EmailTemplate.objects.filter(
                 created_by=request.user)
-        if request.user.is_admin or request.user.is_superuser:
+        if request.user.role == 'ADMIN' or request.user.is_superuser:
             contact_lists = ContactList.objects.all()
         else:
             contact_lists = ContactList.objects.filter(
@@ -638,22 +646,20 @@ def campaign_new(request):
         return JsonResponse({'error': True, 'errors': form.errors}, status=status.HTTP_200_OK)
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def campaign_edit(request):
-    return render(request, 'marketing/campaign/edit.html')
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def campaign_edit(request):
+#     return render(request, 'marketing/campaign/edit.html')
 
 
 @login_required(login_url='/login')
 @marketing_access_required
 def campaign_details(request, pk):
-    try:
-        campaign = Campaign.objects.get(pk=pk)
-    except Campaign.DoesNotExist:
-        return redirect(reverse('marketing:campaign_list'))
-
+    campaign = get_object_or_404(Campaign, pk=pk)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == campaign.created_by):
+        raise PermissionDenied
     contact_lists = campaign.contact_lists.all()
-    if (request.user.is_admin or request.user.is_superuser):
+    if (request.user.role == 'ADMIN' or request.user.is_superuser):
         contact_lists = contact_lists
     else:
         # contact_lists = contact_lists.filter(
@@ -679,96 +685,96 @@ def campaign_details(request, pk):
     read_contacts = Contact.objects.filter(id__in=contact_ids)
     sent_contacts = contacts.exclude(
         Q(is_bounced=True) | Q(is_unsubscribed=True))
-    if request.POST:
-        contacts = contacts.filter(Q(name__icontains=request.POST['search']))
+    # if request.POST:
+    #     contacts = contacts.filter(Q(name__icontains=request.POST['search']))
 
     tab = request.GET.get('tab', 'contacts')
     per_page = request.GET.get("per_page", 10)
     page = request.GET.get('page', 1)
 
-    contacts_paginator = Paginator(contacts.order_by('id'), per_page)
-    if (tab == "contacts"):
-        page = page
-    else:
-        page = 1
-    try:
-        contacts = contacts_paginator.page(page)
-    except PageNotAnInteger:
-        contacts = contacts_paginator.page(1)
-    except EmptyPage:
-        contacts = contacts_paginator.page(contacts_paginator.num_pages)
+    # contacts_paginator = Paginator(contacts.order_by('id'), per_page)
+    # if (tab == "contacts"):
+    #     page = page
+    # else:
+    #     page = 1
+    # try:
+    #     contacts = contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     contacts = contacts_paginator.page(1)
+    # except EmptyPage:
+    #     contacts = contacts_paginator.page(contacts_paginator.num_pages)
 
-    unsubscribe_contacts_paginator = Paginator(
-        unsubscribe_contacts.order_by('id'), per_page)
-    if (tab == "unsubscribe_contacts"):
-        page = page
-    else:
-        page = 1
+    # unsubscribe_contacts_paginator = Paginator(
+    #     unsubscribe_contacts.order_by('id'), per_page)
+    # if (tab == "unsubscribe_contacts"):
+    #     page = page
+    # else:
+    #     page = 1
 
-    try:
-        unsubscribe_contacts = unsubscribe_contacts_paginator.page(page)
-    except PageNotAnInteger:
-        unsubscribe_contacts = unsubscribe_contacts_paginator.page(1)
-    except EmptyPage:
-        unsubscribe_contacts = unsubscribe_contacts_paginator.page(
-            unsubscribe_contacts_paginator.num_pages)
+    # try:
+    #     unsubscribe_contacts = unsubscribe_contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     unsubscribe_contacts = unsubscribe_contacts_paginator.page(1)
+    # except EmptyPage:
+    #     unsubscribe_contacts = unsubscribe_contacts_paginator.page(
+    #         unsubscribe_contacts_paginator.num_pages)
 
-    bounced_contacts_paginator = Paginator(
-        bounced_contacts.order_by('id'), per_page)
-    if (tab == "bounced_contacts"):
-        page = page
-    else:
-        page = 1
+    # bounced_contacts_paginator = Paginator(
+    #     bounced_contacts.order_by('id'), per_page)
+    # if (tab == "bounced_contacts"):
+    #     page = page
+    # else:
+    #     page = 1
 
-    try:
-        bounced_contacts = bounced_contacts_paginator.page(page)
-    except PageNotAnInteger:
-        bounced_contacts = bounced_contacts_paginator.page(1)
-    except EmptyPage:
-        bounced_contacts = bounced_contacts_paginator.page(
-            bounced_contacts_paginator.num_pages)
+    # try:
+    #     bounced_contacts = bounced_contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     bounced_contacts = bounced_contacts_paginator.page(1)
+    # except EmptyPage:
+    #     bounced_contacts = bounced_contacts_paginator.page(
+    #         bounced_contacts_paginator.num_pages)
 
-    sent_contacts_paginator = Paginator(sent_contacts.order_by('id'), per_page)
-    if (tab == "sent_contacts"):
-        page = page
-    else:
-        page = 1
+    # sent_contacts_paginator = Paginator(sent_contacts.order_by('id'), per_page)
+    # if (tab == "sent_contacts"):
+    #     page = page
+    # else:
+    #     page = 1
 
-    try:
-        sent_contacts = sent_contacts_paginator.page(page)
-    except PageNotAnInteger:
-        sent_contacts = sent_contacts_paginator.page(1)
-    except EmptyPage:
-        sent_contacts = sent_contacts_paginator.page(
-            sent_contacts_paginator.num_pages)
+    # try:
+    #     sent_contacts = sent_contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     sent_contacts = sent_contacts_paginator.page(1)
+    # except EmptyPage:
+    #     sent_contacts = sent_contacts_paginator.page(
+    #         sent_contacts_paginator.num_pages)
 
-    all_contacts_paginator = Paginator(all_contacts.order_by('id'), per_page)
-    if (tab == "all_contacts"):
-        page = page
-    else:
-        page = 1
+    # all_contacts_paginator = Paginator(all_contacts.order_by('id'), per_page)
+    # if (tab == "all_contacts"):
+    #     page = page
+    # else:
+    #     page = 1
 
-    try:
-        all_contacts = all_contacts_paginator.page(page)
-    except PageNotAnInteger:
-        all_contacts = all_contacts_paginator.page(1)
-    except EmptyPage:
-        all_contacts = all_contacts_paginator.page(
-            all_contacts_paginator.num_pages)
+    # try:
+    #     all_contacts = all_contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     all_contacts = all_contacts_paginator.page(1)
+    # except EmptyPage:
+    #     all_contacts = all_contacts_paginator.page(
+    #         all_contacts_paginator.num_pages)
 
-    read_contacts_paginator = Paginator(read_contacts.order_by('id'), per_page)
-    if (tab == "read_contacts"):
-        page = page
-    else:
-        page = 1
+    # read_contacts_paginator = Paginator(read_contacts.order_by('id'), per_page)
+    # if (tab == "read_contacts"):
+    #     page = page
+    # else:
+    #     page = 1
 
-    try:
-        read_contacts = read_contacts_paginator.page(page)
-    except PageNotAnInteger:
-        read_contacts = read_contacts_paginator.page(1)
-    except EmptyPage:
-        read_contacts = read_contacts_paginator.page(
-            read_contacts_paginator.num_pages)
+    # try:
+    #     read_contacts = read_contacts_paginator.page(page)
+    # except PageNotAnInteger:
+    #     read_contacts = read_contacts_paginator.page(1)
+    # except EmptyPage:
+    #     read_contacts = read_contacts_paginator.page(
+    #         read_contacts_paginator.num_pages)
 
     data = {'contact_lists': contact_lists, "campaign": campaign,
             "contacts": contacts, 'unsubscribe_contacts': unsubscribe_contacts,
@@ -781,12 +787,11 @@ def campaign_details(request, pk):
 @login_required(login_url='/login')
 @marketing_access_required
 def campaign_delete(request, pk):
-    try:
-        campaign = Campaign.objects.get(id=pk)
-        campaign.delete()
-        redirect_url = reverse('marketing:campaign_list')
-    except Campaign.DoesNotExist:
-        redirect_url = reverse('marketing:campaign_list')
+    campaign = get_object_or_404(Campaign, pk=pk)
+    if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == campaign.created_by):
+        raise PermissionDenied
+    campaign.delete()
+    redirect_url = reverse('marketing:campaign_list')
     return redirect(redirect_url)
 
 
@@ -819,7 +824,7 @@ def campaign_link_click(request, link_id, email_id):
     return redirect(url)
 
 
-def campaign_open(request, campaign_log_id, email_id):
+def campaign_open(request, campaign_log_id, email_id): # pragma: no cover
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
 
     if x_forwarded_for:
@@ -884,36 +889,36 @@ def contact_detail(request, contact_id):
         return render(request, 'contact_detail.html', {'contact_obj': contact_obj})
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def edit_failed_contact(request, pk):
-    contact_obj = get_object_or_404(FailedContact, pk=pk)
-    if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user):
-        raise PermissionDenied
-    if request.method == 'GET':
-        form = ContactForm(instance=contact_obj)
-        return render(request, 'marketing/lists/edit_contact.html', {'form': form})
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def edit_failed_contact(request, pk):
+#     contact_obj = get_object_or_404(FailedContact, pk=pk)
+#     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user):
+#         raise PermissionDenied
+#     if request.method == 'GET':
+#         form = ContactForm(instance=contact_obj)
+#         return render(request, 'marketing/lists/edit_contact.html', {'form': form})
 
-    if request.method == 'POST':
-        form = ContactForm(request.POST, instance=contact_obj)
-        if form.is_valid():
-            contact = form.save(commit=False)
-            contact.save()
-            form.save_m2m()
-            return JsonResponse({'error': False, 'success_url': reverse('marketing:contacts_list')})
-        else:
-            return JsonResponse({'error': True, 'errors': form.errors, })
+#     if request.method == 'POST':
+#         form = ContactForm(request.POST, instance=contact_obj)
+#         if form.is_valid():
+#             contact = form.save(commit=False)
+#             contact.save()
+#             form.save_m2m()
+#             return JsonResponse({'error': False, 'success_url': reverse('marketing:contacts_list')})
+#         else:
+#             return JsonResponse({'error': True, 'errors': form.errors, })
 
 
-@login_required(login_url='/login')
-@marketing_access_required
-def delete_failed_contact(request, pk):
-    contact_obj = get_object_or_404(FailedContact, pk=pk)
-    if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user):
-        raise PermissionDenied
-    if request.method == 'GET':
-        contact_obj.delete()
-        return redirect('marketing:contacts_list')
+# @login_required(login_url='/login')
+# @marketing_access_required
+# def delete_failed_contact(request, pk):
+#     contact_obj = get_object_or_404(FailedContact, pk=pk)
+#     if not (request.user.role == 'ADMIN' or request.user.is_superuser or contact_obj.created_by == request.user):
+#         raise PermissionDenied
+#     if request.method == 'GET':
+#         contact_obj.delete()
+#         return redirect('marketing:contacts_list')
 
 
 @login_required
@@ -948,7 +953,14 @@ def download_contacts_for_campaign(request, compaign_id):
             'company name,email,first name,last name,city,state\n',
         ]
         for contact in contacts:
-            data.append((', '.join(contact.values()) + '\n'))
+            data.append(
+                str(contact.get('company_name')) + ',' +
+                str(contact.get('email')) + ',' +
+                str(contact.get('name')) + ',' +
+                str(contact.get('last_name')) + ',' +
+                str(contact.get('city')) + ',' +
+                str(contact.get('state')) + '\n'
+            )
         response = HttpResponse(
             data, content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename={}'.format(
@@ -976,16 +988,16 @@ def download_links_clicked(request, campaign_id):
     if campaign_link_click_objects:
         for campaign_link_click_object in campaign_link_click_objects:
             data.append(
-                campaign_link_click_object.contact.email + ',' +
-                campaign_link_click_object.contact.company_name + ',' +
-                campaign_link_click_object.contact.name + ',' +
-                campaign_link_click_object.contact.last_name + ',' +
-                campaign_link_click_object.contact.city + ',' +
-                campaign_link_click_object.contact.state + ',' +
-                campaign_link_click_object.link.original + ',' +
+                str(campaign_link_click_object.contact.email) + ',' +
+                str(campaign_link_click_object.contact.company_name) + ',' +
+                str(campaign_link_click_object.contact.name) + ',' +
+                str(campaign_link_click_object.contact.last_name) + ',' +
+                str(campaign_link_click_object.contact.city) + ',' +
+                str(campaign_link_click_object.contact.state) + ',' +
+                str(campaign_link_click_object.link.original) + ',' +
                 str(campaign_link_click_object.link.unique) + ',' +
                 str(campaign_link_click_object.link.clicks) + ',' +
-                campaign_link_click_object.link.campaign.title + '\n'
+                str(campaign_link_click_object.link.campaign.title) + '\n'
             )
         response = HttpResponse(data, content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename={}'.format('data_downloads.csv')
@@ -995,7 +1007,6 @@ def download_links_clicked(request, campaign_id):
 @login_required(login_url='/login')
 @marketing_access_required
 def delete_multiple_contacts(request):
-
     contacts_list = Contact.objects.filter(id__in=request.POST.getlist('selected_list[]'))
     shared_contact_lists = request.user.marketing_contactlist.all().values_list('contacts', flat=True)
     cannot_be_deleted = []
@@ -1011,12 +1022,22 @@ def delete_multiple_contacts(request):
                 if contact_obj.contact_list.count() == 1:
                     contact_obj.delete()
                 else:
-                    contact_list_obj = get_object_or_404(ContactList, pk=request.POST.get('from_contact'))
-                    contact_obj.contact_list.remove(contact_list_obj)
+                    if request.POST.get('duplicate_contacts', None) == 'true':
+                        contact_list_obj = get_object_or_404(ContactList, pk=request.POST.get('from_contact'))
+                        contact_obj.contact_list.remove(contact_list_obj)
+
+                        contact_list_duplicates = contact_list_obj.duplicate_contact_contact_list.all()
+                        contacts_list_ids = contacts_list.values_list('id', flat=True)
+                        contact_list_duplicates.filter(contacts__id__in=contacts_list_ids).delete()
+                    else:
+                        contact_list_obj = get_object_or_404(ContactList, pk=request.POST.get('from_contact'))
+                        contact_obj.contact_list.remove(contact_list_obj)
+
         return JsonResponse({'error':False, 'refresh': True})
     else:
         message = "You don't have permission to delete {}".format(', '.join(cannot_be_deleted))
         return JsonResponse({'error': True, 'message' : message })
+
 
 
 @login_required(login_url='/login')
@@ -1030,13 +1051,26 @@ def delete_all_contacts(request, contact_list_id):
         bounced = True
     else:
         bounced = False
-    contacts_objs = contacts_list_obj.contacts.filter(is_bounced=bounced)
-    if contacts_objs:
-        for contact_obj in contacts_objs:
-            if contact_obj.contact_list.count() > 1:
-                contact_obj.contact_list.remove(contacts_list_obj)
-            else:
-                contact_obj.delete()
+    if request.GET.get('duplicate_contacts', '') == 'true':
+        contact_list_duplicates = contacts_list_obj.duplicate_contact_contact_list.all()
+        if contact_list_duplicates:
+            for dup_contact_obj in contact_list_duplicates:
+                if dup_contact_obj.contacts.contact_list.count() > 1:
+                    contact = dup_contact_obj.contacts
+                    contact.contact_list.remove(contacts_list_obj)
+                    dup_contact_obj.delete()
+                    # dup_contact_obj.contacts.contact_list.remove(contacts_list_obj)
+                # else:
+                #     dup_contact_obj.contacts.delete()
+    else:
+        contacts_objs = contacts_list_obj.contacts.filter(is_bounced=bounced)
+        if contacts_objs:
+            for contact_obj in contacts_objs:
+                if contact_obj.contact_list.count() > 1:
+                    contact_obj.contact_list.remove(contacts_list_obj)
+                else:
+                    contact_obj.delete()
+
     # delete_multiple_contacts_tasks.delay(contact_list_id, bounced)
     redirect_to = reverse('marketing:contact_list_detail', args=(contact_list_id,))
     return HttpResponseRedirect(redirect_to)
@@ -1056,7 +1090,14 @@ def download_failed_contacts(request, contact_list_id):
             'company name,email,first name,last name,city,state\n',
         ]
         for contact in failed_contacts:
-            data.append((', '.join(contact.values()) + '\n'))
+            data.append(
+                str(contact.get('company_name')) + ',' +
+                str(contact.get('email')) + ',' +
+                str(contact.get('name')) + ',' +
+                str(contact.get('last_name')) + ',' +
+                str(contact.get('city')) + ',' +
+                str(contact.get('state')) + '\n'
+            )
         response = HttpResponse(
             data, content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename={}'.format(
@@ -1091,7 +1132,7 @@ def add_email_for_campaigns(request):
             obj = form.save(commit=False)
             obj.created_by = request.user
             obj.save()
-            return JsonResponse({'error':False, 'success_url':reverse('marketing:list_all_emails_for_campaigns')})
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
         else:
             return JsonResponse({'error':True, 'errors':form.errors})
 
@@ -1111,7 +1152,7 @@ def edit_email_for_campaigns(request, pk):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.save()
-            return JsonResponse({'error':False, 'success_url':reverse('marketing:list_all_emails_for_campaigns')})
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
         else:
             return JsonResponse({'error':True, 'errors':form.errors})
 
@@ -1123,4 +1164,4 @@ def delete_email_for_campaigns(request, pk):
     context = {}
     if request.method == 'GET':
         contact_obj.delete()
-        return HttpResponseRedirect(reverse('marketing:list_all_emails_for_campaigns'))
+        return HttpResponseRedirect(reverse('common:api_settings'))

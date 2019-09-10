@@ -3,7 +3,7 @@
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'common:api_settings' %}">Campaign Emails</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'marketing:list_all_emails_for_campaigns' %}">Campaign Emails</a></li>
     <li class="breadcrumb-item active">
       {% if edit_obj %}
       Edit
@@ -60,7 +60,7 @@
             <div class="col-md-12">
               <div class="row marl buttons_row text-center form_btn_row">
                 <button class="btn btn-default save" type="submit">Save</button>
-                <a href="{% url 'marketing:list_all_emails_for_campaigns' %}" class="btn btn-default clear"
+                <a href="{% url 'common:api_settings' %}" class="btn btn-default clear"
                   id="create_lead_cancel">Cancel</a>
               </div>
             </div>

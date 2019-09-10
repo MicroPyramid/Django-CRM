@@ -2,6 +2,9 @@ language: python
 python:
   - "3.5.2"
 
+services:
+  - redis-server
+
 #Django & Database
 addons:
   postgresql: "9.4"
@@ -23,8 +26,8 @@ install:
 
 # command to run tests
 script:
-  - python manage.py test
-  - coverage run --source=accounts,common manage.py test accounts common
+  - python manage.py test --keepdb
+  - coverage run --source=accounts,cases,common,contacts,leads,opportunity,tasks,invoices,events,teams,marketing manage.py test --keepdb --noinput
   - coverage xml
   - pytest
   - python-codacy-coverage -r coverage.xml
