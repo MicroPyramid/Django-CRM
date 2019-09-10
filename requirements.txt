@@ -1,7 +1,7 @@
-django-2.2.4
-celery-4.3.0
+django==2.2.4
+celery==4.3.0
 django-simple-pagination==1.3
-django-compressor-2.3
+django-compressor==2.3
 sorl-thumbnail==12.5.0
 django-phonenumber-field==2.2.0
 phonenumbers==8.10.4
@@ -23,3 +23,4 @@ sorl-thumbnail==12.5.0
 pytest==5.1.1
 pytest-django==3.5.1
 codacy-coverage==1.3.11
+
