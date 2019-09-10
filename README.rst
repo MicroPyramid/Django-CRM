@@ -88,13 +88,14 @@ Installation
    .. code-block:: python
 
       pip install -r requirements.txt
+      cp crm/local_settings.example crm/local_settings.py
       python manage.py makemigrations
       python manage.py createsuperuser
       python manage.py runserver
 
   This will install all the required dependencies for django-crm.
 
-  Then update the settings.py file with your email host server credentials.
+  Then update the local_settings.py file with your email host server credentials.
 
    .. code-block:: python
 
@@ -129,7 +130,7 @@ Credits
 Contributors
 ------------
 
-This project exists thanks to all the people who contribute! 
+This project exists thanks to all the people who contribute!
 
 .. image:: https://opencollective.com/django-crm/contributors.svg?width=890&button=false
 
