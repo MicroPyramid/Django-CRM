@@ -1,13 +1,19 @@
 from django.urls import path
 from .views import (
-    dashboard, contact_lists, contacts_list, contact_list_new, contacts_list_new, contact_list_detail, edit_contact,
+    dashboard, contact_lists, contacts_list, contact_list_new, contact_list_detail, edit_contact,
     email_template_list, email_template_new, email_template_edit, email_template_delete,
-    email_template_detail, campaign_list, campaign_new, campaign_edit, campaign_details, campaign_delete,
-    edit_contact_list, delete_contact_list, failed_contact_list_detail, failed_contact_list_download_delete,
+    email_template_detail, campaign_list, campaign_new, campaign_details, campaign_delete,
+    edit_contact_list, failed_contact_list_download_delete,
     campaign_link_click, campaign_open, demo_file_download, delete_contact, unsubscribe_from_campaign, contact_detail,
-    edit_failed_contact, delete_failed_contact, download_contacts_for_campaign, create_campaign_from_template,
+    download_contacts_for_campaign, create_campaign_from_template,
     download_links_clicked, delete_multiple_contacts, download_failed_contacts, delete_all_contacts,
-    add_email_for_campaigns, list_all_emails_for_campaigns, edit_email_for_campaigns, delete_email_for_campaigns
+    add_email_for_campaigns, list_all_emails_for_campaigns, edit_email_for_campaigns, delete_email_for_campaigns,
+    # contacts_list_new
+    # delete_contact_list
+    # campaign_edit
+    # edit_failed_contact
+    # delete_failed_contact
+    # failed_contact_list_detail
 )
 
 app_name = 'marketing'
@@ -20,11 +26,11 @@ urlpatterns = [
     path('contacts/<int:pk>/delete/', delete_contact, name='delete_contact'),
     path('contacts/', contacts_list, name='contacts_list'),
     path('contact-list/create/', contact_list_new, name='contact_list_new'),
-    path('cl/list/cnew/', contacts_list_new, name='contacts_list_new'),
+    # path('cl/list/cnew/', contacts_list_new, name='contacts_list_new'),
     path('contact-list/<int:pk>/detail/', contact_list_detail, name='contact_list_detail'),
-    path('contact-list/<int:pk>/failed/', failed_contact_list_detail, name='failed_contact_list_detail'),
-    path('contact-list/<int:pk>/failed/edit/', edit_failed_contact, name='edit_failed_contact'),
-    path('contact-list/<int:pk>/failed/delete/', delete_failed_contact, name='delete_failed_contact'),
+    # path('contact-list/<int:pk>/failed/', failed_contact_list_detail, name='failed_contact_list_detail'),
+    # path('contact-list/<int:pk>/failed/edit/', edit_failed_contact, name='edit_failed_contact'),
+    # path('contact-list/<int:pk>/failed/delete/', delete_failed_contact, name='delete_failed_contact'),
     path('contact-list/<int:pk>/failed/download/',
          failed_contact_list_download_delete, name='failed_contact_list_download_delete'),
     path('contact-list/<int:pk>/edit/', edit_contact_list, name='edit_contact_list'),
@@ -38,7 +44,7 @@ urlpatterns = [
 
     path('campaigns/', campaign_list, name='campaign_list'),
     path('campaigns/create/', campaign_new, name='campaign_new'),
-    path('cm/<int:pk>/edit/', campaign_edit, name='campaign_edit'),
+    # path('cm/<int:pk>/edit/', campaign_edit, name='campaign_edit'),
     path('campaigns/<int:pk>/details/', campaign_details, name='campaign_details'),
     path('campaigns/<int:pk>/delete/', campaign_delete, name='campaign_delete'),
     path('cm/link/<int:link_id>/e/<int:email_id>/', campaign_link_click, name='campaign_link_click'),

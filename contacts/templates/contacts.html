@@ -144,13 +144,13 @@
                   </td>
                   <td title="{{contact.created_on}}">{{contact.created_on_arrow}}</td>
                   <td class="actions">
-                    <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view"><i
+                    <a href="{% url 'contacts:view_contact' contact.id %}" class="btn btn-info view" title="View" ><i
                         class="fas fa-eye"></i></a>
-                    <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit"><i
+                    <a href="{% url 'contacts:edit_contact' contact.id%}" class="btn btn-success edit" title="Edit"><i
                         class="fas fa-pencil-alt"></i></a>
                     {% if request.user == contact.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <a href="{% url 'contacts:remove_contact' contact.id %}"
-                      class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                      class="btn btn-danger delete remove_account" title="Delete" ><i class="fas fa-trash-alt"></i></a>
                     {% endif %}
                   </td>
                 </tr>

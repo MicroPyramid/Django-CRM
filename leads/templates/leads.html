@@ -236,13 +236,13 @@
                         <td>{{ lead.country }}</td>
                         <td title="{{ lead.created_on }}">{{ lead.created_on_arrow }}</td>
                         <td class="actions">
-                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
+                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit" title="View"><i
                               class="fas fa-eye"></i></a>
-                          <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i
+                          <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           {% if request.user == lead.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
                           <a href="{% url 'leads:remove_lead' lead.id %}"
-                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            class="btn btn-danger delete remove_account" title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           {% endif %}
                         </td>
                       </tr>
@@ -347,13 +347,13 @@
                         <td>{{ lead.country }}</td>
                         <td title="{{ lead.created_on_arrow }}">{{ lead.created_on_arrow }}</td>
                         <td class="actions">
-                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit"><i
+                          <a href="{% url 'leads:view_lead' lead.id %}" class="btn btn-info edit" title="View"><i
                               class="fas fa-eye"></i></a>
-                          <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit"><i
+                          <a href="{% url 'leads:edit_lead' lead.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
-                          {% if request.user == lead.created_by %}
+                          {% if request.user == lead.created_by or request.user.is_superuser or request.user.role == 'ADMIN' %}
                           <a href="{% url 'leads:remove_lead' lead.id %}"
-                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash-alt"></i></a>
                           {% endif %}
                         </td>
                       </tr>

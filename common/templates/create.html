@@ -151,10 +151,23 @@
           </div>
         </div>
         <p style="color:red" id="forbiden_error"></p>
+        {% comment %}
+        {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+        {% if request.user.id|slugify in request.path %}
+        <h1>true</h1>
+        {% endif %}
+        {% endif %}
+        {% endcomment %}
         <div class="row marl buttons_row form_btn_row text-center">
           <button class="btn btn-default save" type="submit">Save</button>
-          <a href="{% if not user_obj or request.user.is_superuser or request.user.role == 'ADMIN' %}{% url 'common:users_list' %}{% else %}{% url 'common:profile' %}{% endif %}"
-            class="btn btn-default clear" id="create_user_cancel">Cancel</a>
+          <a href="
+          {% if request.META.HTTP_REFERER == request.scheme|add:'://'|add:request.get_host|add:'/profile/' %}
+            {% url 'common:profile' %}
+          {% elif not user_obj or request.user.is_superuser or request.user.role == 'ADMIN' %}
+            {% url 'common:users_list' %}
+          {% else %}
+            {% url 'common:profile' %}
+          {% endif %}" class="btn btn-default clear" id="create_user_cancel">Cancel</a>
         </div>
       </div>
     </div>

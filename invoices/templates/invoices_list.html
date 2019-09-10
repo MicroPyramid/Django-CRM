@@ -195,19 +195,19 @@
                         </td>
                         <td title="{{ invoice.created_on }}">{{ invoice.created_on_arrow }}</td>
                         <td class="actions">
-                          <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit"><i
+                          <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           {% if request.user == invoice.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                          <a href="{% url 'invoices:invoice_details' invoice.id %}" class="btn btn-info edit"><i
+                          <a href="{% url 'invoices:invoice_details' invoice.id %}" class="btn btn-info edit" title="View"><i
                               class="fas fa-eye"></i></a>
                           <a href="{% url 'invoices:invoice_delete' invoice.id %}"
-                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            class="btn btn-danger delete remove_account" title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           {% if invoice.is_draft %}
-                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="send mail"
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="Send Mail"
                             class="btn btn-info to_send_mail"><i class="fas fa-paper-plane"></i></a>
                           {% endif %}
                           {% if invoice.is_sent == True %}
-                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="re send mail"
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="Re Send Mail"
                             class="btn btn-secondary to_re_send_mail"><i class="fas fa-paper-plane"></i></a>
                           <a href="{% url 'invoices:invoice_change_status_paid' invoice.id %}" title="Paid"
                             class="btn btn-info to_paid"><i class="fas fa-check-square"></i></a>
@@ -273,19 +273,19 @@
                         </td>
                         <td title="{{ invoice.created_on }}">{{ invoice.created_on_arrow }}</td>
                         <td class="actions">
-                          <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit"><i
+                          <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           {% if request.user == invoice.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                          <a href="{% url 'invoices:invoice_details' invoice.id %}" class="btn btn-info edit"><i
+                          <a href="{% url 'invoices:invoice_details' invoice.id %}" class="btn btn-info edit" title="View" ><i
                               class="fas fa-eye"></i></a>
                           <a href="{% url 'invoices:invoice_delete' invoice.id %}"
-                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
+                            class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash-alt"></i></a>
                           {% if invoice.is_draft %}
-                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="send mail"
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="Send Mail"
                             class="btn btn-info to_send_mail"><i class="fas fa-paper-plane"></i></a>
                           {% endif %}
                           {% if invoice.is_sent == True %}
-                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="re send mail"
+                          <a href="{% url 'invoices:invoice_send_mail' invoice.id %}" title="Re Send Mail"
                             class="btn btn-secondary to_re_send_mail"><i class="fas fa-paper-plane"></i></a>
                           <a href="{% url 'invoices:invoice_change_status_paid' invoice.id %}" title="Paid"
                             class="btn btn-info to_paid"><i class="fas fa-check-square"></i></a>

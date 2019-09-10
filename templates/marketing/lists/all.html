@@ -19,7 +19,7 @@
               <div class="card-body ">
                 <div class="card-title">Filters</div>
                 <div class="row marl">
-                  <div class="filter_col col-md-3">
+                  <div class="filter_col col-md-2">
                     <div class="form-group">
                       <label for="exampleInputEmail1">Name</label>
                       <input type="text" class="form-control" placeholder="Contact Name" name="contact_name"
@@ -40,11 +40,25 @@
                       </select>
                     </div>
                   </div>
-                  <div class="filter_col col-md-3">
+                  <div class="filter_col col-md-2">
                     <div class="form-group">
                       <label for="exampleInputEmail1">Email</label>
                       <input type="text" class="form-control" placeholder="Contact Email" name="contact_email"
                         value="{{request.POST.contact_email}}" minlength="2">
+                    </div>
+                  </div>
+                  <div class="filter_col col-md-3">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Contact List</label>
+                      <select name="contact_list" id="id_contact_list" class="class_contact_list_ form-control">
+                        <option value="">
+                          ------------------</option>
+                        {% for contact_list in contact_lists %}
+                        <option value="{{contact_list.id}}" {% if contact_list.id|slugify == request.POST.contact_list %} selected=""
+                          {% endif %}>
+                          {{contact_list.name}}</option>
+                        {% endfor %}
+                      </select>
                     </div>
                   </div>
                   <input type="hidden" name="tab_status" id="tab_status">
@@ -117,7 +131,9 @@
                       <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
                       <a href="{% url 'marketing:delete_contact' contact.id %}"
                         class="btn btn-danger delete remove_account"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'
+                        title="Delete"
+                        ><i
                           class="fas fa-trash-alt"></i></a>
                     </td>
                   </tr>

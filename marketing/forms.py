@@ -10,7 +10,7 @@ from django import forms
 from common.models import User
 from marketing.models import Campaign, Contact, ContactList, EmailTemplate, Tag, ContactEmailCampaign
 
-email_regex = '^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
+email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
 
 def csv_doc_validate(document):
@@ -217,7 +217,7 @@ def import_document_validator(document):
             except Exception as e:
                 print(e)
                 print('xls')
-                return {"error": True, "message": "Not a valid CSV/XLS file"}
+                return {"error": True, "message": "Not a valid CSV/XLS, XLSX file"}
 
 
 class ContactListForm(forms.ModelForm):
@@ -269,24 +269,24 @@ class ContactListForm(forms.ModelForm):
                 #     raise forms.ValidationError('Uploaded file is not valid.')
         return document
 
-    def clean_visible_to(self):
-        visible_to_data = json.loads(self.data['visible_to'])
-        if len(visible_to_data) > 0:
-            instance_visible_to = []
-            if self.instance and self.instance.id is not None:
-                instance_visible_to = list(
-                    set(self.instance.visible_to.all().values_list(
-                        'email', flat=True)))
-            for each in visible_to_data:
-                visible_to = User.objects.filter(email=each)
-                if instance_visible_to:
-                    visible_to = visible_to.exclude(
-                        email__in=instance_visible_to)
-                if visible_to:
-                    raise forms.ValidationError(
-                        str(each) + ' User aleady existed')
-            return self.data['visible_to']
-        raise forms.ValidationError("Select any of the users")
+    # def clean_visible_to(self):
+    #     visible_to_data = json.loads(self.data['visible_to'])
+    #     if len(visible_to_data) > 0:
+    #         instance_visible_to = []
+    #         if self.instance and self.instance.id is not None:
+    #             instance_visible_to = list(
+    #                 set(self.instance.visible_to.all().values_list(
+    #                     'email', flat=True)))
+    #         for each in visible_to_data:
+    #             visible_to = User.objects.filter(email=each)
+    #             if instance_visible_to:
+    #                 visible_to = visible_to.exclude(
+    #                     email__in=instance_visible_to)
+    #             if visible_to:
+    #                 raise forms.ValidationError(
+    #                     str(each) + ' User aleady existed')
+    #         return self.data['visible_to']
+    #     raise forms.ValidationError("Select any of the users")
 
 
 class ContactForm(forms.ModelForm):
@@ -334,39 +334,39 @@ class ContactForm(forms.ModelForm):
     #     return contact_list
 
 
-class ContactsCSVUploadForm(forms.Form):
-    contacts_file = forms.FileField()
-    contact_list = forms.CharField(max_length=5000)
+# class ContactsCSVUploadForm(forms.Form):
+#     contacts_file = forms.FileField()
+#     contact_list = forms.CharField(max_length=5000)
 
-    def __init__(self, *args, **kwargs):
-        super(ContactsCSVUploadForm, self).__init__(*args, **kwargs)
-        self.fields['contacts_file'].widget.attrs.update({
-            "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
-        })
-        self.fields['contacts_file'].required = True
+#     def __init__(self, *args, **kwargs):
+#         super(ContactsCSVUploadForm, self).__init__(*args, **kwargs)
+#         self.fields['contacts_file'].widget.attrs.update({
+#             "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
+#         })
+#         self.fields['contacts_file'].required = True
 
-    def clean_contacts_file(self):
-        document = self.cleaned_data.get("contacts_file")
-        data = import_document_validator(document)
-        if data.get("error"):
-            raise forms.ValidationError(data.get("message"))
-        else:
-            self.validated_rows = data.get("validated_rows")
-        return document
+#     def clean_contacts_file(self):
+#         document = self.cleaned_data.get("contacts_file")
+#         data = import_document_validator(document)
+#         if data.get("error"):
+#             raise forms.ValidationError(data.get("message"))
+#         else:
+#             self.validated_rows = data.get("validated_rows")
+#         return document
 
-    def clean_contact_list(self):
-        contact_list = self.cleaned_data.get("contact_list")
-        if not contact_list or contact_list == '[]' or\
-                json.loads(contact_list) == []:
-            raise forms.ValidationError(
-                "Please choose any of the Contact List")
-        else:
-            for each in json.loads(contact_list):
-                if not ContactList.objects.filter(id=each).first():
-                    raise forms.ValidationError(
-                        "Please choose a valid Contact List")
+#     def clean_contact_list(self):
+#         contact_list = self.cleaned_data.get("contact_list")
+#         if not contact_list or contact_list == '[]' or\
+#                 json.loads(contact_list) == []:
+#             raise forms.ValidationError(
+#                 "Please choose any of the Contact List")
+#         else:
+#             for each in json.loads(contact_list):
+#                 if not ContactList.objects.filter(id=each).first():
+#                     raise forms.ValidationError(
+#                         "Please choose a valid Contact List")
 
-        return contact_list
+#         return contact_list
 
 
 class EmailTemplateForm(forms.ModelForm):
@@ -402,7 +402,7 @@ class SendCampaignForm(forms.ModelForm):
 
     def clean_schedule_date_time(self):
         schedule_date_time = self.cleaned_data.get('schedule_date_time')
-        if self.cleaned_data.get('schedule_later') == 'true':
+        if self.cleaned_data.get('schedule_later') == True:
             schedule_date_time = datetime.datetime.strptime(
                 schedule_date_time, '%Y-%m-%d %H:%M')
             if schedule_date_time < datetime.datetime.now():
