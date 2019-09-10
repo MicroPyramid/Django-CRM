@@ -73,6 +73,7 @@ class InvoiceCreateTest(object):
             to_address=self.to_address,
         )
         self.invoice.assigned_to.add(self.user1.id)
+        self.invoice.accounts.add(self.account.id)
 
         self.invoice_history = InvoiceHistory.objects.create(
             invoice_title='invoice title',

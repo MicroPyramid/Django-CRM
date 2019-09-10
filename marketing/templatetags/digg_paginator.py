@@ -8,7 +8,7 @@ NUM_PAGES_OUTSIDE_RANGE = 0
 ADJACENT_PAGES = 2
 
 
-def digg_paginator(context):
+def digg_paginator(context): # pragma: no cover
     '''
     To be used in conjunction with the object_list generic view.
 

@@ -13,6 +13,7 @@ from opportunity.models import Opportunity
 def send_email_to_assigned_user(recipients, opportunity_id, domain='demo.django-crm.io', protocol='http'):
     """ Send Mail To Users When they are assigned to a opportunity """
     opportunity = Opportunity.objects.get(id=opportunity_id)
+    created_by = opportunity.created_by
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()

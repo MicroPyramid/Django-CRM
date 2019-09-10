@@ -202,12 +202,12 @@
                         </td>
                         <td class="actions">
                           {% if request.user == event.created_by or request.user.role == 'ADMIN' %}
-                          <a href="{% url 'events:detail_view' event.id %}" class="btn btn-info edit"><i
+                          <a href="{% url 'events:detail_view' event.id %}" class="btn btn-info edit" title="View"><i
                               class="fas fa-eye"></i></a>
-                          <a href="{% url 'events:event_update' event.id %}" class="btn btn-success edit"><i
+                          <a href="{% url 'events:event_update' event.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
                           <a href="{% url 'events:event_delete' event.id %}"
-                            class="btn btn-danger delete remove_document"><i class="fas fa-trash-alt"></i></a>
+                            class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>
                           {% endif %}
                         </td>
                       </tr>

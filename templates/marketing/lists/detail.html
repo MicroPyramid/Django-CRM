@@ -81,8 +81,14 @@
             </li>
             {% if contact_list.failed_contacts.all %}
             <li class="nav-item">
-              <a class="nav-link" id="close-tab" data-toggle="tab" href="#failed_contacts" role="tab"
+              <a class="nav-link" id="failed-contacts" data-toggle="tab" href="#failed_contacts" role="tab"
                 aria-controls="close" aria-selected="false">Failed Contacts</a>
+            </li>
+            {% endif %}
+            {% if contact_list.duplicate_contact_contact_list.all %}
+            <li class="nav-item">
+              <a class="nav-link" id="duplicate-contacts" data-toggle="tab" href="#duplicate_contacts" role="tab"
+                aria-controls="close" aria-selected="false">Duplicate Contacts</a>
             </li>
             {% endif %}
           </ul>
@@ -140,12 +146,12 @@
                           <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
                           <td class="actions">
                             <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
-                              class="btn btn-success edit edit_contact"
+                              class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
                             <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
-                              class="btn btn-danger delete remove_account"
+                              class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-trash"></i></a>
                           </td>
@@ -216,12 +222,12 @@
                           <td> <a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.email }}</a> </td>
                           <td class="actions">
                             <a href="{% url 'marketing:edit_contact' contact.id %}?from_contact={{contact_list.id}}"
-                              class="btn btn-success edit edit_contact"
+                              class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
                             <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
-                              class="btn btn-danger delete remove_account"
+                              class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-trash"></i></a>
                           </td>
@@ -264,6 +270,83 @@
                 </div>
               </div>
             </div>
+            <div class="tab-pane fade" id="duplicate_contacts" role="tabpanel" aria-labelledby="open">
+              <div class="card">
+                <div class="card-body">
+                  <div class="panel-heading-list card-title text-right">
+                    <span class="total_count float-left">Contacts - {% if show_pageitems %}
+                      {% show_pageitems %}{% else %}{{duplicate_contacts|length}}{% endif %}</span>
+                    <span class="filter_toggle ">
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
+                    <button href="#" class="primary_btn" id="delete_all_duplicate" style="background:black; color: white;">Delete
+                      Selected</button>
+                    <button href="#" class="primary_btn" id="delete_all_complete_duplicate"
+                      style="background:black; color: white;">Delete All</button>
+                  </div>
+                  <div class="table-responsive table-bordered ">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th width="1%">
+                            <input type="checkbox" name="check_all_duplicate" id="check_all_duplicate">
+                          </th>
+                          <th width="5%">ID</th>
+                          <th width="20%">Name</th>
+                          <th width="20%">Email</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <span><b>Tags : </b></span>
+                          {% for tag in contact_list.tags.all %}
+                          <span class="text-left color{{forloop.counter}} tag_class_cl" id="list_tag"
+                            data-link="{{tag.id}}" style="cursor: pointer;">{{tag.name}}</span>
+                          {% empty %}
+                          <span class="text-left">No Tags</span>
+                          {% endfor %}
+                        </tr>
+                        {% if per_page %}
+                        {% paginate per_page duplicate_contacts %}
+                        {% else%}
+                        {% paginate 10 duplicate_contacts %}
+                        {% endif %}
+                        {% for contact in duplicate_contacts %}
+                        <tr style="text-align:center;">
+                          <td>
+                            <input type="checkbox" class="check_delete_duplicate" name="{{contact.contacts.email}}" id="{{contact.id}}"
+                              value="{{contact.contacts.id}}">
+                          </td>
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{{ contact.contacts.name }}</td>
+                          <td> <a href="{% url 'marketing:contact_detail' contact.contacts.id %}">{{ contact.contacts.email }}</a> </td>
+                          <td class="actions">
+                            <a href="{% url 'marketing:edit_contact' contact.contacts.id %}?from_contact={{contact.contact_list.id}}"
+                              class="btn btn-success edit edit_contact" title="Edit"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-edit"></i></a>
+                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact.contact_list.id}}"
+                              class="btn btn-danger delete remove_account" title="Delete"
+                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                                class="fas fa-trash"></i></a>
+                          </td>
+                        </tr>
+                        {% empty %}
+                        <tr style="text-align:center;">
+                          <td colspan="6">There are no records</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="text-center row marl mt-3">
+                  {% show_pages %}
+                </div>
+              </div>
+            </div>
           </div>
           <br clear="all">
         </div>
@@ -291,6 +374,8 @@
     $('#delete_all_bounced').hide()
     $('#delete_all_complete').hide()
     $('#delete_all_bounced_complete').hide()
+    $('#delete_all_duplicate').hide()
+    $('#delete_all_complete_duplicate').hide()
 
     $(".tag_class_cl").click(function () {
       // $(".tag_class_opp").css('cursor', 'pointer')
@@ -322,7 +407,7 @@
       }
     })
 
-    $('#delete_all_complete').click(function(){
+    $('#delete_all_complete').click(function () {
       if (!confirm('Are you sure you want to delete all the {{contacts_list_count}} contacts ?')) {
         $('#check_all').prop('checked', false)
         $('.check_delete').prop('checked', false)
@@ -394,7 +479,7 @@
       }
     })
 
-    $('#delete_all_bounced_complete').click(function(){
+    $('#delete_all_bounced_complete').click(function () {
       if (!confirm('Are you sure you want to delete all the {{bounced_contacts_list_count}} contacts ?')) {
         $('#check_all_bounced').prop('checked', false)
         $('.check_delete_bounced').prop('checked', false)
@@ -443,6 +528,80 @@
 
 
 
+    // for duplicates
+
+    $("#check_all_duplicate").click(function () {
+      $(".check_delete_duplicate").prop('checked', $(this).prop('checked'))
+
+      if ($('#check_all_duplicate').prop('checked')) {
+        $('#delete_all_duplicate').show()
+        $('#delete_all_complete_duplicate').show()
+      }
+      else {
+        $('#delete_all_duplicate').hide()
+        $('#delete_all_complete_duplicate').hide()
+      }
+    });
+
+    $('.check_delete_duplicate').on('change', function () {
+      // console.log('changed')
+      if ($('.check_delete_duplicate:checked').length > 1) {
+        $('#delete_all_duplicate').show()
+      }
+      else {
+        $('#delete_all_duplicate').hide()
+      }
+    })
+
+    $('#delete_all_complete_duplicate').click(function () {
+      if (!confirm('Are you sure you want to delete all the {{duplicate_contacts.count}} contacts ?')) {
+        $('#check_all_duplicate').prop('checked', false)
+        $('.check_delete_duplicate').prop('checked', false)
+        $('#delete_all_duplicate').hide()
+        $('#delete_all_complete_duplicate').hide()
+        return;
+      }
+      window.location.href = "{% url 'marketing:delete_all_contacts' contact_list.id %}?duplicate_contacts=true"
+    })
+
+    $('#delete_all_duplicate').click(function (e) {
+      e.preventDefault()
+      if (!confirm('Are you sure you want to delete the selected contacts ?')) {
+        $('#check_all_duplicate').prop('checked', false)
+        $('.check_delete_duplicate').prop('checked', false)
+        $('#delete_all_duplicate').hide()
+        $('#delete_all_complete_duplicate').hide()
+        return;
+      }
+      $('#delete_all_duplicate').attr('disabled', 'disabled')
+      var selected = [];
+      $('.check_delete_duplicate:checked').each(function () {
+        selected.push($(this).attr('value'));
+        // console.log(selected)
+      });
+      console.log(selected)
+      $.ajax({
+        url: "{% url 'marketing:delete_multiple_contacts' %}",
+        type: 'POST',
+        data: {
+          'selected_list': selected,
+          'from_contact': "{{contact_list.id}}",
+          'duplicate_contacts': "true"
+        },
+        success: function (data) {
+          console.log(data)
+          if (data['error'] === false) {
+            window.location.reload()
+          }
+          else {
+            $('#delete_all_bounced').removeAttr('disabled', 'disabled')
+            alert(data['message'])
+          }
+        },
+      });
+    })
+
+
     // $(".remove_account").click(function (e) {
     //   e.preventDefault()
     //   url = $(this).attr('href')
@@ -487,10 +646,14 @@
     var queryParams = (window.location.search).replace('?', '').split('&').map(param => param.split('=')).reduce((values, [key, value]) => { values[key] = value; return values; }, {})
 
     if (!queryParams.hasOwnProperty('page') && queryParams.hasOwnProperty('bounced_contacts_page')) {
-      //active the tab
-      // $('#open-tab').removeClass('active')
-      // $('#close-tab').addClass('active')
       $('#close-tab').trigger('click')
+    }
+
+    if (!queryParams.hasOwnProperty('page') && queryParams.hasOwnProperty('failed_contacts')) {
+      $('#failed-contacts').trigger('click')
+    }
+    if (queryParams.hasOwnProperty('duplicate_contacts')) {
+      $('#duplicate-contacts').trigger('click')
     }
 
   })

@@ -65,9 +65,8 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
             send_email.delay(**mail_kwargs)
 
 
-
 @task
-def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io', protocol='http'):
+def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io', protocol='http', source=''):
     """ Send Mail To Users When they are assigned to a lead """
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
@@ -82,10 +81,10 @@ def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io'
             context["user"] = user
             context["lead"] = lead
             context["created_by"] = created_by
+            context["source"] = source
             subject = 'Assigned a lead for you. '
             html_content = render_to_string(
                 'assigned_to/leads_assigned.html', context=context)
-
             msg = EmailMessage(
                 subject,
                 html_content,
@@ -93,6 +92,7 @@ def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io'
             )
             msg.content_subtype = "html"
             msg.send()
+
 
 @task
 def create_lead_from_file(validated_rows, invalid_rows, user_id):

@@ -69,6 +69,18 @@
                   </div>
                 </div>
               </div>
+              {% with teams=user_obj.user_teams.all %}
+              {% if teams %}
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="acc_field_label" for="id_industry" data-name="name">Teams</label>
+                  {% for team in teams %}
+                  <div class="account_field" id="account_industry" data-name="name">{{ team }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="col-md-4">
               <div class="profile_pic">

@@ -101,11 +101,11 @@
                           class="fas fa-eye"></i> View Template</a></td> -->
                     <td class="actions text-center">
                       <a href="{% url 'marketing:email_template_detail' email_template.id %}"
-                        class="btn btn-info edit"><i class="fas fa-eye"></i></a>
+                        class="btn btn-info edit" title="View" ><i class="fas fa-eye"></i></a>
                       <a href="{% url 'marketing:email_template_edit' email_template.id %}"
-                        class="btn btn-success edit"><i class="fas fa-edit"></i></a>
+                        class="btn btn-success edit" title="Edit" ><i class="fas fa-edit"></i></a>
                       <a href="{% url 'marketing:email_template_delete' email_template.id %}"
-                        class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
+                        class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash"></i></a>
                     </td>
                   </tr>
                   {% empty %}

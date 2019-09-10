@@ -137,15 +137,15 @@
                   <td>{{ case.priority }}</td>
                   <td title="{{ case.created_on }}">{{ case.created_on_arrow }}</td>
                   <td class="actions">
-                    <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view"><i
+                    <a href="{% url 'cases:view_case' case.id %}" class="btn btn-info view" title="View" ><i
                         class="fas fa-eye"></i></a>
-                    <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit"><i
+                    <a href="{% url 'cases:edit_case' case.id %}" class="btn btn-success edit" title="Edit" ><i
                         class="fas fa-pencil-alt"></i></a>
                     {% if request.user == case.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                    <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case"><i
+                    <a href="{% url 'cases:remove_case' case.id %}" class="btn btn-danger delete remove_case" title="Delete" ><i
                         class="fas fa-trash-alt"></i></a>
                     {% if case.status != 'Closed' %}
-                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-info"><i
+                    <a onclick="close_case({{case.id}}, '{% url 'cases:close_case' %}')" class="btn btn-info" title="Close"><i
                         class="fas fa-times"></i> </a>
                     {% endif %}
                     {% endif %}

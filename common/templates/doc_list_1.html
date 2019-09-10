@@ -232,15 +232,15 @@
                     <span class="">
                       <div class="actions">
                         {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
-                        <a href="{% url 'common:view_doc' document.id %}" class="view_icon"><i
+                        <a href="{% url 'common:view_doc' document.id %}" class="view_icon" title="View"><i
                             class="fas fa-eye edit_delete_options"></i></a>
-                        <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon"><i
+                        <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon" title="Edit" ><i
                             class="fas fa-pencil-alt edit_delete_options"></i></a>
-                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon"><i
+                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon" title="Delete" ><i
                             class="fas fa-trash-alt edit_delete_options"></i></a>
                         {% endif %}
                         {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}
-                        <a href="{% url 'common:download_document' document.id %}" class="download_icon"><i
+                        <a href="{% url 'common:download_document' document.id %}" class="download_icon" title="Download"><i
                             class="fas fa-download edit_delete_options edit_delete_options"></i></a>
                         {% endif %}
                       </div>
