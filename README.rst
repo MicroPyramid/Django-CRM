@@ -16,10 +16,6 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
              :target: https://travis-ci.org/MicroPyramid/Django-CRM
              :alt: Travis
 
-          .. image:: https://landscape.io/github/MicroPyramid/Django-CRM/master/landscape.svg?style=flat
-             :target: https://landscape.io/github/MicroPyramid/Django-CRM/master
-             :alt: Code Health
-
           .. image:: https://readthedocs.org/projects/django-crm/badge/?version=latest
               :target: http://django-crm.readthedocs.io/en/latest/
               :alt: Documentation Status
