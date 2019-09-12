@@ -1,4 +1,4 @@
-django==2.2.4
+Django==2.2.4
 celery==4.3.0
 django-simple-pagination==1.3
 django-compressor==2.3
