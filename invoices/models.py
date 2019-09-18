@@ -5,6 +5,7 @@ from common.models import Address, User
 from common.utils import CURRENCY_CODES
 from accounts.models import Account
 from phonenumber_field.modelfields import PhoneNumberField
+from teams.models import Teams
 
 
 class Invoice(models.Model):
@@ -53,6 +54,7 @@ class Invoice(models.Model):
     details = models.TextField(_('Details'), null=True, blank=True)
     due_date = models.DateField(blank=True, null=True)
     accounts = models.ManyToManyField(Account, related_name='accounts_invoices')
+    teams = models.ManyToManyField(Teams, related_name='invoices_teams')
 
     class Meta:
         """Meta definition for Invoice."""

@@ -9,7 +9,7 @@ from common.models import User
 from common.utils import (COUNTRIES, LEAD_SOURCE, LEAD_STATUS,
                           return_complete_address)
 from contacts.models import Contact
-
+from teams.models import Teams
 
 class Lead(models.Model):
     title = models.CharField(
@@ -55,6 +55,7 @@ class Lead(models.Model):
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
+    teams = models.ManyToManyField(Teams, related_name='lead_teams')
 
     class Meta:
         ordering = ['-created_on']
@@ -64,6 +65,12 @@ class Lead(models.Model):
 
     def get_complete_address(self):
         return return_complete_address(self)
+
+    @property
+    def phone_raw_input(self):
+        if str(self.phone) == '+NoneNone':
+            return ''
+        return self.phone
 
     @property
     def created_on_arrow(self):

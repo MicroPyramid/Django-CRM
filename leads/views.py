@@ -132,6 +132,7 @@ def create_lead(request):
         if form.is_valid():
             lead_obj = form.save(commit=False)
             lead_obj.created_by = request.user
+            lead_obj.source = request.get_host()
             lead_obj.save()
             if request.POST.get('tags', ''):
                 tags = request.POST.get("tags")
@@ -170,6 +171,9 @@ def create_lead(request):
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
                         lead_obj.assigned_to.add(user_id)
+
+            if request.POST.getlist('teams', []):
+                lead_obj.teams.add(*request.POST.getlist('teams'))
 
             current_site = get_current_site(request)
             recipients = list(lead_obj.assigned_to.all().values_list('id', flat=True))
@@ -236,6 +240,7 @@ def create_lead(request):
     context["countries"] = COUNTRIES
     context["status"] = LEAD_STATUS
     context["source"] = LEAD_SOURCE
+    context["teams"] = Teams.objects.all()
     context["assignedto_list"] = [
         int(i) for i in request.POST.getlist('assigned_to', []) if i]
 
@@ -334,6 +339,7 @@ def update_lead(request, pk):
                 'id', flat=True)
             lead_obj = form.save(commit=False)
             lead_obj.save()
+            previous_assigned_to_users = list(lead_obj.assigned_to.all().values_list('id', flat=True))
             lead_obj.tags.clear()
             all_members_list = []
             if request.POST.get('tags', ''):
@@ -388,8 +394,15 @@ def update_lead(request, pk):
                     if user_id not in assinged_to_users_ids:
                         lead_obj.assigned_to.add(user_id)
 
+            if request.POST.getlist('teams', []):
+                lead_obj.teams.clear()
+                lead_obj.teams.add(*request.POST.getlist('teams'))
+            else:
+                lead_obj.teams.clear()
+
             current_site = get_current_site(request)
-            recipients = list(lead_obj.assigned_to.all().values_list('id', flat=True))
+            assigned_to_list = list(lead_obj.assigned_to.all().values_list('id', flat=True))
+            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
                 protocol=request.scheme)
 
@@ -468,6 +481,7 @@ def update_lead(request, pk):
     context["status"] = LEAD_STATUS
     context["source"] = LEAD_SOURCE
     context["error"] = error
+    context["teams"] = Teams.objects.all()
     context["assignedto_list"] = [
         int(i) for i in request.POST.getlist('assigned_to', []) if i]
 
@@ -785,7 +799,8 @@ def upload_lead_csv_file(request):
         lead_form = LeadListForm(request.POST, request.FILES)
         if lead_form.is_valid():
             create_lead_from_file.delay(
-                    lead_form.validated_rows, lead_form.invalid_rows, request.user.id)
+                    lead_form.validated_rows, lead_form.invalid_rows, request.user.id,
+                    request.get_host())
             return JsonResponse({'error': False, 'data': lead_form.data},
                 status=status.HTTP_201_CREATED)
         else:
@@ -796,10 +811,10 @@ def upload_lead_csv_file(request):
 def sample_lead_file(request):
     sample_data = [
         'title,first name,last name,website,phone,email,address\n',
-        'lead1,john,doe,www.example.com,911234567890,user1@email.com,address for lead1\n',
-        'lead2,jane,doe,www.website.com,911234567891,user2@email.com,address for lead2\n',
-        'lead3,joe,doe,www.test.com,911234567892,user3@email.com,address for lead3\n',
-        'lead4,john,doe,www.sample.com,911234567893,user4@email.com,address for lead4\n',
+        'lead1,john,doe,www.example.com,+91-123-456-7890,user1@email.com,address for lead1\n',
+        'lead2,jane,doe,www.website.com,+91-123-456-7891,user2@email.com,address for lead2\n',
+        'lead3,joe,doe,www.test.com,+91-123-456-7892,user3@email.com,address for lead3\n',
+        'lead4,john,doe,www.sample.com,+91-123-456-7893,user4@email.com,address for lead4\n',
     ]
     response = HttpResponse(
         sample_data, content_type='text/plain')

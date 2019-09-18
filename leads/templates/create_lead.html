@@ -12,8 +12,10 @@
 </nav>
 {% endblock %}
 {%block content%}
+
 <head>
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
+  <link rel="stylesheet" type="text/css"
+    href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 </head>
 <form id="lead_form" method="POST" action="" novalidate enctype="multipart/form-data">
   <div class="overview_form_block row marl justify-content-center">
@@ -29,12 +31,15 @@
                 <div class="form-group">
                   <div class="row">
                     <div class="filter_col col-md-6">
-                      <label for="exampleInputEmail1" class="name" >First Name{% if lead_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1" class="name">First
+                        Name{% if lead_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
                       {{ lead_form.first_name }}
-                      <span class="error error_message" id="error_id_first_name">{{ lead_form.first_name.errors }}</span>
+                      <span class="error error_message"
+                        id="error_id_first_name">{{ lead_form.first_name.errors }}</span>
                     </div>
                     <div class="filter_col col-md-6">
-                      <label for="exampleInputEmail1" class="name" >Last Name{% if lead_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1" class="name">Last
+                        Name{% if lead_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
                       {{ lead_form.last_name }}
                       <span class="error error_message" id="error_id_last_name">{{ lead_form.last_name.errors }}</span>
                     </div>
@@ -43,9 +48,12 @@
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" {% if request.POST.status == "converted" %} class="required" {% endif %}>Account Name{% if lead_form.account_name.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" {% if request.POST.status == "converted" %} class="required"
+                    {% endif %}>Account Name{% if lead_form.account_name.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ lead_form.account_name }}
-                  <span class="error error_message" id="error_id_account_name">{{ lead_form.account_name.errors }}</span>
+                  <span class="error error_message"
+                    id="error_id_account_name">{{ lead_form.account_name.errors }}</span>
                   {% if error %}
                   <span class="error error_message" id="error_id_}">{{ error }}</span>
                   {% endif %}
@@ -53,21 +61,25 @@
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Title{% if lead_form.title.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Title{% if lead_form.title.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ lead_form.title }}
                   <span class="error error_message" id="error_id_title">{{ lead_form.title.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1">Phone{% if lead_form.phone.field.required %}<span class="error">*</span>{% endif %}</label>
-                  {{ lead_form.phone }}
+                  <label for="exampleInputEmail1">Phone{% if lead_form.phone.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  <input type="tel" name="phone"
+                  value="{% if lead_obj and lead_obj.phone_raw_input %}{{lead_obj.phone}}{% endif %}" class="form-control" placeholder="+91-123-456-7890" id="id_phone">
                   <span class="error error_message" id="error_id_phone">{{ lead_form.phone.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1" class="required">Email Address{% if lead_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Email
+                    Address{% if lead_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ lead_form.email }}
                   <span class="error error_message" id="error_id_email">{{ lead_form.email.errors }}</span>
                   {% if error %}
@@ -77,18 +89,18 @@
               </div>
 
               <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Attachment</label>
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Attachment</label>
                   <input type="file" name="lead_attachment" id="lead_attachment">
                   {% if lead_obj.lead_attachment.count %}
-                    {% for attachment in lead_obj.lead_attachment.all %}
-                    <div id="attachment{{attachment.id}}" class="mt-2">
-                      <a target="_blank" href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a>
-                      {% if not attachment.created_by.role == 'ADMIN' or attachment.created_by.role == request.user.role %}
-                      <a class="action btn primary_btn"  onclick="remove_attachment({{attachment.id}})">X</a>
-                      {% endif %}
-                    </div>
-                    {% endfor %}
+                  {% for attachment in lead_obj.lead_attachment.all %}
+                  <div id="attachment{{attachment.id}}" class="mt-2">
+                    <a target="_blank" href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a>
+                    {% if not attachment.created_by.role == 'ADMIN' or attachment.created_by.role == request.user.role %}
+                    <a class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">X</a>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
                   {% endif %}
                   <span class="error"></span>
                 </div>
@@ -97,14 +109,16 @@
             <div class="col-md-4">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Website{% if lead_form.website.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Website{% if lead_form.website.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ lead_form.website }}
                   <span class="error error_message" id="error_id_website">{{ lead_form.website.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" >Description{% if lead_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Description{% if lead_form.description.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ lead_form.description }}
                   <span class="error error_message" id="error_id_description">{{ lead_form.description.errors }}</span>
                 </div>
@@ -114,7 +128,13 @@
                 <div class="form-group">
                   <label for="id_sattus">Teams{% if lead_form.teams.field.required %}<span
                       class="error">*</span>{% endif %}</label>
-                  {{ lead_form.teams }}
+                  <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                    {% for team in teams %}
+                    <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in lead_obj.teams.all %}
+                      selected="" {% endif %}>
+                      {{team}}</option>
+                    {% endfor %}
+                  </select>
                   <span class="error" id="id__teams">{{ lead_form.teams.errors }}</span>
                 </div>
               </div>
@@ -123,16 +143,18 @@
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
                   <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                  {% for user in users %}
-                  <option value="{{user.id}}" {% if user in lead_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                  {% endfor %}
+                    {% for user in users %}
+                    <option value="{{user.id}}" {% if user in lead_obj.assigned_to.all or user.id in assignedto_list %}
+                      selected="" {% endif %}>{{user.email}}</option>
+                    {% endfor %}
                   </select>
                   <span class="error error_message" id="error_id_assigned_to">{{ lead_form.assigned_to.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1"/>Status{% if lead_form.status.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" />Status{% if lead_form.status.field.required %}<span
+                    class="error">*</span>{% endif %}</label>
                   {{ lead_form.status }}
                   <span class="error error_message" id="error_id_status">{{ lead_form.status.errors }}</span>
                 </div>
@@ -141,16 +163,18 @@
             <div class="col-md-4">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1"/>Source{% if lead_form.source.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" />Source{% if lead_form.source.field.required %}<span
+                    class="error">*</span>{% endif %}</label>
                   {{ lead_form.source }}
                   <span class="error error_message" id="error_id_source">{{ lead_form.source.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" >Address</label>
+                  <label for="exampleInputEmail1">Address</label>
                   {{ lead_form.address_line }}
-                  <span class="error error_message" id="error_id_address_line">{{ lead_form.address_line.errors }}</span>
+                  <span class="error error_message"
+                    id="error_id_address_line">{{ lead_form.address_line.errors }}</span>
                 </div>
                 {{ lead_form.street }}
                 <span class="error error_message" id="error_id_street">{{ lead_form.street.errors }}</span>
@@ -178,14 +202,15 @@
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label>Tags</label>
-                  <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1" value="{% for t in lead_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags"/>
+                  <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1"
+                      value="{% for t in lead_obj.tags.all %}{{t.name}}, {% endfor %}" class="tags" />
                   </div>
                 </div>
               </div>
             </div>
             <div class="col-md-12">
               <div class="row marl buttons_row text-center form_btn_row">
-                <button  class="btn btn-default save" type="submit" id="submit_btn">Save</button>
+                <button class="btn btn-default save" type="submit" id="submit_btn">Save</button>
                 {% if not lead_obj %}
                 <button class="btn btn-success save savenew" type="submit">Save & New</button>
                 {% endif %}
@@ -221,45 +246,45 @@
   $('#progress_bar').hide()
 
   $('form#lead_form').ajaxForm({
-    type:'POST',
-    dataType:'json',
+    type: 'POST',
+    dataType: 'json',
     url: ".",
-    data:$('#lead_form').serialize(),
-    beforeSubmit:  disableButton,
-    beforeSend: function() {
+    data: $('#lead_form').serialize(),
+    beforeSubmit: disableButton,
+    beforeSend: function () {
       var percentVal = '0%';
       bar.width(percentVal);
       percent.html(percentVal);
     },
-    uploadProgress: function(event, position, total, percentComplete) {
+    uploadProgress: function (event, position, total, percentComplete) {
       var percentVal = percentComplete + '%';
       bar.width(percentVal);
-      if (percentVal == '100%'){
+      if (percentVal == '100%') {
         percent.html('Uploading ...')
       }
-      else{
+      else {
         percent.html(percentVal);
       }
     },
-    success: function(data) {
-      if(data.error){
+    success: function (data) {
+      if (data.error) {
         $('#progress_bar').hide()
         $('.error_message').html('')
         for (var key in data.errors) {
-          $('#error_id_'+key).html("<p>" + data.errors[key][0] + "</p>");
+          $('#error_id_' + key).html("<p>" + data.errors[key][0] + "</p>");
         };
         $('#submit_btn').removeAttr('disabled')
       }
-      else{
+      else {
         window.location = data.success_url;
       }
     }
   });
 
 
-  $('#submit_btn').click(function() {
+  $('#submit_btn').click(function () {
     var file = $('#lead_attachment')[0].files[0];
-    if(file && file.name.length>0){
+    if (file && file.name.length > 0) {
       var percentVal = '0%';
       bar.width(percentVal);
       percent.html(percentVal);
@@ -268,50 +293,48 @@
 
   });
 
-  function disableButton(){
-     // $('#progress_bar').show()
-    $('#submit_btn').attr('disabled','disabled')
+  function disableButton() {
+    // $('#progress_bar').show()
+    $('#submit_btn').attr('disabled', 'disabled')
   }
 
-  $(".savenew").on('click', function(e){
+  $(".savenew").on('click', function (e) {
     e.preventDefault()
     $("#save_new_form").val('true')
     $('#lead_form').submit()
   });
-  $(document).ready(function() {
+  $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_teams').select2();
   });
-  $(function() {
-  
-    $('#tags_1').tagsInput({width:'auto'});
+  $(function () {
+
+    $('#tags_1').tagsInput({ width: 'auto' });
     $('#tags_2').tagsInput({
       width: 'auto',
-      onChange: function(elem, elem_tags)
-      {
-        var languages = ['php','ruby','javascript'];
-        $('.tag', elem_tags).each(function()
-        {
-          if($(this).text().search(new RegExp('\\b(' + languages.join('|') + ')\\b')) >= 0)
+      onChange: function (elem, elem_tags) {
+        var languages = ['php', 'ruby', 'javascript'];
+        $('.tag', elem_tags).each(function () {
+          if ($(this).text().search(new RegExp('\\b(' + languages.join('|') + ')\\b')) >= 0)
             $(this).css('background-color', 'yellow');
         });
       }
     });
     $('#tags_3').tagsInput({
       width: 'auto',
-  
+
       //autocomplete_url:'test/fake_plaintext_endpoint.html' //jquery.autocomplete (not jquery ui)
-      autocomplete_url:'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
+      autocomplete_url: 'test/fake_json_endpoint.html' // jquery ui autocomplete requires a json endpoint
     });
-    
-  
-  // Uncomment this line to see the callback functions in action
-  //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
-  
-  // Uncomment this line to see an input with no interface for adding new tags.
-  //      $('input.tags').tagsInput({interactive:false});
+
+
+    // Uncomment this line to see the callback functions in action
+    //      $('input.tags').tagsInput({onAddTag:onAddTag,onRemoveTag:onRemoveTag,onChange: onChangeTag});   
+
+    // Uncomment this line to see an input with no interface for adding new tags.
+    //      $('input.tags').tagsInput({interactive:false});
   });
-  
+
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {

@@ -416,3 +416,40 @@ class DuplicateContacts(models.Model):
 
     class Meta:
         ordering = ('id', )
+
+
+class BlockedDomain(models.Model):
+    """
+        this model is used to block the domain
+    """
+    domain = models.CharField(max_length=200)
+    created_on = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.domain
+
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
+
+    class Meta:
+        ordering = ('created_on',)
+
+
+class BlockedEmail(models.Model):
+    """
+        this model is used to block the email
+    """
+    email = models.EmailField()
+    created_on = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.email
+
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
+    class Meta:
+        ordering = ('created_on',)

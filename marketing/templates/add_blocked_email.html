@@ -1,0 +1,88 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% block content %}
+{{ block.super }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'common:api_settings' %}">Block Emails</a></li>
+    <li class="breadcrumb-item active">{% if block_email_obj %}Edit{% else %}Create{% endif %} Block Email</li>
+  </ol>
+</nav>
+<div class="main_container ml-5 mr-5">
+  <div class="row marl">
+    <div class="col-md-12">
+      <form id="add_form" method="POST" action='' novalidate>
+        <div class="overview_form_block row marl justify-content-center">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title text-center">
+                  {% if block_email_obj %}Edit{% else %}Create{% endif %} Block Email
+                </div>
+                <form>
+                  <div class="row marl">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label for="">Email</label><span class="error_marker" style="color:red">
+                          *</span>
+                        <input type="text" class="form-control" name="email"
+                          value="{% if block_email_obj %}{{ block_email_obj.email }}{% endif %}"
+                          placeholder="user@example.com">
+                      </div>
+                      <span id="id_email"></span>
+                    </div>
+                    <div class="col-md-12 text-center">
+                      <div class="row marl buttons_row text-center form_btn_row">
+                        <button type="submit" class="btn btn-default save">Save</button>
+                        <button type="reset" id="clear_button" onclick="handleCancel()" class="btn btn-default clear">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js_block %}
+<script src="{% static 'js/ajaxForm.js' %}"></script>
+<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
+<script>
+
+  function handleCancel() {
+    window.location.href = "{% url 'common:api_settings' %}" + '?blocked_emails'
+  }
+
+  $('.save_btn').click(function (e) {
+    e.preventDefault();
+    $("form#add_form").submit()
+  })
+
+  $('form#add_form').ajaxForm({
+    type: 'POST',
+    dataType: 'json',
+    url: $(this).attr('action'),
+    data: $(this).serialize(),
+    success: function (data) {
+      console.log("data", data)
+      if (data.error == false) {
+        window.location = "{% url 'common:api_settings' %}" + '?blocked_emails';
+      } else {
+        /*$(document).ajaxStop($.unblockUI);*/
+        // $.unblockUI();
+        $('p.failure').remove();
+        for (var key in data.errors) {
+          $('#id_' + key).html('<p class="error failure"> *' + data.errors[key] + '</p>');
+        }
+      }
+    },
+    error: function (xhr, errmsg, err) {
+      console.log('error data', errmsg, err)
+    }
+  });
+</script>
+{% endblock js_block %}

@@ -96,7 +96,13 @@
                 <div class="form-group">
                   <label for="id_sattus">Teams{% if opportunity_form.teams.field.required %}<span
                       class="error">*</span>{% endif %}</label>
-                  {{ opportunity_form.teams }}
+                      <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                        {% for team in teams %}
+                        <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in opportunity_obj.teams.all %}
+                          selected="" {% endif %}>
+                          {{team}}</option>
+                        {% endfor %}
+                      </select>
                   <span class="error" id="id__teams">{{ opportunity_form.teams.errors }}</span>
                 </div>
               </div>

@@ -73,7 +73,9 @@ def task_create(request):
             users = User.objects.filter(role='ADMIN').order_by('email')
             accounts = Account.objects.filter(Q(created_by=request.user) | Q(assigned_to__in=[request.user])).filter(status="open")
         form = TaskForm(request_user=request.user)
-        return render(request, 'task_create.html', {'form': form, 'users': users, 'accounts':accounts})
+        return render(request, 'task_create.html', {'form': form, 'users': users, 'accounts':accounts, 
+            "teams": Teams.objects.all(),
+        })
 
     if request.method == 'POST':
         form = TaskForm(request.POST, request_user=request.user)
@@ -91,8 +93,12 @@ def task_create(request):
                     if user_id not in assinged_to_users_ids:
                         task.assigned_to.add(user_id)
 
+            if request.POST.getlist('teams', []):
+                task.teams.add(*request.POST.getlist('teams'))
+
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
-            send_email.delay(task.id, **kwargs)
+            assigned_to_list = list(task.assigned_to.all().values_list('id', flat=True))
+            send_email.delay(task.id, assigned_to_list, **kwargs)
             success_url = reverse('tasks:tasks_list')
             if request.POST.get('from_account'):
                 success_url = reverse('accounts:view_account', args=(request.POST.get('from_account'),))
@@ -159,13 +165,14 @@ def task_edit(request, task_id):
         # form = TaskForm(request_user=request.user)
         form = TaskForm(instance=task_obj, request_user=request.user)
         return render(request, 'task_create.html', {'form': form, 'task_obj': task_obj,
-            'users': users, 'accounts':accounts})
+            'users': users, 'accounts':accounts, "teams": Teams.objects.all(),})
 
     if request.method == 'POST':
         form = TaskForm(request.POST, instance=task_obj,
                         request_user=request.user)
         if form.is_valid():
             task = form.save(commit=False)
+            previous_assigned_to_users = list(task_obj.assigned_to.all().values_list('id', flat=True))
             task.save()
             form.save_m2m()
             # task.assigned_to.clear()
@@ -178,8 +185,17 @@ def task_edit(request, task_id):
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
                         task.assigned_to.add(user_id)
+
+            if request.POST.getlist('teams', []):
+                task.teams.clear()
+                task.teams.add(*request.POST.getlist('teams'))
+            else:
+                task.teams.clear()
+
             kwargs = {'domain': request.get_host(), 'protocol': request.scheme}
-            send_email.delay(task.id, **kwargs)
+            assigned_to_list = list(task.assigned_to.all().values_list('id', flat=True))
+            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+            send_email.delay(task.id, recipients, **kwargs)
             success_url = reverse('tasks:tasks_list')
             if request.POST.get('from_account'):
                 success_url = reverse('accounts:view_account', args=(request.POST.get('from_account'),))

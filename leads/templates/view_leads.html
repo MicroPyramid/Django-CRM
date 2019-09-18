@@ -79,8 +79,8 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
-                  {% if lead_record.phone %}
-                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
+                  {% if lead_record.lead_record.phone_raw_input %}
+                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone_raw_input }}</div>
                   {% else %}
                   <div class="lead_field">Not specified</div>
                   {% endif %}

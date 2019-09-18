@@ -1,0 +1,210 @@
+{% extends 'sales/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% load thumbnail %}
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock extralinks %}
+{% block content %}
+
+<!-- main_container starts here -->
+<div class="main_container">
+  <div class="row marl">
+    <div class="col-lg-12 text-right">
+      <span class="d-inline"><a href="{% url 'marketing:add_email_for_campaigns' %}" class="btn primary_btn"><i
+            class="fa fa-plus"></i> Blocked Emails</a></span>
+      <!-- <span class="d-inline"><a href="{% url 'common:add_api_settings'%}" class="btn primary_btn"><i
+            class="fa fa-plus"></i> Add New Setting</a></span> -->
+    </div>
+  </div>
+  <!-- filter_row starts here -->
+
+  <!-- filter for contacts -->
+  <div class="filter_row list_filter_row_contacts row marl">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <form id="contacts_filter" method="POST" action="" class="filter_form">
+            <div class="card-body">
+              <div class="card-title">Filter Emails</div>
+              <div class="row marl">
+                <!-- <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Name</label>
+                    <input type="text" class="form-control" name="contact_name" value="{{request.POST.contact_name}}">
+                  </div>
+                </div> -->
+                <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Email</label>
+                    <input type="text" class="form-control" name="email" value="{{request.POST.email}}">
+                  </div>
+                </div>
+                <!-- <div class="filter_col col-md-2">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Created By</label>
+                    <select name="contact_created_by" id="created_by" class="assigned_users_ form-control">
+                      <option value="">
+                        ------------------</option>
+                      {% for user in created_by_users %}
+                      <option value="{{user.id}}" {% if user.id|slugify == request.POST.contact_created_by %}
+                        selected="" {% endif %}>
+                        {{user.email}}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div> -->
+                <input type="hidden" name="tab_status" id="tab_status">
+                <input type="hidden" name="filter_contacts" id="tab_status" value="filter_contacts">
+                <div class="filter_col col-lg-2">
+                  <div class="form-group buttons_row">
+                    <button class="btn btn-primary save" type="submit">Search</button>
+                    <a href="" class="btn btn-default clear" >Clear</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- filter for contacts -->
+
+  <!-- filter_row ends here -->
+
+
+  <div class="filter_row row marl">
+    <div class="col-md-12 col-lg-12 col-xl-12">
+      <div class="table_container_row row marl no-gutters">
+        <div class="col-md-12">
+          <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="close"
+                aria-selected="false">Contacts - {% if show_pageitems %}
+                {% show_pageitems %}{% else %}
+                {{ contacts|length }}{% endif %}</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="open"
+                aria-selected="true">Settings - </a>
+            </li>
+          </ul> -->
+          <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade  show active" id="open" role="tabpanel" aria-labelledby="open">
+              <div class="card">
+                <div class="card-body">
+                  <div class="card-title text-right">
+                    <span class="float-left">Blocked Emails - {% if show_pageitems %}
+                      {% show_pageitems %}{% else %}
+                      {{ blocked_emails|length }}{% endif %}</span>
+                    <span class="filter_toggle_contacts">
+                      <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+                    </span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table ">
+                      <thead>
+                        {% if blocked_emails|length > 0 %}
+                        <tr>
+                          <th width="5%">ID</th>
+                          <th width="15%">Email</th>
+                          <th width="15%">Created by</th>
+                          <th width="15%">Created On</th>
+                          <th width="10%">Actions</th>
+                        </tr>
+                        {% endif %}
+                      </thead>
+                      <tbody>
+                        {% if per_page %}
+                        {% paginate per_page blocked_emails %}
+                        {% else %}
+                        {% paginate 10 blocked_emails %}
+                        {% endif %}
+                        {% for email in blocked_emails %}
+                        <tr class="text-center">
+                          <td scope="row">{{ forloop.counter }}</td>
+                          <td>{{ email.email }}</td>
+                          <td>
+                            {% if email.created_by %}
+                            {% if email.created_by.profile_pic %}
+                            {% thumbnail email.created_by.profile_pic "40x40" crop="center" as im %}
+                            <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
+                              title="{{ email.created_by }}" style="border-radius: 50%" />
+                            {% endthumbnail %}
+                            {% else %}
+                            <img src="{% static 'images/user.png' %}"
+                              style="width: 40px;height: 40px;border-radius: 50%;" title="{{ email.created_by }}" />
+                            {% endif %}
+                            {% else %}
+                            <img src="{% static 'images/user.png' %}"
+                              style="width: 40px;height: 40px;border-radius: 50%;" title="{{ email.created_by }}" />
+                            {% endif %}
+                          </td>
+                          <td title="{{ email.created_on }}">{{ email.created_on_arrow }}</td>
+                          <td class="actions">
+                            {% if request.user.role == 'ADMIN' or reques.user.is_superuser %}
+                            <a href="{% url 'marketing:edit_blocked_email' email.id %}"
+                              class="btn btn-success edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
+                            <a href="{% url 'marketing:delete_blocked_email' email.id %}"
+                              class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {%ifequal blocked_emails|length 0%}
+                  <h6 class="text-center">No Email Found</h6>
+                  {%endifequal%}
+                  <div class="marl row text-center">
+                    {% show_pages %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br clear="all">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- main_container ends here -->
+{% endblock %}
+{% block js_block %}
+<script type="text/javascript">
+  $('.trash').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+  $('.assigned_users').select2();
+  $(".list_filter_row_contacts").hide()
+  $(".filter_toggle").click(function () {
+    $(".list_filter_row").toggle();
+    $(".list_filter_row_contacts").hide();
+  });
+  $(".filter_toggle_contacts").click(function () {
+    $(".list_filter_row_contacts").toggle();
+    $(".list_filter_row").hide();
+
+  });
+
+  $("#close a[rel='page']").click(function (e) {
+    e.preventDefault();
+    $('#settings_filter').attr("action", $(this).attr("href"));
+    $('#settings_filter').submit();
+  });
+
+  $("#open a[rel='page']").click(function (e) {
+    e.preventDefault();
+    $('#contacts_filter').attr("action", $(this).attr("href"));
+    $('#contacts_filter').submit();
+  });
+</script>
+{% endblock js_block %}

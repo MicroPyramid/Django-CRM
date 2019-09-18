@@ -221,7 +221,13 @@
                       <label for="staticEmail" class="col-sm-4 col-form-label">Teams</label>
                       <div class="col-sm-8 pl-0">
                         <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
-                        {{form.teams}}
+                        <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                          {% for team in teams %}
+                          <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in invoice_obj.teams.all %}
+                            selected="" {% endif %}>
+                            {{team}}</option>
+                          {% endfor %}
+                        </select>
                         <span class="error" id="id__teams">{{ form.teams.errors }}</span>
                       </div>
                     </div>

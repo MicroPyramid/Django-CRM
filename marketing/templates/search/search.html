@@ -1,0 +1,175 @@
+{% extends 'marketing/base.html' %}
+{% load staticfiles %}
+{% load paginate %}
+{% block content %}
+{{ block.super }}
+
+{% block extralinks %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock extralinks %}
+
+<div class="main_container ml-5 mr-5">
+  <div class="row marl">
+
+    <div class="filter_row list_filter_row row marl col-md-12 mb-2">
+      <div class="">
+        <div class="card">
+          <div class="card-body">
+            <form id="leads_filter" action="" method="GET">
+              <div class="card-body ">
+                <div class="card-title">Filters</div>
+                <div class="row marl">
+                  <div class="filter_col col-md-2">
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Email</label>
+                      <input type="text" class="form-control" placeholder="email.com" name="q"
+                        value="{{request.GET.q}}">
+                    </div>
+                  </div>
+                  <input type="hidden" name="tab_status" id="tab_status">
+                  <div class="filter_col col-2">
+                    <div class="form-group buttons_row">
+                      <button class="btn btn-primary save" type="submit">Search</button>
+                      <a href="" class="btn btn-default clear" onclick="window.location.reload">Clear</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <div class="table_container_row no_mar_top">
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title text-right">
+              <span class="float-left">Contacts - {{ page.object_list|length }}</span>
+              <span class="filter_toggle">
+                <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
+              </span>
+              <a href="{% url 'marketing:contact_list_new' %}" class="primary_btn">Add New Contact
+                List</a>
+            </div>
+            <div class="table-responsive table-bordered ">
+              <table class="table">
+                {% if page.object_list %}
+                <thead>
+                  <tr>
+                    <th width="5%">S. No</th>
+                    <th width="10%">Name</th>
+                    <th width="10%">Email</th>
+                    <th width="15%">Company</th>
+                    <th width="15%">Created by</th>
+                    <th width="15%">Created On</th>
+                    <!-- <th width="15%">Related Contact List</th> -->
+                    <th width="10%">Actions</th>
+                  </tr>
+                </thead>
+                {% endif %}
+                <tbody>
+
+                  {% for contact in page.object_list %}
+                  <!-- <p>
+                    <a href="{{ result.object.get_absolute_url }}">{{ result.object.email }}</a>
+                  </p> -->
+                  <tr style="text-align:center;">
+                    <td scope="row">{{ forloop.counter }}</td>
+                    <td><a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.name }}
+                    </td>
+                    <td class="text-center">{{ contact.email }}</td>
+                    <td class="text-center">{{ contact.company_name }}</td>
+                    <td>{{ contact.created_by }}</td>
+                    <td title="{{contact.created_on}}">{{ contact.created_on_arrow }}</td>
+                    <!-- <td>
+                      {% for contact_list in contact.contact_list.all %}
+                      <span> <a href="{% url 'marketing:contact_list_detail' 1 %}">{{contact_list.name}}</a>
+                      </span>
+                      {% endfor %}
+                    </td> -->
+                    <td class="actions text-center">
+                      <!-- <a href="{% url 'marketing:edit_contact' 1 %}" class="btn btn-success edit edit_contact"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
+                      <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
+                      <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                      <a href="{% url 'marketing:delete_contact' contact.id %}" class="btn btn-danger delete remove_account"
+                        data-other-contacts-lists='{{contact.contact_list.all|length}}' title="Delete"><i
+                          class="fas fa-trash-alt"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr style="text-align:center;">
+                    <td colspan="6">No records found!</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="marl row text-center mt-5">
+        {% if query %}
+
+        {% if page.has_previous or page.has_next %}
+        <div>
+          {% if page.has_previous %}<a href="?q={{ query }}&amp;page={{ page.previous_page_number }}">{% endif %}&laquo;
+            Previous{% if page.has_previous %}</a>{% endif %}
+          |
+          {% if page.has_next %}<a href="?q={{ query }}&amp;page={{ page.next_page_number }}">{% endif %}Next
+            &raquo;{% if page.has_next %}</a>{% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        {# Show some example queries to run, maybe query syntax, something else? #}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js_block %}
+<script>
+  $(function () {
+    $(".filter_toggle").click(function () {
+      $(".list_filter_row").toggle();
+    });
+    $('#id_tag').select2();
+    $('#created_by').select2();
+
+    $("a[rel='page']").click(function (e) {
+      e.preventDefault();
+      $('#leads_filter').attr("action", $(this).attr("href"));
+      $('#leads_filter').submit();
+    });
+
+    $(".remove_account").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      if (contact_lists > 1) {
+        if (!confirm('This contact exists in other Contact List too. Are you sure you want to delete this contact?'))
+          return;
+        window.location = $(this).attr('href');
+      } else {
+        if (!confirm('Are you sure you want to delete?'))
+          return;
+        window.location = $(this).attr('href');
+      }
+    })
+
+    $(".edit_contact").click(function (e) {
+      e.preventDefault()
+      url = $(this).attr('href')
+      console.log(url)
+      var contact_lists = parseInt($(this).attr('data-other-contacts-lists'));
+      console.log(contact_lists);
+      window.location = $(this).attr('href');
+    })
+  })
+</script>
+{% endblock js_block %}

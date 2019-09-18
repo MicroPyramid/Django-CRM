@@ -8,7 +8,9 @@ import xlrd
 from django import forms
 
 from common.models import User
-from marketing.models import Campaign, Contact, ContactList, EmailTemplate, Tag, ContactEmailCampaign
+from marketing.models import (BlockedDomain, BlockedEmail, Campaign, Contact,
+                              ContactEmailCampaign, ContactList, EmailTemplate, Tag)
+from haystack.forms import SearchForm
 
 email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
@@ -60,8 +62,8 @@ def csv_doc_validate(document):
             failed_contacts_csv.append(list(each.values()))
         else:
             temp_row.append(each)
-    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row, "headers":csv_headers,
-        "failed_contacts_csv": failed_contacts_csv}
+    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row, "headers": csv_headers,
+            "failed_contacts_csv": failed_contacts_csv}
 
 
 # def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
@@ -120,7 +122,7 @@ def get_validated_rows(wb, sheet_name, validated_rows, invalid_rows):
         data = []
         for row in wb_sheet.rows:
             d = {}
-            for key,cell_value in zip(sheet_headers,row):
+            for key, cell_value in zip(sheet_headers, row):
                 d[key] = cell_value.value
             data.append(d)
         # remove the first element, it contains no values
@@ -168,7 +170,7 @@ def get_validated_rows_xls(wb, sheet_name, validated_rows, invalid_rows):
         data = []
         for nrow in range(no_of_rows):
             d = {}
-            for key,cell_value in zip(sheet_headers, [cell.value for cell in wb_sheet.row(nrow)]):
+            for key, cell_value in zip(sheet_headers, [cell.value for cell in wb_sheet.row(nrow)]):
                 d[key] = cell_value
             data.append(d)
         # remove the first element, it contains no values
@@ -183,6 +185,7 @@ def get_validated_rows_xls(wb, sheet_name, validated_rows, invalid_rows):
                     else:
                         validated_rows.append(row)
             return validated_rows, invalid_rows
+
 
 def xls_doc_validate(document):
     wb = xlrd.open_workbook(file_contents=document.open().read())
@@ -199,21 +202,22 @@ def xls_doc_validate(document):
         invalid_rows = invalid_rows + invalid_data
         return {"error": False, "validated_rows": validated_rows, "invalid_rows": invalid_rows}
 
+
 def import_document_validator(document):
     try:
         # dialect = csv.Sniffer().sniff(document.read(1024).decode("ascii"))
-        document.seek(0, 0) # csv file
+        document.seek(0, 0)  # csv file
         return csv_doc_validate(document)
     except Exception as e:
         print(e)
         print('csv')
         try:
-            return xlsx_doc_validate(document) # xlsx file
+            return xlsx_doc_validate(document)  # xlsx file
         except Exception as e:
             print(e)
             print('xlsx')
             try:
-                return xls_doc_validate(document) # xls file
+                return xls_doc_validate(document)  # xls file
             except Exception as e:
                 print(e)
                 print('xls')
@@ -245,7 +249,8 @@ class ContactListForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data.get('name')
         if ContactList.objects.filter(name__iexact=name).exclude(id=self.instance.id).exists():
-            raise forms.ValidationError('Contact List with this Name already exists.')
+            raise forms.ValidationError(
+                'Contact List with this Name already exists.')
         return name
 
     def clean_contacts_file(self):
@@ -258,7 +263,8 @@ class ContactListForm(forms.ModelForm):
                 self.validated_rows = data.get("validated_rows", [])
                 self.invalid_rows = data.get("invalid_rows", [])
                 if len(self.validated_rows) == 0:
-                    raise forms.ValidationError("All the contacts in the file are invalid.")
+                    raise forms.ValidationError(
+                        "All the contacts in the file are invalid.")
                 # self.headers = data.get("headers", [])
                 # self.failed_contacts_csv = data.get("failed_contacts_csv", [])
                 # failed_csv_data = []
@@ -438,15 +444,18 @@ class SendCampaignForm(forms.ModelForm):
             elif i == "}":
                 count -= 1
             if count < 0:
-                raise forms.ValidationError('Brackets do not match, Enter valid tags.')
+                raise forms.ValidationError(
+                    'Brackets do not match, Enter valid tags.')
         if count != 0:
-            raise forms.ValidationError('Brackets do not match, Enter valid tags.')
+            raise forms.ValidationError(
+                'Brackets do not match, Enter valid tags.')
         return html
 
     def clean_title(self):
         title = self.cleaned_data.get('title')
         if Campaign.objects.filter(title__iexact=title).exclude(id=self.instance.id).exists():
-            raise forms.ValidationError('Campaign with this title already exists.')
+            raise forms.ValidationError(
+                'Campaign with this title already exists.')
         return title
 
 
@@ -464,7 +473,7 @@ class EmailCampaignForm(forms.ModelForm):
 
     class Meta:
         model = ContactEmailCampaign
-        fields = ["name", "email", "last_name",]
+        fields = ["name", "email", "last_name", ]
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -472,3 +481,56 @@ class EmailCampaignForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Contact with this Email already exists.')
         return email
+
+
+class BlockedDomainsForm(forms.ModelForm):
+
+    class Meta:
+        model = BlockedDomain
+        fields = ['domain', ]
+
+    def clean_domain(self):
+        domain = self.cleaned_data.get('domain')
+        domain_regex = '^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
+        if re.match(domain_regex, domain) is None:
+            raise forms.ValidationError('Enter a valid domain.')
+        if BlockedDomain.objects.filter(domain__iexact=domain).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError('Domain with this name already exists.')
+        return domain
+
+class BlockedEmailForm(forms.ModelForm):
+
+    class Meta:
+        model = BlockedEmail
+        fields = ['email', ]
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if BlockedEmail.objects.filter(email__iexact=email).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError('Email already exists.')
+        return email
+
+
+class MarketingContactEmailSearchForm(SearchForm):
+    email_domain = forms.CharField()
+
+    def search(self):
+        # First, store the SearchQuerySet received from other processing.
+        sqs = super(MarketingContactEmailSearchForm, self).search()
+
+        if not self.is_valid():
+            return self.no_query_found()
+
+        # Check to see if a start_date was chosen.
+        if self.cleaned_data['email_domain']:
+            # import pdb; pdb.set_trace()
+            sqs = sqs.filter(email__icontains=self.cleaned_data.get('email_domain'))
+
+        return sqs
+
+    def clean_email_domain(self):
+        email_domain = self.cleaned_data.get('email_domain')
+        domain_regex = '^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
+        if re.match(domain_regex, email_domain) is None:
+            raise forms.ValidationError('Enter a valid domain.')
+        return email_domain

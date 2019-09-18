@@ -148,7 +148,13 @@
                 <div class="form-group">
                   <label for="id_sattus">Teams{% if account_form.teams.field.required %}<span
                       class="error">*</span>{% endif %}</label>
-                  {{ account_form.teams }}
+                  <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                    {% for team in teams %}
+                    <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in account_obj.teams.all %}
+                      selected="" {% endif %}>
+                      {{team}}</option>
+                    {% endfor %}
+                  </select>
                   <span class="error" id="id__teams">{{ account_form.teams.errors }}</span>
                 </div>
               </div>
@@ -348,6 +354,43 @@
     }
   });
 
+  var assigned_to_users = []
+
+  $("#id_teams").change(function (e) {
+    // console.log($(this).val())
+    // console.log($('option:selected', this).attr('data-users'));
+
+    // users = $('option:selected', this).attr('data-users')
+
+    // $('#id_assigned_to').select2({multiple:true}).val(users).trigger('change');
+
+
+    // if (users) {
+
+    //   users = JSON.parse(users)
+
+    //   for (let i = 0; i < users.length; i++) {
+    //     const element = users[i];
+    //     // $('#id_assigned_to').val(element)
+    //     assigned_to_users.push(element)
+    //   }
+    // }
+
+    // // console.log(assigned_to_users)
+
+    // if ($(this).val().length === 0) {
+    //   assigned_to_users = [];
+    // }
+
+    // for (let i = 0; i < assigned_to_users.length; i++) {
+    //   const element = assigned_to_users[i];
+    //   // $('#id_assigned_to').val(element).change()
+    //   console.log('element checkd', element)
+    //   // $('#id_assigned_to').select2({multiple:true}).val(element).trigger('change');
+    //   $('#id_assigned_to option[value="' + element  + '"]').prop('selected', true)
+    // }
+
+  });
   // $('#call_save').click(function (e) {
   //   e.preventDefault()
   //   console.log($('#formid').serialize())

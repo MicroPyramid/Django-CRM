@@ -174,6 +174,8 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             for user_id in user_ids:
                 if user_id not in assinged_to_users_ids:
                     account_object.assigned_to.add(user_id)
+        if self.request.POST.getlist('teams', []):
+            account_object.teams.add(*self.request.POST.getlist('teams'))
 
         assigned_to_list = list(account_object.assigned_to.all().values_list('id', flat=True))
         current_site = get_current_site(self.request)
@@ -220,6 +222,7 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             context["contacts"] = Contact.objects.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user))
         context["contact_count"] = context["contacts"].count()
+        context["teams"] = Teams.objects.all()
         return context
 
 
@@ -310,6 +313,7 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         # Save Account
         account_object = form.save(commit=False)
         account_object.save()
+        previous_assigned_to_users = list(account_object.assigned_to.all().values_list('id', flat=True))
         account_object.tags.clear()
         if self.request.POST.get('tags', ''):
             tags = self.request.POST.get("tags")
@@ -339,11 +343,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
                 'account_attachment')
             attachment.save()
 
-        assigned_to_list = list(account_object.assigned_to.all().values_list('id', flat=True))
-        current_site = get_current_site(self.request)
-        recipients = assigned_to_list
-        send_email_to_assigned_user.delay(recipients, account_object.id, domain=current_site.domain,
-            protocol=self.request.scheme)
+        if self.request.POST.getlist('teams', []):
+            account_object.teams.clear()
+            account_object.teams.add(*self.request.POST.getlist('teams'))
+        else:
+            account_object.teams.clear()
+
 
         if self.request.POST.getlist('teams', []):
             user_ids = Teams.objects.filter(id__in=self.request.POST.getlist('teams')).values_list('users', flat=True)
@@ -351,6 +356,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             for user_id in user_ids:
                 if user_id not in assinged_to_users_ids:
                     account_object.assigned_to.add(user_id)
+
+        assigned_to_list = list(account_object.assigned_to.all().values_list('id', flat=True))
+        current_site = get_current_site(self.request)
+        recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+        send_email_to_assigned_user.delay(recipients, account_object.id, domain=current_site.domain,
+            protocol=self.request.scheme)
 
         if self.request.is_ajax():
             data = {'success_url': reverse_lazy(
@@ -390,6 +401,7 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             context["lead_count"] = Lead.objects.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)).exclude(status='closed').count()
+        context["teams"] = Teams.objects.all()
         return context
 
 

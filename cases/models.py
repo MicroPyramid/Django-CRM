@@ -8,6 +8,7 @@ from contacts.models import Contact
 from common.models import User
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from planner.models import Event
+from teams.models import Teams
 
 
 class Case(models.Model):
@@ -31,6 +32,8 @@ class Case(models.Model):
         on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
+    teams = models.ManyToManyField(Teams, related_name='cases_teams')
+
 
     class Meta:
         ordering = ['-created_on']

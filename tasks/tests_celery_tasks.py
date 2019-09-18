@@ -11,5 +11,5 @@ class TestEventCeleryTasks(TaskCreateTest, TestCase):
                        CELERY_ALWAYS_EAGER=True,
                        BROKER_BACKEND='memory')
     def test_event_celery_tasks(self):
-        task = send_email.apply((self.task.id,))
+        task = send_email.apply((self.task.id, [self.user.id, self.user1.id,]))
         self.assertEqual('SUCCESS', task.state)
