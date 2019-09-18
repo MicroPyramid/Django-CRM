@@ -20,15 +20,18 @@ from common import status
 from common.utils import convert_to_custom_timezone
 from common.models import User
 from marketing.forms import (ContactForm, ContactListForm, EmailTemplateForm,
-                             SendCampaignForm, EmailCampaignForm)
+                             SendCampaignForm, EmailCampaignForm, BlockedDomainsForm,
+                             BlockedEmailForm, MarketingContactEmailSearchForm)
 from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
                               CampaignOpen, Contact, ContactList,
                               EmailTemplate, Link, Tag, FailedContact, ContactUnsubscribedCampaign,
-                              ContactEmailCampaign)
+                              ContactEmailCampaign, BlockedDomain, BlockedEmail)
 from marketing.tasks import (run_campaign, upload_csv_file,
                             delete_multiple_contacts_tasks,
                             send_campaign_email_to_admin_contact)
 from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin, admin_login_required
+from haystack.generic_views import SearchView
+from haystack.query import SearchQuerySet
 
 TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
 
@@ -868,11 +871,13 @@ def demo_file_download(request):
 
 def unsubscribe_from_campaign(request, contact_id, campaign_id):
     contact_obj = get_object_or_404(Contact, pk=contact_id)
-    campaign_obj = get_object_or_404(Campaign, pk=campaign_id)
-    ContactUnsubscribedCampaign.objects.create(
-        campaigns=campaign_obj, contacts=contact_obj, is_unsubscribed=True)
     contact_obj.is_unsubscribed = True
     contact_obj.save()
+    campaign_obj = Campaign.objects.filter(id=campaign_id).first()
+    # campaign_obj = get_object_or_404(Campaign, pk=campaign_id)
+    if campaign_obj:
+        ContactUnsubscribedCampaign.objects.create(
+            campaigns=campaign_obj, contacts=contact_obj, is_unsubscribed=True)
     return HttpResponseRedirect('/')
 
 
@@ -1165,3 +1170,132 @@ def delete_email_for_campaigns(request, pk):
     if request.method == 'GET':
         contact_obj.delete()
         return HttpResponseRedirect(reverse('common:api_settings'))
+
+# the below views should be in settings page
+
+@login_required
+@admin_login_required
+def add_blocked_domain(request):
+    if request.method == 'GET':
+        form = BlockedDomainsForm()
+        return render(request, 'add_blocked_domain.html', {'form': form})
+    if request.method == 'POST':
+        form = BlockedDomainsForm(request.POST)
+        if form.is_valid():
+            domain = form.save(commit=False)
+            domain.created_by = request.user
+            domain.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def blocked_domain_list(request):
+    if request.method == 'GET':
+        blocked_domains = BlockedDomain.objects.all()
+        return render(request, 'blocked_domain_list.html', {'blocked_domains': blocked_domains})
+    if request.method == 'POST':
+        blocked_domains = BlockedDomain.objects.all()
+        if request.POST.get('domain', ''):
+            blocked_domains = blocked_domains.filter(domain__icontains=request.POST.get('domain', ''))
+        if request.POST.get('created_by', ''):
+            blocked_domains = blocked_domains.filter(created_by_id=request.POST.get('created_by', ''))
+        return render(request, 'blocked_domain_list.html', {'blocked_domains': blocked_domains})
+
+@login_required
+@admin_login_required
+def edit_blocked_domain(request, blocked_domain_id):
+    block_domain_obj = get_object_or_404(BlockedDomain, pk=blocked_domain_id)
+    if request.method == 'GET':
+        form = BlockedDomainsForm(instance=block_domain_obj)
+        return render(request, 'add_blocked_domain.html', {'form': form, 'block_domain_obj': block_domain_obj})
+    if request.method == 'POST':
+        form = BlockedDomainsForm(request.POST, instance=block_domain_obj)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def delete_blocked_domain(request, blocked_domain_id):
+    block_domain_obj = get_object_or_404(BlockedDomain, pk=blocked_domain_id)
+    block_domain_obj.delete()
+    return redirect(reverse('common:api_settings') + '?blocked_domains')
+
+
+@login_required
+@admin_login_required
+def add_blocked_email(request):
+    if request.method == 'GET':
+        form = BlockedEmailForm()
+        return render(request, 'add_blocked_email.html', {'form': form})
+    if request.method == 'POST':
+        form = BlockedEmailForm(request.POST)
+        if form.is_valid():
+            email = form.save(commit=False)
+            email.created_by = request.user
+            email.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def blocked_email_list(request):
+    if request.method == 'GET':
+        blocked_emails = BlockedEmail.objects.all()
+        return render(request, 'blocked_email_list.html', {'blocked_emails': blocked_emails})
+    if request.method == 'POST':
+        blocked_emails = BlockedEmail.objects.all()
+        if request.POST.get('email', ''):
+            blocked_emails = blocked_emails.filter(email__icontains=request.POST.get('email', ''))
+        if request.POST.get('created_by', ''):
+            blocked_emails = blocked_emails.filter(created_by_id=request.POST.get('created_by', ''))
+        return render(request, 'blocked_email_list.html', {'blocked_emails': blocked_emails})
+
+@login_required
+@admin_login_required
+def edit_blocked_email(request, blocked_email_id):
+    block_email_obj = get_object_or_404(BlockedEmail, pk=blocked_email_id)
+    if request.method == 'GET':
+        form = BlockedEmailForm(instance=block_email_obj)
+        return render(request, 'add_blocked_email.html', {'form': form, 'block_email_obj': block_email_obj})
+    if request.method == 'POST':
+        form = BlockedEmailForm(request.POST, instance=block_email_obj)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def delete_blocked_email(request, blocked_email_id):
+    block_email_obj = get_object_or_404(BlockedEmail, pk=blocked_email_id)
+    block_email_obj.delete()
+    return redirect(reverse('common:api_settings') + '?blocked_emails')
+
+
+# class MarketingContactEmailSearch(SearchView):
+#     form_class = MarketingContactEmailSearchForm
+
+#     def get_query(self):
+#         import pdb; pdb.set_trace()
+#         if self.form.is_valid():
+#             return self.form.cleaned_data["email_domain"]
+
+#         return ""
+
+#     # def get_queryset(self):
+#     #     # queryset = super(MarketingContactEmailSearch, self).get_queryset()
+#     #     queryset = SearchQuerySet().models(Contact).filter(
+#     #         email__icontains=self.request.GET.get('email_domain', None))
+#     #     return queryset
+
+#     # def get_context_data(self, *args, **kwargs):
+#     #     context = super(MarketingContactEmailSearch, self).get_context_data(*args, **kwargs)
+#     #     import pdb; pdb.set_trace()
+#     #     return context

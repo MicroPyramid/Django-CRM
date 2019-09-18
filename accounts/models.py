@@ -8,6 +8,7 @@ from common.utils import INDCHOICES, COUNTRIES
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
 from contacts.models import Contact
+from teams.models import Teams
 
 
 class Tags(models.Model):
@@ -69,6 +70,7 @@ class Account(models.Model):
         'contacts.Contact', related_name="account_contacts")
     assigned_to = models.ManyToManyField(
         User, related_name='account_assigned_users')
+    teams = models.ManyToManyField(Teams, related_name='account_teams')
 
     def __str__(self):
         return self.name

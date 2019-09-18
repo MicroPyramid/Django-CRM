@@ -4,6 +4,7 @@ from common.models import User
 from accounts.models import Account
 from contacts.models import Contact
 from django.utils.translation import ugettext_lazy as _
+from teams.models import Teams
 
 
 class Task(models.Model):
@@ -38,6 +39,8 @@ class Task(models.Model):
 
     created_by = models.ForeignKey(
         User, related_name='task_created', blank=True, null=True, on_delete=models.SET_NULL)
+    teams = models.ManyToManyField(Teams, related_name='tasks_teams')
+
 
     def __str__(self):
         return self.title

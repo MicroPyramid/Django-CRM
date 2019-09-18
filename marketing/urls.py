@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
     dashboard, contact_lists, contacts_list, contact_list_new, contact_list_detail, edit_contact,
     email_template_list, email_template_new, email_template_edit, email_template_delete,
@@ -8,6 +8,9 @@ from .views import (
     download_contacts_for_campaign, create_campaign_from_template,
     download_links_clicked, delete_multiple_contacts, download_failed_contacts, delete_all_contacts,
     add_email_for_campaigns, list_all_emails_for_campaigns, edit_email_for_campaigns, delete_email_for_campaigns,
+    add_blocked_domain, blocked_domain_list, edit_blocked_domain, delete_blocked_domain,
+    add_blocked_email, blocked_email_list, edit_blocked_email, delete_blocked_email,
+    # MarketingContactEmailSearch, 
     # contacts_list_new
     # delete_contact_list
     # campaign_edit
@@ -62,4 +65,16 @@ urlpatterns = [
     path('list-all-emails-for-campaigns/', list_all_emails_for_campaigns, name="list_all_emails_for_campaigns"),
     path('edit-email-for-campaigns/<int:pk>/', edit_email_for_campaigns, name="edit_email_for_campaigns"),
     path('delete-email-for-campaigns/<int:pk>/', delete_email_for_campaigns, name="delete_email_for_campaigns"),
+
+    path('add-blocked-domain/', add_blocked_domain, name="add_blocked_domain"),
+    path('blocked-domain-list/', blocked_domain_list, name="blocked_domain_list"),
+    path('edit-blocked-domain/<int:blocked_domain_id>/', edit_blocked_domain, name="edit_blocked_domain"),
+    path('delete-blocked-domain/<int:blocked_domain_id>/', delete_blocked_domain, name="delete_blocked_domain"),
+
+    path('add-blocked-email/', add_blocked_email, name="add_blocked_email"),
+    path('blocked-email-list/', blocked_email_list, name="blocked_email_list"),
+    path('edit-blocked-email/<int:blocked_email_id>/', edit_blocked_email, name="edit_blocked_email"),
+    path('delete-blocked-email/<int:blocked_email_id>/', delete_blocked_email, name="delete_blocked_email"),
+
+    path('search-marketing-contact-emails/', include('haystack.urls')),
 ]

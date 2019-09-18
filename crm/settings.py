@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'simple_pagination',
     'compressor',
+    'haystack',
     'common',
     'accounts',
     'cases',
@@ -333,6 +334,18 @@ if SENTRY_ENABLED and not DEBUG:
                 },
             },
         }
+
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://127.0.0.1:9200/',
+        'INDEX_NAME': 'haystack_marketing_contact_emails',
+    },
+}
+
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+HAYSTACK_SEARCH_RESULTS_PER_PAGE = 10
 
 # Load the local settings file if it exists
 if os.path.isfile('crm/local_settings.py'):

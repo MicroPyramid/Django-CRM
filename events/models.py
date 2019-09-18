@@ -5,6 +5,7 @@ from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 from common.models import User
 from contacts.models import Contact
+from teams.models import Teams
 # Create your models here.
 
 
@@ -44,6 +45,8 @@ class Event(models.Model):
     is_active = models.BooleanField(default=True)
     disabled = models.BooleanField(default=False)
     date_of_meeting = models.DateField(blank=True, null=True)
+    teams = models.ManyToManyField(Teams, related_name='event_teams')
+
     # tags = models.ManyToManyField(Tag)
 
     @property

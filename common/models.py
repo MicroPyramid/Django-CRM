@@ -261,6 +261,8 @@ class Document(models.Model):
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
     shared_to = models.ManyToManyField(User, related_name='document_shared_to')
+    teams = models.ManyToManyField('teams.Teams', related_name='document_teams')
+
 
     class Meta:
         ordering = ('-created_on',)

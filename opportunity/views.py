@@ -200,6 +200,7 @@ def create_opportunity(request):
     context["currencies"] = CURRENCY_CODES
     context["stages"] = STAGES
     context["sources"] = SOURCES
+    context["teams"] = Teams.objects.all()
     context["assignedto_list"] = [
         int(i) for i in request.POST.getlist('assigned_to', []) if i]
 
@@ -294,6 +295,7 @@ def update_opportunity(request, pk):
             opportunity_obj = form.save(commit=False)
             if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
                 opportunity_obj.closed_by = request.user
+            previous_assigned_to_users = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
             opportunity_obj.save()
 
             opportunity_obj.contacts.clear()
@@ -338,8 +340,15 @@ def update_opportunity(request, pk):
                     if user_id not in assinged_to_users_ids:
                         opportunity_obj.assigned_to.add(user_id)
 
+            if request.POST.getlist('teams', []):
+                opportunity_obj.teams.clear()
+                opportunity_obj.teams.add(*request.POST.getlist('teams'))
+            else:
+                opportunity_obj.teams.clear()
+
             current_site = get_current_site(request)
-            recipients = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
+            assigned_to_list = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
+            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,
                 protocol=request.scheme)
 
@@ -393,6 +402,7 @@ def update_opportunity(request, pk):
     context["currencies"] = CURRENCY_CODES
     context["stages"] = STAGES
     context["sources"] = SOURCES
+    context["teams"] = Teams.objects.all()
     context["assignedto_list"] = [
         int(i) for i in request.POST.getlist('assigned_to', []) if i]
     context["contacts_list"] = [

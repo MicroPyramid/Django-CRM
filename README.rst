@@ -1,7 +1,7 @@
 Django-CRM
 ==========
 
-Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
+Django CRM is opensource CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
 
 .. list-table::
    :header-rows: 1
@@ -23,8 +23,8 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
       -  .. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
             :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
             :alt: Codacy Dashboard
-         .. image:: https://api.codacy.com/project/badge/Coverage/b11da5f09dd542479fd3bd53944595d2
-            :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
+         .. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
+            :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
             :alt: Codacy Coverage
 
       -  .. image:: https://img.shields.io/docker/automated/micropyramid/django-crm.svg

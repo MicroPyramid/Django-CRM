@@ -22,3 +22,6 @@ class Teams(models.Model):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
+
+    def get_users(self):
+        return list(self.users.values_list('id', flat=True))

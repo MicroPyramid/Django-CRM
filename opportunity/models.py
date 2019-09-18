@@ -7,6 +7,7 @@ from accounts.models import Account, Tags
 from contacts.models import Contact
 from common.models import User
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
+from teams.models import Teams
 
 
 class Opportunity(models.Model):
@@ -40,6 +41,7 @@ class Opportunity(models.Model):
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
+    teams = models.ManyToManyField(Teams, related_name='oppurtunity_teams')
 
     class Meta:
         ordering = ['-created_on']

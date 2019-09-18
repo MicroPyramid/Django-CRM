@@ -145,6 +145,9 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                 if user_id not in assinged_to_users_ids:
                     contact_obj.assigned_to.add(user_id)
 
+        if self.request.POST.getlist('teams', []):
+            contact_obj.teams.add(*self.request.POST.getlist('teams'))
+
         assigned_to_list = list(contact_obj.assigned_to.all().values_list('id', flat=True))
         current_site = get_current_site(self.request)
         recipients = assigned_to_list
@@ -190,6 +193,7 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                 context["address_form"] = BillingAddressForm(self.request.POST)
             else:
                 context["address_form"] = BillingAddressForm()
+        context["teams"] = Teams.objects.all()
         return context
 
 
@@ -279,6 +283,7 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             'id', flat=True)
 
         contact_obj = form.save(commit=False)
+        previous_assigned_to_users = list(contact_obj.assigned_to.all().values_list('id', flat=True))
         all_members_list = []
         if self.request.POST.getlist('assigned_to', []):
             current_site = get_current_site(self.request)
@@ -315,8 +320,15 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
                 if user_id not in assinged_to_users_ids:
                     contact_obj.assigned_to.add(user_id)
 
+        if self.request.POST.getlist('teams', []):
+            contact_obj.teams.clear()
+            contact_obj.teams.add(*self.request.POST.getlist('teams'))
+        else:
+            contact_obj.teams.clear()
+
         current_site = get_current_site(self.request)
-        recipients = list(contact_obj.assigned_to.all().values_list('id', flat=True))
+        assigned_to_list = list(contact_obj.assigned_to.all().values_list('id', flat=True))
+        recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
         send_email_to_assigned_user.delay(recipients, contact_obj.id, domain=current_site.domain,
             protocol=self.request.scheme)
 
@@ -361,6 +373,7 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         context["contact_form"] = context["form"]
         context["users"] = self.users
         context["countries"] = COUNTRIES
+        context["teams"] = Teams.objects.all()
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         if "address_form" in kwargs:

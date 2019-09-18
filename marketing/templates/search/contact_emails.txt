@@ -1,0 +1,6 @@
+{{ object.id }}
+{{ object.email }}
+{{ object.name }}
+{{ object.company_name }}
+{{ object.created_on_arrow }}
+{{ object.created_on }}
