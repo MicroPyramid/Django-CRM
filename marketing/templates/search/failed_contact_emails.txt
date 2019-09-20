@@ -7,7 +7,6 @@
 {{ object.created_by }}
 {{ object.created_by_id }}
 {{ object.email_domain }}
-{{ object.is_bounced }}
 {{ object.contact_lists_count }}
 
 {% for contact_list in object.contact_lists.all %}

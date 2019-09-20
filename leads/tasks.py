@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 
 from accounts.models import User
 from leads.models import Lead
+from marketing.models import BlockedDomain, BlockedEmail
 
 
 def get_rendered_html(template_name, context={}):
@@ -70,28 +71,31 @@ def send_email_to_assigned_user(recipients, lead_id, domain='demo.django-crm.io'
     """ Send Mail To Users When they are assigned to a lead """
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
+    blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
+    blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()
         if user:
-            recipients_list.append(user.email)
-            context = {}
-            context["url"] = protocol + '://' + domain + \
-                reverse('leads:view_lead', args=(lead.id,))
-            context["user"] = user
-            context["lead"] = lead
-            context["created_by"] = created_by
-            context["source"] = source
-            subject = 'Assigned a lead for you. '
-            html_content = render_to_string(
-                'assigned_to/leads_assigned.html', context=context)
-            msg = EmailMessage(
-                subject,
-                html_content,
-                to=recipients_list
-            )
-            msg.content_subtype = "html"
-            msg.send()
+            if (user.email not in blocked_emails) and (user.email.split('@')[-1] not in blocked_domains):
+                recipients_list.append(user.email)
+                context = {}
+                context["url"] = protocol + '://' + domain + \
+                    reverse('leads:view_lead', args=(lead.id,))
+                context["user"] = user
+                context["lead"] = lead
+                context["created_by"] = created_by
+                context["source"] = source
+                subject = 'Assigned a lead for you. '
+                html_content = render_to_string(
+                    'assigned_to/leads_assigned.html', context=context)
+                msg = EmailMessage(
+                    subject,
+                    html_content,
+                    to=recipients_list
+                )
+                msg.content_subtype = "html"
+                msg.send()
 
 
 @task
@@ -112,7 +116,6 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
                 lead.email = row.get('email')
                 lead.phone = row.get('phone')
                 lead.address_line = row.get('address')
-                lead.source = source
                 # lead.city = row.get('city')
                 # lead.state = row.get('state')
                 # lead.postcode = row.get('postcode')

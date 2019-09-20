@@ -40,7 +40,8 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     template_name = "leads.html"
 
     def get_queryset(self):
-        queryset = self.model.objects.all().exclude(status='converted')
+        queryset = self.model.objects.all().exclude(status='converted').select_related('created_by').prefetch_related(
+            'tags', 'contacts', 'assigned_to',)
         if (self.request.user.role != "ADMIN" and not
                 self.request.user.is_superuser):
             queryset = queryset.filter(
@@ -106,7 +107,6 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
         if self.request.POST.get('tab_status'):
             tab_status = self.request.POST.get('tab_status')
         context['tab_status'] = tab_status
-
         return context
 
     def post(self, request, *args, **kwargs):
