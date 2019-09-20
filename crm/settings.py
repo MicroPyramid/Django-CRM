@@ -240,7 +240,7 @@ CELERY_BEAT_SCHEDULE = {
         "task": "marketing.tasks.send_scheduled_campaigns",
         "schedule": crontab(hour='*/1')
     },
-    "runs-scheduled-emails-for-accounts-every-five-minutes": {
+    "runs-scheduled-emails-for-accounts-every-one-minute": {
         "task": "accounts.tasks.send_scheduled_emails",
         "schedule": crontab(minute='*/1')
     }
@@ -352,3 +352,11 @@ if os.path.isfile('crm/local_settings.py'):
     from .local_settings import *
 else:
     print("No local settings file found")
+
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+#         'LOCATION': '127.0.0.1:11211',
+#     }
+# }

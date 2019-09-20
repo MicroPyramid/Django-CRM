@@ -5,13 +5,13 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
-from django.utils import six
-
-from common.models import Comment, User, Profile
-from django.utils import timezone
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils import six, timezone
 from django.utils.encoding import force_bytes, force_text
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+
+from common.models import Comment, Profile, User
 from common.token_generator import account_activation_token
+from marketing.models import BlockedDomain, BlockedEmail
 
 
 @task
@@ -104,19 +104,22 @@ def send_email_user_mentions(comment_id, called_from, domain='demo.django-crm.io
         else:
             context["url"] = ''
         # subject = 'Django CRM : comment '
+        blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
+        blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
         if recipients:
             for recipient in recipients:
-                recipients_list = [recipient, ]
-                context["mentioned_user"] = recipient
-                html_content = render_to_string('comment_email.html', context=context)
-                msg = EmailMessage(
-                    subject,
-                    html_content,
-                    from_email=comment.commented_by.email,
-                    to=recipients_list
-                )
-                msg.content_subtype = "html"
-                msg.send()
+                if (recipient not in blocked_emails) and (recipient.split('@')[-1] not in blocked_domains):
+                    recipients_list = [recipient, ]
+                    context["mentioned_user"] = recipient
+                    html_content = render_to_string('comment_email.html', context=context)
+                    msg = EmailMessage(
+                        subject,
+                        html_content,
+                        from_email=comment.commented_by.email,
+                        to=recipients_list
+                    )
+                    msg.content_subtype = "html"
+                    msg.send()
 
 
 @task

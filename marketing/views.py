@@ -878,7 +878,7 @@ def unsubscribe_from_campaign(request, contact_id, campaign_id):
     if campaign_obj:
         ContactUnsubscribedCampaign.objects.create(
             campaigns=campaign_obj, contacts=contact_obj, is_unsubscribed=True)
-    return HttpResponseRedirect('/')
+    return render(request, 'unsubscribe_from_campaign_template.html')
 
 
 @login_required
@@ -1277,6 +1277,72 @@ def delete_blocked_email(request, blocked_email_id):
     block_email_obj = get_object_or_404(BlockedEmail, pk=blocked_email_id)
     block_email_obj.delete()
     return redirect(reverse('common:api_settings') + '?blocked_emails')
+
+@login_required(login_url='/login')
+@marketing_access_required
+def contacts_list_elastic_search(request):
+    if (request.user.role == "ADMIN"):
+        # contacts = Contact.objects.filter(is_bounced=False)
+        contacts = SearchQuerySet().filter(is_bounced='false').models(Contact)
+        bounced_contacts = SearchQuerySet().filter(is_bounced='true').models(Contact)
+        failed_contacts = SearchQuerySet().models(FailedContact).filter()
+        # bounced_contacts = Contact.objects.filter(is_bounced=True)
+        # failed_contacts = FailedContact.objects.all()
+        contact_lists = ContactList.objects.all()
+    else:
+        contact_ids = request.user.marketing_contactlist.all().values_list('contacts',
+            flat=True)
+        contacts = SearchQuerySet().filter(is_bounced='false', id__in=contact_ids).models(Contact)
+        bounced_contacts = SearchQuerySet().filter(is_bounced='true', id__in=contact_ids).models(Contact)
+        failed_contacts = SearchQuerySet().models(FailedContact).filter(created_by_id=str(request.user.id))
+        # contacts = Contact.objects.filter(id__in=contact_ids).exclude(is_bounced=True)
+        # bounced_contacts = Contact.objects.filter(id__in=contact_ids, is_bounced=True)
+        # failed_contacts = FailedContact.objects.filter(created_by=request.user)
+        contact_lists = ContactList.objects.filter(created_by=request.user)
+        # contacts = Contact.objects.filter(created_by=request.user)
+
+    users = User.objects.filter(
+        id__in=[_id for _id in contacts.values_list('created_by_id', flat=True) if _id != ''])
+
+    if request.method == 'GET':
+        context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists,
+            'bounced_contacts': bounced_contacts, 'failed_contacts': '',
+        }
+        return render(request, 'search_contact_emails.html', context)
+
+    if request.method == 'POST':
+        data = request.POST
+        if data.get('name'):
+            contacts = contacts.filter(
+                name__icontains=data.get('name'))
+            bounced_contacts = bounced_contacts.filter(
+                name__icontains=data.get('name'))
+            failed_contacts = failed_contacts.filter(
+                name__icontains=data.get('name'))
+        if data.get('email'):
+            contacts = contacts.filter(email__icontains=data.get('email'))
+            bounced_contacts = bounced_contacts.filter(email__icontains=data.get('email'))
+            failed_contacts = failed_contacts.filter(email__icontains=data.get('email'))
+
+        if data.get('domain_name'):
+            contacts = contacts.filter(email_domain__icontains=data.get('domain_name'))
+            bounced_contacts = bounced_contacts.filter(email_domain__icontains=data.get('domain_name'))
+            failed_contacts = failed_contacts.filter(email_domain__icontains=data.get('domain_name'))
+
+        if data.get('created_by'):
+            contacts = contacts.filter(created_by_id=data.get('created_by'))
+            bounced_contacts = bounced_contacts.filter(created_by_id=data.get('created_by'))
+            failed_contacts = failed_contacts.filter(created_by_id=data.get('created_by'))
+
+        if data.get('contact_list'):
+            contacts = contacts.filter(contact_lists_id=data.get('contact_list'))
+            bounced_contacts = bounced_contacts.filter(contact_lists_id=data.get('contact_list'))
+            failed_contacts = failed_contacts.filter(contact_lists_id=data.get('contact_list'))
+
+        context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists,
+            'bounced_contacts': bounced_contacts, 'failed_contacts': failed_contacts,
+        }
+        return render(request, 'search_contact_emails.html', context)
 
 
 # class MarketingContactEmailSearch(SearchView):

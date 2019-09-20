@@ -178,6 +178,10 @@ class FailedContact(models.Model):
     def __str__(self):
         return self.email
 
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_on).humanize()
+
 
 def get_campaign_attachment_path(self, filename):
     file_split = filename.split('.')

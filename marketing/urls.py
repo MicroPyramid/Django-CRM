@@ -10,7 +10,8 @@ from .views import (
     add_email_for_campaigns, list_all_emails_for_campaigns, edit_email_for_campaigns, delete_email_for_campaigns,
     add_blocked_domain, blocked_domain_list, edit_blocked_domain, delete_blocked_domain,
     add_blocked_email, blocked_email_list, edit_blocked_email, delete_blocked_email,
-    # MarketingContactEmailSearch, 
+    contacts_list_elastic_search,
+    # MarketingContactEmailSearch,
     # contacts_list_new
     # delete_contact_list
     # campaign_edit
@@ -27,7 +28,7 @@ urlpatterns = [
     path('contact-list/', contact_lists, name='contact_lists'),
     path('contacts/<int:pk>/edit/', edit_contact, name='edit_contact'),
     path('contacts/<int:pk>/delete/', delete_contact, name='delete_contact'),
-    path('contacts/', contacts_list, name='contacts_list'),
+    path('contacts/', contacts_list_elastic_search, name='contacts_list'),
     path('contact-list/create/', contact_list_new, name='contact_list_new'),
     # path('cl/list/cnew/', contacts_list_new, name='contacts_list_new'),
     path('contact-list/<int:pk>/detail/', contact_list_detail, name='contact_list_detail'),
@@ -77,4 +78,5 @@ urlpatterns = [
     path('delete-blocked-email/<int:blocked_email_id>/', delete_blocked_email, name="delete_blocked_email"),
 
     path('search-marketing-contact-emails/', include('haystack.urls')),
+    # path('elastic-search/', contacts_list_elastic_search),
 ]
