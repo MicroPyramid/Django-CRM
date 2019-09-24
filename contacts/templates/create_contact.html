@@ -26,12 +26,16 @@
                 <div class="form-group">
                   <div class="row">
                     <div class="filter_col col-md-6">
-                      <label for="exampleInputEmail1" class="required">First Name{% if contact_form.first_name.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1" class="required">First
+                        Name{% if contact_form.first_name.field.required %}<span
+                          class="error">*</span>{% endif %}</label>
                       {{ contact_form.first_name }}
                       <span class="error">{{ contact_form.first_name.errors }}</span>
                     </div>
                     <div class="filter_col col-md-6">
-                      <label for="exampleInputEmail1" class="required">Last Name{% if contact_form.last_name.field.required %}<span class="error">*</span>{% endif %}</label>
+                      <label for="exampleInputEmail1" class="required">Last
+                        Name{% if contact_form.last_name.field.required %}<span
+                          class="error">*</span>{% endif %}</label>
                       {{ contact_form.last_name }}
                       <span class="error">{{ contact_form.last_name.errors }}</span>
                     </div>
@@ -40,14 +44,16 @@
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1" class="required" >Phone{% if contact_form.phone.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Phone{% if contact_form.phone.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ contact_form.phone }}
                   <span class="error">{{ contact_form.phone.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
                 <div class="form-group ">
-                  <label for="exampleInputEmail1" class="required" >Email Address{% if contact_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1" class="required">Email
+                    Address{% if contact_form.email.field.required %}<span class="error">*</span>{% endif %}</label>
                   {{ contact_form.email }}
                   <span class="error">{{ contact_form.email.errors }}</span>
                 </div>
@@ -57,13 +63,13 @@
                 <div class="form-group">
                   <label for="id_sattus">Teams{% if contact_form.teams.field.required %}<span
                       class="error">*</span>{% endif %}</label>
-                      <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
-                        {% for team in teams %}
-                        <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in contact_obj.teams.all %}
-                          selected="" {% endif %}>
-                          {{team}}</option>
-                        {% endfor %}
-                      </select>
+                  <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                    {% for team in teams %}
+                    <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in contact_obj.teams.all %}
+                      selected="" {% endif %}>
+                      {{team}}</option>
+                    {% endfor %}
+                  </select>
                   <span class="error" id="id__teams">{{ contact_form.teams.errors }}</span>
                 </div>
               </div>
@@ -73,10 +79,13 @@
               <div class="filter_col col-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
-                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                  {% for user in users %}
-                  <option value="{{user.id}}" {% if user in contact_obj.assigned_to.all or user.id in assignedto_list %} selected="" {% endif %}>{{user.email}}</option>
-                  {% endfor %}
+                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
+                    id="id_assigned_to">
+                    {% for user in users %}
+                    <option value="{{user.id}}"
+                      {% if user in contact_obj.assigned_to.all or user.id in assignedto_list %} selected=""
+                      {% endif %}>{{user.email}}</option>
+                    {% endfor %}
                   </select>
                   <span class="error">{{ contact_form.assigned_to.errors }}</span>
                 </div>
@@ -113,24 +122,25 @@
             <div class="col-md-4">
               <div class="col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1">Description{% if contact_form.description.field.required %}<span class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Description{% if contact_form.description.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ contact_form.description }}
                   <span class="error">{{ contact_form.description.errors }}</span>
                 </div>
               </div>
               <div class="filter_col col-md-12">
-              <div class="form-group">
-                <label for="exampleInputEmail1">Attachment</label>
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Attachment</label>
                   <input type="file" name="contact_attachment">
                   {% if contact_obj.contact_attachment.count %}
-                    {% for attachment in contact_obj.contact_attachment.all %}
-                    <div id="attachment{{attachment.id}}" class="mt-2">
-                      <a target="_blank" href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a>
-                      {% if not attachment.created_by.role == 'ADMIN' or attachment.created_by.role == request.user.role %}
-                      <a class="action btn primary_btn"  onclick="remove_attachment({{attachment.id}})">X</a>
-                      {% endif %}
-                    </div>
-                    {% endfor %}
+                  {% for attachment in contact_obj.contact_attachment.all %}
+                  <div id="attachment{{attachment.id}}" class="mt-2">
+                    <a target="_blank" href="{{ attachment.attachment.url }}">{{ attachment.file_name }}</a>
+                    {% if not attachment.created_by.role == 'ADMIN' or attachment.created_by.role == request.user.role %}
+                    <a class="action btn primary_btn" onclick="remove_attachment({{attachment.id}})">X</a>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
                   {% endif %}
                   <span class="error"></span>
                 </div>
@@ -140,11 +150,13 @@
             <input type="hidden" id="save_new_form" name="savenewform">
             <div class="col-md-12">
               <div class="row marl buttons_row text-center form_btn_row">
-                <button  class="btn btn-default save" type="submit">Save</button>
+                <button class="btn btn-default save" type="submit">Save</button>
                 {% if not contact_obj %}
                 <button class="btn btn-success save savenew" type="submit">Save & New</button>
                 {% endif %}
-                <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}" {% else %} href="{% url 'contacts:list' %}" {% endif %} class="btn btn-default clear" id="create_contact_cancel">Cancel</a>
+                <a {% if request.GET.view_account %} href="{% url 'accounts:view_account' request.GET.view_account %}"
+                  {% else %} href="{% url 'contacts:list' %}" {% endif %} class="btn btn-default clear"
+                  id="create_contact_cancel">Cancel</a>
               </div>
             </div>
           </div>
@@ -157,12 +169,12 @@
 {% block js_block %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script type="text/javascript">
-  $(".savenew").on('click', function(e){
+  $(".savenew").on('click', function (e) {
     e.preventDefault()
     $("#save_new_form").val('true')
     $('#add_form').submit()
   });
-  $(document).ready(function() {
+  $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_teams').select2();
   });
@@ -180,5 +192,38 @@
       })
     }
   }
+
+  $("#id_teams").change(function (e) {
+    try {
+      var users = []
+      $('#id_teams option:selected').each(function () {
+        // users.push($(this).attr('data-users'))
+        _data = $(this).attr('data-users');
+        if (!users) {
+          // users = []
+        } else {
+          users = users.concat(_data.split(','))
+        }
+      })
+      // users = $('option:selected', this).attr('data-users')
+      // if (!users) {
+      //   users = []
+      // } else {
+      //   users = users.split(',')
+      // }
+      console.log('selected users teams data', users)
+      var existingUsers = $('#id_assigned_to').val();
+      var allUsers = users.concat(existingUsers)
+      console.log(existingUsers)
+      if (users.length) {
+        $('#id_assigned_to').select2().val(allUsers).trigger('change');
+
+      }
+    } catch (error) {
+      console.log(error)
+      $('#id_assigned_to').select2().val(existingUsers).trigger('change');
+    }
+
+  });
 </script>
 {% endblock js_block %}

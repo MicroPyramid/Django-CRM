@@ -24,4 +24,5 @@ class Teams(models.Model):
         return arrow.get(self.created_on).humanize()
 
     def get_users(self):
-        return list(self.users.values_list('id', flat=True))
+        return ','.join([str(_id) for _id in list(self.users.values_list('id', flat=True))])
+        # return ','.join(list(self.users.values_list('id', flat=True)))

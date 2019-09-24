@@ -40,8 +40,15 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     template_name = "leads.html"
 
     def get_queryset(self):
-        queryset = self.model.objects.all().exclude(status='converted').select_related('created_by').prefetch_related(
-            'tags', 'contacts', 'assigned_to',)
+        queryset = self.model.objects.all().exclude(status='converted').select_related('created_by'
+            ).prefetch_related('tags', 'assigned_to',)#.defer('first_name', 'last_name', 'email',
+            # 'phone', 'address_line', 'street', 'city', 'postcode', 'website', 'description',
+            # 'account_name', 'opportunity_amount', 'enquery_type', 'created_from_site',
+            # 'teams', 'contacts', 'tags__slug', 'created_by__username', 'created_by__first_name',
+            # 'created_by__last_name', 'created_by__last_login', 'created_by__password',
+            # 'created_by__date_joined', 'assigned_to__username', 'assigned_to__first_name',
+            # 'assigned_to__last_name', 'assigned_to__last_login', 'assigned_to__password',
+            # 'assigned_to__date_joined')
         if (self.request.user.role != "ADMIN" and not
                 self.request.user.is_superuser):
             queryset = queryset.filter(
@@ -85,7 +92,7 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
         context["per_page"] = self.request.POST.get('per_page')
         context["source"] = LEAD_SOURCE
         context["users"] = User.objects.filter(
-            is_active=True).order_by('email')
+            is_active=True).order_by('email').values('id', 'email')
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         context["request_tags"] = self.request.POST.getlist('tag')
@@ -384,8 +391,8 @@ def update_lead(request, pk):
 
                 lead_obj.assigned_to.clear()
                 lead_obj.assigned_to.add(*request.POST.getlist('assigned_to'))
-            # else:
-            #     lead_obj.assigned_to.clear()
+            else:
+                lead_obj.assigned_to.clear()
 
             if request.POST.getlist('teams', []):
                 user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)

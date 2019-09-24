@@ -13,6 +13,7 @@ from django.views.generic import (CreateView, DeleteView, DetailView, FormView,
 from common.models import User
 from teams.models import Teams
 from teams.forms import TeamForm
+from teams.tasks import update_team_users
 
 
 @login_required
@@ -103,6 +104,10 @@ def team_edit(request, team_id):
         form = TeamForm(request.POST, instance=team_obj)
         if form.is_valid():
             task_obj = form.save(commit=False)
+            if 'users' in form.changed_data:
+                update_team_users.delay(team_id)
+                # pass
+                # print('celery task')
             task_obj.save()
             form.save_m2m()
             return JsonResponse({'error': False, 'success_url': reverse('teams:teams_list')})

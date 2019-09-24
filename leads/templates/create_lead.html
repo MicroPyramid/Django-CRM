@@ -72,7 +72,8 @@
                   <label for="exampleInputEmail1">Phone{% if lead_form.phone.field.required %}<span
                       class="error">*</span>{% endif %}</label>
                   <input type="tel" name="phone"
-                  value="{% if lead_obj and lead_obj.phone_raw_input %}{{lead_obj.phone}}{% endif %}" class="form-control" placeholder="+91-123-456-7890" id="id_phone">
+                    value="{% if lead_obj and lead_obj.phone_raw_input %}{{lead_obj.phone}}{% endif %}"
+                    class="form-control" placeholder="+91-123-456-7890" id="id_phone">
                   <span class="error error_message" id="error_id_phone">{{ lead_form.phone.errors }}</span>
                 </div>
               </div>
@@ -142,7 +143,8 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label for="exampleInputEmail1">Assigned Users</label>
-                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
+                  <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
+                    id="id_assigned_to">
                     {% for user in users %}
                     <option value="{{user.id}}" {% if user in lead_obj.assigned_to.all or user.id in assignedto_list %}
                       selected="" {% endif %}>{{user.email}}</option>
@@ -349,5 +351,42 @@
       })
     }
   }
+
+  $("#id_teams").change(function (e) {
+    try {
+      var users = []
+      $('#id_teams option:selected').each(function () {
+        // users.push($(this).attr('data-users'))
+        _data = $(this).attr('data-users');
+        if (!users) {
+          users = []
+        } else {
+          users = users.concat(_data.split(','))
+        }
+      });
+      // $('#id_teams option').each(function () {
+      //   if($(this).is(':selected')){
+      //     // console.log('selected', $(this).attr('data-users'))
+      //   }
+      //   else{
+      //     _unselected = $(this).attr('data-users').split(',')
+      //     console.log('un selected', $(this).attr('data-users').split(','))
+      //   }
+      // });
+      // console.log('selected users teams data', users)
+      var existingUsers = $('#id_assigned_to').val();
+      var allUsers = users.concat(existingUsers)
+      // var allUsers = users
+      // console.log(existingUsers)
+      $('#id_assigned_to').select2().val(allUsers).trigger('change');
+      if (users.length) {
+
+      }
+    } catch (error) {
+      console.log(error)
+      $('#id_assigned_to').select2().val([]).trigger('change');
+    }
+
+  });
 </script>
 {% endblock js_block %}

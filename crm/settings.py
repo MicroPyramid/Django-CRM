@@ -215,7 +215,6 @@ COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
     ('text/x-sass', 'sass {infile} {outfile}'),
     ('text/x-scss', 'sass {infile} {outfile}'),
-    ('text/x-scss', 'django_libsass.SassCompiler'),
 )
 
 COMPRESS_OFFLINE_CONTEXT = {
@@ -355,9 +354,9 @@ else:
     print("No local settings file found")
 
 
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-#         'LOCATION': '127.0.0.1:11211',
-#     }
-# }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
