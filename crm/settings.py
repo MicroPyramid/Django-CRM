@@ -215,6 +215,7 @@ COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
     ('text/x-sass', 'sass {infile} {outfile}'),
     ('text/x-scss', 'sass {infile} {outfile}'),
+    ('text/x-scss', 'django_libsass.SassCompiler'),
 )
 
 COMPRESS_OFFLINE_CONTEXT = {
