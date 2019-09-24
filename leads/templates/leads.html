@@ -2,6 +2,7 @@
 {% load staticfiles %}
 {% load paginate %}
 {% load thumbnail %}
+{% load cache %}
 
 {% block date_picker %}
 {% endblock date_picker %}
@@ -184,7 +185,8 @@
                           {% endthumbnail %}
                           {% else %}
                           <a href="{% url 'common:view_user' user.id %}">
-                            <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
+                            <img src="{% cache 600 default_profile_pic %}{% static 'images/user.png' %}{% endcache %}"
+                              alt="Micro profile pic"
                               style="width: 40px;height: 40px;" title="{{ lead.created_by }}" />
                           </a>
                           {% endif %}
@@ -206,7 +208,7 @@
                           {% endthumbnail %}
                           {% else %}
                           <a href="{% url 'common:view_user' user.id %}">
-                            <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
+                            <img src="{% cache 600 default_profile_pic %}{% static 'images/user.png' %}{% endcache %}" title="{{ user.email }}" width="40" height="40">
                           </a>
                           {% endif %}
                           {% empty %}
@@ -383,7 +385,7 @@
 </div>
 
 
-{% comment %}
+
 
 {% for lead_record in open_leads %}
 
@@ -750,7 +752,7 @@
 </div>
 
 {% endfor %}
-{% endcomment %}
+
 
 <div class="modal fade" id="uploadleadfile" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
   aria-hidden="true">

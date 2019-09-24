@@ -1306,7 +1306,7 @@ def contacts_list_elastic_search(request):
 
     if request.method == 'GET':
         context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists,
-            'bounced_contacts': bounced_contacts, 'failed_contacts': '',
+            'bounced_contacts': bounced_contacts, 'failed_contacts': failed_contacts,
         }
         return render(request, 'search_contact_emails.html', context)
 

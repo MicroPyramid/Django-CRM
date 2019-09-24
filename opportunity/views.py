@@ -151,6 +151,9 @@ def create_opportunity(request):
                     if user_id not in assinged_to_users_ids:
                         opportunity_obj.assigned_to.add(user_id)
 
+            if request.POST.getlist('teams', []):
+                opportunity_obj.teams.add(*request.POST.getlist('teams'))
+
             current_site = get_current_site(request)
             recipients = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
             send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,

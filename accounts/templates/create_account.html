@@ -249,9 +249,9 @@
     $("#id_lead").select2();
     $("#id_assigned_to").select2()
     $("#id_teams").select2()
-    $("#id_assigned_to").change(function () {
-      $("#id_assigned_to").attr('name', 'assigned_to')
-    })
+    // $("#id_assigned_to").change(function () {
+    //   $("#id_assigned_to").attr('name', 'assigned_to')
+    // })
     // $("#id_assigned_to")
     // var data_assigned_to = []
     // data_assigned_to = $('#id_assigned_to').val()
@@ -354,41 +354,42 @@
     }
   });
 
-  var assigned_to_users = []
+  $('#multiple').change(function () {
+    var $value = $('option:selected', this).attr('type');
+    console.log($value);
+  });
+
 
   $("#id_teams").change(function (e) {
-    // console.log($(this).val())
-    // console.log($('option:selected', this).attr('data-users'));
+    try {
+      var users = []
+      $('#id_teams option:selected').each(function () {
+        // users.push($(this).attr('data-users'))
+        _data = $(this).attr('data-users');
+        if (!users) {
+          // users = []
+        } else {
+          users = users.concat(_data.split(','))
+        }
+      })
+      // users = $('option:selected', this).attr('data-users')
+      // if (!users) {
+      //   users = []
+      // } else {
+      //   users = users.split(',')
+      // }
+      console.log('selected users teams data', users)
+      var existingUsers = $('#id_assigned_to').val();
+      var allUsers = users.concat(existingUsers)
+      console.log(existingUsers)
+      if (users.length) {
+        $('#id_assigned_to').select2().val(allUsers).trigger('change');
 
-    // users = $('option:selected', this).attr('data-users')
-
-    // $('#id_assigned_to').select2({multiple:true}).val(users).trigger('change');
-
-
-    // if (users) {
-
-    //   users = JSON.parse(users)
-
-    //   for (let i = 0; i < users.length; i++) {
-    //     const element = users[i];
-    //     // $('#id_assigned_to').val(element)
-    //     assigned_to_users.push(element)
-    //   }
-    // }
-
-    // // console.log(assigned_to_users)
-
-    // if ($(this).val().length === 0) {
-    //   assigned_to_users = [];
-    // }
-
-    // for (let i = 0; i < assigned_to_users.length; i++) {
-    //   const element = assigned_to_users[i];
-    //   // $('#id_assigned_to').val(element).change()
-    //   console.log('element checkd', element)
-    //   // $('#id_assigned_to').select2({multiple:true}).val(element).trigger('change');
-    //   $('#id_assigned_to option[value="' + element  + '"]').prop('selected', true)
-    // }
+      }
+    } catch (error) {
+      console.log(error)
+      $('#id_assigned_to').select2().val(existingUsers).trigger('change');
+    }
 
   });
   // $('#call_save').click(function (e) {
