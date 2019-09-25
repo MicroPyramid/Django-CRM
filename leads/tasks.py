@@ -2,6 +2,7 @@ import re
 
 from celery.task import task
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.shortcuts import reverse
@@ -122,3 +123,13 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
                 # lead.country = row.get('country')
                 lead.created_by = user
                 lead.save()
+
+
+@task
+def update_leads_cache():
+    queryset = Lead.objects.all().exclude(status='converted').select_related('created_by'
+            ).prefetch_related('tags', 'assigned_to',)
+    open_leads = queryset.exclude(status='closed')
+    close_leads = queryset.filter(status='closed')
+    cache.set('admin_leads_open_queryset', open_leads, 60*60)
+    cache.set('admin_leads_close_queryset', close_leads, 60*60)

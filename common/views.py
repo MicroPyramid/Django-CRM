@@ -5,6 +5,7 @@ import os
 import boto3
 import botocore
 import requests
+from django.core.cache import cache
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -422,6 +423,9 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
         send_email_user_delete.delay(
             self.object.email, deleted_by=deleted_by, domain=current_site, protocol=request.scheme)
         self.object.delete()
+        lead_users = User.objects.filter(
+            is_active=True).order_by('email').values('id', 'email')
+        cache.set('lead_form_users', lead_users, 60*60)
         return redirect("common:users_list")
 
 

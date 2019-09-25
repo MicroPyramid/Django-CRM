@@ -5,6 +5,7 @@ from mimetypes import MimeTypes
 import pytz
 import requests
 from celery.task import task
+from django.core.management import call_command
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -318,3 +319,7 @@ def send_campaign_email_to_admin_contact(campaign, domain='demo.django-crm.io', 
     except Exception as e:
         print(e)
         pass
+
+@task
+def update_elastic_search_index():
+    call_command('update_index')

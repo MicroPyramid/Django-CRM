@@ -139,6 +139,28 @@
                   <span class="error" id="id__teams">{{ lead_form.teams.errors }}</span>
                 </div>
               </div>
+
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus"><span class="">Users</span></label>
+                  <select name="" aria-readonly="true" id="_id_assigned_to" class=" form-control" multiple>
+                    {% if lead_obj and lead_obj.teams.all %}
+                    {% with teams=lead_obj.teams.all  %}
+                    {% for team in teams %}
+                    {% for user in team.users.all %}
+                    <option value="{{user.id}}" selected="">{{user.email}}</option>
+                    {% endfor %}
+                    {% endfor %}
+                    {% endwith %}
+                    {% else %}
+                    {% for user in users %}
+                    <option value="{{user.id}}">{{user.email}}</option>
+                    {% endfor %}
+                    {% endif %}
+                  </select>
+                </div>
+              </div>
+
               {% endif %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
@@ -153,20 +175,20 @@
                   <span class="error error_message" id="error_id_assigned_to">{{ lead_form.assigned_to.errors }}</span>
                 </div>
               </div>
-              <div class="filter_col col-md-12">
-                <div class="form-group">
-                  <label for="exampleInputEmail1" />Status{% if lead_form.status.field.required %}<span
-                    class="error">*</span>{% endif %}</label>
-                  {{ lead_form.status }}
-                  <span class="error error_message" id="error_id_status">{{ lead_form.status.errors }}</span>
-                </div>
-              </div>
             </div>
             <div class="col-md-4">
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <label for="exampleInputEmail1" />Source{% if lead_form.source.field.required %}<span
-                    class="error">*</span>{% endif %}</label>
+                  <label for="exampleInputEmail1">Status{% if lead_form.status.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
+                  {{ lead_form.status }}
+                  <span class="error error_message" id="error_id_status">{{ lead_form.status.errors }}</span>
+                </div>
+              </div>
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Source{% if lead_form.source.field.required %}<span
+                      class="error">*</span>{% endif %}</label>
                   {{ lead_form.source }}
                   <span class="error error_message" id="error_id_source">{{ lead_form.source.errors }}</span>
                 </div>
@@ -245,6 +267,9 @@
   var bar = $('.bar');
   var percent = $('.percent');
 
+  $('#_id_assigned_to').select2({ disabled: 'readonly' });
+
+
   $('#progress_bar').hide()
 
   $('form#lead_form').ajaxForm({
@@ -308,6 +333,7 @@
   $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_teams').select2();
+
   });
   $(function () {
 
@@ -352,6 +378,21 @@
     }
   }
 
+  // $('#id_teams').on("select2:unselect", function (e) {
+  //   // return true; // I don't use this unselecting event but here is how you could use it to get the ID of the one you are trying to remove.
+  //   // console.log(e);
+  //   console.log(e.params);
+  //   //console.log(e.params.args.data.tag); data.tag is specific to my code.
+  // });
+
+  // $('#id_teams').on("select2:select", function (e) {
+  //   // return true; // I don't use this unselecting event but here is how you could use it to get the ID of the one you are trying to remove.
+  //   // console.log(e);
+  //   console.log(e.params);
+  //   console.log($(this).is(':selected'))
+  //   //console.log(e.params.args.data.tag); data.tag is specific to my code.
+  // });
+
   $("#id_teams").change(function (e) {
     try {
       var users = []
@@ -364,27 +405,29 @@
           users = users.concat(_data.split(','))
         }
       });
-      // $('#id_teams option').each(function () {
-      //   if($(this).is(':selected')){
-      //     // console.log('selected', $(this).attr('data-users'))
-      //   }
-      //   else{
-      //     _unselected = $(this).attr('data-users').split(',')
-      //     console.log('un selected', $(this).attr('data-users').split(','))
-      //   }
-      // });
+      $('#id_teams option').each(function () {
+        if ($(this).is(':selected')) {
+          _data = $(this).attr('data-users').split(',')
+          // console.log(' selected', $(this).attr('data-users').split(','))
+          // console.log('selected', $(this).attr('data-users'))
+        }
+        else {
+          _unselected = $(this).attr('data-users').split(',')
+          // console.log('un selected', $(this).attr('data-users').split(','))
+        }
+      });
       // console.log('selected users teams data', users)
       var existingUsers = $('#id_assigned_to').val();
-      var allUsers = users.concat(existingUsers)
-      // var allUsers = users
+      // var allUsers = users.concat(existingUsers)
+      var allUsers = users
       // console.log(existingUsers)
-      $('#id_assigned_to').select2().val(allUsers).trigger('change');
+      $('#_id_assigned_to').select2().val(allUsers).trigger('change');
       if (users.length) {
 
       }
     } catch (error) {
       console.log(error)
-      $('#id_assigned_to').select2().val([]).trigger('change');
+      $('#_id_assigned_to').select2().val([]).trigger('change');
     }
 
   });
