@@ -3,6 +3,7 @@ import binascii
 import datetime
 import os
 import time
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
@@ -62,6 +63,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def save(self, *args, **kwargs):
+        super(User, self).save(*args, **kwargs)
+        lead_users = User.objects.filter(
+            is_active=True).order_by('email').values('id', 'email')
+        cache.set('lead_form_users', lead_users, 60*60)
+
 
     class Meta:
         ordering = ['-is_active']

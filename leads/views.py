@@ -28,10 +28,11 @@ from leads.forms import (LeadAttachmentForm, LeadCommentForm, LeadForm,
                          LeadListForm)
 from leads.models import Lead
 from leads.tasks import (create_lead_from_file, send_email_to_assigned_user,
-                         send_lead_assigned_emails)
+                         send_lead_assigned_emails, update_leads_cache)
 from planner.forms import ReminderForm
 from planner.models import Event, Reminder
 from teams.models import Teams
+from django.core.cache import cache
 
 
 class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
@@ -84,15 +85,35 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(LeadListView, self).get_context_data(**kwargs)
         # context["lead_obj"] = self.get_queryset()
-        open_leads = self.get_queryset().exclude(status='closed')
-        close_leads = self.get_queryset().filter(status='closed')
+        # open_leads = self.get_queryset().exclude(status='closed')
+        # close_leads = self.get_queryset().filter(status='closed')
+        # code for caching
+        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+            if not cache.get('admin_leads_open_queryset'):
+                open_leads = self.get_queryset().exclude(status='closed')
+                close_leads = self.get_queryset().filter(status='closed')
+                cache.set('admin_leads_open_queryset', open_leads, 60*60)
+                cache.set('admin_leads_close_queryset', close_leads, 60*60)
+            else:
+                open_leads = cache.get('admin_leads_open_queryset')
+                close_leads = cache.get('admin_leads_close_queryset')
+        else:
+            open_leads = self.get_queryset().exclude(status='closed')
+            close_leads = self.get_queryset().filter(status='closed')
+
         context["status"] = LEAD_STATUS
         context["open_leads"] = open_leads
         context["close_leads"] = close_leads
         context["per_page"] = self.request.POST.get('per_page')
         context["source"] = LEAD_SOURCE
-        context["users"] = User.objects.filter(
-            is_active=True).order_by('email').values('id', 'email')
+        if not cache.get('lead_form_users'):
+            lead_users = User.objects.filter(
+                is_active=True).order_by('email').values('id', 'email')
+            cache.set('lead_form_users', lead_users, 60*60)
+        else:
+            lead_users = cache.get('lead_form_users')
+        context["users"] = lead_users
+
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         context["request_tags"] = self.request.POST.getlist('tag')
@@ -412,7 +433,7 @@ def update_lead(request, pk):
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
                 protocol=request.scheme)
-
+            update_leads_cache.delay()
             if request.FILES.get('lead_attachment'):
                 attachment = Attachments()
                 attachment.created_by = request.user
@@ -508,6 +529,7 @@ class DeleteLeadView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
             self.request.user == self.object.created_by
         ):
             self.object.delete()
+            update_leads_cache.delay()
             return redirect("leads:list")
         raise PermissionDenied
 

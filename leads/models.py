@@ -1,4 +1,5 @@
 import arrow
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -75,3 +76,12 @@ class Lead(models.Model):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
+
+    def save(self, *args, **kwargs):
+        super(Lead, self).save(*args, **kwargs)
+        queryset = Lead.objects.all().exclude(status='converted').select_related('created_by'
+            ).prefetch_related('tags', 'assigned_to',)
+        open_leads = queryset.exclude(status='closed')
+        close_leads = queryset.filter(status='closed')
+        cache.set('admin_leads_open_queryset', open_leads, 60*60)
+        cache.set('admin_leads_close_queryset', close_leads, 60*60)

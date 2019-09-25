@@ -28,7 +28,8 @@ from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
                               ContactEmailCampaign, BlockedDomain, BlockedEmail)
 from marketing.tasks import (run_campaign, upload_csv_file,
                             delete_multiple_contacts_tasks,
-                            send_campaign_email_to_admin_contact)
+                            send_campaign_email_to_admin_contact,
+                            update_elastic_search_index)
 from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin, admin_login_required
 from haystack.generic_views import SearchView
 from haystack.query import SearchQuerySet
@@ -346,13 +347,16 @@ def delete_contact(request, pk):
     if request.GET.get('from_contact'):
         if contact_obj.contact_list.count() == 1:
             contact_obj.delete()
+            update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
         else:
             contact_list_obj = get_object_or_404(ContactList, pk=request.GET.get('from_contact'))
             contact_obj.contact_list.remove(contact_list_obj)
+            update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
     else:
         contact_obj.delete()
+        update_elastic_search_index.delay()
     return redirect('marketing:contacts_list')
 
 

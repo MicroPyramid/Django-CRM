@@ -22,7 +22,7 @@ for dirpath, dirnames, filenames in os.walk(PROJECT_NAME):
 
 setup(
     name='django-crm',
-    version='0.6.0',
+    version='0.3.0',
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     description='An opensourse CRM developed on django framework',
