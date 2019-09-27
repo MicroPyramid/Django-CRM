@@ -1202,5 +1202,6 @@ class TestViewFunctions(ObjectsCreation, TestCase):
         response = self.client.post(reverse('common:edit_doc', args=(self.document.id,)), data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
+        self.client.login(username='johndoe@admin.com', password='password')
         response = self.client.get(reverse('common:download_document', args=(self.document.id,)))
         self.assertEqual(200, response.status_code)

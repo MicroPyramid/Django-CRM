@@ -109,6 +109,7 @@ def invoices_create(request):
     if request.method == 'GET':
         context = {}
         context["form"] = InvoiceForm(request_user=request.user)
+        context["users"] = User.objects.all()
         # "prefix" use case in form, both from address and to address use the
         # same model and same model form, so the name attribute in the form will
         #  be same for the both forms and the address will be same for both
@@ -210,6 +211,7 @@ def invoice_edit(request, invoice_id):
         context = {}
         context['invoice_obj'] = invoice_obj
         context['teams'] = Teams.objects.all()
+        context['users'] = User.objects.all()
         context['form'] = InvoiceForm(
             instance=invoice_obj, request_user=request.user)
         context['from_address_form'] = InvoiceAddressForm(prefix='from',

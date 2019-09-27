@@ -159,7 +159,7 @@
                         <td>{{ invoice.email }} </td>
                         <td>{{ invoice.status }} </td>
                         <td>
-                          {% with users=invoice.assigned_to.all %}
+                          {% with users=invoice.get_team_and_assigned_users %}
                           {% for user in users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -237,7 +237,7 @@
                         <td>{{ invoice.email }} </td>
                         <td>{{ invoice.status }} </td>
                         <td>
-                          {% with users=invoice.assigned_to.all %}
+                          {% with users=invoice.get_team_and_assigned_users %}
                           {% for user in users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}

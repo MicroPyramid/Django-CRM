@@ -162,7 +162,7 @@
                           {% endwith %}
                         </td>
                         <td>
-                          {% with users=event.assigned_to.all %}
+                          {% with users=event.get_team_and_assigned_users %}
                           {% for user in users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -413,7 +413,7 @@
 
                       <div class="filter_col col-md-12">
                         <div class="form-group">
-                          {% with users=event.assigned_to.all  %}
+                          {% with users=event.get_team_and_assigned_users  %}
                           <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
                           {% if users %}
                           {% for user in users %}

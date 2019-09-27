@@ -35,6 +35,102 @@ from teams.models import Teams
 from django.core.cache import cache
 
 
+@login_required
+@sales_access_required
+def lead_list_view(request):
+
+    queryset = Lead.objects.all().exclude(status='converted'
+        ).select_related('created_by'
+        ).prefetch_related('tags', 'assigned_to',)
+    if request.user.role == 'ADMIN' or request.user.is_superuser:
+        queryset = queryset
+    else:
+        queryset = queryset.filter(
+            Q(assigned_to__in=[request.user]) |
+            Q(created_by=request.user))
+
+    if request.method == 'GET':
+        context = {}
+        if request.GET.get('tag', None):
+            queryset = queryset.filter(tags__in = self.request.GET.getlist('tag'))
+
+        open_leads = queryset.exclude(status='closed')
+        close_leads = queryset.filter(status='closed')
+
+        context["status"] = LEAD_STATUS
+        context["open_leads"] = open_leads
+        context["close_leads"] = close_leads
+        context["per_page"] = request.POST.get('per_page')
+        context["source"] = LEAD_SOURCE
+
+        context["users"] = User.objects.filter(
+            is_active=True).order_by('email').values('id', 'email')
+
+        tag_ids = list(set(queryset.values_list('tags', flat=True,)))
+        context["tags"] = Tags.objects.filter(id__in=tag_ids)
+        return render(request, 'leads.html', context)
+
+    if request.method == 'POST':
+        context = {}
+        search = True if (
+            request.POST.get('name') or request.POST.get('city') or
+            request.POST.get('email') or request.POST.get('tag') or
+            request.POST.get('status') or
+            request.POST.get('source') or
+            request.POST.get('assigned_to')
+        ) else False
+        context["search"] = search
+
+        request_post = request.POST
+        if request_post:
+            if request_post.get('name'):
+                queryset = queryset.filter(
+                    Q(first_name__icontains=request_post.get('name')) &
+                    Q(last_name__icontains=request_post.get('name')))
+            if request_post.get('city'):
+                queryset = queryset.filter(
+                    city__icontains=request_post.get('city'))
+            if request_post.get('email'):
+                queryset = queryset.filter(
+                    email__icontains=request_post.get('email'))
+            if request_post.get('status'):
+                queryset = queryset.filter(status=request_post.get('status'))
+            if request_post.get('tag'):
+                queryset = queryset.filter(tags__in=request_post.getlist('tag'))
+            if request_post.get('source'):
+                queryset = queryset.filter(source=request_post.get('source'))
+            if request_post.getlist('assigned_to'):
+                queryset = queryset.filter(
+                    assigned_to__id__in=request_post.getlist('assigned_to'))
+        queryset = queryset.distinct()
+
+        open_leads = queryset.exclude(status='closed')
+        close_leads = queryset.filter(status='closed')
+
+        context["status"] = LEAD_STATUS
+        context["open_leads"] = open_leads
+        context["close_leads"] = close_leads
+        context["per_page"] = request.POST.get('per_page')
+        context["source"] = LEAD_SOURCE
+
+        context["users"] = User.objects.filter(
+            is_active=True).order_by('email').values('id', 'email')
+
+        tag_ids = list(set(queryset.values_list('tags', flat=True,)))
+        context["tags"] = Tags.objects.filter(id__in=tag_ids)
+
+        context["assignedto_list"] = [
+            int(i) for i in request.POST.getlist('assigned_to', []) if i]
+        context["request_tags"] = request.POST.getlist('tag')
+
+        tab_status = 'Open'
+        if request.POST.get('tab_status'):
+            tab_status = request.POST.get('tab_status')
+        context['tab_status'] = tab_status
+        return render(request, 'leads.html', context)
+        # return context
+
+
 class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Lead
     context_object_name = "lead_obj"
@@ -85,34 +181,35 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(LeadListView, self).get_context_data(**kwargs)
         # context["lead_obj"] = self.get_queryset()
-        # open_leads = self.get_queryset().exclude(status='closed')
-        # close_leads = self.get_queryset().filter(status='closed')
-        # code for caching
-        if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
-            if not cache.get('admin_leads_open_queryset'):
-                open_leads = self.get_queryset().exclude(status='closed')
-                close_leads = self.get_queryset().filter(status='closed')
-                cache.set('admin_leads_open_queryset', open_leads, 60*60)
-                cache.set('admin_leads_close_queryset', close_leads, 60*60)
-            else:
-                open_leads = cache.get('admin_leads_open_queryset')
-                close_leads = cache.get('admin_leads_close_queryset')
-        else:
-            open_leads = self.get_queryset().exclude(status='closed')
-            close_leads = self.get_queryset().filter(status='closed')
+        open_leads = self.get_queryset().exclude(status='closed')
+        close_leads = self.get_queryset().filter(status='closed')
+        # # code for caching
+        # if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
+        #     if not cache.get('admin_leads_open_queryset'):
+        #         open_leads = self.get_queryset().exclude(status='closed')
+        #         close_leads = self.get_queryset().filter(status='closed')
+        #         cache.set('admin_leads_open_queryset', open_leads, 60*60)
+        #         cache.set('admin_leads_close_queryset', close_leads, 60*60)
+        #     else:
+        #         open_leads = cache.get('admin_leads_open_queryset')
+        #         close_leads = cache.get('admin_leads_close_queryset')
+        # else:
+        #     open_leads = self.get_queryset().exclude(status='closed')
+        #     close_leads = self.get_queryset().filter(status='closed')
 
         context["status"] = LEAD_STATUS
         context["open_leads"] = open_leads
         context["close_leads"] = close_leads
         context["per_page"] = self.request.POST.get('per_page')
         context["source"] = LEAD_SOURCE
-        if not cache.get('lead_form_users'):
-            lead_users = User.objects.filter(
-                is_active=True).order_by('email').values('id', 'email')
-            cache.set('lead_form_users', lead_users, 60*60)
-        else:
-            lead_users = cache.get('lead_form_users')
-        context["users"] = lead_users
+        # if not cache.get('lead_form_users'):
+        #     lead_users = User.objects.filter(
+        #         is_active=True).order_by('email').values('id', 'email')
+        #     cache.set('lead_form_users', lead_users, 60*60)
+        # else:
+        #     lead_users = cache.get('lead_form_users')
+        context["users"] = User.objects.filter(
+            is_active=True).order_by('email').values('id', 'email')
 
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
@@ -160,7 +257,6 @@ def create_lead(request):
         if form.is_valid():
             lead_obj = form.save(commit=False)
             lead_obj.created_by = request.user
-            lead_obj.source = request.get_host()
             lead_obj.save()
             if request.POST.get('tags', ''):
                 tags = request.POST.get("tags")
@@ -256,6 +352,7 @@ def create_lead(request):
                     #     email.send()
 
                 account_object.save()
+                # update_leads_cache.delay()
             success_url = reverse('leads:list')
             if request.POST.get("savenewform"):
                 success_url = reverse("leads:add_lead")
@@ -433,7 +530,7 @@ def update_lead(request, pk):
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(recipients, lead_obj.id, domain=current_site.domain,
                 protocol=request.scheme)
-            update_leads_cache.delay()
+            # update_leads_cache.delay()
             if request.FILES.get('lead_attachment'):
                 attachment = Attachments()
                 attachment.created_by = request.user
@@ -529,7 +626,7 @@ class DeleteLeadView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
             self.request.user == self.object.created_by
         ):
             self.object.delete()
-            update_leads_cache.delay()
+            # update_leads_cache.delay()
             return redirect("leads:list")
         raise PermissionDenied
 
@@ -850,3 +947,4 @@ def sample_lead_file(request):
     response['Content-Disposition'] = 'attachment; filename={}'.format(
         'sample_data.csv')
     return response
+

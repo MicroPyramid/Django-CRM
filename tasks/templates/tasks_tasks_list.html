@@ -149,7 +149,7 @@
                   {% endif %}
 
 
-                  <td>{% with task_users=task.assigned_to.all %}
+                  <td>{% with task_users=task.get_team_and_assigned_users %}
                     {% for user in task_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -212,7 +212,7 @@
 
 
                   <td>
-                    {% with task_users=task.assigned_to.all %}
+                    {% with task_users=task.get_team_and_assigned_users %}
                     {% for user in task_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -274,7 +274,7 @@
                   {% endif %}
 
 
-                  <td>{% with task_users=task.assigned_to.all %}
+                  <td>{% with task_users=task.get_team_and_assigned_users %}
                     {% for user in task_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -422,7 +422,7 @@
                       <div class="filter_col col-md-12">
                         <div class="form-group">
                           <label class="acc_field_label" for="id_website" data-name="name">Assigned To</label>
-                          {% for user in task.assigned_to.all %}
+                          {% for user in task.get_team_and_assigned_users %}
                           <div class="account_field" id="account_website" data-name="name">
                             <a href="{% url 'common:view_user' user.id %}">
                               {{ user }}

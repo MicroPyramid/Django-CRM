@@ -205,7 +205,7 @@
                     <div title="{{document.created_on}}"><b>Created On: </b>{{document.created_on_arrow}}</div>
                     <div><b>Status: </b>{{document.status}}</div>
                     <div><b>Shared To: </b>
-                      {% with document_users=document.shared_to.all %}
+                      {% with document_users=document.get_team_and_assigned_users %}
                       {% for user in document_users %}
                       {% if user.profile_pic %}
                       {% thumbnail user.profile_pic "20x20" crop="center" as im %}

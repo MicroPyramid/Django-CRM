@@ -144,7 +144,7 @@
                   <td><a href="#" data-toggle="modal"
                       data-target="#exampleModalCenter_opportunity{{opportunity.id}}">{{ opportunity.name }}</a></td>
                   <td>
-                    {% with opportunity_users=opportunity.assigned_to.all %}
+                    {% with opportunity_users=opportunity.get_team_and_assigned_users %}
                     {% for user in opportunity_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}

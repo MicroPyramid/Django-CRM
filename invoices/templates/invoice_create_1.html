@@ -223,14 +223,38 @@
                         <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
                         <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
                           {% for team in teams %}
-                          <option data-users="{{team.get_users}}" value="{{team.id}}" {% if team in invoice_obj.teams.all %}
-                            selected="" {% endif %}>
+                          <option data-users="{{team.get_users}}" value="{{team.id}}"
+                            {% if team in invoice_obj.teams.all %} selected="" {% endif %}>
                             {{team}}</option>
                           {% endfor %}
                         </select>
                         <span class="error" id="id__teams">{{ form.teams.errors }}</span>
                       </div>
                     </div>
+
+
+                    <div class="form-group row">
+                      <label class="col-sm-4 col-form-label"><span class="">Users</span></label>
+                      <div class="col-sm-8 pl-0">
+                        <select name="" aria-readonly="true" id="_id_assigned_to" class=" form-control" multiple>
+                          {% if invoice_obj and invoice_obj.teams.all %}
+                          {% for user in users %}
+                          {% if user in invoice_obj.get_team_users %}
+                          <option value="{{user.id}}" selected="">{{user.email}}</option>
+                          {% else %}
+                          <option value="{{user.id}}">{{user.email}}</option>
+                          {% endif %}
+                          {% endfor %}
+                          {% else %}
+                          {% for user in users %}
+                          <option value="{{user.id}}">{{user.email}}</option>
+                          {% endfor %}
+                          {% endif %}
+                        </select>
+                      </div>
+                    </div>
+
+
                     {% endif %}
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
@@ -314,6 +338,7 @@
       $("#id_assigned_to").select2();
       $('#id_currency').select2();
       $('#id_teams').select2();
+      $('#_id_assigned_to').select2({ disabled: 'readonly' });
       {% if request.GET.view_account %}
       $("#id_accounts option[value=" + '{{request.GET.view_account}}' + "]").attr('selected', true);
       {% endif %}
@@ -368,36 +393,36 @@
     });
 
     $("#id_teams").change(function (e) {
-    try {
-      var users = []
-      $('#id_teams option:selected').each(function () {
-        // users.push($(this).attr('data-users'))
-        _data = $(this).attr('data-users');
-        if (!users) {
-          // users = []
-        } else {
-          users = users.concat(_data.split(','))
+      try {
+        var users = []
+        $('#id_teams option:selected').each(function () {
+          // users.push($(this).attr('data-users'))
+          _data = $(this).attr('data-users');
+          if (!users) {
+            // users = []
+          } else {
+            users = users.concat(_data.split(','))
+          }
+        })
+        // users = $('option:selected', this).attr('data-users')
+        // if (!users) {
+        //   users = []
+        // } else {
+        //   users = users.split(',')
+        // }
+        console.log('selected users teams data', users)
+        var existingUsers = $('#id_assigned_to').val();
+        var allUsers = users.concat(existingUsers)
+        console.log(existingUsers)
+        if (users.length) {
+          $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+
         }
-      })
-      // users = $('option:selected', this).attr('data-users')
-      // if (!users) {
-      //   users = []
-      // } else {
-      //   users = users.split(',')
-      // }
-      console.log('selected users teams data', users)
-      var existingUsers = $('#id_assigned_to').val();
-      var allUsers = users.concat(existingUsers)
-      console.log(existingUsers)
-      if (users.length) {
-        $('#id_assigned_to').select2().val(allUsers).trigger('change');
-
+      } catch (error) {
+        console.log(error)
+        $('#_id_assigned_to').select2().val(existingUsers).trigger('change');
       }
-    } catch (error) {
-      console.log(error)
-      $('#id_assigned_to').select2().val(existingUsers).trigger('change');
-    }
 
-  });
+    });
   </script>
   {% endblock js_block %}
