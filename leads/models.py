@@ -98,3 +98,11 @@ class Lead(models.Model):
     #     close_leads = queryset.filter(status='closed')
     #     cache.set('admin_leads_open_queryset', open_leads, 60*60)
     #     cache.set('admin_leads_close_queryset', close_leads, 60*60)
+    def save(self, *args, **kwargs):
+        super(Lead, self).save(*args, **kwargs)
+        queryset = Lead.objects.all().exclude(status='converted').select_related('created_by'
+            ).prefetch_related('tags', 'assigned_to',)
+        open_leads = queryset.exclude(status='closed')
+        close_leads = queryset.filter(status='closed')
+        cache.set('admin_leads_open_queryset', open_leads, 60*60)
+        cache.set('admin_leads_close_queryset', close_leads, 60*60)
