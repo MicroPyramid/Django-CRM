@@ -347,16 +347,16 @@ def delete_contact(request, pk):
     if request.GET.get('from_contact'):
         if contact_obj.contact_list.count() == 1:
             contact_obj.delete()
-            update_elastic_search_index.delay()
+            # update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
         else:
             contact_list_obj = get_object_or_404(ContactList, pk=request.GET.get('from_contact'))
             contact_obj.contact_list.remove(contact_list_obj)
-            update_elastic_search_index.delay()
+            # update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
     else:
         contact_obj.delete()
-        update_elastic_search_index.delay()
+        # update_elastic_search_index.delay()
     return redirect('marketing:contacts_list')
 
 

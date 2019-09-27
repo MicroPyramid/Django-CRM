@@ -314,6 +314,13 @@ class Document(models.Model):
         return User.objects.filter(id__in=user_ids)
 
     @property
+    def get_assigned_users_not_in_teams(self):
+        team_user_ids = list(self.teams.values_list('users__id', flat=True))
+        assigned_user_ids = list(self.shared_to.values_list('id', flat=True))
+        user_ids = set(assigned_user_ids) - set(team_user_ids)
+        return User.objects.filter(id__in=list(user_ids))
+
+    @property
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
 

@@ -168,7 +168,7 @@
                   <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
                     id="id_assigned_to">
                     {% for user in users %}
-                    <option value="{{user.id}}" {% if user in lead_obj.assigned_to.all or user.id in assignedto_list %}
+                    <option value="{{user.id}}" {% if user in lead_obj.get_assigned_users_not_in_teams or user.id in assignedto_list %}
                       selected="" {% endif %}>{{user.email}}</option>
                     {% endfor %}
                   </select>
@@ -378,57 +378,170 @@
     }
   }
 
-  // $('#id_teams').on("select2:unselect", function (e) {
-  //   // return true; // I don't use this unselecting event but here is how you could use it to get the ID of the one you are trying to remove.
-  //   // console.log(e);
-  //   console.log(e.params);
-  //   //console.log(e.params.args.data.tag); data.tag is specific to my code.
-  // });
-
-  // $('#id_teams').on("select2:select", function (e) {
-  //   // return true; // I don't use this unselecting event but here is how you could use it to get the ID of the one you are trying to remove.
-  //   // console.log(e);
-  //   console.log(e.params);
-  //   console.log($(this).is(':selected'))
-  //   //console.log(e.params.args.data.tag); data.tag is specific to my code.
-  // });
+  function find_dict(dict, id){
+    var index = dict.map(function(o) { return o.team; }).indexOf(parseInt(id));
+    return dict[index]['users']
+  }
 
   $("#id_teams").change(function (e) {
-    try {
-      var users = []
-      $('#id_teams option:selected').each(function () {
-        // users.push($(this).attr('data-users'))
-        _data = $(this).attr('data-users');
-        if (!users) {
-          users = []
-        } else {
-          users = users.concat(_data.split(','))
-        }
-      });
-      $('#id_teams option').each(function () {
-        if ($(this).is(':selected')) {
-          _data = $(this).attr('data-users').split(',')
-          // console.log(' selected', $(this).attr('data-users').split(','))
-          // console.log('selected', $(this).attr('data-users'))
-        }
-        else {
-          _unselected = $(this).attr('data-users').split(',')
-          // console.log('un selected', $(this).attr('data-users').split(','))
-        }
-      });
-      // console.log('selected users teams data', users)
-      var existingUsers = $('#id_assigned_to').val();
-      // var allUsers = users.concat(existingUsers)
-      var allUsers = users
-      // console.log(existingUsers)
-      $('#_id_assigned_to').select2().val(allUsers).trigger('change');
-      if (users.length) {
+    var teams = []
+    var all_users = []
+    var selected_teams = []
+    var selected_users = []
+    var assigned_users = []
+    $.get("{% url 'leads:get_teams_and_users' %}", function(data){
+      // console.log(data)
+          if(($('#id_teams').val()).length==0){
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+        $('#id_assigned_to').select2().trigger('change');
 
+          }
+
+      teams = data['teams']
+      all_users = data['users']
+      try {
+        var users = []
+        $('#id_teams option:selected').each(function () {
+          // users.push($(this).attr('data-users'))
+          _data = $(this).attr('data-users');
+          selected_teams.push($(this).val())
+          selected_users.push(find_dict(teams, $(this).val()))
+          // console.log("s_users", selected_users)
+          var un_select_users = [].concat.apply([], selected_users)
+          // console.log('un select users', un_select_users);
+
+
+        $('#id_assigned_to option').each(function () {
+          if($.inArray(parseInt($(this).val()), un_select_users) != -1){
+            $(this).attr('disabled', 'disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          else{
+            $(this).show()
+            $(this).removeAttr('disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          }
+        )
+
+
+          if (!selected_teams) {
+            users = []
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+            $('#id_assigned_to').select2();
+          } else {
+            users = users.concat(_data.split(','))
+          }
+        });
+        $('#id_teams option').each(function () {
+          if ($(this).is(':selected')) {
+            _data = $(this).attr('data-users').split(',')
+            // console.log(' selected', $(this).attr('data-users').split(','))
+            // console.log('selected', $(this).attr('data-users'))
+          }
+          else {
+            _unselected = $(this).attr('data-users').split(',')
+            // console.log('un selected', $(this).attr('data-users').split(','))
+          }
+        });
+        // console.log('selected users teams data', users)
+        var existingUsers = $('#id_assigned_to').val();
+        var allUsers = users
+        $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+        if (users.length) {
+
+        }
+      } catch (error) {
+        console.log(error)
+        $('#_id_assigned_to').select2().val([]).trigger('change');
       }
-    } catch (error) {
-      console.log(error)
-      $('#_id_assigned_to').select2().val([]).trigger('change');
-    }
+    })
+
+  });
+
+  $(document).ready(function($) {
+    
+    var teams = []
+    var all_users = []
+    var selected_teams = []
+    var selected_users = []
+    var assigned_users = []
+    $.get("{% url 'leads:get_teams_and_users' %}", function(data){
+
+          if(($('#id_teams').val()).length==0){
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+        // $('#id_assigned_to').select2().val([]).trigger('change');
+
+          }
+
+      teams = data['teams']
+      all_users = data['users']
+      try {
+        var users = []
+        $('#id_teams option:selected').each(function () {
+          // users.push($(this).attr('data-users'))
+          _data = $(this).attr('data-users');
+          selected_teams.push($(this).val())
+          selected_users.push(find_dict(teams, $(this).val()))
+          var un_select_users = [].concat.apply([], selected_users)
+
+
+        $('#id_assigned_to option').each(function () {
+          if($.inArray(parseInt($(this).val()), un_select_users) != -1){
+            // $(this).attr('disabled', 'disabled')
+            $(this).attr('disabled', 'disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          else{
+            $(this).show()
+            $(this).removeAttr('disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          }
+        )
+
+
+          if (!selected_teams) {
+            users = []
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+            $('#id_assigned_to').select2();
+          } else {
+            users = users.concat(_data.split(','))
+          }
+        });
+        $('#id_teams option').each(function () {
+          if ($(this).is(':selected')) {
+            _data = $(this).attr('data-users').split(',')
+          }
+          else {
+            _unselected = $(this).attr('data-users').split(',')
+          }
+        });
+        var existingUsers = $('#id_assigned_to').val();
+        // var allUsers = users.concat(existingUsers)
+        var allUsers = users
+        // console.log(existingUsers)
+        $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+        if (users.length) {
+
+        }
+      } catch (error) {
+        console.log(error)
+        $('#_id_assigned_to').select2().val([]).trigger('change');
+      }
+    })
 
   });
 </script>
