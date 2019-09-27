@@ -110,7 +110,7 @@
                       data-target="#exampleModalCenter_contact{{contact.id}}">{{contact.first_name}}
                       {{contact.last_name}}</a></td>
                   <td>
-                    {% with contact_users=contact.assigned_to.all %}
+                    {% with contact_users=contact.get_team_and_assigned_users %}
                     {% for user in contact_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}

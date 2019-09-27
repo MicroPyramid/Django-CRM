@@ -4,7 +4,8 @@ from leads.views import (
     update_lead, DeleteLeadView, convert_lead,
     GetLeadsView, AddCommentView, UpdateCommentView, DeleteCommentView,
     AddAttachmentsView, DeleteAttachmentsView, create_lead_from_site,
-    update_lead_tags, remove_lead_tag, upload_lead_csv_file, sample_lead_file
+    update_lead_tags, remove_lead_tag, upload_lead_csv_file, sample_lead_file,
+    lead_list_view,
 )
 
 
@@ -12,7 +13,8 @@ app_name = 'leads'
 
 
 urlpatterns = [
-    path('', LeadListView.as_view(), name='list'),
+#     path('', LeadListView.as_view(), name='list'),
+    path('', lead_list_view, name='list'),
     path('create/', create_lead, name='add_lead'),
     # create_lead_from_site
     path('create/from-site/', create_lead_from_site,

@@ -425,7 +425,7 @@
                         <div class="form-group">
                           <label class="case_field_label" for="id_contact" data-name="name">Assigned To</label>
                           <div class="case_field" id="case_contact" data-name="name">
-                            {% for user in account_record.assigned_to.all %}
+                            {% for user in account_record.get_team_and_assigned_users %}
                             <div>
                               <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
                             </div>
@@ -606,7 +606,7 @@
                         <div class="form-group">
                           <label class="case_field_label" for="id_contact" data-name="name">Assigned To</label>
                           <div class="case_field" id="case_contact" data-name="name">
-                            {% for user in account_record.assigned_to.all %}
+                            {% for user in account_record.get_team_and_assigned_users %}
                             <div>
                               <a href="{% url 'common:view_user' user.id %}">{{user}}</a>
                             </div>

@@ -34,3 +34,16 @@ class Contact(models.Model):
 
     class Meta:
         ordering = ['-created_on']
+
+
+    @property
+    def get_team_users(self):
+        team_user_ids = list(self.teams.values_list('users__id', flat=True))
+        return User.objects.filter(id__in=team_user_ids)
+
+    @property
+    def get_team_and_assigned_users(self):
+        team_user_ids = list(self.teams.values_list('users__id', flat=True))
+        assigned_user_ids = list(self.assigned_to.values_list('id', flat=True))
+        user_ids = team_user_ids + assigned_user_ids
+        return User.objects.filter(id__in=user_ids)

@@ -197,7 +197,7 @@
                         <td>{{ lead.source }}</td>
                         <td>{{ lead.get_status_display }}</td>
                         <td>
-                          {% with lead_users=lead.assigned_to.all %}
+                          {% with lead_users=lead.get_team_and_assigned_users %}
                           {% for user in lead_users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -308,7 +308,7 @@
                         <td>{{ lead.source }}</td>
                         <td>{{ lead.get_status_display }}</td>
                         <td>
-                          {% with lead_users=lead.assigned_to.all %}
+                          {% with lead_users=lead.get_team_and_assigned_users %}
                           {% for user in lead_users %}
                           {% if user.profile_pic %}
                           {% thumbnail user.profile_pic "40x40" crop="center" as im %}

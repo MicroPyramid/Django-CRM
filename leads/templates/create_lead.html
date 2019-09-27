@@ -145,13 +145,13 @@
                   <label for="id_sattus"><span class="">Users</span></label>
                   <select name="" aria-readonly="true" id="_id_assigned_to" class=" form-control" multiple>
                     {% if lead_obj and lead_obj.teams.all %}
-                    {% with teams=lead_obj.teams.all  %}
-                    {% for team in teams %}
-                    {% for user in team.users.all %}
+                    {% for user in users %}
+                    {% if user in lead_obj.get_team_users %}
                     <option value="{{user.id}}" selected="">{{user.email}}</option>
+                    {% else %}
+                    <option value="{{user.id}}">{{user.email}}</option>
+                    {% endif %}
                     {% endfor %}
-                    {% endfor %}
-                    {% endwith %}
                     {% else %}
                     {% for user in users %}
                     <option value="{{user.id}}">{{user.email}}</option>

@@ -92,6 +92,7 @@ def event_create(request):
     if request.method == 'GET':
         context = {}
         context["form"] = EventForm(request_user=request.user)
+        context["users"] = User.objects.filter(is_active=True)
         if request.user.role == 'ADMIN' or request.user.is_superuser:
             context['teams'] = Teams.objects.all()
         return render(request, 'event_create.html', context)
@@ -196,6 +197,7 @@ def event_update(request, event_id):
     if request.method == 'GET':
         context = {}
         context["event_obj"] = event_obj
+        context["users"] = User.objects.filter(is_active=True)
         context["form"] = EventForm(
             instance=event_obj, request_user=request.user)
         selected_recurring_days = Event.objects.filter(

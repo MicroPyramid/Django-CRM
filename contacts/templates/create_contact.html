@@ -73,6 +73,28 @@
                   <span class="error" id="id__teams">{{ contact_form.teams.errors }}</span>
                 </div>
               </div>
+
+              <div class="filter_col col-12">
+                <div class="form-group">
+                  <label for="id_sattus"><span class="">Users</span></label>
+                  <select name="" aria-readonly="true" id="_id_assigned_to" class=" form-control" multiple>
+                    {% if contact_obj and contact_obj.teams.all %}
+                    {% for user in users %}
+                    {% if user in contact_obj.get_team_users %}
+                    <option value="{{user.id}}" selected="">{{user.email}}</option>
+                    {% else %}
+                    <option value="{{user.id}}">{{user.email}}</option>
+                    {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    {% for user in users %}
+                    <option value="{{user.id}}">{{user.email}}</option>
+                    {% endfor %}
+                    {% endif %}
+                  </select>
+                </div>
+              </div>
+
               {% endif %}
             </div>
             <div class="col-md-4">
@@ -177,6 +199,8 @@
   $(document).ready(function () {
     $('.assigned_users').select2();
     $('#id_teams').select2();
+    $('#_id_assigned_to').select2({ disabled: 'readonly' });
+
   });
   function remove_attachment(x) {
     const con = confirm("Do you want to Delete it for Sure!?");
@@ -216,12 +240,12 @@
       var allUsers = users.concat(existingUsers)
       console.log(existingUsers)
       if (users.length) {
-        $('#id_assigned_to').select2().val(allUsers).trigger('change');
+        $('#_id_assigned_to').select2().val(allUsers).trigger('change');
 
       }
     } catch (error) {
       console.log(error)
-      $('#id_assigned_to').select2().val(existingUsers).trigger('change');
+      $('#_id_assigned_to').select2().val(existingUsers).trigger('change');
     }
 
   });

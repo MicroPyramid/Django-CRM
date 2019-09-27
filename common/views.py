@@ -434,7 +434,7 @@ class PasswordResetView(PasswordResetView):
     form_class = PasswordResetEmailForm
     email_template_name = 'registration/password_reset_email.html'
     html_email_template_name = 'registration/password_reset_email.html'
-    from_email = 'no-reply@' + settings.EMAIL_HOST_USER + '.com'
+    from_email = settings.PASSWORD_RESET_MAIL_FROM_USER
 
 
 @login_required
