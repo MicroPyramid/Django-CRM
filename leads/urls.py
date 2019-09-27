@@ -5,7 +5,7 @@ from leads.views import (
     GetLeadsView, AddCommentView, UpdateCommentView, DeleteCommentView,
     AddAttachmentsView, DeleteAttachmentsView, create_lead_from_site,
     update_lead_tags, remove_lead_tag, upload_lead_csv_file, sample_lead_file,
-    lead_list_view,
+    lead_list_view, get_teams_and_users
 )
 
 
@@ -39,4 +39,5 @@ urlpatterns = [
     path('remove_lead_tag/', remove_lead_tag, name="remove_lead_tag"),
     path('upload_lead_csv_file/', upload_lead_csv_file, name="upload_lead_csv_file"),
     path('sample_lead_file/', sample_lead_file, name="sample_lead_file"),
+    path('get_teams_and_users/', get_teams_and_users, name="get_teams_and_users")
 ]

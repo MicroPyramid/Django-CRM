@@ -7,8 +7,8 @@ class MarketingContactIndex(indexes.SearchIndex, indexes.Indexable):
         document=True, use_template=True, template_name='search/contact_emails.txt')
 
     id = indexes.CharField(model_attr='id')
-    email = indexes.CharField(model_attr='email')
-    email_domain = indexes.CharField()
+    email = indexes.EdgeNgramField(model_attr='email')
+    email_domain = indexes.EdgeNgramField()
     name = indexes.CharField(model_attr='name')
     company_name = indexes.CharField()
     created_on = indexes.CharField(model_attr='created_on')
@@ -61,8 +61,8 @@ class MarketingFailedContactIndex(indexes.SearchIndex, indexes.Indexable):
         document=True, use_template=True, template_name='search/failed_contact_emails.txt')
 
     id = indexes.CharField(model_attr='id')
-    email = indexes.CharField(model_attr='email')
-    email_domain = indexes.CharField()
+    email = indexes.EdgeNgramField(model_attr='email')
+    email_domain = indexes.EdgeNgramField()
     name = indexes.CharField(model_attr='name')
     company_name = indexes.CharField()
     created_on = indexes.CharField(model_attr='created_on')
