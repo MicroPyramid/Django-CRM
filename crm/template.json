@@ -1,0 +1,28 @@
+{
+  "comments": "EasyTrans Software JSON import format",
+  "authentication": {
+    "username": "",
+    "password": "",
+    "type": "customer_import",
+  "mode": "effect"
+  },
+    "customers": [
+    {
+      "customerno": 0,
+      "update_on_existing_customerno": true,
+      "delete_existing_customer_contacts": true,
+      "company_name": "",
+      "attn": "Afdeling Administratie",
+      "address": "",
+      "houseno": "",
+      "addition": "",
+      "address2": "",
+      "postal_code": "",
+      "city": "",
+      "country": "",
+      "customer_contacts": [
+      ]
+    }
+  ]
+}
+

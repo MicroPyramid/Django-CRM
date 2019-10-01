@@ -1,7 +1,11 @@
 import arrow
 from django.db import models
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
+from .export import export_to_easytrans
+
 
 from common.models import User
 from common.utils import INDCHOICES, COUNTRIES
@@ -144,3 +148,11 @@ class EmailLog(models.Model):
     email = models.ForeignKey(Email, related_name='email_log', on_delete=models.SET_NULL, null=True)
     contact = models.ForeignKey(Contact, related_name='contact_email_log', on_delete=models.SET_NULL, null=True)
     is_sent = models.BooleanField(default=False)
+
+
+@receiver(post_save, sender=Account)
+def push_to_api(sender, instance, **kwargs):
+    if instance.status == 'open':
+        print("Sending to Easytrans")
+        result = export_to_easytrans(instance)
+        print(result.json())
