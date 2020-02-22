@@ -1,6 +1,7 @@
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -24,13 +25,24 @@ from common.access_decorators_mixins import (
 from teams.models import Teams
 
 
+@login_required
+def get_teams_and_users(request):
+    data = {}
+    teams = Teams.objects.all()
+    teams_data = [{'team': team.id, 'users': [user.id for user in team.users.all()]} for team in teams]
+    users = User.objects.all().values_list("id", flat=True)
+    data['teams'] = teams_data
+    data['users'] = list(users)
+    return JsonResponse(data)
+
+
 class ContactsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Contact
     context_object_name = "contact_obj_list"
     template_name = "contacts.html"
 
     def get_queryset(self):
-        queryset = self.model.objects.all()
+        queryset = self.model.objects.all().order_by('-created_on')
         if (self.request.user.role != "ADMIN" and not
                 self.request.user.is_superuser):
             queryset = queryset.filter(
@@ -61,7 +73,7 @@ class ContactsListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateVie
         context["contact_obj_list"] = self.get_queryset()
         context["per_page"] = self.request.POST.get('per_page')
         context["users"] = User.objects.filter(
-            is_active=True).order_by('email')
+            is_active=True).order_by('username')
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist('assigned_to', []) if i]
         search = False

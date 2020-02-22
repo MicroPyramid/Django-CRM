@@ -527,7 +527,7 @@ class test_account_views_list(AccountCreateTest, TestCase):
         self.client.login(email='johnAccount@example.com', password='password')
         response = self.client.post(reverse('accounts:new_account'), {
             'name': "account", 'email': "johndoe@example.com",
-            'phone': "+91-123-456-7894",
+            'phone': "+911234567894",
             'billing_address_line': "address line",
             'billing_street': "billing street",
             'billing_city': "billing city",
@@ -544,7 +544,7 @@ class test_account_views_list(AccountCreateTest, TestCase):
 
         response = self.client.post(reverse('accounts:new_account'), {
             'name': "account", 'email': "johndoe@example.com",
-            'phone': "+91-123-456-7894",
+            'phone': "+911234567894",
             'billing_address_line': "address line",
             'billing_street': "billing street",
             'billing_city': "billing city",
@@ -561,7 +561,7 @@ class test_account_views_list(AccountCreateTest, TestCase):
 
         response = self.client.post(reverse('accounts:new_account'), {
             'name': "account", 'email': "johndoe@example.com",
-            'phone': "+91-123-456-7894",
+            'phone': "+911234567894",
             'billing_address_line': "address line",
             'billing_street': "billing street",
             'billing_city': "billing city",
@@ -579,7 +579,7 @@ class test_account_views_list(AccountCreateTest, TestCase):
 
         response = self.client.post(reverse('accounts:new_account'), {
             'name': "account", 'email': "johndoe@example.com",
-            'phone': "+91-123-456-789",
+            'phone': "+91123456789",
             'billing_address_line': "address line",
             'billing_street': "billing street",
             'billing_city': "billing city",

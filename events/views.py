@@ -21,6 +21,18 @@ from teams.models import Teams
 
 
 @login_required
+def get_teams_and_users(request):
+    data = {}
+    teams = Teams.objects.all()
+    teams_data = [{'team': team.id, 'users': [
+        user.id for user in team.users.all()]} for team in teams]
+    users = User.objects.all().values_list("id", flat=True)
+    data['teams'] = teams_data
+    data['users'] = list(users)
+    return JsonResponse(data)
+
+
+@login_required
 @sales_access_required
 def events_list(request):
 
@@ -35,7 +47,6 @@ def events_list(request):
     else:
         pass
 
-
     if request.method == 'GET':
         context = {}
         if request.user.role == 'ADMIN' or request.user.is_superuser:
@@ -43,12 +54,13 @@ def events_list(request):
         else:
             events = Event.objects.filter(
                 Q(created_by=request.user) | Q(assigned_to=request.user)).distinct()
-        context['events'] = events.order_by('id')
+        context['events'] = events.order_by('-created_on')
         # context['status'] = status
         context['users'] = users
         user_ids = list(events.values_list('created_by', flat=True))
         user_ids.append(request.user.id)
-        context['created_by_users'] = users.filter(is_active=True, id__in=user_ids)
+        context['created_by_users'] = users.filter(
+            is_active=True, id__in=user_ids)
         return render(request, 'events_list.html', context)
 
     if request.method == 'POST':
@@ -79,10 +91,11 @@ def events_list(request):
             events = events.filter(
                 date_of_meeting=request.POST.get('date_of_meeting'))
 
-        context['events'] = events.distinct().order_by('id')
+        context['events'] = events.distinct().order_by('-created_on')
         user_ids = list(events.values_list('created_by', flat=True))
         user_ids.append(request.user.id)
-        context['created_by_users'] = users.filter(is_active=True, id__in=user_ids)
+        context['created_by_users'] = users.filter(
+            is_active=True, id__in=user_ids)
         return render(request, 'events_list.html', context)
 
 
@@ -111,7 +124,8 @@ def event_create(request):
                 event.save()
                 form.save_m2m()
                 if request.POST.getlist('teams', []):
-                    user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                    user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                        'teams')).values_list('users', flat=True)
                     assinged_to_users_ids = event.assigned_to.all().values_list('id', flat=True)
                     for user_id in user_ids:
                         if user_id not in assinged_to_users_ids:
@@ -119,7 +133,8 @@ def event_create(request):
 
                 if request.POST.getlist('teams', []):
                     event.teams.add(*request.POST.getlist('teams'))
-                assigned_to_list = list(event.assigned_to.all().values_list('id', flat=True))
+                assigned_to_list = list(
+                    event.assigned_to.all().values_list('id', flat=True))
                 send_email.delay(
                     event.id, assigned_to_list, domain=request.get_host(), protocol=request.scheme)
 
@@ -146,7 +161,8 @@ def event_create(request):
                     event.contacts.add(*request.POST.getlist('contacts'))
                     event.assigned_to.add(*request.POST.getlist('assigned_to'))
                     if request.POST.getlist('teams', []):
-                        user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                        user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                            'teams')).values_list('users', flat=True)
                         assinged_to_users_ids = event.assigned_to.all().values_list('id', flat=True)
                         for user_id in user_ids:
                             if user_id not in assinged_to_users_ids:
@@ -154,9 +170,10 @@ def event_create(request):
 
                     if request.POST.getlist('teams', []):
                         event.teams.add(*request.POST.getlist('teams'))
-                    assigned_to_list = list(event.assigned_to.all().values_list('id', flat=True))
+                    assigned_to_list = list(
+                        event.assigned_to.all().values_list('id', flat=True))
                     send_email.delay(
-                        event.id, assigned_to_list,  domain=request.get_host(), protocol=request.scheme)
+                        event.id, assigned_to_list, domain=request.get_host(), protocol=request.scheme)
 
             return JsonResponse({'error': False, 'success_url': reverse('events:events_list')})
         else:
@@ -215,7 +232,8 @@ def event_update(request, event_id):
         if form.is_valid():
             start_date = form.cleaned_data.get('start_date')
             end_date = form.cleaned_data.get('end_date')
-            previous_assigned_to_users = list(event_obj.assigned_to.all().values_list('id', flat=True))
+            previous_assigned_to_users = list(
+                event_obj.assigned_to.all().values_list('id', flat=True))
 
             # recurring_days
             # recurring_days = request.POST.getlist('days')
@@ -226,7 +244,8 @@ def event_update(request, event_id):
                 event.save()
                 form.save_m2m()
                 if request.POST.getlist('teams', []):
-                    user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                    user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                        'teams')).values_list('users', flat=True)
                     assinged_to_users_ids = event.assigned_to.all().values_list('id', flat=True)
                     for user_id in user_ids:
                         if user_id not in assinged_to_users_ids:
@@ -236,8 +255,10 @@ def event_update(request, event_id):
                     event.teams.add(*request.POST.getlist('teams'))
                 else:
                     event.teams.clear()
-                assigned_to_list = list(event.assigned_to.all().values_list('id', flat=True))
-                recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+                assigned_to_list = list(
+                    event.assigned_to.all().values_list('id', flat=True))
+                recipients = list(set(assigned_to_list) -
+                                  set(previous_assigned_to_users))
                 send_email.delay(
                     event.id, recipients, domain=request.get_host(), protocol=request.scheme)
 
@@ -246,7 +267,8 @@ def event_update(request, event_id):
                 event.save()
                 form.save_m2m()
                 if request.POST.getlist('teams', []):
-                    user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                    user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                        'teams')).values_list('users', flat=True)
                     assinged_to_users_ids = event.assigned_to.all().values_list('id', flat=True)
                     for user_id in user_ids:
                         if user_id not in assinged_to_users_ids:
@@ -256,8 +278,10 @@ def event_update(request, event_id):
                     event.teams.add(*request.POST.getlist('teams'))
                 else:
                     event.teams.clear()
-                assigned_to_list = list(event.assigned_to.all().values_list('id', flat=True))
-                recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+                assigned_to_list = list(
+                    event.assigned_to.all().values_list('id', flat=True))
+                recipients = list(set(assigned_to_list) -
+                                  set(previous_assigned_to_users))
                 send_email.delay(
                     event.id, recipients, domain=request.get_host(), protocol=request.scheme)
 

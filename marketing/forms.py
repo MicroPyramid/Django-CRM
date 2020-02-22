@@ -10,7 +10,7 @@ from django import forms
 from common.models import User
 from marketing.models import (BlockedDomain, BlockedEmail, Campaign, Contact,
                               ContactEmailCampaign, ContactList, EmailTemplate, Tag)
-from haystack.forms import SearchForm
+# from haystack.forms import SearchForm
 
 email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
@@ -511,26 +511,26 @@ class BlockedEmailForm(forms.ModelForm):
         return email
 
 
-class MarketingContactEmailSearchForm(SearchForm):
-    email_domain = forms.CharField()
+# class MarketingContactEmailSearchForm(SearchForm):
+#     email_domain = forms.CharField()
 
-    def search(self):
-        # First, store the SearchQuerySet received from other processing.
-        sqs = super(MarketingContactEmailSearchForm, self).search()
+#     def search(self):
+#         # First, store the SearchQuerySet received from other processing.
+#         sqs = super(MarketingContactEmailSearchForm, self).search()
 
-        if not self.is_valid():
-            return self.no_query_found()
+#         if not self.is_valid():
+#             return self.no_query_found()
 
-        # Check to see if a start_date was chosen.
-        if self.cleaned_data['email_domain']:
-            # import pdb; pdb.set_trace()
-            sqs = sqs.filter(email__icontains=self.cleaned_data.get('email_domain'))
+#         # Check to see if a start_date was chosen.
+#         if self.cleaned_data['email_domain']:
+#             # import pdb; pdb.set_trace()
+#             sqs = sqs.filter(email__icontains=self.cleaned_data.get('email_domain'))
 
-        return sqs
+#         return sqs
 
-    def clean_email_domain(self):
-        email_domain = self.cleaned_data.get('email_domain')
-        domain_regex = '^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
-        if re.match(domain_regex, email_domain) is None:
-            raise forms.ValidationError('Enter a valid domain.')
-        return email_domain
+#     def clean_email_domain(self):
+#         email_domain = self.cleaned_data.get('email_domain')
+#         domain_regex = '^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
+#         if re.match(domain_regex, email_domain) is None:
+#             raise forms.ValidationError('Enter a valid domain.')
+#         return email_domain

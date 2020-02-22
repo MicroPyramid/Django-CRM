@@ -109,20 +109,27 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
     for row in validated_rows:
         if not Lead.objects.filter(title=row.get('title')).exists():
             if re.match(email_regex, row.get('email')) is not None:
-                lead = Lead()
-                lead.title = row.get('title')
-                lead.first_name = row.get('first name')
-                lead.last_name = row.get('last name')
-                lead.website = row.get('website')
-                lead.email = row.get('email')
-                lead.phone = row.get('phone')
-                lead.address_line = row.get('address')
-                # lead.city = row.get('city')
-                # lead.state = row.get('state')
-                # lead.postcode = row.get('postcode')
-                # lead.country = row.get('country')
-                lead.created_by = user
-                lead.save()
+                try:
+                    lead = Lead()
+                    lead.title = row.get('title', '')[:64]
+                    lead.first_name = row.get('first name', '')[:255]
+                    lead.last_name = row.get('last name', '')[:255]
+                    lead.website = row.get('website', '')[:255]
+                    lead.email = row.get('email', '')
+                    lead.phone = row.get('phone', '')
+                    lead.address_line = row.get('address', '')[:255]
+                    lead.city = row.get('city', '')[:255]
+                    lead.state = row.get('state', '')[:255]
+                    lead.postcode = row.get('postcode', '')[:64]
+                    lead.country = row.get('country', '')[:3]
+                    lead.description = row.get('description', '')
+                    lead.status = row.get('status', '')
+                    lead.account_name = row.get('account_name', '')[:255]
+                    lead.created_from_site = False
+                    lead.created_by = user
+                    lead.save()
+                except e:
+                    print(e)
 
 
 @task

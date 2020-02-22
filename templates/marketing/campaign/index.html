@@ -70,7 +70,7 @@
                 <thead>
                   <tr>
                     <th width="15%" class="text-center">Campaign</th>
-                    <th width="5%" class="text-center">Recipients</th>
+                    <th width="5%" class="text-center">Receipents</th>
                     <th width="15%" class="text-center">Sent</th>
                     <th width="10%" class="text-center">Created By</th>
                     <th width="10%" class="text-center">Unique Opens</th>
@@ -160,6 +160,12 @@
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+
+    search = "{{search}}"
+    if (search == 'True') {
+    $(".list_filter_row").show();
+    }
+
     $('#id_tag').select2();
     $('#created_by').select2();
 

@@ -48,9 +48,9 @@
               <div class="row marl">
                 <div class="filter_col col-md-2">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Name</label>
-                    <input type="text" class="form-control" placeholder="First Name" name="name"
-                      value="{{request.POST.name}}">
+                    <label for="exampleInputEmail1">Title</label>
+                    <input type="text" class="form-control" placeholder="Title" name="title"
+                      value="{{request.POST.title}}">
                   </div>
                 </div>
                 <div class="filter_col col-md-2">
@@ -72,7 +72,7 @@
                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                       {% for user in users %}
                       <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>
-                        {{user.email}}</option>
+                        {% if user.username %}{{user.username}}{% else %}{{user.email}}{% endif %}</option>
                       {% endfor %}
                     </select>
                   </div>
@@ -855,8 +855,8 @@
   $(".remove_tag").click(function () {
     // $(".tag_class_opp").css('cursor', 'pointer')
     url = "{% url 'leads:list' %}"
-    console.log($(this).attr('data-tag'))
-    console.log($(this).attr('data-lead'))
+    // console.log($(this).attr('data-tag'))
+    // console.log($(this).attr('data-lead'))
     const data = { 'tag': $(this).attr('data-tag'), 'lead': $(this).attr('data-lead') }
     const tagToRemove = $(this).attr('data-lead') + $(this).attr('data-tag')
     const lead = $(this).attr('data-lead')
@@ -942,12 +942,26 @@
     $("#open-tab").click()
   }
 
+  $.urlParam = function(name){
+  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+  if (results==null){
+       return null;
+    }
+  else{
+        return results[1] || 0;
+      }
+    }
   $('.delete').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
       return;
+    if($.urlParam('page')){
+    window.location = $(this).attr('href')+"?page="+$.urlParam('page');
+  }
+  else{
     window.location = $(this).attr('href')
+  }
   });
 
   $("a[rel='page']").click(function (e) {

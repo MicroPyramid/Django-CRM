@@ -73,7 +73,7 @@
                       class="error">*</span>{% endif %}</label>
                   <input type="tel" name="phone"
                     value="{% if lead_obj and lead_obj.phone_raw_input %}{{lead_obj.phone}}{% endif %}"
-                    class="form-control" placeholder="+91-123-456-7890" id="id_phone">
+                    class="form-control" placeholder="+911234567890" id="id_phone">
                   <span class="error error_message" id="error_id_phone">{{ lead_form.phone.errors }}</span>
                 </div>
               </div>
@@ -454,6 +454,7 @@
         var existingUsers = $('#id_assigned_to').val();
         var allUsers = users
         $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+        $('#id_assigned_to').select2().val(existingUsers).trigger('change');
         if (users.length) {
 
         }

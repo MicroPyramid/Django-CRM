@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.shortcuts import reverse
 from django.test import Client, TestCase
 from django.test.utils import override_settings
-from haystack import connections
+# from haystack import connections
 
 from common.models import User
 from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
@@ -145,9 +145,9 @@ class TestMarketingModel(object):
 @override_settings(HAYSTACK_CONNECTIONS=TEST_INDEX )
 class TestTemplates(TestMarketingModel, TestCase):
 
-    def setUp(self):
-        super(TestTemplates, self).setUp()
-        connections.reload('default')
+    # def setUp(self):
+    #     super(TestTemplates, self).setUp()
+    #     connections.reload('default')
 
     def test_templates(self):
         url1 = reverse('marketing:dashboard')
@@ -253,9 +253,9 @@ class TestDasboardView(TestMarketingModel, TestCase):
 @override_settings(HAYSTACK_CONNECTIONS=TEST_INDEX )
 class TestContactListsListPage(TestMarketingModel, TestCase):
 
-    def setUp(self):
-        super(TestContactListsListPage, self).setUp()
-        connections.reload('default')
+    # def setUp(self):
+    #     super(TestContactListsListPage, self).setUp()
+    #     # connections.reload('default')
 
     def test_contact_lists_list_page(self):
         self.client.login(username='john@example.com', password='password')
@@ -282,13 +282,13 @@ class TestContactListsListPage(TestMarketingModel, TestCase):
 @override_settings(HAYSTACK_CONNECTIONS=TEST_INDEX )
 class TestContactsListPage(TestMarketingModel, TestCase):
 
-    def setUp(self):
-        super(TestContactsListPage, self).setUp()
-        connections.reload('default')
+    # def setUp(self):
+    #     super(TestContactsListPage, self).setUp()
+    #     connections.reload('default')
         # connections = ConnectionHandler(TEST_INDEX )
 
     def test_contacts_list_page(self):
-        connections.reload('default')
+        # connections.reload('default')
         self.client.login(username='john@example.com', password='password')
         response = self.client.get(
             reverse('marketing:contacts_list'))

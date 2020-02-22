@@ -503,7 +503,7 @@ class TestUpdateLeadView(TestLeadModel, TestCase):
         self.client.login(username='janeLead2@example.com', password='password')
         response = self.client.get(reverse('leads:edit_lead', args=(self.lead.id,)),
                         {'status': 'assigned', 'country':'AD', 'title':'update_title'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
         self.client.logout()
 
 
@@ -702,10 +702,10 @@ class TestCommentAddResponse(TestLeadModel, TestCase):
         response = self.client.get(reverse('leads:sample_lead_file'))
         sample_data = [
         'title,first name,last name,website,phone,email,address\n',
-        'lead1,john,doe,www.example.com,+91-123-456-7890,user1@email.com,address for lead1\n',
-        'lead2,jane,doe,www.website.com,+91-123-456-7891,user2@email.com,address for lead2\n',
-        'lead3,joe,doe,www.test.com,+91-123-456-7892,user3@email.com,address for lead3\n',
-        'lead4,john,doe,www.sample.com,+91-123-456-7893,user4@email.com,address for lead4\n',
+        'lead1,john,doe,www.example.com,+911234567890,user1@email.com,address for lead1\n',
+        'lead2,jane,doe,www.website.com,+911234567891,user2@email.com,address for lead2\n',
+        'lead3,joe,doe,www.test.com,+911234567892,user3@email.com,address for lead3\n',
+        'lead4,john,doe,www.sample.com,+911234567893,user4@email.com,address for lead4\n',
         ]
         content = bytes(''.join(sample_data), 'utf-8')
         self.assertEqual(response.content, content)

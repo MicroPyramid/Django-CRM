@@ -268,9 +268,27 @@
 {% block js_block %}
 <script>
   $(function () {
+     function getQueryStringValue (key) {  
+  return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));  
+}
+  if(getQueryStringValue('tag')){
+    $('#id_tag').val(getQueryStringValue('tag')).trigger('change')
+    // $('#id_tag').select2("data", "34")
+}
+
+
+ $(document).ready(function () {
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+  });
+
+  search = "{{search}}"
+  if (search == 'True') {
+    $(".list_filter_row").show();
+  }
+
+
     $('#id_tag').select2();
     $('#created_by').select2();
 

@@ -134,6 +134,7 @@
                         {% if active_users|length > 0 %}
                         <tr>
                           <th width="20%">Username</th>
+                          <th width="20%">Created</th>
                           <th width="20%">Email Address</th>
                           <th width="8%">User Role</th>
                           <th width="8%">Permissions</th>
@@ -151,6 +152,7 @@
                         {% for user in active_users %}
                         <tr class="text-center">
                           <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
+                          <td data-toggle="tooltip" title="{{user.date_joined}}">{{user.date_joined.date|timesince}}
                           <td>{{ user.email }}</td>
                           <td class="user_role">{% if user.is_superuser %} ADMIN {% else %} {{user.role}} {% endif %}
                           </td>
@@ -192,13 +194,14 @@
                             <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i
                                 class="fas fa-pencil-alt"></i>Edit</a>
                             {% endif %}
-                            <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action"
+                            <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger remove_active_user trash action"
                               {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i
                                 class="fas fa-trash-alt"></i>Delete</a>
                             {% if user.email != admin_email and request.user != user %}
                             <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href=""
                               class="fa-passwd-reset fa-stack" title="Change Password"><i class="fa fa-undo fa-stack-2x"></i><i
-                                class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
+                                class="fa fa-lock fa-stack-1x"></i></a>
+                            {% endif %}
                           </td>
                         </tr>
                         {% endfor %}
@@ -272,10 +275,11 @@
                             <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i
                                 class="fas fa-pencil-alt"></i>Edit</a>
                             {% endif %}
-                            <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger trash action"
+                            <a href="{% url 'common:remove_user' user.id %}" class="btn btn-danger remove_inactive_user trash action"
                               {% if request.user.email == user.email %} style="visibility: hidden;" {% endif %}><i
                                 class="fas fa-trash-alt"></i>Delete</a>
                             {% if user.email != admin_email and request.user != user %}
+
                             <a style="color:black;margin-bottom: -11px;" data-id="{{user.id}}" href=""
                               class="fa-passwd-reset fa-stack" title="Change Password"><i class="fa fa-undo fa-stack-2x"></i><i
                                 class="fa fa-lock fa-stack-1x"></i></a>{% endif %}
@@ -286,7 +290,7 @@
                     </table>
                   </div>
                   {% ifequal inactive_users|length 0 %}
-                  <h6 class="text-center">No Closed Acccount Records Found</h6>
+                  <h6 class="text-center">There are no users</h6>
                   {% endifequal %}
                   <div class="text-center row marl">
                     {% show_pages %}
@@ -304,6 +308,11 @@
 <!-- main_container ends here -->
 {% endblock %}
 {% block js_block %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+<!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script> -->
+<script src="{% static 'js/ajaxForm.js' %}"></script>
 <script type="text/javascript">
   $(document).ready(function () {
     $(".filter_toggle").click(function () {
@@ -314,13 +323,22 @@
     }
   });
 
-  $('.trash').click(function (e) {
+  $('.remove_active_user').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))
       return;
     window.location = $(this).attr('href')
   });
+
+  $('.remove_inactive_user').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+
 </script>
 <script>
   $(document).ready(function () {
@@ -331,6 +349,9 @@
       $("#password_eror").text("");
       $("#pass_change_div").modal();
     });
+
+
+
     $("#submit_password").click(function (e) {
       e.preventDefault();
       if ($("#new_passwoord").val().length < 4) {

@@ -146,7 +146,7 @@
                     {% endwith %}
                   </td>
                   <td class="actions">
-                    {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
+                    {% if request.user == document.created_by or request.user.role == 'ADMIN' or request.user.has_sales_access %}
                     <a href="{% url 'common:view_doc' document.id %}" class="btn btn-info edit"><i
                       class="fas fa-eye"></i></a>
                     <a href="{% url 'common:edit_doc' document.id %}" class="btn btn-success edit"><i

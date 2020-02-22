@@ -1,6 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% load paginate %}
+{% load common_tags %}
 {% load thumbnail %}
 {% block extralinks %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
@@ -169,12 +170,14 @@
                   </td>
                   <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
-                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
-                    <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit" title="View" ><i
-                      class="fas fa-eye"></i></a>
-                    <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit" title="Edit" ><i
+                    {% if request.user|view_edit_condition:task %}                    
+                      <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit" title="View" ><i
+                        class="fas fa-eye"></i></a>
+                      <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit" title="Edit" ><i
                         class="fas fa-pencil-alt"></i></a>
-                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document" title="Delete" ><i
+                    {% endif %}
+                    {% if request.user|delete_condition:task %}                    
+                        <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document" title="Delete" ><i
                         class="fas fa-trash-alt"></i></a>
                     {% endif %}
                   </td>
@@ -232,11 +235,13 @@
                   </td>
                   <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
-                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    {% if request.user|view_edit_condition:task %}                    
                     <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit" title="View"><i
                       class="fas fa-eye"></i></a>
                     <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit" title="Edit" ><i
                         class="fas fa-pencil-alt"></i></a>
+                    {% endif %}
+                    {% if request.user|delete_condition:task %}                    
                     <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document" title="Delete" ><i
                         class="fas fa-trash-alt"></i></a>
                     {% endif %}
@@ -294,12 +299,14 @@
                   </td>
                   <td title="{{task.created_on}}">{{task.created_on_arrow}}</td>
                   <td class="actions">
-                    {% if request.user == task.created_by or request.user.role == 'ADMIN' %}
+                    {% if request.user|view_edit_condition:task %}                    
                     <a href="{% url 'tasks:task_detail' task.id %}" class="btn btn-info edit" title="View"><i
                       class="fas fa-eye"></i></a>
                     <a href="{% url 'tasks:task_edit' task.id %}" class="btn btn-success edit" title="Edit"><i
                         class="fas fa-pencil-alt"></i></a>
-                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document" title="Delete"><i
+                    {% endif %}
+                    {% if request.user|delete_condition:task %}                    
+                    <a href="{% url 'tasks:task_delete' task.id %}" class="btn btn-danger delete remove_document" title="Delete" ><i
                         class="fas fa-trash-alt"></i></a>
                     {% endif %}
                   </td>

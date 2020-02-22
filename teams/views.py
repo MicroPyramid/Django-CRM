@@ -13,14 +13,14 @@ from django.views.generic import (CreateView, DeleteView, DetailView, FormView,
 from common.models import User
 from teams.models import Teams
 from teams.forms import TeamForm
-from teams.tasks import update_team_users
+from teams.tasks import update_team_users, remove_users
 
 
 @login_required
 def teams_list(request):
     context = {}
     if request.user.role == 'ADMIN' or request.user.is_superuser:
-        queryset = Teams.objects.all()
+        queryset = Teams.objects.all().order_by('-created_on')
         users = User.objects.all()
         context['teams'] = queryset
         context['users'] = users
@@ -93,6 +93,7 @@ def team_edit(request, team_id):
     if not (request.user.role == 'ADMIN' or request.user.is_superuser):
         raise PermissionDenied
     team_obj = get_object_or_404(Teams, pk=team_id)
+    actual_users = team_obj.get_users()
     context = {}
 
     if request.method == 'GET':
@@ -101,15 +102,23 @@ def team_edit(request, team_id):
         return render(request, 'team_create.html', context)
 
     if request.method == 'POST':
+        removed_users = []
         form = TeamForm(request.POST, instance=team_obj)
         if form.is_valid():
             task_obj = form.save(commit=False)
             if 'users' in form.changed_data:
                 update_team_users.delay(team_id)
                 # pass
-                # print('celery task')
             task_obj.save()
             form.save_m2m()
+            latest_users = task_obj.get_users()
+            for user in actual_users:
+                if user in latest_users:
+                    pass
+                else:
+
+                    removed_users.append(user)
+            remove_users.delay(removed_users, team_id)
             return JsonResponse({'error': False, 'success_url': reverse('teams:teams_list')})
         else:
             return JsonResponse({'error': True, 'errors': form.errors})

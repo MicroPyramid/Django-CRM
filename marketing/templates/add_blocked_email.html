@@ -4,7 +4,7 @@
 {{ block.super }}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb mb-3">
-    <li class="breadcrumb-item"><a href="{% url 'common:api_settings' %}">Block Emails</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'common:api_settings' %}#blocked_emails">Block Emails</a></li>
     <li class="breadcrumb-item active">{% if block_email_obj %}Edit{% else %}Create{% endif %} Block Email</li>
   </ol>
 </nav>

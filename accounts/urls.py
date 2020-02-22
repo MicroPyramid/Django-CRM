@@ -3,7 +3,8 @@ from accounts.views import (
     AccountsListView, CreateAccountView, AccountDetailView, AccountUpdateView,
     AccountDeleteView, AddCommentView, UpdateCommentView, DeleteCommentView,
     AddAttachmentView, DeleteAttachmentsView, create_mail,  # get_account_details,
-    get_contacts_for_account, get_email_data_for_account
+    get_contacts_for_account, get_email_data_for_account,
+    get_teams_and_users
 )
 
 app_name = 'accounts'
@@ -29,6 +30,8 @@ urlpatterns = [
          name="get_contacts_for_account"),
     path('get_email_data_for_account/', get_email_data_for_account,
          name="get_email_data_for_account"),
+    path('get_teams_and_users/',
+        get_teams_and_users, name="get_teams_and_users"),
     #     path('get-account-details/<int:account_id>/', get_account_details, name="get_account_details"),
 
 ]
