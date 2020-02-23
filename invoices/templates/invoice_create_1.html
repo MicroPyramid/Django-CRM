@@ -33,7 +33,7 @@
                         Title{% if form.invoice_title.field.required %}<span class="error_marker" style="color:red">
                           *</span>{% endif %} </label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="micropyramid"> -->
+                        
                         {{ form.invoice_title }}
                         <span class="error" id="id__invoice_title">{{ form.invoice_title.errors }}</span>
                       </div>
@@ -45,10 +45,10 @@
                         class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
                           class="error_marker" style="color:red">*</span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        
                         {{ form.status }}
                         <span class="error" id="id__status">{{ form.status.errors }}</span>
-                        <!-- <span class="error" id="id__name">{{ form.name.errors }}</span> -->
+                        
                       </div>
                     </div>
                   </div>
@@ -60,40 +60,21 @@
                         Number{% if form.invoice_number.field.required %}<span class="error_marker" style="color:red">
                           *</span>{% endif %}</label>
                       <div class="col-sm-9 pl-0">
-                        <!-- <input type="text" class="form-control" id="inputPassword" placeholder="79840PM90"> -->
+                        
                         {{ form.invoice_number }}
                         <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- <div class="col-md-6">
-                    <div class="form-group row">
-                      <label for="id_contacts" class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
-                          class="error_marker" style="color:red">*</span>{% endif %}</label>
-                      {{ form.status }}
-                      <span class="error" id="id__status">{{ form.status.errors }}</span>
-                    </div> -->
-                  <!-- <div class="row">
-                      <div class="col-sm-8 pl-0">
-                        <div class="form-group ">
-                          <label for="id_contacts" class="required">Status{% if form.status.field.required %}<span
-                              class="error_marker" style="color:red">*</span>{% endif %}</label>
-                          {{ form.status }}
-                          <span class="error" id="id__status">{{ form.status.errors }}</span>
-                        </div>
-                      </div>
-                    </div> -->
-                  <!-- <label>Status</label>
-                    <button class="btn status btn-primary">Sent</button> -->
-                  <!-- </div> -->
+                  
+                  
+                  
+                  
                   <div class="col-md-12">
                     <div class="row">
                       <div class="form-group mt-5 col-md-6">
-                        <!-- <label for="exampleFormControlTextarea1">From Address</label>
-                        <textarea class="form-control" id="exampleFormControlTextarea1"
-                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"
-                          rows="6"></textarea> -->
+                        
                         <div class="form-group">
                           <label for="exampleInputEmail1">From Address</label>
                           {{ from_address_form.address_line }}
@@ -123,9 +104,7 @@
                         <br>
                       </div>
                       <div class="form-group mt-5 col-md-6">
-                        <!-- <label for="exampleFormControlTextarea1">To Address</label>
-                        <textarea class="form-control" id="exampleFormControlTextarea1" rows="6"
-                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"></textarea> -->
+                        
                         <div class="form-group">
                           <label for="exampleInputEmail1">To Address</label>
                           {{ to_address_form.address_line }}
@@ -162,7 +141,7 @@
                         {% if form.name.field.required %}<span class="error_marker" style="color:red"> *
                         </span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        
                         {{ form.name }}
                         <span class="error" id="id__name">{{ form.name.errors }}</span>
                       </div>
@@ -172,8 +151,7 @@
                         {% if form.email.field.required %}<span class="error_marker" style="color:red"> *
                         </span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail"
-                                placeholder="lakshman@micropyramid.com"> -->
+                        
                         {{ form.email }}
                         <span class="error" id="id__email">{{ form.email.errors }}</span>
                       </div>
@@ -185,7 +163,7 @@
                       <div class="col-sm-8 pl-0">
                         {{ form.phone }}
                         <span class="error" id="id__phone">{{ form.phone.errors }}</span>
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="6566589125"> -->
+                        
                       </div>
                     </div>
                     <div class="form-group row">
@@ -216,7 +194,7 @@
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Teams</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        
                         <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
                           {% for team in teams %}
                           <option data-users="{{team.get_users}}" value="{{team.id}}"
@@ -254,11 +232,9 @@
                     {% endif %}
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
-                      <!-- <div class="col-sm-8 pl-0"> -->
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
-                        <!-- {{form.assigned_to}}
-                        <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
-                      </div> -->
+                      
+                        
+                        
                       <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
                     id="id_assigned_to">
                     {% for user in users %}
@@ -271,7 +247,7 @@
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Accounts</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        
                         {{form.accounts}}
                         <span class="error" id="id__accounts">{{ form.accounts.errors }}</span>
                       </div>
@@ -283,7 +259,7 @@
                       <div class="form-group col-md-4">
                         <label for="inputCity">Quality Hours{% if form.quantity.field.required %}<span
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
-                        <!-- <input type="text" class="form-control" id="inputCity" placeholder="5:30"> -->
+                        
                         {{ form.quantity }}
                         <span class="error" id="id__quantity">{{ form.quantity.errors }}</span>
                       </div>
@@ -298,7 +274,7 @@
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
                         {{ form.total_amount }}
                         <span class="error" id="id__total_amount">{{ form.total_amount.errors }}</span>
-                        <!-- <input type="text" class="form-control" id="inputZip" placeholder="5:31"> -->
+                        
                       </div>
                     </div>
                   </div>

@@ -3,9 +3,9 @@
 {% load paginate %}
 {% block content %}
 {{ block.super }}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline">
@@ -21,13 +21,7 @@
             <div class="card-body ">
               <div class="card-title">Filters</div>
               <div class="row marl">
-                <!-- <div class="filter_col col-md-3">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Name</label>
-                    <input type="text" class="form-control" placeholder="Name" name="name"
-                      value="{{request.POST.name}}">
-                  </div>
-                </div> -->
+                
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Email</label>
@@ -35,13 +29,7 @@
                       value="{{request.POST.email}}">
                   </div>
                 </div>
-                <!-- <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Domain Name</label>
-                    <input type="text" class="form-control" placeholder="Domain Name" name="domain_name"
-                      value="{{request.POST.domain_name}}">
-                  </div>
-                </div> -->
+                
                 <div class="filter_col col-md-3">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Created By</label>
@@ -84,8 +72,8 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
+  
+  
   <div class="filter_row row marl">
     <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
@@ -114,18 +102,13 @@
                     <span class="filter_toggle ">
                       <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
-                    <!-- <button href="#" class="primary_btn" id="delete_all" style="background:black; color: white;">Delete
-                      Selected</button>
-                    <button href="#" class="primary_btn" id="delete_all_complete"
-                      style="background:black; color: white;">Delete All</button> -->
+                    
                   </div>
                   <div class="table-responsive table-bordered ">
                     <table class="table">
                       <thead>
                         <tr>
-                          <!-- <th width="1%">
-                            <input type="checkbox" name="check_all" id="check_all">
-                          </th> -->
+                          
                           <th width="5%">S. No</th>
                           <th width="10%">Name</th>
                           <th width="10%">Email</th>
@@ -160,10 +143,8 @@
                             {% endfor %}
                           </td>
                           <td class="actions text-center">
-                            <!-- <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
-                                data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
-                            <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
-                              <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                            
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}"
                               class="btn btn-danger delete remove_account"
                               data-other-contacts-lists='{{contact.contact_lists_count}}' title="Delete"><i
@@ -193,10 +174,7 @@
                     <span class="filter_toggle ">
                       <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
-                    <!-- <button href="#" class="primary_btn" id="delete_all_bounced"
-                      style="background:black; color: white;">Delete Selected</button>
-                    <button href="#" class="primary_btn" id="delete_all_bounced_complete"
-                      style="background:black; color: white;">Delete All</button> -->
+                    
                   </div>
                   <div class="table-responsive table-bordered ">
                     <table class="table">
@@ -236,10 +214,8 @@
                             {% endfor %}
                           </td>
                           <td class="actions text-center">
-                            <!-- <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
-                                data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
-                            <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
-                              <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                            
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}"
                               class="btn btn-danger delete remove_account"
                               data-other-contacts-lists='{{contact.contact_lists_count}}' title="Delete"><i
@@ -271,10 +247,7 @@
                     <span class="filter_toggle ">
                       <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
                     </span>
-                    <!-- <button href="#" class="primary_btn" id="delete_all_bounced"
-                      style="background:black; color: white;">Delete Selected</button>
-                    <button href="#" class="primary_btn" id="delete_all_bounced_complete"
-                      style="background:black; color: white;">Delete All</button> -->
+                    
                   </div>
                   <div class="table-responsive table-bordered ">
                     <table class="table">
@@ -314,10 +287,8 @@
                             {% endfor %}
                           </td>
                           <td class="actions text-center">
-                            <!-- <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
-                                data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
-                            <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
-                              <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                            
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}"
                               class="btn btn-danger delete remove_account"
                               data-other-contacts-lists='{{contact.contact_lists_count}}' title="Delete"><i
@@ -350,11 +321,11 @@
 </div>
 </div>
 </div>
-<!-- filter_row ends here -->
-<!-- accounts list start -->
-<!-- accounts list end -->
+
+
+
 </div>
-<!-- main_container ends here -->
+
 
 
 

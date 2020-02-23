@@ -121,10 +121,8 @@
                       {% endfor %}
                     </td>
                     <td class="actions text-center">
-                      <!-- <a href="{% url 'marketing:edit_contact' contact.id %}" class="btn btn-success edit edit_contact"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
-                      <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                      
+                      
                       <a href="{% url 'marketing:delete_contact' contact.id %}"
                         class="btn btn-danger delete remove_account"
                         data-other-contacts-lists='{{contact.contact_list.all|length}}'

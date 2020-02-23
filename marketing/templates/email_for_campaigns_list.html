@@ -10,84 +10,23 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'marketing:add_email_for_campaigns'%}"><i class="fa fa-plus"></i>
           Add Contact</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="filter_row list_filter_row row marl">
-    <!-- filter form
-        <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-          <form id="leads_filter" action="" method="POST">
-            <div class="card-body ">
-              <div class="card-title">Filters</div>
-              <div class="row marl">
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Team Name</label>
-                    <input type="text" class="form-control" placeholder="Team Name" name="team_name"
-                      value="{{request.POST.team_name}}">
-                  </div>
-                </div>
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Created By</label>
-                    <select name="created_by" id="created_by" class="assigned_users_ form-control">
-                      <option value="">
-                        ------------------</option>
-                      {% for user in created_by_users %}
-                      <option value="{{user.id}}" {% if user.id|slugify == request.POST.created_by %} selected=""
-                        {% endif %}>
-                        {{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Assigned Users</label>
-                    <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                      {% for user in users %}
-                      <option value="{{user.id}}" {% if user.id|slugify in assigned_to %} selected="" {% endif %}>
-                        {{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <input type="hidden" name="tab_status" id="tab_status">
-                <div class="filter_col col-2">
-                  <div class="form-group buttons_row">
-                    <button class="btn btn-primary save" type="submit">Search</button>
-                    <a href="{% url 'teams:teams_list' %}" class="btn btn-default clear">Clear</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>  filter form -->
+    
   </div>
   <div class="col-md-12 col-lg-12 col-xl-12">
     <div class="table_container_row row marl no-gutters">
       <div class="col-md-12">
-        <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
-              aria-selected="true">Open ({{open_leads|length}})</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
-              aria-selected="false">Closed ({{close_leads|length}})</a>
-          </li>
-        </ul> -->
+        
         <div class="tab-content" id="myTabContent">
           <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
             <div class="card">

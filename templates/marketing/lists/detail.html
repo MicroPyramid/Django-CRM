@@ -11,9 +11,9 @@
   </ol>
 </nav>
 
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline">
@@ -64,8 +64,8 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
+  
+  
   <div class="filter_row row marl">
     <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
@@ -149,7 +149,7 @@
                               class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
                               class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
@@ -225,7 +225,7 @@
                               class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
                               class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
@@ -327,7 +327,7 @@
                             class="btn btn-success edit edit_contact" title="Edit"
                             data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                             class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact.contact_list.id}}"
                             class="btn btn-danger delete remove_account" title="Delete"
                             data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
@@ -355,11 +355,11 @@
       </div>
     </div>
   </div>
-  <!-- filter_row ends here -->
-  <!-- accounts list start -->
-  <!-- accounts list end -->
+  
+  
+  
 </div>
-<!-- main_container ends here -->
+
 
 
 

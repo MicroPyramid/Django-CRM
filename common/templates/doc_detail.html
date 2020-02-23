@@ -8,7 +8,7 @@
     <li class="breadcrumb-item" active>View</li>
   </ol>
 </nav>
-<!-- OPPORTUNITY VIEW STARTS -->
+
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-6">
@@ -84,7 +84,7 @@
               <div class="profile_pic">
                 {% if doc_obj.document_file %}
                 <i class="{{file_type_code}}" aria-hidden="true" style="font-size:3rem;"></i>
-                <!-- <a href="{{doc_obj.document_file.url}}" target="_blank">Download</a> -->
+                
                 <a style="display:block;" href="{% url 'common:download_document' doc_obj.id %}">Download</a></td>
                 {% endif %}
               </div>
@@ -95,5 +95,5 @@
     </div>
   </div>
 </div>
-<!-- OPPORTUNITY VIEW ENDS -->
+
 {% endblock %}

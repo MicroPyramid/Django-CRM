@@ -14,9 +14,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'invoices:invoices_create'%}"><i
@@ -25,7 +25,7 @@
           Invoice</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
       <div class="card">
@@ -103,16 +103,7 @@
   <div class="col-md-12 col-lg-12 col-xl-12">
     <div class="table_container_row row marl no-gutters">
       <div class="col-md-12">
-        <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
-              aria-selected="true">Open ({{open_leads|length}})</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
-              aria-selected="false">Closed ({{close_leads|length}})</a>
-          </li>
-        </ul> -->
+        
         <div class="tab-content" id="myTabContent">
           <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
             <div class="card">
@@ -222,7 +213,7 @@
                               class="fas fa-window-close"></i></a>
                           {% endif %}
                           {% if invoice.is_paid_or_cancelled == True %}
-                          <!-- <a  title="re send mail" class="btn btn-secondary">no actions</a> -->
+                          
                           {% endif %}
                           {% endif %}
                         </td>
@@ -300,7 +291,7 @@
                               class="fas fa-window-close"></i></a>
                           {% endif %}
                           {% if invoice.is_paid_or_cancelled == True %}
-                          <!-- <a  title="re send mail" class="btn btn-secondary">no actions</a> -->
+                          
                           {% endif %}
                           {% endif %}
                         </td>
@@ -319,102 +310,9 @@
               </div>
             </div>
           </div>
-          <!-- second tab for closed and other statuses -->
-          <!--
-          <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
-            <div class="card">
-              <div class="card-body">
-                <div class="card-title text-right">
-                  <span class="float-left">Open Leads - {% if show_pageitems %}
-                    {% show_pageitems %}{% else %}
-                    {{ open_leads|length }}{% endif %}</span>
-                  <span class="filter_toggle">
-                    <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
-                  </span>
-                </div>
-                <div class="table-responsive">
-                  <table class="table ">
-                    <thead>
-                      {% if invoices|length > 0 %}
-                      <tr>
-                        <th width="5%">ID</th>
-                        <th width="10%">Invoice Title</th>
-                        <th width="8%">Invoice Number</th>
-                        <th width="10%">Email</th>
-                        <th width="10%">Status</th>
-                        <th width="20%">Assigned To</th>
-                        <th width="15%">Created by</th>
-                        <th width="10%">Created On</th>
-                        <th width="10%">Actions</th>
-                      </tr>
-                      {% endif %}
-                    </thead>
-                    <tbody>
-                      {% if per_page %}
-                      {% paginate per_page invoices %}
-                      {% else %}
-                      {% paginate 10 invoices %}
-                      {% endif %}
-                      {% for invoice in invoices %}
-                      <tr class="text-center">
-                        <td scope="row">{{ forloop.counter }}</td>
-                        <td><a href="">
-                            {{ invoice.invoice_title }} </a></td>
-                        <td>{{ invoice.invoice_number }} </td>
-                        <td>{{ invoice.email }} </td>
-                        <td>{{ invoice.status }} </td>
-                        <td>
-                          {% with users=invoice.assigned_to.all %}
-                          {% for user in users %}
-                          {% if user.profile_pic %}
-                          {% thumbnail user.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ user.email }}">
-                          {% endthumbnail %}
-                          {% else %}
-                          <img src="{% static 'images/user.png' %}" title="{{ user.email }}" width="40" height="40">
-                          {% endif %}
-                          {% empty %}
-                          Not Assigned to Any
-                          {% endfor %}
-                          {% endwith %}
-                        </td>
-                        <td>
-                          {% if invoice.created_by.profile_pic %}
-                          {% thumbnail invoice.created_by.profile_pic "40x40" crop="center" as im %}
-                          <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}"
-                            title="{{ lead.created_by }}">
-                          {% endthumbnail %}
-                          {% else %}
-                          <img src="{% static 'images/user.png' %}" alt="Micro profile pic"
-                            style="width: 40px;height: 40px;" />
-                          {% endif %}
-                        </td>
-                        <td>{{ invoice.created_on }}</td>
-                        <td class="actions">
-                          <a href="" class="btn btn-success edit"><i
-                              class="fas fa-pencil-alt"></i></a>
-                          {% if request.user == lead.created_by or request.user.role == "ADMIN" or request.user.is_superuser %}
-                          <a href=""
-                            class="btn btn-danger delete remove_account"><i class="fas fa-trash-alt"></i></a>
-                          {% endif %}
-                        </td>
-                      </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-                {%ifequal invoices|length 0%}
-                <h6 class="text-center">No Invoices Found</h6>
-                {%endifequal%}
-                <div class="marl row text-center">
-                  {% show_pages %}
-                </div>
-              </div>
-            </div>
-          </div>
-        -->
-          <!-- second tab div for closed or another status -->
+          
+          
+          
         </div>
       </div>
     </div>
@@ -435,7 +333,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
+        
         <div class="" id="">
           <div class="">
             <div class="col-md-12" id="">
@@ -443,17 +341,9 @@
                 <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
-                      <!-- <span class="float-left title">Overview</span> -->
+                      
                       <span style="margin-top: 0px">
-                        <!-- <div class="dropdown buttons_row">
-                          <a href="{% url 'invoices:invoice_download' invoice.id %}" id="download_btn_"
-                            class="btn btn-info" style="padding: 0.12em 0.6em;border-radius: 0;">Download</a>
-                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                            <span class="caret"></span></button>
-                          <ul class="dropdown-menu">
-                            <li><a href="{% url 'invoices:invoice_edit' invoice.id %}">Edit</a></li>
-                          </ul>
-                        </div> -->
+                        
                       </span>
                     </h5>
                   </div>
@@ -626,10 +516,7 @@
   </div>
 </div>
 
-<!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+
 
 
 {% endfor %}

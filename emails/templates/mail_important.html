@@ -2,15 +2,15 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block breadcrumb %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl heading_create">
     {% include 'mail_center.html' %}
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="table_container_row row marl">
-    <!-- mail_links starts here -->
+    
     <div class="col-md-2 col-sm-3 col-xs-12 mail_menu">
       <div class="panel panel-default">
         <div class="panel-content">
@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <!-- mail_links ends here -->
+    
     <div class="col-md-10 col-sm-9 col-xs-12">
       <div class="filter_row row marl">
         <div class="panel panel-default">
@@ -63,7 +63,7 @@
             <table class="table table-bordered table-striped table-condensed">
               <thead>
                 <tr>
-                  <!--  <th ><input type="checkbox"></th>-->
+                  
                   <th >To</th>
                   <th >Subject</th>
                   <th >Message</th>
@@ -77,7 +77,7 @@
                 {% paginate 10 filter_list as filter_list %}
                 {% for imp in filter_list %}
                 <tr>
-                  <!--  <td><input type="checkbox"></td>-->
+                  
                   <td>{{imp.to_email}}</td>
                   <td>{{imp.subject}}</td>
                   <td><a href="{% url 'emails:email_view' imp.id %}">{{imp.message|stringformat:".5s"}}</a></td>
@@ -116,7 +116,7 @@
       <br clear="all">
     </div>
   </div>
-  <!-- main_container ends here -->
+  
 </div>
 {% endblock %}
 {% block js_block %}

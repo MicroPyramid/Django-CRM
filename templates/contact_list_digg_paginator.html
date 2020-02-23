@@ -1,8 +1,7 @@
 {% spaceless %}
 {% ifnotequal pages 1 %}
-<!-- single page -->
-<!-- "bounced_contacts_page", instead of "page" is the query param, since there are two objects with pagination in the same page 
-and to differentiate between "page" for contacts_list and "bounced_contacts_page" for bounced_contacts_list -->
+
+
 {% ifnotequal bounced_contacts_page 1  %}
 <li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page=1"
         rel="page">{{"<<"|safe}}</a></li>
@@ -16,7 +15,7 @@ and to differentiate between "page" for contacts_list and "bounced_contacts_page
 <li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ p }}"
         rel="page">{{ p }}</a></li>
 {% endfor %}
-<!-- <li><span class="ellipsis">...</span></li> -->
+
 {% endif %}
 {% for p in page_range %}
 {% if p == bounced_contacts_page %}
@@ -27,7 +26,7 @@ and to differentiate between "page" for contacts_list and "bounced_contacts_page
 {% endif %}
 {% endfor %}
 {% if not in_trailing_range %}
-<!-- <li><span class="ellipsis">...</span></li> -->
+
 {% for p in pages_outside_leading_range reversed %}
 <li><a href="{% if get_params %}?{{ get_params }}&{% else %}?{% endif %}bounced_contacts_page={{ p }}"
         rel="page">{{ p }}</a></li>

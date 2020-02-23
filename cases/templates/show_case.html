@@ -77,9 +77,9 @@
                 <div class="field" id ="case_description" data-name="name">{% if case.description%}{{case.description}}{% else%}Not Specified{% endif%}</div>
               </div>
             </div>
-            <!-- show case ends here-->
+            
           </div>
-          <!-- Comments Section starts-->
+          
           <form id="comment_form" method="POST" enctype="multipart/form-data">
             <div class="filter_col col-md-12">
               <div style="background-color:gray">
@@ -126,9 +126,9 @@
           {% endfor %}
           </ul>
           </div>
-          <!-- Comments Section Ends-->
-          <!-- Comment Edit Modal Starts Here -->
-          <!-- Modal -->
+          
+          
+          
           <div class="modal fade" id="myModal" role="dialog" role="dialog" data-keyboard="false"
             data-backdrop="static">
             <div class="modal-dialog modal-lg">
@@ -155,12 +155,12 @@
               </div>
             </div>
           </div>
-          <!-- COmment Edit Modal Ends Here -->
+          
         </div>
       </div>
     </div>
   </div>
-  <!-- Assigned users and teams starts-->
+  
   <div class="col-md-4">
     <div class="panel panel-default">
       <div class="panel-heading text-center">
@@ -190,7 +190,7 @@
       </div>
     </div>
   </div>
-  <!-- Activities block Starts here-->
+  
   <div class="panel panel-default panel-activities" data-name="activities">
     <div class="panel-heading">
       <h4 class="panel-title">
@@ -250,7 +250,7 @@
                 {% endifequal %}
               </ul>
             </div>
-            <!-- Tasks Tab Division starts-->
+            
             <div id="tasks_list" class="tab-pane fade">
               <ul class="list-group">
                 {% ifequal case.get_tasks|length 0 %}
@@ -292,8 +292,8 @@
                 {% endifequal %}
               </ul>
             </div>
-            <!-- Tasks Tab Division ends here-->
-            <!-- Calls Tab Division Starts here-->
+            
+            
             <div id="calls_list" class="tab-pane fade">
               <ul class="list-group">
                 {% ifequal case.get_calls|length 0 %}
@@ -328,9 +328,7 @@
                     </span>
                   </div>
                   <div class="expanded-row">
-                    <!--<span class="cell" data-name="assignedUser">
-                      <a href="#User/view/52eb7b4ba5500">Raghu</a>
-                      </span>-->
+                    
                     <span class="cell" data-name="dateStart">{{call.start_date}}</span>
                   </div>
                 </li>
@@ -338,9 +336,9 @@
                 {% endifequal %}
               </ul>
             </div>
-            <!-- Calls Tab Division ends here-->
+            
           </div>
-          <!-- Calls Tab Division ends here-->
+          
         </div>
         </ul>
         <div class="show-more hide">
@@ -348,8 +346,8 @@
       </div>
     </div>
   </div>
-  <!--Activities block ends here-->
-  <!-- History block starts here-->
+  
+  
   <div class="panel panel-default panel-activities" data-name="activities">
     <div class="panel-heading">
       <h4 class="panel-title">
@@ -406,7 +404,7 @@
                 {% endifequal %}
               </ul>
             </div>
-            <!-- Tasks Tab Division starts-->
+            
             <div id="tasks_list_completed" class="tab-pane fade">
               <ul class="list-group">
                 {% ifequal case.get_completed_tasks|length 0 %}
@@ -448,8 +446,8 @@
                 {% endifequal %}
               </ul>
             </div>
-            <!-- Tasks Tab Division ends here-->
-            <!-- Calls Tab Division Starts here-->
+            
+            
             <div id="calls_list_completed" class="tab-pane fade">
               <ul class="list-group">
                 {% ifequal case.get_completed_calls|length 0 %}
@@ -484,9 +482,7 @@
                     </span>
                   </div>
                   <div class="expanded-row">
-                    <!--<span class="cell" data-name="assignedUser">
-                      <a href="#User/view/52eb7b4ba5500">Raghu</a>
-                      </span>-->
+                    
                     <span class="cell" data-name="dateStart">{{ call.start_date }}</span>
                   </div>
                 </li>
@@ -495,7 +491,7 @@
               </ul>
             </div>
           </div>
-          <!-- Calls Tab Division ends here-->
+          
         </div>
         </ul>
         <div class="show-more hide">
@@ -504,12 +500,12 @@
     </div>
   </div>
 </div>
-<!-- History block ends here-->
+
 </div></div>
 </div>
 </div>
-<!-- Assigned users and teams sends-->
-<!-- CREATE MEETING MODEL -->
+
+
 <div class="modal fade" id="meeting-dispaly-model" role="dialog" data-keyboard="false"
   data-backdrop="static">
   <div class="modal-dialog modal-lg">
@@ -638,7 +634,7 @@
     </div>
   </div>
 </div>
-<!--END CREATE MEETING MODEL-->
+
 </div>
 </div>
 <form id="edit_form" method="POST" action="{% url 'cases:edit_case' case.id %}" >

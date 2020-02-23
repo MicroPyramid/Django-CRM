@@ -2,16 +2,16 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- filter_row starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a href="{% url 'common:create_user'%}" class="btn primary_btn"><i class="fa fa-plus"></i>
           Add New User</a></span>
     </div>
   </div>
-  <!-- modal begins -->
+  
   <div class="modal fade" id="pass_change_div" role="dialog">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -37,7 +37,7 @@
     </div>
   </div>
 
-  <!-- modal ends -->
+  
 
   <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
@@ -101,8 +101,8 @@
       </div>
     </div>
   </div>
-  <!-- filter_row ends here -->
-  <!-- popup for change password start's here  -->
+  
+  
   <div class="filter_row row marl">
     <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
@@ -189,7 +189,7 @@
                             {% endifnotequal %}
                           </td>
                           <td class="actions">
-                            <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                            
                             {% if user.email != admin_email  or request.user.email == admin_email %}
                             <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i
                                 class="fas fa-pencil-alt"></i>Edit</a>
@@ -270,7 +270,7 @@
                             {% endifnotequal %}
                           </td>
                           <td class="actions">
-                            <!-- <a href="{% url 'common:view_user' user.id %}" class="btn btn-info view"><i class="fas fa-eye"></i>View</a> -->
+                            
                             {% if user.email != admin_email  or request.user.email == admin_email %}
                             <a href="{% url 'common:edit_user' user.id %}" class="btn btn-success edit action"><i
                                 class="fas fa-pencil-alt"></i>Edit</a>
@@ -305,7 +305,7 @@
     </div>
   </div>
 </div>
-<!-- main_container ends here -->
+
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">

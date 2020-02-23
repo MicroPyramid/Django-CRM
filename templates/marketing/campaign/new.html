@@ -27,7 +27,7 @@
                       <div class="form-group">
                         <label>Title</label><span class="error_marker" style="color:red"> *</span>
                         <input type="text" name="title" class="form-control" placeholder="Title of this campaign">
-                        <!-- <small class="form-text text-muted">Set a title for this campaign?</small> -->
+                        
                         <span id="id_title"></span>
                       </div>
                     </div>
@@ -41,10 +41,7 @@
                           <option value="{{email_template.id}}" htmlcode="{{email_template.html}}"
                             subject="{{email_template.subject}}">{{ email_template.title }}</option>
                           {% endfor %}
-                          <!-- <option value="one">First template</option>
-                          <option value="two">Second template</option>
-                          <option value="three">Third template</option>
-                          <option value="four">Fourth template</option> -->
+                          
                         </select>
                         <span id="id_email_template"></span>
                       </div>
@@ -53,7 +50,7 @@
                       <div class="form-group">
                         <label>Subject</label><span class="error_marker" style="color:red"> *</span>
                         <input type="text" name="subject" class="form-control" placeholder="Subject of this Campaign">
-                        <!-- <small class="form-text text-muted">Set a title for this campaign?</small> -->
+                        
                         <span id="id_subject"></span>
                       </div>
                     </div>
@@ -93,14 +90,7 @@
                             <input type="email" class="form-control" placeholder="replyto@mp.com" name="reply_to_email">
                             <span id="id_reply_to_email"></span>
                           </div>
-                          <!-- <div class="form-group">
-                            <label>Query String</label>
-                            <div class="well">
-                              Optionally append a query string to all links in your email newsletter. A good use case is
-                              Google Analytics tracking. Don't include '?' in your query string.
-                            </div>
-                            <input type="email" class="form-control" placeholder="url">
-                          </div> -->
+                          
                           <div class="form-group">
                             <label>Attachments</label>
                             <input type="file" class="form-control" name="attachment">
@@ -109,7 +99,7 @@
                             <span id="id_attachment"></span>
                           </div>
 
-                          <!-- <div class="filter_col col-md-12"> -->
+                          
                           <div class="form-group">
                             <label>Tags</label>
                             <div class="txt-box-div" id="tag-div">
@@ -118,21 +108,8 @@
                             </div>
                             <span id="id_tags"></span>
                           </div>
-                          <!-- </div> -->
-                          <!--
-                            <div class="form-group">
-                            <label>Track Opens</label>
-                            <button type="button" class="btn btn-toggle" data-toggle="button" aria-pressed="false" autocomplete="off">
-                              <div class="handle"></div>
-                            </button>
-                          </div>
-                          <div class="form-group">
-                            <label>Track Clicks</label>
-                            <button type="button" class="btn btn-toggle" data-toggle="button" aria-pressed="false" autocomplete="off">
-                              <div class="handle"></div>
-                            </button>
-                          </div>
-                         -->
+                          
+                          
                           <br>
                           <div class="form-group">
                             <div class="row marl buttons_row text-center form_btn_row">
@@ -175,63 +152,24 @@
                                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                   </div>
                                 </div>
-                                <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
+                                
                                 <span id="id_schedule_date_time"></span>
                               </div>
                             </div>
                           </div>
                           <div class="col-md-12">
-                            <!-- <div class="form-group">
-                              <label>Plain Text</label>
-                              <textarea class="form-control" rows="3" name="plain_html"></textarea>
-                              <span id="id_plain_html"></span>
-                            </div> -->
+                            
                             <div class="form-group">
                               <label>Html Code</label><span class="error_marker" style="color:red"> *</span>
                               <span id="id_html"></span>
                               <div id="editor-container">
                               </div>
-                              <!-- <span class="hint">Use the following tags in your subject, plain text or HTML code and
-                                they'll automatically be formatted when your campaign is sent. For web version and
-                                unsubscribe tags, you can style them with inline CSS.</span> -->
+                              
                               <input type="hidden" name="html" id="html_content">
                             </div>
                             <div class="col-md-12 no-padding">
-                              <!-- <div class="row help_container"> -->
-                              <!-- <div class="col-md-6">
-                                  <div class="heading">Essential tags (HTML only)</div>
-                                  <p class="desc">The following tags can only be used on the HTML version</p>
-                                  <ul>
-                                    <li>
-                                      <strong>Webversion link: </strong>
-                                      <code>
-                                        <webversion>View web version<webversion>
-                                      </code>
-                                    </li>
-                                    <li>
-                                      <strong>Unsubscribe link: </strong>
-                                      <code>
-                                        <unsubscribe>Unsubscribe here</unsubscribe>
-                                      </code>
-                                    </li>
-                                  </ul>
-                                  <div class="heading">Essential tags</div>
-                                  <p class="desc">The following tags can only be used on the HTML version</p>
-                                  <ul>
-                                    <li>
-                                      <strong>Webversion link: </strong>
-                                      <code>
-                                        <webversion>View web version<webversion>
-                                      </code>
-                                    </li>
-                                    <li>
-                                      <strong>Unsubscribe link: </strong>
-                                      <code>
-                                        <unsubscribe>Unsubscribe here</unsubscribe>
-                                      </code>
-                                    </li>
-                                  </ul>
-                                </div> -->
+                              
+                              
                               <div class="col-md-12">
                                 <div class="heading">Personalization tags</div>
                                 <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to customize the email template, these tags will be replaced with the associated contact details while the mails are sent.</p>
@@ -264,13 +202,10 @@
                                     <strong>State: </strong>
                                     <code>{% templatetag openvariable %} state {% templatetag closevariable %}</code>
                                   </li>
-                                  <!-- <li>
-                                      <strong>Two digit day of the month (eg. 01 to 31):</strong>
-                                      <code>[currentdaynumber]</code>
-                                    </li> -->
+                                  
                                 </ul>
                               </div>
-                              <!-- </div> -->
+                              
                             </div>
                           </div>
                         </div>

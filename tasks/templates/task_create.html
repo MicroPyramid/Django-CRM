@@ -64,13 +64,7 @@
                   <div class="form-group ">
                     <label for="exampleInputEmail1" class="required">Account{% if form.account.field.required %}<span
                         class="error_marker" style="color:red">*</span>{% endif %}</label>
-                    <!-- <select name="account" class="form-control" placeholder="Account" required="" id="id_account">
-                      <option value="" selected="">---------</option>
-                      {% for account in accounts %}
-                      <option value="{{account.id}}" data-contact="{{account.contact_values}}">
-                        {{account.name}}</option>
-                      {% endfor %}
-                    </select> -->
+                    
                     {{ form.account }}
                     <span class="error" id="id__account">{{ form.account.errors }}</span>
                   </div>
@@ -151,9 +145,9 @@
         </div>
       </div>
     </div>
-    <!-- <input type="hidden" id="save_new_form" name="savenewform"> -->
+    
   </div>
-  <!-- overview ends here -->
+  
 </form>
 {% endblock %}
 {% block js_block %}

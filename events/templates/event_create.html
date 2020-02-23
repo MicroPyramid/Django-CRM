@@ -126,10 +126,7 @@
               {% endif %}
               <div class="filter_col col-md-12">
                 <div class="form-group">
-                  <!-- <label for="exampleInputEmail1" class="required">Assigned To{% if form.assigned_to.field.required %}<span class="error_marker"
-                      style="color:red">*</span>{% endif %}</label>
-                  {{ form.assigned_to }}
-                  <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span> -->
+                  
                   <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
                     id="id_assigned_to">
                     {% for user in users %}
@@ -205,9 +202,9 @@
         </div>
       </div>
     </div>
-    <!-- <input type="hidden" id="save_new_form" name="savenewform"> -->
+    
   </div>
-  <!-- overview ends here -->
+  
 </form>
 {% endblock %}
 {% block js_block %}

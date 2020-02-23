@@ -10,16 +10,16 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'opportunities:save'%}"><i class="fa fa-plus"></i> Add
           New Opportunity</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
       <div class="card">
@@ -78,7 +78,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1">Tags</label>
                     <select class="form-control" id="id_tag" name="tag" multiple>
-                      <!-- <option value="">--Select Tags--</option> -->
+                      
                       {% for tag in tags %}
                       <option value="{{tag.id}}" {% if request_tags %}
                         {% if tag.id|slugify in request_tags %}selected{% endif %}{% endif %}>{{ tag.name }} </option>
@@ -123,7 +123,7 @@
                   <th width="10%">Assigned To</th>
                   <th width="10%">Tags</th>
                   <th width="10%">Account</th>
-                  <!--<th width="15%">Contact(s)</th>-->
+                  
                   <th width="15%">Stage</th>
                   <th width="10%">Created On</th>
                   <th width="5%">Lead Source</th>
@@ -180,17 +180,7 @@
                     No Related Account
                     {% endif %}
                   </td>
-                  <!--<td>
-                  {% with opp_contacts=opportunity.contacts.all %}
-                    {% if opp_contacts %}
-                      {% for contact in opp_contacts %}
-                        <li class="text-left"><a href="{% url 'contacts:view_contact' contact.id %}">{{contact.first_name}} {{contact.last_name}}</a></li>
-                      {% endfor %}
-                    {% else %}
-                      No Related Contact
-                    {% endif %}
-                  {% endwith %}
-                </td>-->
+                  
                   <td>{% if opportunity.stage %}{{ opportunity.stage }}{% else %}Not Specified {% endif %}</td>
                   <td title="{{opportunity.created_on}}">{{opportunity.created_on_arrow}}</td>
                   <td>{% if opportunity.lead_source %}{{ opportunity.lead_source }}{% else %}Not Specified{% endif %}
@@ -222,7 +212,7 @@
     </div>
     <br clear="all">
   </div>
-  <!-- filter_row starts here -->
+  
 
 </div>
 
@@ -240,7 +230,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
+        
         <div class="" id="">
           <div class="">
             <div class="col-md-12" id="">
@@ -248,15 +238,9 @@
                 <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="card-title text-right">
                     <h5>
-                      <!-- <span class="float-left">OVERVIEW</span> -->
+                      
                       <span class="" style="margin-top: 0px">
-                        <!-- <div class="dropdown buttons_row">
-                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                            <span class="caret"></span></button>
-                          <ul class="dropdown-menu">
-                            <li><a href="{% url 'opportunities:opp_edit' opportunity_record.id %}">Edit</a></li>
-                          </ul>
-                        </div> -->
+                        
                       </span>
                     </h5>
                   </div>
@@ -380,16 +364,13 @@
       </div>
     </div>
 
-    <!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+    
   </div>
 </div>
 
 
 {% endfor %}
-<!-- main_container ends here -->
+
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">
