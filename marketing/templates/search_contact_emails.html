@@ -35,13 +35,13 @@
                       value="{{request.POST.email}}">
                   </div>
                 </div>
-                <div class="filter_col col-md-2">
+                <!-- <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Domain Name</label>
                     <input type="text" class="form-control" placeholder="Domain Name" name="domain_name"
                       value="{{request.POST.domain_name}}">
                   </div>
-                </div>
+                </div> -->
                 <div class="filter_col col-md-3">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Created By</label>
@@ -151,9 +151,9 @@
                           <td>{{ contact.created_by }}</td>
                           <td title="{{contact.created_on}}">{{ contact.created_on_arrow }}</td>
                           <td>
-                            {% for contact_list in contact.contact_lists %}
+                            {% for contact_list in contact.contact_list.all %}
                             <span> <a
-                                href="{% url 'marketing:contact_list_detail' contact_list.0 %}">{{contact_list.1}}</a>
+                                href="{% url 'marketing:contact_list_detail' contact_list.id %}">{{contact_list.name}}</a>
                             </span>
                             {% empty %}
                             <span>None</span>
@@ -366,6 +366,11 @@
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+    search = "{{search}}"
+    if (search == 'True') {
+    $(".list_filter_row").show();
+    }
+
     $('#id_tag').select2();
     $('#delete_all').hide()
     $('#delete_all_bounced').hide()

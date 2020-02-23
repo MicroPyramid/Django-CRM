@@ -14,6 +14,16 @@ from teams.models import Teams
 class LeadForm(forms.ModelForm):
     teams_queryset = []
     teams = forms.MultipleChoiceField(choices=teams_queryset)
+    LEAD_SOURCE_CHOICES = (
+        ('call', 'Call'),
+        ('email', 'Email'),
+        ('existing customer', 'Existing Customer'),
+        ('partner', 'Partner'),
+        ('public relations', 'Public Relations'),
+        ('compaign', 'Campaign'),
+        ('other', 'Other'),
+    )
+    source = forms.ChoiceField(choices=LEAD_SOURCE_CHOICES)
 
     def __init__(self, *args, **kwargs):
         assigned_users = kwargs.pop('assigned_to', [])
@@ -43,7 +53,7 @@ class LeadForm(forms.ModelForm):
         self.fields['account_name'].widget.attrs.update({
             'placeholder': 'Account Name'})
         self.fields['phone'].widget.attrs.update({
-            'placeholder': '+91-123-456-7890'})
+            'placeholder': '+911234567890'})
         self.fields['description'].widget.attrs.update({
             'rows': '6'})
         self.fields['address_line'].widget.attrs.update({
@@ -60,6 +70,13 @@ class LeadForm(forms.ModelForm):
             ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
         self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
         self.fields["teams"].required = False
+
+        if self.instance.id:
+            if self.instance.created_from_site:
+                prev_choices = self.fields['source']._get_choices()
+                prev_choices = prev_choices +[('micropyramid', 'Micropyramid')]
+                self.fields['source']._set_choices(prev_choices)
+
 
     class Meta:
         model = Lead
@@ -147,7 +164,6 @@ def import_document_validator(document):
     except Exception as e:
         print(e)
         return {"error": True, "message": "Not a valid CSV file"}
-
 
 class LeadListForm(forms.Form):
     leads_file = forms.FileField(required=False)

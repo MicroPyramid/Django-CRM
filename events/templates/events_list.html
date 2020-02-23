@@ -57,7 +57,7 @@
                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                       {% for user in users %}
                       <option value="{{user.id}}" {% if user.id|slugify in assigned_to %} selected="" {% endif %}>
-                        {{user.email}}</option>
+                        {% if user.username %}{{user.username}}{% else %}{{user.email}}{% endif %}</option>
                       {% endfor %}
                     </select>
                   </div>
@@ -201,7 +201,7 @@
                           {% endif %}
                         </td>
                         <td class="actions">
-                          {% if request.user == event.created_by or request.user.role == 'ADMIN' %}
+                          {% if request.user == event.created_by or request.user.role == 'ADMIN' or request.user.has_sales_access %}
                           <a href="{% url 'events:detail_view' event.id %}" class="btn btn-info edit" title="View"><i
                               class="fas fa-eye"></i></a>
                           <a href="{% url 'events:event_update' event.id %}" class="btn btn-success edit" title="Edit"><i

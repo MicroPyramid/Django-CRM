@@ -322,4 +322,4 @@ def send_campaign_email_to_admin_contact(campaign, domain='demo.django-crm.io', 
 
 @task
 def update_elastic_search_index():
-    call_command('update_index')
+    call_command('update_index --age=1', interactive=False)

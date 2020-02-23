@@ -39,7 +39,7 @@ class InvoiceForm(forms.ModelForm):
 
         self.fields["teams"].required = False
         self.fields['phone'].widget.attrs.update({
-            'placeholder': '+91-123-456-7890'})
+            'placeholder': '+911234567890'})
         self.fields['invoice_title'].required = True
         self.fields['invoice_number'].required = True
         self.fields['currency'].required = True

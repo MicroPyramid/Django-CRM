@@ -24,6 +24,19 @@ from common.access_decorators_mixins import (
     sales_access_required, marketing_access_required, SalesAccessRequiredMixin, MarketingAccessRequiredMixin)
 from teams.models import Teams
 
+
+@login_required
+def get_teams_and_users(request):
+    data = {}
+    teams = Teams.objects.all()
+    teams_data = [{'team': team.id, 'users': [
+        user.id for user in team.users.all()]} for team in teams]
+    users = User.objects.all().values_list("id", flat=True)
+    data['teams'] = teams_data
+    data['users'] = list(users)
+    return JsonResponse(data)
+
+
 class OpportunityListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
     model = Opportunity
     context_object_name = "opportunity_list"
@@ -39,7 +52,8 @@ class OpportunityListView(SalesAccessRequiredMixin, LoginRequiredMixin, Template
                 Q(created_by=self.request.user.id))
 
         if self.request.GET.get('tag', None):
-            queryset = queryset.filter(tags__in = self.request.GET.getlist('tag'))
+            queryset = queryset.filter(
+                tags__in=self.request.GET.getlist('tag'))
 
         request_post = self.request.POST
         if request_post:
@@ -58,7 +72,8 @@ class OpportunityListView(SalesAccessRequiredMixin, LoginRequiredMixin, Template
                 queryset = queryset.filter(
                     contacts=request_post.get('contacts'))
             if request_post.get('tag'):
-                queryset = queryset.filter(tags__in=request_post.getlist('tag'))
+                queryset = queryset.filter(
+                    tags__in=request_post.getlist('tag'))
         return queryset.distinct()
 
     def get_context_data(self, **kwargs):
@@ -145,7 +160,8 @@ def create_opportunity(request):
                 #     email.content_subtype = "html"
                 #     email.send()
             if request.POST.getlist('teams', []):
-                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                    'teams')).values_list('users', flat=True)
                 assinged_to_users_ids = opportunity_obj.assigned_to.all().values_list('id', flat=True)
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
@@ -155,9 +171,10 @@ def create_opportunity(request):
                 opportunity_obj.teams.add(*request.POST.getlist('teams'))
 
             current_site = get_current_site(request)
-            recipients = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
+            recipients = list(
+                opportunity_obj.assigned_to.all().values_list('id', flat=True))
             send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,
-                protocol=request.scheme)
+                                              protocol=request.scheme)
 
             if request.POST.getlist('contacts', []):
                 opportunity_obj.contacts.add(
@@ -227,7 +244,8 @@ class OpportunityDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, Detail
         user_assgn_list = [
             assigned_to.id for assigned_to in
             context['object'].assigned_to.all()]
-        user_assigned_accounts = set(self.request.user.account_assigned_users.values_list('id', flat=True))
+        user_assigned_accounts = set(
+            self.request.user.account_assigned_users.values_list('id', flat=True))
         if context['object'].account:
             opportunity_account = set([context['object'].account.id])
         else:
@@ -250,11 +268,14 @@ class OpportunityDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, Detail
         comments = context["opportunity_record"].opportunity_comments.all()
 
         if self.request.user.is_superuser or self.request.user.role == 'ADMIN':
-            users_mention = list(User.objects.filter(is_active=True).values('username'))
+            users_mention = list(User.objects.filter(
+                is_active=True).values('username'))
         elif self.request.user != context['object'].created_by:
-            users_mention = [{'username': context['object'].created_by.username}]
+            users_mention = [
+                {'username': context['object'].created_by.username}]
         else:
-            users_mention = list(context['object'].assigned_to.all().values('username'))
+            users_mention = list(
+                context['object'].assigned_to.all().values('username'))
 
         context.update({
             "comments": comments,
@@ -298,7 +319,8 @@ def update_opportunity(request, pk):
             opportunity_obj = form.save(commit=False)
             if request.POST.get('stage') in ['CLOSED WON', 'CLOSED LOST']:
                 opportunity_obj.closed_by = request.user
-            previous_assigned_to_users = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
+            previous_assigned_to_users = list(
+                opportunity_obj.assigned_to.all().values_list('id', flat=True))
             opportunity_obj.save()
 
             opportunity_obj.contacts.clear()
@@ -337,7 +359,8 @@ def update_opportunity(request, pk):
                 opportunity_obj.assigned_to.clear()
 
             if request.POST.getlist('teams', []):
-                user_ids = Teams.objects.filter(id__in=request.POST.getlist('teams')).values_list('users', flat=True)
+                user_ids = Teams.objects.filter(id__in=request.POST.getlist(
+                    'teams')).values_list('users', flat=True)
                 assinged_to_users_ids = opportunity_obj.assigned_to.all().values_list('id', flat=True)
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
@@ -350,10 +373,12 @@ def update_opportunity(request, pk):
                 opportunity_obj.teams.clear()
 
             current_site = get_current_site(request)
-            assigned_to_list = list(opportunity_obj.assigned_to.all().values_list('id', flat=True))
-            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+            assigned_to_list = list(
+                opportunity_obj.assigned_to.all().values_list('id', flat=True))
+            recipients = list(set(assigned_to_list) -
+                              set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(recipients, opportunity_obj.id, domain=current_site.domain,
-                protocol=request.scheme)
+                                              protocol=request.scheme)
 
             if request.POST.getlist('contacts', []):
                 opportunity_obj.contacts.add(
@@ -480,7 +505,7 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         comment_id = comment.id
         current_site = get_current_site(self.request)
         send_email_user_mentions.delay(comment_id, 'opportunity', domain=current_site.domain,
-            protocol=self.request.scheme)
+                                       protocol=self.request.scheme)
         return JsonResponse({
             "comment_id": comment.id, "comment": comment.comment,
             "commented_on": comment.commented_on,
@@ -514,7 +539,7 @@ class UpdateCommentView(LoginRequiredMixin, View):
         comment_id = self.comment_obj.id
         current_site = get_current_site(self.request)
         send_email_user_mentions.delay(comment_id, 'opportunity', domain=current_site.domain,
-            protocol=self.request.scheme)
+                                       protocol=self.request.scheme)
         return JsonResponse({
             "commentid": self.comment_obj.id,
             "comment": self.comment_obj.comment,

@@ -4,7 +4,7 @@ from opportunity.views import (
     OpportunityDetailView, update_opportunity,
     DeleteOpportunityView, GetContactView,
     GetOpportunitiesView,
-    AddCommentView,
+    AddCommentView, get_teams_and_users,
     UpdateCommentView, DeleteCommentView, AddAttachmentsView, DeleteAttachmentsView)
 
 
@@ -31,4 +31,6 @@ urlpatterns = [
          AddAttachmentsView.as_view(), name="add_attachment"),
     path('attachment/remove/', DeleteAttachmentsView.as_view(),
          name="remove_attachment"),
+    path('get_teams_and_users/', get_teams_and_users,
+        name="get_teams_and_users"),
 ]

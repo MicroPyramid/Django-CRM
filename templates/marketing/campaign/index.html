@@ -160,6 +160,12 @@
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+
+    search = "{{search}}"
+    if (search == 'True') {
+    $(".list_filter_row").show();
+    }
+
     $('#id_tag').select2();
     $('#created_by').select2();
 

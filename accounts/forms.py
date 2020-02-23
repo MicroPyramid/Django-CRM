@@ -23,7 +23,7 @@ class AccountForm(forms.ModelForm):
         self.fields['status'].required = False
         for key, value in self.fields.items():
             if key == 'phone':
-                value.widget.attrs['placeholder'] = "+91-123-456-7890"
+                value.widget.attrs['placeholder'] = "+911234567890"
             else:
                 value.widget.attrs['placeholder'] = value.label
 

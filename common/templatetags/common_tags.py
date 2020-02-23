@@ -7,19 +7,23 @@ def is_document_file_image(ext):
                       'tga', 'thm', 'tif', 'tiff', 'yuv']
     return ext.lower() in image_ext_list
 
+
 def is_document_file_audio(ext):
     audio_ext_list = ['aif', 'iff', 'm3u', 'm4a', 'mid', 'mp3',
                       'mpa', 'wav', 'wma']
     return ext.lower() in audio_ext_list
+
 
 def is_document_file_video(ext):
     video_ext_list = ['3g2', '3gp', 'asf', 'avi', 'flv', 'm4v', 'mov',
                       'mp4', 'mpg', 'rm', 'srt', 'swf', 'vob', 'wmv']
     return ext.lower() in video_ext_list
 
+
 def is_document_file_pdf(ext):
     pdf_ext_list = ['indd', 'pct', 'pdf']
     return ext.lower() in pdf_ext_list
+
 
 def is_document_file_code(ext):
     code_ext_list = ['aspx', 'json', 'jsp', 'do', 'htm', 'html', 'ser',
@@ -96,15 +100,18 @@ def is_document_file_code(ext):
                      'drc', 'appxsym']
     return ext.lower() in code_ext_list
 
+
 def is_document_file_text(ext):
     text_ext_list = ['doc', 'docx', 'log', 'msg', 'odt', 'pages', 'rtf',
                      'tex', 'txt', 'wpd', 'wps']
     return ext.lower() in text_ext_list
 
+
 def is_document_file_sheet(ext):
     sheet_ext_list = ['csv', 'xls', 'xlsx',
                       'xlsm', 'xlsb', 'xltx', 'xltm', 'xlt']
     return ext.lower() in sheet_ext_list
+
 
 def is_document_file_zip(ext):
     ext_list = ['zip', '7Z', 'gz', 'rar', 'ZIPX', 'ACE', 'tar', ]
@@ -114,3 +121,17 @@ def is_document_file_zip(ext):
 @register.filter
 def subtract(value, arg):
     return value - int(arg)
+
+
+@register.filter
+def delete_condition(user, task):
+    if user == task.created_by or user.role == 'ADMIN':
+        return True
+    return False
+
+
+@register.filter
+def view_edit_condition(user, task):
+    if user == task.created_by or user.role == 'ADMIN' or user.has_sales_access or user in task.assigned_to.all:
+        return True
+    return False

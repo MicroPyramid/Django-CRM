@@ -81,7 +81,7 @@
                     <select class="assigned_users form-control" name="shared_to" multiple="multiple">
                       {% for user in users %}
                       <option value="{{user.id}}" {% if user.id in sharedto_list %} selected="" {% endif %}>
-                        {{user.email}}</option>
+                        {% if user.username %}{{user.username}}{% else %}{{user.email}}{% endif %}</option>
                       {% endfor %}
                     </select>
                   </div>
@@ -231,12 +231,12 @@
                   <div class="col-6 offset-6" style="margin-left: 60%; margin-bottom: -1em;">
                     <span class="">
                       <div class="actions">
-                        {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
+                        {% if request.user == document.created_by or request.user.role == 'ADMIN' or request.user.has_sales_access%}
                         <a href="{% url 'common:view_doc' document.id %}" class="view_icon" title="View"><i
                             class="fas fa-eye edit_delete_options"></i></a>
                         <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon" title="Edit" ><i
                             class="fas fa-pencil-alt edit_delete_options"></i></a>
-                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon" title="Delete" ><i
+                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon remove_document" title="Delete" ><i
                             class="fas fa-trash-alt edit_delete_options"></i></a>
                         {% endif %}
                         {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}

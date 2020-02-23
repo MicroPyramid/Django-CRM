@@ -77,6 +77,6 @@ urlpatterns = [
     path('edit-blocked-email/<int:blocked_email_id>/', edit_blocked_email, name="edit_blocked_email"),
     path('delete-blocked-email/<int:blocked_email_id>/', delete_blocked_email, name="delete_blocked_email"),
 
-    path('search-marketing-contact-emails/', include('haystack.urls')),
+    # path('search-marketing-contact-emails/', include('haystack.urls')),
     # path('elastic-search/', contacts_list_elastic_search),
 ]

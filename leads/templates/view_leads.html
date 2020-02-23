@@ -131,6 +131,23 @@
               </div>
             </div>
             <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="lead_field_label" for="id_tags" data-name="name">Tags</label><br>
+                  {% for tag in lead_record.tags.all %}
+                  <span style="cursor: pointer;" class="tag_class_lead_" data-leadTag="{{lead.id}}{{tag.id}}">
+                    <span class="text-left color{{forloop.counter}}" id="list_tag">
+                      <span data-link="{{tag.id}}" class="tag_class_lead">{{ tag.name }}</span>
+                        <!-- <span class="remove_tag" data-tag={{tag.id}} data-lead="{{lead.id}}"><i
+                          class="fas fa-times" style="color: rgb(255, 255, 255);"></i></span> -->
+                    </span>
+                  </span>
+                  {% empty %}
+                  <div class="lead_field">Not Specified</div>     
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
 
               <div class="filter_col col-md-12">
                 <div class="form-group">

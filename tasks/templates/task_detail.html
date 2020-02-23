@@ -35,8 +35,10 @@
                   <ul class="dropdown-menu" style="width:fit-content; min-width:-webkit-fill-available; margin-top: 0;">
                     <li><a href="{% url 'tasks:task_edit' task.id %}"
                         style="background:#17a2b8; color: white; font-weight: 600;">Edit</a></li>
+                    {% if delete_task %}
                     <li><a href="{% url 'tasks:task_delete' task.id %}"
                         style="background:#17a2b8; color: white; font-weight: 600;">Delete</a></li>
+                    {% endif %}
                   </ul>
                 </div>
               </span>

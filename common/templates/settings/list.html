@@ -276,11 +276,11 @@
                           </td>
                           <td title="{{ contact.created_on }}">{{ contact.created_on_arrow }}</td>
                           <td class="actions">
-                            {% if request.user.role == 'ADMIN' or reques.user.is_superuser %}
+                            {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
                             <a href="{% url 'marketing:edit_email_for_campaigns' contact.id %}"
                               class="btn btn-success edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'marketing:delete_email_for_campaigns' contact.id %}"
-                              class="btn btn-danger delete remove_document" title="Delete"><i
+                              class="btn btn-danger delete contacts_delete" title="Delete"><i
                                 class="fas fa-trash-alt"></i></a>
                             {% endif %}
                           </td>
@@ -353,11 +353,11 @@
                           </td>
                           <td title="{{ domain.created_on }}">{{ domain.created_on_arrow }}</td>
                           <td class="actions">
-                            {% if request.user.role == 'ADMIN' or reques.user.is_superuser %}
+                            {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
                             <a href="{% url 'marketing:edit_blocked_domain' domain.id %}" class="btn btn-success edit"
                               title="Edit"><i class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'marketing:delete_blocked_domain' domain.id %}"
-                              class="btn btn-danger delete remove_document" title="Delete"><i
+                              class="btn btn-danger blocked_domain_delete remove_document" title="Delete"><i
                                 class="fas fa-trash-alt"></i></a>
                             {% endif %}
                           </td>
@@ -431,11 +431,11 @@
                           </td>
                           <td title="{{ email.created_on }}">{{ email.created_on_arrow }}</td>
                           <td class="actions">
-                            {% if request.user.role == 'ADMIN' or reques.user.is_superuser %}
+                            {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
                             <a href="{% url 'marketing:edit_blocked_email' email.id %}" class="btn btn-success edit"
                               title="Edit"><i class="fas fa-pencil-alt"></i></a>
                             <a href="{% url 'marketing:delete_blocked_email' email.id %}"
-                              class="btn btn-danger delete remove_document" title="Delete"><i
+                              class="btn btn-danger blocked_email_delete remove_document" title="Delete"><i
                                 class="fas fa-trash-alt"></i></a>
                             {% endif %}
                           </td>
@@ -468,6 +468,8 @@
 <script type="text/javascript">
   var queryParams = (window.location.search).replace('?', '').split('&').map(param => param.split('=')).reduce((values, [key, value]) => { values[key] = value; return values; }, {})
 
+
+
   if (queryParams.hasOwnProperty('contacts')) {
     $('#open-tab').trigger('click')
   }
@@ -494,8 +496,32 @@
   if (tab_clicked_emails.length > 1) {
     $('#emails-tab').trigger('click')
   }
+  // Javascript to enable link to tab
+  var url = document.location.toString();
+  if (url.match('#')) {
+    $('.nav-tabs a[href="#' + url.split('#')[1] + '"]').tab('show');
+  }
 
-  $('.trash').click(function (e) {
+  // Change hash for page-reload
+  $('.nav-tabs a').on('shown.bs.tab', function (e) {
+    window.location.hash = e.target.hash;
+  })
+
+  $('.contacts_delete').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+  $('.blocked_domain_delete').click(function (e) {
+    e.preventDefault()
+    url = $(this).attr('href')
+    if (!confirm('Are you sure you want to delete?'))
+      return;
+    window.location = $(this).attr('href')
+  });
+  $('.blocked_email_delete').click(function (e) {
     e.preventDefault()
     url = $(this).attr('href')
     if (!confirm('Are you sure you want to delete?'))

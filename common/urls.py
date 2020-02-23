@@ -7,7 +7,7 @@ from common.views import (
     UsersListView, CreateUserView, UpdateUserView, UserDetailView,
     UserDeleteView, PasswordResetView,
     DocumentListView, document_create, document_update,
-    DocumentDetailView, DocumentDeleteView,
+    DocumentDetailView, DocumentDeleteView,get_teams_and_users,
     download_document, change_user_status, download_attachment,
     add_comment, edit_comment, remove_comment,
     api_settings, add_api_settings, view_api_settings,
@@ -93,6 +93,8 @@ urlpatterns = [
     # user activate link
     path('activate-user/<uidb64>/<token>/<activation_key>/', activate_user, name='activate_user'),
     path('resend_activation_link/<userId>/', resend_activation_link, name='resend_activation_link'),
+    path('get_teams_and_users/', get_teams_and_users, name="get_teams_and_users")
+
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

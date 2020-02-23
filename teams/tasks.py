@@ -1,13 +1,74 @@
 from accounts.models import Account
 from cases.models import Case
 from celery.task import task
-from common.models import Document
+from common.models import Document, User
 from contacts.models import Contact
 from events.models import Event
 from leads.models import Lead
 from opportunity.models import Opportunity
 from tasks.models import Task
 from teams.models import Teams
+
+
+@task
+def remove_users(removed_users_list, team_id):
+    removed_users_list = [i for i in removed_users_list if i.isdigit()]
+    users_list = User.objects.filter(id__in=removed_users_list)
+    if users_list:
+        team = Teams.objects.filter(id=team_id).first()
+        if team:
+            accounts = team.account_teams.all()
+            for account in accounts:
+                for user in users_list:
+                    account.assigned_to.remove(user)
+
+            # for contacts
+            contacts = team.contact_teams.all()
+            for contact in contacts:
+                for user in users_list:
+                    contact.assigned_to.remove(user)
+
+            # for leads
+            leads = team.lead_teams.all()
+            for lead in leads:
+                for user in users_list:
+                    lead.assigned_to.remove(user)
+
+            # for opportunities
+            opportunities = team.oppurtunity_teams.all()
+            for opportunity in opportunities:
+                for user in users_list:
+                    opportunity.assigned_to.remove(user)
+
+            # for cases
+            cases = team.cases_teams.all()
+            for case in cases:
+                for user in users_list:
+                    case.assigned_to.remove(user)
+
+            # for documents
+            docs = team.document_teams.all()
+            for doc in docs:
+                for user in users_list:
+                    doc.shared_to.remove(user)
+
+            # for tasks
+            tasks = team.tasks_teams.all()
+            for task in tasks:
+                for user in users_list:
+                    task.assigned_to.remove(user)
+
+            # for invoices
+            invoices = team.invoices_teams.all()
+            for invoice in invoices:
+                for user in users_list:
+                    invoice.assigned_to.remove(user)
+
+            # for events
+            events = team.event_teams.all()
+            for event in events:
+                for user in users_list:
+                    event.assigned_to.remove(user)
 
 
 @task
@@ -60,7 +121,7 @@ def update_team_users(team_id):
         # for documents
         docs = team.document_teams.all()
         for doc in docs:
-            doc_assigned_to_users = doc.assigned_to.all()
+            doc_assigned_to_users = doc.shared_to.all()
             for team_member in teams_members:
                 if team_member not in doc_assigned_to_users:
                     doc.shared_to.add(team_member)

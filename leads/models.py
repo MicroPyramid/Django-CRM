@@ -26,7 +26,7 @@ class Lead(models.Model):
         null=True, choices=LEAD_STATUS)
     source = models.CharField(
         _("Source of Lead"), max_length=255,
-        blank=True, null=True, choices=LEAD_SOURCE)
+        blank=True, null=True)
     address_line = models.CharField(
         _("Address"), max_length=255, blank=True, null=True)
     street = models.CharField(
