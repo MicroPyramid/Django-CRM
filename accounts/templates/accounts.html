@@ -3,12 +3,7 @@
 {% load paginate %}
 {% load thumbnail %}
 {% block extralinks %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
 
-<link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 <style>
   .form-group label {
     font-weight: 800;
@@ -802,12 +797,7 @@
 
 {% endblock %}
 {% block js_block %}
-<script src="{% static 'js/ajaxForm.js' %}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
-<script type="text/javascript"
-  src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
+
 <script type="text/javascript">
   $("#close-tab").click(function (e) {
     $("#tab_status").val('Closed');
