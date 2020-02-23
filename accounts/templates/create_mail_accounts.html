@@ -16,9 +16,9 @@
 {% endblock breadcrumb %}
 
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-md-12">
       <form id="add_form" method="POST" action='' novalidate>
@@ -34,11 +34,8 @@
                     <div class="col-md-12">
                       <div class="form-group">
                         <label for="">Contacts</label>
-                        <!-- <input type="text" class="form-control" name="contacts_list" id="id_contacts"> -->
-                        <!-- <select name="recipients" id="_id_recipients">
-                          <option value="">email</option>
-
-                        </select> -->
+                        
+                        
                         <input type="text" placeholder="Contacts" name="recipients" id="_id_recipients">
                       </div>
                       <span id="id_recipients"></span>
@@ -85,7 +82,7 @@
                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                               </div>
                             </div>
-                            <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
+                            
                             <span id="id_scheduled_date_time"></span>
                           </div>
                         </div>
@@ -99,11 +96,7 @@
                       <input type="hidden" name="message_body" id="html_content">
                       <span id="id_message_body"></span>
                     </div>
-                    <!-- <div class="col-md-12 text-center">
-                            <pre id="myPrecious"></pre>
-                            <div id="justText"></div>
-                            <div id="justHtml"></div>
-                        </div> -->
+                    
                     <div class="col-md-12">
                       <div class="heading">Personalization tags</div>
                       <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to
@@ -118,10 +111,7 @@
                           <strong>Email: </strong>
                           <code>{% templatetag openvariable %} email {% templatetag closevariable %}</code>
                         </li>
-                        <!-- <li>
-                                      <strong>Two digit day of the month (eg. 01 to 31):</strong>
-                                      <code>[currentdaynumber]</code>
-                                    </li> -->
+                        
                       </ul>
                     </div>
                     <div class="col-md-12 text-center">

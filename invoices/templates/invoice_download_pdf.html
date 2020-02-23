@@ -119,31 +119,10 @@
           <table class="table"
             style="width:100%;border-radius: 5px; background: #f4f8f9; padding: 5px; width: 100%; background: #f4f8f9; display: table; border-collapse: separate; border-spacing: 0 6px; border-radius: 0;">
             <thead style="border-collapse: separate; border-spacing: 0 6px;">
-              <!--
-                <tr>
-                <th
-                  style="padding: 5px 10px;border-top: none;text-transform: uppercase;font-size:13px;border: none;text-align:left;">
-                  ID</th>
-                <th
-                  style="padding: 5px 10px;border-top: none;text-transform: uppercase;font-size:13px;border: none;text-align:left;">
-                  Item Description</th>
-                <th
-                  style="padding: 5px 10px;border-top: none;text-transform: uppercase;font-size:13px;border: none;text-align:left;">
-                  Total</th>
-              </tr>
-            -->
+              
             </thead>
             <tbody style="font-size:13px;font-weight:400;">
-              <!--
-              <tr>
-                <td style="padding:8px 10px;vertical-align: middle;background: #fff;font-weight: 550;border: none;">
-                </td>
-                <td style="padding:8px 10px;vertical-align: middle;background: #fff;font-weight: 550;border: none;">
-                </td>
-                <td style="padding:8px 10px;vertical-align: middle;background: #fff;font-weight: 550;border: none;">
-                </td>
-              </tr>
-              -->
+              
               <tr class="sub_total">
                 {% if invoice.quantity %}
                 <td colspan="2"
@@ -169,22 +148,7 @@
                 <td style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
                   {{ invoice.formatted_total_amount }}</td>
               </tr>
-              <!--
-                <tr class="sub_total">
-                <td colspan="2"
-                  style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
-                  <b>Amount Paid</b></td>
-                <td style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
-                  {{ invoice.formatted_amount_paid }}</td>
-              </tr>
-              <tr class="total">
-                <td colspan="2"
-                  style="padding:8px 10px;vertical-align: middle;background: #cccccc;font-weight: 800;border: none;">
-                  <b>Amount Due</b></td>
-                <td style="padding:8px 10px;vertical-align: middle;background: #cccccc;font-weight: 800;border: none;">
-                  {{ invoice.formatted_amount_due }}</td>
-              </tr>
-            -->
+              
             </tbody>
           </table>
         </td>

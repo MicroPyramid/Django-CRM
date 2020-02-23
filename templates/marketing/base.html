@@ -2,7 +2,7 @@
 
 {% block main_menu %}
 <ul class="navbar-nav mr-auto">
-  <!-- add submenu for contacts-->
+  
   {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user.has_marketing_access %}
   <li class="nav-item"><a class="nav-link" id="marketing-dashboard" href="{% url 'marketing:dashboard' %}">Dashboard</a>
   </li>
@@ -15,26 +15,19 @@
       <div class="dropdown-menu mt-2">
         <a class="dropdown-item contact-list" id="contact-list" href="{% url 'marketing:contact_lists' %}">Contacts
           List</a>
-        <!-- <div class="dropdown-divider"></div> -->
+        
         <a class="dropdown-item contacts" id="contacts" href="{% url 'marketing:contacts_list' %}">Contacts</a>
-        <!-- <a class="dropdown-item contacts" id="contacts" href="/marketing/search-marketing-contact-emails/">Search Contacts</a> -->
+        
       </div>
     </div>
   </li>
 
-  <!-- <li class="nav-item"><a href="{% url 'marketing:contact_lists' %}" class="nav-link" id="contact_lists">Contacts</a>
-  </li> -->
+  
   <li class="nav-item"><a class="nav-link" id="email-templates" href="{% url 'marketing:email_template_list' %}">Email
       templates</a></li>
   <li class="nav-item"><a class="nav-link" id="campaigns" href="{% url 'marketing:campaign_list' %}">Campaigns</a></li>
   {% endif %}
-  <!-- <li class="nav-item"><a class="nav-link" id="leads" href="{% url 'leads:list' %}">Leads</a></li>
-  <li class="nav-item"><a class="nav-link" id="opportunities"href="{% url 'opportunities:list' %}">Opportunities</a></li>
-  <li class="nav-item"><a class="nav-link" id="cases" href="{% url 'cases:list' %}">Cases</a></li>
-  <li class="nav-item"><a class="nav-link" id="documents" href="{% url 'common:doc_list' %}">Documents</a></li>
-  <li class="nav-item"><a class="nav-link" id="tasks" href="{% url 'tasks:tasks_list' %}">Tasks</a></li>
-  <li class="nav-item"><a class="nav-link" id="invoices" href="{% url 'invoices:invoices_list' %}">Invoices</a></li>
-  <li class="nav-item"><a class="nav-link" id="events" href="{% url 'events:events_list' %}">Events</a></li> -->
+  
 </ul>
 {% endblock %}
 
@@ -48,8 +41,7 @@
 {% load compress %}
 {% load thumbnail %}
 {% block main_menu %}
-<!-- <ul class="navbar-nav mr-auto">
-</ul> -->
+
 {% endblock %}
 {% block header %}
 
@@ -58,8 +50,8 @@
 
 {% block content %}
 <div class="side_menu">
-  <!-- <div class="logo_block"> -->
-  <!-- <a href="#">Django <span class="green_color text-uppercase">Crm</span></a> -->
+  
+  
   <div class="dropdown">
     <a class="dropdown-toggle navbar-brand mt-2 ml-3" href="#" role="button" id="dropdownMenuLink"
       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
@@ -72,13 +64,13 @@
       <a class="dropdown-item" href="{% url 'marketing:dashboard' %}">Marketing</a>
     </div>
   </div>
-  <!-- </div> -->
+  
   <div class="profile_block">
     <ul>
 
       <li data-toggle="tooltip" data-placement="bottom" title="{{request.user}}">
         <a href="#" class="profile_pic">
-          <!-- <img src="https://lh3.googleusercontent.com/-6gBVCn2WaAk/AAAAAAAAAAI/AAAAAAAAAAA/ACHi3rd7EWo94Fj0ep0DQa3tDjddczFC3g/s96-c-mo/photo.jpg" alt="profile picture"> -->
+          
           {% if not request.user.profile_pic %}
           <img src="{% static 'images/user.png' %}" alt="Micro profile pic">
           {% else %}
@@ -138,42 +130,7 @@
     </ul>
   </div>
 </div>
-<!-- <ul class="list-group side_menu mb-3">
-  <li class="logo list-group-item">
-    <div class="item">
-      <a href="#">Django <span class="green_color text-uppercase">Crm</span></a>
-    </div>
-  </li>
-  
-  <li class="list-group-item d-flex justify-content-between">
-    <div class="item">
-      <h6 class="heading"><i class="fas fa-address-book"></i> Contacts</h6>
-      <ul>
-        <li><a href="/m/cl/all"><i class="fas fa-bars"></i>All</a></li>
-        <li><a href="/m/cl/lists/" class=""><i class="fas fa-bars"></i> Lists</a></li>
-        <li><a href="/m/cl/list/cnew/"> <i class="fas fa-plus"></i>Create New Contacts</a></li>
-      </ul>
-    </div>
-  </li>
-  <li class="list-group-item d-flex justify-content-between">
-    <div class="item">
-      <h6 class="heading"><i class="fas fa-envelope"></i> Email Templates </h6>
-      <ul>
-        <li><a href="/m/et/list"><i class="fas fa-bars"></i>List</a></li>
-        <li><a href="/m/et/new/"><i class="fas fa-plus"></i>Create New Template</a></li>
-      </ul>
-    </div>
-  </li>
-  <li class="list-group-item d-flex justify-content-between">
-    <div class="item">
-      <h6 class="heading"><i class="fas fa-bullhorn"></i> Campigns</h6>
-      <ul>
-        <li><a href="/m/cm/list/"><i class="fas fa-bars"></i>List</a></li>
-        <li><a href="/m/cm/new/"><i class="fas fa-plus"></i>New Campaign</a></li>
-      </ul>
-    </div>
-  </li>
-</ul> -->
+
 {% endblock %}
 
 {% endcomment %}

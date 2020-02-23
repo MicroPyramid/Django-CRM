@@ -4,19 +4,18 @@
 {% load thumbnail %}
 {% block content %}
 
-<!-- main_container starts here -->
+
 <div class="main_container">
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a href="{% url 'marketing:add_email_for_campaigns' %}" class="btn primary_btn"><i
             class="fa fa-plus"></i> Blocked Emails</a></span>
-      <!-- <span class="d-inline"><a href="{% url 'common:add_api_settings'%}" class="btn primary_btn"><i
-            class="fa fa-plus"></i> Add New Setting</a></span> -->
+      
     </div>
   </div>
-  <!-- filter_row starts here -->
+  
 
-  <!-- filter for contacts -->
+  
   <div class="filter_row list_filter_row_contacts row marl">
     <div class="col-md-12">
       <div class="card">
@@ -25,32 +24,14 @@
             <div class="card-body">
               <div class="card-title">Filter Emails</div>
               <div class="row marl">
-                <!-- <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Name</label>
-                    <input type="text" class="form-control" name="contact_name" value="{{request.POST.contact_name}}">
-                  </div>
-                </div> -->
+                
                 <div class="filter_col col-md-2">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Email</label>
                     <input type="text" class="form-control" name="email" value="{{request.POST.email}}">
                   </div>
                 </div>
-                <!-- <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Created By</label>
-                    <select name="contact_created_by" id="created_by" class="assigned_users_ form-control">
-                      <option value="">
-                        ------------------</option>
-                      {% for user in created_by_users %}
-                      <option value="{{user.id}}" {% if user.id|slugify == request.POST.contact_created_by %}
-                        selected="" {% endif %}>
-                        {{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div> -->
+                
                 <input type="hidden" name="tab_status" id="tab_status">
                 <input type="hidden" name="filter_contacts" id="tab_status" value="filter_contacts">
                 <div class="filter_col col-lg-2">
@@ -66,27 +47,16 @@
       </div>
     </div>
   </div>
-  <!-- filter for contacts -->
+  
 
-  <!-- filter_row ends here -->
+  
 
 
   <div class="filter_row row marl">
     <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
         <div class="col-md-12">
-          <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item">
-              <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="close"
-                aria-selected="false">Contacts - {% if show_pageitems %}
-                {% show_pageitems %}{% else %}
-                {{ contacts|length }}{% endif %}</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="open"
-                aria-selected="true">Settings - </a>
-            </li>
-          </ul> -->
+          
           <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade  show active" id="open" role="tabpanel" aria-labelledby="open">
               <div class="card">
@@ -169,7 +139,7 @@
   </div>
 
 </div>
-<!-- main_container ends here -->
+
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">

@@ -37,9 +37,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'common:create_doc' %}"><i class="fa fa-plus"></i> Add
@@ -98,7 +98,7 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
@@ -110,7 +110,7 @@
               <a href="#" class="primary_btn"><i class="fas fa-filter"></i></a>
             </span>
           </div>
-          <!-- card -->
+          
           <div class="row mb-3">
             {% if per_page %}
             {% paginate per_page documents %}
@@ -120,7 +120,7 @@
             {% for document in documents %}
             <div class="col-lg-3 mt-3">
               <div style="border: 1px solid #e5e5e5; padding: 1em;" class="ml-2 mr-2">
-                <!-- options -->
+                
                 <div class="">
                   <div class="row">
                     <div class="col-12">
@@ -135,54 +135,14 @@
                         </a>{% endif %}
                       </span>
                     </div>
-                    <!-- <div class="col-6">
-                      <span class="">
-                        <div class="actions">
-                          {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
-                          <a href="{% url 'common:view_doc' document.id %}" class="view_icon"><i
-                              class="fas fa-eye edit_delete_options"></i></a>
-                          <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon"><i
-                              class="fas fa-pencil-alt edit_delete_options"></i></a>
-                          <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon"><i
-                              class="fas fa-trash-alt edit_delete_options"></i></a>
-                          {% endif %}
-                          {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}
-                          <a href="{% url 'common:download_document' document.id %}" class="download_icon"><i
-                              class="fas fa-download edit_delete_options edit_delete_options"></i></a>
-                          {% endif %}
-                        </div>
-                      </span>
-                    </div> -->
+                    
                   </div>
-                  <!-- <span class="float-left">
-                    <b> Title: </b> {% if document.title %}<a data-toggle="modal" href="#"
-                      data-target="#exampleModalCenter_doc{{document.id}}">
-                      {{ document.title }}
-                    </a>{% endif %}
-                  </span>
-                  <span class="">
-                    <div class="actions">
-                      {% if request.user == document.created_by or request.user.role == 'ADMIN' %}
-                      <a href="{% url 'common:view_doc' document.id %}" class="view_icon"><i
-                          class="fas fa-eye edit_delete_options"></i></a>
-                      <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon"><i
-                          class="fas fa-pencil-alt edit_delete_options"></i></a>
-                      <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon"><i
-                          class="fas fa-trash-alt edit_delete_options"></i></a>
-                      {% endif %}
-                      {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}
-                      <a href="{% url 'common:download_document' document.id %}" class="download_icon"><i
-                          class="fas fa-download edit_delete_options edit_delete_options"></i></a>
-                      {% endif %}
-                    </div>
-                  </span> -->
+                  
                 </div>
-                <!-- opitons end -->
+                
                 <div class="row mt-3">
                   <div class="col-4">
-                    <!-- <div>{% if document.title %}<a data-toggle="modal" href="#"
-                        data-target="#exampleModalCenter_doc{{document.id}}">{{ document.title }}</a>{% endif %}
-                    </div> -->
+                    
                     <div>
                       {% if document.created_by %}
                       {% if document.created_by.profile_pic %}
@@ -252,7 +212,7 @@
 
           </div>
 
-          <!-- card end -->
+          
         </div>
       </div>
     </div>
@@ -266,14 +226,8 @@
 
 
 </div>
-<!-- </div>
-<br clear="all">
-</div>
-</div>
-<!-- accounts list start
-<!-- accounts list end
-</div> -->
-<!-- main_container ends here -->
+
+
 
 
 {% for doc_obj in documents %}
@@ -289,18 +243,16 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
-        <!-- OPPORTUNITY VIEW STARTS -->
+        
+        
         <div class="" id="">
           <div class="">
             <div class="col-md-12">
               <div class="card">
                 <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                   <div class="panel-heading card-title view-pad text-center">
-                    <!-- <h5>
-                      Document
-                    </h5> -->
-                    <!-- <a href="{% url 'common:edit_doc' doc_obj.id %}" class="btn btn-success edit">Edit</a> -->
+                    
+                    
                   </div>
                   <div class="row marl no-gutters">
                     <div class="col-md-8">
@@ -372,8 +324,8 @@
                       <div class="profile_pic">
                         {% if doc_obj.document_file %}
                         <i class="{{file_type_code}}" aria-hidden="true" style="font-size:3rem;"></i>
-                        <!-- <a href="{{doc_obj.document_file.url}}" target="_blank">Download</a> -->
-                        <!-- <a style="display:block;" href="{% url 'common:download_document' doc_obj.id %}">Download</a> -->
+                        
+                        
                         </td>
                         {% endif %}
                       </div>
@@ -387,10 +339,7 @@
       </div>
     </div>
 
-    <!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+    
   </div>
 </div>
 

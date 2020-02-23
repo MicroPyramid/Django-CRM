@@ -16,7 +16,7 @@
     <li class="breadcrumb-item active">View</li>
   </ol>
 </nav>
-<!-- CASE VIEW STARTS -->
+
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-8" id="opacity_block">
@@ -114,7 +114,7 @@
             </div>
           </div>
         </div>
-        <!-- Attachments -->
+        
         <div class="card-body mar-top" id="datashow">
           <div class="card-title view-pad">
             <h5>Attachments</h5>
@@ -167,7 +167,7 @@
             </div>
           </div>
         </div>
-        <!-- Comments Section starts-->
+        
         <div class="card-body" id="datashow">
           <div class="panel-heading card-title view-pad">
             <h5>Comments</h5>
@@ -249,7 +249,7 @@
             </div>
           </div>
         </div>
-        <!-- Comments Section Ends-->
+        
       </div>
     </div>
     <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
@@ -261,137 +261,8 @@
     </div>
   </div>
 </div>
-<!-- CASE VIEW ENDS -->
-<!-- CREATE MEETING MODEL
-  <div class="modal fade" id="meeting-dispaly-model" role="dialog" data-keyboard="false"
-    data-backdrop="static">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 id="create-meeting-dialog-title" class="modal-title">Meeting</h4>
-        </div>
-        <div id="modelbody" class="modal-body">
-          <div class="panel-body">
-            <div class="row">
-              <div class="cell col-sm-6 form-group inline-group" data-name="name">
-                <label class="control-label" data-name="name" style="display: inline">
-                Name *
-                </label>
-                <div class="field" data-name="name">
-                  <input type="hidden" name="event_type" value="Meeting"/>
-                  <input id="name" class="main-element form-control" type="text"
-                    autocomplete="off"
-                    name="name" required/>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="cell col-sm-6 form-group" data-name="parent">
-                <div class="field" data-name="parent">
-                  <label for="parent">Parent </label>
-                  <div class="form-group" data-name="parent">
-                    <div class="input-group">
-                      <span class="input-group-btn">
-                      <select class="form-control" id="parent_type" name="parent_type" style="width:150px">
-                      </select>
-                      </span>
-                      <input type="text" placeholder="Select" autocomplete="off"
-                        id="parent_name" value="" name="parent_name"
-                        class="main-element form-control">
-                      <span class="input-group-btn">
-                      <button title="Select" tabindex="-1" type="button" class="btn btn-default" id="selectparent"><i
-                        class="glyphicon glyphicon-arrow-up"></i></button>
-                      <button tabindex="-1" type="button" class="btn btn-default" id="clearparent">
-                      </button>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="cell col-sm-6 form-group" data-name="status">
-                <label class="control-label" data-name="status"> Status</label>
-                <div class="field" data-name="status">
-                  <select class="form-control main-element" id="status" name="status">
-                  </select>
-                  <i id="status_error"></i>
-                </div>
-              </div>
-              <div class="col-sm-6"></div>
-            </div>
-            <div class="row">
-              <div class="cell col-sm-6 form-group" data-name="dateStart">
-                <label class="control-label" data-name="dateEnd"> Date Start * </label>
-                <div class="form-group">
-                  <div class='input-group date' id='startdatepicker'>
-                    <input type='text' name="start_date" class="form-control"
-                      id="start_date"
-                      required/>
-                    <span class="input-group-addon">
-                    <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="cell col-sm-6 form-group" data-name="dateEnd">
-                <label class="control-label" data-name="dateEnd"> Date End *</label>
-                <div class="form-group">
-                  <div class='input-group date' id='enddatepicker'>
-                    <input type='text' id="close_date" name="close_date"
-                      class="form-control"/>
-                    <span class="input-group-addon">
-                    <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="cell col-sm-6 form-group" data-name="duration">
-              <label class="control-label" data-name="duration"> Duration </label>
-              <div class="field" data-name="duration">
-                <select class="form-control main-element" id="duration" name="duration">
-                </select>
-              </div>
-            </div>
-            <div class="cell col-sm-6 form-group" data-name="reminders">
-              <label class="control-label" data-name="reminders"> Reminders </label>
-              <a type="button" id="addreminder"
-                style="padding-top: 5px;border: none">
-              <span class="glyphicon glyphicon-plus"></span>
-              </a>
-              <div id="reminders" class="field" data-name="reminders">
-                <div class="reminders-container">
-                  <div class="input-group reminder">
-                    <input type="hidden" id="pushreminder"/>
-                    <div id="reminder1">
-                      <div class="reminderslist" style="display: inline-flex;">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <i id="reminder_error"></i>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="cell col-sm-12 form-group" data-name="description">
-              <label class="control-label" data-name="description"> Description </label>
-              <div class="field" data-name="description">
-                <textarea id="description" class="main-element form-control" rows="4" name="description"></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button data-dismiss="modal" type="button" class="btn btn-default">
-          Close
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  END CREATE MEETING MODEL-->
+
+
 {% endblock %}
 {% block js_block %}
 <script src="{% static 'js/cases/view_case.js' %}"></script>

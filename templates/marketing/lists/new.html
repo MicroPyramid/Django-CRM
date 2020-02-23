@@ -2,7 +2,6 @@
 {% load staticfiles %}
 {% load paginate %}
 {% block extralinks %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
 <style>
   .add_opacity {
     opacity: 0.2;
@@ -53,9 +52,7 @@
                       </label>
                       <input type="file" class="form-control" name="contacts_file">
                       <span id="id_contacts_file"></span>
-                      <!-- <span>
-                          {% if contact_list.contacts.all|length > 0 %} <a href="#">Download Previous File</a>{% endif %}
-                      </span> -->
+                      
                     </div>
                   </div>
                   <div class="filter_col col-md-12">
@@ -98,10 +95,6 @@
 
 {% endblock %}
 {% block js_block %}
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.js"></script>
 <script>
   // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
   $('#loading_spinner').hide()

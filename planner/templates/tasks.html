@@ -1,7 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block content %}
-<!-- heading_create starts here -->
+
 <div class="row marl heading_create">
   <div class="heading col-md-2">TASKS</div>
   <div class="col-md-7">
@@ -146,8 +146,8 @@
       class="fa fa-plus"></i> Create Task</a>
   </div>
 </div>
-<!-- heading_create ends here -->
-<!-- filter_row starts here -->
+
+
 <div class="filter_row row marl">
   <div class="col-md-12">
     <div class="panel panel-default">
@@ -211,14 +211,14 @@
   </div>
 </div>
 </div>
-<!-- filter_row ends here -->
+
 <div class="table_container_row row marl">
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-content for-pagination">
         {% include 'planner/tasks_list.html' %}
       </div>
-      <!-- CREATE TASK MODEL -->
+      
       <form id="model-form" method="post">
         <div class="modal fade" id="task-create-model" role="dialog" data-keyboard="false" data-backdrop="static">
           <div class="modal-dialog modal-lg">
@@ -358,12 +358,12 @@
           </div>
         </div>
       </form>
-      <!--END CREATE TASK MODEL-->
+      
     </div>
   </div>
 </div>
 </div>
-<!--START SUCCESS TASK MODEL-->
+
 <div class="modal fade" id="task-success-model" role="dialog">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
@@ -380,11 +380,11 @@
     </div>
   </div>
 </div>
-<!--END SUCCESS TASK MODEL-->
-<!--SELECT PARENT MODEL-->
+
+
 <div class="modal fade model-sm" id="selectparentmodel" role="dialog" data-keyboard="false" data-backdrop="static">
   <div class="modal-dialog">
-    <!-- Modal content-->
+    
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Select Contact</h4>
@@ -398,7 +398,7 @@
     </div>
   </div>
 </div>
-<!--END  SELECT PARENT MODEL-->
+
 {% include 'planner/dialog_models.html' %}
 <script src="{% static 'js/tasks.js' %}"></script>
 <script src="{% static 'js/setstatus.js' %}"></script>

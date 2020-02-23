@@ -60,7 +60,7 @@
                     <th width="15%">Company</th>
                     <th width="15%">Created by</th>
                     <th width="15%">Created On</th>
-                    <!-- <th width="15%">Related Contact List</th> -->
+                    
                     <th width="10%">Actions</th>
                   </tr>
                 </thead>
@@ -68,9 +68,7 @@
                 <tbody>
 
                   {% for contact in page.object_list %}
-                  <!-- <p>
-                    <a href="{{ result.object.get_absolute_url }}">{{ result.object.email }}</a>
-                  </p> -->
+                  
                   <tr style="text-align:center;">
                     <td scope="row">{{ forloop.counter }}</td>
                     <td><a href="{% url 'marketing:contact_detail' contact.id %}">{{ contact.name }}
@@ -79,17 +77,10 @@
                     <td class="text-center">{{ contact.company_name }}</td>
                     <td>{{ contact.created_by }}</td>
                     <td title="{{contact.created_on}}">{{ contact.created_on_arrow }}</td>
-                    <!-- <td>
-                      {% for contact_list in contact.contact_list.all %}
-                      <span> <a href="{% url 'marketing:contact_list_detail' 1 %}">{{contact_list.name}}</a>
-                      </span>
-                      {% endfor %}
-                    </td> -->
+                    
                     <td class="actions text-center">
-                      <!-- <a href="{% url 'marketing:edit_contact' 1 %}" class="btn btn-success edit edit_contact"
-                        data-other-contacts-lists='{{contact.contact_list.all|length}}'><i class="fas fa-edit"></i></a> -->
-                      <!-- <a href="#" class="sky_blue box"><i class="far fa-copy"></i></a>
-                      <a href="#" class="purple box"><i class="fas fa-upload"></i></a> -->
+                      
+                      
                       <a href="{% url 'marketing:delete_contact' contact.id %}" class="btn btn-danger delete remove_account"
                         data-other-contacts-lists='{{contact.contact_list.all|length}}' title="Delete"><i
                           class="fas fa-trash-alt"></i></a>

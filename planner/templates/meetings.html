@@ -1,7 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block content %}
-<!-- heading_create starts here -->
+
 <div class="row marl heading_create">
   <div class="heading col-md-2">MEETINGS</div>
   <div class="col-md-7">
@@ -198,14 +198,14 @@
       class="fa fa-plus"></i> Create Meeting</a>
   </div>
 </div>
-<!-- heading_create ends here -->
+
 <div class="table_container_row row marl">
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-content for-pagination">
         {% include 'planner/meetings_list.html' %}
       </div>
-      <!-- CREATE MEETING MODEL -->
+      
       <form id="model-form" method="POST" novalidate >
         <div class="modal fade" id="meeting-create-model" role="dialog" data-keyboard="false"
           data-backdrop="static">
@@ -453,8 +453,8 @@
         </div>
       </form>
     </div>
-    <!--END CREATE MEETING MODEL-->
-    <!--START SUCCESS MEETING MODEL-->
+    
+    
     <div class="modal fade" id="meeting-success-model" role="dialog" data-keyboard="false"
       data-backdrop="static">
       <div class="modal-dialog modal-sm">
@@ -471,8 +471,8 @@
         </div>
       </div>
     </div>
-    <!--END SUCCESS MEETING MODEL-->
-    <!--START DELETECONFORMATION MODEL-->
+    
+    
     <div class="modal fade" id="meeting-delete-model" role="dialog" data-keyboard="false"
       data-backdrop="static">
       <div class="modal-dialog modal-sm">
@@ -493,12 +493,12 @@
   </div>
 </div>
 </div>
-<!--END DELETECONFORMATION MODEL-->
-<!--SELECT PARENT MODEL-->
+
+
 <div class="modal fade model-sm" id="selectparentmodel" role="dialog" data-keyboard="false"
   data-backdrop="static">
   <div class="modal-dialog">
-    <!-- Modal content-->
+    
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Select Contact</h4>
@@ -512,7 +512,7 @@
     </div>
   </div>
 </div>
-<!--END  SELECT PARENT MODEL-->
+
 {% include 'planner/dialog_models.html' %}
 <script src="{% static 'js/meetings.js' %}"></script>
 <script src="{% static 'js/setstatus.js' %}"></script>

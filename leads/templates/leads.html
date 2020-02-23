@@ -20,9 +20,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn btn-info edit" data-toggle="modal" data-target="#uploadleadfile"
@@ -31,7 +31,7 @@
           Lead</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="filter_row list_filter_row row marl" id="opacity_block">
     <div class="col-md-12">
       <div class="card">
@@ -88,7 +88,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1">Tags</label>
                     <select class="form-control" id="id_tag" name="tag" multiple>
-                      <!-- <option value="">--Select Tags--</option> -->
+                      
                       {% for tag in tags %}
                       <option value="{{tag.id}}" {% if request_tags %}
                         {% if tag.id|slugify in request_tags %}selected{% endif %}{% endif %}>{{ tag.name }} </option>
@@ -161,8 +161,7 @@
                       {% for lead in open_leads %}
                       <tr class="text-center">
                         <td scope="row">{{ forloop.counter }}</td>
-                        <!-- <td><a href="{% url 'leads:view_lead' lead.id %}">
-                            {{ lead.title }} </a></td> -->
+                        
                         <td>
                           <a data-toggle="modal" data-target="#exampleModalCenter_lead{{lead.id}}" href="#">
                             {{ lead.title }}
@@ -225,14 +224,12 @@
                               </span>
                             </span>
                             {% endfor %}
-                            <!-- <span title="Update Tags" data-toggle="modal" data-target=".modal_tags{{lead.id}}"><i
-                              class="fas fa-pencil-alt"></i></span> -->
+                            
                             {% else %}
                             No Tags
                             {% endif %}
                             {% endwith %}
-                            <!-- <span class="ml-2" title="Update Tags" data-toggle="modal"
-                              data-target=".modal_tags{{lead.id}}"><i class="fas fa-plus"></i></span> -->
+                            
                           </div>
                         </td>
                         <td>{{ lead.country }}</td>
@@ -336,14 +333,12 @@
                               </span>
                             </span>
                             {% endfor %}
-                            <!-- <span title="Update Tags" data-toggle="modal" data-target=".modal_tags{{lead.id}}"><i
-                                  class="fas fa-pencil-alt"></i></span> -->
+                            
                             {% else %}
                             No Tags
                             {% endif %}
                             {% endwith %}
-                            <!-- <span class="ml-2" title="Update Tags" data-toggle="modal"
-                                  data-target=".modal_tags{{lead.id}}"><i class="fas fa-plus"></i></span> -->
+                            
                           </div>
                         </td>
                         <td>{{ lead.country }}</td>
@@ -395,7 +390,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
+        
         <div class=" ">
           <div class="col-md-12" id="">
             <div class="card">
@@ -403,11 +398,10 @@
               <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                 <div class="card-title text-right">
                   <h5>
-                    <!-- <span class="float-left title">Overview</span> -->
+                    
                     <span class="" style="margin-top: 0px">
                       <div class="dropdown buttons_row">
-                        <!-- <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                            <span class="caret"></span></button> -->
+                        
 
                       </div>
                     </span>
@@ -535,10 +529,7 @@
       </div>
 
     </div>
-    <!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+    
   </div>
 </div>
 
@@ -549,7 +540,7 @@
 {% for lead_record in close_leads %}
 
 
-<!-- modal for editing and deleting tags -->
+
 
 <div class="modal fade bd-example-modal-lg modal_tags{{lead_record.id}}" tabindex="-1" role="dialog"
   aria-labelledby="mySmallModalLabel" aria-hidden="true">
@@ -577,7 +568,7 @@
   </div>
 </div>
 
-<!-- modal for editing and deleting tags -->
+
 
 
 <div class="modal fade" id="exampleModalCenter_lead{{lead_record.id}}" tabindex="-1" role="dialog"
@@ -591,7 +582,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
+        
         <div class=" ">
           <div class="col-md-12" id="">
             <div class="card">
@@ -599,11 +590,10 @@
               <div class="card-body" id="datashow" style="margin: 0; padding: 0;">
                 <div class="card-title text-right">
                   <h5>
-                    <!-- <span class="float-left title">Overview</span> -->
+                    
                     <span class="" style="margin-top: 0px">
                       <div class="dropdown buttons_row">
-                        <!-- <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                            <span class="caret"></span></button> -->
+                        
 
                       </div>
                     </span>
@@ -731,10 +721,7 @@
       </div>
 
     </div>
-    <!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+    
     <div class="overview_form_block row marl justify-content-center" id="loading_spinner"
       style="z-index: 10; left: 0; right: 0; vertical-align: middle; position: absolute; margin-top: 15%;">
 
@@ -773,7 +760,7 @@
               <button type="submit" class="btn btn-default save">Save</button>
               <button type="button" class="btn btn-default clear" data-dismiss="modal"
                 id="close_upload_form">Cancel</button>
-              <!-- <a href="{{request.get_full_path}}" class="btn btn-default clear">Cancel</a> -->
+              
             </div>
           </div>
         </form>

@@ -88,7 +88,7 @@
                   {% for campaign in campaigns_list %}
                   <tr style="text-align:center;">
                     <td scope="row" style="text-align: center;">
-                      <!-- <span class="badge badge-primary">Primary</span> -->
+                      
                       <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
                     <td class="text-center">{{campaign.get_all_emails_count}}</td>
                     <td title="{{ campaign.sent_on_format }}">
@@ -98,19 +98,19 @@
                       {{ campaign.created_by }}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      
                       {{campaign.opens_unique}}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      
                       {{campaign.get_all_email_bounces_count}}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">15.5%</span> -->
+                      
                       {{campaign.get_all_emails_subscribed_count}}
                     </td>
                     <td class="text-center">
-                        <!-- <span class="badge badge-secondary">15.5%</span> -->
+                        
                         {{campaign.get_all_emails_unsubscribed_count}}
                       </td>
                     <td class="text-center">

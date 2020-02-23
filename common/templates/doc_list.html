@@ -10,9 +10,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'common:create_doc' %}"><i class="fa fa-plus"></i> Add
@@ -71,7 +71,7 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
@@ -174,10 +174,10 @@
       <br clear="all">
     </div>
   </div>
-  <!-- accounts list start -->
-  <!-- accounts list end -->
+  
+  
 </div>
-<!-- main_container ends here -->
+
 
 
 {% for doc_obj in documents %}
@@ -193,18 +193,16 @@
         </button>
       </div>
       <div class="modal-body">
-        <!-- ... -->
-        <!-- OPPORTUNITY VIEW STARTS -->
+        
+        
         <div class="" id="">
           <div class="">
             <div class="col-md-12">
               <div class="card">
                 <div class="card-body" id="datashow">
                   <div class="panel-heading card-title view-pad text-center">
-                    <!-- <h5>
-                      Document
-                    </h5> -->
-                    <!-- <a href="{% url 'common:edit_doc' doc_obj.id %}" class="btn btn-success edit">Edit</a> -->
+                    
+                    
                   </div>
                   <div class="row marl no-gutters">
                     <div class="col-md-8">
@@ -276,8 +274,8 @@
                       <div class="profile_pic">
                         {% if doc_obj.document_file %}
                         <i class="{{file_type_code}}" aria-hidden="true" style="font-size:3rem;"></i>
-                        <!-- <a href="{{doc_obj.document_file.url}}" target="_blank">Download</a> -->
-                        <!-- <a style="display:block;" href="{% url 'common:download_document' doc_obj.id %}">Download</a> -->
+                        
+                        
                         </td>
                         {% endif %}
                       </div>
@@ -291,10 +289,7 @@
       </div>
     </div>
 
-    <!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+    
   </div>
 </div>
 

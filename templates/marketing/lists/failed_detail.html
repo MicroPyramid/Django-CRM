@@ -11,11 +11,9 @@
           <div class="card-body">
             <div class="card-title text-right">
               <span class="float-left">{{ contact_list.name }} -  Failed: {{ failed_contacts_list|length }}</span>
-              <!-- {% if contact_list.contacts.all|length > 0 %}
-                <a href="{% url 'marketing:contact_list_detail' contact_list.id %}" class="primary_btn">Contacts</a>
-              {% endif %} -->
+              
               <a href="{% url 'marketing:failed_contact_list_download_delete' contact_list.id %}" class="primary_btn">Download & Delete</a>
-                <!-- <div class="" style="margin-top: 2.5em;"></div> -->
+                
             </div>
             <div class="table-responsive table-bordered ">
               <table class="table">
@@ -35,7 +33,7 @@
                     <td>{{ contact.email }}</td>
                     <td class="actions">
                       <a href="{% url 'marketing:edit_failed_contact' contact.id %}" class="btn btn-success edit"><i class="fas fa-edit"></i></a>
-                      <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                      
                       <a href="{% url 'marketing:delete_failed_contact' contact.id %}" class="btn btn-danger delete remove_account"><i class="fas fa-trash"></i></a>
                     </td>
                   </tr>

@@ -10,9 +10,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'teams:team_create'%}"><i class="fa fa-plus"></i>
@@ -20,7 +20,7 @@
           Team</a></span>
     </div>
   </div>
-  <!-- heading_create ends here -->
+  
   <div class="filter_row list_filter_row row marl">
     <div class="col-md-12">
       <div class="card">
@@ -78,16 +78,7 @@
   <div class="col-md-12 col-lg-12 col-xl-12">
     <div class="table_container_row row marl no-gutters">
       <div class="col-md-12">
-        <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link active" id="open-tab" data-toggle="tab" href="#open" role="tab" aria-controls="open"
-              aria-selected="true">Open ({{open_leads|length}})</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="close-tab" data-toggle="tab" href="#close" role="tab" aria-controls="close"
-              aria-selected="false">Closed ({{close_leads|length}})</a>
-          </li>
-        </ul> -->
+        
         <div class="tab-content" id="myTabContent">
           <div class="tab-pane fade show active" id="open" role="tabpanel" aria-labelledby="open">
             <div class="card">
@@ -216,21 +207,11 @@
             <div class="col-md-12">
               <div class="card">
                 <div class="card-body" id="datashow" >
-                  <!-- <div class="panel-heading card-title view-pad text-center">
-                    <h5>
-                      Team
-                    </h5>
-                  </div> -->
+                  
                   <div class="row marl no-gutters">
                     <div class="col-md-8">
                       {% if team_obj.name %}
-                      <!-- <div class="filter_col col-md-12">
-                        <div class="form-group">
-                          <label class="contact_field_label" for="id_title" data-name="title">Name</label>
-                          <div class="contact_field" id="doc_title" data-name="name">{{ team_obj.name }}
-                          </div>
-                        </div>
-                      </div> -->
+                      
                       {% endif %}
                       {% if team_obj.description %}
                       <div class="filter_col col-md-12">
@@ -296,10 +277,7 @@
     </div>
   </div>
 </div>
-<!-- <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div> -->
+
 </div>
 </div>
 </div>

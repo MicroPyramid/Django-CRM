@@ -4,7 +4,7 @@
 {% load thumbnail %}
 {% block content %}
 
-<!-- main_container starts here -->
+
 <div class="main_container">
   <div class="row marl">
     <div class="col-lg-12 text-right">
@@ -14,71 +14,16 @@
             class="fa fa-plus"></i> Block Domains</a></span>
       <span class="d-inline"><a href="{% url 'marketing:add_blocked_email' %}" class="btn primary_btn"><i
             class="fa fa-plus"></i> Block Emails</a></span>
-      <!-- <span class="d-inline"><a href="{% url 'common:add_api_settings'%}" class="btn primary_btn"><i
-            class="fa fa-plus"></i> Add New Setting</a></span> -->
+      
     </div>
   </div>
-  <!-- filter_row starts here -->
+  
 
-  <!-- filter for settings -->
-  <!-- <div class="filter_row list_filter_row row marl">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-          <form id="settings_filter" method="POST" action="" class="filter_form">
-            <div class="card-body">
-              <div class="card-title">Filter Settings</div>
-              <div class="row marl">
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Title</label>
-                    <input type="text" class="form-control" placeholder="API Title" name="title"
-                      value="{{request.POST.title}}">
-                  </div>
-                </div>
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Created By</label>
-                    <select name="created_by" id="created_by" class="assigned_users_ form-control">
-                      <option value="">
-                        ------------------</option>
-                      {% for user in created_by_users %}
-                      <option value="{{user.id}}" {% if user.id|slugify == request.POST.created_by %} selected=""
-                        {% endif %}>
-                        {{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <input type="hidden" name="tab_status" id="tab_status">
-                <input type="hidden" name="api_settings" id="tab_status" value="api_settings">
-                <div class="filter_col col-md-2">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Assigned Users</label>
-                    <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
-                      {% for user in assigned_users %}
-                      <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>
-                        {{user.email}}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="filter_col col-lg-2">
-                  <div class="form-group buttons_row">
-                    <button class="btn btn-primary save" type="submit">Search</button>
-                    <a href="{% url 'common:api_settings' %}" class="btn btn-default clear">Clear</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div> -->
-  <!-- filter for settings -->
+  
+  
+  
 
-  <!-- filter for contacts -->
+  
   <div class="filter_row list_filter_row_contacts row marl">
     <div class="col-md-12">
       <div class="card">
@@ -128,10 +73,10 @@
       </div>
     </div>
   </div>
-  <!-- filter for contacts -->
+  
 
 
-  <!-- filter for domains -->
+  
   <div class="filter_row list_filter_row_domains row marl">
     <div class="col-md-12">
       <div class="card">
@@ -161,9 +106,9 @@
       </div>
     </div>
   </div>
-  <!-- filter for domains -->
+  
 
-  <!-- filter for emails -->
+  
   <div class="filter_row list_filter_row_emails row marl">
     <div class="col-md-12">
       <div class="card">
@@ -193,9 +138,9 @@
       </div>
     </div>
   </div>
-  <!-- filter for emails -->
+  
 
-  <!-- filter_row ends here -->
+  
 
 
   <div class="filter_row row marl">
@@ -296,7 +241,7 @@
               </div>
             </div>
 
-            <!-- blocked domains -->
+            
 
             <div class="tab-pane fade  " id="blocked_domains" role="tabpanel" aria-labelledby="blocked_domains">
               <div class="card">
@@ -373,9 +318,9 @@
               </div>
             </div>
 
-            <!-- blocked domains -->
+            
 
-            <!-- blocked emails -->
+            
             <div class="tab-pane fade  " id="blocked_emails" role="tabpanel" aria-labelledby="blocked_emails">
               <div class="card">
                 <div class="card-body">
@@ -450,7 +395,7 @@
                 </div>
               </div>
             </div>
-            <!-- blocked emails -->
+            
           </div>
           <br clear="all">
         </div>
@@ -459,7 +404,7 @@
   </div>
 
 </div>
-<!-- main_container ends here -->
+
 {% endblock %}
 {% block js_block %}
 <script type="text/javascript">

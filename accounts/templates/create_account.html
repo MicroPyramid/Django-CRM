@@ -60,13 +60,7 @@
                 <div class="form-group ">
                   <label for="exampleInputEmail1" class="required">Leads{% if account_form.lead.field.required %}<span
                       class="error_marker" style="color:red">*</span>{% endif %}</label>
-                  <!-- <select name="lead" class="form-control" placeholder="Lead" required="" id="id_lead">
-                    <option value="" selected="">---------</option>
-                    {% for lead in leads %}
-                    <option value="{{lead.id}}" {% ifequal account_obj.lead.id lead.id %}selected{% endifequal %}>
-                      {{lead.first_name}} {{lead.last_name}}</option>
-                    {% endfor %}
-                  </select> -->
+                  
                   {{ account_form.lead }}
                   <span class="error" id="id__lead">{{ account_form.lead.errors }}</span>
                 </div>
@@ -193,10 +187,7 @@
                   <input type="hidden" id="id_assigned_to_hidden" name="assigned_to_">
                   <span class="error" id="error_id_assigned_to">{{ account_form.assigned_to.errors }}</span>
 
-                  <!-- <label for="id_sattus">Assign To{% if account_form.assigned_to.field.required %}<span
-                      class="error">*</span>{% endif %}</label>
-                  {{ account_form.assigned_to }}
-                  <span class="error">{{ account_form.assigned_to.errors }}</span> -->
+                  
                 </div>
               </div>
               <div class="filter_col col-12">
@@ -245,7 +236,7 @@
     </div>
     <input type="hidden" id="save_new_form" name="savenewform">
   </div>
-  <!-- overview ends here -->
+  
 </form>
 {% else %}
 <div class="justify-content-center text-center">
