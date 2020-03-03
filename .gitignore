@@ -6,7 +6,7 @@ db.sqlite3
 media
 media-images
 cache
-.idea
+.idea/
 CACHE/
 .sass-cache/
 main.css

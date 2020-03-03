@@ -3,14 +3,14 @@ version: '2.0'
 services:
   db:
     image: postgres
-    # volumes:
-    #   - /home/db:/var/lib/postgresql/data
+    volumes:
+       - /opt/krynegger/data/postgresql:/var/lib/postgresql/data
     env_file: 
       - ./db.env
 
   web:
     build: .
-    image: micropyramid/django-crm:1
+    image: lordoftheflies/krynegger-crm:1
     env_file: 
       - ./db.env
     ports:
