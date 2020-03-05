@@ -630,7 +630,7 @@ def campaign_new(request):
             for e in links:
                 llist.append(e.get('href'))
 
-            # get unique linnk
+            # get unique link
             links = set(llist)
 
             # Replace Links with new One
