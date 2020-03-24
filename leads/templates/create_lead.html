@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css"
     href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 </head>
-<form id="lead_form" method="POST" action="" novalidate enctype="multipart/form-data">
+<form id="lead_form" method="POST" action="" novalidate enctype="multipart/form-data">{% csrf_token %}
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">

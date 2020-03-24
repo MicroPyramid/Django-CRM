@@ -36,7 +36,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="leads_filter" action="" method="POST">
+          <form id="leads_filter" action="" method="POST">{% csrf_token %}
             <div class="card-body ">
               <div class="card-title">Filters</div>
               <div class="row marl">
@@ -551,7 +551,7 @@
         <button type="button" class="close" data-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body" style="padding:20px 50px;">
-        <form role="form" id="" method="POST" action="{% url 'leads:update_lead_tags' lead_record.id %}">
+        <form role="form" id="" method="POST" action="{% url 'leads:update_lead_tags' lead_record.id %}">{% csrf_token %}
           <div class="form-group">
             <label>Tags</label>
             <div class="txt-box-div" id="tag-div"><input type="text" name="tags" id="tags_1"
@@ -746,7 +746,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <form action="" method="POST" enctype="multipart/form-data">
+        <form action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
           <div class="filter_col col-md-12">
             <div class="form-group">
               <label>Leads File <span class="error">{% if contact_list %}{% else %}*{% endif %}</span>

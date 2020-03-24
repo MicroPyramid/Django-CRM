@@ -206,7 +206,7 @@
         {% include 'planner/meetings_list.html' %}
       </div>
       
-      <form id="model-form" method="POST" novalidate >
+      <form id="model-form" method="POST" novalidate >{% csrf_token %}
         <div class="modal fade" id="meeting-create-model" role="dialog" data-keyboard="false"
           data-backdrop="static">
           <div class="modal-dialog modal-lg">
