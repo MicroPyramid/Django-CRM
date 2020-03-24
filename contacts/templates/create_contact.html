@@ -202,7 +202,8 @@
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {
       $.post('{% url "cases:remove_attachment" %}', {
-        "attachment_id": x
+        "attachment_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
       }, function (data) {
         if (data.error) {
           alert(data.errors)

@@ -25,7 +25,7 @@
           <div class="row">
             <div class="col-md-9 p-5 m-auto" style=" background: #fff!important;">
               <h1 class="text-center pb-3">{% if invoice_obj %}Edit{% else %}Create{% endif %} Invoice</h1>
-              <form id="formid" action='' method="POST" novalidate>
+              <form id="formid" action='' method="POST" novalidate>{% csrf_token %}
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group row">
