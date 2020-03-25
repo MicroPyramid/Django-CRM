@@ -235,18 +235,29 @@ def task_edit(request, task_id):
 
 @login_required
 @sales_access_required
-def task_delete(request, task_id):
-    task_obj = get_object_or_404(Task, pk=task_id)
+def task_delete(request):
+    # task_obj = get_object_or_404(Task, pk=task_id)
+
+    task_obj = get_object_or_404(
+        Task, id=request.POST.get("task_id"))
 
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or task_obj.created_by == request.user):
         raise PermissionDenied
 
     if request.method == 'GET':
-        task_obj.delete()
+        # task_obj.delete()
 
         if request.GET.get('view_account', None):
             return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))
         return redirect('tasks:tasks_list')
+
+    if request.method == 'POST':
+        task_obj.delete()
+
+        if request.GET.get('page'):
+            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))
+        return redirect('tasks:tasks_list')
+
 
 
 class AddCommentView(LoginRequiredMixin, CreateView):

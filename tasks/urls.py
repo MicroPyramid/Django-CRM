@@ -9,7 +9,9 @@ urlpatterns = [
     path('create/', task_create, name='task_create'),
     path('detail/<int:task_id>/', task_detail, name='task_detail'),
     path('edit/<int:task_id>/', task_edit, name='task_edit'),
-    path('delete/<int:task_id>/', task_delete, name='task_delete'),
+    # path('delete/<int:task_id>/', task_delete, name='task_delete'),
+
+    path('delete/', task_delete, name='task_delete'),
 
     path('comment/add/', AddCommentView.as_view(), name="add_comment"),
     path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),

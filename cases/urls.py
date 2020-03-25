@@ -12,8 +12,10 @@ urlpatterns = [
     path('create/', create_case, name='add_case'),
     path('<int:pk>/view/', CaseDetailView.as_view(), name="view_case"),
     path('<int:pk>/edit_case/', update_case, name="edit_case"),
-    path('<int:case_id>/remove/',
-         RemoveCaseView.as_view(), name="remove_case"),
+    # path('<int:case_id>/remove/',
+    #      RemoveCaseView.as_view(), name="remove_case"),
+
+    path('remove/', RemoveCaseView.as_view(), name="remove_case"),
 
     path('close_case/', CloseCaseView.as_view(), name="close_case"),
     path('select_contacts/', select_contact, name="select_contacts"),

@@ -295,12 +295,22 @@ def event_update(request, event_id):
 
 @login_required
 @sales_access_required
-def event_delete(request, event_id):
-    event = get_object_or_404(Event, pk=event_id)
+def event_delete(request):
+    # event = get_object_or_404(Event, pk=event_id)
+
+    event = get_object_or_404(
+        Event, id=request.POST.get("event_id"))
+
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or event.created_by == request.user):
         raise PermissionDenied
 
-    event.delete()
+    if request.method == 'GET':
+        return redirect('events:events_list')
+
+    if request.method == 'POST':
+        event.delete()
+        return redirect('events:events_list')
+
     return redirect('events:events_list')
 
 

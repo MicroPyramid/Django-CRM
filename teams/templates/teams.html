@@ -166,8 +166,10 @@
                               class="fas fa-eye"></i></a>
                           <a href="{% url 'teams:team_edit' team.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
-                          <a href="{% url 'teams:team_delete' team.id %}"
-                            class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>
+{#                          <a href="{% url 'teams:team_delete' team.id %}"#}
+{#                            class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>#}
+                              <a class="btn btn-danger delete remove_team" onclick="remove_team({{team.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           {% endif %}
                         </td>
                       </tr>
@@ -317,13 +319,30 @@
     $("#open-tab").click()
   }
 
-  $('.delete').click(function (e) {
-    e.preventDefault()
-    url = $(this).attr('href')
-    if (!confirm('Are you sure you want to delete?'))
-      return;
-    window.location = $(this).attr('href')
-  });
+  {#$('.delete').click(function (e) {#}
+  {#  e.preventDefault()#}
+  {#  url = $(this).attr('href')#}
+  {#  if (!confirm('Are you sure you want to delete?'))#}
+  {#    return;#}
+  {#  window.location = $(this).attr('href')#}
+  {#});#}
+
+  function remove_team(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "teams:team_delete" %}', {
+          "task_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#leads" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 
   $("a[rel='page']").click(function (e) {
     e.preventDefault();

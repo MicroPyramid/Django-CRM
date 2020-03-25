@@ -44,13 +44,18 @@ urlpatterns = [
     path('email-templates/create/', email_template_new, name='email_template_new'),
     path('email-templates/<int:pk>/edit/', email_template_edit, name='email_template_edit'),
     path('email-templates/<int:pk>/detail/', email_template_detail, name='email_template_detail'),
-    path('email-templates/<int:pk>/delete/', email_template_delete, name='email_template_delete'),
+    # path('email-templates/<int:pk>/delete/', email_template_delete, name='email_template_delete'),
+
+    path('email-templates/delete/', email_template_delete, name='email_template_delete'),
 
     path('campaigns/', campaign_list, name='campaign_list'),
     path('campaigns/create/', campaign_new, name='campaign_new'),
     # path('cm/<int:pk>/edit/', campaign_edit, name='campaign_edit'),
     path('campaigns/<int:pk>/details/', campaign_details, name='campaign_details'),
-    path('campaigns/<int:pk>/delete/', campaign_delete, name='campaign_delete'),
+    # path('campaigns/<int:pk>/delete/', campaign_delete, name='campaign_delete'),
+
+    path('campaigns/delete/', campaign_delete, name='campaign_delete'),
+
     path('cm/link/<int:link_id>/e/<int:email_id>/', campaign_link_click, name='campaign_link_click'),
     path('cm/track-email/<int:campaign_log_id>/contact/<int:email_id>/', campaign_open, name='campaign_open'),
     path('demo-file-download-for-contacts-list/', demo_file_download, name='demo_file_download'),

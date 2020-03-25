@@ -291,12 +291,20 @@ def invoice_edit(request, invoice_id):
 
 @login_required
 @sales_access_required
-def invoice_delete(request, invoice_id):
-    invoice = get_object_or_404(Invoice, pk=invoice_id)
+def invoice_delete(request):
+    # invoice = get_object_or_404(Invoice, pk=invoice_id)
+
+    invoice = get_object_or_404(
+        Invoice, id=request.POST.get("invoice_id"))
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or invoice.created_by == request.user):
         raise PermissionDenied
 
     if request.method == 'GET':
+        if request.GET.get('view_account'):
+            return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))
+        return redirect('invoices:invoices_list')
+
+    if request.method == 'POST':
         invoice.delete()
         if request.GET.get('view_account'):
             return redirect(reverse('accounts:view_account', args=(request.GET.get('view_account'),)))

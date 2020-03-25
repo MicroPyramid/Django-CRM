@@ -128,8 +128,10 @@
                     <td class="actions text-center">
                       <a href="{% url 'marketing:campaign_details' campaign.id %}" class="btn btn-success view" title="View"><i
                           class="fas fa-eye"></i></a>
-                      <a href="{% url 'marketing:campaign_delete' campaign.id %}"
-                        class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash"></i></a>
+{#                      <a href="{% url 'marketing:campaign_delete' campaign.id %}"#}
+{#                        class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash"></i></a>#}
+                        <a class="btn btn-danger delete remove_campaign" onclick="remove_campaign({{campaign.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt"></i></a>
                     </td>
                   </tr>
                   {% empty %}
@@ -188,5 +190,22 @@
       window.location.href = url;
     });
   })
+
+function remove_campaign(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "marketing:email_template_delete" %}', {
+          "campaign_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#leads" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

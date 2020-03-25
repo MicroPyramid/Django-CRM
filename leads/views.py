@@ -640,7 +640,9 @@ class DeleteLeadView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
         return self.post(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Lead, id=kwargs.get("pk"))
+        # self.object = get_object_or_404(Lead, id=kwargs.get("pk"))
+        self.object = get_object_or_404(
+            Lead, id=request.POST.get("leads_id"))
         if (
             self.request.user.role == "ADMIN" or
             self.request.user.is_superuser or

@@ -393,7 +393,9 @@ class RemoveCaseView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         case_id = kwargs.get("case_id")
-        self.object = get_object_or_404(Case, id=case_id)
+        # self.object = get_object_or_404(Case, id=case_id)
+        self.object = get_object_or_404(
+            Case, id=request.POST.get("case_id"))
         if (self.request.user.role == "ADMIN" or
             self.request.user.is_superuser or
                 self.request.user == self.object.created_by):

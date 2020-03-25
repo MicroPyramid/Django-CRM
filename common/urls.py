@@ -56,8 +56,11 @@ urlpatterns = [
     path('documents/<int:pk>/edit/', document_update, name="edit_doc"),
     path('documents/<int:pk>/view/',
          DocumentDetailView.as_view(), name='view_doc'),
-    path('documents/<int:pk>/delete/',
-         DocumentDeleteView.as_view(), name='remove_doc'),
+    # path('documents/<int:pk>/delete/',
+    #      DocumentDeleteView.as_view(), name='remove_doc'),
+
+    path('documents/delete/',
+             DocumentDeleteView.as_view(), name='remove_doc'),
 
     # download
     path('documents/<int:pk>/download/',
