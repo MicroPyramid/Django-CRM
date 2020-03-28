@@ -151,8 +151,8 @@ class AccountsViewTestCase(AccountCreateTest, TestCase):
 class AccountsRemoveTestCase(AccountCreateTest, TestCase):
 
     def test_accounts_remove(self):
-        response = self.client.get(
-            '/accounts/' + str(self.account.id) + '/delete/')
+        response = self.client.post(
+            '/accounts/delete/', {'account_id':self.account.id})
         self.assertEqual(response['location'], '/accounts/')
 
     # def test_accounts_remove_status(self):

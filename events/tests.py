@@ -406,13 +406,13 @@ class EventDeleteTestCase(EventObjectTest, TestCase):
 
         self.client.login(email='janeDoeEvent@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('events:event_delete', args=(self.event.id,)))
+        response = self.client.post(
+            reverse('events:event_delete'), {'event_id':self.event.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.login(email='johnDoeEvent@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('events:event_delete', args=(self.event.id,)))
+        response = self.client.post(
+            reverse('events:event_delete'), {'event_id':self.event.id})
         self.assertEqual(response.status_code, 302)
 

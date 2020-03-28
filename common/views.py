@@ -556,13 +556,13 @@ class DocumentListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateVie
 class DocumentDeleteView(LoginRequiredMixin, DeleteView):
     model = Document
 
-    # def get(self, request, *args, **kwargs):
-    #     if not request.user.role == 'ADMIN':
-    #         if not request.user == Document.objects.get(id=kwargs['pk']).created_by:
-    #             raise PermissionDenied
-    #     self.object = self.get_object()
-    #     self.object.delete()
-    #     return redirect("common:doc_list")
+    def get(self, request, *args, **kwargs):
+        if not request.user.role == 'ADMIN':
+            if not request.user == Document.objects.get(id=kwargs['pk']).created_by:
+                raise PermissionDenied
+        self.object = self.get_object()
+        # self.object.delete()
+        return redirect("common:doc_list")
 
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(

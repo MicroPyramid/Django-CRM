@@ -504,14 +504,18 @@ class InvoiceDeleteTestCase(InvoiceCreateTest, TestCase):
 
         self.client.login(email='joeInvoice@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('invoices:invoice_delete', args=(self.invoice_1.id,)))
+        # response = self.client.get(
+        #     reverse('invoices:invoice_delete', args=(self.invoice_1.id,)))
+        # self.assertEqual(response.status_code, 403)
+
+        response = self.client.post(
+            reverse('invoices:invoice_delete', ), {'invoice_id':self.invoice_1.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.login(email='janeDoeInvoice@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('invoices:invoice_delete', args=(self.invoice_1.id,)))
+        response = self.client.post(
+            reverse('invoices:invoice_delete', ), {'invoice_id':self.invoice_1.id})
         self.assertEqual(response.status_code, 302)
 
         self.client.login(email='johnDoeInvoice@example.com',
@@ -528,6 +532,6 @@ class InvoiceDeleteTestCase(InvoiceCreateTest, TestCase):
         self.invoice.status = 'Paid'
         self.invoice.save()
         self.assertEqual(self.invoice.is_paid_or_cancelled(), True)
-        response = self.client.get(
-            reverse('invoices:invoice_delete', args=(self.invoice.id,)) + '?view_account={}'.format(self.account.id,))
+        response = self.client.post(
+            reverse('invoices:invoice_delete',), {'invoice_id':self.invoice.id})
         self.assertEqual(response.status_code, 302)

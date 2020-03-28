@@ -421,6 +421,14 @@ class AccountDeleteView(SalesAccessRequiredMixin, LoginRequiredMixin, DeleteView
     model = Account
     template_name = 'view_account.html'
 
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user != self.object.created_by:
+                raise PermissionDenied
+        # self.object.delete()
+        return redirect("accounts:list")
+
     def post(self, request, *args, **kwargs):
         self.object = get_object_or_404(
             Account, id=request.POST.get("account_id"))

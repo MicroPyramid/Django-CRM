@@ -52,7 +52,7 @@ urlpatterns = [
     path('campaigns/create/', campaign_new, name='campaign_new'),
     # path('cm/<int:pk>/edit/', campaign_edit, name='campaign_edit'),
     path('campaigns/<int:pk>/details/', campaign_details, name='campaign_details'),
-    # path('campaigns/<int:pk>/delete/', campaign_delete, name='campaign_delete'),
+    path('campaigns/<int:pk>/delete/', campaign_delete, name='campaign_delete'),
 
     path('campaigns/delete/', campaign_delete, name='campaign_delete'),
 

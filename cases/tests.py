@@ -141,15 +141,15 @@ class CaseShowTestCase(CaseCreation, TestCase):
 
 class CaseRemoveTestCase(CaseCreation, TestCase):
 
-    def test_case_deletion_show_case(self):
-        response = self.client.get('/cases/' + str(self.case.id) + '/remove/')
-        self.assertEqual(response['location'], '/cases/')
+    # def test_case_deletion_show_case(self):
+    #     response = self.client.get('/cases/remove/')
+    #     self.assertEqual(response['location'], '/cases/')
 
     def test_case_delete(self):
         response = self.client.post(
-            '/cases/' + str(self.case.id) + '/remove/',
+            '/cases/remove/',
             {'case_id': self.case.id})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
 
 
 class CaseUpdateTestCase(CaseCreation, TestCase):
@@ -427,10 +427,10 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
             })
         self.assertEqual(response.status_code, 403)
 
-        response = self.client.get(reverse('cases:remove_case', args=(self.case.id,)))
+        response = self.client.get(reverse('cases:remove_case'))
         self.assertEqual(response.status_code, 403)
 
-        response = self.client.post(reverse('cases:remove_case', args=(self.case.id,)),
+        response = self.client.post(reverse('cases:remove_case'),
             {'case_id':self.case_new.id})
         self.assertEqual(response.status_code, 403)
 
@@ -538,9 +538,9 @@ class TestCasesListViewForUser(CaseCreation, TestCase):
             created_by=self.usermp, closed_on="2016-05-04")
         self.client.logout()
         self.client.login(email='johnDoeCase@example.com', password='password')
-        response = self.client.post(reverse('cases:remove_case', args=(self.case_user.id,)) + '?view_account={}'.format(self.account.id),
+        response = self.client.post(reverse('cases:remove_case',),
             {'case_id': self.case_user.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(302, response.status_code)
 
         self.case_user = Case.objects.create(
             name="case user", case_type="Problem", status="New",

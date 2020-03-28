@@ -253,7 +253,7 @@ class GetLeadsViewTestCase(TestLeadModel, TestCase):
 class LeadsRemoveTestCase(TestLeadModel, TestCase):
 
     def test_leads_remove(self):
-        response = self.client.get('/leads/' + str(self.lead.id) + '/delete/')
+        response = self.client.post('/leads/delete/', {'leads_id':self.lead.id})
         self.assertEqual(response['location'], '/leads/')
 
     def test_leads_remove_status(self):
@@ -663,7 +663,7 @@ class TestCommentAddResponse(TestLeadModel, TestCase):
         self.client.logout()
         self.client.login(email='janeLead3@example.com', password="password")
 
-        response = self.client.get(reverse('leads:remove_lead', args=(self.lead_1.id,)))
+        response = self.client.post(reverse('leads:remove_leads'), {'leads_id':self.lead_1.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.logout()

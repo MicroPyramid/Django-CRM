@@ -21,7 +21,7 @@ urlpatterns = [
          name="create_lead_from_site"),
     path('<int:pk>/view/', LeadDetailView.as_view(), name="view_lead"),
     path('<int:pk>/edit/', update_lead, name="edit_lead"),
-    # path('<int:pk>/delete/', DeleteLeadView.as_view(), name="remove_lead"),
+    path('<int:pk>/delete/', DeleteLeadView.as_view(), name="remove_lead"),
 
     path('delete/', DeleteLeadView.as_view(), name="remove_leads"),
 
