@@ -156,7 +156,7 @@
             </div>
             <div class="row marl">
               <div class="col-md-12">
-                <form id="attachment_form" method="POST" enctype="multipart/form-data">
+                <form id="attachment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
                   <div class="form-group ">
                     <input type="file" class="form-control-file" cols="40" id="id_attachments" name="attachment">
                     <div>
@@ -212,7 +212,7 @@
             </div>
             <div class="row marl">
               <div class="col-md-12">
-                <form id="comment_form" method="POST" enctype="multipart/form-data">
+                <form id="comment_form" method="POST" enctype="multipart/form-data">{% csrf_token %}
                   <div class="form-group">
                     <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_comments" name="comment"
                       placeholder="Submit Your Comments Here"></textarea>
@@ -270,7 +270,7 @@
                     <h4 class="modal-title">Update Your Comment</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">&times;</button>
                   </div>
-                  <form id="comment_edit_form" method="POST">
+                  <form id="comment_edit_form" method="POST">{% csrf_token %}
                     <div class="modal-body">
                       <div class="form-group">
                         <textarea class="form-control mentions" textarea cols="40" rows="3" id="id_editcomment"
@@ -414,7 +414,8 @@
     var con = confirm("Do you want to Delete it for Sure!?")
     if (con == true) {
       $.post('{% url "opportunities:remove_comment" %}', {
-        "comment_id": x
+        "comment_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
       }, function (data) {
         if (data.error) {
           alert(data.error)
@@ -429,7 +430,8 @@
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {
       $.post('{% url "leads:remove_attachment" %}', {
-        "attachment_id": x
+        "attachment_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
       }, function (data) {
         if (data.error) {
           alert(data.error)

@@ -219,7 +219,7 @@
         {% include 'planner/tasks_list.html' %}
       </div>
       
-      <form id="model-form" method="post">
+      <form id="model-form" method="post">{% csrf_token %}
         <div class="modal fade" id="task-create-model" role="dialog" data-keyboard="false" data-backdrop="static">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">

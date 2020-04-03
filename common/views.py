@@ -561,8 +561,17 @@ class DocumentDeleteView(LoginRequiredMixin, DeleteView):
             if not request.user == Document.objects.get(id=kwargs['pk']).created_by:
                 raise PermissionDenied
         self.object = self.get_object()
-        self.object.delete()
+        # self.object.delete()
         return redirect("common:doc_list")
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(
+            Document, id=request.POST.get("document_id"))
+        if not request.user.role == 'ADMIN':
+            if not request.user == Document.objects.get(id=kwargs['pk']).created_by:
+                raise PermissionDenied
+        self.object.delete()
+        return redirect('common:doc_list')
 
 
 @login_required

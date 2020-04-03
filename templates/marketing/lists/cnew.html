@@ -6,7 +6,7 @@
 <div class="marketing_pages">
 	<div class="row marl">
 	  <div class="col-md-12">
-	    <form id="add_form" method="POST" action='' novalidate>
+	    <form id="add_form" method="POST" action='' novalidate>{% csrf_token %}
 		  <div class="overview_form_block row marl justify-content-center">
 		    <div class="col-md-5">
 		      <div class="card">
@@ -53,7 +53,7 @@
 	  </div>  
 
 	  <div class="col-md-12">
-	    <form id="add_form" method="POST" action='' novalidate>
+	    <form id="add_form" method="POST" action='' novalidate>{% csrf_token %}
 		  <div class="overview_form_block row marl justify-content-center">
 		    <div class="col-md-5">
 		      <div class="card">

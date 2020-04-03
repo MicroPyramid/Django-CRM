@@ -155,14 +155,14 @@ class ContactViewsTestCase(ContactObjectsCreation, TestCase):
         response = self.client.get(reverse("contacts:list"))
         self.assertEqual(response.status_code, 200)
 
-    def test_contacts_delete_get(self):
-        response = self.client.get(
-            '/contacts/' + str(self.contact.id) + '/delete/')
+    def test_contacts_delete_post(self):
+        response = self.client.post(
+            '/contacts/delete/', {'contact_id':self.contact.id})
         self.assertEqual(response.status_code, 302)
 
     def test_contacts_delete_location_checking(self):
         response = self.client.post(
-            '/contacts/' + str(self.contact.id) + '/delete/')
+            '/contacts/delete/', {'contact_id': self.contact.id})
         self.assertEqual(response['location'], '/contacts/')
 
     def test_contacts_edit(self):
@@ -363,7 +363,7 @@ class TestContactCreateContact(ContactObjectsCreation, TestCase):
         self.assertEqual(403, response.status_code)
 
         response = self.client.post(reverse('contacts:remove_contact', args=(
-            self.contact.id,)), {'pk': self.contact.id})
+            self.contact.id,)), {'contact_id': self.contact.id})
         self.assertEqual(403, response.status_code)
         self.contact.delete()
 
@@ -520,7 +520,7 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             address=self.address,
             description="contact",
             created_by=self.user)
-        response = self.client.post(reverse('contacts:remove_contact', args=(self.contact_delete.id,)), {'pk': self.contact_delete.id},
+        response = self.client.post(reverse('contacts:remove_contact'), {'contact_id': self.contact_delete.id},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(200, response.status_code)
 

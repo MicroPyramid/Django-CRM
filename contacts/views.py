@@ -407,7 +407,9 @@ class RemoveContactView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         contact_id = kwargs.get("pk")
-        self.object = get_object_or_404(Contact, id=contact_id)
+        # self.object = get_object_or_404(Contact, id=contact_id)
+        self.object = get_object_or_404(
+            Contact, id=request.POST.get("contact_id"))
         if (self.request.user.role != "ADMIN" and not
             self.request.user.is_superuser and
                 self.request.user != self.object.created_by):
@@ -419,7 +421,6 @@ class RemoveContactView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
             if self.request.is_ajax():
                 return JsonResponse({'error': False})
             return redirect("contacts:list")
-
 
 class AddCommentView(LoginRequiredMixin, CreateView):
     model = Comment

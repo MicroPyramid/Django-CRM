@@ -15,6 +15,8 @@ urlpatterns = [
     path('<int:case_id>/remove/',
          RemoveCaseView.as_view(), name="remove_case"),
 
+    path('remove/', RemoveCaseView.as_view(), name="remove_case"),
+
     path('close_case/', CloseCaseView.as_view(), name="close_case"),
     path('select_contacts/', select_contact, name="select_contacts"),
     path('get/list/', GetCasesView.as_view(), name="get_cases"),

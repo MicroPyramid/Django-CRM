@@ -9,7 +9,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-<form id="submitForm" method="POST" action="" novalidate enctype="multipart/form-data">
+<form id="submitForm" method="POST" action="" novalidate enctype="multipart/form-data">{% csrf_token %}
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">
@@ -294,7 +294,8 @@
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {
       $.post('{% url "cases:remove_attachment" %}', {
-        "attachment_id": x
+        "attachment_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
       }, function (data) {
         if (data.error) {
           alert(data.errors)

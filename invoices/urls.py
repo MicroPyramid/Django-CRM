@@ -10,6 +10,9 @@ urlpatterns = [
     path('detail/<int:invoice_id>/', invoice_details, name='invoice_details'),
     path('edit/<int:invoice_id>/', invoice_edit, name='invoice_edit'),
     path('delete/<int:invoice_id>/', invoice_delete, name='invoice_delete'),
+
+    path('delete/', invoice_delete, name='invoice_delete'),
+
     path('download/<int:invoice_id>/', invoice_download, name='invoice_download'),
     path('send-mail/<int:invoice_id>/', invoice_send_mail, name='invoice_send_mail'),
     path('cancelled-mail/<int:invoice_id>/', invoice_change_status_cancelled, name='invoice_change_status_cancelled'),

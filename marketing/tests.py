@@ -647,13 +647,13 @@ class TestContactListDetail(TestMarketingModel, TestCase):
     def test_email_delete(self):
         self.client.logout()
         self.client.login(username='janeMarketing@example.com', password='password')
-        response = self.client.get(
-            reverse('marketing:email_template_delete', args=(self.email_template.id,)))
+        response = self.client.post(
+            reverse('marketing:email_template_delete'), {'emailtemp_id':self.email_template.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.login(username='john@example.com', password='password')
-        response = self.client.get(
-            reverse('marketing:email_template_delete', args=(self.email_template.id,)))
+        response = self.client.post(
+            reverse('marketing:email_template_delete'), {'emailtemp_id': self.email_template.id})
         self.assertEqual(response.status_code, 302)
 
     def test_campaign_list(self):
@@ -790,13 +790,13 @@ class TestContactListDetail(TestMarketingModel, TestCase):
 
     def test_campaign_delete(self):
         self.client.login(username='janeMarketing@example.com', password='password')
-        response = self.client.get(
-            reverse('marketing:campaign_delete', args=(self.campaign.id,)))
+        response = self.client.post(
+            reverse('marketing:campaign_delete'), {'campaign_id':self.campaign.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.login(username='john@example.com', password='password')
-        response = self.client.get(
-            reverse('marketing:campaign_delete', args=(self.campaign.id,)))
+        response = self.client.post(
+            reverse('marketing:campaign_delete'), {'campaign_id':self.campaign.id})
         self.assertEqual(response.status_code, 302)
 
     def test_demo_file_download(self):

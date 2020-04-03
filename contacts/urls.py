@@ -17,6 +17,8 @@ urlpatterns = [
          RemoveContactView.as_view(),
          name="remove_contact"),
 
+    path('delete/', RemoveContactView.as_view(), name="remove_contact"),
+
     path('get/list/', GetContactsView.as_view(), name="get_contacts"),
 
     path('comment/add/', AddCommentView.as_view(), name="add_comment"),

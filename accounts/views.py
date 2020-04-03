@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (CreateView, DeleteView, DetailView, FormView,
@@ -426,9 +426,18 @@ class AccountDeleteView(SalesAccessRequiredMixin, LoginRequiredMixin, DeleteView
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
                 raise PermissionDenied
-        self.object.delete()
+        # self.object.delete()
         return redirect("accounts:list")
 
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(
+            Account, id=request.POST.get("account_id"))
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user != self.object.created_by:
+                raise PermissionDenied
+        self.object.delete()
+        # data = {"cid": request.POST.get("comment_id")}
+        return redirect('accounts:list')
 
 class AddCommentView(LoginRequiredMixin, CreateView):
     model = Comment

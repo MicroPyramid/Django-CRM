@@ -16,6 +16,7 @@ urlpatterns = [
     path('<int:pk>/edit/', AccountUpdateView.as_view(), name="edit_account"),
     path('<int:pk>/delete/', AccountDeleteView.as_view(),
          name="remove_account"),
+    path('delete/', AccountDeleteView.as_view(), name="remove_account"),
     path('comment/add/', AddCommentView.as_view(), name="add_comment"),
     path('comment/edit/', UpdateCommentView.as_view(), name="edit_comment"),
     path('comment/remove/', DeleteCommentView.as_view(),

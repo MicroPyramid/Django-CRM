@@ -21,7 +21,7 @@
         </div>
         <div class="modal-body" style="padding:20px 50px;">
           <form role="form" id="chang_password_form" method="POST"
-            action="{% url 'common:change_passsword_by_admin' %}">
+            action="{% url 'common:change_passsword_by_admin' %}">{% csrf_token %}
             <div class="form-group">
               <label for="usrname"><span class="glyphicon glyphicon-user"></span> New Password</label>
               <input type="password" class="form-control" name="new_passwoord" id="new_passwoord"
@@ -43,7 +43,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="users_filter" method="POST" action="">
+          <form id="users_filter" method="POST" action="">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filters</div>
               <div class="row marl">

@@ -28,7 +28,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="contacts_filter" method="POST" action="" class="filter_form">
+          <form id="contacts_filter" method="POST" action="" class="filter_form">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filter Contacts</div>
               <div class="row marl">
@@ -81,7 +81,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="filter_domains_form" method="POST" action="" class="filter_form">
+          <form id="filter_domains_form" method="POST" action="" class="filter_form">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filter Domain</div>
               <div class="row marl">
@@ -113,7 +113,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="filter_emails_form" method="POST" action="" class="filter_form">
+          <form id="filter_emails_form" method="POST" action="" class="filter_form">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filter Contacts</div>
               <div class="row marl">

@@ -524,11 +524,22 @@ def email_template_detail(request, pk):
 
 @login_required(login_url='/login')
 @marketing_access_required
-def email_template_delete(request, pk):
-    email_template_obj = get_object_or_404(EmailTemplate, pk=pk)
+def email_template_delete(request):
+    # email_template_obj = get_object_or_404(EmailTemplate, pk=pk)
+
+    email_template_obj = get_object_or_404(
+        EmailTemplate, id=request.POST.get("emailtemp_id"))
+
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == email_template_obj.created_by):
         raise PermissionDenied
-    email_template_obj.delete()
+
+    if request.method == 'GET':
+        return redirect('marketing:email_template_list')
+
+    if request.method == 'POST':
+        email_template_obj.delete()
+        return redirect('marketing:email_template_list')
+
     redirect_to = reverse('marketing:email_template_list')
     return HttpResponseRedirect(redirect_to)
 
@@ -809,11 +820,21 @@ def campaign_details(request, pk):
 
 @login_required(login_url='/login')
 @marketing_access_required
-def campaign_delete(request, pk):
-    campaign = get_object_or_404(Campaign, pk=pk)
+def campaign_delete(request):
+    # campaign = get_object_or_404(Campaign, pk=pk)
+    campaign = get_object_or_404(
+        EmailTemplate, id=request.POST.get("campaign_id"))
+
     if not (request.user.role == 'ADMIN' or request.user.is_superuser or request.user == campaign.created_by):
         raise PermissionDenied
-    campaign.delete()
+
+    if request.method == 'GET':
+        return redirect('marketing:campaign_list')
+
+    if request.method == 'POST':
+        campaign.delete()
+        return redirect('marketing:campaign_list')
+
     redirect_url = reverse('marketing:campaign_list')
     return redirect(redirect_url)
 

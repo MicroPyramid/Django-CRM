@@ -59,6 +59,9 @@ urlpatterns = [
     path('documents/<int:pk>/delete/',
          DocumentDeleteView.as_view(), name='remove_doc'),
 
+    path('documents/delete/',
+             DocumentDeleteView.as_view(), name='remove_doc'),
+
     # download
     path('documents/<int:pk>/download/',
          download_document, name='download_document'),

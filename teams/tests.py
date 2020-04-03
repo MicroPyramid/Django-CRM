@@ -158,12 +158,12 @@ class TeamDeleteCase(TeamObjectTest, TestCase):
     def test_team_delete(self):
         self.client.login(email='janeDoeTeam@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('teams:team_delete', args=(self.team_dev.id,)))
+        response = self.client.post(
+            reverse('teams:team_delete'), {'task_id':self.team_dev.id})
         self.assertEqual(response.status_code, 403)
 
         self.client.login(email='johnDoeTeam@example.com',
                           password='password')
-        response = self.client.get(
-            reverse('teams:team_delete', args=(self.team_dev.id,)))
+        response = self.client.post(
+            reverse('teams:team_delete'), {'task_id':self.team_dev.id})
         self.assertEqual(response.status_code, 302)

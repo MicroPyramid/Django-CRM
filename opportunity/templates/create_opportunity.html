@@ -15,7 +15,7 @@
     href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
 </head>
-<form id="id_opportunity_form" class="form_user" method="POST" action="" novalidate enctype="multipart/form-data">
+<form id="id_opportunity_form" class="form_user" method="POST" action="" novalidate enctype="multipart/form-data">{% csrf_token %}
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-9">
       <div class="card">
@@ -391,7 +391,7 @@
   function remove_comment(x) {
     var warn = confirm("Are You Sure, you Want to Delete this Comment!?")
     if (warn == true) {
-      $.post('{% url "opportunities:remove_comment" %}', { "comment_id": x }, function (data) {
+      $.post('{% url "opportunities:remove_comment" %}', { "comment_id": x, csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val() }, function (data) {
         if (data.error) {
           alert(data.error)
         } else {
@@ -485,7 +485,8 @@
     const con = confirm("Do you want to Delete it for Sure!?");
     if (con == true) {
       $.post('{% url "cases:remove_attachment" %}', {
-        "attachment_id": x
+        "attachment_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
       }, function (data) {
         if (data.error) {
           alert(data.errors)

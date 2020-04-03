@@ -10,13 +10,13 @@ from contacts.models import Contact
 from opportunity.models import Opportunity
 from teams.models import Teams
 
+
 # Create your tests here.
 
 
 class OpportunityModel(object):
 
     def setUp(self):
-
         self.user = User.objects.create(
             first_name="jane doe", username='jane doe Opp',
             email="janeOpp@example.com", role="ADMIN")
@@ -147,8 +147,8 @@ class opportunityCreateTestCase(OpportunityModel, TestCase):
             response.context['opportunity_record'].id, self.opportunity.id)
 
     def test_del_opportunity_url(self):
-        response = self.client.get(
-            '/opportunities/' + str(self.opportunity.id) + '/delete/')
+        response = self.client.post(
+            '/opportunities/delete/', {'opportunity_id': self.opportunity.id})
         self.assertEqual(response['location'], '/opportunities/')
 
     def test_opportunity_delete(self):
@@ -322,7 +322,6 @@ class TestGetOpportunitiesView(OpportunityModel, TestCase):
 class TestOpportunityListViewForUser(OpportunityModel, TestCase):
 
     def test_queryset_for_user(self):
-
         self.usermp = User.objects.create(
             first_name="john",
             username='johndoeopportunity@example.com',
@@ -403,14 +402,14 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
         response = self.client.post(
             '/opportunities/comment/add/', {'opportunityid': self.opportunity.id})
         self.assertJSONEqual(force_text(response.content), {
-                             'error': ['This field is required.']})
+            'error': ['This field is required.']})
 
         self.comment = Comment.objects.create(
             comment='testikd', case=self.case, commented_by=self.usermp)
         response = self.client.post(
             '/opportunities/comment/edit/', {'commentid': self.comment.id})
         self.assertJSONEqual(force_text(response.content), {
-                             'error': ['This field is required.']})
+            'error': ['This field is required.']})
 
         self.client.logout()
 
@@ -466,12 +465,11 @@ class TestOpportunityListViewForUser(OpportunityModel, TestCase):
 class CommentTestCaseError(OpportunityModel, TestCase):
 
     def test_comment_add(self):
-
         self.client.login(email='johnOpp@example.com', password='password')
         response = self.client.post(
             '/opportunities/comment/add/', {'opportunityid': self.opportunity.id})
         self.assertJSONEqual(force_text(response.content), {
-                             'error': "You don't have permission to comment."})
+            'error': "You don't have permission to comment."})
 
         self.usermp5 = User.objects.create(
             first_name="janeD",
@@ -487,12 +485,12 @@ class CommentTestCaseError(OpportunityModel, TestCase):
         response = self.client.post(
             '/opportunities/comment/edit/', {'commentid': self.comment_mp.id})
         self.assertJSONEqual(force_text(response.content), {
-                             'error': "You don't have permission to edit this comment."})
+            'error': "You don't have permission to edit this comment."})
 
         response = self.client.post(
             '/opportunities/comment/remove/', {'comment_id': self.comment_mp.id})
         self.assertJSONEqual(force_text(response.content), {
-                             'error': "You don't have permission to delete this comment."})
+            'error': "You don't have permission to delete this comment."})
 
 
 class AttachmentTestCaseError(OpportunityModel, TestCase):
@@ -500,7 +498,7 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
     def test_attachment_add(self):
         url = "/opportunities/attachment/add/"
         response = self.client.post(url, {'opportunityid': self.opportunity.id})
-        self.assertJSONEqual(force_text(response.content),{"error": ["This field is required."]})
+        self.assertJSONEqual(force_text(response.content), {"error": ["This field is required."]})
 
         response = self.client.get(reverse('opportunity:list') + '?tag={}'.format(self.tag_1.id))
         self.assertEqual(200, response.status_code)
@@ -518,7 +516,7 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
             'name': 'opportunity teams',
             'stage': 'QUALIFICATION',
             'teams': self.team_opp.id,
-            'savenewform':'true',
+            'savenewform': 'true',
         }
         response = self.client.post(reverse('opportunity:save'), data)
         self.assertEqual(200, response.status_code)
@@ -545,13 +543,14 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
             'name': 'opportunity teams edit',
             'stage': 'QUALIFICATION',
             'teams': self.team_opp.id,
-            'savenewform':'true',
+            'savenewform': 'true',
             'from_account': self.account.id,
         }
         response = self.client.post(reverse('opportunity:opp_edit', args=(self.opportunity_2.id,)), data)
         self.assertEqual(200, response.status_code)
 
-        response = self.client.get(reverse('opportunity:opp_edit', args=(self.opportunity_2.id,)) + '?view_account={}'.format(self.account.id))
+        response = self.client.get(
+            reverse('opportunity:opp_edit', args=(self.opportunity_2.id,)) + '?view_account={}'.format(self.account.id))
         self.assertEqual(200, response.status_code)
 
         self.client.logout()
@@ -561,22 +560,21 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
 
         self.client.logout()
         self.client.login(email='janeOpp@example.com', password='password')
-        response = self.client.get(reverse('opportunity:opp_remove', args=(self.opportunity_1.id,)), {
-            'pk':self.opportunity_1.id,
+        response = self.client.post(reverse('opportunity:opp_remove'), {
+            'pk': self.opportunity_1.id,
         }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
         self.client.logout()
         self.client.login(email='joeDoeOpp@example.com', password='password')
-        response = self.client.post(reverse('opportunity:opp_remove', args=(self.opportunity.id,)) + '?view_account={}'.format(self.account.id), {
-            'pk':self.opportunity.id})
+        response = self.client.post(reverse('opportunity:opp_remove'), {
+            'opportunity_id': self.opportunity.id})
         self.assertEqual(403, response.status_code)
 
         self.client.logout()
         self.client.login(email='janeOpp@example.com', password='password')
-        response = self.client.post(reverse('opportunity:opp_remove', args=(self.opportunity_2.id,)) + '?view_account={}'.format(self.account.id), {
-            'pk':self.opportunity_2.id})
+        response = self.client.post(reverse('opportunity:opp_remove'), {
+            'opportunity_id': self.opportunity_2.id})
         self.assertEqual(302, response.status_code)
 
         response = self.client.get(reverse('opportunity:contacts') + '?account={}'.format(self.account.id))
         self.assertEqual(200, response.status_code)
-

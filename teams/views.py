@@ -125,12 +125,18 @@ def team_edit(request, team_id):
 
 
 @login_required
-def team_delete(request, team_id):
+def team_delete(request):
     if not (request.user.role == 'ADMIN' or request.user.is_superuser):
         raise PermissionDenied
-    team_obj = get_object_or_404(Teams, pk=team_id)
+    # team_obj = get_object_or_404(Teams, pk=team_id)
+    team_obj = get_object_or_404(
+        Teams, id=request.POST.get("task_id"))
+
     context = {}
 
     if request.method == 'GET':
+        return redirect('teams:teams_list')
+
+    if request.method == 'POST':
         team_obj.delete()
         return redirect('teams:teams_list')

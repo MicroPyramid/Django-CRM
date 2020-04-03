@@ -10,7 +10,7 @@
       <div class="">
         <div class="card">
           <div class="card-body">
-            <form id="leads_filter" action="" method="POST">
+            <form id="leads_filter" action="" method="POST">{% csrf_token %}
               <div class="card-body ">
                 <div class="card-title">Filters</div>
                 <div class="row marl">
@@ -100,8 +100,10 @@
                         class="btn btn-info edit" title="View" ><i class="fas fa-eye"></i></a>
                       <a href="{% url 'marketing:email_template_edit' email_template.id %}"
                         class="btn btn-success edit" title="Edit" ><i class="fas fa-edit"></i></a>
-                      <a href="{% url 'marketing:email_template_delete' email_template.id %}"
-                        class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash"></i></a>
+{#                      <a href="{% url 'marketing:email_template_delete' email_template.id %}"#}
+{#                        class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash"></i></a>#}
+                        <a class="btn btn-danger delete remove_emailtemp" onclick="remove_emailtemp({{email_template.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt"></i></a>
                     </td>
                   </tr>
                   {% empty %}
@@ -141,6 +143,7 @@
     $('#id_tag').select2();
     $('#created_by').select2();
 
+
     $(".remove_account").click(function (e) {
       e.preventDefault()
       url = $(this).attr('href')
@@ -155,5 +158,22 @@
       $('#leads_filter').submit();
     });
   })
+
+function remove_emailtemp(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "marketing:email_template_delete" %}', {
+          "emailtemp_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#leads" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 </script>
 {% endblock js_block %}

@@ -94,10 +94,10 @@ class OpportunityListView(SalesAccessRequiredMixin, LoginRequiredMixin, Template
             context["request_tags"] = None
         search = False
         if (
-            self.request.POST.get('name') or self.request.POST.get('stage') or
-            self.request.POST.get('lead_source') or
-            self.request.POST.get('account') or
-            self.request.POST.get('contacts')
+                self.request.POST.get('name') or self.request.POST.get('stage') or
+                self.request.POST.get('lead_source') or
+                self.request.POST.get('account') or
+                self.request.POST.get('contacts')
         ):
             search = True
 
@@ -204,7 +204,7 @@ def create_opportunity(request):
             if request.POST.get('from_account'):
                 from_account = request.POST.get('from_account')
                 success_url = reverse("accounts:view_account", kwargs={
-                                      'pk': from_account})
+                    'pk': from_account})
                 # print(success_url)
             return JsonResponse({'error': False, 'success_url': success_url})
         return JsonResponse({'error': True, 'errors': form.errors})
@@ -407,7 +407,7 @@ def update_opportunity(request, pk):
             if request.POST.get('from_account'):
                 from_account = request.POST.get('from_account')
                 success_url = reverse("accounts:view_account", kwargs={
-                                      'pk': from_account})
+                    'pk': from_account})
             return JsonResponse({'error': False, 'success_url': success_url})
         return JsonResponse({'error': True, 'errors': form.errors})
     context = {}
@@ -444,7 +444,9 @@ class DeleteOpportunityView(SalesAccessRequiredMixin, LoginRequiredMixin, View):
         return self.post(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        self.object = get_object_or_404(Opportunity, id=kwargs.get("pk"))
+        # self.object = get_object_or_404(Opportunity, id=kwargs.get("pk"))
+        self.object = get_object_or_404(
+            Opportunity, id=request.POST.get("opportunity_id"))
         if (self.request.user.role == "ADMIN" or
             self.request.user.is_superuser or
                 self.request.user == self.object.created_by):
@@ -470,7 +472,7 @@ class GetContactView(LoginRequiredMixin, View):
         else:
             contacts = Contact.objects.all()
         data = {contact.pk:
-                contact.first_name for contact in contacts.distinct()}
+                    contact.first_name for contact in contacts.distinct()}
         return JsonResponse(data)
 
 
@@ -621,7 +623,7 @@ class DeleteAttachmentsView(LoginRequiredMixin, View):
         self.object = get_object_or_404(
             Attachments, id=request.POST.get("attachment_id"))
         if (request.user == self.object.created_by or
-            request.user.is_superuser or
+                request.user.is_superuser or
                 request.user.role == 'ADMIN'):
             self.object.delete()
             data = {"aid": request.POST.get("attachment_id")}

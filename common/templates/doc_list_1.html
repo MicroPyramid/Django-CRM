@@ -50,7 +50,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="docs_filter" method="POST" action="">
+          <form id="docs_filter" method="POST" action="">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filters</div>
               <div class="row marl">
@@ -195,8 +195,10 @@
                             class="fas fa-eye edit_delete_options"></i></a>
                         <a href="{% url 'common:edit_doc' document.id %}" class="edit_icon" title="Edit" ><i
                             class="fas fa-pencil-alt edit_delete_options"></i></a>
-                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon remove_document" title="Delete" ><i
-                            class="fas fa-trash-alt edit_delete_options"></i></a>
+{#                        <a href="{% url 'common:remove_doc' document.id %}" class="delete_icon remove_document" title="Delete" ><i#}
+{#                            class="fas fa-trash-alt edit_delete_options"></i></a>#}
+                             <a class="delete_icon remove_document" onclick="remove_document({{document.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt edit_delete_options"></i></a>
                         {% endif %}
                         {% if request.user in document.shared_to.all or request.user == document.created_by or request.user.role == 'ADMIN' %}
                         <a href="{% url 'common:download_document' document.id %}" class="download_icon" title="Download"><i
@@ -365,13 +367,30 @@
     $(".list_filter_row").show();
   }
 
-  $('.remove_document').click(function (e) {
-    e.preventDefault()
-    url = $(this).attr('href')
-    if (!confirm('Are you sure you want to delete?'))
-      return;
-    window.location = $(this).attr('href')
-  });
+  {#$('.remove_document').click(function (e) {#}
+  {#  e.preventDefault()#}
+  {#  url = $(this).attr('href')#}
+  {#  if (!confirm('Are you sure you want to delete?'))#}
+  {#    return;#}
+  {#  window.location = $(this).attr('href')#}
+  {#});#}
+
+  function remove_document(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "common:remove_doc" %}', {
+          "document_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#account" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 
   $(".reset").click(function (e) {
     window.location = "{% url 'common:doc_list'%}"

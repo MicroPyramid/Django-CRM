@@ -25,7 +25,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="leads_filter" action="" method="POST">
+          <form id="leads_filter" action="" method="POST">{% csrf_token %}
             <div class="card-body ">
               <div class="card-title">Filters</div>
               <div class="row marl">
@@ -194,8 +194,11 @@
                               class="fas fa-eye"></i></a>
                           <a href="{% url 'events:event_update' event.id %}" class="btn btn-success edit" title="Edit"><i
                               class="fas fa-pencil-alt"></i></a>
-                          <a href="{% url 'events:event_delete' event.id %}"
-                            class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>
+{#                          <a href="{% url 'events:event_delete' event.id %}"#}
+{#                            class="btn btn-danger delete remove_document" title="Delete"><i class="fas fa-trash-alt"></i></a>#}
+
+                              <a class="btn btn-danger delete remove_event" onclick="remove_event({{event.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           {% endif %}
                         </td>
                       </tr>
@@ -423,6 +426,23 @@
       return;
     window.location = $(this).attr('href')
   });
+
+  function remove_event(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "events:event_delete" %}', {
+          "event_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#leads" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 
   $("a[rel='page']").click(function (e) {
     e.preventDefault();

@@ -19,6 +19,8 @@ urlpatterns = [
     path('<int:pk>/delete/',
          DeleteOpportunityView.as_view(), name="opp_remove"),
 
+    path('delete/', DeleteOpportunityView.as_view(), name="opp_remove"),
+
     path('contacts/', GetContactView.as_view(), name="contacts"),
     path('get/list/', GetOpportunitiesView.as_view(), name="get_opportunity"),
 

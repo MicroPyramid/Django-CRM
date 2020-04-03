@@ -28,7 +28,7 @@
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
-          <form id="accounts_filter" method="POST" action="">
+          <form id="accounts_filter" method="POST" action="">{% csrf_token %}
             <div class="card-body">
               <div class="card-title">Filters</div>
               <div class="row marl">
@@ -150,7 +150,7 @@
                           <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
                             specified {% endif %}</td>
                           <td title="{{each_account.created_on}}">{{ each_account.created_on_arrow }}</td>
-                          <td style="display: block;">
+                          <td>
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
@@ -174,8 +174,11 @@
                                 class="fas fa-eye"></i></a>
                             <a href="{% url 'accounts:edit_account' each_account.id %}" class="btn btn-success edit" title="Edit"><i
                                 class="fas fa-pencil-alt"></i></a>
-                            <a href="{% url 'accounts:remove_account' each_account.id %}"
-                              class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash-alt"></i></a>
+{#                            <a href="{% url 'accounts:remove_account' each_account.id %}"#}
+{#                              class="btn btn-danger delete remove_account" title="Delete"><i class="fas fa-trash-alt"></i></a>#}
+{#                          #}
+                           <a class="btn btn-danger delete remove_account" onclick="remove_account({{each_account.id}})"
+                               title="Delete" ><i class="fas fa-trash-alt"></i></a>
                           </td>
                         </tr>
                         {% endfor %}
@@ -249,7 +252,7 @@
                           <td>{% if each_account.billing_state %}{{ each_account.billing_state }} {% else %} Not
                             specified {% endif %}</td>
                           <td title="{{each_account.created_on}}">{{ each_account.created_on_arrow }}</td>
-                          <td style="display: block;">
+                          <td >
                             {% with tags=each_account.tags.all %}
                             {% if tags %}
                             {% for tag in tags %}
@@ -643,7 +646,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="col-md-12">
-        <form id="add_form_mail" method="POST" action="{% url 'accounts:create_mail' %}" novalidate>
+        <form id="add_form_mail" method="POST" action="{% url 'accounts:create_mail' %}" novalidate>{% csrf_token %}
           <div class="overview_form_block row marl justify-content-center">
             <div class="col-md-12">
               <div class="card">
@@ -790,15 +793,24 @@
   }
 
 
-  $('.remove_account').click(function (e) {
-    e.preventDefault()
-    url = $(this).attr('href')
-    if (!confirm('Are you sure you want to delete?'))
-      return;
-    window.location = $(this).attr('href')
-  });
+  function remove_account(x) {
+    var con = confirm("Do you want to Delete it for Sure!?")
+    if (con == true) {
+      $.post('{% url "accounts:remove_account" %}', {
+          "account_id": x,
+          csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val()
+      }, function (data) {
+        if (data.error) {
+          alert(data.error)
+        } else {
+          $("#account" + data.aid).remove()
+        }
+        setTimeout(location.reload(), 6000);
+      })
+    }
+  }
 
-  $(".reset").click(function (e) {
+  $(".reset").click(function (x) {
     window.location = "{% url 'accounts:list'%}"
   });
 
