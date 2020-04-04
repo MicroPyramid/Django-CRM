@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Django CRM</title>
+  <title>Shot in the Dark</title>
   <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
@@ -56,23 +56,23 @@
             {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
             <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            Shot in the Dark
             </a>
             {% else %}
             {% if request.user.has_sales_access and request.user.has_marketing_access %}
             <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            Shot in the Dark
             </a>
             {% elif request.user.has_sales_access and not request.user.has_marketing_access %}
             <a class="navbar-brand" href="{% url 'common:home' %}" role="button" id="dropdownMenuLink" data-toggle=""
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            Shot in the Dark
             </a>
             {% elif not request.user.has_sales_access and request.user.has_marketing_access %}
             <a class="navbar-brand" href="{% url 'marketing:dashboard' %}" role="button" id="dropdownMenuLink" data-toggle=""
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            Shot in the Dark
             </a>
             {% else %}
             {{''}}

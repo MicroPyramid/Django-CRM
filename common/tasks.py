@@ -38,7 +38,7 @@ def send_email_to_new_user(user_email, created_by, domain='demo.django-crm.io', 
                 context['uid'][0], context['token'], activation_key))
         recipients = []
         recipients.append(user_email)
-        subject = 'Welcome to Django CRM'
+        subject = 'Welcome to Shot in the Dark!'
         html_content = render_to_string('user_status_in.html', context=context)
         if recipients:
             msg = EmailMessage(
@@ -103,7 +103,7 @@ def send_email_user_mentions(comment_id, called_from, domain='demo.django-crm.io
             subject = 'New comment on Event. '
         else:
             context["url"] = ''
-        # subject = 'Django CRM : comment '
+        # subject = 'Shot in the Dark: comment '
         blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
         blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
         if recipients:
@@ -203,7 +203,7 @@ def resend_activation_link_to_user(user_email="", domain='demo.django-crm.io', p
                 context['uid'][0], context['token'], activation_key))
         recipients = []
         recipients.append(user_email)
-        subject = 'Welcome to Django CRM'
+        subject = 'Welcome to Shot in the Dark'
         html_content = render_to_string('user_status_in.html', context=context)
         if recipients:
             msg = EmailMessage(

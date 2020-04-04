@@ -50,7 +50,7 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
             "html": mbody,
             "subject": msubject,
             "from_email": mfrom,
-            "from_name": "Django CRM",
+            "from_name": "Shot in the Dark",
             "to": [{'email': i, 'type': 'to'} for i in mto]
         }
         response = mandrill_client.messages.send(message=message)
