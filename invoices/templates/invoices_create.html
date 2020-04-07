@@ -1,5 +1,12 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load compress %}
+{% block extralinks %}
+  {% compress css %}
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker-standalone.min.css' %}" />
+  {% endcompress %}
+{% endblock %}
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -213,6 +220,7 @@
 </form>
 {% endblock %}
 {% block js_block %}
+<script src="{% static 'bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
 <script type="text/javascript">
 
   // $(document).ready(function() {

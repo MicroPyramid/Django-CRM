@@ -1,5 +1,12 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load compress %}
+{% block extralinks %}
+  {% compress css %}
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker-standalone.min.css' %}" />
+  {% endcompress %}
+{% endblock %}
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -60,7 +67,7 @@
                   <div class='input-group date' id='datepicker1'>
                     {{ case_form.closed_on }}
                     <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
+                      <span class="fa fa-calendar"></span>
                     </span>
                   </div>
                   <span class="error error_message" id="error_id_closed_on">{{ case_form.closed_on.errors }}</span>
@@ -198,6 +205,7 @@
 </div>
 {% endblock %}
 {% block js_block %}
+<script src="{% static 'bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
 <script type="text/javascript">
 
   var bar = $('.bar');

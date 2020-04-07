@@ -1,13 +1,18 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
+{% load compress %}
 {% load paginate %}
 {% load thumbnail %}
 {% block extralinks %}
-<style>
-  .form-group label {
-    font-weight: 800;
-  }
-</style>
+  {% compress css %}
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'bootstrap-datetimepicker/css/bootstrap-datetimepicker-standalone.min.css' %}" />
+  {% endcompress %}
+  <style>
+    .form-group label {
+      font-weight: 800;
+    }
+  </style>
 {% endblock %}
 {% block content %}
 
@@ -379,6 +384,7 @@
 
 {% endblock %}
 {% block js_block %}
+<script src="{% static 'bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js' %}"></script>
 <script type="text/javascript">
   $(document).ready(function () {
     $('.assigned_users').select2();
