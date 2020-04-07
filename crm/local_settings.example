@@ -26,6 +26,7 @@ DATABASES = {
     }
 }
 
+
 # Server Customizations
 ADMIN_EMAIL = "you@your_email.com"
 URL_FOR_LINKS = "https://crm.example.com"
@@ -38,3 +39,11 @@ TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+
+APPLICATION_NAME = 'Django CRM'
+
+
+SETTINGS_EXPORT = [
+    'APPLICATION_NAME',
+]
