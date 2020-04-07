@@ -48,20 +48,20 @@
         <div class="dropdown">
           {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
           <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            {{ settings.APPLICATION_NAME }}
           </a>
           {% else %}
           {% if request.user.has_sales_access and request.user.has_marketing_access %}
           <a class="dropdown-toggle navbar-brand" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            {{ settings.APPLICATION_NAME }}
           </a>
           {% elif request.user.has_sales_access and not request.user.has_marketing_access %}
           <a class="navbar-brand" href="{% url 'common:home' %}" role="button" id="dropdownMenuLink" data-toggle="" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            {{ settings.APPLICATION_NAME }}
           </a>
           {% elif not request.user.has_sales_access and request.user.has_marketing_access %}
           <a class="navbar-brand" href="{% url 'marketing:dashboard' %}" role="button" id="dropdownMenuLink" data-toggle="" aria-haspopup="true" aria-expanded="false" style="color:#44535c">
-            Django CRM
+            {{ settings.APPLICATION_NAME }}
           </a>
           {% else %}
           {{''}}
@@ -83,7 +83,6 @@
             {{''}}
             {% endif %}
             {% endif %}
-
           </div>
         </div>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,52 +147,52 @@
   <script src="{% static 'js/bootstrap-suggest.js' %}"></script>
   {% block js_block %}{% endblock js_block %}
   <script type="text/javascript">
-    $(document).ready(function() {
-      word = window.location.pathname.split('/')[1];
-      if (word == "") {
-        $("#dashboard").addClass('active');
-      } else {
-        $('#' + word).addClass('active');
+  $(document).ready(function() {
+    word = window.location.pathname.split('/')[1];
+    if (word == "") {
+      $("#dashboard").addClass('active');
+    } else {
+      $('#' + word).addClass('active');
+    }
+    marketing_word = window.location.pathname.split('/')[2];
+    if (marketing_word == "") {
+      $("#marketing-dashboard").addClass('active');
+    }
+    // console.log(marketing_word.substring(0,7) === 'contact');
+    else if (marketing_word && marketing_word.substring(0, 7) === "contact") {
+      $("#contact").css({ 'border-bottom': '3px solid #099CBE,' });
+      $(".contact_class").css('border-bottom', '3px solid #099CBE');
+      marketing_word = window.location.pathname.split('/')[2]
+      // console.log(marketing_word)
+      // console.log(marketing_word == 'contact-list')
+      // console.log(marketing_word == 'contacts')
+      if (marketing_word == 'contact-list') {
+        $(".contact-list").css('background', '#e5e5e5');
       }
-      marketing_word = window.location.pathname.split('/')[2];
-      if (marketing_word == "") {
-        $("#marketing-dashboard").addClass('active');
+      if (marketing_word == 'contacts') {
+        $(".contacts").css('background', '#e5e5e5');
       }
-      // console.log(marketing_word.substring(0,7) === 'contact');
-      else if (marketing_word && marketing_word.substring(0, 7) === "contact") {
-        $("#contact").css({ 'border-bottom': '3px solid #099CBE,' });
-        $(".contact_class").css('border-bottom', '3px solid #099CBE');
-        marketing_word = window.location.pathname.split('/')[2]
-        // console.log(marketing_word)
-        // console.log(marketing_word == 'contact-list')
-        // console.log(marketing_word == 'contacts')
-        if (marketing_word == 'contact-list') {
-          $(".contact-list").css('background', '#e5e5e5');
-        }
-        if (marketing_word == 'contacts') {
-          $(".contacts").css('background', '#e5e5e5');
-        }
-        // $("#contacts").css('background','#e5e5e5');
-      } else {
-        $('#' + marketing_word).addClass('active')
-      }
-    });
-    /*
-        Usage is very simple; to block user activity for the page:
-          $.blockUI();
+      // $("#contacts").css('background','#e5e5e5');
+    } else {
+      $('#' + marketing_word).addClass('active')
+    }
+  });
+  /*
+      Usage is very simple; to block user activity for the page:
+        $.blockUI();
 
-        Blocking with a custom message:
-          $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
+      Blocking with a custom message:
+        $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
 
-        Blocking with custom style:
-          $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
+      Blocking with custom style:
+        $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
 
-        To unblock the page:
-          $.unblockUI();
+      To unblock the page:
+        $.unblockUI();
 
-        If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
-          $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-      */
+      If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
+        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+    */
   </script>
 </body>
 
