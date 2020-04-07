@@ -13,7 +13,7 @@ addons:
 sudo: required
 
 env:
-  -DJANGO=1.11
+  -DJANGO=2.2.10
 
 before_install:
   - gem install sass
@@ -27,6 +27,7 @@ install:
 
 # command to run tests
 script:
+  - cp crm/local_settings.example crm/local_settings.py
   - python manage.py test --keepdb
   - coverage run --source=accounts,cases,common,contacts,leads,opportunity,tasks,invoices,events,teams,marketing manage.py test --keepdb --noinput
   - coverage xml
