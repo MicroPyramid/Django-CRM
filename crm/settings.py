@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'SECRET_SECRET_SECRET'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG_STATUS', True)
+DEBUG = os.getenv('DEBUG_STATUS', False)
 
 ALLOWED_HOSTS = ['*']
 
@@ -68,6 +68,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_settings_export.settings_export',
             ],
         },
     },
@@ -386,11 +387,16 @@ if SENTRY_ENABLED and not DEBUG:
 # HAYSTACK_DEFAULT_OPERATOR = 'AND'
 
 # Load the local settings file if it exists
-if os.path.isfile('crm/local_settings.py'):
-    from .local_settings import *
+if DEBUG:
+    try:
+        from .dev_settings import *
+    except ImportError:
+        raise ImproperlyConfigured("No dev settings file found")
 else:
-    print("No local settings file found")
-
+    try:
+        from .local_settings import *
+    except ImportError:
+        raise ImproperlyConfigured("No local settings file found")
 
 CACHES = {
     'default': {
