@@ -13,55 +13,69 @@ class TaskForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         # assigned_users = kwargs.pop('assigned_to', [])
-        request_user = kwargs.pop('request_user', None)
-        self.obj_instance = kwargs.get('instance', None)
+        request_user = kwargs.pop("request_user", None)
+        request_obj = kwargs.pop("request_obj", None)
+        self.obj_instance = kwargs.get("instance", None)
         super(TaskForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
 
-        if request_user.role == 'USER':
+        if request_user.role == "USER":
             self.fields["account"].queryset = Account.objects.filter(
-                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)).filter(status="open")
+                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)
+            ).filter(status="open", company=request_obj.company)
 
             self.fields["contacts"].queryset = Contact.objects.filter(
-                Q(assigned_to__in=[request_user]) | Q(created_by=request_user))
+                Q(assigned_to__in=[request_user]) | Q(created_by=request_user)
+            ).filter(company=request_obj.company)
 
-        if request_user.role == 'ADMIN' or request_user.is_superuser:
+        if request_user.role == "ADMIN" or request_user.is_superuser:
             self.fields["account"].queryset = Account.objects.filter(
-                status="open")
+                status="open", company=request_obj.company
+            )
 
-            self.fields["contacts"].queryset = Contact.objects.filter()
-            self.fields["teams"].choices = [(team.get('id'), team.get(
-                'name')) for team in Teams.objects.all().values('id', 'name')]
+            self.fields["contacts"].queryset = Contact.objects.filter(
+                company=request_obj.company
+            )
+            self.fields["teams"].choices = [
+                (team.get("id"), team.get("name"))
+                for team in Teams.objects.filter(company=request_obj.company).values(
+                    "id", "name"
+                )
+            ]
 
         self.fields["teams"].required = False
-        self.fields['assigned_to'].required = False
+        self.fields["assigned_to"].required = False
         # if assigned_users:
         #     self.fields['assigned_to'].queryset = assigned_users
         # else:
         #     self.fields.get('assigned_to').queryset = User.objects.none()
-        self.fields['title'].required = True
-        self.fields['status'].required = True
-        self.fields['priority'].required = True
-        self.fields['account'].required = False
-        self.fields['contacts'].required = False
-        self.fields['due_date'].required = False
+        self.fields["title"].required = True
+        self.fields["status"].required = True
+        self.fields["priority"].required = True
+        self.fields["account"].required = False
+        self.fields["contacts"].required = False
+        self.fields["due_date"].required = False
 
         # self.fields['account'].widget.attrs = {'data-id': [list(account.contacts.values_list(
         #     'id', flat=True)) for account in self.fields["account"].queryset]}
 
     def clean_title(self):
-        title = self.cleaned_data.get('title')
+        title = self.cleaned_data.get("title")
         if Task.objects.filter(title=title).exclude(id=self.instance.id).exists():
-            raise forms.ValidationError(
-                'Task with this Title already exists.')
+            raise forms.ValidationError("Task with this Title already exists.")
         return title
 
     class Meta:
         model = Task
         fields = (
-            'title', 'status', 'priority', 'assigned_to', 'account', 'contacts',
-            'due_date'
+            "title",
+            "status",
+            "priority",
+            "assigned_to",
+            "account",
+            "contacts",
+            "due_date",
         )
 
 
@@ -70,7 +84,7 @@ class TaskCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
-        fields = ('comment', 'task', 'commented_by')
+        fields = ("comment", "task", "commented_by")
 
 
 class TaskAttachmentForm(forms.ModelForm):
@@ -78,4 +92,4 @@ class TaskAttachmentForm(forms.ModelForm):
 
     class Meta:
         model = Attachments
-        fields = ('attachment', 'task')
+        fields = ("attachment", "task")

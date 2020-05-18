@@ -3,11 +3,13 @@
 {% block breadcrumb %}
 
 <div class="main_container">
+  
   <ol class="breadcrumb">
     <li><a href="#">Mails</a></li>
     <li class="active">Create Mail</li>
   </ol>
-
+  
+  
   <form id="email_form" action="." method="POST">
     <div class="overview_form_block row marl">
       <div class="col-md-12">
@@ -21,7 +23,8 @@
                 <div class="filter_col col-md-12">
                   <div class="form-group">
                     <label for="exampleInputEmail1">From *</label>
-                    <input type="email" class="form-control" id="from_email" name="from_email"{% if x %} value="{{x.from_email.value}}" {% endif %}
+                    
+                    <input type="email" class="form-control" id="from_email" name="from_email"{% if x %} value="{{x.from_email.value}}" {% endif %} 
                     {% if form.errors %} value="{{request.POST.from_email}}" {% endif %}
                     value="{{em.from_email}}"/>
                   </div>
@@ -53,7 +56,7 @@
                   <div class="form-group">
                     <label for="exampleInputEmail1">Subject *</label>
                     <input type="text" class="form-control" id="subject" name="subject"
-                    {% if x %} value="{{x.subject.value}}" {% endif %}
+                    {% if x %} value="{{x.subject.value}}" {% endif %} 
                     {% if form.errors %} value="{{request.POST.subject}}" {% endif %}
                     value="{{em.subject}}"/>
                   </div>
@@ -106,6 +109,7 @@
       </div>
       <br clear="all">
     </div>
+    
     <div class="row marl buttons_row text-center">
       <div id="extra_hide">
         <button class="btn btn-default save" type="submit">Send</button>
@@ -120,15 +124,23 @@
 
 </div>
 {% endblock %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
+
+<script src="http://cdn.ckeditor.com/4.5.4/basic/ckeditor.js"></script>
 <script type="text/javascript">
   CKEDITOR.replace( 'job_description',
   {
+  
   // skin : 'office2003',
   uiColor: '#ffffff',
     height: 120
   //width: 700,
   }
+  
   );
+  
   // CKEDITOR.replace('description', {
   //   customConfig: "{% static 'js/custom/ckeditor_config.js' %}"
   // });

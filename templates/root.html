@@ -50,7 +50,6 @@
     {% block header %}
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-
         <div class="dropdown">
 
             {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
@@ -65,7 +64,7 @@
             {{ settings.APPLICATION_NAME }}
             </a>
             {% elif request.user.has_sales_access and not request.user.has_marketing_access %}
-            <a class="navbar-brand" href="{% url 'common:home' %}" role="button" id="dropdownMenuLink" data-toggle=""
+            <a class="navbar-brand" href="{% url 'common:dashboard' %}" role="button" id="dropdownMenuLink" data-toggle=""
             aria-haspopup="true" aria-expanded="false" style="color:#44535c">
             {{ settings.APPLICATION_NAME }}
             </a>
@@ -78,8 +77,6 @@
             {{''}}
             {% endif %}
             {% endif %}
-
-
 
           <div class="dropdown-menu mt-2" aria-labelledby="dropdownMenuLink">
             {% if user.is_superuser or user.role == 'ADMIN' %}
@@ -97,7 +94,6 @@
             {{''}}
             {% endif %}
             {% endif %}
-
           </div>
         </div>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
@@ -206,28 +202,12 @@
         if (marketing_word == 'contacts') {
           $(".contacts").css('background', '#e5e5e5');
         }
-        // $("#contacts").css('background','#e5e5e5');
       }
       else {
         $('#' + marketing_word).addClass('active')
       }
     });
-  /*
-      Usage is very simple; to block user activity for the page:
-        $.blockUI();
 
-      Blocking with a custom message:
-        $.blockUI({ message: '<h1><img src="busy.gif" /> Just a moment...</h1>' });
-
-      Blocking with custom style:
-        $.blockUI({ css: { backgroundColor: '#f00', color: '#fff'} });
-
-      To unblock the page:
-        $.unblockUI();
-
-      If you want to use the default settings and have the UI blocked for all ajax requests, it's as easy as this:
-        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-    */
   </script>
 </body>
 

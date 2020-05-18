@@ -10,36 +10,48 @@ class OpportunityForm(forms.ModelForm):
     teams = forms.MultipleChoiceField(choices=teams_queryset)
 
     def __init__(self, *args, **kwargs):
-        assigned_users = kwargs.pop('assigned_to', [])
-        opp_accounts = kwargs.pop('account', [])
-        opp_contacts = kwargs.pop('contacts', [])
+        assigned_users = kwargs.pop("assigned_to", [])
+        opp_accounts = kwargs.pop("account", [])
+        opp_contacts = kwargs.pop("contacts", [])
+        request_obj = kwargs.pop("request_obj", [])
         super(OpportunityForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
-        self.fields['description'].widget.attrs.update({
-            'rows': '8'})
+        self.fields["description"].widget.attrs.update({"rows": "8"})
         if assigned_users:
-            self.fields['assigned_to'].queryset = assigned_users
-        self.fields['assigned_to'].required = False
-        self.fields['account'].queryset = opp_accounts
-        self.fields['contacts'].queryset = opp_contacts
-        self.fields['contacts'].required = False
+            self.fields["assigned_to"].queryset = assigned_users
+        self.fields["assigned_to"].required = False
+        self.fields["account"].queryset = opp_accounts
+        self.fields["contacts"].queryset = opp_contacts
+        self.fields["contacts"].required = False
         for key, value in self.fields.items():
-            value.widget.attrs['placeholder'] = value.label
+            value.widget.attrs["placeholder"] = value.label
 
-        self.fields['closed_on'].widget.attrs.update({
-            'placeholder': 'Due Date'})
+        self.fields["closed_on"].widget.attrs.update({"placeholder": "Due Date"})
 
-        self.fields['probability'].widget.attrs.update({
-            'placeholder': 'Probability'})
-        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["probability"].widget.attrs.update({"placeholder": "Probability"})
+        self.fields["teams"].choices = [
+            (team.get("id"), team.get("name"))
+            for team in Teams.objects.filter(company=request_obj.company).values(
+                "id", "name"
+            )
+        ]
         self.fields["teams"].required = False
 
     class Meta:
         model = Opportunity
         fields = (
-            'name', 'amount', 'account', 'contacts', 'assigned_to', 'currency',
-            'probability', 'closed_on', 'lead_source', 'description', 'stage',
+            "name",
+            "amount",
+            "account",
+            "contacts",
+            "assigned_to",
+            "currency",
+            "probability",
+            "closed_on",
+            "lead_source",
+            "description",
+            "stage",
         )
 
 
@@ -48,7 +60,7 @@ class OpportunityCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
-        fields = ('comment', 'opportunity', 'commented_by')
+        fields = ("comment", "opportunity", "commented_by")
 
 
 class OpportunityAttachmentForm(forms.ModelForm):
@@ -56,4 +68,4 @@ class OpportunityAttachmentForm(forms.ModelForm):
 
     class Meta:
         model = Attachments
-        fields = ('attachment', 'opportunity')
+        fields = ("attachment", "opportunity")

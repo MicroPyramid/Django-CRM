@@ -6,22 +6,33 @@ import time
 from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
-                                        UserManager)
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 from common.templatetags.common_tags import (
-    is_document_file_image, is_document_file_audio,
-    is_document_file_video, is_document_file_pdf,
-    is_document_file_code, is_document_file_text,
-    is_document_file_sheet, is_document_file_zip
+    is_document_file_image,
+    is_document_file_audio,
+    is_document_file_video,
+    is_document_file_pdf,
+    is_document_file_code,
+    is_document_file_text,
+    is_document_file_sheet,
+    is_document_file_zip,
 )
 from common.utils import COUNTRIES, ROLES
-from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
+from django.conf import settings
 
 
 def img_url(self, filename):
     hash_ = int(time.time())
     return "%s/%s/%s" % ("profile_pics", hash_, filename)
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=2000, blank=True, null=True)
+    sub_domain = models.CharField(max_length=30)
+    user_limit = models.IntegerField(default=5)
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -33,20 +44,31 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(('date joined'), auto_now_add=True)
+    date_joined = models.DateTimeField(("date joined"), auto_now_add=True)
     role = models.CharField(max_length=50, choices=ROLES)
     profile_pic = models.FileField(
-        max_length=1000, upload_to=img_url, null=True, blank=True)
+        max_length=1000, upload_to=img_url, null=True, blank=True
+    )
     has_sales_access = models.BooleanField(default=False)
     has_marketing_access = models.BooleanField(default=False)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', ]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = [
+        "username",
+    ]
 
     objects = UserManager()
 
     def get_short_name(self):
         return self.username
+
+    @property
+    def get_app_name(self):
+        if self.company:
+            return self.company.sub_domain + "." + settings.APPLICATION_NAME
+        else:
+            return settings.APPLICATION_NAME
 
     def documents(self):
         return self.document_uploaded.all()
@@ -64,28 +86,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
-    def save(self, *args, **kwargs):
-        super(User, self).save(*args, **kwargs)
-        lead_users = User.objects.filter(
-            is_active=True).order_by('email').values('id', 'email')
-        cache.set('lead_form_users', lead_users, 60*60)
-
-
     class Meta:
-        ordering = ['-is_active']
+        ordering = ["-is_active"]
 
 
 class Address(models.Model):
-    address_line = models.CharField(
-        _("Address"), max_length=255, blank=True, null=True)
-    street = models.CharField(
-        _("Street"), max_length=55, blank=True, null=True)
+    address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
+    street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
     city = models.CharField(_("City"), max_length=255, blank=True, null=True)
     state = models.CharField(_("State"), max_length=255, blank=True, null=True)
     postcode = models.CharField(
-        _("Post/Zip-code"), max_length=64, blank=True, null=True)
-    country = models.CharField(
-        max_length=3, choices=COUNTRIES, blank=True, null=True)
+        _("Post/Zip-code"), max_length=64, blank=True, null=True
+    )
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
         return self.city if self.city else ""
@@ -123,41 +136,77 @@ class Address(models.Model):
 
 
 class Comment(models.Model):
-    case = models.ForeignKey('cases.Case', blank=True, null=True,
-                             related_name="cases", on_delete=models.CASCADE)
+    case = models.ForeignKey(
+        "cases.Case",
+        blank=True,
+        null=True,
+        related_name="cases",
+        on_delete=models.CASCADE,
+    )
     comment = models.CharField(max_length=255)
     commented_on = models.DateTimeField(auto_now_add=True)
     commented_by = models.ForeignKey(
-        User, on_delete=models.CASCADE, blank=True, null=True)
+        User, on_delete=models.CASCADE, blank=True, null=True
+    )
     account = models.ForeignKey(
-        'accounts.Account', blank=True, null=True,
+        "accounts.Account",
+        blank=True,
+        null=True,
         related_name="accounts_comments",
-        on_delete=models.CASCADE)
-    lead = models.ForeignKey('leads.Lead',
-                             blank=True, null=True,
-                             related_name="leads_comments",
-                             on_delete=models.CASCADE)
+        on_delete=models.CASCADE,
+    )
+    lead = models.ForeignKey(
+        "leads.Lead",
+        blank=True,
+        null=True,
+        related_name="leads_comments",
+        on_delete=models.CASCADE,
+    )
     opportunity = models.ForeignKey(
-        'opportunity.Opportunity', blank=True,
-        null=True, related_name="opportunity_comments",
-        on_delete=models.CASCADE)
+        "opportunity.Opportunity",
+        blank=True,
+        null=True,
+        related_name="opportunity_comments",
+        on_delete=models.CASCADE,
+    )
     contact = models.ForeignKey(
-        'contacts.Contact', blank=True,
-        null=True, related_name="contact_comments",
-        on_delete=models.CASCADE)
+        "contacts.Contact",
+        blank=True,
+        null=True,
+        related_name="contact_comments",
+        on_delete=models.CASCADE,
+    )
     user = models.ForeignKey(
-        'User', blank=True, null=True,
+        "User",
+        blank=True,
+        null=True,
         related_name="user_comments",
-        on_delete=models.CASCADE)
+        on_delete=models.CASCADE,
+    )
 
-    task = models.ForeignKey('tasks.Task', blank=True, null=True,
-                             related_name='tasks_comments', on_delete=models.CASCADE)
+    task = models.ForeignKey(
+        "tasks.Task",
+        blank=True,
+        null=True,
+        related_name="tasks_comments",
+        on_delete=models.CASCADE,
+    )
 
-    invoice = models.ForeignKey('invoices.Invoice', blank=True, null=True,
-                                related_name='invoice_comments', on_delete=models.CASCADE)
+    invoice = models.ForeignKey(
+        "invoices.Invoice",
+        blank=True,
+        null=True,
+        related_name="invoice_comments",
+        on_delete=models.CASCADE,
+    )
 
-    event = models.ForeignKey('events.Event', blank=True, null=True,
-                              related_name='events_comments', on_delete=models.CASCADE)
+    event = models.ForeignKey(
+        "events.Event",
+        blank=True,
+        null=True,
+        related_name="events_comments",
+        on_delete=models.CASCADE,
+    )
 
     def get_files(self):
         return Comment_Files.objects.filter(comment_id=self)
@@ -170,54 +219,84 @@ class Comment(models.Model):
 class Comment_Files(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     updated_on = models.DateTimeField(auto_now_add=True)
-    comment_file = models.FileField(
-        "File", upload_to="comment_files", default='')
+    comment_file = models.FileField("File", upload_to="comment_files", default="")
 
     def get_file_name(self):
         if self.comment_file:
-            return self.comment_file.path.split('/')[-1]
+            return self.comment_file.path.split("/")[-1]
 
         return None
 
 
 class Attachments(models.Model):
     created_by = models.ForeignKey(
-        User, related_name='attachment_created_by',
-        on_delete=models.SET_NULL, null=True)
+        User, related_name="attachment_created_by", on_delete=models.SET_NULL, null=True
+    )
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    attachment = models.FileField(
-        max_length=1001, upload_to='attachments/%Y/%m/')
+    attachment = models.FileField(max_length=1001, upload_to="attachments/%Y/%m/")
     lead = models.ForeignKey(
-        'leads.Lead', null=True,
-        blank=True, related_name='lead_attachment',
-        on_delete=models.CASCADE)
+        "leads.Lead",
+        null=True,
+        blank=True,
+        related_name="lead_attachment",
+        on_delete=models.CASCADE,
+    )
     account = models.ForeignKey(
-        'accounts.Account', null=True, blank=True,
-        related_name='account_attachment', on_delete=models.CASCADE)
+        "accounts.Account",
+        null=True,
+        blank=True,
+        related_name="account_attachment",
+        on_delete=models.CASCADE,
+    )
     contact = models.ForeignKey(
-        'contacts.Contact', on_delete=models.CASCADE,
-        related_name='contact_attachment',
-        blank=True, null=True)
+        "contacts.Contact",
+        on_delete=models.CASCADE,
+        related_name="contact_attachment",
+        blank=True,
+        null=True,
+    )
     opportunity = models.ForeignKey(
-        'opportunity.Opportunity', blank=True,
-        null=True, on_delete=models.CASCADE,
-        related_name='opportunity_attachment')
+        "opportunity.Opportunity",
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="opportunity_attachment",
+    )
     case = models.ForeignKey(
-        'cases.Case', blank=True, null=True,
-        on_delete=models.CASCADE, related_name='case_attachment')
+        "cases.Case",
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="case_attachment",
+    )
 
-    task = models.ForeignKey('tasks.Task', blank=True, null=True,
-                             related_name='tasks_attachment', on_delete=models.CASCADE)
+    task = models.ForeignKey(
+        "tasks.Task",
+        blank=True,
+        null=True,
+        related_name="tasks_attachment",
+        on_delete=models.CASCADE,
+    )
 
-    invoice = models.ForeignKey('invoices.Invoice', blank=True, null=True,
-                                related_name='invoice_attachment', on_delete=models.CASCADE)
-    event = models.ForeignKey('events.Event', blank=True, null=True,
-                              related_name='events_attachment', on_delete=models.CASCADE)
+    invoice = models.ForeignKey(
+        "invoices.Invoice",
+        blank=True,
+        null=True,
+        related_name="invoice_attachment",
+        on_delete=models.CASCADE,
+    )
+    event = models.ForeignKey(
+        "events.Event",
+        blank=True,
+        null=True,
+        related_name="events_attachment",
+        on_delete=models.CASCADE,
+    )
 
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
-        if (len(name_ext_list) > 1):
+        if len(name_ext_list) > 1:
             ext = name_ext_list[int(len(name_ext_list) - 1)]
             if is_document_file_audio(ext):
                 return ("audio", "fa fa-file-audio")
@@ -255,29 +334,29 @@ def document_path(self, filename):
 
 class Document(models.Model):
 
-    DOCUMENT_STATUS_CHOICE = (
-        ("active", "active"),
-        ('inactive', 'inactive')
-    )
+    DOCUMENT_STATUS_CHOICE = (("active", "active"), ("inactive", "inactive"))
 
     title = models.CharField(max_length=1000, blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
     created_by = models.ForeignKey(
-        User, related_name='document_uploaded',
-        on_delete=models.SET_NULL, null=True)
+        User, related_name="document_uploaded", on_delete=models.SET_NULL, null=True
+    )
     created_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        choices=DOCUMENT_STATUS_CHOICE, max_length=64, default='active')
-    shared_to = models.ManyToManyField(User, related_name='document_shared_to')
-    teams = models.ManyToManyField('teams.Teams', related_name='document_teams')
-
+        choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
+    )
+    shared_to = models.ManyToManyField(User, related_name="document_shared_to")
+    teams = models.ManyToManyField("teams.Teams", related_name="document_teams")
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     class Meta:
-        ordering = ('-created_on',)
+        ordering = ("-created_on",)
 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
-        if (len(name_ext_list) > 1):
+        if len(name_ext_list) > 1:
             ext = name_ext_list[int(len(name_ext_list) - 1)]
             if is_document_file_audio(ext):
                 return ("audio", "fa fa-file-audio")
@@ -303,20 +382,20 @@ class Document(models.Model):
 
     @property
     def get_team_users(self):
-        team_user_ids = list(self.teams.values_list('users__id', flat=True))
+        team_user_ids = list(self.teams.values_list("users__id", flat=True))
         return User.objects.filter(id__in=team_user_ids)
 
     @property
     def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list('users__id', flat=True))
-        assigned_user_ids = list(self.shared_to.values_list('id', flat=True))
+        team_user_ids = list(self.teams.values_list("users__id", flat=True))
+        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
         return User.objects.filter(id__in=user_ids)
 
     @property
     def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list('users__id', flat=True))
-        assigned_user_ids = list(self.shared_to.values_list('id', flat=True))
+        team_user_ids = list(self.teams.values_list("users__id", flat=True))
+        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
         user_ids = set(assigned_user_ids) - set(team_user_ids)
         return User.objects.filter(id__in=list(user_ids))
 
@@ -332,17 +411,16 @@ def generate_key():
 class APISettings(models.Model):
     title = models.CharField(max_length=1000)
     apikey = models.CharField(max_length=16, blank=True)
-    website = models.URLField(max_length=255, default='')
-    lead_assigned_to = models.ManyToManyField(
-        User, related_name='lead_assignee_users')
-    tags = models.ManyToManyField('accounts.Tags', blank=True)
+    website = models.URLField(max_length=255, default="")
+    lead_assigned_to = models.ManyToManyField(User, related_name="lead_assignee_users")
+    tags = models.ManyToManyField("accounts.Tags", blank=True)
     created_by = models.ForeignKey(
-        User, related_name='settings_created_by',
-        on_delete=models.SET_NULL, null=True)
+        User, related_name="settings_created_by", on_delete=models.SET_NULL, null=True
+    )
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ('-created_on',)
+        ordering = ("-created_on",)
 
     def __str__(self):
         return self.title
@@ -354,17 +432,16 @@ class APISettings(models.Model):
 
 
 class Google(models.Model):
-    user = models.ForeignKey(
-        User, related_name='google', on_delete=models.CASCADE)
-    google_id = models.CharField(max_length=200, default='')
-    google_url = models.CharField(max_length=1000, default='')
-    verified_email = models.CharField(max_length=200, default='')
-    family_name = models.CharField(max_length=200, default='')
-    name = models.CharField(max_length=200, default='')
-    gender = models.CharField(max_length=10, default='')
-    dob = models.CharField(max_length=50, default='')
-    given_name = models.CharField(max_length=200, default='')
-    email = models.CharField(max_length=200, default='', db_index=True)
+    user = models.ForeignKey(User, related_name="google", on_delete=models.CASCADE)
+    google_id = models.CharField(max_length=200, default="")
+    google_url = models.CharField(max_length=1000, default="")
+    verified_email = models.CharField(max_length=200, default="")
+    family_name = models.CharField(max_length=200, default="")
+    name = models.CharField(max_length=200, default="")
+    gender = models.CharField(max_length=10, default="")
+    dob = models.CharField(max_length=50, default="")
+    given_name = models.CharField(max_length=200, default="")
+    email = models.CharField(max_length=200, default="", db_index=True)
 
     def __str__(self):
         return self.email
@@ -372,8 +449,10 @@ class Google(models.Model):
 
 class Profile(models.Model):
     """ this model is used for activating the user within a particular expiration time """
-    user = models.OneToOneField(User, related_name='profile',
-                                on_delete=models.CASCADE)  # 1 to 1 link with Django User
+
+    user = models.OneToOneField(
+        User, related_name="profile", on_delete=models.CASCADE
+    )  # 1 to 1 link with Django User
     activation_key = models.CharField(max_length=50)
     key_expires = models.DateTimeField()
 
