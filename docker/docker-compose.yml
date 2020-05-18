@@ -1,0 +1,45 @@
+version: '3'
+services:
+  djcrm8000:
+    network_mode: host
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+      args:
+        UWSGI_HTTP: 8000
+    volumes:
+      - /root/djcrm/media:/root/djcrm/media
+      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+
+  djcrm8001:
+    network_mode: host
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+      args:
+        UWSGI_HTTP: 8001
+    volumes:
+      - /root/djcrm/media:/root/djcrm/media
+      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+
+  djcrm8002:
+    network_mode: host
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+      args:
+        UWSGI_HTTP: 8002
+    volumes:
+      - /root/djcrm/media:/root/djcrm/media
+      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+
+  djcrm8003:
+    network_mode: host
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+      args:
+        UWSGI_HTTP: 8003
+    volumes:
+      - /root/djcrm/media:/root/djcrm/media
+      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE

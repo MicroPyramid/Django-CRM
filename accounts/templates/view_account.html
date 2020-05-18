@@ -4,6 +4,7 @@
 {% block breadcrumb %}
 
 {% block extralinks %}
+<link rel="stylesheet" href="{% static 'css/bootstrap-suggest.css' %}">
 <style>
   .opacity_block {
     opacity: 0.2;
@@ -852,6 +853,7 @@
   });
 
 </script>
+<script src="{% static 'js/bootstrap-suggest.js' %}"></script>
 <script>
   $('.mentions').suggest('@', {
     data: {{ users_mention| safe}},

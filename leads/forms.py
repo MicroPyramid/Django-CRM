@@ -15,78 +15,87 @@ class LeadForm(forms.ModelForm):
     teams_queryset = []
     teams = forms.MultipleChoiceField(choices=teams_queryset)
     LEAD_SOURCE_CHOICES = (
-        ('call', 'Call'),
-        ('email', 'Email'),
-        ('existing customer', 'Existing Customer'),
-        ('partner', 'Partner'),
-        ('public relations', 'Public Relations'),
-        ('compaign', 'Campaign'),
-        ('other', 'Other'),
+        ("call", "Call"),
+        ("email", "Email"),
+        ("existing customer", "Existing Customer"),
+        ("partner", "Partner"),
+        ("public relations", "Public Relations"),
+        ("compaign", "Campaign"),
+        ("other", "Other"),
     )
     source = forms.ChoiceField(choices=LEAD_SOURCE_CHOICES)
 
     def __init__(self, *args, **kwargs):
-        assigned_users = kwargs.pop('assigned_to', [])
+        request_obj = kwargs.pop("request_obj", None)
+        assigned_users = kwargs.pop("assigned_to", [])
         super(LeadForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs = {"class": "form-control"}
-        if self.data.get('status') == 'converted':
-            self.fields['account_name'].required = True
-            self.fields['email'].required = True
-        self.fields['first_name'].required = False
-        self.fields['last_name'].required = False
-        self.fields['title'].required = True
+        if self.data.get("status") == "converted":
+            self.fields["account_name"].required = True
+            self.fields["email"].required = True
+        self.fields["first_name"].required = False
+        self.fields["last_name"].required = False
+        self.fields["title"].required = True
         if assigned_users:
-            self.fields['assigned_to'].queryset = assigned_users
-        self.fields['assigned_to'].required = False
+            self.fields["assigned_to"].queryset = assigned_users
+        self.fields["assigned_to"].required = False
         for key, value in self.fields.items():
-            if key == 'phone':
-                value.widget.attrs['placeholder'] =\
-                    'Enter phone number with country code'
+            if key == "phone":
+                value.widget.attrs[
+                    "placeholder"
+                ] = "Enter phone number with country code"
             else:
-                value.widget.attrs['placeholder'] = value.label
+                value.widget.attrs["placeholder"] = value.label
 
-        self.fields['first_name'].widget.attrs.update({
-            'placeholder': 'First Name'})
-        self.fields['last_name'].widget.attrs.update({
-            'placeholder': 'Last Name'})
-        self.fields['account_name'].widget.attrs.update({
-            'placeholder': 'Account Name'})
-        self.fields['phone'].widget.attrs.update({
-            'placeholder': '+911234567890'})
-        self.fields['description'].widget.attrs.update({
-            'rows': '6'})
-        self.fields['address_line'].widget.attrs.update({
-            'placeholder': 'Address Line'})
-        self.fields['street'].widget.attrs.update({
-            'placeholder': 'Street'})
-        self.fields['city'].widget.attrs.update({
-            'placeholder': 'City'})
-        self.fields['state'].widget.attrs.update({
-            'placeholder': 'State'})
-        self.fields['postcode'].widget.attrs.update({
-            'placeholder': 'Postcode'})
-        self.fields["country"].choices = [
-            ("", "--Country--"), ] + list(self.fields["country"].choices)[1:]
-        self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]
+        self.fields["first_name"].widget.attrs.update({"placeholder": "First Name"})
+        self.fields["last_name"].widget.attrs.update({"placeholder": "Last Name"})
+        self.fields["account_name"].widget.attrs.update({"placeholder": "Account Name"})
+        self.fields["phone"].widget.attrs.update({"placeholder": "+911234567890"})
+        self.fields["description"].widget.attrs.update({"rows": "6"})
+        self.fields["address_line"].widget.attrs.update({"placeholder": "Address Line"})
+        self.fields["street"].widget.attrs.update({"placeholder": "Street"})
+        self.fields["city"].widget.attrs.update({"placeholder": "City"})
+        self.fields["state"].widget.attrs.update({"placeholder": "State"})
+        self.fields["postcode"].widget.attrs.update({"placeholder": "Postcode"})
+        self.fields["country"].choices = [("", "--Country--"),] + list(
+            self.fields["country"].choices
+        )[1:]
+        self.fields["teams"].choices = [
+            (team.get("id"), team.get("name"))
+            for team in Teams.objects.filter(company=request_obj.company).values(
+                "id", "name"
+            )
+        ]
         self.fields["teams"].required = False
 
         if self.instance.id:
             if self.instance.created_from_site:
-                prev_choices = self.fields['source']._get_choices()
-                prev_choices = prev_choices +[('micropyramid', 'Micropyramid')]
-                self.fields['source']._set_choices(prev_choices)
-
+                prev_choices = self.fields["source"]._get_choices()
+                prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
+                self.fields["source"]._set_choices(prev_choices)
 
     class Meta:
         model = Lead
-        fields = ('assigned_to', 'first_name',
-                  'last_name', 'account_name', 'title',
-                  'phone', 'email', 'status', 'source',
-                  'website', 'description',
-                  'address_line', 'street',
-                  'city', 'state', 'postcode', 'country'
-                  )
+        fields = (
+            "assigned_to",
+            "first_name",
+            "last_name",
+            "account_name",
+            "title",
+            "phone",
+            "email",
+            "status",
+            "source",
+            "website",
+            "description",
+            "address_line",
+            "street",
+            "city",
+            "state",
+            "postcode",
+            "country",
+        )
 
 
 class LeadCommentForm(forms.ModelForm):
@@ -94,7 +103,7 @@ class LeadCommentForm(forms.ModelForm):
 
     class Meta:
         model = Comment
-        fields = ('comment', 'lead', 'commented_by')
+        fields = ("comment", "lead", "commented_by")
 
 
 class LeadAttachmentForm(forms.ModelForm):
@@ -102,9 +111,11 @@ class LeadAttachmentForm(forms.ModelForm):
 
     class Meta:
         model = Attachments
-        fields = ('attachment', 'lead')
+        fields = ("attachment", "lead")
 
-email_regex = '^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
+
+email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
+
 
 def csv_doc_validate(document):
     temp_row = []
@@ -120,16 +131,14 @@ def csv_doc_validate(document):
         each = {}
         invalid_each = {}
         if y_index == 0:
-            csv_headers = [header_name.lower()
-                           for header_name in row if header_name]
-            missing_headers = set(required_headers) - \
-                set([r.lower() for r in row])
+            csv_headers = [header_name.lower() for header_name in row if header_name]
+            missing_headers = set(required_headers) - set([r.lower() for r in row])
             if missing_headers:
-                missing_headers_str = ', '.join(missing_headers)
-                message = 'Missing headers: %s' % (missing_headers_str)
+                missing_headers_str = ", ".join(missing_headers)
+                message = "Missing headers: %s" % (missing_headers_str)
                 return {"error": True, "message": message}
             continue
-        elif not ''.join(str(x) for x in row):
+        elif not "".join(str(x) for x in row):
             continue
         else:
             for x_index, cell_value in enumerate(row):
@@ -153,8 +162,14 @@ def csv_doc_validate(document):
             failed_leads_csv.append(list(each.values()))
         else:
             temp_row.append(each)
-    return {"error": False, "validated_rows": temp_row, "invalid_rows": invalid_row, "headers":csv_headers,
-        "failed_leads_csv": failed_leads_csv}
+    return {
+        "error": False,
+        "validated_rows": temp_row,
+        "invalid_rows": invalid_row,
+        "headers": csv_headers,
+        "failed_leads_csv": failed_leads_csv,
+    }
+
 
 def import_document_validator(document):
     try:
@@ -165,19 +180,20 @@ def import_document_validator(document):
         print(e)
         return {"error": True, "message": "Not a valid CSV file"}
 
+
 class LeadListForm(forms.Form):
     leads_file = forms.FileField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(LeadListForm, self).__init__(*args, **kwargs)
-        self.fields['leads_file'].widget.attrs.update({
-            "accept": ".csv",
-        })
-        self.fields['leads_file'].required = True
-        if self.data.get('leads_file'):
-            self.fields['leads_file'].widget.attrs.update({
-                "accept": ".csv",
-            })
+        self.fields["leads_file"].widget.attrs.update(
+            {"accept": ".csv",}
+        )
+        self.fields["leads_file"].required = True
+        if self.data.get("leads_file"):
+            self.fields["leads_file"].widget.attrs.update(
+                {"accept": ".csv",}
+            )
 
     def clean_leads_file(self):
         document = self.cleaned_data.get("leads_file")
@@ -189,5 +205,7 @@ class LeadListForm(forms.Form):
                 self.validated_rows = data.get("validated_rows", [])
                 self.invalid_rows = data.get("invalid_rows", [])
                 if len(self.validated_rows) == 0:
-                    raise forms.ValidationError("All the leads in the file are invalid.")
+                    raise forms.ValidationError(
+                        "All the leads in the file are invalid."
+                    )
         return document
