@@ -149,11 +149,11 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             tags = self.request.POST.get("tags")
             splitted_tags = tags.split(",")
             for t in splitted_tags:
-                tag = Tags.objects.filter(name=t.lower())
+                tag = Tags.objects.filter(name=t)
                 if tag:
                     tag = tag[0]
                 else:
-                    tag = Tags.objects.create(name=t.lower())
+                    tag = Tags.objects.create(name=t)
                 account_object.tags.add(tag)
         if self.request.POST.getlist('contacts', []):
             account_object.contacts.add(*self.request.POST.getlist('contacts'))
