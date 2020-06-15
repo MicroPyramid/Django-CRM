@@ -947,7 +947,7 @@ def upload_lead_csv_file(request):
     if request.method == 'POST':
         lead_form = LeadListForm(request.POST, request.FILES)
         if lead_form.is_valid():
-            create_lead_from_file.delay(
+            create_lead_from_file(
                     lead_form.validated_rows, lead_form.invalid_rows, request.user.id,
                     request.get_host())
             return JsonResponse({'error': False, 'data': lead_form.data},
