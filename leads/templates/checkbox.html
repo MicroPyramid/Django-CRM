@@ -39,8 +39,8 @@
       </div>
       <br clear="all">
     </div>
-    <!-- assigned users & teams ends here -->
-    <!-- overview starts here -->
+    
+    
     <div class="overview_form_block row marl">
       <div class="col-md-12">
         <div class="panel panel-default">
@@ -112,7 +112,7 @@
                     <option required="required" value="{{ k.id }}" {%ifequal k.id post.address.country %}selected {% endifequal %}>{{ k.name }}</option>
                     {% endfor %}
                   </select>
-                  <!-- <input type="text" class="form-control country_class" placeholder="Country" id="bcountry" name="country" value="{{ edit.billing_address.country }}" /> -->
+                  
                 </div>
                 <div>
                   <h6 style="color:white;">shipping address</h6>
@@ -139,7 +139,7 @@
                     <option value="{{c.pk}}" {% if edit2%}{%ifequal c.pk edit2.country.pk %}selected {% endifequal %}{% endif %}{% if shipdata.country1 %} {% ifequal c.pk shipdata.country1|add:"0" %}selected{% endifequal %}{% endif %}>{{ c.printable_name }}</option>
                     {% endfor %}
                   </select>
-                  <!-- <input type="text" class="form-control country_class" placeholder="Country" id="id_ship-country" name="ship-country" value="{{ edit2.country }}"/> -->
+                  
                 </div>
                 <div>
                   <h6 style="color:white;">copy address</h6>
@@ -155,8 +155,8 @@
       </div>
       <br clear="all">
     </div>
-    <!-- overview ends here -->
-    <!-- details_block starts here -->
+    
+    
     <div class="details_block row marl">
       <div class="col-md-12">
         <div class="panel panel-default">
@@ -204,7 +204,7 @@
       </div>
       <br clear="all">
     </div>
-    <!-- details_block ends here -->
+    
     <div class="row marl buttons_row text-center">
       <button class="btn btn-default save" type="submit">Convert</button>
       <a href="{% url 'leads:view_lead' post.id %}"<button type="button" class="btn btn-default">CANCEL</button></a>

@@ -1,7 +1,7 @@
 Django-CRM
 ==========
 
-Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
+Django CRM is opensource CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
 
 .. list-table::
    :header-rows: 1
@@ -23,8 +23,8 @@ Django CRM is opensourse CRM developed on django framework. It has all the basic
       -  .. image:: https://api.codacy.com/project/badge/Grade/b11da5f09dd542479fd3bd53944595d2
             :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
             :alt: Codacy Dashboard
-         .. image:: https://api.codacy.com/project/badge/Coverage/b11da5f09dd542479fd3bd53944595d2
-            :target: https://app.codacy.com/project/ashwin/Django-CRM/dashboard
+         .. image:: https://coveralls.io/repos/github/MicroPyramid/Django-CRM/badge.svg?branch=master
+            :target: https://coveralls.io/github/MicroPyramid/Django-CRM?branch=master
             :alt: Codacy Coverage
 
       -  .. image:: https://img.shields.io/docker/automated/micropyramid/django-crm.svg
@@ -133,6 +133,29 @@ Contributors
 This project exists thanks to all the people who contribute!
 
 .. image:: https://opencollective.com/django-crm/contributors.svg?width=890&button=false
+
+Backers
+-------
+
+Thank you to all our backers! `Become a backer`__.
+
+.. image:: https://opencollective.com/django-crm/backers.svg?width=890
+    :target: https://opencollective.com/django-crm#backers
+
+__ Backer_
+.. _Backer: https://opencollective.com/django-crm#backer
+
+Sponsors
+--------
+
+Support us by becoming a sponsor. Your logo will show up here with a link to your website. `Become a sponsor`__.
+
+.. image:: https://opencollective.com/django-crm/sponsor/0/avatar.svg
+    :target: https://opencollective.com/django-crm/sponsor/0/website
+
+__ Sponsor_
+.. _Sponsor: https://opencollective.com/django-crm#sponsor
+
 
 
 Feature requests and bug reports

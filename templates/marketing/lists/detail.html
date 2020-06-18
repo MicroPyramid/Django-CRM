@@ -11,9 +11,9 @@
   </ol>
 </nav>
 
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline">
@@ -64,8 +64,8 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
+  
+  
   <div class="filter_row row marl">
     <div class="col-md-12 col-lg-12 col-xl-12">
       <div class="table_container_row row marl no-gutters">
@@ -82,13 +82,13 @@
             {% if contact_list.failed_contacts.all %}
             <li class="nav-item">
               <a class="nav-link" id="failed-contacts" data-toggle="tab" href="#failed_contacts" role="tab"
-                aria-controls="close" aria-selected="false">Failed Contacts</a>
+                aria-controls="close" aria-selected="false">Failed Contacts ({{contact_list.failed_contacts.count}})</a>
             </li>
             {% endif %}
             {% if contact_list.duplicate_contact_contact_list.all %}
             <li class="nav-item">
               <a class="nav-link" id="duplicate-contacts" data-toggle="tab" href="#duplicate_contacts" role="tab"
-                aria-controls="close" aria-selected="false">Duplicate Contacts</a>
+                aria-controls="close" aria-selected="false">Duplicate Contacts  ({{duplicate_contacts|length}})</a>
             </li>
             {% endif %}
           </ul>
@@ -149,7 +149,7 @@
                               class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
                               class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
@@ -225,7 +225,7 @@
                               class="btn btn-success edit edit_contact" title="Edit"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
                                 class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact_list.id}}"
                               class="btn btn-danger delete remove_account" title="Delete"
                               data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
@@ -313,26 +313,28 @@
                         {% paginate 10 duplicate_contacts %}
                         {% endif %}
                         {% for contact in duplicate_contacts %}
+                        {% if contact.contacts %}
                         <tr style="text-align:center;">
                           <td>
                             <input type="checkbox" class="check_delete_duplicate" name="{{contact.contacts.email}}" id="{{contact.id}}"
-                              value="{{contact.contacts.id}}">
+                            value="{{contact.contacts.id}}">
                           </td>
                           <td scope="row">{{ forloop.counter }}</td>
                           <td>{{ contact.contacts.name }}</td>
                           <td> <a href="{% url 'marketing:contact_detail' contact.contacts.id %}">{{ contact.contacts.email }}</a> </td>
                           <td class="actions">
                             <a href="{% url 'marketing:edit_contact' contact.contacts.id %}?from_contact={{contact.contact_list.id}}"
-                              class="btn btn-success edit edit_contact" title="Edit"
-                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
-                                class="fas fa-edit"></i></a>
-                            <!-- <a href="/contacts/1/edit/" class="btn btn-info duplicate"><i class="fas fa-copy"></i></a> -->
+                            class="btn btn-success edit edit_contact" title="Edit"
+                            data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                            class="fas fa-edit"></i></a>
+                            
                             <a href="{% url 'marketing:delete_contact' contact.id %}?from_contact={{contact.contact_list.id}}"
-                              class="btn btn-danger delete remove_account" title="Delete"
-                              data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
-                                class="fas fa-trash"></i></a>
+                            class="btn btn-danger delete remove_account" title="Delete"
+                            data-other-contacts-lists='{{contact.contact_list.all|length}}'><i
+                            class="fas fa-trash"></i></a>
                           </td>
                         </tr>
+                        {% endif %}
                         {% empty %}
                         <tr style="text-align:center;">
                           <td colspan="6">There are no records</td>
@@ -353,11 +355,11 @@
       </div>
     </div>
   </div>
-  <!-- filter_row ends here -->
-  <!-- accounts list start -->
-  <!-- accounts list end -->
+  
+  
+  
 </div>
-<!-- main_container ends here -->
+
 
 
 

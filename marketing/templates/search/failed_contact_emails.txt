@@ -1,0 +1,18 @@
+{{ object.id }}
+{{ object.email }}
+{{ object.name }}
+{{ object.company_name }}
+{{ object.created_on_arrow }}
+{{ object.created_on }}
+{{ object.created_by }}
+{{ object.created_by_id }}
+{{ object.email_domain }}
+{{ object.contact_lists_count }}
+
+{% for contact_list in object.contact_lists.all %}
+    {{ contact_list.id }}
+{% endfor %}
+
+{% for contact_list in object.contact_lists.all %}
+    {{ contact_list.name }}
+{% endfor %}

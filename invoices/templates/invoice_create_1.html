@@ -2,10 +2,6 @@
 {% load staticfiles %}
 {% block breadcrumb %}
 {% block extralinks %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.css" rel="stylesheet">
-<link rel="stylesheet" type="text/css"
-  href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/start/jquery-ui.css" />
 <style>
   .form-group label {
     font-weight: 800;
@@ -37,7 +33,7 @@
                         Title{% if form.invoice_title.field.required %}<span class="error_marker" style="color:red">
                           *</span>{% endif %} </label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="micropyramid"> -->
+                        
                         {{ form.invoice_title }}
                         <span class="error" id="id__invoice_title">{{ form.invoice_title.errors }}</span>
                       </div>
@@ -49,10 +45,10 @@
                         class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
                           class="error_marker" style="color:red">*</span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        
                         {{ form.status }}
                         <span class="error" id="id__status">{{ form.status.errors }}</span>
-                        <!-- <span class="error" id="id__name">{{ form.name.errors }}</span> -->
+                        
                       </div>
                     </div>
                   </div>
@@ -64,40 +60,21 @@
                         Number{% if form.invoice_number.field.required %}<span class="error_marker" style="color:red">
                           *</span>{% endif %}</label>
                       <div class="col-sm-9 pl-0">
-                        <!-- <input type="text" class="form-control" id="inputPassword" placeholder="79840PM90"> -->
+                        
                         {{ form.invoice_number }}
                         <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- <div class="col-md-6">
-                    <div class="form-group row">
-                      <label for="id_contacts" class="col-sm-4 col-form-label">Status{% if form.status.field.required %}<span
-                          class="error_marker" style="color:red">*</span>{% endif %}</label>
-                      {{ form.status }}
-                      <span class="error" id="id__status">{{ form.status.errors }}</span>
-                    </div> -->
-                  <!-- <div class="row">
-                      <div class="col-sm-8 pl-0">
-                        <div class="form-group ">
-                          <label for="id_contacts" class="required">Status{% if form.status.field.required %}<span
-                              class="error_marker" style="color:red">*</span>{% endif %}</label>
-                          {{ form.status }}
-                          <span class="error" id="id__status">{{ form.status.errors }}</span>
-                        </div>
-                      </div>
-                    </div> -->
-                  <!-- <label>Status</label>
-                    <button class="btn status btn-primary">Sent</button> -->
-                  <!-- </div> -->
+                  
+                  
+                  
+                  
                   <div class="col-md-12">
                     <div class="row">
                       <div class="form-group mt-5 col-md-6">
-                        <!-- <label for="exampleFormControlTextarea1">From Address</label>
-                        <textarea class="form-control" id="exampleFormControlTextarea1"
-                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"
-                          rows="6"></textarea> -->
+                        
                         <div class="form-group">
                           <label for="exampleInputEmail1">From Address</label>
                           {{ from_address_form.address_line }}
@@ -127,9 +104,7 @@
                         <br>
                       </div>
                       <div class="form-group mt-5 col-md-6">
-                        <!-- <label for="exampleFormControlTextarea1">To Address</label>
-                        <textarea class="form-control" id="exampleFormControlTextarea1" rows="6"
-                          placeholder="Micropyramid Informatics, 6th Floor, Krish saphire Building, Madhapur"></textarea> -->
+                        
                         <div class="form-group">
                           <label for="exampleInputEmail1">To Address</label>
                           {{ to_address_form.address_line }}
@@ -166,7 +141,7 @@
                         {% if form.name.field.required %}<span class="error_marker" style="color:red"> *
                         </span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="Lakshmanchandu"> -->
+                        
                         {{ form.name }}
                         <span class="error" id="id__name">{{ form.name.errors }}</span>
                       </div>
@@ -176,8 +151,7 @@
                         {% if form.email.field.required %}<span class="error_marker" style="color:red"> *
                         </span>{% endif %}</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail"
-                                placeholder="lakshman@micropyramid.com"> -->
+                        
                         {{ form.email }}
                         <span class="error" id="id__email">{{ form.email.errors }}</span>
                       </div>
@@ -189,7 +163,7 @@
                       <div class="col-sm-8 pl-0">
                         {{ form.phone }}
                         <span class="error" id="id__phone">{{ form.phone.errors }}</span>
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="6566589125"> -->
+                        
                       </div>
                     </div>
                     <div class="form-group row">
@@ -220,24 +194,60 @@
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Teams</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
-                        {{form.teams}}
+                        
+                        <select name="teams" id="id_teams" class="assigned_users form-control" multiple>
+                          {% for team in teams %}
+                          <option data-users="{{team.get_users}}" value="{{team.id}}"
+                            {% if team in invoice_obj.teams.all %} selected="" {% endif %}>
+                            {{team}}</option>
+                          {% endfor %}
+                        </select>
                         <span class="error" id="id__teams">{{ form.teams.errors }}</span>
                       </div>
                     </div>
+
+
+                    <div class="form-group row">
+                      <label class="col-sm-4 col-form-label"><span class="">Users</span></label>
+                      <div class="col-sm-8 pl-0">
+                        <select name="" aria-readonly="true" id="_id_assigned_to" class=" form-control" multiple>
+                          {% if invoice_obj and invoice_obj.teams.all %}
+                          {% for user in users %}
+                          {% if user in invoice_obj.get_team_users %}
+                          <option value="{{user.id}}" selected="">{{user.email}}</option>
+                          {% else %}
+                          <option value="{{user.id}}">{{user.email}}</option>
+                          {% endif %}
+                          {% endfor %}
+                          {% else %}
+                          {% for user in users %}
+                          <option value="{{user.id}}">{{user.email}}</option>
+                          {% endfor %}
+                          {% endif %}
+                        </select>
+                      </div>
+                    </div>
+
+
                     {% endif %}
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
-                      <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
-                        {{form.assigned_to}}
-                        <span class="error" id="id__assigned_to">{{ form.assigned_to.errors }}</span>
-                      </div>
+                      
+                        
+                        
+                      <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
+                    id="id_assigned_to">
+                    {% for user in users %}
+                    <option value="{{user.id}}" {% if user in invoice_obj.get_assigned_users_not_in_teams or user.id in assignedto_list %}
+                      selected="" {% endif %}>{{user.email}}</option>
+                    {% endfor %}
+                  </select>
+                  <span class="error error_message" id="error_id_assigned_to">{{ form.assigned_to.errors }}</span>
                     </div>
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Accounts</label>
                       <div class="col-sm-8 pl-0">
-                        <!-- <input type="text" class="form-control" id="staticEmail" placeholder="santhrao N"> -->
+                        
                         {{form.accounts}}
                         <span class="error" id="id__accounts">{{ form.accounts.errors }}</span>
                       </div>
@@ -249,7 +259,7 @@
                       <div class="form-group col-md-4">
                         <label for="inputCity">Quality Hours{% if form.quantity.field.required %}<span
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
-                        <!-- <input type="text" class="form-control" id="inputCity" placeholder="5:30"> -->
+                        
                         {{ form.quantity }}
                         <span class="error" id="id__quantity">{{ form.quantity.errors }}</span>
                       </div>
@@ -264,7 +274,7 @@
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
                         {{ form.total_amount }}
                         <span class="error" id="id__total_amount">{{ form.total_amount.errors }}</span>
-                        <!-- <input type="text" class="form-control" id="inputZip" placeholder="5:31"> -->
+                        
                       </div>
                     </div>
                   </div>
@@ -293,11 +303,8 @@
     </div>
   </div>
   {% endblock %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
   {% block js_block %}
-  <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-  <script src="https://malsup.github.io/jquery.form.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript">
 
     // $(document).ready(function() {
@@ -308,6 +315,7 @@
       $("#id_assigned_to").select2();
       $('#id_currency').select2();
       $('#id_teams').select2();
+      $('#_id_assigned_to').select2({ disabled: 'readonly' });
       {% if request.GET.view_account %}
       $("#id_accounts option[value=" + '{{request.GET.view_account}}' + "]").attr('selected', true);
       {% endif %}
@@ -360,5 +368,172 @@
         }
       }
     });
-  </script>
-  {% endblock js_block %}
+
+  function find_dict(dict, id){
+    var index = dict.map(function(o) { return o.team; }).indexOf(parseInt(id));
+    return dict[index]['users']
+  }
+
+  $("#id_teams").change(function (e) {
+    var teams = []
+    var all_users = []
+    var selected_teams = []
+    var selected_users = []
+    var assigned_users = []
+    $.get("{% url 'invoices:get_teams_and_users' %}", function(data){
+      // console.log(data)
+          if(($('#id_teams').val()).length==0){
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+        $('#id_assigned_to').select2().trigger('change');
+
+          }
+
+      teams = data['teams']
+      all_users = data['users']
+      try {
+        var users = []
+        $('#id_teams option:selected').each(function () {
+          // users.push($(this).attr('data-users'))
+          _data = $(this).attr('data-users');
+          selected_teams.push($(this).val())
+          selected_users.push(find_dict(teams, $(this).val()))
+          // console.log("s_users", selected_users)
+          var un_select_users = [].concat.apply([], selected_users)
+          // console.log('un select users', un_select_users);
+
+
+        $('#id_assigned_to option').each(function () {
+          if($.inArray(parseInt($(this).val()), un_select_users) != -1){
+            $(this).attr('disabled', 'disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          else{
+            $(this).show()
+            $(this).removeAttr('disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          }
+        )
+
+
+          if (!selected_teams) {
+            users = []
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+            $('#id_assigned_to').select2();
+          } else {
+            users = users.concat(_data.split(','))
+          }
+        });
+        $('#id_teams option').each(function () {
+          if ($(this).is(':selected')) {
+            _data = $(this).attr('data-users').split(',')
+            // console.log(' selected', $(this).attr('data-users').split(','))
+            // console.log('selected', $(this).attr('data-users'))
+          }
+          else {
+            _unselected = $(this).attr('data-users').split(',')
+            // console.log('un selected', $(this).attr('data-users').split(','))
+          }
+        });
+        // console.log('selected users teams data', users)
+        var existingUsers = $('#id_assigned_to').val();
+        var allUsers = users
+        $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+        if (users.length) {
+
+        }
+      } catch (error) {
+        console.log(error)
+        $('#_id_assigned_to').select2().val([]).trigger('change');
+      }
+    })
+
+  });
+
+  $(document).ready(function($) {
+
+    var teams = []
+    var all_users = []
+    var selected_teams = []
+    var selected_users = []
+    var assigned_users = []
+    $.get("{% url 'invoices:get_teams_and_users' %}", function(data){
+
+          if(($('#id_teams').val()).length==0){
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+        // $('#id_assigned_to').select2().val([]).trigger('change');
+
+          }
+
+      teams = data['teams']
+      all_users = data['users']
+      try {
+        var users = []
+        $('#id_teams option:selected').each(function () {
+          // users.push($(this).attr('data-users'))
+          _data = $(this).attr('data-users');
+          selected_teams.push($(this).val())
+          selected_users.push(find_dict(teams, $(this).val()))
+          var un_select_users = [].concat.apply([], selected_users)
+
+
+        $('#id_assigned_to option').each(function () {
+          if($.inArray(parseInt($(this).val()), un_select_users) != -1){
+            // $(this).attr('disabled', 'disabled')
+            $(this).attr('disabled', 'disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          else{
+            $(this).show()
+            $(this).removeAttr('disabled')
+            $('#id_assigned_to').select2();
+
+          }
+          }
+        )
+
+
+          if (!selected_teams) {
+            users = []
+            $('#id_assigned_to option').each(function () {
+            $(this).removeAttr('disabled')
+            })
+            $('#id_assigned_to').select2();
+          } else {
+            users = users.concat(_data.split(','))
+          }
+        });
+        $('#id_teams option').each(function () {
+          if ($(this).is(':selected')) {
+            _data = $(this).attr('data-users').split(',')
+          }
+          else {
+            _unselected = $(this).attr('data-users').split(',')
+          }
+        });
+        var existingUsers = $('#id_assigned_to').val();
+        // var allUsers = users.concat(existingUsers)
+        var allUsers = users
+        // console.log(existingUsers)
+        $('#_id_assigned_to').select2().val(allUsers).trigger('change');
+        if (users.length) {
+
+        }
+      } catch (error) {
+        console.log(error)
+        $('#_id_assigned_to').select2().val([]).trigger('change');
+      }
+    })
+
+  });
+</script>
+{% endblock js_block %}

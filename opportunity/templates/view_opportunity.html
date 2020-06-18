@@ -10,17 +10,17 @@
   }
 </style>
 {% endblock extralinks %}
-<!-- Breadcrumb Starts Here -->
+
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'opportunities:list' %}">Opportunities</a></li>
     <li class="breadcrumb-item active">View</li>
   </ol>
 </nav>
-<!-- Breadcrumb Ends Here -->
+
 {% endblock%}
 {% block content%}
-<!-- OPPORTUNITY VIEW STARTS -->
+
 <div class="main_container" id="maincontainer">
   <div class="overview_form_block row marl justify-content-center">
     <div class="col-md-8" id="opacity_block">
@@ -148,7 +148,7 @@
             </div>
           </div>
         </div>
-        <!-- Attachment Section start -->
+        
         <div>
           <div class="card-body mar-top" id="datashow">
             <div class="card-title view-pad">
@@ -204,8 +204,8 @@
               </div>
             </div>
           </div>
-          <!-- Attachment Section end -->
-          <!-- Comments Section starts-->
+          
+          
           <div class="card-body" id="datashow">
             <div class="card-title view-pad">
               <h5>Comments</h5>
@@ -289,7 +289,7 @@
               </div>
             </div>
           </div>
-          <!-- Comments Section Ends-->
+          
         </div>
       </div>
     </div>
@@ -302,7 +302,7 @@
     </div>
   </div>
 </div>
-<!-- OPPORTUNITY VIEW ENDS -->
+
 {% endblock %}
 
 {% block js_block %}
@@ -493,7 +493,7 @@
 
 </script>
 
-<!-- <script src="{% static 'js/mention.js' %}"></script> -->
+
 <script src="{% static 'js/bootstrap-suggest.js' %}"></script>
 <script>
   $('.mentions').suggest('@', {

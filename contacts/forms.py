@@ -21,7 +21,7 @@ class ContactForm(forms.ModelForm):
 
         for key, value in self.fields.items():
             if key == 'phone':
-                value.widget.attrs['placeholder'] = "+91-123-456-7890"
+                value.widget.attrs['placeholder'] = "+911234567890"
             else:
                 value.widget.attrs['placeholder'] = value.label
         self.fields["teams"].choices = [(team.get('id'), team.get('name')) for team in Teams.objects.all().values('id', 'name')]

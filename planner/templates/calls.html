@@ -1,7 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load staticfiles %}
 {% block content %}
-<!-- heading_create starts here -->
+
 <div class="row marl heading_create">
   <div class="heading col-md-2">CALLS</div>
   <div class="col-md-7">
@@ -197,8 +197,8 @@
       class="fa fa-plus"></i> Create Call</a>
   </div>
 </div>
-<!-- heading_create ends here -->
-<!-- filter_row starts here -->
+
+
 <div class="filter_row row marl">
   <div class="col-md-12">
     <div class="panel panel-default">
@@ -262,14 +262,14 @@
   </div>
 </div>
 </div>
-<!-- filter_row ends here -->
+
 <div class="table_container_row row marl">
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-content for-pagination">
         {% include 'planner/calls_list.html' %}
       </div>
-      <!-- CREATE CALL MODEL -->
+      
       <form id="model-form" method="post">
         <div class="modal fade" id="call-create-model" role="dialog" data-keyboard="false"
           data-backdrop="static">
@@ -503,8 +503,8 @@
           </div>
         </div>
       </form>
-      <!--END CREATE CALL MODEL-->
-      <!--START SUCCESS CALL MODEL-->
+      
+      
       <div class="modal fade" id="call-success-model" role="dialog">
         <div class="modal-dialog modal-sm">
           <div class="modal-content">
@@ -520,10 +520,10 @@
             </div>
           </div>
         </div>
-        <!--END SUCCESS MEETING MODEL-->
+        
       </div>
     </div>
-    <!--START DELETECONFORMATION MODEL-->
+    
     <div class="modal fade" id="call-delete-model" role="dialog" data-keyboard="false"
       data-backdrop="static">
       <div class="modal-dialog modal-sm">
@@ -544,12 +544,12 @@
   </div>
 </div>
 </div>
-<!--END DELETECONFORMATION MODEL-->
-<!--SELECT PARENT MODEL-->
+
+
 <div class="modal fade model-sm" id="selectparentmodel" role="dialog" data-keyboard="false"
   data-backdrop="static">
   <div class="modal-dialog">
-    <!-- Modal content-->
+    
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title"></h4>
@@ -563,7 +563,7 @@
     </div>
   </div>
 </div>
-<!--END  SELECT PARENT MODEL-->
+
 {% include 'planner/dialog_models.html' %}
 <script src="{% static 'js/calls.js' %}"></script>
 <script src="{% static 'js/setstatus.js' %}"></script>

@@ -3,9 +3,6 @@
 {% load paginate %}
 {% load common_tags %}
 {% block content %}
-{% block extralinks %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-{% endblock extralinks %}
 
 {{ block.super }}
 <div class="main_container ml-5 mr-5">
@@ -70,7 +67,7 @@
                 <thead>
                   <tr>
                     <th width="15%" class="text-center">Campaign</th>
-                    <th width="5%" class="text-center">Receipents</th>
+                    <th width="5%" class="text-center">Recipients</th>
                     <th width="15%" class="text-center">Sent</th>
                     <th width="10%" class="text-center">Created By</th>
                     <th width="10%" class="text-center">Unique Opens</th>
@@ -91,7 +88,7 @@
                   {% for campaign in campaigns_list %}
                   <tr style="text-align:center;">
                     <td scope="row" style="text-align: center;">
-                      <!-- <span class="badge badge-primary">Primary</span> -->
+                      
                       <a href="{% url 'marketing:campaign_details' campaign.id %}">{{ campaign.title }} </a></td>
                     <td class="text-center">{{campaign.get_all_emails_count}}</td>
                     <td title="{{ campaign.sent_on_format }}">
@@ -101,19 +98,19 @@
                       {{ campaign.created_by }}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      
                       {{campaign.opens_unique}}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">20.6%</span>  -->
+                      
                       {{campaign.get_all_email_bounces_count}}
                     </td>
                     <td class="text-center">
-                      <!-- <span class="badge badge-secondary">15.5%</span> -->
+                      
                       {{campaign.get_all_emails_subscribed_count}}
                     </td>
                     <td class="text-center">
-                        <!-- <span class="badge badge-secondary">15.5%</span> -->
+                        
                         {{campaign.get_all_emails_unsubscribed_count}}
                       </td>
                     <td class="text-center">
@@ -160,6 +157,12 @@
     $(".filter_toggle").click(function () {
       $(".list_filter_row").toggle();
     });
+
+    search = "{{search}}"
+    if (search == 'True') {
+    $(".list_filter_row").show();
+    }
+
     $('#id_tag').select2();
     $('#created_by').select2();
 

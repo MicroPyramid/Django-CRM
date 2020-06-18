@@ -3,7 +3,6 @@
 {% load paginate %}
 {% load thumbnail %}
 {% block extralinks %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 <style>
   .form-group label {
     font-weight: 800;
@@ -11,9 +10,9 @@
 </style>
 {% endblock %}
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-lg-12 text-right">
       <span class="d-inline"><a class="primary_btn" href="{% url 'contacts:add_contact'%}"><i class="fa fa-plus"></i>
@@ -47,8 +46,8 @@
                     <label for="exampleInputEmail1">Assigned To</label>
                     <select class="assigned_users form-control" name="assigned_to" multiple="multiple">
                       {% for user in users %}
-                      <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>
-                        {{user.email}}</option>
+                        <option value="{{user.id}}" {% if user.id in assignedto_list %} selected="" {% endif %}>
+                          {% if user.username %}{{user.username}}{% else %}{{user.email}}{% endif %}</option>                  
                       {% endfor %}
                     </select>
                   </div>
@@ -66,8 +65,8 @@
       </div>
     </div>
   </div>
-  <!-- heading_create ends here -->
-  <!-- filter_row starts here -->
+  
+  
   <div class="table_container_row row marl ">
     <div class="col-md-12">
       <div class="card">
@@ -110,7 +109,7 @@
                       data-target="#exampleModalCenter_contact{{contact.id}}">{{contact.first_name}}
                       {{contact.last_name}}</a></td>
                   <td>
-                    {% with contact_users=contact.assigned_to.all %}
+                    {% with contact_users=contact.get_team_and_assigned_users %}
                     {% for user in contact_users %}
                     {% if user.profile_pic %}
                     {% thumbnail user.profile_pic "40x40" crop="center" as im %}
@@ -169,9 +168,9 @@
     </div>
     <br clear="all">
   </div>
-  <!-- filter_row ends here -->
+  
 </div>
-<!-- main_container ends here -->
+
 
 
 {% for contact_record in contact_obj_list %}
@@ -197,15 +196,9 @@
 
                   <div class="card-title text-right">
                     <h5>
-                      <!-- <span class="float-left title">Overview</span> -->
+                      
                       <span class="" style="margin-top: 0px">
-                        <!-- <div class="dropdown buttons_row">
-                          <button class="btn primary_btn dropdown-toggle" type="button" data-toggle="dropdown">Actions
-                            <span class="caret"></span></button>
-                          <ul class="dropdown-menu">
-                            <li><a href="{% url 'contacts:edit_contact' contact_record.id %}">Edit</a></li>
-                          </ul>
-                        </div> -->
+                        
                       </span>
                     </h5>
                   </div>
@@ -249,14 +242,7 @@
                         </div>
                       </div>
                       <div class="filter_col col-md-12">
-                        <!-- <div class="form-group">
-                          {% if contact_record.description %}
-                          <label class="contact_field_label" for="id_description" data-name="name">Description</label>
-                          <div class="contact_field" id="contact_description" data-name="name">
-                            {{ contact_record.description }}
-                          </div>
-                          {% endif %}
-                        </div> -->
+                        
                       </div>
                     </div>
                     <div class=" ml-2 col-md-12">

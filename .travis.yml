@@ -4,6 +4,7 @@ python:
 
 services:
   - redis-server
+  - elasticsearch
 
 #Django & Database
 addons:

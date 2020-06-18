@@ -46,5 +46,5 @@ class TestCeleryTasks(TestLeadModel, TestCase):
              'phone': '911234567893', 'email': 'user4@email', 'address': 'address for lead4'}
         ]
         task = create_lead_from_file.apply(
-            (valid_rows, invalid_rows, self.user.id),)
+            (valid_rows, invalid_rows, self.user.id, 'example.com'),)
         self.assertEqual('SUCCESS', task.state)

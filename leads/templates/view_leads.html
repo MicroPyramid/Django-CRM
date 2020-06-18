@@ -39,8 +39,7 @@
                         style="background:#17a2b8; color: white; font-weight: 600;">Edit</a></li>
                     <li><a href="{% url 'leads:leads_convert' lead_record.id %}" class="" role="button"
                         style="background:#17a2b8; color: white; font-weight: 600;">Convert</a></li>
-                    <!-- <li><a href="{% url 'leads:leads_convert' lead_record.id %}" class="btn btn-info"
-                        role="button">Convert</a></li> -->
+                    
                   </ul>
                 </div>
               </span>
@@ -79,8 +78,8 @@
               <div class="filter_col col-md-12">
                 <div class="form-group">
                   <label class="lead_field_label" for="id_phone" data-name="name">Phone</label>
-                  {% if lead_record.phone %}
-                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone }}</div>
+                  {% if lead_record.lead_record.phone_raw_input %}
+                  <div class="lead_field" id="lead_phone" data-name="name">{{ lead_record.phone_raw_input }}</div>
                   {% else %}
                   <div class="lead_field">Not specified</div>
                   {% endif %}
@@ -131,6 +130,22 @@
               </div>
             </div>
             <div class="col-md-4">
+              <div class="filter_col col-md-12">
+                <div class="form-group">
+                  <label class="lead_field_label" for="id_tags" data-name="name">Tags</label><br>
+                  {% for tag in lead_record.tags.all %}
+                  <span style="cursor: pointer;" class="tag_class_lead_" data-leadTag="{{lead.id}}{{tag.id}}">
+                    <span class="text-left color{{forloop.counter}}" id="list_tag">
+                      <span data-link="{{tag.id}}" class="tag_class_lead">{{ tag.name }}</span>
+                        
+                    </span>
+                  </span>
+                  {% empty %}
+                  <div class="lead_field">Not Specified</div>     
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
 
               <div class="filter_col col-md-12">
                 <div class="form-group">
@@ -160,7 +175,7 @@
           </div>
         </div>
 
-        <!-- Attachment Section start -->
+        
         <div>
           <div class="card-body mar-top" id="datashow">
             <div class="card-title view-pad">
@@ -216,9 +231,9 @@
               </div>
             </div>
           </div>
-          <!-- Attachment Section end -->
+          
 
-          <!-- Comments Section starts-->
+          
           <div>
             <div class="card-body mar-top" id="datashow">
               <div class="card-title view-pad">
@@ -307,7 +322,7 @@
               </div>
             </div>
           </div>
-          <!-- Comments Section Ends-->
+          
         </div>
       </div>
       <tr id="meeting{{ meeting.id }}">

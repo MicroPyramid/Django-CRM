@@ -5,15 +5,17 @@ from mimetypes import MimeTypes
 import pytz
 import requests
 from celery.task import task
+from django.core.management import call_command
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
 from django.template import Context, Template
 
 from common.utils import convert_to_custom_timezone
-from marketing.models import (Campaign, CampaignCompleted, CampaignLog,
-                              Contact, ContactEmailCampaign, ContactList,
-                              FailedContact, DuplicateContacts)
+from marketing.models import (BlockedDomain, BlockedEmail, Campaign,
+                              CampaignCompleted, CampaignLog, Contact,
+                              ContactEmailCampaign, ContactList,
+                              DuplicateContacts, FailedContact)
 
 
 @task
@@ -107,6 +109,8 @@ def get_campaign_message_id(campaign):
 
 @task
 def run_campaign(campaign, domain='demo.django-crm.io', protocol='https'):
+    blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
+    blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
     try:
         campaign = Campaign.objects.get(id=campaign)
         attachments = []
@@ -140,39 +144,40 @@ def run_campaign(campaign, domain='demo.django-crm.io', protocol='https'):
                 reply_to_email = str(from_email) + ' <' + \
                     str(message_id + '@' + domain_name + '') + '>'
             if not (each_contact.is_bounced or each_contact.is_unsubscribed):
-                # domain_url = settings.URL_FOR_LINKS
-                domain_url = protocol + '://' + domain
-                img_src_url = domain_url + reverse('marketing:campaign_open', kwargs={
-                    'campaign_log_id': campaign_log.id, 'email_id': each_contact.id})
-                # images can only be accessed over https
-                link = '<img src={img_src_url} alt="company_logo" title="company_logo" height="1" width="1" />'.format(
-                    img_src_url=img_src_url)
-                # link = '<img src="' + domain_url + '/m/cm/track-email/' + \
-                #     str(campaign_log.id) + '/contact/' + \
-                #     str(each_contact.id) + '/" height="1" width="1" alt="company_logo" + \
-                #     title="company_logo"/>'
+                if ((each_contact.email not in blocked_emails) and (each_contact.email.split('@')[-1] not in blocked_domains)):
+                    # domain_url = settings.URL_FOR_LINKS
+                    domain_url = protocol + '://' + domain
+                    img_src_url = domain_url + reverse('marketing:campaign_open', kwargs={
+                        'campaign_log_id': campaign_log.id, 'email_id': each_contact.id})
+                    # images can only be accessed over https
+                    link = '<img src={img_src_url} alt="company_logo" title="company_logo" height="1" width="1" />'.format(
+                        img_src_url=img_src_url)
+                    # link = '<img src="' + domain_url + '/m/cm/track-email/' + \
+                    #     str(campaign_log.id) + '/contact/' + \
+                    #     str(each_contact.id) + '/" height="1" width="1" alt="company_logo" + \
+                    #     title="company_logo"/>'
 
-                unsubscribe_from_campaign_url = reverse(
-                    'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id,
-                                                                   'campaign_id': campaign.id})
-                unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
-                    domain_url + unsubscribe_from_campaign_url)
-                names_dict = {'company_name': each_contact.company_name if each_contact.company_name else '',
-                              'last_name': each_contact.last_name if each_contact.last_name else '',
-                              'city': each_contact.city if each_contact.city else '',
-                              'state': each_contact.state if each_contact.state else '',
-                              'first_name': each_contact.name,
-                              'email': each_contact.email, 'email_id': each_contact.id,
-                              'name': each_contact.name + ' ' + each_contact.last_name if each_contact.last_name else '',
-                              'unsubscribe_from_campaign_url': unsubscribe_from_campaign_url}
+                    unsubscribe_from_campaign_url = reverse(
+                        'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id,
+                                                                    'campaign_id': campaign.id})
+                    unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
+                        domain_url + unsubscribe_from_campaign_url)
+                    names_dict = {'company_name': each_contact.company_name if each_contact.company_name else '',
+                                'last_name': each_contact.last_name if each_contact.last_name else '',
+                                'city': each_contact.city if each_contact.city else '',
+                                'state': each_contact.state if each_contact.state else '',
+                                'first_name': each_contact.name,
+                                'email': each_contact.email, 'email_id': each_contact.id,
+                                'name': each_contact.name + ' ' + each_contact.last_name if each_contact.last_name else '',
+                                'unsubscribe_from_campaign_url': unsubscribe_from_campaign_url}
 
-                html = Template(html).render(Context(names_dict))
-                mail_html = html + link + unsubscribe_from_campaign_html
-                from_email = str(campaign.from_name) + "<" + \
-                    str(campaign.from_email) + '>'
-                to_email = [each_contact.email]
-                send_campaign_mail(
-                    subject, mail_html, from_email, to_email, [], [reply_to_email], attachments)
+                    html = Template(html).render(Context(names_dict))
+                    mail_html = html + link + unsubscribe_from_campaign_html
+                    from_email = str(campaign.from_name) + "<" + \
+                        str(campaign.from_email) + '>'
+                    to_email = [each_contact.email]
+                    send_campaign_mail(
+                        subject, mail_html, from_email, to_email, [], [reply_to_email], attachments)
     except Exception as e:
         print(e)
         pass
@@ -263,51 +268,58 @@ def send_campaign_email_to_admin_contact(campaign, domain='demo.django-crm.io', 
         subject = campaign.subject
         contacts = ContactEmailCampaign.objects.all()
         default_html = campaign.html_processed
+        blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
+        blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
         for each_contact in contacts:
-            html = default_html
-            if campaign.reply_to_email:
-                reply_to_email = campaign.reply_to_email
-            else:
-                domain_name = 'django-crm.com'
-                if campaign.from_email is not None:
-                    from_email = campaign.from_email
+            if ((each_contact.email not in blocked_emails) and (each_contact.email.split('@')[-1] not in blocked_domains)):
+                html = default_html
+                if campaign.reply_to_email:
+                    reply_to_email = campaign.reply_to_email
                 else:
-                    from_email = campaign.created_by.email
-                reply_to_email = str(from_email) + ' <' + \
-                    str(settings.EMAIL_HOST_USER + '@' + domain_name + '') + '>'
+                    domain_name = 'django-crm.com'
+                    if campaign.from_email is not None:
+                        from_email = campaign.from_email
+                    else:
+                        from_email = campaign.created_by.email
+                    reply_to_email = str(from_email) + ' <' + \
+                        str(settings.EMAIL_HOST_USER + '@' + domain_name + '') + '>'
 
-            # domain_url = settings.URL_FOR_LINKS
-            domain_url = protocol + '://' + domain
-            # img_src_url = domain_url + reverse('marketing:campaign_open', kwargs={
-            #     'campaign_log_id': campaign_log.id, 'email_id': each_contact.id})
-            # # images can only be accessed over https
-            # link = '<img src={img_src_url} alt="company_logo" title="company_logo" height="1" width="1" />'.format(
-            #     img_src_url=img_src_url)
-            # link = '<img src="' + domain_url + '/m/cm/track-email/' + \
-            #     str(campaign_log.id) + '/contact/' + \
-            #     str(each_contact.id) + '/" height="1" width="1" alt="company_logo" + \
-            #     title="company_logo"/>'
+                # domain_url = settings.URL_FOR_LINKS
+                domain_url = protocol + '://' + domain
+                # img_src_url = domain_url + reverse('marketing:campaign_open', kwargs={
+                #     'campaign_log_id': campaign_log.id, 'email_id': each_contact.id})
+                # # images can only be accessed over https
+                # link = '<img src={img_src_url} alt="company_logo" title="company_logo" height="1" width="1" />'.format(
+                #     img_src_url=img_src_url)
+                # link = '<img src="' + domain_url + '/m/cm/track-email/' + \
+                #     str(campaign_log.id) + '/contact/' + \
+                #     str(each_contact.id) + '/" height="1" width="1" alt="company_logo" + \
+                #     title="company_logo"/>'
 
-            # unsubscribe_from_campaign_url = reverse(
-            #     'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id,
-            #                                                     'campaign_id': campaign.id})
-            # unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
-            #     domain_url + unsubscribe_from_campaign_url)
+                # unsubscribe_from_campaign_url = reverse(
+                #     'marketing:unsubscribe_from_campaign', kwargs={'contact_id': each_contact.id,
+                #                                                     'campaign_id': campaign.id})
+                # unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
+                #     domain_url + unsubscribe_from_campaign_url)
 
-            # names_dict = {'company_name': '', 'city': '', 'state': '',
-            #                 'last_name': each_contact.last_name if each_contact.last_name else '',
-            #                 'email': each_contact.email, 'email_id': each_contact.id,
-            #                 'name': each_contact.name + ' ' + each_contact.last_name if each_contact.last_name else '',
-            #             }
+                # names_dict = {'company_name': '', 'city': '', 'state': '',
+                #                 'last_name': each_contact.last_name if each_contact.last_name else '',
+                #                 'email': each_contact.email, 'email_id': each_contact.id,
+                #                 'name': each_contact.name + ' ' + each_contact.last_name if each_contact.last_name else '',
+                #             }
 
-            # mail_html = html + link + unsubscribe_from_campaign_html
-            html = Template(html).render(Context({'email_id': each_contact.id}))
-            mail_html = html
-            from_email = str(campaign.from_name) + "<" + \
-                str(campaign.from_email) + '>'
-            to_email = [each_contact.email]
-            send_campaign_mail(
-                subject, mail_html, from_email, to_email, [], [reply_to_email], attachments)
+                # mail_html = html + link + unsubscribe_from_campaign_html
+                html = Template(html).render(Context({'email_id': each_contact.id}))
+                mail_html = html
+                from_email = str(campaign.from_name) + "<" + \
+                    str(campaign.from_email) + '>'
+                to_email = [each_contact.email]
+                send_campaign_mail(
+                    subject, mail_html, from_email, to_email, [], [reply_to_email], attachments)
     except Exception as e:
         print(e)
         pass
+
+@task
+def update_elastic_search_index():
+    call_command('update_index --age=1', interactive=False)

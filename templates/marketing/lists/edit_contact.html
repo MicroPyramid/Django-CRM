@@ -83,7 +83,7 @@
                       <button class="btn btn-default save" type="submit">Update</button>
                       <a {% if request.META.HTTP_REFERER %} href="{{ request.META.HTTP_REFERER }}" {% else %} href="/"
                         {% endif %} class="btn btn-default clear">Cancel</a>
-                      <!-- <a href="#" onclick="window.history.back()" class="btn btn-default clear">Cancel</a> -->
+                      
                     </div>
                   </div>
                 </div>
@@ -97,10 +97,6 @@
 </div>
 {% endblock %}
 {% block js_block %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js'></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tagsinput/1.3.6/jquery.tagsinput.min.js"></script>
-<script src="https://malsup.github.io/jquery.form.js"></script>
 <script type="text/javascript">
 
   // $(document).ready(function() {

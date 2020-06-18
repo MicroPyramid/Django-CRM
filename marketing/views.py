@@ -20,15 +20,19 @@ from common import status
 from common.utils import convert_to_custom_timezone
 from common.models import User
 from marketing.forms import (ContactForm, ContactListForm, EmailTemplateForm,
-                             SendCampaignForm, EmailCampaignForm)
+                             SendCampaignForm, EmailCampaignForm, BlockedDomainsForm,
+                             BlockedEmailForm)
 from marketing.models import (Campaign, CampaignLinkClick, CampaignLog,
                               CampaignOpen, Contact, ContactList,
                               EmailTemplate, Link, Tag, FailedContact, ContactUnsubscribedCampaign,
-                              ContactEmailCampaign)
+                              ContactEmailCampaign, BlockedDomain, BlockedEmail)
 from marketing.tasks import (run_campaign, upload_csv_file,
                             delete_multiple_contacts_tasks,
-                            send_campaign_email_to_admin_contact)
+                            send_campaign_email_to_admin_contact,
+                            update_elastic_search_index)
 from common.access_decorators_mixins import marketing_access_required, MarketingAccessRequiredMixin, admin_login_required
+# from haystack.generic_views import SearchView
+# from haystack.query import SearchQuerySet
 
 TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
 
@@ -89,15 +93,16 @@ def dashboard(request):
 def contact_lists(request):
     tags = Tag.objects.all()
     if (request.user.role == "ADMIN"):
-        queryset = ContactList.objects.all()
+        queryset = ContactList.objects.all().order_by('-created_on')
     else:
         queryset = ContactList.objects.filter(
-            Q(created_by=request.user) | Q(visible_to=request.user))
+            Q(created_by=request.user) | Q(visible_to=request.user)).order_by('-created_on')
 
     users = User.objects.filter(
         id__in=queryset.values_list('created_by_id', flat=True))
     if request.GET.get('tag'):
         queryset = queryset.filter(tags=request.GET.get('tag'))
+    search = False
     if request.method == 'POST':
         post_tags = request.POST.getlist('tag')
 
@@ -112,9 +117,15 @@ def contact_lists(request):
         if request.POST.get('tag'):
             queryset = queryset.filter(tags__id__in=post_tags)
             request_tags = request.POST.getlist('tag')
+        if (
+            request.POST.get('contact_list_name')or 
+            request.POST.get('created_by')or
+            request.POST.get('created_by')
+            ):
+            search = True   #for filter form to show in contactlist
 
     data = {'contact_lists': queryset, 'tags': tags, 'users': users,
-            'request_tags': request.POST.getlist('tag'), }
+            'request_tags': request.POST.getlist('tag'),'search':search }
     return render(request, 'marketing/lists/index.html', data)
 
 
@@ -343,13 +354,16 @@ def delete_contact(request, pk):
     if request.GET.get('from_contact'):
         if contact_obj.contact_list.count() == 1:
             contact_obj.delete()
+            # update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
         else:
             contact_list_obj = get_object_or_404(ContactList, pk=request.GET.get('from_contact'))
             contact_obj.contact_list.remove(contact_list_obj)
+            # update_elastic_search_index.delay()
             return redirect(reverse('marketing:contact_list_detail', args=(request.GET.get('from_contact'),)))
     else:
         contact_obj.delete()
+        # update_elastic_search_index.delay()
     return redirect('marketing:contacts_list')
 
 
@@ -438,12 +452,13 @@ def failed_contact_list_download_delete(request, pk):
 def email_template_list(request):
     # users = User.objects.all()
     if (request.user.role == 'ADMIN' or request.user.is_superuser):
-        queryset = EmailTemplate.objects.all()
+        queryset = EmailTemplate.objects.all().order_by('-created_on')
     else:
         queryset = EmailTemplate.objects.filter(
-            created_by=request.user)
+            created_by=request.user).order_by('-created_on')
     users = User.objects.filter(
         id__in=queryset.values_list('created_by_id', flat=True))
+    search = False
     if request.method == 'POST':
         if request.POST.get('template_name'):
             queryset = queryset.filter(
@@ -452,8 +467,11 @@ def email_template_list(request):
         if request.POST.get('created_by'):
             queryset = queryset.filter(
                 created_by=request.POST.get('created_by'))
-
-    data = {'email_templates': queryset, 'users': users}
+        if (request.POST.get('template_name')or
+            request.POST.get('created_by')
+            ):
+            search =True
+    data = {'email_templates': queryset, 'users': users, 'search':search}
     return render(request, 'marketing/email_template/index.html', data)
 
 
@@ -527,6 +545,7 @@ def campaign_list(request):
         id__in=queryset.values_list('created_by_id', flat=True))
     if request.GET.get('tag'):
         queryset = queryset.filter(tags=request.GET.get('tag'))
+    search = False
     if request.method == 'POST':
         if request.POST.get('campaign_name'):
             queryset = queryset.filter(
@@ -535,8 +554,12 @@ def campaign_list(request):
         if request.POST.get('created_by'):
             queryset = queryset.filter(
                 created_by=request.POST.get('created_by'))
-
-    data = {'campaigns_list': queryset, 'users': users}
+        #shows the filter form in marketing-Campaigns after any search is requested
+        if (request.POST.get('campaign_name')or
+            request.POST.get('created_by')
+            ):
+            search = True
+    data = {'campaigns_list': queryset,'search':search ,'users': users}
     return render(request, 'marketing/campaign/index.html', data)
 
 
@@ -607,7 +630,7 @@ def campaign_new(request):
             for e in links:
                 llist.append(e.get('href'))
 
-            # get uniaue linnk
+            # get unique link
             links = set(llist)
 
             # Replace Links with new One
@@ -868,12 +891,14 @@ def demo_file_download(request):
 
 def unsubscribe_from_campaign(request, contact_id, campaign_id):
     contact_obj = get_object_or_404(Contact, pk=contact_id)
-    campaign_obj = get_object_or_404(Campaign, pk=campaign_id)
-    ContactUnsubscribedCampaign.objects.create(
-        campaigns=campaign_obj, contacts=contact_obj, is_unsubscribed=True)
     contact_obj.is_unsubscribed = True
     contact_obj.save()
-    return HttpResponseRedirect('/')
+    campaign_obj = Campaign.objects.filter(id=campaign_id).first()
+    # campaign_obj = get_object_or_404(Campaign, pk=campaign_id)
+    if campaign_obj:
+        ContactUnsubscribedCampaign.objects.create(
+            campaigns=campaign_obj, contacts=contact_obj, is_unsubscribed=True)
+    return render(request, 'unsubscribe_from_campaign_template.html')
 
 
 @login_required
@@ -1165,3 +1190,207 @@ def delete_email_for_campaigns(request, pk):
     if request.method == 'GET':
         contact_obj.delete()
         return HttpResponseRedirect(reverse('common:api_settings'))
+
+# the below views should be in settings page
+
+@login_required
+@admin_login_required
+def add_blocked_domain(request):
+    if request.method == 'GET':
+        form = BlockedDomainsForm()
+        return render(request, 'add_blocked_domain.html', {'form': form})
+    if request.method == 'POST':
+        form = BlockedDomainsForm(request.POST)
+        if form.is_valid():
+            domain = form.save(commit=False)
+            domain.created_by = request.user
+            domain.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def blocked_domain_list(request):
+    if request.method == 'GET':
+        blocked_domains = BlockedDomain.objects.all()
+        return render(request, 'blocked_domain_list.html', {'blocked_domains': blocked_domains})
+    if request.method == 'POST':
+        blocked_domains = BlockedDomain.objects.all()
+        if request.POST.get('domain', ''):
+            blocked_domains = blocked_domains.filter(domain__icontains=request.POST.get('domain', ''))
+        if request.POST.get('created_by', ''):
+            blocked_domains = blocked_domains.filter(created_by_id=request.POST.get('created_by', ''))
+        return render(request, 'blocked_domain_list.html', {'blocked_domains': blocked_domains})
+
+@login_required
+@admin_login_required
+def edit_blocked_domain(request, blocked_domain_id):
+    block_domain_obj = get_object_or_404(BlockedDomain, pk=blocked_domain_id)
+    if request.method == 'GET':
+        form = BlockedDomainsForm(instance=block_domain_obj)
+        return render(request, 'add_blocked_domain.html', {'form': form, 'block_domain_obj': block_domain_obj})
+    if request.method == 'POST':
+        form = BlockedDomainsForm(request.POST, instance=block_domain_obj)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def delete_blocked_domain(request, blocked_domain_id):
+    block_domain_obj = get_object_or_404(BlockedDomain, pk=blocked_domain_id)
+    block_domain_obj.delete()
+    return redirect(reverse('common:api_settings') + '?blocked_domains')
+
+
+@login_required
+@admin_login_required
+def add_blocked_email(request):
+    if request.method == 'GET':
+        form = BlockedEmailForm()
+        return render(request, 'add_blocked_email.html', {'form': form})
+    if request.method == 'POST':
+        form = BlockedEmailForm(request.POST)
+        if form.is_valid():
+            email = form.save(commit=False)
+            email.created_by = request.user
+            email.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def blocked_email_list(request):
+    if request.method == 'GET':
+        blocked_emails = BlockedEmail.objects.all()
+        return render(request, 'blocked_email_list.html', {'blocked_emails': blocked_emails})
+    if request.method == 'POST':
+        blocked_emails = BlockedEmail.objects.all()
+        if request.POST.get('email', ''):
+            blocked_emails = blocked_emails.filter(email__icontains=request.POST.get('email', ''))
+        if request.POST.get('created_by', ''):
+            blocked_emails = blocked_emails.filter(created_by_id=request.POST.get('created_by', ''))
+        return render(request, 'blocked_email_list.html', {'blocked_emails': blocked_emails})
+
+@login_required
+@admin_login_required
+def edit_blocked_email(request, blocked_email_id):
+    block_email_obj = get_object_or_404(BlockedEmail, pk=blocked_email_id)
+    if request.method == 'GET':
+        form = BlockedEmailForm(instance=block_email_obj)
+        return render(request, 'add_blocked_email.html', {'form': form, 'block_email_obj': block_email_obj})
+    if request.method == 'POST':
+        form = BlockedEmailForm(request.POST, instance=block_email_obj)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'error':False, 'success_url':reverse('common:api_settings')})
+        else:
+            return JsonResponse({'error':True, 'errors':form.errors})
+
+@login_required
+@admin_login_required
+def delete_blocked_email(request, blocked_email_id):
+    block_email_obj = get_object_or_404(BlockedEmail, pk=blocked_email_id)
+    block_email_obj.delete()
+    return redirect(reverse('common:api_settings') + '?blocked_emails')
+
+@login_required(login_url='/login')
+@marketing_access_required
+def contacts_list_elastic_search(request):
+    search = False
+    if (request.user.role == "ADMIN"):
+        contacts = Contact.objects.filter(is_bounced=False)
+        # contacts = SearchQuerySet().filter(is_bounced='false').models(Contact)
+        # bounced_contacts = SearchQuerySet().filter(is_bounced='true').models(Contact)
+        # failed_contacts = SearchQuerySet().models(FailedContact).filter()
+        bounced_contacts = Contact.objects.filter(is_bounced=True)
+        failed_contacts = FailedContact.objects.all()
+        contact_lists = ContactList.objects.all()
+    else:
+        contact_ids = request.user.marketing_contactlist.all().values_list('contacts',
+            flat=True)
+        # contacts = SearchQuerySet().filter(is_bounced='false', id__in=contact_ids).models(Contact)
+        # bounced_contacts = SearchQuerySet().filter(is_bounced='true', id__in=contact_ids).models(Contact)
+        # failed_contacts = SearchQuerySet().models(FailedContact).filter(created_by_id=str(request.user.id))
+        contacts = Contact.objects.filter(id__in=contact_ids).exclude(is_bounced=True)
+        bounced_contacts = Contact.objects.filter(id__in=contact_ids, is_bounced=True)
+        failed_contacts = FailedContact.objects.filter(created_by=request.user)
+        contact_lists = ContactList.objects.filter(created_by=request.user)
+        # contacts = Contact.objects.filter(created_by=request.user)
+
+    users = User.objects.filter(
+        id__in=[_id for _id in contacts.values_list('created_by_id', flat=True) if _id != ''])
+
+    if request.method == 'GET':
+        context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists,
+            'bounced_contacts': bounced_contacts, 'failed_contacts': failed_contacts,
+            'search':search,
+        }
+        return render(request, 'search_contact_emails.html', context)
+
+    if request.method == 'POST':
+        data = request.POST
+        if data.get('name'):
+            contacts = contacts.filter(
+                name__icontains=data.get('name'))
+            bounced_contacts = bounced_contacts.filter(
+                name__icontains=data.get('name'))
+            failed_contacts = failed_contacts.filter(
+                name__icontains=data.get('name'))
+        if data.get('email'):
+            contacts = contacts.filter(email__icontains=data.get('email'))
+            bounced_contacts = bounced_contacts.filter(email__icontains=data.get('email'))
+            failed_contacts = failed_contacts.filter(email__icontains=data.get('email'))
+
+        # if data.get('domain_name'):
+        #     contacts = contacts.filter(email_domain__icontains=data.get('domain_name'))
+        #     bounced_contacts = bounced_contacts.filter(email_domain__icontains=data.get('domain_name'))
+        #     failed_contacts = failed_contacts.filter(email_domain__icontains=data.get('domain_name'))
+
+        if data.get('created_by'):
+            contacts = contacts.filter(created_by_id=data.get('created_by'))
+            bounced_contacts = bounced_contacts.filter(created_by_id=data.get('created_by'))
+            failed_contacts = failed_contacts.filter(created_by_id=data.get('created_by'))
+
+        if data.get('contact_list'):
+            contacts = contacts.filter(contact_list__id=data.get('contact_list'))
+            bounced_contacts = bounced_contacts.filter(contact_list__id=data.get('contact_list'))
+            failed_contacts = failed_contacts.filter(contact_list__id=data.get('contact_list'))
+
+        # shows filter form in marketing-contact if any search  
+        if (
+            data.get('name')or
+            data.get('email')or
+            data.get('created_by')or
+            data.get('contact_list')
+            ):
+            search = True
+        context = {'contacts': contacts, 'users': users, 'contact_lists': contact_lists,
+            'bounced_contacts': bounced_contacts, 'failed_contacts': failed_contacts,
+            'search':search,
+        }
+        return render(request, 'search_contact_emails.html', context)
+
+
+# class MarketingContactEmailSearch(SearchView):
+#     form_class = MarketingContactEmailSearchForm
+
+#     def get_query(self):
+#         if self.form.is_valid():
+#             return self.form.cleaned_data["email_domain"]
+
+#         return ""
+
+#     # def get_queryset(self):
+#     #     # queryset = super(MarketingContactEmailSearch, self).get_queryset()
+#     #     queryset = SearchQuerySet().models(Contact).filter(
+#     #         email__icontains=self.request.GET.get('email_domain', None))
+#     #     return queryset
+
+#     # def get_context_data(self, *args, **kwargs):
+#     #     context = super(MarketingContactEmailSearch, self).get_context_data(*args, **kwargs)
+#     #     return context

@@ -3,12 +3,7 @@
 {% load paginate %}
 {% block extralinks %}
 {% load thumbnail %}
-<link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css">
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 {% endblock %}
 
 {% block breadcrumb %}
@@ -21,9 +16,9 @@
 {% endblock breadcrumb %}
 
 {% block content %}
-<!-- main_container starts here -->
+
 <div class="main_container">
-  <!-- heading_create starts here -->
+  
   <div class="row marl">
     <div class="col-md-12">
       <form id="add_form" method="POST" action='' novalidate>
@@ -39,11 +34,8 @@
                     <div class="col-md-12">
                       <div class="form-group">
                         <label for="">Contacts</label>
-                        <!-- <input type="text" class="form-control" name="contacts_list" id="id_contacts"> -->
-                        <!-- <select name="recipients" id="_id_recipients">
-                          <option value="">email</option>
-
-                        </select> -->
+                        
+                        
                         <input type="text" placeholder="Contacts" name="recipients" id="_id_recipients">
                       </div>
                       <span id="id_recipients"></span>
@@ -90,7 +82,7 @@
                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                               </div>
                             </div>
-                            <!-- <input type="text" class="form-control" name="schedule_date_time" value="" placeholder="Schedule Date Time"> -->
+                            
                             <span id="id_scheduled_date_time"></span>
                           </div>
                         </div>
@@ -104,11 +96,7 @@
                       <input type="hidden" name="message_body" id="html_content">
                       <span id="id_message_body"></span>
                     </div>
-                    <!-- <div class="col-md-12 text-center">
-                            <pre id="myPrecious"></pre>
-                            <div id="justText"></div>
-                            <div id="justHtml"></div>
-                        </div> -->
+                    
                     <div class="col-md-12">
                       <div class="heading">Personalization tags</div>
                       <p class="desc">The following tags can be used on both Plain text or HTML. Add these tags to
@@ -123,10 +111,7 @@
                           <strong>Email: </strong>
                           <code>{% templatetag openvariable %} email {% templatetag closevariable %}</code>
                         </li>
-                        <!-- <li>
-                                      <strong>Two digit day of the month (eg. 01 to 31):</strong>
-                                      <code>[currentdaynumber]</code>
-                                    </li> -->
+                        
                       </ul>
                     </div>
                     <div class="col-md-12 text-center">
@@ -145,14 +130,7 @@
 </div>
 {% endblock %}
 {% block js_block %}
-<script src="https://malsup.github.com/jquery.form.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-<!-- <script src="https://malsup.github.com/jquery.form.js"></script> -->
-<script src="{% static 'js/ajaxForm.js' %}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
-<script type="text/javascript"
-  src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
+
 <script>
   $(document).ready(function () {
 

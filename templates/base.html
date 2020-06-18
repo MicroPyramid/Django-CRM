@@ -8,7 +8,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Django CRM</title>
+    <title>{{APPLICATION_NAME}}</title>
     <link href="https://fonts.googleapis.com/css?family=Quicksand:300,400,500,700" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
@@ -21,18 +21,18 @@
   </head>
   <body class="main_body_bg_color">
     <div class="wrapper">
-      <!-- header starts here -->
+
       <header>
         <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
 
-          <a class="navbar-brand" href="{% url 'common:home' %}">Django CRM</a>
+          <a class="navbar-brand" href="{% url 'common:dashboard' %}">{{APPLICATION_NAME}}</a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <i class="fas fa-bars"></i>
           </button>
           {% if request.user.is_authenticated %}
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
-              <li class="nav-item"><a class="nav-link" id="dashboard" href="{% url 'common:home' %}">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" id="dashboard" href="{% url 'common:dashboard' %}">Dashboard</a></li>
               {% if request.user.role == "ADMIN"  or request.user.is_superuser %}
               <li class="nav-item"><a class="nav-link" id="users" href="{% url 'common:users_list' %}">Users</a></li>
               {% endif %}
@@ -68,31 +68,29 @@
               </li>
             </ul>
           </div>
+          {% else %}
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto my-2 my-lg-0">
+              <li class="nav-item"><a class="nav-link" id="dashboard" href="{% url 'common:dashboard' %}">Login</a></li>
+            </ul>
+          </div>
           {% endif %}
         </nav>
       </header>
-      <!-- header ends here -->
-      <!-- main_container starts here -->
+
       <div id="mainbody" class="main_container" style="padding-top:65px;">
-        <!-- breadcrumb starts here -->
+
         {% block breadcrumb %}
         {% endblock %}
-        <!-- breadcrumb ends here -->
+
         {% block content %}
         {% endblock %}
       </div>
-      <!-- main_container ends here -->
+
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment-with-locales.min.js"></script>
-    <script defer src="https://use.fontawesome.com/releases/v5.7.1/js/all.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.13.0/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-    <script src="{% static 'js/index.js' %}"></script>
     {% block js_block %}
+    <script src="{% static 'js/index.js' %}"></script>
     {% endblock js_block %}
     <script type="text/javascript">
       $(document).ready(function(){
