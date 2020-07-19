@@ -16,6 +16,7 @@ RUN mkdir ${APPDIR}/static/CACHE
 
 RUN pip3 install --no-cache-dir -r ${APPDIR}/requirements.txt
 RUN python3 manage.py collectstatic --noinput
+RUN python3 manage.py compress --force
 RUN python3 manage.py migrate
 
 # remove build pkgs

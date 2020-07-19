@@ -2,7 +2,6 @@ Documents
 *********
 
 
-.. image:: screenshots/documentshome1.png
 
 |  **Fig** documents Home Page
 
@@ -11,7 +10,6 @@ Documents
 
 |  Create a new Document using the button on right corner ``+ Add New Document``
 
-.. image:: screenshots/documentscreate.png
 
 |  **Fig** Documents Create Page
 

@@ -95,7 +95,11 @@ def landing_page(request):
 
 def check_sub_domain(request):
     if request.method == "GET":
-        return render(request, "check_subdomain.html", {})
+        try:
+            if request.company:
+                return redirect("common:login")
+        except:
+            return render(request, "check_subdomain.html", {})
     if request.method == "POST":
         sub_domain = request.POST.get("sub_domain", "")
         company = Company.objects.filter(sub_domain=sub_domain).first()
@@ -394,14 +398,14 @@ class CompanyLoginView(CreateView):
                 user = User.objects.filter(email=email, company=company).first()
                 if user is not None:
                     if user.is_active:
-                        user = authenticate(email=email, password=password,)
+                        user = authenticate(email=email, password=password,company=company)
                         if user is not None:
                             login(request, user)
                             request.session["company"] = (
                                 user.company.id if user.company else None
                             )
                             if user.has_sales_access:
-                                return redirect("common:dashboard")
+                                return redirect(reverse('common:dashboard'))
                             elif user.has_marketing_access:
                                 return redirect("marketing:dashboard")
                             else:

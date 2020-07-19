@@ -3,8 +3,7 @@ Profile
 
 Dropdown menu for user settings
 
-.. image:: screenshots/dropdown.png
-	:align: center
+
 
 |  **Fig** Dropdown menu
 
@@ -15,8 +14,6 @@ Users
 
 |  On clicking users, the following page is shown
 
-.. image:: screenshots/usershome.png
-	:align: center
 
 |  **Fig:** Users view
 
@@ -26,15 +23,12 @@ Users
 
 |  One clicking `` + Add New User`` the following page is shown:
 
-.. image:: screenshots/createuser.png
-	:align: center
 
 |  **Fig** User create page
 
 |  **Note:** Fields having ``*`` are mandatory.
 
-.. image:: screenshots/edituser.png
-	:align: center
+
 
 |  **Fig:** User Edit User page
 
@@ -49,8 +43,7 @@ Settings
 
 |  Click on `` + Add New Setting``
 
-.. image:: screenshots/createsettings.png
-	:align: center
+
 
 |  **Fig:** User Create Setting page
 
@@ -60,8 +53,7 @@ Change Password
 
 |  On clicking settings, the following page is shown:
 
-.. image:: screenshots/changepassword.png
-	:align: center
+
 
 |  **Fig:** User Change password page
 
@@ -70,13 +62,11 @@ Profile
 
 |  On clicking settings, the following page is shown:
 
-.. image:: screenshots/profilehome.png
-	:align: center
+
 
 |  **Fig:** User profile page
 
-.. image:: screenshots/editprofile.png
-	:align: center
+
 
 |  **Fig:** User edit profile page
 

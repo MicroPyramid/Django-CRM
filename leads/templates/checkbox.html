@@ -1,5 +1,5 @@
 {% extends 'sales/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% block breadcrumb %}
 <form id="formid"  method='POST'  action="{% url 'leads:leads_convert' post.id%}">
   <div class="page-header">

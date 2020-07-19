@@ -5,7 +5,6 @@ Contacts
 
 
 
-.. image:: screenshots/contactshome1.png
 
 |  **Fig** Contacts Home Page
 
@@ -14,7 +13,6 @@ Contacts
 
 |  Create a new Lead using the button on right corner ``+ Add New contact``
 
-.. image:: screenshots/contactscreate.png
 
 |  **Fig** Contacts Create Page
 

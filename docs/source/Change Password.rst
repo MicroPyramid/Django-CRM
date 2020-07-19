@@ -2,7 +2,6 @@ Change Password
 ***************
 
 
-.. image:: screenshots/changepassword.png
 
 |  **Fig** Password Change Page
 
