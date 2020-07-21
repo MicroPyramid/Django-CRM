@@ -158,7 +158,7 @@ def xlsx_doc_validate(document):
         valid_data, invalid_data = get_validated_rows(
             wb, sheet_name, validated_rows, invalid_rows
         )
-        if type(valid_data) == dict:
+        if isinstance(valid_data, dict):
             return valid_data
         validated_rows = validated_rows + valid_data
         invalid_rows = invalid_rows + invalid_data
@@ -325,7 +325,7 @@ class ContactForm(forms.ModelForm):
     contact_list = forms.CharField(max_length=5000)
 
     def __init__(self, *args, **kwargs):
-        request_user = kwargs.pop("request_user", None)
+        # request_user = kwargs.pop("request_user", None)
         self.obj_instance = kwargs.get("instance", None)
         super(ContactForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():

@@ -7,12 +7,10 @@ from django.core.mail import EmailMessage
 from django.shortcuts import reverse
 from django.template import Context, Template
 from django.template.loader import render_to_string
-from django.utils import timezone
 
 from accounts.models import Account, Email, EmailLog
 from common.models import User
 from common.utils import convert_to_custom_timezone
-from contacts.models import Contact
 from marketing.models import BlockedDomain, BlockedEmail
 
 
@@ -47,7 +45,7 @@ def send_email(email_obj_id):
                             subject,
                             html_content,
                             from_email=from_email,
-                            to=[contact_obj.email,],
+                            to=[contact_obj.email, ],
                         )
                         msg.content_subtype = "html"
                         res = msg.send()
@@ -59,7 +57,6 @@ def send_email(email_obj_id):
                             )
                     except Exception as e:
                         print(e)
-                        pass
 
 
 @task
