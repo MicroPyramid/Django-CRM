@@ -41,8 +41,9 @@ pip install -r requirements.txt
 ```
 
 #### env variables
-* Then refer to env.md for environment variables and keep those in the .env file in the current folder as your project is in. Refer https://github.com/theskumar/python-dotenv
+* Then refer to env.md for environment variables and keep those in the .env file in the current folder as your project is in.
 * add ```127.0.0.1   test.localhost``` to your hosts file ```/etc/hosts``` Then you can use test as company name to register and login
+
 #### next steps
 ```
 python manage.py migrate
