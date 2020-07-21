@@ -10,84 +10,101 @@ from marketing.models import BlockedDomain, BlockedEmail
 
 
 @task
-def send_email(invoice_id, recipients, domain='demo.django-crm.io', protocol='http'):
+def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     created_by = invoice.created_by
-    blocked_domains = BlockedDomain.objects.values_list('domain', flat=True)
-    blocked_emails = BlockedEmail.objects.values_list('email', flat=True)
+    blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
+    blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()
         if user:
-            if (user.email not in blocked_emails) and (user.email.split('@')[-1] not in blocked_domains):
+            if (user.email not in blocked_emails) and (
+                user.email.split("@")[-1] not in blocked_domains
+            ):
                 recipients_list.append(user.email)
-                subject = 'Shared an invoice with you.'
+                subject = "Shared an invoice with you."
                 context = {}
-                context['invoice_title'] = invoice.invoice_title
-                context['invoice_id'] = invoice_id
-                context['invoice_created_by'] = invoice.created_by
-                context["url"] = protocol + '://' + domain + \
-                    reverse('invoices:invoice_details', args=(invoice.id,))
+                context["invoice_title"] = invoice.invoice_title
+                context["invoice_id"] = invoice_id
+                context["invoice_created_by"] = invoice.created_by
+                context["url"] = (
+                    protocol
+                    + "://"
+                    + domain
+                    + reverse("invoices:invoice_details", args=(invoice.id,))
+                )
 
-                context['user'] = user
+                context["user"] = user
                 html_content = render_to_string(
-                    'assigned_to_email_template.html', context=context)
+                    "assigned_to_email_template.html", context=context
+                )
                 msg = EmailMessage(
-                    subject=subject, body=html_content, to=recipients_list)
+                    subject=subject, body=html_content, to=recipients_list
+                )
                 msg.content_subtype = "html"
                 msg.send()
-    recipients = invoice.accounts.filter(status='open')
+    recipients = invoice.accounts.filter(status="open")
     if recipients.count() > 0:
-        subject = 'Shared an invoice with you.'
+        subject = "Shared an invoice with you."
         context = {}
-        context['invoice_title'] = invoice.invoice_title
-        context['invoice_id'] = invoice_id
-        context['invoice_created_by'] = invoice.created_by
-        context["url"] = protocol + '://' + domain + \
-            reverse('invoices:invoice_details', args=(invoice.id,))
+        context["invoice_title"] = invoice.invoice_title
+        context["invoice_id"] = invoice_id
+        context["invoice_created_by"] = invoice.created_by
+        context["url"] = (
+            protocol
+            + "://"
+            + domain
+            + reverse("invoices:invoice_details", args=(invoice.id,))
+        )
         for recipient in recipients:
-            context['user'] = recipient.email
+            context["user"] = recipient.email
             html_content = render_to_string(
-                'assigned_to_email_template.html', context=context)
+                "assigned_to_email_template.html", context=context
+            )
             msg = EmailMessage(
-                subject=subject, body=html_content, to=[recipient.email, ])
+                subject=subject, body=html_content, to=[recipient.email,]
+            )
             msg.content_subtype = "html"
             msg.send()
 
 
-
 @task
-def send_invoice_email(invoice_id, domain='demo.django-crm.io', protocol='http'):
+def send_invoice_email(invoice_id, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
-        subject = 'CRM Invoice : {0}'.format(invoice.invoice_title)
+        subject = "CRM Invoice : {0}".format(invoice.invoice_title)
         recipients = [invoice.email]
         context = {}
-        context['invoice'] = invoice
-        context['url'] = protocol + '://' + domain + \
-            reverse('invoices:invoice_details', args=(invoice.id,))
-        html_content = render_to_string(
-            'invoice_detail_email.html', context=context)
-        msg = EmailMessage(subject=subject, body=html_content,
-                           to=recipients)
+        context["invoice"] = invoice
+        context["url"] = (
+            protocol
+            + "://"
+            + domain
+            + reverse("invoices:invoice_details", args=(invoice.id,))
+        )
+        html_content = render_to_string("invoice_detail_email.html", context=context)
+        msg = EmailMessage(subject=subject, body=html_content, to=recipients)
         msg.content_subtype = "html"
         msg.send()
 
 
 @task
-def send_invoice_email_cancel(invoice_id, domain='demo.django-crm.io', protocol='http'):
+def send_invoice_email_cancel(invoice_id, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
-        subject = 'CRM Invoice : {0}'.format(invoice.invoice_title)
+        subject = "CRM Invoice : {0}".format(invoice.invoice_title)
         recipients = [invoice.email]
         context = {}
-        context['invoice'] = invoice
-        context['url'] = protocol + '://' + domain + \
-            reverse('invoices:invoice_details', args=(invoice.id,))
-        html_content = render_to_string(
-            'invoice_cancelled.html', context=context)
-        msg = EmailMessage(subject=subject, body=html_content,
-                           to=recipients)
+        context["invoice"] = invoice
+        context["url"] = (
+            protocol
+            + "://"
+            + domain
+            + reverse("invoices:invoice_details", args=(invoice.id,))
+        )
+        html_content = render_to_string("invoice_cancelled.html", context=context)
+        msg = EmailMessage(subject=subject, body=html_content, to=recipients)
         msg.content_subtype = "html"
         msg.send()
 
@@ -98,16 +115,18 @@ def create_invoice_history(original_invoice_id, updated_by_user_id, changed_fiel
     original_invoice = Invoice.objects.filter(id=original_invoice_id).first()
     created_by = original_invoice.created_by
     updated_by_user = User.objects.get(id=updated_by_user_id)
-    changed_data = [(' '.join(field.split('_')).title()) for field in changed_fields]
+    changed_data = [(" ".join(field.split("_")).title()) for field in changed_fields]
     if len(changed_data) > 1:
-        changed_data = ', '.join(changed_data[:-1]) + ' and ' + changed_data[-1] + ' have changed.'
+        changed_data = (
+            ", ".join(changed_data[:-1]) + " and " + changed_data[-1] + " have changed."
+        )
     elif len(changed_data) == 1:
-        changed_data = ', '.join(changed_data) + ' has changed.'
+        changed_data = ", ".join(changed_data) + " has changed."
     else:
         changed_data = None
 
     if original_invoice.invoice_history.count() == 0:
-        changed_data = 'Invoice Created.'
+        changed_data = "Invoice Created."
     if original_invoice:
         invoice_history = InvoiceHistory()
         invoice_history.invoice = original_invoice

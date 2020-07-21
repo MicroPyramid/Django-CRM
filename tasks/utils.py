@@ -1,11 +1,7 @@
 STATUS_CHOICES = (
     ("New", "New"),
     ("In Progress", "In Progress"),
-    ("Completed", "Completed")
+    ("Completed", "Completed"),
 )
 
-PRIORITY_CHOICES = (
-    ("Low", "Low"),
-    ("Medium", "Medium"),
-    ("High", "High")
-)
+PRIORITY_CHOICES = (("Low", "Low"), ("Medium", "Medium"), ("High", "High"))

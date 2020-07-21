@@ -7,39 +7,43 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketing', '0007_auto_20190611_1226'),
+        ("marketing", "0007_auto_20190611_1226"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='campaign',
-            options={'ordering': ('created_on',)},
+            name="campaign", options={"ordering": ("created_on",)},
+        ),
+        migrations.AlterModelOptions(name="contact", options={"ordering": ["id"]},),
+        migrations.AlterModelOptions(
+            name="contactlist", options={"ordering": ("id",)},
         ),
         migrations.AlterModelOptions(
-            name='contact',
-            options={'ordering': ['id']},
-        ),
-        migrations.AlterModelOptions(
-            name='contactlist',
-            options={'ordering': ('id',)},
-        ),
-        migrations.AlterModelOptions(
-            name='emailtemplate',
-            options={'ordering': ['id']},
+            name="emailtemplate", options={"ordering": ["id"]},
         ),
         migrations.AddField(
-            model_name='campaign',
-            name='tags',
-            field=models.ManyToManyField(to='marketing.Tag'),
+            model_name="campaign",
+            name="tags",
+            field=models.ManyToManyField(to="marketing.Tag"),
         ),
         migrations.AlterField(
-            model_name='campaignopen',
-            name='campaign',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='campaign_open', to='marketing.Campaign'),
+            model_name="campaignopen",
+            name="campaign",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="campaign_open",
+                to="marketing.Campaign",
+            ),
         ),
         migrations.AlterField(
-            model_name='campaignopen',
-            name='contact',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='contact_campaign_open', to='marketing.Contact'),
+            model_name="campaignopen",
+            name="contact",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="contact_campaign_open",
+                to="marketing.Contact",
+            ),
         ),
     ]

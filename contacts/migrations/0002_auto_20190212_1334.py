@@ -8,25 +8,23 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contacts', '0001_initial'),
+        ("contacts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='contact',
-            options={'ordering': ['-created_on']},
+            name="contact", options={"ordering": ["-created_on"]},
         ),
-        migrations.RemoveField(
-            model_name='contact',
-            name='account',
-        ),
-        migrations.RemoveField(
-            model_name='contact',
-            name='teams',
-        ),
+        migrations.RemoveField(model_name="contact", name="account",),
+        migrations.RemoveField(model_name="contact", name="teams",),
         migrations.AlterField(
-            model_name='contact',
-            name='created_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contact_created_by', to=settings.AUTH_USER_MODEL),
+            model_name="contact",
+            name="created_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="contact_created_by",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

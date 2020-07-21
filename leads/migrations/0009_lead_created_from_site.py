@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('leads', '0008_auto_20190315_1503'),
+        ("leads", "0008_auto_20190315_1503"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='lead',
-            name='created_from_site',
+            model_name="lead",
+            name="created_from_site",
             field=models.BooleanField(default=False),
         ),
     ]
