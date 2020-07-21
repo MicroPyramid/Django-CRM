@@ -1,13 +1,11 @@
 import csv
 import datetime
-import json
 import re
 
 import openpyxl
 import xlrd
 from django import forms
 
-from common.models import User
 from marketing.models import (
     BlockedDomain,
     BlockedEmail,
@@ -16,7 +14,6 @@ from marketing.models import (
     ContactEmailCampaign,
     ContactList,
     EmailTemplate,
-    Tag,
 )
 
 # from haystack.forms import SearchForm
