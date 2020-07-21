@@ -26,4 +26,3 @@ class GetCompany(object):
             if company:
                 request.company = company
                 request.session['company'] = company.id
-

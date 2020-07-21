@@ -9,7 +9,7 @@ RUN pip3 install setuptools
 RUN gem install sass
 
 RUN mkdir ${APPDIR}
-WORKDIR ${APPDIR} 
+WORKDIR ${APPDIR}
 ADD . ${APPDIR}
 RUN mkdir ${APPDIR}/media
 RUN mkdir ${APPDIR}/static/CACHE
