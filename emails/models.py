@@ -1,4 +1,5 @@
 from django.db import models
+
 # Create your models here.
 
 
@@ -18,4 +19,4 @@ class Email(models.Model):
         return self.subject
 
     class Meta:
-        ordering = ['-id']
+        ordering = ["-id"]

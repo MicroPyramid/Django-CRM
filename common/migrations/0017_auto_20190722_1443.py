@@ -8,25 +8,38 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0016_auto_20190624_1816'),
+        ("common", "0016_auto_20190624_1816"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='apisettings',
-            options={'ordering': ('-created_on',)},
+            name="apisettings", options={"ordering": ("-created_on",)},
         ),
         migrations.AlterModelOptions(
-            name='document',
-            options={'ordering': ('-created_on',)},
+            name="document", options={"ordering": ("-created_on",)},
         ),
         migrations.CreateModel(
-            name='Profile',
+            name="Profile",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('activation_key', models.CharField(max_length=50)),
-                ('key_expires', models.DateTimeField()),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("activation_key", models.CharField(max_length=50)),
+                ("key_expires", models.DateTimeField()),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

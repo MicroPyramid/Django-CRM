@@ -8,24 +8,39 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0007_auto_20190212_1334'),
+        ("common", "0007_auto_20190212_1334"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Google',
+            name="Google",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('google_id', models.CharField(default='', max_length=200)),
-                ('google_url', models.CharField(default='', max_length=1000)),
-                ('verified_email', models.CharField(default='', max_length=200)),
-                ('family_name', models.CharField(default='', max_length=200)),
-                ('name', models.CharField(default='', max_length=200)),
-                ('gender', models.CharField(default='', max_length=10)),
-                ('dob', models.CharField(default='', max_length=50)),
-                ('given_name', models.CharField(default='', max_length=200)),
-                ('email', models.CharField(db_index=True, default='', max_length=200)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='google', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("google_id", models.CharField(default="", max_length=200)),
+                ("google_url", models.CharField(default="", max_length=1000)),
+                ("verified_email", models.CharField(default="", max_length=200)),
+                ("family_name", models.CharField(default="", max_length=200)),
+                ("name", models.CharField(default="", max_length=200)),
+                ("gender", models.CharField(default="", max_length=10)),
+                ("dob", models.CharField(default="", max_length=50)),
+                ("given_name", models.CharField(default="", max_length=200)),
+                ("email", models.CharField(db_index=True, default="", max_length=200)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="google",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

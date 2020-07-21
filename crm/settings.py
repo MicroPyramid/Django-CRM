@@ -6,11 +6,11 @@ from celery.schedules import crontab
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_path = Path('.') / '.env'
+env_path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRETKEY')
+SECRET_KEY = os.getenv("SECRETKEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -172,6 +172,7 @@ if ENV_TYPE == "dev":
 
 elif ENV_TYPE == "live":
     from .server_settings import *
+
     SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
 
 
@@ -286,8 +287,8 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
-        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse", },
-        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue", },
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse",},
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue",},
     },
     "formatters": {
         "django.server": {
@@ -384,11 +385,11 @@ APPLICATION_NAME = "bottlecrm"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": os.getenv('MEMCACHELOCATION')
+        "LOCATION": os.getenv("MEMCACHELOCATION"),
     }
 }
 
-PASSWORD_RESET_MAIL_FROM_USER = os.getenv('PASSWORD_RESET_MAIL_FROM_USER')
+PASSWORD_RESET_MAIL_FROM_USER = os.getenv("PASSWORD_RESET_MAIL_FROM_USER")
 
 
 SETTINGS_EXPORT = ["APPLICATION_NAME"]

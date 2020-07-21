@@ -10,31 +10,37 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('common', '0001_initial'),
-        ('cases', '0001_initial'),
-        ('contacts', '0001_initial'),
+        ("common", "0001_initial"),
+        ("cases", "0001_initial"),
+        ("contacts", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='case',
-            name='assigned_to',
-            field=models.ManyToManyField(related_name='case_assigned_users', to=settings.AUTH_USER_MODEL),
+            model_name="case",
+            name="assigned_to",
+            field=models.ManyToManyField(
+                related_name="case_assigned_users", to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='case',
-            name='contacts',
-            field=models.ManyToManyField(to='contacts.Contact'),
+            model_name="case",
+            name="contacts",
+            field=models.ManyToManyField(to="contacts.Contact"),
         ),
         migrations.AddField(
-            model_name='case',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='case_created_by', to=settings.AUTH_USER_MODEL),
+            model_name="case",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="case_created_by",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='case',
-            name='teams',
-            field=models.ManyToManyField(to='common.Team'),
+            model_name="case",
+            name="teams",
+            field=models.ManyToManyField(to="common.Team"),
         ),
     ]

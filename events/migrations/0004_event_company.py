@@ -7,14 +7,19 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0020_auto_20200409_1653'),
-        ('events', '0003_event_teams'),
+        ("common", "0020_auto_20200409_1653"),
+        ("events", "0003_event_teams"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='company',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='common.Company'),
+            model_name="event",
+            name="company",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="common.Company",
+            ),
         ),
     ]

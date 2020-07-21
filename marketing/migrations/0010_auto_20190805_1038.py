@@ -9,37 +9,57 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('marketing', '0009_auto_20190618_1144'),
+        ("marketing", "0009_auto_20190618_1144"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='contactlist',
-            options={'ordering': ('-created_on',)},
+            name="contactlist", options={"ordering": ("-created_on",)},
         ),
-        migrations.AlterModelOptions(
-            name='link',
-            options={'ordering': ('id',)},
+        migrations.AlterModelOptions(name="link", options={"ordering": ("id",)},),
+        migrations.AlterField(
+            model_name="campaignlinkclick",
+            name="campaign",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="campaign_link_click",
+                to="marketing.Campaign",
+            ),
         ),
         migrations.AlterField(
-            model_name='campaignlinkclick',
-            name='campaign',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='campaign_link_click', to='marketing.Campaign'),
-        ),
-        migrations.AlterField(
-            model_name='campaignlog',
-            name='campaign',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='campaign_log_contacts', to='marketing.Campaign'),
+            model_name="campaignlog",
+            name="campaign",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="campaign_log_contacts",
+                to="marketing.Campaign",
+            ),
         ),
         migrations.CreateModel(
-            name='ContactEmailCampaign',
+            name="ContactEmailCampaign",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=500)),
-                ('email', models.EmailField(max_length=254)),
-                ('last_name', models.CharField(blank=True, max_length=500, null=True)),
-                ('created_on', models.DateTimeField(auto_now_add=True)),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='marketing_contacts_emails_campaign_created_by', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=500)),
+                ("email", models.EmailField(max_length=254)),
+                ("last_name", models.CharField(blank=True, max_length=500, null=True)),
+                ("created_on", models.DateTimeField(auto_now_add=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="marketing_contacts_emails_campaign_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

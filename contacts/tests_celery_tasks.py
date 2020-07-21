@@ -8,11 +8,13 @@ from contacts.tests import ContactObjectsCreation
 
 
 class TestCeleryTasks(ContactObjectsCreation, TestCase):
-
-    @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
-                       CELERY_ALWAYS_EAGER=True,
-                       BROKER_BACKEND='memory')
+    @override_settings(
+        CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+        CELERY_ALWAYS_EAGER=True,
+        BROKER_BACKEND="memory",
+    )
     def test_celery_tasks(self):
         task = send_email_to_assigned_user.apply(
-            ([self.user.id, self.user_contacts_mp.id, ], self.contact.id,),)
-        self.assertEqual('SUCCESS', task.state)
+            ([self.user.id, self.user_contacts_mp.id,], self.contact.id,),
+        )
+        self.assertEqual("SUCCESS", task.state)

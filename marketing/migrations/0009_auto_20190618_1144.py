@@ -8,29 +8,44 @@ import django.db.models.expressions
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketing', '0008_auto_20190612_1905'),
+        ("marketing", "0008_auto_20190612_1905"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ContactUnsubscribedCampaign',
+            name="ContactUnsubscribedCampaign",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('is_unsubscribed', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("is_unsubscribed", models.BooleanField(default=False)),
             ],
         ),
         migrations.AlterModelOptions(
-            name='campaign',
-            options={'ordering': ('-created_on',)},
+            name="campaign", options={"ordering": ("-created_on",)},
         ),
         migrations.AddField(
-            model_name='contactunsubscribedcampaign',
-            name='campaigns',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='campaign_is_unsubscribed', to='marketing.Campaign'),
+            model_name="contactunsubscribedcampaign",
+            name="campaigns",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="campaign_is_unsubscribed",
+                to="marketing.Campaign",
+            ),
         ),
         migrations.AddField(
-            model_name='contactunsubscribedcampaign',
-            name='contacts',
-            field=models.ForeignKey(on_delete=django.db.models.expressions.Case, related_name='contact_is_unsubscribed', to='marketing.Contact'),
+            model_name="contactunsubscribedcampaign",
+            name="contacts",
+            field=models.ForeignKey(
+                on_delete=django.db.models.expressions.Case,
+                related_name="contact_is_unsubscribed",
+                to="marketing.Contact",
+            ),
         ),
     ]

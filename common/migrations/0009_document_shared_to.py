@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0008_google'),
+        ("common", "0008_google"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='document',
-            name='shared_to',
-            field=models.ManyToManyField(related_name='document_shared_to', to=settings.AUTH_USER_MODEL),
+            model_name="document",
+            name="shared_to",
+            field=models.ManyToManyField(
+                related_name="document_shared_to", to=settings.AUTH_USER_MODEL
+            ),
         ),
     ]

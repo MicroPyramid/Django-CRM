@@ -14,12 +14,25 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Teams',
+            name="Teams",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('description', models.TextField()),
-                ('users', models.ManyToManyField(related_name='user_teams', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("description", models.TextField()),
+                (
+                    "users",
+                    models.ManyToManyField(
+                        related_name="user_teams", to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
         ),
     ]

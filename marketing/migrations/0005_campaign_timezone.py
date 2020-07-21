@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketing', '0004_auto_20190315_1443'),
+        ("marketing", "0004_auto_20190315_1443"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='campaign',
-            name='timezone',
-            field=models.CharField(default='UTC', max_length=100),
+            model_name="campaign",
+            name="timezone",
+            field=models.CharField(default="UTC", max_length=100),
         ),
     ]
