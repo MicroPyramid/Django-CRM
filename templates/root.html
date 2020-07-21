@@ -1,4 +1,4 @@
-{% load staticfiles %}
+{% load static %}
 {% load compress %}
 {% load thumbnail %}
 <!DOCTYPE html>
@@ -171,8 +171,6 @@
 <script src="http://cdn.ckeditor.com/4.5.4/basic/ckeditor.js"></script>
 
 <script src="{% static 'js/bootstrap-suggest.js' %}"></script>
-
-<script src="{% static 'js/index.js' %}"></script>
 
   {% block js_block %}{% endblock js_block %}
   <script type="text/javascript">

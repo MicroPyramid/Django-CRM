@@ -7,6 +7,8 @@ services:
       dockerfile: docker/dockerfile
       args:
         UWSGI_HTTP: 8000
+    env_file:
+      - ./db.env
     volumes:
       - /root/djcrm/media:/root/djcrm/media
       - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
@@ -18,6 +20,8 @@ services:
       dockerfile: docker/dockerfile
       args:
         UWSGI_HTTP: 8001
+    env_file:
+      - ./db.env
     volumes:
       - /root/djcrm/media:/root/djcrm/media
       - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
@@ -29,6 +33,8 @@ services:
       dockerfile: docker/dockerfile
       args:
         UWSGI_HTTP: 8002
+    env_file:
+      - ./db.env
     volumes:
       - /root/djcrm/media:/root/djcrm/media
       - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
@@ -40,6 +46,8 @@ services:
       dockerfile: docker/dockerfile
       args:
         UWSGI_HTTP: 8003
+    env_file:
+      - ./db.env
     volumes:
       - /root/djcrm/media:/root/djcrm/media
       - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE

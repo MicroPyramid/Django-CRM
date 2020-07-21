@@ -51,7 +51,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     has_sales_access = models.BooleanField(default=False)
     has_marketing_access = models.BooleanField(default=False)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = [

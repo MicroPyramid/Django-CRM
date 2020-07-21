@@ -2,7 +2,6 @@ Cases
 *****
 
 
-.. image:: screenshots/caseshome1.png
 
 |  **Fig** cases Home Page
 
@@ -11,7 +10,6 @@ Cases
 
 |  Create a new Lead using the button on right corner ``+ Add New case``
 
-.. image:: screenshots/casescreate.png
 
 |  **Fig** cases Create Page
 

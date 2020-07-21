@@ -768,4 +768,3 @@ def get_email_data_for_account(request):
         return JsonResponse(ctx)
     else:
         return JsonResponse({"error": True, "data": "No emails found."})
-

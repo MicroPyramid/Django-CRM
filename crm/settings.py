@@ -1,25 +1,28 @@
 import os
-
+from dotenv import load_dotenv
+from pathlib import Path
 from celery.schedules import crontab
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+env_path = Path('.') / '.env'
+load_dotenv(dotenv_path=env_path)
+
 # SECURITY WARNING: keep the secret key used in production secret!
-# Set in local_settings.py
-SECRET_KEY = "SECRET_SECRET_SECRET"
+SECRET_KEY = os.getenv('SECRETKEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG_STATUS', False)
+DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [".bottlecrm.com", ".localhost"]
 
 # Application definition
 
 LOGIN_REDIRECT_URL = "/"
 
 # LOGIN_URL = "/login/"
-LOGIN_URL = "/login-sub-domain/"
+LOGIN_URL = "/auth/domain/"
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -72,7 +75,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "common.context_processors.common.app_name",
-                'django_settings_export.settings_export',
+                "django_settings_export.settings_export",
             ],
         },
     },
@@ -86,16 +89,18 @@ WSGI_APPLICATION = "crm.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "dj_crm",
-        "USER": "postgres",
-        "PASSWORD": "root",
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": os.getenv("DBNAME"),
+        "USER": os.getenv("DBUSER"),
+        "PASSWORD": os.getenv("DBPASSWORD"),
+        "HOST": os.getenv("DBHOST"),
+        "PORT": os.getenv("DBPORT"),
     }
 }
 
+
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "blog_app/static"),
 ]
 
 # Password validation
@@ -145,9 +150,16 @@ EMAIL_USE_TLS = True
 
 AUTH_USER_MODEL = "common.User"
 
-STORAGE_TYPE = os.getenv("STORAGE_TYPE", "normal")
+ENV_TYPE = os.getenv("ENV_TYPE", "dev")
 
-if STORAGE_TYPE == "normal":
+if ENV_TYPE == "dev":
+    DOMAIN_NAME = "localhost:8000"
+    # SESSION_COOKIE_DOMAIN = "localhost:8000"
+
+    # DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    # STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    # COMPRESS_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
 
@@ -155,45 +167,18 @@ if STORAGE_TYPE == "normal":
     STATICFILES_DIRS = (BASE_DIR + "/static",)
     COMPRESS_ROOT = BASE_DIR + "/static/"
 
-elif STORAGE_TYPE == "s3-storage":
-
-    AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWSBUCKETNAME", "")
-    AM_ACCESS_KEY = AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
-    AM_PASS_KEY = AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
-    S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN = str(AWS_BUCKET_NAME) + ".s3.amazonaws.com"
-
-    AWS_S3_OBJECT_PARAMETERS = {
-        "CacheControl": "max-age=86400",
-    }
-
-    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    DEFAULT_S3_PATH = "media"
-    STATICFILES_STORAGE = "storages.backends.s3boto.S3BotoStorage"
-    STATIC_S3_PATH = "static"
-    COMPRESS_STORAGE = "storages.backends.s3boto.S3BotoStorage"
-
-    COMPRESS_CSS_FILTERS = [
-        "compressor.filters.css_default.CssAbsoluteFilter",
-        "compressor.filters.cssmin.CSSMinFilter",
-    ]
-    COMPRESS_JS_FILTERS = ["compressor.filters.jsmin.JSMinFilter"]
-    COMPRESS_REBUILD_TIMEOUT = 5400
-
-    MEDIA_ROOT = "/%s/" % DEFAULT_S3_PATH
-    MEDIA_URL = "//%s/%s/" % (S3_DOMAIN, DEFAULT_S3_PATH)
-    STATIC_ROOT = "/%s/" % STATIC_S3_PATH
-    STATIC_URL = "https://%s/" % (S3_DOMAIN)
     ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
 
-    CORS_ORIGIN_ALLOW_ALL = True
 
-    AWS_IS_GZIPPED = True
-    AWS_ENABLED = True
-    AWS_S3_SECURE_URLS = True
+elif ENV_TYPE == "live":
+    from .server_settings import *
+    SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
 
-COMPRESS_ROOT = BASE_DIR + "/static/"
+
+# CORS_ORIGIN_ALLOW_ALL = True
+
+# COMPRESS_ROOT = BASE_DIR + "/static/"
+COMPRESS_JS_FILTERS = ["compressor.filters.jsmin.JSMinFilter"]
 
 COMPRESS_ENABLED = True
 
@@ -211,7 +196,9 @@ COMPRESS_CSS_FILTERS = [
     "compressor.filters.css_default.CssAbsoluteFilter",
     "compressor.filters.cssmin.CSSMinFilter",
 ]
+
 COMPRESS_REBUILD_TIMEOUT = 5400
+
 
 COMPRESS_OUTPUT_DIR = "CACHE"
 COMPRESS_URL = STATIC_URL
@@ -226,11 +213,11 @@ COMPRESS_OFFLINE_CONTEXT = {
     "STATIC_URL": "STATIC_URL",
 }
 
-DEFAULT_FROM_EMAIL = "no-reply@django-crm.micropyramid.com"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 # celery Tasks
-CELERY_BROKER_URL = "redis://localhost:6379"
-CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
 CELERY_BEAT_SCHEDULE = {
     "runs-campaign-for-every-thiry-minutes": {
@@ -252,35 +239,30 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 MAIL_SENDER = "AMAZON"
-INACTIVE_MAIL_SENDER = "MANDRILL"
+# INACTIVE_MAIL_SENDER = "MANDRILL"
 
 AM_ACCESS_KEY = os.getenv("AM_ACCESS_KEY", "")
 AM_PASS_KEY = os.getenv("AM_PASS_KEY", "")
 AWS_REGION = os.getenv("AWS_REGION", "")
 
-MGUN_API_URL = os.getenv("MGUN_API_URL", "")
-MGUN_API_KEY = os.getenv("MGUN_API_KEY", "")
+# MGUN_API_URL = os.getenv("MGUN_API_URL", "")
+# MGUN_API_KEY = os.getenv("MGUN_API_KEY", "")
 
-SG_USER = os.getenv("SG_USER", "")
-SG_PWD = os.getenv("SG_PWD", "")
+# SG_USER = os.getenv("SG_USER", "")
+# SG_PWD = os.getenv("SG_PWD", "")
 
-MANDRILL_API_KEY = os.getenv("MANDRILL_API_KEY", "")
-
-ADMIN_EMAIL = "admin@micropyramid.com"
-
-URL_FOR_LINKS = "http://demo.django-crm.io"
-
-try:
-    from .dev_settings import *
-except ImportError:
-    pass
+# MANDRILL_API_KEY = os.getenv("MANDRILL_API_KEY", "")
 
 
-GP_CLIENT_ID = os.getenv("GP_CLIENT_ID", False)
-GP_CLIENT_SECRET = os.getenv("GP_CLIENT_SECRET", False)
-ENABLE_GOOGLE_LOGIN = os.getenv("ENABLE_GOOGLE_LOGIN", False)
+# Marketing app related
+# URL_FOR_LINKS = os.getenv("URLFORLINKS")
 
-MARKETING_REPLY_EMAIL = "djangocrm@micropyramid.com"
+
+# GP_CLIENT_ID = os.getenv("GP_CLIENT_ID", False)
+# GP_CLIENT_SECRET = os.getenv("GP_CLIENT_SECRET", False)
+# ENABLE_GOOGLE_LOGIN = os.getenv("ENABLE_GOOGLE_LOGIN", False)
+
+MARKETING_REPLY_EMAIL = os.getenv("MARKETINGREPLYEMAIL")
 
 PASSWORD_RESET_TIMEOUT_DAYS = 3
 
@@ -298,45 +280,56 @@ if SENTRY_ENABLED and not DEBUG:
             "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
             "raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware",
         ] + MIDDLEWARE
-        LOGGING = {
-            "version": 1,
-            "disable_existing_loggers": True,
-            "root": {"level": "WARNING", "handlers": ["sentry"],},
-            "formatters": {
-                "verbose": {
-                    "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
-                },
-            },
-            "handlers": {
-                "sentry": {
-                    "level": "ERROR",
-                    "class": "raven.contrib.django.raven_compat.handlers.SentryHandler",
-                },
-                "console": {
-                    "level": "DEBUG",
-                    "class": "logging.StreamHandler",
-                    "formatter": "verbose",
-                },
-            },
-            "loggers": {
-                "django.db.backends": {
-                    "level": "ERROR",
-                    "handlers": ["console"],
-                    "propagate": False,
-                },
-                "raven": {
-                    "level": "DEBUG",
-                    "handlers": ["console"],
-                    "propagate": False,
-                },
-                "sentry.errors": {
-                    "level": "DEBUG",
-                    "handlers": ["console"],
-                    "propagate": False,
-                },
-            },
-        }
 
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse", },
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue", },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[%(server_time)s] %(message)s",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "console_debug_false": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+        "logfile": {"class": "logging.FileHandler", "filename": "server.log",},
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "console_debug_false", "logfile",],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 # HAYSTACK_CONNECTIONS = {
 #     'default': {
 #         # 'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
@@ -386,29 +379,16 @@ if SENTRY_ENABLED and not DEBUG:
 # HAYSTACK_DEFAULT_OPERATOR = 'AND'
 
 APPLICATION_NAME = "bottlecrm"
-DOMAIN_NAME = "bottlecrm.com"
 
-SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
-
-# Load the local settings file if it exists
-if DEBUG:
-    try:
-        from .dev_settings import *
-    except ImportError:
-        raise ImproperlyConfigured("No dev settings file found")
-else:
-    try:
-        from .local_settings import *
-    except ImportError:
-        raise ImproperlyConfigured("No local settings file found")
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": "127.0.0.1:11211",
+        "LOCATION": os.getenv('MEMCACHELOCATION')
     }
 }
 
-PASSWORD_RESET_MAIL_FROM_USER = os.getenv(
-    "PASSWORD_RESET_MAIL_FROM_USER", "no-reply@bottlecrm.com"
-)
+PASSWORD_RESET_MAIL_FROM_USER = os.getenv('PASSWORD_RESET_MAIL_FROM_USER')
+
+
+SETTINGS_EXPORT = ["APPLICATION_NAME"]

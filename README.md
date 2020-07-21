@@ -1,0 +1,80 @@
+Django-CRM
+==========
+
+Django CRM is opensource CRM developed on django framework. It has all
+the basic features of CRM to start with. We welcome code contributions
+and feature requests via github.
+
+<http://django-crm.readthedocs.io> for latest documentation
+
+This project contains the following modules.
+
+> -   Contacts
+> -   Accounts
+> -   Invoices
+> -   Cases
+> -   Leads
+> -   Opportunity
+> -   Planner
+
+## Try for free [here](https://bottlecrm.com/)
+---
+
+# Installation
+We recommend ubuntu 18.04 or ubuntu 20.04. These instructions are verified for ubuntu 20.04
+
+#### System Requirements
+---
+
+```
+sudo apt install postgresql xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip gem ruby ruby-dev build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools -y
+
+sudo gem install sass
+
+```
+
+#### Install dependencies
+---
+
+```
+pip install -r requirements.txt
+```
+
+#### env variables
+* Then refer to env.md for environment variables and keep those in the .env file in the current folder as your project is in. Refer https://github.com/theskumar/python-dotenv
+* add ```127.0.0.1   test.localhost``` to your hosts file ```/etc/hosts``` Then you can use test as company name to register and login
+#### next steps
+```
+python manage.py migrate
+python manage.py runserver
+```
+Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped test.localhost to 127.0.0.1 So, it should work properly.
+
+Community
+=========
+
+Get help or stay up to date.
+
+-   [Issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   Follow [@micropyramid](<https://twitter.com/micropyramid>) on Twitter
+-   Ask questions on [Stack Overflow](<https://stackoverflow.com/questions/tagged/django-crm>)
+-   Chat with community [Gitter](<https://gitter.im/MicroPyramid/Django-CRM>)
+-   For customisations, email to <django-crm@micropyramid.com>
+
+Credits
+-------
+
+### Contributors
+
+This project exists thanks to all the people who contribute!
+
+![image](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
+
+
+Feature requests and bug reports
+================================
+
+We welcome your feedback and support, raise github issue if you want to
+report a bug or request new feature. we are glad to help.
+
+For commercial support [Contact us](https://micropyramid.com/contact-us/)

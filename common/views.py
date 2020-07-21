@@ -95,7 +95,15 @@ def landing_page(request):
 
 def check_sub_domain(request):
     if request.method == "GET":
+<<<<<<< HEAD
+        try:
+            if request.company:
+                return redirect("common:login")
+        except:
+            return render(request, "check_subdomain.html", {})
+=======
         return render(request, "check_subdomain.html", {})
+>>>>>>> 13b750edba53c119df91e8ca10557731d6d555f7
     if request.method == "POST":
         sub_domain = request.POST.get("sub_domain", "")
         company = Company.objects.filter(sub_domain=sub_domain).first()
@@ -217,6 +225,90 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         return context
 
 
+<<<<<<< HEAD
+# class LoginView(TemplateView):
+#     template_name = "login.html"
+
+#     def get_context_data(self, **kwargs):
+#         context = super(LoginView, self).get_context_data(**kwargs)
+#         context["ENABLE_GOOGLE_LOGIN"] = settings.ENABLE_GOOGLE_LOGIN
+#         context["GP_CLIENT_SECRET"] = settings.GP_CLIENT_SECRET
+#         context["GP_CLIENT_ID"] = settings.GP_CLIENT_ID
+#         return context
+
+#     def dispatch(self, request, *args, **kwargs):
+#         if request.user.is_authenticated:
+#             return redirect("common:dashboard")
+#         return super(LoginView, self).dispatch(request, *args, **kwargs)
+
+#     def post(self, request, *args, **kwargs):
+#         form = LoginForm(request.POST, request=request)
+#         if form.is_valid():
+
+#             user = User.objects.filter(email=request.POST.get("email")).first()
+#             # user = authenticate(username=request.POST.get('email'), password=request.POST.get('password'))
+#             if user is not None:
+#                 if user.is_active:
+#                     user = authenticate(
+#                         username=request.POST.get("email"),
+#                         password=request.POST.get("password"),
+#                     )
+#                     if user is not None:
+#                         login(request, user)
+#                         if user.has_sales_access:
+#                             return redirect("common:dashboard")
+#                         elif user.has_marketing_access:
+#                             return redirect("marketing:dashboard")
+#                         else:
+#                             return redirect("common:dashboard")
+#                     return render(
+#                         request,
+#                         "login.html",
+#                         {
+#                             "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
+#                             "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
+#                             "GP_CLIENT_ID": settings.GP_CLIENT_ID,
+#                             "error": True,
+#                             "message": "Your username and password didn't match. \
+#                         Please try again.",
+#                         },
+#                     )
+#                 return render(
+#                     request,
+#                     "login.html",
+#                     {
+#                         "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
+#                         "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
+#                         "GP_CLIENT_ID": settings.GP_CLIENT_ID,
+#                         "error": True,
+#                         "message": "Your Account is inactive. Please Contact Administrator",
+#                     },
+#                 )
+#             return render(
+#                 request,
+#                 "login.html",
+#                 {
+#                     "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
+#                     "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
+#                     "GP_CLIENT_ID": settings.GP_CLIENT_ID,
+#                     "error": True,
+#                     "message": "Your Account is not Found. Please Contact Administrator",
+#                 },
+#             )
+
+#         return render(
+#             request,
+#             "login.html",
+#             {
+#                 "ENABLE_GOOGLE_LOGIN": settings.ENABLE_GOOGLE_LOGIN,
+#                 "GP_CLIENT_SECRET": settings.GP_CLIENT_SECRET,
+#                 "GP_CLIENT_ID": settings.GP_CLIENT_ID,
+#                 # "error": True,
+#                 # "message": "Your username and password didn't match. Please try again."
+#                 "form": form,
+#             },
+#         )
+=======
 class LoginView(TemplateView):
     template_name = "login.html"
 
@@ -299,6 +391,7 @@ class LoginView(TemplateView):
                 "form": form,
             },
         )
+>>>>>>> 13b750edba53c119df91e8ca10557731d6d555f7
 
 
 class ForgotPasswordView(TemplateView):
@@ -389,19 +482,32 @@ class CompanyLoginView(CreateView):
         if form.is_valid():
             email = form.cleaned_data.get("email", "")
             password = form.cleaned_data.get("password", "")
+<<<<<<< HEAD
+            # company = get_object_or_404(Company, pk=form.data.get("company", ""))
+            if request.company:
+                user = User.objects.filter(email=email, company=request.company).first()
+                if user is not None:
+                    if user.is_active:
+                        user = authenticate(email=email, password=password, company=request.company)
+=======
             company = get_object_or_404(Company, pk=form.data.get("company", ""))
             if company:
                 user = User.objects.filter(email=email, company=company).first()
                 if user is not None:
                     if user.is_active:
                         user = authenticate(email=email, password=password,)
+>>>>>>> 13b750edba53c119df91e8ca10557731d6d555f7
                         if user is not None:
                             login(request, user)
                             request.session["company"] = (
                                 user.company.id if user.company else None
                             )
                             if user.has_sales_access:
+<<<<<<< HEAD
+                                return redirect(reverse('common:dashboard'))
+=======
                                 return redirect("common:dashboard")
+>>>>>>> 13b750edba53c119df91e8ca10557731d6d555f7
                             elif user.has_marketing_access:
                                 return redirect("marketing:dashboard")
                             else:

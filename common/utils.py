@@ -592,18 +592,14 @@ def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
 
 def append_str_to(append_to: str, *args, sep=", ", **kwargs):
     """Concatenate to a string.
-
     Args:
         append_to(str): The string to append to.
         args(list): list of string characters to concatenate.
         sep(str): Seperator to use between concatenated strings.
         kwargs(dict): Mapping of variables with intended string values.
-
     Returns:
         str, joined strings seperated
     """
     append_to = append_to or ""
     result_list = [append_to] + list(args) + list(kwargs.values())
     return f"{sep}".join(filter(len, result_list))
-
-

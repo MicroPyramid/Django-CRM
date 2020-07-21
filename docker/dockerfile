@@ -9,13 +9,14 @@ RUN pip3 install setuptools
 RUN gem install sass
 
 RUN mkdir ${APPDIR}
-WORKDIR ${APPDIR} 
+WORKDIR ${APPDIR}
 ADD . ${APPDIR}
 RUN mkdir ${APPDIR}/media
 RUN mkdir ${APPDIR}/static/CACHE
 
 RUN pip3 install --no-cache-dir -r ${APPDIR}/requirements.txt
 RUN python3 manage.py collectstatic --noinput
+RUN python3 manage.py compress --force
 RUN python3 manage.py migrate
 
 # remove build pkgs

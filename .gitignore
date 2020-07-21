@@ -7,7 +7,7 @@ media
 media-images
 cache
 .idea
-CACHE/
+static/CACHE
 .sass-cache/
 main.css
 main.css.map
@@ -16,6 +16,10 @@ ref.css.map
 .coverage
 crm/dev_settings\.py
 env
+.env
 docs/build
 celerybeat-schedule
 local_settings.py
+media
+.sass-cache
+server.log

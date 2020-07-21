@@ -1,44 +1,36 @@
 import os
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "common.middleware.get_company.GetCompany",
-]
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DOMAIN_NAME = "bottlecrm.com"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "dj_crm",
-        "USER": "admin",
-        "PASSWORD": "U988fQkB5sW7eprr",
-        "HOST": "88.99.114.133",
-        "PORT": "5432",
-    }
+AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWSBUCKETNAME", "")
+AM_ACCESS_KEY = AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AM_PASS_KEY = AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN = str(AWS_BUCKET_NAME) + ".s3.amazonaws.com"
+
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",
 }
 
-# celery Tasks
-CELERY_BROKER_URL = "redis://88.99.114.133:6379"
-CELERY_RESULT_BACKEND = "redis://88.99.114.133:6379"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-# Load the local settings file if it exists
-if os.path.isfile("crm/local_settings.py"):
-    from .local_settings import *
-elif os.path.isfile("crm/server_settings.py"):
-    from .server_settings import *
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+DEFAULT_S3_PATH = "media"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+STATIC_S3_PATH = "static"
+COMPRESS_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": "88.99.114.133:11211",
-    }
-}
+COMPRESS_JS_FILTERS = ["compressor.filters.jsmin.JSMinFilter"]
+
+MEDIA_ROOT = "/%s/" % DEFAULT_S3_PATH
+MEDIA_URL = "//%s/%s/" % (S3_DOMAIN, DEFAULT_S3_PATH)
+STATIC_ROOT = "/%s/" % STATIC_S3_PATH
+STATIC_URL = "https://%s/" % (S3_DOMAIN)
+ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+AWS_IS_GZIPPED = True
+AWS_ENABLED = True
+AWS_S3_SECURE_URLS = True
+COMPRESS_URL = STATIC_URL

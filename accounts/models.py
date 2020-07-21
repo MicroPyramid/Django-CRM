@@ -91,8 +91,8 @@ class Account(models.Model):
             self.get_billing_country_display(),
         ]
         address = utils.append_str_to(address, *add_to_address)
-        return address
 
+        return address
 
     @property
     def created_on_arrow(self):

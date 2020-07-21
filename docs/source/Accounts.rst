@@ -6,7 +6,7 @@ Accounts
 |  Create your Accounts  - new account can be created for different users and contacts and leads can create in accounts itself in their view pages
 
 
-.. image:: screenshots/accountshome1.png
+
 
 |  **Fig** Accounts page
 
@@ -20,7 +20,6 @@ Accounts
 
 |  **Optional:** We can filter the users based on name,city,tags .
 
-.. image:: screenshots/accountcreate.png
 
 |  **Fig** Account create page
 
