@@ -1,44 +1,15 @@
-Python 3.5.2:
-    script:
-    - export PY_EXE=python3.5.2
-    - virtualenv -p python3 env
-    - source env/bin/activate
-    - pip install --no-cache-dir -r requirements.txt
-    - python manage.py test --keepdb --parallel --noinput
-    - coverage run --source=accounts,cases,common,contacts,leads,opportunity,tasks,invoices,events,teams,marketing manage.py test --keepdb --noinput
-    - coverage report -m
-    except:
-    - tags
-
-deploy_mp:
-  stage: deploy
-  environment:
-    name: live
-  script:
-    - sudo /bin/rm -rf /home/dj_crm/dj_crm/; cp -r . /home/dj_crm/dj_crm
-    - source /home/dj_crm/env/bin/activate
-    - pip install -r /home/dj_crm/dj_crm/requirements.txt
-    - python /home/dj_crm/dj_crm/manage.py migrate --noinput
-    - sudo /etc/init.d/uwsgi restart
-    - sudo /usr/bin/supervisorctl restart all
-  only:
-    - master
-  tags:
-    - djcrm_micropyramid
-
 deploy_live:
   stage: deploy
   environment:
     name: live
   script:
-    - sudo /bin/rm -rf /home/dj_crm/dj_crm/; cp -r . /home/dj_crm/dj_crm
-    - source /home/dj_crm/env/bin/activate
-    - pip install -r /home/dj_crm/dj_crm/requirements.txt
-    - python /home/dj_crm/dj_crm/manage.py migrate --noinput
-    - python /home/dj_crm/dj_crm/manage.py rebuild_index --noinput
-    - sudo /etc/init.d/uwsgi restart
+    - df -h
+    - sudo /bin/rm -rf /home/bottlecrm/bottlecrm/; cp -r . /home/bottlecrm/bottlecrm/
+    - source /home/bottlecrm/env/bin/activate
+    - pip install -r /home/bottlecrm/bottlecrm/requirements.txt
+    - python /home/bottlecrm/bottlecrm/manage.py migrate --noinput
     - sudo /usr/bin/supervisorctl restart all
   only:
     - master
   tags:
-    - github-crm
+    - bottlecrm-com

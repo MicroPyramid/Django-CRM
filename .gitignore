@@ -22,3 +22,4 @@ celerybeat-schedule
 local_settings.py
 media
 .sass-cache
+server.log

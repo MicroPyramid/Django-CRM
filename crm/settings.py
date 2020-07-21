@@ -22,7 +22,7 @@ ALLOWED_HOSTS = [".bottlecrm.com", ".localhost"]
 LOGIN_REDIRECT_URL = "/"
 
 # LOGIN_URL = "/login/"
-LOGIN_URL = "/login-sub-domain/"
+LOGIN_URL = "/auth/domain/"
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -213,11 +213,11 @@ COMPRESS_OFFLINE_CONTEXT = {
     "STATIC_URL": "STATIC_URL",
 }
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULTFROMEMAIL")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 # celery Tasks
-CELERY_BROKER_URL = os.getenv("CELERYBROKERURL")
-CELERY_RESULT_BACKEND = os.getenv("CELERYRESULTBACKEND")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
 CELERY_BEAT_SCHEDULE = {
     "runs-campaign-for-every-thiry-minutes": {
@@ -258,9 +258,9 @@ AWS_REGION = os.getenv("AWS_REGION", "")
 # URL_FOR_LINKS = os.getenv("URLFORLINKS")
 
 
-GP_CLIENT_ID = os.getenv("GP_CLIENT_ID", False)
-GP_CLIENT_SECRET = os.getenv("GP_CLIENT_SECRET", False)
-ENABLE_GOOGLE_LOGIN = os.getenv("ENABLE_GOOGLE_LOGIN", False)
+# GP_CLIENT_ID = os.getenv("GP_CLIENT_ID", False)
+# GP_CLIENT_SECRET = os.getenv("GP_CLIENT_SECRET", False)
+# ENABLE_GOOGLE_LOGIN = os.getenv("ENABLE_GOOGLE_LOGIN", False)
 
 MARKETING_REPLY_EMAIL = os.getenv("MARKETINGREPLYEMAIL")
 

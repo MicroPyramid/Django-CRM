@@ -47,25 +47,19 @@ pip install -r requirements.txt
 ```
 python manage.py migrate
 python manage.py runserver
-
 ```
-
-
+Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped test.localhost to 127.0.0.1 So, it should work properly.
 
 Community
 =========
 
 Get help or stay up to date.
 
--   [Contribute on
-    Issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
--   Follow [@micropyramid](<https://twitter.com/micropyramid>) on
-    Twitter
--   Ask questions on [Stack
-    Overflow](<https://stackoverflow.com/questions/tagged/django-crm>)
--   Chat with community
-    [Gitter](<https://gitter.im/MicroPyramid/Django-CRM>)
--   For customisations, email <django-crm@micropyramid.com>
+-   [Issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   Follow [@micropyramid](<https://twitter.com/micropyramid>) on Twitter
+-   Ask questions on [Stack Overflow](<https://stackoverflow.com/questions/tagged/django-crm>)
+-   Chat with community [Gitter](<https://gitter.im/MicroPyramid/Django-CRM>)
+-   For customisations, email to <django-crm@micropyramid.com>
 
 Credits
 -------
@@ -76,12 +70,6 @@ This project exists thanks to all the people who contribute!
 
 ![image](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
 
-### Backers
-
-Thank you to all our backers! [Become a backer](Backer_).
-
-![image](https://opencollective.com/django-crm/backers.svg?width=890%0A%20:target:%20https://opencollective.com/django-crm#backers)
-
 
 Feature requests and bug reports
 ================================
@@ -89,5 +77,4 @@ Feature requests and bug reports
 We welcome your feedback and support, raise github issue if you want to
 report a bug or request new feature. we are glad to help.
 
-For commercial support [Contact us
-here](https://micropyramid.com/contact-us/)
+For commercial support [Contact us](https://micropyramid.com/contact-us/)

@@ -14,7 +14,6 @@ class GetCompany(object):
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        # import pdb; pdb.set_trace()
         company_id = request.session.get('company', None)
         if company_id:
             company = Company.objects.get(id=company_id)
