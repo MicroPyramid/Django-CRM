@@ -26,6 +26,7 @@ setup(
     include_package_data=True,
     description="An opensourse CRM developed on django framework",
     long_description=README,
+    long_description_content_type="text/markdown",
     url="https://github.com/MicroPyramid/Django-CRM.git",
     author="Micropyramid",
     author_email="hello@micropyramid.com",
