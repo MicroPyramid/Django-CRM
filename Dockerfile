@@ -3,7 +3,7 @@ FROM python:3.6
 WORKDIR /app
 
 # Intall dependencies
-COPY . /app/
+COPY requirements.txt /app/
 
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
   apt update && \
@@ -13,6 +13,8 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
   npm -g install less && \
   pip install --no-cache-dir -r requirements.txt && \
   pip install --no-cache-dir redis
+
+COPY . /app/
 
 RUN chmod +x /app/entrypoint.sh \
   /app/wait-for-postgres.sh
