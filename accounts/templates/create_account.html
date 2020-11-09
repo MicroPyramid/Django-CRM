@@ -358,6 +358,7 @@
         $('#submit_btn').removeAttr('disabled')
       }
       else {
+        alert(data.message)
         window.location = data.success_url;
       }
     }

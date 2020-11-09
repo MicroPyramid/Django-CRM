@@ -75,10 +75,10 @@ TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
 @marketing_access_required
 def dashboard(request):
     if request.user.role == "ADMIN" or request.user.is_superuser:
-        email_templates = EmailTemplate.objects.all()
-        contacts = Contact.objects.all()
-        campaign = Campaign.objects.all()
-        contacts_list = ContactList.objects.all()
+        email_templates = EmailTemplate.objects.filter(company=request.company)
+        contacts = Contact.objects.filter(company=request.company)
+        campaign = Campaign.objects.filter(company=request.company)
+        contacts_list = ContactList.objects.filter(company=request.company)
     else:
         email_templates = EmailTemplate.objects.filter(created_by=request.user)
         contacts = Contact.objects.filter(created_by=request.user)
@@ -125,7 +125,7 @@ def dashboard(request):
 def contact_lists(request):
     tags = Tag.objects.all()
     if request.user.role == "ADMIN":
-        queryset = ContactList.objects.all().order_by("-created_on")
+        queryset = ContactList.objects.filter(company=request.company).order_by("-created_on")
     else:
         queryset = ContactList.objects.filter(
             Q(created_by=request.user) | Q(visible_to=request.user)
@@ -170,8 +170,8 @@ def contact_lists(request):
 @marketing_access_required
 def contacts_list(request):
     if request.user.role == "ADMIN":
-        contacts = Contact.objects.all()
-        contact_lists = ContactList.objects.all()
+        contacts = Contact.objects.filter(company=request.company)
+        contact_lists = ContactList.objects.filter(company=request.company)
     else:
         contact_ids = request.user.marketing_contactlist.all().values_list(
             "contacts", flat=True
@@ -216,6 +216,7 @@ def contact_list_new(request):
         if form.is_valid():
             instance = form.save(commit=False)
             instance.created_by = request.user
+            instance.company = request.company
             instance.save()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
@@ -250,7 +251,7 @@ def edit_contact_list(request, pk):
     if request.method == "GET":
         # contact_lists = ContactList.objects.filter(company=request.company)
         if user.is_superuser or request.user.role == "ADMIN":
-            contact_lists = ContactList.objects.all()
+            contact_lists = ContactList.objects.filter(company=request.company)
         else:
             contact_lists = ContactList.objects.filter(created_by=request.user)
 
@@ -377,6 +378,7 @@ def edit_contact(request, pk):
                     if updated_contact.is_valid():
                         updated_contact_obj = updated_contact.save()
                         updated_contact_obj.created_by = request.user
+                        updated_contact_obj.company = request.company
                         updated_contact_obj.save()
                         updated_contact_obj.contact_list.add(contact_list_obj)
                 else:
@@ -561,7 +563,7 @@ def failed_contact_list_download_delete(request, pk):
 def email_template_list(request):
     # users = User.objects.all()
     if request.user.role == "ADMIN" or request.user.is_superuser:
-        queryset = EmailTemplate.objects.all().order_by("-created_on")
+        queryset = EmailTemplate.objects.filter(company=request.company).order_by("-created_on")
     else:
         queryset = EmailTemplate.objects.filter(created_by=request.user).order_by(
             "-created_on"
@@ -590,6 +592,7 @@ def email_template_new(request):
         if form.is_valid():
             instance = form.save(commit=False)
             instance.created_by = request.user
+            instance.company = request.user.company
             instance.save()
             return JsonResponse(
                 {"error": False, "data": form.data}, status=status.HTTP_201_CREATED
@@ -665,7 +668,7 @@ def email_template_delete(request, pk):
 def campaign_list(request):
     # users = User.objects.all()
     if request.user.role == "ADMIN":
-        queryset = Campaign.objects.all()
+        queryset = Campaign.objects.filter(company=request.company)
     else:
         queryset = Campaign.objects.all().filter(created_by=request.user)
     users = User.objects.filter(id__in=queryset.values_list("created_by_id", flat=True))
@@ -692,11 +695,11 @@ def campaign_list(request):
 def campaign_new(request):
     if request.method == "GET":
         if request.user.role == "ADMIN" or request.user.is_superuser:
-            email_templates = EmailTemplate.objects.all()
+            email_templates = EmailTemplate.objects.all(company=request.company)
         else:
             email_templates = EmailTemplate.objects.filter(created_by=request.user)
         if request.user.role == "ADMIN" or request.user.is_superuser:
-            contact_lists = ContactList.objects.all()
+            contact_lists = ContactList.objects.filter(company=request.company)
         else:
             contact_lists = ContactList.objects.filter(created_by=request.user)
         # if request.GET.get('contact_list'):
@@ -720,6 +723,7 @@ def campaign_new(request):
         if form.is_valid():
             instance = form.save(commit=False)
             instance.created_by = request.user
+            instance.company = request.company
             if request.POST.get("from_email"):
                 instance.from_email = request.POST["from_email"]
             if request.POST.get("from_name"):
@@ -831,7 +835,7 @@ def campaign_details(request, pk):
         raise PermissionDenied
     contact_lists = campaign.contact_lists.all()
     if request.user.role == "ADMIN" or request.user.is_superuser:
-        contact_lists = contact_lists
+        contact_lists = contact_lists.filter(company=request.company)
     else:
         # contact_lists = contact_lists.filter(
         #     is_public=True, created_by=request.user)
@@ -1385,7 +1389,7 @@ def download_failed_contacts(request, contact_list_id):
 def list_all_emails_for_campaigns(request):
     context = {}
     if request.method == "GET":
-        queryset = ContactEmailCampaign.objects.all()
+        queryset = ContactEmailCampaign.objects.filter(company=request.company)
         context["contacts"] = queryset
         return render(request, "email_for_campaigns_list.html", context)
 
@@ -1403,6 +1407,7 @@ def add_email_for_campaigns(request):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
+            obj.company = request.company
             obj.save()
             return JsonResponse(
                 {"error": False, "success_url": reverse("common:api_settings")}
@@ -1457,6 +1462,7 @@ def add_blocked_domain(request):
         if form.is_valid():
             domain = form.save(commit=False)
             domain.created_by = request.user
+            domain.company = request.company
             domain.save()
             return JsonResponse(
                 {"error": False, "success_url": reverse("common:api_settings")}
@@ -1529,6 +1535,7 @@ def add_blocked_email(request):
         if form.is_valid():
             email = form.save(commit=False)
             email.created_by = request.user
+            email.company = request.company
             email.save()
             return JsonResponse(
                 {"error": False, "success_url": reverse("common:api_settings")}
@@ -1595,13 +1602,13 @@ def delete_blocked_email(request, blocked_email_id):
 def contacts_list_elastic_search(request):
     search = False
     if request.user.role == "ADMIN":
-        contacts = Contact.objects.filter(is_bounced=False)
+        contacts = Contact.objects.filter(is_bounced=False, company=request.company)
         # contacts = SearchQuerySet().filter(is_bounced='false').models(Contact)
         # bounced_contacts = SearchQuerySet().filter(is_bounced='true').models(Contact)
         # failed_contacts = SearchQuerySet().models(FailedContact).filter()
-        bounced_contacts = Contact.objects.filter(is_bounced=True)
-        failed_contacts = FailedContact.objects.all()
-        contact_lists = ContactList.objects.all()
+        bounced_contacts = Contact.objects.filter(is_bounced=True, company=request.company)
+        failed_contacts = FailedContact.objects.filter(company=request.company)
+        contact_lists = ContactList.objects.filter(company=request.company)
     else:
         contact_ids = request.user.marketing_contactlist.all().values_list(
             "contacts", flat=True

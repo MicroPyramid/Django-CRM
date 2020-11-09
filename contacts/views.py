@@ -30,12 +30,12 @@ from teams.models import Teams
 @login_required
 def get_teams_and_users(request):
     data = {}
-    teams = Teams.objects.all()
+    teams = Teams.objects.filter(company=request.company)
     teams_data = [
         {"team": team.id, "users": [user.id for user in team.users.all()]}
         for team in teams
     ]
-    users = User.objects.all().values_list("id", flat=True)
+    users = User.objects.filter(company=request.company).values_list("id", flat=True)
     data["teams"] = teams_data
     data["users"] = list(users)
     return JsonResponse(data)
@@ -107,15 +107,15 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
 
     def dispatch(self, request, *args, **kwargs):
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True).order_by("email")
+            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
         else:
-            self.users = User.objects.filter(role="ADMIN").order_by("email")
+            self.users = User.objects.filter(role="ADMIN", company=self.request.company).order_by("email")
         return super(CreateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(CreateContactView, self).get_form_kwargs()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True).order_by("email")
+            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
             kwargs.update({"assigned_to": self.users})
         return kwargs
 
@@ -228,7 +228,7 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                 context["address_form"] = BillingAddressForm(self.request.POST)
             else:
                 context["address_form"] = BillingAddressForm()
-        context["teams"] = Teams.objects.all()
+        context["teams"] = Teams.objects.filter(company=self.request.company)
         return context
 
 
@@ -306,15 +306,15 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             raise PermissionDenied
 
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True).order_by("email")
+            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
         else:
-            self.users = User.objects.filter(role="ADMIN").order_by("email")
+            self.users = User.objects.filter(role="ADMIN", company=self.request.company).order_by("email")
         return super(UpdateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(UpdateContactView, self).get_form_kwargs()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True).order_by("email")
+            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
             kwargs.update({"assigned_to": self.users})
         return kwargs
 
@@ -443,7 +443,7 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         context["contact_form"] = context["form"]
         context["users"] = self.users
         context["countries"] = COUNTRIES
-        context["teams"] = Teams.objects.all()
+        context["teams"] = Teams.objects.filter(company=self.request.company)
         context["assignedto_list"] = [
             int(i) for i in self.request.POST.getlist("assigned_to", []) if i
         ]

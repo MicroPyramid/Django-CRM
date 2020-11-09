@@ -141,9 +141,9 @@
                       {% endif %}
                       {% for invoice in invoices %}
                       {% if invoice.due_date < today %}
-                      <tr class="text-center due_date">
+                      <tr class="text-center">
                         <td scope="row" >{{ forloop.counter }}</td>
-                        <td><a style="color: red;" href="#" data-toggle="modal" data-target="#exampleModalCenter_invoice{{invoice.id}}">
+                        <td><a href="#" data-toggle="modal" data-target="#exampleModalCenter_invoice{{invoice.id}}">
                             {{ invoice.invoice_title }} </a></td>
                         <td>{{ invoice.invoice_number }} </td>
                         <td>{{ invoice.email }} </td>

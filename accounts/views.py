@@ -236,7 +236,8 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             return redirect("accounts:new_account")
 
         if self.request.is_ajax():
-            data = {"success_url": reverse_lazy("accounts:list"), "error": False}
+            data = {"success_url": reverse_lazy("accounts:list"), "error": False,
+                    "message": "Account created successfully"}
             return JsonResponse(data)
 
         return redirect("accounts:list")
@@ -366,6 +367,7 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
     def dispatch(self, request, *args, **kwargs):
         self.users = User.objects.filter(is_active=True).order_by("email")
         lead_obj = self.get_object()
+        self.account_status = lead_obj.status
         if lead_obj.company != request.company:
             raise PermissionDenied
         # if self.request.user.role == 'ADMIN' or self.request.user.is_superuser:
@@ -453,9 +455,15 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             domain=current_site.domain,
             protocol=self.request.scheme,
         )
-
+        message = "Account updated successfully"
+        if self.account_status != account_object.status:
+            if account_object.status == "open":
+                message = "Account opened successfully"
+            else:
+                message = "Account closed successfully"
         if self.request.is_ajax():
-            data = {"success_url": reverse_lazy("accounts:list"), "error": False}
+            data = {"success_url": reverse_lazy("accounts:list"), "error": False,
+                    "message": message}
             return JsonResponse(data)
         return redirect("accounts:list")
 

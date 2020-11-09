@@ -52,25 +52,19 @@
                       </div>
                     </div>
                   </div>
-
-                  <div class="col-md-12" style="margin: 0; padding: 0;">
-
-                    <div class="form-group row" style="padding:0; margin:0;">
-                      <label for="inputPassword" class="col-sm-3 col-form-label" style="">Invoice
-                        Number{% if form.invoice_number.field.required %}<span class="error_marker" style="color:red">
-                          *</span>{% endif %}</label>
-                      <div class="col-sm-9 pl-0">
-                        
-                        {{ form.invoice_number }}
+                  {% if invoice_obj %}
+                  <div class="col-md-6">
+                    <div class="form-group row">
+                      <label for="inputPassword" class="col-sm-4 col-form-label" style="">Invoice
+                        Number<span class="error_marker" style="color:red">
+                          *</span></label>
+                      <div class="col-sm-8 pl-0">
+                        <input type="text" name="invoice_number" value="{{invoice_obj.invoice_number}}" class="form-control" readonly="">
                         <span class="error" id="id__invoice_number">{{ form.invoice_number.errors }}</span>
                       </div>
                     </div>
                   </div>
-
-                  
-                  
-                  
-                  
+                  {% endif %}
                   <div class="col-md-12">
                     <div class="row">
                       <div class="form-group mt-5 col-md-6">
@@ -232,17 +226,15 @@
                     {% endif %}
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Assign To</label>
-                      
-                        
-                        
-                      <select class="assigned_users form-control" name="assigned_to" multiple="multiple"
-                    id="id_assigned_to">
-                    {% for user in users %}
-                    <option value="{{user.id}}" {% if user in invoice_obj.get_assigned_users_not_in_teams or user.id in assignedto_list %}
-                      selected="" {% endif %}>{{user.email}}</option>
-                    {% endfor %}
-                  </select>
-                  <span class="error error_message" id="error_id_assigned_to">{{ form.assigned_to.errors }}</span>
+                        <div class="col-sm-8 pl-0">
+                          <select class="assigned_users form-control" name="assigned_to" multiple="multiple" id="id_assigned_to">
+                            {% for user in users %}
+                            <option value="{{user.id}}" {% if user in invoice_obj.get_assigned_users_not_in_teams or user.id in assignedto_list %}
+                              selected="" {% endif %}>{{user.email}}</option>
+                            {% endfor %}
+                         </select>
+                        </div>
+                        <span class="error error_message" id="error_id_assigned_to">{{ form.assigned_to.errors }}</span>
                     </div>
                     <div class="form-group row">
                       <label for="staticEmail" class="col-sm-4 col-form-label">Accounts</label>
@@ -256,20 +248,26 @@
                   </div>
                   <div class="col-md-12 mt-5">
                     <div class="row pt-0 pb-4">
-                      <div class="form-group col-md-4">
+                      <div class="form-group col-md-3">
                         <label for="inputCity">Quality Hours{% if form.quantity.field.required %}<span
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
                         
                         {{ form.quantity }}
                         <span class="error" id="id__quantity">{{ form.quantity.errors }}</span>
                       </div>
-                      <div class="form-group col-md-4">
+                      <div class="form-group col-md-3">
                         <label for="inputState">Rate {% if form.rate.field.required %}<span class="error_marker"
                             style="color:red">*</span>{% endif %}</label>
                         {{ form.rate }}
                         <span class="error" id="id__rate">{{ form.rate.errors }}</span>
                       </div>
-                      <div class="form-group col-md-4">
+                       <div class="form-group col-md-3">
+                        <label for="inputCity">Tax{% if form.tax.field.required %}<span
+                            class="error_marker" style="color:red"> * </span>{% endif %}</label>
+                        {{ form.tax }}
+                        <span class="error" id="id__tax">{{ form.tax.errors }}</span>
+                      </div>
+                      <div class="form-group col-md-3">
                         <label for="inputZip">Total Amount{% if form.total_amount.field.required %}<span
                             class="error_marker" style="color:red"> * </span>{% endif %}</label>
                         {{ form.total_amount }}
@@ -337,8 +335,19 @@
 
       $('#id_quantity').keyup(calculate);
       $('#id_rate').keyup(calculate);
+      $('#id_tax').keyup(calculate)
       function calculate(e) {
-        $('#id_total_amount').val($('#id_quantity').val() * $('#id_rate').val());
+        tax = $('#id_tax').val()
+        data  = $('#id_quantity').val() * $('#id_rate').val()
+        $('#id_total_amount').val(data);
+        if(tax){
+          if(data){
+            $('#id_total_amount').val(parseInt(tax)+parseInt(data));
+          }
+          else{
+            $('#id_total_amount').val(parseInt(tax));
+          }
+        }
       }
 
     });

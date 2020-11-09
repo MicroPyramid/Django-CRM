@@ -34,12 +34,12 @@ from teams.models import Teams
 @login_required
 def get_teams_and_users(request):
     data = {}
-    teams = Teams.objects.all()
+    teams = Teams.objects.filter(company=request.company)
     teams_data = [
         {"team": team.id, "users": [user.id for user in team.users.all()]}
         for team in teams
     ]
-    users = User.objects.all().values_list("id", flat=True)
+    users = User.objects.filter(company=request.company).values_list("id", flat=True)
     data["teams"] = teams_data
     data["users"] = list(users)
     return JsonResponse(data)

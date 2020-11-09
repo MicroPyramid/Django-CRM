@@ -1,12 +1,17 @@
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
+DEBUG = False
 
 DOMAIN_NAME = "bottlecrm.com"
 
-AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWSBUCKETNAME", "")
-AM_ACCESS_KEY = AWS_ACCESS_KEY_ID = os.getenv("AWSACCESSKEYID", "")
-AM_PASS_KEY = AWS_SECRET_ACCESS_KEY = os.getenv("AWSSECRETACCESSKEY", "")
+AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", "")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN = str(AWS_BUCKET_NAME) + ".s3.amazonaws.com"
+AWS_SES_REGION_NAME = os.getenv("AWS_SES_REGION_NAME", "")
+AWS_SES_REGION_ENDPOINT = os.getenv("AWS_SES_REGION_ENDPOINT", "")
 
 AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=86400",
@@ -34,3 +39,22 @@ AWS_IS_GZIPPED = True
 AWS_ENABLED = True
 AWS_S3_SECURE_URLS = True
 COMPRESS_URL = STATIC_URL
+
+EMAIL_BACKEND = "django_ses.SESBackend"
+
+SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
+
+ELASTIC_APM = {
+  'SERVICE_NAME': os.getenv("ELASTIC_APM_SERVICE_NAME"),
+  'SECRET_TOKEN': os.getenv("ELASTIC_APM_SECRET_TOKEN"),
+  'SERVER_URL': os.getenv("ELASTIC_APM_SERVER_URL"),
+}
+
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    integrations=[DjangoIntegration()],
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True
+)

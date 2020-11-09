@@ -7,6 +7,7 @@ from django import forms
 
 from common.models import Attachments, Comment
 from leads.models import Lead
+from accounts.models import Account
 from phonenumber_field.formfields import PhoneNumberField
 from teams.models import Teams
 
@@ -74,6 +75,24 @@ class LeadForm(forms.ModelForm):
                 prev_choices = self.fields["source"]._get_choices()
                 prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
+        self.company = request_obj.company
+
+
+    def clean_account_name(self):
+        account_name = self.cleaned_data.get("account_name")
+        if self.instance.id:
+            if self.instance.account_name != account_name:
+                if not Account.objects.filter(
+                    name__iexact=self.cleaned_data.get("account_name"),
+                    company=self.company
+                ).exists():
+                    return self.cleaned_data.get("account_name")
+                raise forms.ValidationError(
+                    "Account already exists with this name")
+            return self.cleaned_data.get("account_name")
+        if not Account.objects.filter(name__iexact=self.cleaned_data.get("account_name"), company=self.company).exists():
+            return self.cleaned_data.get("account_name")
+        raise forms.ValidationError("Account already exists with this name")
 
     class Meta:
         model = Lead

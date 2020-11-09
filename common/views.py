@@ -95,13 +95,17 @@ def landing_page(request):
 
 def check_sub_domain(request):
     if request.method == "GET":
-        try:
-            if request.company:
-                return redirect("common:login")
-        except:
-            return render(request, "check_subdomain.html", {})
+        # try:
+        #     if request.company:
+        #         return redirect("common:login")
+        # except:
+        return render(request, "check_subdomain.html", {})
     if request.method == "POST":
         sub_domain = request.POST.get("sub_domain", "")
+        if sub_domain == "":
+            return render(
+                request, "check_subdomain.html", {"error": "Please mention a sub_domain"}
+            )
         company = Company.objects.filter(sub_domain=sub_domain).first()
         if company:
             abs_url = (
@@ -112,7 +116,7 @@ def check_sub_domain(request):
                 + settings.DOMAIN_NAME
                 + reverse("common:login")
             )
-            request.session["company"] = company.id
+            # request.session["company"] = company.id
             return HttpResponseRedirect(abs_url)
         else:
             return render(
@@ -150,10 +154,11 @@ class HomeView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        accounts = Account.objects.filter(status="open")
-        contacts = Contact.objects.all()
-        leads = Lead.objects.exclude(status="converted").exclude(status="closed")
-        opportunities = Opportunity.objects.all()
+        accounts = Account.objects.filter(status="open", company=self.request.company)
+        contacts = Contact.objects.filter(company=self.request.company)
+        leads = Lead.objects.filter(company=self.request.company).exclude(Q(status="converted") |
+            Q(status="closed"))
+        opportunities = Opportunity.objects.filter(company=self.request.company)
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
         else:
@@ -313,6 +318,7 @@ class LogoutView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         logout(request)
         request.session.flush()
+        request.company = None
         url = request.scheme + "://" + settings.DOMAIN_NAME + "/"
         return HttpResponseRedirect(url)
         # return redirect("common:login")
@@ -389,6 +395,15 @@ class CompanyLoginView(CreateView):
     template_name = "company_login.html"
 
     def post(self, request, *args, **kwargs):
+        # add company to request and header
+        host_name = request.META.get("HTTP_HOST")
+        subdomain = host_name.split(".")[0]
+        company = Company.objects.filter(sub_domain=subdomain).first()
+        if company:
+            request.company = company
+            request.session["company"] = company.id
+        else:
+            return render(request, "check_subdomain.html", {"error": "Please mention a sub_domain"})
         form = CompanyLoginForm(request.POST, request=request)
         if form.is_valid():
             email = form.cleaned_data.get("email", "")
@@ -507,7 +522,7 @@ class CreateUserView(AdminRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super(CreateUserView, self).get_context_data(**kwargs)
         context["user_form"] = context["form"]
-        context["teams"] = Teams.objects.all()
+        context["teams"] = Teams.objects.filter(company=self.request.company)
         if "errors" in kwargs:
             context["errors"] = kwargs["errors"]
         return context
@@ -615,7 +630,7 @@ class UpdateUserView(LoginRequiredMixin, UpdateView):
         user_profile_name = user_profile_name[-1]
         context["user_profile_name"] = user_profile_name
         context["user_form"] = context["form"]
-        context["teams"] = Teams.objects.all()
+        context["teams"] = Teams.objects.filter(company=self.request.company)
         if "errors" in kwargs:
             context["errors"] = kwargs["errors"]
         return context

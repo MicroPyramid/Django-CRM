@@ -142,6 +142,15 @@
                 {% endif %}
               </tr>
               <tr class="sub_total">
+                {% if invoice.tax %}
+                <td colspan="2"
+                  style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
+                  <b>Tax</b></td>
+                <td style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
+                  {{ invoice.tax }}</td>
+                {% endif %}
+              </tr>
+              <tr class="sub_total">
                 <td colspan="2"
                   style="padding:8px 10px;vertical-align: middle;background: #dedede;font-weight: 800;border: none;">
                   <b>Invoice Total</b></td>

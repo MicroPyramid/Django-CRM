@@ -182,19 +182,25 @@
                   <div class="col-md-12 ">
                     <div class="row pt-0 pb-4">
                       {% if invoice.quantity %}
-                      <div class="form-group col-md-4">
+                      <div class="form-group col-md-3">
                         <label for="inputCity">Quality Hours</label>
                         {{ invoice.quantity }}
                       </div>
                       {% endif %}
                       {% if invoice.rate %}
-                      <div class="form-group col-md-4">
+                      <div class="form-group col-md-3">
                         <label for="inputCity">Rate</label>
                         {{ invoice.rate }}
                       </div>
                       {% endif %}
+                      {% if invoice.tax %}
+                      <div class="form-group col-md-3">
+                        <label for="inputCity">Tax</label>
+                        {{ invoice.tax }}
+                      </div>
+                      {% endif %}
                       {% if invoice.total_amount %}
-                      <div class="form-group col-md-4">
+                      <div class="form-group col-md-3">
                         <label for="inputCity">Total Amount</label>
                         {{ invoice.total_amount }}
                       </div>

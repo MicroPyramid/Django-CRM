@@ -85,6 +85,10 @@ class User(AbstractBaseUser, PermissionsMixin):
             full_name = self.email
         return full_name
 
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.date_joined).humanize()
+
     def __str__(self):
         return self.email
 
