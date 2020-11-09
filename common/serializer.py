@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
             "has_sales_access",
             "has_marketing_access",
             "company",
-            "get_app_name"
+            "get_app_name",
 
         )
 
@@ -64,19 +64,21 @@ class CreateUserSerializer(serializers.ModelSerializer):
             "profile_pic",
             "has_sales_access",
             "has_marketing_access",
+            "password"
         )
 
     def __init__(self, *args, **kwargs):
         self.request_user = kwargs.pop("request_user", None)
         super(CreateUserSerializer, self).__init__(*args, **kwargs)
         self.fields["first_name"].required = True
-        if not self.instance.pk:
+        if not self.instance:
             self.fields["password"].required = True
+        else:
+            self.fields['password'].required = False
+            self.fields['email'].required = False
+            self.fields['role'].required = False
 
-        # self.fields['password'].required = True
-
-    def validate_password(self):
-        password = self.cleaned_data.get("password")
+    def validate_password(self, password):
         if password:
             if len(password) < 4:
                 raise serializers.ValidationError(
@@ -84,47 +86,40 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 )
         return password
 
-    def validate_has_sales_access(self):
-        sales = self.cleaned_data.get("has_sales_access", False)
-        user_role = self.cleaned_data.get("role")
+    def validate_has_sales_access(self, has_sales_access):
+        user_role = self.initial_data.get("role")
         if user_role == "ADMIN":
             is_admin = True
         else:
             is_admin = False
         if self.request_user.role == "ADMIN" or self.request_user.is_superuser:
             if not is_admin:
-                marketing = self.data.get("has_marketing_access", False)
-                if not sales and not marketing:
+                marketing = self.initial_data.get("has_marketing_access", False)
+                if not has_sales_access and not marketing:
                     raise serializers.ValidationError(
                         "Select atleast one option.")
-            # if not (self.instance.role == 'ADMIN' or self.instance.is_superuser):
-            #     marketing = self.data.get('has_marketing_access', False)
-            #     if not sales and not marketing:
-            #         raise forms.ValidationError('Select atleast one option.')
         if self.request_user.role == "USER":
-            sales = self.instance.has_sales_access
-        return sales
+            has_sales_access = self.instance.has_sales_access
+        return has_sales_access
 
-    def validate_has_marketing_access(self):
-        marketing = self.cleaned_data.get("has_marketing_access", False)
+    def validate_has_marketing_access(self, marketing):
         if self.request_user.role == "USER":
             marketing = self.instance.has_marketing_access
         return marketing
 
-    def validate_email(self):
-        email = self.cleaned_data.get("email")
-        if self.instance.id:
+    def validate_email(self, email):
+        if self.instance:
             if self.instance.email != email:
                 if not User.objects.filter(
-                    email=self.cleaned_data.get("email")
+                    email=email
                 ).exists():
-                    return self.cleaned_data.get("email")
+                    return email
                 raise serializers.ValidationError("Email already exists")
             else:
-                return self.cleaned_data.get("email")
+                return email
         else:
-            if not User.objects.filter(email=self.cleaned_data.get("email")).exists():
-                return self.cleaned_data.get("email")
+            if not User.objects.filter(email=email).exists():
+                return email
             raise serializers.ValidationError(
                 "User already exists with this email")
 
