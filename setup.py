@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-with open(os.path.join(os.path.dirname(__file__), "README.md")) as readme:
+with open(os.path.join(os.path.dirname(__file__), "README.rst")) as readme:
     README = readme.read()
 
 # allow setup.py to be run from any path
@@ -21,12 +21,11 @@ for dirpath, dirnames, filenames in os.walk(PROJECT_NAME):
 
 setup(
     name="django-crm",
-    version="0.8.0",
+    version="0.7.0",
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
     description="An opensourse CRM developed on django framework",
     long_description=README,
-    long_description_content_type="text/markdown",
     url="https://github.com/MicroPyramid/Django-CRM.git",
     author="Micropyramid",
     author_email="hello@micropyramid.com",

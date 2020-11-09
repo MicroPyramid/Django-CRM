@@ -152,7 +152,7 @@
                         {% for user in active_users %}
                         <tr class="text-center">
                           <td><a href="{% url 'common:view_user' user.id %}">{{ user.username }}</a></td>
-                          <td data-toggle="tooltip" title="{{user.date_joined}}">{{user.date_joined.date|timesince}}
+                          <td data-toggle="tooltip" title="{{user.date_joined}}">{{user.created_on_arrow}}
                           <td>{{ user.email }}</td>
                           <td class="user_role">{% if user.is_superuser %} ADMIN {% else %} {{user.role}} {% endif %}
                           </td>

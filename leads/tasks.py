@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import User
+from accounts.models import User, Company
 from leads.models import Lead
 from marketing.models import BlockedDomain, BlockedEmail
 
@@ -112,12 +112,13 @@ def send_email_to_assigned_user(
 
 
 @task
-def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
+def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company_id):
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
     """
     email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
     user = User.objects.get(id=user_id)
+    company = Company.objects.filter(id=company_id).first()
     for row in validated_rows:
         if not Lead.objects.filter(title=row.get("title")).exists():
             if re.match(email_regex, row.get("email")) is not None:
@@ -139,8 +140,9 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
                     lead.account_name = row.get("account_name", "")[:255]
                     lead.created_from_site = False
                     lead.created_by = user
+                    lead.company = company
                     lead.save()
-                except e:
+                except Exception as e:
                     print(e)
 
 

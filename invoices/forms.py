@@ -49,7 +49,6 @@ class InvoiceForm(forms.ModelForm):
         self.fields["teams"].required = False
         self.fields["phone"].widget.attrs.update({"placeholder": "+911234567890"})
         self.fields["invoice_title"].required = True
-        self.fields["invoice_number"].required = True
         self.fields["currency"].required = True
         self.fields["email"].required = True
         self.fields["total_amount"].required = True
@@ -64,24 +63,10 @@ class InvoiceForm(forms.ModelForm):
 
         return quantity
 
-    def clean_invoice_number(self):
-        invoice_number = self.cleaned_data.get("invoice_number")
-        if (
-            Invoice.objects.filter(invoice_number=invoice_number)
-            .exclude(id=self.instance.id)
-            .exists()
-        ):
-            raise forms.ValidationError(
-                "Invoice with this Invoice Number already exists."
-            )
-
-        return invoice_number
-
     class Meta:
         model = Invoice
         fields = (
             "invoice_title",
-            "invoice_number",
             "from_address",
             "to_address",
             "name",
@@ -96,6 +81,7 @@ class InvoiceForm(forms.ModelForm):
             "details",
             "due_date",
             "accounts",
+            "tax"
         )
 
 

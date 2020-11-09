@@ -1,6 +1,7 @@
 {% extends 'sales/base.html' %}
 {% load static %}
 {% block breadcrumb %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/css/intlTelInput.min.css" />
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Contacts</a></li>
@@ -169,7 +170,7 @@
             <input type="hidden" id="save_new_form" name="savenewform">
             <div class="col-md-12">
               <div class="row marl buttons_row text-center form_btn_row">
-                <button class="btn btn-default save" type="submit">Save</button>
+                <button class="btn btn-default save update_data" type="submit">Save</button>
                 {% if not contact_obj %}
                 <button class="btn btn-success save savenew" type="submit">Save & New</button>
                 {% endif %}
@@ -186,10 +187,68 @@
 </form>
 {% endblock %}
 {% block js_block %}
+ <link href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/css/intlTelInput.css" rel="stylesheet" media="screen">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/js/intlTelInput.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/js/utils.js"></script>
 <script type="text/javascript">
+  var telInput = $("#id_phone"),
+  errorMsg = $("#error-msg"),
+  validMsg = $("#valid-msg");
+
+// initialise plugin
+telInput.intlTelInput({
+
+  allowExtensions: true,
+  formatOnDisplay: true,
+  autoFormat: true,
+  autoHideDialCode: true,
+  autoPlaceholder: true,
+  defaultCountry: "auto",
+  ipinfoToken: "yolo",
+
+  nationalMode: false,
+  numberType: "MOBILE",
+  //onlyCountries: ['us', 'gb', 'ch', 'ca', 'do'],
+  preferredCountries: ['sa', 'ae', 'qa','om','bh','kw','ma'],
+  preventInvalidNumbers: true,
+  separateDialCode: true,
+  initialCountry: "us",
+   utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/11.0.9/js/utils.js"
+});
+
+var reset = function() {
+  telInput.removeClass("error");
+  errorMsg.addClass("hide");
+  validMsg.addClass("hide");
+};
+
+// on blur: validate
+telInput.blur(function() {
+  reset();
+  if ($.trim(telInput.val())) {
+    if (telInput.intlTelInput("isValidNumber")) {
+      validMsg.removeClass("hide");
+    } else {
+      telInput.addClass("error");
+      errorMsg.removeClass("hide");
+    }
+  }
+});
+
+// on keyup / change flag: reset
+telInput.on("keyup change", reset);
+
+  $('.update_data').click(function(){
+    country_code = $('.selected-dial-code').text()
+    phone_number = $('#id_phone').val()
+    $('#id_phone').val(country_code + ' ' + phone_number)
+  })
   $(".savenew").on('click', function (e) {
     e.preventDefault()
     $("#save_new_form").val('true')
+    country_code = $('.selected-dial-code').text()
+    phone_number = $('#id_phone').val()
+    $('#id_phone').val(country_code + ' ' + phone_number)
     $('#add_form').submit()
   });
   $(document).ready(function () {

@@ -2,18 +2,19 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from celery.schedules import crontab
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_path = Path(".") / ".env"
+env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRETKEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG")
 
 ALLOWED_HOSTS = [".bottlecrm.com", ".localhost"]
 
@@ -49,6 +50,10 @@ INSTALLED_APPS = [
     "invoices",
     "events",
     "teams",
+    "rest_framework",
+    "drf_yasg",
+    "corsheaders",
+    "django_ses",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +64,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.get_company.GetCompany",
+    "corsheaders.middleware.CorsMiddleware",
+
 ]
 
 ROOT_URLCONF = "crm.urls"
@@ -66,7 +73,7 @@ ROOT_URLCONF = "crm.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates"),],
+        "DIRS": [os.path.join(BASE_DIR, "templates"), ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -100,7 +107,7 @@ DATABASES = {
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
-    os.path.join(BASE_DIR, "blog_app/static"),
+    # os.path.join(BASE_DIR, "blog_app/static"),
 ]
 
 # Password validation
@@ -110,9 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator", },
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator", },
 ]
 
 # Internationalization
@@ -133,7 +140,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -142,11 +149,11 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend', )
 
 
-EMAIL_HOST = "smtp.sendgrid.net"
-EMAIL_HOST_USER = os.getenv("SG_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("SG_PWD", "")
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+# EMAIL_HOST = "smtp.sendgrid.net"
+# EMAIL_HOST_USER = os.getenv("SG_USER", "")
+# EMAIL_HOST_PASSWORD = os.getenv("SG_PWD", "")
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
 
 AUTH_USER_MODEL = "common.User"
 
@@ -162,21 +169,25 @@ if ENV_TYPE == "dev":
 
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
-
     STATIC_URL = "/static/"
     STATICFILES_DIRS = (BASE_DIR + "/static",)
     COMPRESS_ROOT = BASE_DIR + "/static/"
 
     ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
 
-
 elif ENV_TYPE == "live":
+    INSTALLED_APPS = INSTALLED_APPS + [
+      'elasticapm.contrib.django',
+    ]
+
+    MIDDLEWARE = MIDDLEWARE + [
+      'elasticapm.contrib.django.middleware.TracingMiddleware',
+    ]
+
     from .server_settings import *
 
-    SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
 
-
-# CORS_ORIGIN_ALLOW_ALL = True
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # COMPRESS_ROOT = BASE_DIR + "/static/"
 COMPRESS_JS_FILTERS = ["compressor.filters.jsmin.JSMinFilter"]
@@ -215,6 +226,10 @@ COMPRESS_OFFLINE_CONTEXT = {
 }
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+MARKETING_REPLY_EMAIL = os.getenv("MARKETING_REPLY_EMAIL", "")
+PASSWORD_RESET_MAIL_FROM_USER = os.getenv("PASSWORD_RESET_MAIL_FROM_USER", "")
+
 
 # celery Tasks
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
@@ -242,10 +257,6 @@ CELERY_BEAT_SCHEDULE = {
 MAIL_SENDER = "AMAZON"
 # INACTIVE_MAIL_SENDER = "MANDRILL"
 
-AM_ACCESS_KEY = os.getenv("AWSACCESSKEYID", "")
-AM_PASS_KEY = os.getenv("AWSSECRETACCESSKEY", "")
-AWS_REGION = os.getenv("AWS_REGION", "")
-
 # MGUN_API_URL = os.getenv("MGUN_API_URL", "")
 # MGUN_API_KEY = os.getenv("MGUN_API_KEY", "")
 
@@ -263,16 +274,15 @@ AWS_REGION = os.getenv("AWS_REGION", "")
 # GP_CLIENT_SECRET = os.getenv("GP_CLIENT_SECRET", False)
 # ENABLE_GOOGLE_LOGIN = os.getenv("ENABLE_GOOGLE_LOGIN", False)
 
-MARKETING_REPLY_EMAIL = os.getenv("MARKETINGREPLYEMAIL")
 
 PASSWORD_RESET_TIMEOUT_DAYS = 3
 
 SENTRY_ENABLED = os.getenv("SENTRY_ENABLED", False)
 
 if SENTRY_ENABLED and not DEBUG:
-    if os.getenv("SENTRYDSN") is not None:
+    if os.getenv("SENTRY_DSN") is not None:
         RAVEN_CONFIG = {
-            "dsn": os.getenv("SENTRYDSN", ""),
+            "dsn": os.getenv("SENTRY_DSN", ""),
         }
         INSTALLED_APPS = INSTALLED_APPS + [
             "raven.contrib.django.raven_compat",
@@ -287,8 +297,8 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
-        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse",},
-        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue",},
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse", },
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue", },
     },
     "formatters": {
         "django.server": {
@@ -317,11 +327,11 @@ LOGGING = {
             "filters": ["require_debug_false"],
             "class": "django.utils.log.AdminEmailHandler",
         },
-        "logfile": {"class": "logging.FileHandler", "filename": "server.log",},
+        "logfile": {"class": "logging.FileHandler", "filename": "server.log", },
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "console_debug_false", "logfile",],
+            "handlers": ["console", "console_debug_false", "logfile", ],
             "level": "INFO",
         },
         "django.server": {
@@ -389,7 +399,64 @@ CACHES = {
     }
 }
 
-PASSWORD_RESET_MAIL_FROM_USER = os.getenv("PASSWORD_RESET_MAIL_FROM_USER")
 
 
 SETTINGS_EXPORT = ["APPLICATION_NAME"]
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+SWAGGER_SETTINGS = {
+    'DEFAULT_INFO': "crm.urls.info",
+    'SECURITY_DEFINITIONS': {
+        "api_key": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+    },
+}
+
+TOKEN_SECRET_KEY = 'mk%l3jsghg-u*!luyer@tew$xn!ksb(k$&2rj4h4@%tmy76z'
+
+JWT_AUTH = {
+    'JWT_ENCODE_HANDLER':
+    'rest_framework_jwt.utils.jwt_encode_handler',
+
+    'JWT_DECODE_HANDLER':
+    'rest_framework_jwt.utils.jwt_decode_handler',
+
+    'JWT_PAYLOAD_HANDLER':
+    'common.utils.jwt_payload_handler',
+
+    'JWT_RESPONSE_PAYLOAD_HANDLER':
+    'rest_framework_jwt.utils.jwt_response_payload_handler',
+
+    'JWT_SECRET_KEY': TOKEN_SECRET_KEY,
+    'JWT_GET_USER_SECRET_KEY': None,
+    'JWT_PUBLIC_KEY': None,
+    'JWT_PRIVATE_KEY': None,
+    'JWT_ALGORITHM': 'HS256',
+    'JWT_VERIFY': True,
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_LEEWAY': 0,
+    'JWT_AUDIENCE': None,
+    'JWT_ISSUER': None,
+    'JWT_ALLOW_REFRESH': True,
+
+    'JWT_AUTH_HEADER_PREFIX': 'JWT',
+    'JWT_AUTH_COOKIE': None,
+
+}
+
+CORS_ALLOW_HEADERS = default_headers + (
+    'company',
+)
+
+CORS_ORIGIN_ALLOW_ALL = True

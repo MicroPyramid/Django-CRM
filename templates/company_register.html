@@ -9,7 +9,7 @@
           <div class="welcome">{{ settings.APPLICATION_NAME }}</div>
           <form method="POST" action="">
             <div class="form-group">
-              <input type="text" class="form-control" id="id_sub_domain" placeholder="Sub-domain.bottle.crm" name="sub_domain" value="{{request.POST.sub_domain}}">
+              <input type="text" class="form-control" id="id_sub_domain" placeholder="Sub-domain" name="sub_domain" value="{{request.POST.sub_domain}}">
               <span class="error">{{form.sub_domain.errors}}</span>
             </div>
             <div class="form-group">

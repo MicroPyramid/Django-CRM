@@ -31,7 +31,12 @@ sudo apt install postgresql xvfb libfontconfig wkhtmltopdf git libpq-dev python3
 
 sudo gem install sass
 
+sudo apt-get install postfix
+
 ```
+
+#### postfix package installation process
+* After running ```sudo apt-get install postfix``` in terminal, select ```Internet``` as a configuration from the pop-up and click ok. Next it will ask to enter the ```System mail name``` which will be the used as a ```From Email Address``` during sending the mail.
 
 #### Install dependencies
 ---

@@ -1,5 +1,36 @@
 import pytz
+from datetime import datetime
+from datetime import datetime, timedelta
+
 from django.utils.translation import ugettext_lazy as _
+from django.conf import settings
+from django.forms.models import model_to_dict
+from .custom_auth import BaseJSONWebTokenAuthentication
+from rest_framework.authentication import get_authorization_header
+
+
+def jwt_payload_handler(user):
+    """ Custom payload handler
+    Token encrypts the dictionary returned by this function, and can be
+    decoded by rest_framework_jwt.utils.jwt_decode_handler
+    """
+    return {
+            'id': user.pk,
+            # 'name': user.name,
+            'email': user.email,
+            'company': user.company.id,
+            "role": user.role,
+            "has_sales_access": user.has_sales_access,
+            "has_marketing_access": user.has_marketing_access,
+            "file_prepend": user.file_prepend,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "is_active": user.is_active,
+            "is_admin": user.is_admin,
+            "is_staff": user.is_staff,
+            # "date_joined"
+}
 
 
 INDCHOICES = (
@@ -593,4 +624,9 @@ def append_str_to(append_to: str, *args, sep=", ", **kwargs):
     """
     append_to = append_to or ""
     result_list = [append_to] + list(args) + list(kwargs.values())
-    return f"{sep}".join(filter(len, result_list))
+    data = False
+    for item in result_list:
+        if item:
+            data = True
+            break
+    return f"{sep}".join(filter(len, result_list)) if data else ""

@@ -16,11 +16,11 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
     else:
         mail_sender = settings.INACTIVE_MAIL_SENDER
     if mail_sender == "AMAZON":
-        # conn=SESConnection(settings.AM_ACCESS_KEY, settings.AM_PASS_KEY)
+        # conn=SESConnection(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)
         conn = boto.ses.connect_to_region(
-            settings.AWS_REGION,
-            aws_access_key_id=settings.AM_ACCESS_KEY,
-            aws_secret_access_key=settings.AM_PASS_KEY,
+            settings.AWS_SES_REGION_NAME,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         )
         response = conn.send_email(mfrom, msubject, mbody, mto, format="html")
     elif mail_sender == "MAILGUN":

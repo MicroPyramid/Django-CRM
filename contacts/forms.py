@@ -20,7 +20,7 @@ class ContactForm(forms.ModelForm):
 
         for key, value in self.fields.items():
             if key == "phone":
-                value.widget.attrs["placeholder"] = "+911234567890"
+               pass
             else:
                 value.widget.attrs["placeholder"] = value.label
         self.fields["teams"].choices = [

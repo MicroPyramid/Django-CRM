@@ -8,7 +8,7 @@ from django.core.validators import RegexValidator
 from django.dispatch import receiver
 from django.db.models import Sum
 from django.template.defaultfilters import slugify
-from common.models import User
+from common.models import User, Company
 from common.utils import convert_to_custom_timezone
 
 
@@ -19,6 +19,12 @@ class Tag(models.Model):
         User, related_name="marketing_tags", null=True, on_delete=models.SET_NULL
     )
     created_on = models.DateTimeField(auto_now_add=True)
+    company = models.ForeignKey(
+        Company, 
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
+
 
     @property
     def created_by_user(self):
@@ -37,6 +43,12 @@ class EmailTemplate(models.Model):
     title = models.CharField(max_length=5000)
     subject = models.CharField(max_length=5000)
     html = models.TextField()
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_emailtemplates_company",
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     class Meta:
         ordering = [
@@ -62,6 +74,12 @@ class ContactList(models.Model):
     tags = models.ManyToManyField(Tag)
     # is_public = models.BooleanField(default=False)
     visible_to = models.ManyToManyField(User, related_name="contact_lists_visible_to")
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_contactlist_company",
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     class Meta:
         ordering = ("-created_on",)
@@ -148,6 +166,12 @@ class Contact(models.Model):
     city = models.CharField(max_length=500, null=True, blank=True)
     state = models.CharField(max_length=500, null=True, blank=True)
     contry = models.CharField(max_length=500, null=True, blank=True)
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_contacts_company",
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     def __str__(self):
         return self.email
@@ -186,6 +210,12 @@ class FailedContact(models.Model):
     city = models.CharField(max_length=500, null=True, blank=True)
     state = models.CharField(max_length=500, null=True, blank=True)
     contry = models.CharField(max_length=500, null=True, blank=True)
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_failed_contacts_company",
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     def __str__(self):
         return self.email
@@ -242,6 +272,12 @@ class Campaign(models.Model):
     )
     attachment = models.FileField(
         max_length=1000, upload_to=get_campaign_attachment_path, blank=True, null=True
+    )
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_campaigns_company",
+        on_delete=models.CASCADE, 
+        null=True,         
     )
 
     class Meta:
@@ -446,6 +482,12 @@ class ContactEmailCampaign(models.Model):
         on_delete=models.SET_NULL,
     )
     created_on = models.DateTimeField(auto_now_add=True)
+    company = models.ForeignKey(
+        Company, 
+        related_name="marketing_contacts_emails_campaign_company",
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
@@ -483,6 +525,11 @@ class BlockedDomain(models.Model):
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
+    company = models.ForeignKey(
+        Company, 
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
 
     def __str__(self):
         return self.domain
@@ -504,6 +551,12 @@ class BlockedEmail(models.Model):
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
+    company = models.ForeignKey(
+        Company, 
+        on_delete=models.CASCADE, 
+        null=True,         
+    )
+
 
     def __str__(self):
         return self.email

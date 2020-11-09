@@ -665,6 +665,7 @@ def update_lead(request, pk):
                     description=request.POST.get("description"),
                     website=request.POST.get("website"),
                     lead=lead_obj,
+                    company=request.company
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -1092,6 +1093,7 @@ def upload_lead_csv_file(request):
                 lead_form.invalid_rows,
                 request.user.id,
                 request.get_host(),
+                request.company.id,
             )
             return JsonResponse(
                 {"error": False, "data": lead_form.data}, status=status.HTTP_201_CREATED

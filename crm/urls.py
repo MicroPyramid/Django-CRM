@@ -3,11 +3,37 @@ from django.conf.urls.static import static
 from django.contrib.auth import views
 from django.urls import include, path
 from common.views import handler404, handler500
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from django.conf.urls import url
+from rest_framework import permissions
+
+
+openapi_info = openapi.Info(
+    title="Crm API",
+    default_version='v1',
+)
+
+schema_view = get_schema_view(
+    openapi_info,
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
 
 app_name = "crm"
 
 urlpatterns = [
+    url(r'^swagger(?P<format>\.json|\.yaml)$',
+        schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    url(r'^swagger/$', schema_view.with_ui('swagger',
+                                           cache_timeout=0), name='schema-swagger-ui'),
+    url(r'^redoc/$', schema_view.with_ui('redoc',
+                                         cache_timeout=0), name='schema-redoc'),
     path("", include("common.urls", namespace="common")),
+    path("api-common/", include("common.api_urls", namespace="api_common")),
+    path("api-accounts/", include("accounts.api_urls", namespace="api_accounts")),
+    path("api-contacts/", include("contacts.api_urls", namespace="api_contacts")),
     path("", include("django.contrib.auth.urls")),
     path("marketing/", include("marketing.urls", namespace="marketing")),
     path("accounts/", include("accounts.urls", namespace="accounts")),
