@@ -9,7 +9,7 @@ from accounts.forms import (
 from accounts.models import Account, Tags
 from accounts.tasks import send_email_to_assigned_user
 from accounts import swagger_params
-from accounts.serializer import AccountSerializer, TagsSerailizer
+from accounts.serializer import AccountSerializer, TagsSerailizer, AccountCreateSerializer
 from common.models import User, Attachments
 from common.utils import (
     COUNTRIES,
@@ -53,6 +53,8 @@ class AccountsListView(APIView):
     model = Account
 
     def get_queryset(self):
+        params = self.request.query_params if len(
+            self.request.data) == 0 else self.request.data
         queryset = self.model.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
@@ -63,23 +65,23 @@ class AccountsListView(APIView):
         if self.request.GET.get("tag", None):
             queryset = queryset.filter(
                 tags__in=self.request.GET.getlist("tag"))
-
-        request_post = self.request.POST
-        if request_post:
-            if request_post.get("name"):
-                queryset = queryset.filter(
-                    name__icontains=request_post.get("name"))
-            if request_post.get("city"):
-                queryset = queryset.filter(
-                    billing_city__contains=request_post.get("city")
-                )
-            if request_post.get("industry"):
-                queryset = queryset.filter(
-                    industry__icontains=request_post.get("industry")
-                )
-            if request_post.get("tag"):
-                queryset = queryset.filter(
-                    tags__in=request_post.getlist("tag"))
+        if params.get('is_filter'):
+            request_post = params
+            if request_post:
+                if request_post.get("name"):
+                    queryset = queryset.filter(
+                        name__icontains=request_post.get("name"))
+                if request_post.get("city"):
+                    queryset = queryset.filter(
+                        billing_city__contains=request_post.get("city")
+                    )
+                if request_post.get("industry"):
+                    queryset = queryset.filter(
+                        industry__icontains=request_post.get("industry")
+                    )
+                if request_post.get("tag"):
+                    queryset = queryset.filter(
+                        tags__in=request_post.getlist("tag"))
 
         return queryset.filter(company=self.request.company).distinct()
 
@@ -133,34 +135,21 @@ class AccountsListView(APIView):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_list_post_params)
-    def post(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-
-class CreateAccountView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    model = Account
-
     @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_create_post_params)
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         params = request.query_params if len(
             request.data) == 0 else request.data
         context = {}
-        form = AccountForm(
-            params, request.FILES, request_obj=request, account=True, request_user=self.request.user
+        serializer = AccountCreateSerializer(
+            data=params, request_obj=request, account=True
         )
         # Save Account
-        if form.is_valid():
-            account_object = form.save(commit=False)
-            account_object.created_by = self.request.user
-            account_object.company = self.request.company
-            account_object.save()
+        if serializer.is_valid():
+            account_object = serializer.save(
+                created_by=request.user, company=request.company)
 
             if self.request.POST.get("tags", ""):
-                tags = self.request.POST.get("tags")
+                tags = params.get("tags")
                 splitted_tags = tags.split(",")
                 for t in splitted_tags:
                     tag = Tags.objects.filter(name=t)
@@ -169,24 +158,24 @@ class CreateAccountView(APIView):
                     else:
                         tag = Tags.objects.create(name=t)
                     account_object.tags.add(tag)
-            if self.request.POST.getlist("contacts", []):
+            if params.getlist("contacts", []):
                 account_object.contacts.add(
-                    *self.request.POST.getlist("contacts"))
-            if self.request.POST.getlist("assigned_to", []):
+                    *params.getlist("contacts"))
+            if params.getlist("assigned_to", []):
                 account_object.assigned_to.add(
-                    *self.request.POST.getlist("assigned_to"))
+                    *params.getlist("assigned_to"))
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.user
-                attachment.file_name = self.request.FILES.get(
+                attachment.created_by = request.user
+                attachment.file_name = request.FILES.get(
                     "account_attachment").name
                 attachment.account = account_object
-                attachment.attachment = self.request.FILES.get(
+                attachment.attachment = request.FILES.get(
                     "account_attachment")
                 attachment.save()
-            if self.request.POST.getlist("teams", []):
+            if params.getlist("teams", []):
                 user_ids = Teams.objects.filter(
-                    id__in=self.request.POST.getlist("teams")
+                    id__in=params.getlist("teams")
                 ).values_list("users", flat=True)
                 assinged_to_users_ids = account_object.assigned_to.all().values_list(
                     "id", flat=True
@@ -194,13 +183,13 @@ class CreateAccountView(APIView):
                 for user_id in user_ids:
                     if user_id not in assinged_to_users_ids:
                         account_object.assigned_to.add(user_id)
-            if self.request.POST.getlist("teams", []):
-                account_object.teams.add(*self.request.POST.getlist("teams"))
+            if params.getlist("teams", []):
+                account_object.teams.add(*params.getlist("teams"))
 
             assigned_to_list = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(self.request)
+            current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email_to_assigned_user.delay(
                 recipients,
@@ -208,91 +197,42 @@ class CreateAccountView(APIView):
                 domain=current_site.domain,
                 protocol=self.request.scheme,
             )
-            return Response({'error': False})
-        context["errors"] = form.errors
+            return Response({'error': False,
+                             'message': 'Account Created Successfully'})
+        context["errors"] = serializer.errors
         return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_context_data(self, **kwargs):
-        context = {}
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(
-                is_active=True, company=self.request.company
-            ).order_by("email")
-        elif self.request.user.google.all():
-            self.users = []
-        else:
-            self.users = User.objects.filter(
-                role="ADMIN", company=self.request.company
-            ).order_by("email")
-        context["users"] = UserSerializer(self.users, many=True).data
-        context["industries"] = INDCHOICES
-        context["countries"] = COUNTRIES
-        contacts = Contact.objects.filter(company=self.request.company)
-        leads = Lead.objects.exclude(
-            status__in=["converted", "closed"], company=self.request.company)
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            context["leads"] = LeadSerializer(leads, many=True).data
-            context["contacts"] = ContactSerializer(contacts, many=True).data
-        else:
-            leads = filter(
-                Q(assigned_to__in=[self.request.user])
-                | Q(created_by=self.request.user))
-            context["leads"] = LeadSerializer(leads, many=True).data
-        context["lead_count"] = leads.count()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            context["lead_count"] = (
-                Lead.objects.filter(
-                    Q(assigned_to__in=[self.request.user])
-                    | Q(created_by=self.request.user)
-                )
-                .filter(company=self.request.company,)
-                .exclude(status="closed")
-                .count()
-            )
-            contacts = contacts.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(
-                    created_by=self.request.user)
-            )
-            context["contacts"] = ContactSerializer(contacts, many=True).data
-        context["contact_count"] = contacts.count()
-        context["teams"] = TeamsSerializer(Teams.objects.filter(
-            company=self.request.company,), many=True).data
-        return context
 
-    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_create_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-
-class AccountUpdateView(APIView):
+class AccountDetailView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
-    model = Account
+
+    def get_object(self, pk):
+        return Account.objects.filter(id=pk).first()
 
     def dispatch(self, request, *args, **kwargs):
-        self.users = User.objects.filter(is_active=True).order_by("email")
-        self.account_obj = Account.objects.filter(id=kwargs.get('pk')).first()
-        if self.account_obj.company != request.company:
+        self.account = self.get_object(pk=kwargs.get('pk'))
+        if self.account.company != request.company:
             raise PermissionDenied
-        return super(AccountUpdateView, self).dispatch(request, *args, **kwargs)
+        return super(AccountDetailView, self).dispatch(request, *args, **kwargs)
 
     @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_update_post_params)
-    def post(self, request, *args, **kwargs):
+    def put(self, request, pk, format=None):
         params = request.query_params if len(
             request.data) == 0 else request.data
         context = {}
-        form = AccountForm(params, request.FILES, instance=self.account_obj, request_obj=request, account=True, request_user=self.request.user
-                           )
-        if form.is_valid():
-            account_object = form.save(commit=False)
-            account_object.save()
+        serializer = AccountCreateSerializer(
+            data=params, instance=self.account,
+            request_obj=request, account=True
+        )
+        if serializer.is_valid():
+            account_object = serializer.save()
             previous_assigned_to_users = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
             account_object.tags.clear()
-            if self.request.POST.get("tags", ""):
-                tags = self.request.POST.get("tags")
+            if params.get("tags", ""):
+                tags = params.get("tags")
                 splitted_tags = tags.split(",")
                 for t in splitted_tags:
                     tag = Tags.objects.filter(name=t.lower())
@@ -301,14 +241,14 @@ class AccountUpdateView(APIView):
                     else:
                         tag = Tags.objects.create(name=t.lower())
                     account_object.tags.add(tag)
-            if self.request.POST.getlist("contacts", []):
+            if params.getlist("contacts", []):
                 account_object.contacts.clear()
                 account_object.contacts.add(
-                    *self.request.POST.getlist("contacts"))
-            if self.request.POST.getlist("assigned_to", []):
+                    *params.getlist("contacts"))
+            if params.getlist("assigned_to", []):
                 account_object.assigned_to.clear()
                 account_object.assigned_to.add(
-                    *self.request.POST.getlist("assigned_to"))
+                    *params.getlist("assigned_to"))
             else:
                 account_object.assigned_to.clear()
             if self.request.FILES.get("account_attachment"):
@@ -321,12 +261,12 @@ class AccountUpdateView(APIView):
                     "account_attachment")
                 attachment.save()
 
-            if self.request.POST.getlist("teams", []):
+            if params.getlist("teams", []):
                 account_object.teams.clear()
-                account_object.teams.add(*self.request.POST.getlist("teams"))
+                account_object.teams.add(*params.getlist("teams"))
             else:
                 account_object.teams.clear()
-            if self.request.POST.getlist("teams", []):
+            if params.getlist("teams", []):
                 user_ids = Teams.objects.filter(
                     id__in=self.request.POST.getlist("teams")
                 ).values_list("users", flat=True)
@@ -349,67 +289,14 @@ class AccountUpdateView(APIView):
                 domain=current_site.domain,
                 protocol=self.request.scheme,
             )
-            return Response({'error': False})
-        context['errors'] = form.errors
+            return Response({'error': False,
+                             'message': 'Account Updated Successfully'})
+        context['errors'] = serializer.errors
         return Response(context, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_context_data(self, **kwargs):
-        context = {}
-        self.users = User.objects.filter(is_active=True).order_by("email")
-        context["account_obj"] = AccountSerializer(self.account_obj).data
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if (self.request.user != context["account_obj"].created_by) and (
-                self.request.user not in context[
-                    "account_obj"].assigned_to.all()
-            ):
-                raise PermissionDenied
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            self.users = self.users.filter(
-                Q(role="ADMIN") | Q(id__in=[self.request.user.id, ])
-            )
-        context["users"] = UserSerializer(self.users, many=True).data
-        context["industries"] = INDCHOICES
-        context["countries"] = COUNTRIES
-        context["contact_count"] = Contact.objects.count()
-        context["edit_view"] = True
-        leads = Lead.objects.exclude(
-            status__in=["converted", "closed"])
-        if self.request.user.role == "ADMIN":
-            context["leads"] = LeadSerializer(leads, many=True).data
-        else:
-            leads = leads.filter(Q(assigned_to__in=[self.request.user]) | Q(
-                created_by=self.request.user))
-            context["leads"] = LeadSerializer(leads, many=True).data
-        context["lead_count"] = leads.count()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            context["lead_count"] = (
-                Lead.objects.filter(
-                    Q(assigned_to__in=[self.request.user])
-                    | Q(created_by=self.request.user)
-                )
-                .exclude(status="closed")
-                .count()
-            )
-        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
-        return context
-
-    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_update_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-
-class AccountDeleteView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    model = Account
-
-    def get_object(self):
-        return Account.objects.filter(id=self.kwargs.get('pk')).first()
-
-    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_delete_params)
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
+    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.company_params)
+    def delete(self, request, pk, format=None):
+        self.object = self.get_object(pk)
         if self.object.company != request.company:
             raise PermissionDenied
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -418,22 +305,8 @@ class AccountDeleteView(APIView):
         self.object.delete()
         return Response({'status': 'success'}, status=status.HTTP_204_NO_CONTENT)
 
-
-class AccountDetailView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    model = Account
-
-    def get_object(self):
-        return Account.objects.filter(id=self.kwargs.get('pk')).first()
-
-    def dispatch(self, request, *args, **kwargs):
-        self.account = self.get_object()
-        if self.account.company != request.company:
-            raise PermissionDenied
-        return super(AccountDetailView, self).dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
+    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_list_get_params)
+    def get(self, request, pk, format=None):
         context = {}
         context["account_obj"] = AccountSerializer(self.account).data
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -461,7 +334,8 @@ class AccountDetailView(APIView):
             )
         elif self.request.user != self.account.created_by:
             if self.account.created_by:
-                users_mention = [{"username": self.account.created_by.username}]
+                users_mention = [
+                    {"username": self.account.created_by.username}]
             else:
                 users_mention = []
         else:
@@ -469,14 +343,21 @@ class AccountDetailView(APIView):
 
         context.update(
             {
-                "comments": CommentSerializer(self.account.accounts_comments.all(), many=True).data,
-                "attachments": AttachmentsSerializer(self.account.account_attachment.all(), many=True).data,
-                "opportunity_list": OpportunitySerializer(Opportunity.objects.filter(account=self.account), many=True).data,
-                "contacts": ContactSerializer(self.account.contacts.all(), many=True).data,
+                "comments": CommentSerializer(
+                    self.account.accounts_comments.all(), many=True).data,
+                "attachments": AttachmentsSerializer(
+                    self.account.account_attachment.all(), many=True).data,
+                "opportunity_list": OpportunitySerializer(
+                    Opportunity.objects.filter(
+                        account=self.account), many=True).data,
+                "contacts": ContactSerializer(
+                    self.account.contacts.all(), many=True).data,
                 "users": UserSerializer(User.objects.filter(
                     is_active=True, company=self.request.company,
                 ).order_by("email"), many=True).data,
-                "cases": CaseSerializer(Case.objects.filter(account=self.account), many=True).data,
+                "cases": CaseSerializer(
+                    Case.objects.filter(
+                        account=self.account), many=True).data,
                 "stages": STAGES,
                 "sources": SOURCES,
                 "countries": COUNTRIES,
@@ -485,16 +366,13 @@ class AccountDetailView(APIView):
                 "case_priority": PRIORITY_CHOICE,
                 "case_status": STATUS_CHOICE,
                 "comment_permission": comment_permission,
-                "tasks": TaskSerializer(self.account.accounts_tasks.all(), many=True).data,
-                "invoices": InvoiceSerailizer(self.account.accounts_invoices.all(), many=True).data,
-                "emails": EmailSerailizer(self.account.sent_email.all(), many=True).data,
+                "tasks": TaskSerializer(
+                    self.account.accounts_tasks.all(), many=True).data,
+                "invoices": InvoiceSerailizer(
+                    self.account.accounts_invoices.all(), many=True).data,
+                "emails": EmailSerailizer(
+                    self.account.sent_email.all(), many=True).data,
                 "users_mention": users_mention,
             }
         )
-        return context
-
-
-    @swagger_auto_schema(tags=["accounts"], manual_parameters=swagger_params.account_list_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
         return Response(context)

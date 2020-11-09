@@ -46,56 +46,18 @@ from django.db.models import Q
 from rest_framework.decorators import api_view
 
 
-class UserDetailView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    @swagger_auto_schema(tags=["users"], manual_parameters=swagger_params.dashboard_params)
-    def get(self, request, *args, **kwargs):
-        company = request.headers['company']
-        user_id = kwargs['pk']
-        user_obj = get_object_or_404(
-            User, pk=user_id, company__sub_domain=company)
-        users_data = []
-        for each in User.objects.all():
-            assigned_dict = {}
-            assigned_dict["id"] = each.id
-            assigned_dict["name"] = each.username
-            users_data.append(assigned_dict)
-        context = {}
-        context["user_obj"] = UserSerializer(user_obj).data
-        opportunity_list = Opportunity.objects.filter(assigned_to=user_obj.id)
-        context["opportunity_list"] = OpportunitySerializer(
-            opportunity_list, many=True).data
-        contacts = Contact.objects.filter(assigned_to=user_obj.id)
-        context["contacts"] = ContactSerializer(contacts, many=True).data
-        cases = Case.objects.filter(assigned_to=user_obj.id)
-        context["cases"] = CaseSerializer(cases, many=True).data
-        # "accounts": Account.objects.filter(assigned_to=user_obj.id)
-        # context["assigned_data"] = json.dumps(users_data)
-        context["assigned_data"] = users_data
-        comments = user_obj.user_comments.all()
-        context["comments"] = CommentSerializer(comments, many=True).data
-        return Response(context)
-
-
 class GetTeamsAndUsersView(APIView):
 
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(tags=["users"], manual_parameters=swagger_params.dashboard_params)
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.dashboard_params)
     def get(self, request, *args, **kwargs):
         data = {}
         teams = Teams.objects.filter(company=request.company)
-        # teams_data = [
-        #     {"team": team.id, "users": [user.id for user in team.users.all()]}
-        #     for team in teams
-        # ]
         teams_data = TeamsSerializer(teams, many=True).data
         users = User.objects.filter(company=request.company)
         users_data = UserSerializer(users, many=True).data
-
         users = User.objects.all().values_list("id", flat=True)
         data["teams"] = teams_data
         data["users_data"] = users_data
@@ -104,15 +66,74 @@ class GetTeamsAndUsersView(APIView):
 
 
 # to be checked
-class UserDeleteView(APIView):
-    model = User
-
+class UserDetailView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(tags=["users"], manual_parameters=swagger_params.dashboard_params)
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
+    def get_object(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.dashboard_params)
+    def get(self, request, pk, format=None):
+        user_obj = self.get_object(pk)
+        users_data = []
+        for each in User.objects.all():
+            assigned_dict = {}
+            assigned_dict["id"] = each.id
+            assigned_dict["name"] = each.username
+            users_data.append(assigned_dict)
+        context = {}
+        context["user_obj"] = UserSerializer(user_obj).data
+        opportunity_list = Opportunity.objects.filter(assigned_to=user_obj)
+        context["opportunity_list"] = OpportunitySerializer(
+            opportunity_list, many=True).data
+        contacts = Contact.objects.filter(assigned_to=user_obj)
+        context["contacts"] = ContactSerializer(contacts, many=True).data
+        cases = Case.objects.filter(assigned_to=user_obj)
+        context["cases"] = CaseSerializer(cases, many=True).data
+        context["assigned_data"] = users_data
+        comments = user_obj.user_comments.all()
+        context["comments"] = CommentSerializer(comments, many=True).data
+        return Response({'error': False, 'data': context})
+
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.user_update_params)
+    def put(self, request, pk, format=None):
+        params = request.query_params if len(
+            request.data) == 0 else request.data
+        user = self.get_object(pk)
+        serializer = CreateUserSerializer(
+            user, data=params, request_user=request.user)
+        if serializer.is_valid():
+            user = serializer.save()
+            if request.user.role != "ADMIN" and not request.user.is_superuser:
+                if request.user.id != self.user.id:
+                    return Response({'error': True}, status=status.HTTP_403_FORBIDDEN)
+            if user.role == "USER":
+                user.is_superuser = False
+            user.save()
+            if params.getlist("teams"):
+                user_teams = user.user_teams.all()
+                for user_team in user_teams:
+                    user_team.users.remove(user)
+
+                for team in params.getlist("teams"):
+                    team_obj = Teams.objects.filter(id=team).first()
+                    team_obj.users.add(user)
+            return Response({'error': False,
+                             'message': 'User Updated Successfully'},
+                            status=status.HTTP_200_OK)
+        return Response({'error': True, 'errors': user_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.dashboard_params)
+    def delete(self, request, pk, format=None):
+        self.object = self.get_object(pk)
+        if self.object.company != request.company:
+            return Response(
+                {"error": True,
+                 "message": "You don't have permission to delete this user"})
         current_site = request.get_host()
         deleted_by = self.request.user.email
         send_email_user_delete.delay(
@@ -129,7 +150,7 @@ class ChangePasswordView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(tags=["profile"], operation_description="This is change password api",
+    @swagger_auto_schema(tags=["Profile"], operation_description="This is change password api",
                          manual_parameters=swagger_params.change_password_params)
     def post(self, request, format=None):
         params = request.query_params if len(
@@ -204,7 +225,7 @@ class ApiHomeView(APIView):
 
 class LoginView(APIView):
 
-    @swagger_auto_schema(tags=["common"], operation_description="This is login api",
+    @swagger_auto_schema(tags=["Auth"], operation_description="This is login api",
                          manual_parameters=swagger_params.login_page_params)
     def post(self, request, format=None):
         params = request.query_params if len(
@@ -247,7 +268,7 @@ class LoginView(APIView):
 
 class RegistrationView(APIView):
 
-    @swagger_auto_schema(tags=["common"], operation_description="This is registration api",
+    @swagger_auto_schema(tags=["Auth"], operation_description="This is registration api",
                          manual_parameters=swagger_params.registration_page_params)
     def post(self, request, format=None):
         params = request.query_params if len(
@@ -289,7 +310,7 @@ class RegistrationView(APIView):
             return Response({'status': 'success'}, status=201)
 
 
-@swagger_auto_schema(method='post', tags=["common"], manual_parameters=swagger_params.check_sub_domain_params)
+@swagger_auto_schema(method='post', tags=["Auth"], manual_parameters=swagger_params.check_sub_domain_params)
 @api_view(['POST'])
 def check_sub_domain(request):
     if request.method == "POST":
@@ -314,7 +335,7 @@ class ProfileView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(tags=["profile"], manual_parameters=swagger_params.dashboard_params)
+    @swagger_auto_schema(tags=["Profile"], manual_parameters=swagger_params.dashboard_params)
     def get(self, request, format=None):
         context = {}
         context["user_obj"] = UserSerializer(request.user).data
@@ -326,14 +347,14 @@ class UsersListView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(tags=["users"], manual_parameters=swagger_params.user_list_params)
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.user_create_params)
     def post(self, request, format=None):
 
-        context = {}
-        queryset = User.objects.filter(company=self.request.company)
         params = request.query_params if len(
             request.data) == 0 else request.data
-        if params:
+        if params.get('is_filter'):
+            context = {}
+            queryset = User.objects.filter(company=self.request.company)
             if params.get("username"):
                 queryset = queryset.filter(
                     username__icontains=params.get("username")
@@ -345,19 +366,40 @@ class UsersListView(APIView):
                 queryset = queryset.filter(role=params.get("role"))
             if params.get("status"):
                 queryset = queryset.filter(is_active=params.get("status"))
-        active_users = queryset.filter(is_active=True)
-        inactive_users = queryset.filter(is_active=False)
-        context["active_users"] = UserSerializer(active_users, many=True).data
-        context["inactive_users"] = UserSerializer(
-            inactive_users, many=True).data
-        context["per_page"] = self.request.POST.get("per_page")
-        context["admin_email"] = settings.ADMIN_EMAIL
-        context["roles"] = ROLES
-        context["status"] = [("True", "Active"), ("False", "In Active")]
+            active_users = queryset.filter(is_active=True)
+            inactive_users = queryset.filter(is_active=False)
+            context["active_users"] = UserSerializer(
+                active_users, many=True).data
+            context["inactive_users"] = UserSerializer(
+                inactive_users, many=True).data
+            return Response(context)
+        else:
+            user_serializer = CreateUserSerializer(
+                data=params, request_user=request.user)
+            if user_serializer.is_valid():
+                user = user_serializer.save()
+                if params.get("password"):
+                    user.set_password(params.get("password"))
+                user.company = self.request.company
+                user.save()
+                if params.getlist("teams"):
+                    for team in params.getlist("teams"):
+                        Teams.objects.filter(id=team).first().users.add(user)
 
-        return Response(context)
+                current_site = request.get_host()
+                protocol = request.scheme
+                send_email_to_new_user.delay(
+                    user.email, self.request.user.email, domain=current_site,
+                    protocol=protocol
+                )
+                return Response({'error': False,
+                                 'message': 'User Created Successfully'},
+                                status=status.HTTP_201_CREATED)
+            return Response({'error': True,
+                             'errors': user_serializer.errors},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(tags=["users"], manual_parameters=swagger_params.dashboard_params)
+    @swagger_auto_schema(tags=["Users"], manual_parameters=swagger_params.dashboard_params)
     def get(self, request, format=None):
 
         queryset = User.objects.filter(company=self.request.company)
@@ -439,93 +481,10 @@ class DocumentCreate(APIView):
         context["errors"] = form.errors
         return Response(context)
 
-# from common.forms import UserForm
-# from common.utils import ROLES
-# class CreateUserView(APIView):
-#     # model = User
-#     # form_class = UserForm
-#     # template_name = "create.html"
-#     # success_url = '/users/list/'
-#     authentication_classes = (JSONWebTokenAuthentication,)
-#     permission_classes = (IsAuthenticated,)
-#     # def form_valid(self, form):
-#     #     user = form.save(commit=False)
-#     #     if form.cleaned_data.get("password"):
-#     #         user.set_password(form.cleaned_data.get("password"))
-#     #     user.company = self.request.company
-#     #     user.save()
-
-#     #     if self.request.POST.getlist("teams"):
-#     #         for team in self.request.POST.getlist("teams"):
-#     #             Teams.objects.filter(id=team).first().users.add(user)
-
-#     #     current_site = self.request.get_host()
-#     #     protocol = self.request.scheme
-#     #     send_email_to_new_user.delay(
-#     #         user.email, self.request.user.email, domain=current_site, protocol=protocol
-#     #     )
-
-#     #     if self.request.is_ajax():
-#     #         data = {"success_url": reverse_lazy("common:users_list"), "error": False}
-#     #         return Response(data)
-#     #     return super(CreateUserView, self).form_valid(form)
-
-#     # def form_invalid(self, form):
-#     #     response = super(CreateUserView, self).form_invalid(form)
-#     #     if self.request.is_ajax():
-#     #         return Response({"error": True, "errors": form.errors})
-#     #     return response
-
-#     # def get_form_kwargs(self):
-#     #     kwargs = super(CreateUserView, self).get_form_kwargs()
-#     #     kwargs.update({"request_user": self.request.user})
-#     #     return kwargs
-
-#     # def get_context_data(self, **kwargs):
-#     #     context = super(CreateUserView, self).get_context_data(**kwargs)
-#     #     context["user_form"] = context["form"]
-#     #     context["teams"] = Teams.objects.all()
-#     #     if "errors" in kwargs:
-#     #         context["errors"] = kwargs["errors"]
-#     #     return context
-
-#     @swagger_auto_schema(tags=["user create"], manual_parameters=swagger_params.dashboard_params)
-#     def get(self, request, format=None):
-#         context = {}
-#         context['role'] = ROLES
-#         teams = Teams.objects.filter(company=request.company)
-#         context["teams"] = TeamsSerializer(teams, many=True).data
-#         return Response(context)
-
-
-#     @swagger_auto_schema(tags=["user create"], operation_description="Create user",
-#                          manual_parameters=swagger_params.user_create_params)
-#     def post(self, request, format=None):
-#         params = request.query_params if len(request.data) == 0 else request.data
-
-#         form = UserForm(params, request_user=self.request)
-
-#         if form.is_valid():
-#             user = form.save(commit=False)
-#             if form.cleaned_data.get("password"):
-#                 user.set_password(form.cleaned_data.get("password"))
-#             user.company = self.request.company
-#             user.save()
-
-#             if self.request.POST.getlist("teams"):
-#                 for team in self.request.POST.getlist("teams"):
-#                     Teams.objects.filter(id=team).first().users.add(user)
-
-#             data = { "error": False}
-#             return Response(data)
-
-#         # if self.request.is_ajax():
-#         return Response({"error": True, "errors": form.errors})
-
 
 class ForgotPasswordView(APIView):
 
-    @swagger_auto_schema(tags=["common"], manual_parameters=swagger_params.forgot_password_params)
+    @swagger_auto_schema(tags=["Auth"], manual_parameters=swagger_params.forgot_password_params)
     def post(self, request, format=None):
         params = request.query_params if len(
             request.data) == 0 else request.data
@@ -547,7 +506,7 @@ class ForgotPasswordView(APIView):
 
 class ResetPasswordView(APIView):
 
-    @swagger_auto_schema(tags=["common"], manual_parameters=swagger_params.reset_password_params)
+    @swagger_auto_schema(tags=["Auth"], manual_parameters=swagger_params.reset_password_params)
     def post(self, request, format=None):
         params = request.query_params if len(
             request.data) == 0 else request.data

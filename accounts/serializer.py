@@ -7,6 +7,7 @@ from contacts.serializer import ContactSerializer
 
 
 class TagsSerailizer(serializers.ModelSerializer):
+
     class Meta:
         model = Tags
         fields = (
@@ -82,4 +83,63 @@ class EmailLogSerializer(serializers.ModelSerializer):
             "email"
             "contact"
             "is_sent"
+        )
+
+
+class AccountCreateSerializer(serializers.ModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        account_view = kwargs.pop("account", False)
+        request_obj = kwargs.pop("request_obj", None)
+        super(AccountCreateSerializer, self).__init__(*args, **kwargs)
+        self.fields["status"].required = False
+        if account_view:
+            self.fields["billing_address_line"].required = True
+            self.fields["billing_street"].required = True
+            self.fields["billing_city"].required = True
+            self.fields["billing_state"].required = True
+            self.fields["billing_postcode"].required = True
+            self.fields["billing_country"].required = True
+
+        if self.instance:
+            self.fields["lead"].required = False
+        self.fields["lead"].required = False
+        self.company = request_obj.company
+
+    def validate_name(self, name):
+        if self.instance:
+            if self.instance.name != name:
+                if not Account.objects.filter(
+                    name__iexact=name,
+                    company=self.company
+                ).exists():
+                    return name
+                raise serializers.ValidationError(
+                    "Account already exists with this name")
+            return name
+        if not Account.objects.filter(
+                name__iexact=name,
+                company=self.company).exists():
+            return name
+        raise serializers.ValidationError(
+            "Account already exists with this name")
+
+    class Meta:
+        model = Account
+        fields = (
+            "name",
+            "phone",
+            "email",
+            "website",
+            "industry",
+            "description",
+            "status",
+            "billing_address_line",
+            "billing_street",
+            "billing_city",
+            "billing_state",
+            "billing_postcode",
+            "billing_country",
+            "lead",
+            "contacts",
         )

@@ -61,6 +61,6 @@ account_update_post_params = [
                       required=True, type=openapi.TYPE_STRING),
 ]
 
-account_delete_params = [
+company_params = [
     company_params_in_header,
 ]
