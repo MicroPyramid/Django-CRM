@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="contact", options={"ordering": ["-created_on"]},
+            name="contact",
+            options={"ordering": ["-created_on"]},
         ),
     ]

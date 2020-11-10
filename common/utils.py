@@ -10,27 +10,27 @@ from rest_framework.authentication import get_authorization_header
 
 
 def jwt_payload_handler(user):
-    """ Custom payload handler
+    """Custom payload handler
     Token encrypts the dictionary returned by this function, and can be
     decoded by rest_framework_jwt.utils.jwt_decode_handler
     """
     return {
-            'id': user.pk,
-            # 'name': user.name,
-            'email': user.email,
-            'company': user.company.id,
-            "role": user.role,
-            "has_sales_access": user.has_sales_access,
-            "has_marketing_access": user.has_marketing_access,
-            "file_prepend": user.file_prepend,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "is_active": user.is_active,
-            "is_admin": user.is_admin,
-            "is_staff": user.is_staff,
-            # "date_joined"
-}
+        "id": user.pk,
+        # 'name': user.name,
+        "email": user.email,
+        "company": user.company.id,
+        "role": user.role,
+        "has_sales_access": user.has_sales_access,
+        "has_marketing_access": user.has_marketing_access,
+        "file_prepend": user.file_prepend,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "is_active": user.is_active,
+        "is_admin": user.is_admin,
+        "is_staff": user.is_staff,
+        # "date_joined"
+    }
 
 
 INDCHOICES = (

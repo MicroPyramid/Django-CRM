@@ -11,10 +11,18 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="account", old_name="leads", new_name="lead",
+            model_name="account",
+            old_name="leads",
+            new_name="lead",
         ),
-        migrations.RemoveField(model_name="account", name="billing_address",),
-        migrations.RemoveField(model_name="account", name="shipping_address",),
+        migrations.RemoveField(
+            model_name="account",
+            name="billing_address",
+        ),
+        migrations.RemoveField(
+            model_name="account",
+            name="shipping_address",
+        ),
         migrations.AddField(
             model_name="account",
             name="billing_address_line",

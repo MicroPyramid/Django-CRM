@@ -13,7 +13,7 @@ class OpportunitySerializer(serializers.ModelSerializer):
         model = Opportunity
         # fields = ‘__all__’
         fields = (
-            'id',
+            "id",
             "name",
             "account",
             "stage",

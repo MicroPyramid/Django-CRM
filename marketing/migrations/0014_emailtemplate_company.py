@@ -7,14 +7,19 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0022_auto_20200609_1203'),
-        ('marketing', '0013_blockeddomain_blockedemail'),
+        ("common", "0022_auto_20200609_1203"),
+        ("marketing", "0013_blockeddomain_blockedemail"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='emailtemplate',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_emailtemplates_company', to='common.company'),
+            model_name="emailtemplate",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_emailtemplates_company",
+                to="common.company",
+            ),
         ),
     ]

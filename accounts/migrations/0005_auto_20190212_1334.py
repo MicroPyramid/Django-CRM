@@ -14,8 +14,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="account", name="assigned_to",),
-        migrations.RemoveField(model_name="account", name="teams",),
+        migrations.RemoveField(
+            model_name="account",
+            name="assigned_to",
+        ),
+        migrations.RemoveField(
+            model_name="account",
+            name="teams",
+        ),
         migrations.AddField(
             model_name="account",
             name="contacts",

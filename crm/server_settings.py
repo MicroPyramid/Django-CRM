@@ -45,16 +45,15 @@ EMAIL_BACKEND = "django_ses.SESBackend"
 SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
 
 ELASTIC_APM = {
-  'SERVICE_NAME': os.getenv("ELASTIC_APM_SERVICE_NAME"),
-  'SECRET_TOKEN': os.getenv("ELASTIC_APM_SECRET_TOKEN"),
-  'SERVER_URL': os.getenv("ELASTIC_APM_SERVER_URL"),
+    "SERVICE_NAME": os.getenv("ELASTIC_APM_SERVICE_NAME"),
+    "SECRET_TOKEN": os.getenv("ELASTIC_APM_SECRET_TOKEN"),
+    "SERVER_URL": os.getenv("ELASTIC_APM_SERVER_URL"),
 }
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     integrations=[DjangoIntegration()],
-
     # If you wish to associate users to errors (assuming you are using
     # django.contrib.auth) you may enable sending PII data.
-    send_default_pii=True
+    send_default_pii=True,
 )

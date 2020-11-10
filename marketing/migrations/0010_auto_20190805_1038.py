@@ -14,9 +14,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="contactlist", options={"ordering": ("-created_on",)},
+            name="contactlist",
+            options={"ordering": ("-created_on",)},
         ),
-        migrations.AlterModelOptions(name="link", options={"ordering": ("id",)},),
+        migrations.AlterModelOptions(
+            name="link",
+            options={"ordering": ("id",)},
+        ),
         migrations.AlterField(
             model_name="campaignlinkclick",
             name="campaign",

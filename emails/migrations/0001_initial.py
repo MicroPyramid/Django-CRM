@@ -31,6 +31,8 @@ class Migration(migrations.Migration):
                 ("status", models.CharField(default="sent", max_length=200)),
                 ("important", models.BooleanField(default=False, max_length=10)),
             ],
-            options={"ordering": ["-id"],},
+            options={
+                "ordering": ["-id"],
+            },
         ),
     ]

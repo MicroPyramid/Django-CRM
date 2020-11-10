@@ -24,7 +24,7 @@ class ContactsListView(APIView):
     permission_classes = (IsAuthenticated,)
     model = Contact
 
-    def get_queryset(self):
+    def get_queryset(self, params):
         queryset = self.model.objects.filter(
             company=self.request.company).order_by("-created_on")
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -34,7 +34,7 @@ class ContactsListView(APIView):
             )
 
         request_post = params
-        if request_post:
+        if request_post and params.get('is_filter'):
             if request_post.get("first_name"):
                 queryset = queryset.filter(
                     first_name__icontains=request_post.get("first_name")
@@ -56,9 +56,24 @@ class ContactsListView(APIView):
         return queryset.distinct()
 
     def get_context_data(self, **kwargs):
+        params = self.request.query_params if len(
+            self.request.data) == 0 else self.request.data
         context = {}
+        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
+            self.users = User.objects.filter(
+                is_active=True, company=self.request.company).order_by("email")
+        else:
+            self.users = User.objects.filter(
+                role="ADMIN", company=self.request.company).order_by("email")
+        context["users"] = UserSerializer(self.users, many=True).data
+        context["countries"] = COUNTRIES
+        context["assignedto_list"] = [
+            int(i) for i in params.getlist("assigned_to", []) if i
+        ]
+        context["teams"] = TeamsSerializer(Teams.objects.filter(
+            company=self.request.company), many=True).data
         context["contact_obj_list"] = ContactSerializer(
-            self.get_queryset(), many=True).data
+            self.get_queryset(params), many=True).data
         context["per_page"] = params.get("per_page")
         context["users"] = UserSerializer(
             User.objects.filter(is_active=True).order_by("username"), many=True).data
@@ -82,20 +97,8 @@ class ContactsListView(APIView):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_list_post_params)
-    def post(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-
-class CreateContactView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    model = Contact
-
     @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params)
     def post(self, request, *args, **kwargs):
-        self.object = None
         params = request.query_params if len(
             request.data) == 0 else request.data
         contact_serializer = CreateContctForm(data=params)
@@ -159,31 +162,7 @@ class CreateContactView(APIView):
             attachment.attachment = request.FILES.get("contact_attachment")
             attachment.save()
 
-        return Response({'error': False})
-
-    def get_context_data(self, **kwargs):
-        params = self.request.query_params if len(
-            self.request.data) == 0 else request.data
-        context = {}
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(
-                is_active=True, company=self.request.company).order_by("email")
-        else:
-            self.users = User.objects.filter(
-                role="ADMIN", company=self.request.company).order_by("email")
-        context["users"] = UserSerializer(self.users, many=True).data
-        context["countries"] = COUNTRIES
-        context["assignedto_list"] = [
-            int(i) for i in params.getlist("assigned_to", []) if i
-        ]
-        context["teams"] = TeamsSerializer(Teams.objects.filter(
-            company=self.request.company), many=True).data
-        return context
-
-    @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_list_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
+        return Response({'error': False, 'message': 'Contact created Successfuly'})
 
 
 class ContactDetailView(APIView):
@@ -191,81 +170,17 @@ class ContactDetailView(APIView):
     permission_classes = (IsAuthenticated,)
     model = Contact
 
-    def get_context_data(self, **kwargs):
-        context = {}
-        contact_obj = get_object_or_404(Contact, pk=kwargs['pk'])
-        context["contact_obj"] = ContactSerializer(contact_obj).data
-        user_assgn_list = [
-            assigned_to.id for assigned_to in contact_obj.assigned_to.all()
-        ]
-        user_assigned_accounts = set(
-            self.request.user.account_assigned_users.values_list(
-                "id", flat=True)
-        )
-        contact_accounts = set(
-            contact_obj.account_contacts.values_list("id", flat=True)
-        )
-        if user_assigned_accounts.intersection(contact_accounts):
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user == contact_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
-                raise PermissionDenied
-        assigned_data = []
-        for each in contact_obj.assigned_to.all():
-            assigned_dict = {}
-            assigned_dict["id"] = each.id
-            assigned_dict["name"] = each.email
-            assigned_data.append(assigned_dict)
-
-        if self.request.user.is_superuser or self.request.user.role == "ADMIN":
-            users_mention = list(
-                User.objects.filter(
-                    is_active=True, company=self.request.company
-                ).values("username")
-            )
-        elif self.request.user != contact_obj.created_by:
-            users_mention = [
-                {"username": contact_obj.created_by.username}]
-        else:
-            users_mention = list(
-                contact_obj.assigned_to.all().values("username"))
-
-        context.update(
-            {
-                "comments": CommentSerializer(contact_obj.contact_comments.all(), many=True).data,
-                "attachments": AttachmentsSerializer(contact_obj.contact_attachment.all(), many=True).data,
-                "assigned_data": assigned_data,
-                "tasks": TaskSerializer(contact_obj.contacts_tasks.all(), many=True).data,
-                "users_mention": users_mention,
-            }
-        )
-        return context
-
-    @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_detail_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-
-class UpdateContactView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    model = Contact
-
-    def dispatch(self, request, *args, **kwargs):
-        self.contact = get_object_or_404(Contact, pk=kwargs.get('pk'))
-        return super(UpdateContactView, self).dispatch(request, *args, **kwargs)
+    def get_object(self, pk):
+        return get_object_or_404(Contact, pk=pk)
 
     @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params)
-    def post(self, request, *args, **kwargs):
+    def put(self, request, pk, format=None):
         params = request.query_params if len(
             request.data) == 0 else request.data
-        self.object = get_object_or_404(Contact, pk=kwargs.get('pk'))
-        address_obj = self.contact.address
+        self.object = self.get_object(pk)
+        address_obj = self.object.address
         contact_serializer = CreateContctForm(
-            data=params, instance=self.contact)
+            data=params, instance=self.object)
         address_serializer = BillingAddressSerializer(
             data=params, instance=address_obj)
         data = {}
@@ -333,50 +248,80 @@ class UpdateContactView(APIView):
             attachment.save()
         return Response({'error': False})
 
-    def get_context_data(self, **kwargs):
-        params = self.request.query_params if len(
-            self.request.data) == 0 else request.data
+    @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_detail_get_params)
+    def get(self, request, pk, format=None):
         context = {}
-        context["contact_obj"] = ContactSerializer(self.contact).data
+        contact_obj = self.get_object(pk)
+        context["contact_obj"] = ContactSerializer(contact_obj).data
         user_assgn_list = [
-            assigned_to.id for assigned_to in self.contact.assigned_to.all()
+            assigned_to.id for assigned_to in contact_obj.assigned_to.all()
         ]
+        user_assigned_accounts = set(
+            self.request.user.account_assigned_users.values_list(
+                "id", flat=True)
+        )
+        contact_accounts = set(
+            contact_obj.account_contacts.values_list("id", flat=True)
+        )
+        if user_assigned_accounts.intersection(contact_accounts):
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user == contact_obj.created_by:
+            user_assgn_list.append(self.request.user.id)
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.user.id not in user_assgn_list:
+                raise PermissionDenied
+        assigned_data = []
+        for each in contact_obj.assigned_to.all():
+            assigned_dict = {}
+            assigned_dict["id"] = each.id
+            assigned_dict["name"] = each.email
+            assigned_data.append(assigned_dict)
+
+        if self.request.user.is_superuser or self.request.user.role == "ADMIN":
+            users_mention = list(
+                User.objects.filter(
+                    is_active=True, company=self.request.company
+                ).values("username")
+            )
+        elif self.request.user != contact_obj.created_by:
+            users_mention = [
+                {"username": contact_obj.created_by.username}]
+        else:
+            users_mention = list(
+                contact_obj.assigned_to.all().values("username"))
+
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             self.users = User.objects.filter(
                 is_active=True, company=self.request.company).order_by("email")
         else:
             self.users = User.objects.filter(
                 role="ADMIN", company=self.request.company).order_by("email")
-        if self.request.user == self.contact.created_by:
+        if request.user == contact_obj.created_by:
             user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
-                raise PermissionDenied
+
         context["address_obj"] = BillingAddressSerializer(
-            self.contact.address).data
+            contact_obj.address).data
         context["users"] = UserSerializer(self.users, many=True).data
         context["countries"] = COUNTRIES
         context["teams"] = TeamsSerializer(
-            Teams.objects.filter(company=self.request.company), many=True).data
-        context["assignedto_list"] = [
-            int(i) for i in params.getlist("assigned_to", []) if i
-        ]
-        return context
-
-    @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_list_get_params)
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
+            Teams.objects.filter(company=request.company), many=True).data
+        context.update(
+            {
+                "comments": CommentSerializer(
+                    contact_obj.contact_comments.all(), many=True).data,
+                "attachments": AttachmentsSerializer(
+                    contact_obj.contact_attachment.all(), many=True).data,
+                "assigned_data": assigned_data,
+                "tasks": TaskSerializer(
+                    contact_obj.contacts_tasks.all(), many=True).data,
+                "users_mention": users_mention,
+            }
+        )
         return Response(context)
 
-
-class RemoveContactView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
     @swagger_auto_schema(tags=["contacts"], manual_parameters=swagger_params.contact_delete_get_params)
-    def get(self, request, *args, **kwargs):
-        contact_id = kwargs.get("pk")
-        self.object = get_object_or_404(Contact, id=contact_id)
+    def delete(self, request, pk, format=None):
+        self.object = self.get_object(pk)
         if (
             self.request.user.role != "ADMIN"
             and not self.request.user.is_superuser
@@ -387,4 +332,4 @@ class RemoveContactView(APIView):
             if self.object.address_id:
                 self.object.address.delete()
             self.object.delete()
-            return Response({"error": False})
+        return Response({"error": False})

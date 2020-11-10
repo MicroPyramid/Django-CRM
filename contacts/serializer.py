@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from contacts.models import Contact
-from common.serializer import UserSerializer, CompanySerializer, BillingAddressSerializer
+from common.serializer import (
+    UserSerializer,
+    CompanySerializer,
+    BillingAddressSerializer,
+)
 from teams.serializer import TeamsSerializer
 
 
@@ -17,7 +21,7 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = (
-            'id',
+            "id",
             "first_name",
             "last_name",
             "email",
@@ -38,7 +42,6 @@ class ContactSerializer(serializers.ModelSerializer):
 
 
 class CreateContctForm(serializers.ModelSerializer):
-
     class Meta:
         model = Contact
         fields = (

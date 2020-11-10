@@ -13,10 +13,17 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="contact", options={"ordering": ["-created_on"]},
+            name="contact",
+            options={"ordering": ["-created_on"]},
         ),
-        migrations.RemoveField(model_name="contact", name="account",),
-        migrations.RemoveField(model_name="contact", name="teams",),
+        migrations.RemoveField(
+            model_name="contact",
+            name="account",
+        ),
+        migrations.RemoveField(
+            model_name="contact",
+            name="teams",
+        ),
         migrations.AlterField(
             model_name="contact",
             name="created_by",

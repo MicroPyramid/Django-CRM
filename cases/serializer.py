@@ -17,27 +17,26 @@ class CaseSerializer(serializers.ModelSerializer):
     get_team_and_assigned_users = UserSerializer(read_only=True, many=True)
     get_assigned_users_not_in_teams = UserSerializer(read_only=True, many=True)
 
-
     class Meta:
         model = Case
         fields = (
-            'id',
-            'name',
-            'status',
-            'priority',
-            'case_type',
-            'account',
-            'contacts',
-            'closed_on',
-            'description',
-            'assigned_to',
-            'created_by',
-            'created_on',
-            'is_active',
-            'teams',
-            'company',
-            'get_team_users',
-            'get_team_and_assigned_users',
+            "id",
+            "name",
+            "status",
+            "priority",
+            "case_type",
+            "account",
+            "contacts",
+            "closed_on",
+            "description",
+            "assigned_to",
+            "created_by",
+            "created_on",
+            "is_active",
+            "teams",
+            "company",
+            "get_team_users",
+            "get_team_and_assigned_users",
             "get_assigned_users_not_in_teams",
             "created_on_arrow",
         )

@@ -83,6 +83,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ["-created_on"],},
+            options={
+                "ordering": ["-created_on"],
+            },
         ),
     ]

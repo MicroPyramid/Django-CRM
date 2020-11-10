@@ -208,7 +208,9 @@ class CaseUpdateTestCase(CaseCreation, TestCase):
 
 class CaseModelTestCase(CaseCreation, TestCase):
     def test_string_representation(self):
-        case = Case(name="name",)
+        case = Case(
+            name="name",
+        )
         self.assertEqual(str(case), case.name)
 
 

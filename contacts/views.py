@@ -107,15 +107,21 @@ class CreateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
 
     def dispatch(self, request, *args, **kwargs):
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                is_active=True, company=self.request.company
+            ).order_by("email")
         else:
-            self.users = User.objects.filter(role="ADMIN", company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                role="ADMIN", company=self.request.company
+            ).order_by("email")
         return super(CreateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(CreateContactView, self).get_form_kwargs()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                is_active=True, company=self.request.company
+            ).order_by("email")
             kwargs.update({"assigned_to": self.users})
         return kwargs
 
@@ -306,15 +312,21 @@ class UpdateContactView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             raise PermissionDenied
 
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                is_active=True, company=self.request.company
+            ).order_by("email")
         else:
-            self.users = User.objects.filter(role="ADMIN", company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                role="ADMIN", company=self.request.company
+            ).order_by("email")
         return super(UpdateContactView, self).dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super(UpdateContactView, self).get_form_kwargs()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            self.users = User.objects.filter(is_active=True, company=self.request.company).order_by("email")
+            self.users = User.objects.filter(
+                is_active=True, company=self.request.company
+            ).order_by("email")
             kwargs.update({"assigned_to": self.users})
         return kwargs
 
@@ -560,7 +572,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             protocol=self.request.scheme,
         )
         return JsonResponse(
-            {"commentid": self.comment_obj.id, "comment": self.comment_obj.comment,}
+            {
+                "commentid": self.comment_obj.id,
+                "comment": self.comment_obj.comment,
+            }
         )
 
     def form_invalid(self, form):

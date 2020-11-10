@@ -13,7 +13,10 @@ from teams.models import Teams
 class InvoiceCreateTest(object):
     def setUp(self):
         self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN",
+            name="test company",
+            address="IN",
+            sub_domain="test",
+            country="IN",
         )
         self.user = User.objects.create(
             first_name="johnInvoice",
@@ -524,6 +527,8 @@ class InvoiceDeleteTestCase(InvoiceCreateTest, TestCase):
         self.assertEqual(self.invoice.is_paid_or_cancelled(), True)
         response = self.client.get(
             reverse("invoices:invoice_delete", args=(self.invoice.id,))
-            + "?view_account={}".format(self.account.id,)
+            + "?view_account={}".format(
+                self.account.id,
+            )
         )
         self.assertEqual(response.status_code, 302)

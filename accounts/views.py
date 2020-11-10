@@ -236,8 +236,11 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
             return redirect("accounts:new_account")
 
         if self.request.is_ajax():
-            data = {"success_url": reverse_lazy("accounts:list"), "error": False,
-                    "message": "Account created successfully"}
+            data = {
+                "success_url": reverse_lazy("accounts:list"),
+                "error": False,
+                "message": "Account created successfully",
+            }
             return JsonResponse(data)
 
         return redirect("accounts:list")
@@ -256,9 +259,12 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
         # context["contact_count"] = Contact.objects.count()
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             context["leads"] = Lead.objects.exclude(
-                status__in=["converted", "closed"], company=self.request.company,
+                status__in=["converted", "closed"],
+                company=self.request.company,
             )
-            context["contacts"] = Contact.objects.filter(company=self.request.company,)
+            context["contacts"] = Contact.objects.filter(
+                company=self.request.company,
+            )
         else:
             context["leads"] = (
                 Lead.objects.filter(
@@ -266,7 +272,9 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                     | Q(created_by=self.request.user)
                 )
                 .exclude(status__in=["converted", "closed"])
-                .filter(company=self.request.company,)
+                .filter(
+                    company=self.request.company,
+                )
             )
         context["lead_count"] = context["leads"].count()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -275,15 +283,21 @@ class CreateAccountView(SalesAccessRequiredMixin, LoginRequiredMixin, CreateView
                     Q(assigned_to__in=[self.request.user])
                     | Q(created_by=self.request.user)
                 )
-                .filter(company=self.request.company,)
+                .filter(
+                    company=self.request.company,
+                )
                 .exclude(status="closed")
                 .count()
             )
             context["contacts"] = Contact.objects.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
-            ).filter(company=self.request.company,)
+            ).filter(
+                company=self.request.company,
+            )
         context["contact_count"] = context["contacts"].count()
-        context["teams"] = Teams.objects.filter(company=self.request.company,)
+        context["teams"] = Teams.objects.filter(
+            company=self.request.company,
+        )
         return context
 
 
@@ -321,7 +335,8 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
             users_mention = list(
                 User.objects.filter(
-                    is_active=True, company=self.request.company,
+                    is_active=True,
+                    company=self.request.company,
                 ).values("username")
             )
         elif self.request.user != account_record.created_by:
@@ -339,7 +354,8 @@ class AccountDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailView
                 "opportunity_list": Opportunity.objects.filter(account=account_record),
                 "contacts": account_record.contacts.all(),
                 "users": User.objects.filter(
-                    is_active=True, company=self.request.company,
+                    is_active=True,
+                    company=self.request.company,
                 ).order_by("email"),
                 "cases": Case.objects.filter(account=account_record),
                 "stages": STAGES,
@@ -462,8 +478,11 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
             else:
                 message = "Account closed successfully"
         if self.request.is_ajax():
-            data = {"success_url": reverse_lazy("accounts:list"), "error": False,
-                    "message": message}
+            data = {
+                "success_url": reverse_lazy("accounts:list"),
+                "error": False,
+                "message": message,
+            }
             return JsonResponse(data)
         return redirect("accounts:list")
 
@@ -483,7 +502,12 @@ class AccountUpdateView(SalesAccessRequiredMixin, LoginRequiredMixin, UpdateView
         context["account_form"] = context["form"]
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             self.users = self.users.filter(
-                Q(role="ADMIN") | Q(id__in=[self.request.user.id,])
+                Q(role="ADMIN")
+                | Q(
+                    id__in=[
+                        self.request.user.id,
+                    ]
+                )
             )
         context["users"] = self.users
         context["industries"] = INDCHOICES
@@ -602,7 +626,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             protocol=self.request.scheme,
         )
         return JsonResponse(
-            {"comment_id": self.comment_obj.id, "comment": self.comment_obj.comment,}
+            {
+                "comment_id": self.comment_obj.id,
+                "comment": self.comment_obj.comment,
+            }
         )
 
     def form_invalid(self, form):

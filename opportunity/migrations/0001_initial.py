@@ -289,6 +289,8 @@ class Migration(migrations.Migration):
                 ),
                 ("teams", models.ManyToManyField(to="common.Team")),
             ],
-            options={"ordering": ["-created_on"],},
+            options={
+                "ordering": ["-created_on"],
+            },
         ),
     ]

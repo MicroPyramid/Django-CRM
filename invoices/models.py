@@ -42,9 +42,7 @@ class Invoice(models.Model):
     total_amount = models.DecimalField(
         blank=True, null=True, max_digits=12, decimal_places=2
     )
-    tax = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
+    tax = models.DecimalField(blank=True, null=True, max_digits=12, decimal_places=2)
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
@@ -70,9 +68,7 @@ class Invoice(models.Model):
     company = models.ForeignKey(
         Company, on_delete=models.SET_NULL, null=True, blank=True
     )
-    tax = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
+    tax = models.DecimalField(blank=True, null=True, max_digits=12, decimal_places=2)
 
     class Meta:
         """Meta definition for Invoice."""
@@ -88,14 +84,16 @@ class Invoice(models.Model):
         if prev_invoice_number:
             prev_invoice_number += 1
             return prev_invoice_number
-        date = datetime.datetime.now().strftime('%d%m%Y')
+        date = datetime.datetime.now().strftime("%d%m%Y")
         return int(date + "0001")
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
             self.invoice_number = self.invoice_id_generator()
             while Invoice.objects.filter(invoice_number=self.invoice_number).exists():
-                self.invoice_number = self.invoice_id_generator(prev_invoice_number=self.invoice_number)
+                self.invoice_number = self.invoice_id_generator(
+                    prev_invoice_number=self.invoice_number
+                )
         super(Invoice, self).save(*args, **kwargs)
 
     def formatted_total_amount(self):

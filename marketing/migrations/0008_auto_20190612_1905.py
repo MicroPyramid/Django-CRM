@@ -12,14 +12,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="campaign", options={"ordering": ("created_on",)},
-        ),
-        migrations.AlterModelOptions(name="contact", options={"ordering": ["id"]},),
-        migrations.AlterModelOptions(
-            name="contactlist", options={"ordering": ("id",)},
+            name="campaign",
+            options={"ordering": ("created_on",)},
         ),
         migrations.AlterModelOptions(
-            name="emailtemplate", options={"ordering": ["id"]},
+            name="contact",
+            options={"ordering": ["id"]},
+        ),
+        migrations.AlterModelOptions(
+            name="contactlist",
+            options={"ordering": ("id",)},
+        ),
+        migrations.AlterModelOptions(
+            name="emailtemplate",
+            options={"ordering": ["id"]},
         ),
         migrations.AddField(
             model_name="campaign",

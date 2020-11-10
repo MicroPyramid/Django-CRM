@@ -92,7 +92,14 @@ def upload_csv_file(data, invalid_data, user, contact_lists):
 def send_campaign_mail(
     subject, content, from_email, to_email, bcc, reply_to, attachments
 ):
-    msg = EmailMessage(subject, content, from_email, to_email, bcc, reply_to=reply_to,)
+    msg = EmailMessage(
+        subject,
+        content,
+        from_email,
+        to_email,
+        bcc,
+        reply_to=reply_to,
+    )
     for attachment in attachments:
         msg.attach(*attachment)
     msg.content_subtype = "html"
@@ -181,8 +188,10 @@ def run_campaign(campaign, domain="demo.django-crm.io", protocol="https"):
                             "campaign_id": campaign.id,
                         },
                     )
-                    unsubscribe_from_campaign_html = "<br><br/><a href={}>Unsubscribe</a>".format(
-                        domain_url + unsubscribe_from_campaign_url
+                    unsubscribe_from_campaign_html = (
+                        "<br><br/><a href={}>Unsubscribe</a>".format(
+                            domain_url + unsubscribe_from_campaign_url
+                        )
                     )
                     names_dict = {
                         "company_name": each_contact.company_name

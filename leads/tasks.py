@@ -152,7 +152,10 @@ def update_leads_cache():
         Lead.objects.all()
         .exclude(status="converted")
         .select_related("created_by")
-        .prefetch_related("tags", "assigned_to",)
+        .prefetch_related(
+            "tags",
+            "assigned_to",
+        )
     )
     open_leads = queryset.exclude(status="closed")
     close_leads = queryset.filter(status="closed")

@@ -10,8 +10,8 @@ class GetCompany(object):
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if request.headers.get('company'):
-            subdomain = request.headers.get('company')
+        if request.headers.get("company"):
+            subdomain = request.headers.get("company")
             company = Company.objects.filter(sub_domain=subdomain).first()
             if company:
                 request.company = company

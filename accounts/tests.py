@@ -283,7 +283,9 @@ class AccountCreateEmptyFormTestCase(AccountCreateTest, TestCase):
 
 class AccountModelTest(AccountCreateTest, TestCase):
     def test_string_representation(self):
-        account = Account(name="Account name",)
+        account = Account(
+            name="Account name",
+        )
         self.assertEqual(str(account), account.name)
 
     def setUp(self):
@@ -291,7 +293,9 @@ class AccountModelTest(AccountCreateTest, TestCase):
             name="test company", address="IN", sub_domain="test", country="IN"
         )
         self.user = User.objects.create(
-            username="username", email="email@email.com", company=self.company,
+            username="username",
+            email="email@email.com",
+            company=self.company,
         )
 
 
@@ -596,7 +600,13 @@ class test_account_views_list(AccountCreateTest, TestCase):
         self.assertEqual(200, response.status_code)
         response = self.client.post(
             reverse("accounts:list"),
-            {"industry": "industry", "tag": [1,], "tab_status": "true"},
+            {
+                "industry": "industry",
+                "tag": [
+                    1,
+                ],
+                "tab_status": "true",
+            },
         )
         self.assertEqual(200, response.status_code)
         self.tag_name = Tags.objects.create(name="tag name")
@@ -619,10 +629,16 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name,
-                "assigned_to": [self.user.id,],
-                "teams": [self.team_account.id,],
+                "assigned_to": [
+                    self.user.id,
+                ],
+                "teams": [
+                    self.team_account.id,
+                ],
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -642,10 +658,16 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name,
-                "assigned_to": [self.user.id,],
-                "teams": [self.team_account.id,],
+                "assigned_to": [
+                    self.user.id,
+                ],
+                "teams": [
+                    self.team_account.id,
+                ],
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -665,10 +687,16 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name,
-                "assigned_to": [self.user.id,],
-                "teams": [self.team_account.id,],
+                "assigned_to": [
+                    self.user.id,
+                ],
+                "teams": [
+                    self.team_account.id,
+                ],
                 "savenewform": "true",
             },
         )
@@ -690,8 +718,12 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "industry": "SOFTWARE",
                 "description": "Testing",
                 "tags": self.tag_name.name,
-                "assigned_to": [0,],
-                "teams": [0,],
+                "assigned_to": [
+                    0,
+                ],
+                "teams": [
+                    0,
+                ],
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -721,10 +753,16 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name,
-                "assigned_to": [self.user.id,],
-                "teams": [self.team_account.id,],
+                "assigned_to": [
+                    self.user.id,
+                ],
+                "teams": [
+                    self.team_account.id,
+                ],
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -778,10 +816,16 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name + ", another tag edit",
-                "assigned_to": [self.user.id,],
-                "teams": [self.team_account.id,],
+                "assigned_to": [
+                    self.user.id,
+                ],
+                "teams": [
+                    self.team_account.id,
+                ],
                 "savenewform": "true",
                 "account_attachment": SimpleUploadedFile(
                     upload_file.name, upload_file.read()
@@ -804,9 +848,13 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name + ", another tag edit",
-                "teams": [self.team_account.id,],
+                "teams": [
+                    self.team_account.id,
+                ],
                 "savenewform": "true",
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -827,9 +875,13 @@ class test_account_views_list(AccountCreateTest, TestCase):
                 "website": "www.example.com",
                 "industry": "SOFTWARE",
                 "description": "Testing",
-                "contacts": [self.contact_user1.id,],
+                "contacts": [
+                    self.contact_user1.id,
+                ],
                 "tags": self.tag_name.name + ", another tag edit",
-                "teams": [self.team_account.id,],
+                "teams": [
+                    self.team_account.id,
+                ],
                 "savenewform": "true",
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -944,7 +996,10 @@ class test_account_views_list(AccountCreateTest, TestCase):
 class TestAccountUserMentions(AccountCreateTest, TestCase):
     def test_account_views(self):
         self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN",
+            name="test company",
+            address="IN",
+            sub_domain="test",
+            country="IN",
         )
         self.user_created_by = User.objects.create(
             first_name="jane",

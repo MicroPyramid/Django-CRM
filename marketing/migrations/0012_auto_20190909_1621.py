@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="duplicatecontacts", options={"ordering": ("id",)},
+            name="duplicatecontacts",
+            options={"ordering": ("id",)},
         ),
     ]

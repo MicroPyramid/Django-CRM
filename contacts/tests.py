@@ -496,7 +496,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             "last_name": "last name",
             "phone": "+91-123-456-7854",
             "email": "example@user.com",
-            "teams": [self.teams_contacts.id,],
+            "teams": [
+                self.teams_contacts.id,
+            ],
         }
         response = self.client.post(
             reverse("contacts:add_contact")
@@ -510,7 +512,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             "last_name": "last name",
             "phone": "+91-123-456-7858",
             "email": "example@mail.com",
-            "teams": [self.teams_contacts.id,],
+            "teams": [
+                self.teams_contacts.id,
+            ],
         }
         response = self.client.post(
             reverse("contacts:add_contact")
@@ -525,7 +529,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             "last_name": "last name",
             "phone": "+91-123-456-7854",
             "email": "example@user",
-            "teams": [self.teams_contacts.id,],
+            "teams": [
+                self.teams_contacts.id,
+            ],
         }
         response = self.client.post(
             reverse("contacts:add_contact")
@@ -544,7 +550,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
                 "last_name": "contact@example.com",
                 "phone": "+91-123-456-7856",
                 "email": "contact@example.com",
-                "teams": [self.teams_contacts.id,],
+                "teams": [
+                    self.teams_contacts.id,
+                ],
             },
         )
         self.assertEqual(302, response.status_code)
@@ -582,7 +590,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             "last_name": "contact",
             "phone": "+91-123-456-7852",
             "email": "contact@example.com",
-            "teams": [self.teams_contacts.id,],
+            "teams": [
+                self.teams_contacts.id,
+            ],
         }
         response = self.client.post(
             reverse("contacts:edit_contact", args=(self.contact.id,))
@@ -604,7 +614,9 @@ class TestContactViews(ContactObjectsCreation, TestCase):
             "last_name": "contact",
             "phone": "+91-123-456",
             "email": "contact@example",
-            "teams": [self.teams_contacts.id,],
+            "teams": [
+                self.teams_contacts.id,
+            ],
         }
         response = self.client.post(
             reverse("contacts:edit_contact", args=(self.contact.id,))

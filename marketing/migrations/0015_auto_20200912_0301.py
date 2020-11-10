@@ -7,49 +7,86 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0022_auto_20200609_1203'),
-        ('marketing', '0014_emailtemplate_company'),
+        ("common", "0022_auto_20200609_1203"),
+        ("marketing", "0014_emailtemplate_company"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='blockeddomain',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='common.company'),
+            model_name="blockeddomain",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='blockedemail',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='common.company'),
+            model_name="blockedemail",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='campaign',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_campaigns_company', to='common.company'),
+            model_name="campaign",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_campaigns_company",
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_contacts_company', to='common.company'),
+            model_name="contact",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_contacts_company",
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='contactemailcampaign',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_contacts_emails_campaign_company', to='common.company'),
+            model_name="contactemailcampaign",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_contacts_emails_campaign_company",
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='contactlist',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_contactlist_company', to='common.company'),
+            model_name="contactlist",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_contactlist_company",
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='failedcontact',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marketing_failed_contacts_company', to='common.company'),
+            model_name="failedcontact",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="marketing_failed_contacts_company",
+                to="common.company",
+            ),
         ),
         migrations.AddField(
-            model_name='tag',
-            name='company',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='common.company'),
+            model_name="tag",
+            name="company",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="common.company",
+            ),
         ),
     ]

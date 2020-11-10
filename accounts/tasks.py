@@ -45,7 +45,9 @@ def send_email(email_obj_id):
                             subject,
                             html_content,
                             from_email=from_email,
-                            to=[contact_obj.email, ],
+                            to=[
+                                contact_obj.email,
+                            ],
                         )
                         msg.content_subtype = "html"
                         res = msg.send()

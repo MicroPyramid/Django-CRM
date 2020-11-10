@@ -18,7 +18,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="user", options={"ordering": ["-is_active"]},
+            name="user",
+            options={"ordering": ["-is_active"]},
         ),
         migrations.AddField(
             model_name="document",

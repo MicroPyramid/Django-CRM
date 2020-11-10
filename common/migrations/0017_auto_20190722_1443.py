@@ -13,10 +13,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="apisettings", options={"ordering": ("-created_on",)},
+            name="apisettings",
+            options={"ordering": ("-created_on",)},
         ),
         migrations.AlterModelOptions(
-            name="document", options={"ordering": ("-created_on",)},
+            name="document",
+            options={"ordering": ("-created_on",)},
         ),
         migrations.CreateModel(
             name="Profile",

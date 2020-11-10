@@ -257,7 +257,9 @@ class ContactListForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ContactListForm, self).__init__(*args, **kwargs)
         self.fields["contacts_file"].widget.attrs.update(
-            {"accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",}
+            {
+                "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
+            }
         )
         if self.instance.id is None:
             self.fields["contacts_file"].required = True
@@ -265,7 +267,9 @@ class ContactListForm(forms.ModelForm):
             self.fields["contacts_file"].required = False
         if self.data.get("contacts_file"):
             self.fields["contacts_file"].widget.attrs.update(
-                {"accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",}
+                {
+                    "accept": ".csv,.xls,.xlsx,.xlsm,.xlsb,.xml",
+                }
             )
 
     def clean_name(self):

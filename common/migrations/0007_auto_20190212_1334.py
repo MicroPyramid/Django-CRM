@@ -18,7 +18,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="team", name="members",),
+        migrations.RemoveField(
+            model_name="team",
+            name="members",
+        ),
         migrations.AlterField(
             model_name="attachments",
             name="created_by",
@@ -39,5 +42,7 @@ class Migration(migrations.Migration):
                 to=settings.AUTH_USER_MODEL,
             ),
         ),
-        migrations.DeleteModel(name="Team",),
+        migrations.DeleteModel(
+            name="Team",
+        ),
     ]

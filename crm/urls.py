@@ -11,7 +11,7 @@ from rest_framework import permissions
 
 openapi_info = openapi.Info(
     title="Crm API",
-    default_version='v1',
+    default_version="v1",
 )
 
 schema_view = get_schema_view(
@@ -24,12 +24,19 @@ schema_view = get_schema_view(
 app_name = "crm"
 
 urlpatterns = [
-    url(r'^swagger(?P<format>\.json|\.yaml)$',
-        schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    url(r'^swagger/$', schema_view.with_ui('swagger',
-                                           cache_timeout=0), name='schema-swagger-ui'),
-    url(r'^redoc/$', schema_view.with_ui('redoc',
-                                         cache_timeout=0), name='schema-redoc'),
+    url(
+        r"^swagger(?P<format>\.json|\.yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    url(
+        r"^swagger/$",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    url(
+        r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"
+    ),
     path("", include("common.urls", namespace="common")),
     path("api/", include("common.app_urls", namespace="common_urls")),
     path("", include("django.contrib.auth.urls")),

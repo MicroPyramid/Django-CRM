@@ -12,7 +12,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="contactemailcampaign", options={"ordering": ("created_on",)},
+            name="contactemailcampaign",
+            options={"ordering": ("created_on",)},
         ),
         migrations.CreateModel(
             name="DuplicateContacts",
