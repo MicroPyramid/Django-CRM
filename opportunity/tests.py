@@ -650,7 +650,9 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
 
         response = self.client.post(
             reverse("opportunity:list") + "?tag={}".format(self.tag_1.id),
-            {"tag": self.tag_1.id,},
+            {
+                "tag": self.tag_1.id,
+            },
         )
         self.assertEqual(200, response.status_code)
 
@@ -722,7 +724,9 @@ class AttachmentTestCaseError(OpportunityModel, TestCase):
         self.client.login(email="janeOpp@example.com", password="password")
         response = self.client.get(
             reverse("opportunity:opp_remove", args=(self.opportunity_1.id,)),
-            {"pk": self.opportunity_1.id,},
+            {
+                "pk": self.opportunity_1.id,
+            },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 

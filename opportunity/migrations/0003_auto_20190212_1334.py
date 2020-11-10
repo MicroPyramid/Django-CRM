@@ -12,7 +12,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="opportunity", name="teams",),
+        migrations.RemoveField(
+            model_name="opportunity",
+            name="teams",
+        ),
         migrations.AlterField(
             model_name="opportunity",
             name="closed_by",

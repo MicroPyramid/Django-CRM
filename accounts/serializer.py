@@ -7,13 +7,9 @@ from contacts.serializer import ContactSerializer
 
 
 class TagsSerailizer(serializers.ModelSerializer):
-
     class Meta:
         model = Tags
-        fields = (
-            "name",
-            "slug"
-        )
+        fields = ("name", "slug")
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -29,7 +25,7 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         # fields = ‘__all__’
         fields = (
-            'id',
+            "id",
             "name",
             "email",
             "phone",
@@ -52,12 +48,11 @@ class AccountSerializer(serializers.ModelSerializer):
             "contacts",
             "assigned_to",
             "teams",
-            "company"
+            "company",
         )
 
 
 class EmailSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Email
         fields = (
@@ -79,15 +74,10 @@ class EmailLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Email
-        fields = (
-            "email"
-            "contact"
-            "is_sent"
-        )
+        fields = "email" "contact" "is_sent"
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
-
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
         request_obj = kwargs.pop("request_obj", None)
@@ -110,19 +100,16 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             if self.instance.name != name:
                 if not Account.objects.filter(
-                    name__iexact=name,
-                    company=self.company
+                    name__iexact=name, company=self.company
                 ).exists():
                     return name
                 raise serializers.ValidationError(
-                    "Account already exists with this name")
+                    "Account already exists with this name"
+                )
             return name
-        if not Account.objects.filter(
-                name__iexact=name,
-                company=self.company).exists():
+        if not Account.objects.filter(name__iexact=name, company=self.company).exists():
             return name
-        raise serializers.ValidationError(
-            "Account already exists with this name")
+        raise serializers.ValidationError("Account already exists with this name")
 
     class Meta:
         model = Account

@@ -41,7 +41,8 @@ class InvoiceForm(forms.ModelForm):
                 role="ADMIN", company=request_obj.company
             )
             self.fields["accounts"].queryset = Account.objects.filter(
-                status="open", company=request_obj.company,
+                status="open",
+                company=request_obj.company,
             ).filter(Q(created_by=request_user) | Q(assigned_to=request_user))
         else:
             pass
@@ -81,7 +82,7 @@ class InvoiceForm(forms.ModelForm):
             "details",
             "due_date",
             "accounts",
-            "tax"
+            "tax",
         )
 
 

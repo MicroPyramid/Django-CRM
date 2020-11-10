@@ -18,29 +18,52 @@ class TestCeleryTasks(TestLeadModel, TestCase):
     )
     def test_celery_tasks(self):
         task = send_email_to_assigned_user.apply(
-            ([self.user.id, self.user1.id,], self.lead.id,),
+            (
+                [
+                    self.user.id,
+                    self.user1.id,
+                ],
+                self.lead.id,
+            ),
         )
         self.assertEqual("SUCCESS", task.state)
 
         task = send_lead_assigned_emails.apply(
             (
                 self.lead.id,
-                [self.user.id, self.user1.id, self.user2.id,],
+                [
+                    self.user.id,
+                    self.user1.id,
+                    self.user2.id,
+                ],
                 "https://www.example.com",
             ),
         )
         self.assertEqual("SUCCESS", task.state)
 
         task = send_email.apply(
-            ("mail subject", "html content",),
-            {"recipients": [self.user.id, self.user1.id, self.user2.id,],},
+            (
+                "mail subject",
+                "html content",
+            ),
+            {
+                "recipients": [
+                    self.user.id,
+                    self.user1.id,
+                    self.user2.id,
+                ],
+            },
         )
         self.assertEqual("SUCCESS", task.state)
 
         task = send_lead_assigned_emails.apply(
             (
                 self.lead1.id,
-                [self.user.id, self.user1.id, self.user2.id,],
+                [
+                    self.user.id,
+                    self.user1.id,
+                    self.user2.id,
+                ],
                 "https://www.example.com",
             ),
         )

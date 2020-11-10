@@ -109,8 +109,7 @@ def send_email_user_mentions(
                 protocol
                 + "://"
                 + domain
-                + reverse("opportunity:opp_view",
-                          args=(comment.opportunity.id,))
+                + reverse("opportunity:opp_view", args=(comment.opportunity.id,))
             )
             subject = "New comment on Opportunity. "
         elif called_from == "cases":
@@ -134,8 +133,7 @@ def send_email_user_mentions(
                 protocol
                 + "://"
                 + domain
-                + reverse("invoices:invoice_details",
-                          args=(comment.invoice.id,))
+                + reverse("invoices:invoice_details", args=(comment.invoice.id,))
             )
             subject = "New comment on Invoice. "
         elif called_from == "events":
@@ -149,8 +147,7 @@ def send_email_user_mentions(
         else:
             context["url"] = ""
         # subject = 'Django CRM : comment '
-        blocked_domains = BlockedDomain.objects.values_list(
-            "domain", flat=True)
+        blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
         blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
         if recipients:
             for recipient in recipients:
@@ -224,8 +221,7 @@ def send_email_user_delete(
         recipients = []
         recipients.append(user_email)
         subject = "CRM : Your account is Deleted. "
-        html_content = render_to_string(
-            "user_delete_email.html", context=context)
+        html_content = render_to_string("user_delete_email.html", context=context)
         if recipients:
             msg = EmailMessage(subject, html_content, to=recipients)
             msg.content_subtype = "html"
@@ -282,8 +278,11 @@ def send_email_to_reset_password(
     context["uid"] = (urlsafe_base64_encode(force_bytes(user.pk)),)
     context["token"] = default_token_generator.make_token(user)
     context["token"] = context["token"]
-    context["complete_url"] = context["url"] + '/api-common/reset-password/{uidb64}/{token}/'.format(
-        uidb64=context["uid"], token=context["token"])
+    context["complete_url"] = context[
+        "url"
+    ] + "/api-common/reset-password/{uidb64}/{token}/".format(
+        uidb64=context["uid"], token=context["token"]
+    )
     recipients = []
     recipients.append(user_email)
     subject = "Password Reset"

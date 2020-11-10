@@ -37,7 +37,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ("created_on",),},
+            options={
+                "ordering": ("created_on",),
+            },
         ),
         migrations.CreateModel(
             name="BlockedDomain",
@@ -63,6 +65,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ("created_on",),},
+            options={
+                "ordering": ("created_on",),
+            },
         ),
     ]

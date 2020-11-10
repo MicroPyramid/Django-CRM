@@ -63,7 +63,10 @@ def lead_list_view(request):
         Lead.objects.filter(company=request.company)
         .exclude(status="converted")
         .select_related("created_by")
-        .prefetch_related("tags", "assigned_to",)
+        .prefetch_related(
+            "tags",
+            "assigned_to",
+        )
     )
     if request.user.role == "ADMIN" or request.user.is_superuser:
         queryset = queryset
@@ -92,7 +95,14 @@ def lead_list_view(request):
             .values("id", "username")
         )
 
-        tag_ids = list(set(queryset.values_list("tags", flat=True,)))
+        tag_ids = list(
+            set(
+                queryset.values_list(
+                    "tags",
+                    flat=True,
+                )
+            )
+        )
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
         return render(request, "leads.html", context)
 
@@ -154,7 +164,14 @@ def lead_list_view(request):
             .order_by("email")
             .values("id", "email")
         )
-        tag_ids = list(set(queryset.values_list("tags", flat=True,)))
+        tag_ids = list(
+            set(
+                queryset.values_list(
+                    "tags",
+                    flat=True,
+                )
+            )
+        )
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
 
         context["assignedto_list"] = [
@@ -180,7 +197,10 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
             self.model.objects.all()
             .exclude(status="converted")
             .select_related("created_by")
-            .prefetch_related("tags", "assigned_to",)
+            .prefetch_related(
+                "tags",
+                "assigned_to",
+            )
         )  # .defer('first_name', 'last_name', 'email',
         # 'phone', 'address_line', 'street', 'city', 'postcode', 'website', 'description',
         # 'account_name', 'opportunity_amount', 'enquery_type', 'created_from_site',
@@ -275,7 +295,14 @@ class LeadListView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
 
         context["search"] = search
 
-        tag_ids = list(set(self.get_queryset().values_list("tags", flat=True,)))
+        tag_ids = list(
+            set(
+                self.get_queryset().values_list(
+                    "tags",
+                    flat=True,
+                )
+            )
+        )
         context["tags"] = Tags.objects.filter(id__in=tag_ids)
 
         tab_status = "Open"
@@ -545,7 +572,10 @@ def update_lead(request, pk):
         initial.update({"status": status, "lead": lead_record.id})
     error = ""
     form = LeadForm(
-        instance=lead_record, initial=initial, assigned_to=users, request_obj=request,
+        instance=lead_record,
+        initial=initial,
+        assigned_to=users,
+        request_obj=request,
     )
 
     if request.POST:
@@ -665,7 +695,7 @@ def update_lead(request, pk):
                     description=request.POST.get("description"),
                     website=request.POST.get("website"),
                     lead=lead_obj,
-                    company=request.company
+                    company=request.company,
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -886,7 +916,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             protocol=self.request.scheme,
         )
         return JsonResponse(
-            {"commentid": self.comment_obj.id, "comment": self.comment_obj.comment,}
+            {
+                "commentid": self.comment_obj.id,
+                "comment": self.comment_obj.comment,
+            }
         )
 
     def form_invalid(self, form):

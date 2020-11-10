@@ -18,5 +18,5 @@ class TeamsSerializer(serializers.ModelSerializer):
             "created_on",
             "created_by",
             "company",
-            "created_on_arrow"
+            "created_on_arrow",
         )

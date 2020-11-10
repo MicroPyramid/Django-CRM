@@ -86,6 +86,8 @@ class Migration(migrations.Migration):
                 ),
                 ("is_active", models.BooleanField(default=False)),
             ],
-            options={"ordering": ["-created_on"],},
+            options={
+                "ordering": ["-created_on"],
+            },
         ),
     ]

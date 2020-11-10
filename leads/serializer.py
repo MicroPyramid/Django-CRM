@@ -8,10 +8,7 @@ from contacts.serializer import ContactSerializer
 class TagsSerailizer(serializers.ModelSerializer):
     class Meta:
         model = Tags
-        fields = (
-            "name",
-            "slug"
-        )
+        fields = ("name", "slug")
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -25,7 +22,7 @@ class LeadSerializer(serializers.ModelSerializer):
         model = Lead
         # fields = ‘__all__’
         fields = (
-            'id',
+            "id",
             "title",
             "first_name",
             "last_name",

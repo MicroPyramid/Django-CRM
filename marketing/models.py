@@ -20,11 +20,10 @@ class Tag(models.Model):
     )
     created_on = models.DateTimeField(auto_now_add=True)
     company = models.ForeignKey(
-        Company, 
-        on_delete=models.CASCADE, 
-        null=True,         
+        Company,
+        on_delete=models.CASCADE,
+        null=True,
     )
-
 
     @property
     def created_by_user(self):
@@ -44,10 +43,10 @@ class EmailTemplate(models.Model):
     subject = models.CharField(max_length=5000)
     html = models.TextField()
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_emailtemplates_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     class Meta:
@@ -75,10 +74,10 @@ class ContactList(models.Model):
     # is_public = models.BooleanField(default=False)
     visible_to = models.ManyToManyField(User, related_name="contact_lists_visible_to")
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_contactlist_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     class Meta:
@@ -167,10 +166,10 @@ class Contact(models.Model):
     state = models.CharField(max_length=500, null=True, blank=True)
     contry = models.CharField(max_length=500, null=True, blank=True)
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_contacts_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     def __str__(self):
@@ -211,10 +210,10 @@ class FailedContact(models.Model):
     state = models.CharField(max_length=500, null=True, blank=True)
     contry = models.CharField(max_length=500, null=True, blank=True)
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_failed_contacts_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     def __str__(self):
@@ -274,10 +273,10 @@ class Campaign(models.Model):
         max_length=1000, upload_to=get_campaign_attachment_path, blank=True, null=True
     )
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_campaigns_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     class Meta:
@@ -443,8 +442,8 @@ class CampaignOpen(models.Model):
 
 
 class CampaignCompleted(models.Model):
-    """ This Model Is Used To Check If The Scheduled Later Emails Have Been Sent
-        related name : campaign_is_completed
+    """This Model Is Used To Check If The Scheduled Later Emails Have Been Sent
+    related name : campaign_is_completed
     """
 
     campaign = models.OneToOneField(
@@ -454,8 +453,8 @@ class CampaignCompleted(models.Model):
 
 
 class ContactUnsubscribedCampaign(models.Model):
-    """ This Model Is Used To Check If The Contact has Unsubscribed To a Particular Campaign
-        related name : contact_is_unsubscribed
+    """This Model Is Used To Check If The Contact has Unsubscribed To a Particular Campaign
+    related name : contact_is_unsubscribed
     """
 
     campaigns = models.ForeignKey(
@@ -483,10 +482,10 @@ class ContactEmailCampaign(models.Model):
     )
     created_on = models.DateTimeField(auto_now_add=True)
     company = models.ForeignKey(
-        Company, 
+        Company,
         related_name="marketing_contacts_emails_campaign_company",
-        on_delete=models.CASCADE, 
-        null=True,         
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     def created_on_arrow(self):
@@ -517,7 +516,7 @@ class DuplicateContacts(models.Model):
 
 class BlockedDomain(models.Model):
     """
-        this model is used to block the domain
+    this model is used to block the domain
     """
 
     domain = models.CharField(max_length=200)
@@ -526,9 +525,9 @@ class BlockedDomain(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
     company = models.ForeignKey(
-        Company, 
-        on_delete=models.CASCADE, 
-        null=True,         
+        Company,
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     def __str__(self):
@@ -543,7 +542,7 @@ class BlockedDomain(models.Model):
 
 class BlockedEmail(models.Model):
     """
-        this model is used to block the email
+    this model is used to block the email
     """
 
     email = models.EmailField()
@@ -552,11 +551,10 @@ class BlockedEmail(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
     company = models.ForeignKey(
-        Company, 
-        on_delete=models.CASCADE, 
-        null=True,         
+        Company,
+        on_delete=models.CASCADE,
+        null=True,
     )
-
 
     def __str__(self):
         return self.email

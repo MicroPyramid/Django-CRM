@@ -28,7 +28,8 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterModelOptions(
-            name="campaign", options={"ordering": ("-created_on",)},
+            name="campaign",
+            options={"ordering": ("-created_on",)},
         ),
         migrations.AddField(
             model_name="contactunsubscribedcampaign",

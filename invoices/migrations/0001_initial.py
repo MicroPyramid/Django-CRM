@@ -284,6 +284,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"verbose_name": "Invoice", "verbose_name_plural": "Invoices",},
+            options={
+                "verbose_name": "Invoice",
+                "verbose_name_plural": "Invoices",
+            },
         ),
     ]

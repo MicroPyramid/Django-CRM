@@ -77,20 +77,20 @@ class LeadForm(forms.ModelForm):
                 self.fields["source"]._set_choices(prev_choices)
         self.company = request_obj.company
 
-
     def clean_account_name(self):
         account_name = self.cleaned_data.get("account_name")
         if self.instance.id:
             if self.instance.account_name != account_name:
                 if not Account.objects.filter(
                     name__iexact=self.cleaned_data.get("account_name"),
-                    company=self.company
+                    company=self.company,
                 ).exists():
                     return self.cleaned_data.get("account_name")
-                raise forms.ValidationError(
-                    "Account already exists with this name")
+                raise forms.ValidationError("Account already exists with this name")
             return self.cleaned_data.get("account_name")
-        if not Account.objects.filter(name__iexact=self.cleaned_data.get("account_name"), company=self.company).exists():
+        if not Account.objects.filter(
+            name__iexact=self.cleaned_data.get("account_name"), company=self.company
+        ).exists():
             return self.cleaned_data.get("account_name")
         raise forms.ValidationError("Account already exists with this name")
 
@@ -206,12 +206,16 @@ class LeadListForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(LeadListForm, self).__init__(*args, **kwargs)
         self.fields["leads_file"].widget.attrs.update(
-            {"accept": ".csv",}
+            {
+                "accept": ".csv",
+            }
         )
         self.fields["leads_file"].required = True
         if self.data.get("leads_file"):
             self.fields["leads_file"].widget.attrs.update(
-                {"accept": ".csv",}
+                {
+                    "accept": ".csv",
+                }
             )
 
     def clean_leads_file(self):

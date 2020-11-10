@@ -125,7 +125,9 @@ def dashboard(request):
 def contact_lists(request):
     tags = Tag.objects.all()
     if request.user.role == "ADMIN":
-        queryset = ContactList.objects.filter(company=request.company).order_by("-created_on")
+        queryset = ContactList.objects.filter(company=request.company).order_by(
+            "-created_on"
+        )
     else:
         queryset = ContactList.objects.filter(
             Q(created_by=request.user) | Q(visible_to=request.user)
@@ -405,7 +407,12 @@ def edit_contact(request, pk):
                 {"error": False, "success_url": reverse("marketing:contacts_list")}
             )
         else:
-            return JsonResponse({"error": True, "errors": form.errors,})
+            return JsonResponse(
+                {
+                    "error": True,
+                    "errors": form.errors,
+                }
+            )
 
 
 @login_required(login_url="/login")
@@ -563,7 +570,9 @@ def failed_contact_list_download_delete(request, pk):
 def email_template_list(request):
     # users = User.objects.all()
     if request.user.role == "ADMIN" or request.user.is_superuser:
-        queryset = EmailTemplate.objects.filter(company=request.company).order_by("-created_on")
+        queryset = EmailTemplate.objects.filter(company=request.company).order_by(
+            "-created_on"
+        )
     else:
         queryset = EmailTemplate.objects.filter(created_by=request.user).order_by(
             "-created_on"
@@ -1606,7 +1615,9 @@ def contacts_list_elastic_search(request):
         # contacts = SearchQuerySet().filter(is_bounced='false').models(Contact)
         # bounced_contacts = SearchQuerySet().filter(is_bounced='true').models(Contact)
         # failed_contacts = SearchQuerySet().models(FailedContact).filter()
-        bounced_contacts = Contact.objects.filter(is_bounced=True, company=request.company)
+        bounced_contacts = Contact.objects.filter(
+            is_bounced=True, company=request.company
+        )
         failed_contacts = FailedContact.objects.filter(company=request.company)
         contact_lists = ContactList.objects.filter(company=request.company)
     else:

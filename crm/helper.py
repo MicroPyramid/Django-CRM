@@ -27,7 +27,12 @@ def send_mail(mto, mfrom, msubject, mbody, user_active):
         response = requests.post(
             settings.MGUN_API_URL,
             auth=("api", settings.MGUN_API_KEY),
-            data={"from": mfrom, "to": mto, "subject": msubject, "html": mbody,},
+            data={
+                "from": mfrom,
+                "to": mto,
+                "subject": msubject,
+                "html": mbody,
+            },
         )
     elif mail_sender == "SENDGRID":
         sg = sendgrid.SendGridClient(settings.SG_USER, settings.SG_PWD)

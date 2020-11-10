@@ -734,7 +734,9 @@ class TestCommentAddResponse(TestLeadModel, TestCase):
             reverse("leads:add_lead"),
             {
                 "title": "new lead title",
-                "teams": [self.teams_leads.id,],
+                "teams": [
+                    self.teams_leads.id,
+                ],
                 "savenewform": "true",
             },
         )
@@ -781,7 +783,9 @@ class TestCommentAddResponse(TestLeadModel, TestCase):
         self.teams_leads.users.add(self.user3)
         data = {
             "title": self.lead_1.title,
-            "teams": [self.teams_leads.id,],
+            "teams": [
+                self.teams_leads.id,
+            ],
             "status": "converted",
             "account_name": "lead_conversion",
             "email": "account@lead.com",

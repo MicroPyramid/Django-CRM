@@ -12,7 +12,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="event", name="teams",),
+        migrations.RemoveField(
+            model_name="event",
+            name="teams",
+        ),
         migrations.AlterField(
             model_name="event",
             name="created_by",

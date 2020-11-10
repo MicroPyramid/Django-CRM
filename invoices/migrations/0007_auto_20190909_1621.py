@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="invoicehistory", options={"ordering": ("created_on",)},
+            name="invoicehistory",
+            options={"ordering": ("created_on",)},
         ),
     ]

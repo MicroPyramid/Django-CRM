@@ -152,7 +152,8 @@ class TestMarketingModel(object):
         self.campaign.tags.add(self.tag_marketing.id)
 
         self.link = Link.objects.create(
-            campaign=self.campaign, original="https://example.com",
+            campaign=self.campaign,
+            original="https://example.com",
         )
 
         self.campaign_link_click = CampaignLinkClick.objects.create(
@@ -494,7 +495,9 @@ class TestEditContact(TestMarketingModel, TestCase):
 
         response = self.client.post(
             reverse("marketing:edit_contact", args=(self.contact.id,))
-            + "?from_url={}".format(self.contact_list.id,),
+            + "?from_url={}".format(
+                self.contact_list.id,
+            ),
             data,
         )
         self.assertEqual(response.status_code, 200)
@@ -1513,7 +1516,10 @@ class TestCampaignLinkClick(TestMarketingModel, TestCase):
         response = self.client.get(
             reverse(
                 "marketing:campaign_link_click",
-                kwargs={"link_id": self.link.id, "email_id": self.contact_1.id,},
+                kwargs={
+                    "link_id": self.link.id,
+                    "email_id": self.contact_1.id,
+                },
             )
         )
         self.assertEqual(response.status_code, 302)
@@ -1521,7 +1527,10 @@ class TestCampaignLinkClick(TestMarketingModel, TestCase):
         response = self.client.get(
             reverse(
                 "marketing:campaign_link_click",
-                kwargs={"link_id": self.link.id, "email_id": self.contact_1.id,},
+                kwargs={
+                    "link_id": self.link.id,
+                    "email_id": self.contact_1.id,
+                },
             )
         )
         self.assertEqual(response.status_code, 302)

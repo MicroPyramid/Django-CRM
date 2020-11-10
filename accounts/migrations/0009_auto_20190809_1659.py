@@ -14,12 +14,19 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="email", old_name="sent_at", new_name="created_on",
+            model_name="email",
+            old_name="sent_at",
+            new_name="created_on",
         ),
         migrations.RenameField(
-            model_name="email", old_name="sender", new_name="from_account",
+            model_name="email",
+            old_name="sender",
+            new_name="from_account",
         ),
-        migrations.RemoveField(model_name="email", name="recipient",),
+        migrations.RemoveField(
+            model_name="email",
+            name="recipient",
+        ),
         migrations.AddField(
             model_name="email",
             name="from_email",

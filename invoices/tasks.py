@@ -63,7 +63,11 @@ def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="ht
                 "assigned_to_email_template.html", context=context
             )
             msg = EmailMessage(
-                subject=subject, body=html_content, to=[recipient.email,]
+                subject=subject,
+                body=html_content,
+                to=[
+                    recipient.email,
+                ],
             )
             msg.content_subtype = "html"
             msg.send()

@@ -587,7 +587,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             protocol=self.request.scheme,
         )
         return JsonResponse(
-            {"comment_id": self.comment_obj.id, "comment": self.comment_obj.comment,}
+            {
+                "comment_id": self.comment_obj.id,
+                "comment": self.comment_obj.comment,
+            }
         )
 
     def form_invalid(self, form):

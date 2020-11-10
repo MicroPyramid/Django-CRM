@@ -22,13 +22,17 @@ class TestCeleryTasks(TestMarketingModel, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_celery_tasks(self):
-        task = run_campaign.apply((self.campaign.id,),)
+        task = run_campaign.apply(
+            (self.campaign.id,),
+        )
         self.assertEqual("SUCCESS", task.state)
 
         self.campaign.reply_to_email = None
         self.campaign.save()
 
-        task = run_campaign.apply((self.campaign.id,),)
+        task = run_campaign.apply(
+            (self.campaign.id,),
+        )
         self.assertEqual("SUCCESS", task.state)
 
         self.campaign.schedule_date_time = datetime.now()
@@ -43,10 +47,14 @@ class TestCeleryTasks(TestMarketingModel, TestCase):
         task = send_scheduled_campaigns.apply()
         self.assertEqual("SUCCESS", task.state)
 
-        task = delete_multiple_contacts_tasks.apply((self.contact_list.id,),)
+        task = delete_multiple_contacts_tasks.apply(
+            (self.contact_list.id,),
+        )
         self.assertEqual("SUCCESS", task.state)
 
-        task = send_campaign_email_to_admin_contact.apply((self.campaign.id,),)
+        task = send_campaign_email_to_admin_contact.apply(
+            (self.campaign.id,),
+        )
         self.assertEqual("SUCCESS", task.state)
 
         valid_rows = [
@@ -103,6 +111,13 @@ class TestCeleryTasks(TestMarketingModel, TestCase):
             },
         ]
         task = upload_csv_file.apply(
-            (valid_rows, invalid_rows, self.user.id, [self.contact_list.id,],),
+            (
+                valid_rows,
+                invalid_rows,
+                self.user.id,
+                [
+                    self.contact_list.id,
+                ],
+            ),
         )
         self.assertEqual("SUCCESS", task.state)

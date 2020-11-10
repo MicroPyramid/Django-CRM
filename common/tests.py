@@ -1308,13 +1308,15 @@ class TestUserFormValidation(ObjectsCreation, TestCase):
             postcode="postcode",
             country="IN",
         )
-        Address_obj_street_city_address_line_state_postcode_country = Address.objects.create(
-            street="street",
-            city="city",
-            address_line="address_line",
-            state="state",
-            postcode="postcode",
-            country="IN",
+        Address_obj_street_city_address_line_state_postcode_country = (
+            Address.objects.create(
+                street="street",
+                city="city",
+                address_line="address_line",
+                state="state",
+                postcode="postcode",
+                country="IN",
+            )
         )
 
         self.assertEqual(Address_obj_street.get_complete_address(), "street")
@@ -1673,7 +1675,9 @@ class TestViewFunctions(ObjectsCreation, TestCase):
                 "username": "john@developer.com",
                 "password": "password",
                 "role": "USER",
-                "teams": [self.team_dev.id,],
+                "teams": [
+                    self.team_dev.id,
+                ],
                 "has_sales_access": "on",
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -1709,7 +1713,9 @@ class TestViewFunctions(ObjectsCreation, TestCase):
                 "username": "john@developer.com",
                 "password": "password",
                 "role": "USER",
-                "teams": [self.team_test.id,],
+                "teams": [
+                    self.team_test.id,
+                ],
                 "has_sales_access": "on",
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -1744,8 +1750,12 @@ class TestViewFunctions(ObjectsCreation, TestCase):
         data = {
             "title": "new doc",
             "document_file": SimpleUploadedFile(upload_file.name, upload_file.read()),
-            "teams": [self.team_test.id,],
-            "shared_to": [shared_user.id,],
+            "teams": [
+                self.team_test.id,
+            ],
+            "shared_to": [
+                shared_user.id,
+            ],
         }
         response = self.client.post(
             reverse("common:create_doc"), data, HTTP_X_REQUESTED_WITH="XMLHttpRequest"
@@ -1756,8 +1766,12 @@ class TestViewFunctions(ObjectsCreation, TestCase):
         data = {
             "title": "another new doc",
             "document_file": SimpleUploadedFile(upload_file.name, upload_file.read()),
-            "teams": [self.team_test.id,],
-            "shared_to": [shared_user.id,],
+            "teams": [
+                self.team_test.id,
+            ],
+            "shared_to": [
+                shared_user.id,
+            ],
         }
         response = self.client.post(
             reverse("common:edit_doc", args=(self.document.id,)),

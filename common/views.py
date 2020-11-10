@@ -104,7 +104,9 @@ def check_sub_domain(request):
         sub_domain = request.POST.get("sub_domain", "")
         if sub_domain == "":
             return render(
-                request, "check_subdomain.html", {"error": "Please mention a sub_domain"}
+                request,
+                "check_subdomain.html",
+                {"error": "Please mention a sub_domain"},
             )
         company = Company.objects.filter(sub_domain=sub_domain).first()
         if company:
@@ -156,8 +158,9 @@ class HomeView(SalesAccessRequiredMixin, LoginRequiredMixin, TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         accounts = Account.objects.filter(status="open", company=self.request.company)
         contacts = Contact.objects.filter(company=self.request.company)
-        leads = Lead.objects.filter(company=self.request.company).exclude(Q(status="converted") |
-            Q(status="closed"))
+        leads = Lead.objects.filter(company=self.request.company).exclude(
+            Q(status="converted") | Q(status="closed")
+        )
         opportunities = Opportunity.objects.filter(company=self.request.company)
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
@@ -403,7 +406,11 @@ class CompanyLoginView(CreateView):
             request.company = company
             request.session["company"] = company.id
         else:
-            return render(request, "check_subdomain.html", {"error": "Please mention a sub_domain"})
+            return render(
+                request,
+                "check_subdomain.html",
+                {"error": "Please mention a sub_domain"},
+            )
         form = CompanyLoginForm(request.POST, request=request)
         if form.is_valid():
             email = form.cleaned_data.get("email", "")
@@ -881,7 +888,10 @@ class DocumentDetailView(SalesAccessRequiredMixin, LoginRequiredMixin, DetailVie
         context = super(DocumentDetailView, self).get_context_data(**kwargs)
         # documents = Document.objects.all()
         context.update(
-            {"file_type_code": self.object.file_type()[1], "doc_obj": self.object,}
+            {
+                "file_type_code": self.object.file_type()[1],
+                "doc_obj": self.object,
+            }
         )
         return context
 
@@ -1022,7 +1032,10 @@ def edit_comment(request, pk):
                 comment_obj.comment = form.cleaned_data.get("comment")
                 comment_obj.save(update_fields=["comment"])
                 return JsonResponse(
-                    {"comment_id": comment_obj.id, "comment": comment_obj.comment,}
+                    {
+                        "comment_id": comment_obj.id,
+                        "comment": comment_obj.comment,
+                    }
                 )
             return JsonResponse({"error": form["comment"].errors})
         data = {"error": "You don't have permission to edit this comment."}
@@ -1358,7 +1371,10 @@ def create_lead_from_site(request):  # pragma: no cover
     ]
     # add origin_domain = request.get_host() in the post body
     if (
-        request.get_host() in ["sales.micropyramid.com",]
+        request.get_host()
+        in [
+            "sales.micropyramid.com",
+        ]
         and request.POST.get("origin_domain") in allowed_domains
     ):
         if request.method == "POST":
@@ -1414,8 +1430,10 @@ def activate_user(request, uidb64, token, activation_key):  # pragma: no cover
             resend_url = reverse(
                 "common:resend_activation_link", args=(profile.user.id,)
             )
-            link_content = '<a href="{}">Click Here</a> to resend the activation link.'.format(
-                resend_url
+            link_content = (
+                '<a href="{}">Click Here</a> to resend the activation link.'.format(
+                    resend_url
+                )
             )
             message_content = "Your activation link has expired, {}".format(
                 link_content

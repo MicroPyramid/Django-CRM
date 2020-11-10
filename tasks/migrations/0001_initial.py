@@ -77,6 +77,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ["-due_date"],},
+            options={
+                "ordering": ["-due_date"],
+            },
         ),
     ]

@@ -86,20 +86,19 @@ class AccountForm(forms.ModelForm):
         self.fields["lead"].required = False
         self.company = request_obj.company
 
-
     def clean_name(self):
         name = self.cleaned_data.get("name")
         if self.instance.id:
             if self.instance.name != name:
                 if not Account.objects.filter(
-                    name__iexact=self.cleaned_data.get("name"),
-                    company=self.company
+                    name__iexact=self.cleaned_data.get("name"), company=self.company
                 ).exists():
                     return self.cleaned_data.get("name")
-                raise forms.ValidationError(
-                    "Account already exists with this name")
+                raise forms.ValidationError("Account already exists with this name")
             return self.cleaned_data.get("name")
-        if not Account.objects.filter(name__iexact=self.cleaned_data.get("name"), company=self.company).exists():
+        if not Account.objects.filter(
+            name__iexact=self.cleaned_data.get("name"), company=self.company
+        ).exists():
             return self.cleaned_data.get("name")
         raise forms.ValidationError("Account already exists with this name")
 

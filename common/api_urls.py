@@ -17,5 +17,5 @@ urlpatterns = [
     path("auth/reset-password/", api_views.ResetPasswordView.as_view()),
     path("users/", api_views.UsersListView.as_view()),
     path("users/<int:pk>/", api_views.UserDetailView.as_view()),
-    path("documents/create/", api_views.DocumentCreate.as_view()),
+    path("documents/", api_views.DocumentListView.as_view()),
 ]

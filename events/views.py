@@ -217,7 +217,12 @@ def event_create(request):
                 {"error": False, "success_url": reverse("events:events_list")}
             )
         else:
-            return JsonResponse({"error": True, "errors": form.errors,})
+            return JsonResponse(
+                {
+                    "error": True,
+                    "errors": form.errors,
+                }
+            )
 
 
 @login_required
@@ -376,7 +381,12 @@ def event_update(request, event_id):
                 {"error": False, "success_url": reverse("events:events_list")}
             )
         else:
-            return JsonResponse({"error": True, "errors": form.errors,})
+            return JsonResponse(
+                {
+                    "error": True,
+                    "errors": form.errors,
+                }
+            )
 
 
 @login_required
@@ -472,7 +482,10 @@ class UpdateCommentView(LoginRequiredMixin, View):
             protocol=self.request.scheme,
         )
         return JsonResponse(
-            {"comment_id": self.comment_obj.id, "comment": self.comment_obj.comment,}
+            {
+                "comment_id": self.comment_obj.id,
+                "comment": self.comment_obj.comment,
+            }
         )
 
     def form_invalid(self, form):
