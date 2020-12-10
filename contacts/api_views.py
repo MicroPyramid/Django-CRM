@@ -75,8 +75,6 @@ class ContactsListView(APIView):
         context["contact_obj_list"] = ContactSerializer(
             self.get_queryset(params), many=True).data
         context["per_page"] = params.get("per_page")
-        context["users"] = UserSerializer(
-            User.objects.filter(is_active=True).order_by("username"), many=True).data
         context["assignedto_list"] = [
             int(i) for i in params.getlist("assigned_to", []) if i
         ]

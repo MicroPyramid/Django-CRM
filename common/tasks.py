@@ -1,6 +1,6 @@
 import datetime
 from django.conf import settings
-from celery.task import task
+from celery import Celery
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -15,8 +15,9 @@ from common.token_generator import account_activation_token
 from django.contrib.auth.tokens import default_token_generator
 from marketing.models import BlockedDomain, BlockedEmail
 
+app = Celery('redis://')
 
-@task
+@app.task
 def send_email_to_new_user(
     user_email, created_by, domain="demo.django-crm.io", protocol="http"
 ):
@@ -52,7 +53,7 @@ def send_email_to_new_user(
             msg.send()
 
 
-@task
+@app.task
 def send_email_user_mentions(
     comment_id, called_from, domain="demo.django-crm.io", protocol="http"
 ):
@@ -171,7 +172,7 @@ def send_email_user_mentions(
                     msg.send()
 
 
-@task
+@app.task
 def send_email_user_status(
     user_id, status_changed_user="", domain="demo.django-crm.io", protocol="http"
 ):
@@ -208,7 +209,7 @@ def send_email_user_status(
             msg.send()
 
 
-@task
+@app.task
 def send_email_user_delete(
     user_email, deleted_by="", domain="demo.django-crm.io", protocol="http"
 ):
@@ -228,7 +229,7 @@ def send_email_user_delete(
             msg.send()
 
 
-@task
+@app.task
 def resend_activation_link_to_user(
     user_email="", domain="demo.django-crm.io", protocol="http"
 ):
@@ -266,7 +267,7 @@ def resend_activation_link_to_user(
             msg.send()
 
 
-@task
+@app.task
 def send_email_to_reset_password(
     user_email, domain="demo.django-crm.io", protocol="http"
 ):

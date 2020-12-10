@@ -4,7 +4,7 @@ from mimetypes import MimeTypes
 
 import pytz
 import requests
-from celery.task import task
+from celery import Celery
 from django.core.management import call_command
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -25,29 +25,33 @@ from marketing.models import (
     FailedContact,
 )
 
+app = Celery('redis://')
 
-@task
+@app.task
 def campaign_sechedule(request):
     pass
 
 
-@task
+@app.task
 def campaign_open(request):
     pass
 
 
-@task
+@app.task
 def campaign_click(request):
     pass
 
 
-@task
-def upload_csv_file(data, invalid_data, user, contact_lists):
+@app.task
+def upload_csv_file(data, invalid_data, user, contact_lists, company):
     for each in data:
         contact = Contact.objects.filter(email=each["email"]).first()
         if not contact:
             contact = Contact.objects.create(
-                email=each["email"], created_by_id=user, name=each["first name"]
+                email=each["email"],
+                created_by_id=user,
+                name=each["first name"],
+                company_id=company
             )
             if each.get("company name", None):
                 contact.company_name = each["company name"]
@@ -74,7 +78,10 @@ def upload_csv_file(data, invalid_data, user, contact_lists):
         contact = FailedContact.objects.filter(email=each["email"]).first()
         if not contact:
             contact = FailedContact.objects.create(
-                email=each["email"], created_by_id=user, name=each["first name"]
+                email=each["email"],
+                created_by_id=user,
+                name=each["first name"],
+                company_id=company
             )
             if each.get("company name", None):
                 contact.company_name = each["company name"]
@@ -117,7 +124,7 @@ def get_campaign_message_id(campaign):
     return file_hash
 
 
-@task
+@app.task
 def run_campaign(campaign, domain="demo.django-crm.io", protocol="https"):
     blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
     blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
@@ -231,7 +238,7 @@ def run_campaign(campaign, domain="demo.django-crm.io", protocol="https"):
         pass
 
 
-@task
+@app.task
 def run_all_campaigns():
     start_date = datetime.date.today()
     campaigns = Campaign.objects.filter(schedule_date_time__date=start_date)
@@ -239,7 +246,7 @@ def run_all_campaigns():
         run_campaign(each.id)
 
 
-@task
+@app.task
 def list_all_bounces_unsubscribes():
     bounces = requests.get(
         "https://api.sendgrid.com/api/bounces.get.json?api_user="
@@ -268,7 +275,7 @@ def list_all_bounces_unsubscribes():
                 contact.save()
 
 
-@task
+@app.task
 def send_scheduled_campaigns():
     from datetime import datetime
 
@@ -296,7 +303,7 @@ def send_scheduled_campaigns():
                 CampaignCompleted.objects.create(campaign=each, is_completed=True)
 
 
-@task
+@app.task
 def delete_multiple_contacts_tasks(contact_list_id, bounced=True):
     """ this method is used to remove all contacts from a contact list based on bounced kwarg """
     contacts_list_obj = ContactList.objects.filter(id=contact_list_id).first()
@@ -310,7 +317,7 @@ def delete_multiple_contacts_tasks(contact_list_id, bounced=True):
                     contact_obj.delete()
 
 
-@task
+@app.task
 def send_campaign_email_to_admin_contact(
     campaign, domain="demo.django-crm.io", protocol="https"
 ):
@@ -394,6 +401,6 @@ def send_campaign_email_to_admin_contact(
         pass
 
 
-@task
+@app.task
 def update_elastic_search_index():
     call_command("update_index --age=1", interactive=False)

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytz
-from celery.task import task
+from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -13,8 +13,9 @@ from common.models import User
 from common.utils import convert_to_custom_timezone
 from marketing.models import BlockedDomain, BlockedEmail
 
+app = Celery('redis://')
 
-@task
+@app.task
 def send_email(email_obj_id):
     email_obj = Email.objects.filter(id=email_obj_id).first()
     blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
@@ -61,7 +62,7 @@ def send_email(email_obj_id):
                         print(e)
 
 
-@task
+@app.task
 def send_email_to_assigned_user(
     recipients, from_email, domain="demo.django-crm.io", protocol="http"
 ):
@@ -100,7 +101,7 @@ def send_email_to_assigned_user(
                 msg.send()
 
 
-@task
+@app.task
 def send_scheduled_emails():
     email_objs = Email.objects.filter(scheduled_later=True)
     # TODO: modify this later , since models are updated

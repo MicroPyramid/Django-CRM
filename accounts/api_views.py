@@ -96,17 +96,15 @@ class AccountsListView(APIView):
         close_accounts = AccountSerializer(
             self.get_queryset().filter(status="close"), many=True
         ).data
-        context["accounts_list"] = AccountSerializer(
-            self.get_queryset(), many=True
-        ).data
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True).order_by("email"), many=True
+            User.objects.filter(is_active=True, company=self.request.company).order_by("email"), many=True
         ).data
         context["open_accounts"] = open_accounts
         context["close_accounts"] = close_accounts
         context["industries"] = INDCHOICES
         context["per_page"] = self.request.POST.get("per_page")
-        tag_ids = list(set(Account.objects.values_list("tags", flat=True)))
+        tag_ids = list(set(Account.objects.filter(
+            company=self.request.company).values_list("tags", flat=True)))
         context["tags"] = TagsSerailizer(
             Tags.objects.filter(id__in=tag_ids), many=True
         ).data

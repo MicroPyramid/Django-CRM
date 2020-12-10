@@ -5,12 +5,15 @@ from django.contrib.auth.tokens import default_token_generator
 
 
 class CompanySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Company
-        fields = ("id", "name", "address", "sub_domain", "user_limit", "country")
+        fields = ("id", "name", "address",
+                  "sub_domain", "user_limit", "country")
 
 
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = (
@@ -34,6 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Comment
         fields = "__all__"
@@ -86,7 +90,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 marketing = self.initial_data.get(
                     "has_marketing_access", False)
                 if not has_sales_access and not marketing:
-                    raise serializers.ValidationError("Select atleast one option.")
+                    raise serializers.ValidationError(
+                        "Select atleast one option.")
         if self.request_user.role == "USER":
             has_sales_access = self.instance.has_sales_access
         return has_sales_access
@@ -107,7 +112,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
         else:
             if not User.objects.filter(email=email).exists():
                 return email
-            raise serializers.ValidationError("User already exists with this email")
+            raise serializers.ValidationError(
+                "User already exists with this email")
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -155,20 +161,30 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
         new_password2 = data.get("new_password2")
         new_password1 = data.get("new_password1")
         if new_password1 != new_password2:
-            raise serializers.ValidationError("The two password fields didn't match.")
+            raise serializers.ValidationError(
+                "The two password fields didn't match.")
         return new_password2
 
 
 class AttachmentsSerializer(serializers.ModelSerializer):
+    file_path = serializers.SerializerMethodField()
+
+    def get_file_path(self, obj):
+        if obj.attachment:
+            return obj.attachment.url
+        None
+
     class Meta:
         model = Attachments
-        fields = ["created_by", "file_name", "created_on"]
+        fields = ["created_by", "file_name", "created_on", "file_path"]
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Address
-        fields = ("address_line", "street", "city", "state", "postcode", "country")
+        fields = ("address_line", "street", "city",
+                  "state", "postcode", "country")
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
@@ -194,3 +210,26 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = "__all__"
+
+
+class DocumentCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Document
+        fields = ["title", "document_file", "status"]
+
+    def __init__(self, *args, **kwargs):
+
+        super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
+        self.fields["title"].required = True
+
+    def validate_title(self, title):
+        if not self.instance:
+            if Document.objects.filter(title=title).exists():
+                raise serializers.ValidationError(
+                    "Document with this Title already exists")
+            return title
+        if Document.objects.filter(title=title).exclude(id=self.instance.id).exists():
+            raise serializers.ValidationError(
+                "Document with this Title already exists")
+        return title

@@ -164,7 +164,7 @@ class Contact(models.Model):
     last_name = models.CharField(max_length=500, null=True, blank=True)
     city = models.CharField(max_length=500, null=True, blank=True)
     state = models.CharField(max_length=500, null=True, blank=True)
-    contry = models.CharField(max_length=500, null=True, blank=True)
+    country = models.CharField(max_length=500, null=True, blank=True)
     company = models.ForeignKey(
         Company,
         related_name="marketing_contacts_company",
@@ -208,7 +208,7 @@ class FailedContact(models.Model):
     last_name = models.CharField(max_length=500, null=True, blank=True)
     city = models.CharField(max_length=500, null=True, blank=True)
     state = models.CharField(max_length=500, null=True, blank=True)
-    contry = models.CharField(max_length=500, null=True, blank=True)
+    country = models.CharField(max_length=500, null=True, blank=True)
     company = models.ForeignKey(
         Company,
         related_name="marketing_failed_contacts_company",

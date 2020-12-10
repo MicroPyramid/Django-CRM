@@ -123,7 +123,7 @@ def dashboard(request):
 @login_required(login_url="/login")
 @marketing_access_required
 def contact_lists(request):
-    tags = Tag.objects.all()
+    tags = Tag.objects.filter(company=request.company)
     if request.user.role == "ADMIN":
         queryset = ContactList.objects.filter(company=request.company).order_by(
             "-created_on"
@@ -203,7 +203,7 @@ def contacts_list(request):
 
         context = {
             "contacts": contacts,
-            "users": User.objects.all(),
+            "users": User.objects.filter(company=request.company),
             "contact_lists": contact_lists,
         }
         return render(request, "marketing/lists/all.html", context)
@@ -222,7 +222,7 @@ def contact_list_new(request):
             instance.save()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user)
+                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
                 instance.tags.add(tag)
             if request.FILES.get("contacts_file"):
                 upload_csv_file.delay(
@@ -230,6 +230,7 @@ def contact_list_new(request):
                     form.invalid_rows,
                     request.user.id,
                     [instance.id],
+                    request.company.id,
                 )
 
             return JsonResponse(
@@ -266,7 +267,7 @@ def edit_contact_list(request, pk):
             instance.tags.clear()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user)
+                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
                 instance.tags.add(tag)
             if request.FILES.get("contacts_file"):
                 upload_csv_file.delay(
@@ -274,6 +275,7 @@ def edit_contact_list(request, pk):
                     form.invalid_rows,
                     request.user.id,
                     [instance.id],
+                    request.company.id,
                 )
 
             return JsonResponse(
@@ -679,7 +681,7 @@ def campaign_list(request):
     if request.user.role == "ADMIN":
         queryset = Campaign.objects.filter(company=request.company)
     else:
-        queryset = Campaign.objects.all().filter(created_by=request.user)
+        queryset = Campaign.objects.filter(created_by=request.user)
     users = User.objects.filter(id__in=queryset.values_list("created_by_id", flat=True))
     if request.GET.get("tag"):
         queryset = queryset.filter(tags=request.GET.get("tag"))
@@ -704,7 +706,7 @@ def campaign_list(request):
 def campaign_new(request):
     if request.method == "GET":
         if request.user.role == "ADMIN" or request.user.is_superuser:
-            email_templates = EmailTemplate.objects.all(company=request.company)
+            email_templates = EmailTemplate.objects.filter(company=request.company)
         else:
             email_templates = EmailTemplate.objects.filter(created_by=request.user)
         if request.user.role == "ADMIN" or request.user.is_superuser:
@@ -758,7 +760,7 @@ def campaign_new(request):
             instance.save()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user)
+                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
                 instance.tags.add(tag)
 
             camp = instance
@@ -1618,7 +1620,7 @@ def contacts_list_elastic_search(request):
         bounced_contacts = Contact.objects.filter(
             is_bounced=True, company=request.company
         )
-        failed_contacts = FailedContact.objects.filter(company=request.company)
+        failed_contacts = FailedContact.objects.filter(company=request.company).order_by("id")
         contact_lists = ContactList.objects.filter(company=request.company)
     else:
         contact_ids = request.user.marketing_contactlist.all().values_list(
@@ -1629,7 +1631,7 @@ def contacts_list_elastic_search(request):
         # failed_contacts = SearchQuerySet().models(FailedContact).filter(created_by_id=str(request.user.id))
         contacts = Contact.objects.filter(id__in=contact_ids).exclude(is_bounced=True)
         bounced_contacts = Contact.objects.filter(id__in=contact_ids, is_bounced=True)
-        failed_contacts = FailedContact.objects.filter(created_by=request.user)
+        failed_contacts = FailedContact.objects.filter(created_by=request.user).order_by("id")
         contact_lists = ContactList.objects.filter(created_by=request.user)
         # contacts = Contact.objects.filter(created_by=request.user)
 
