@@ -1,6 +1,6 @@
 import re
 
-from celery.task import task
+from celery import Celery
 from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import EmailMessage, EmailMultiAlternatives
@@ -13,12 +13,14 @@ from leads.models import Lead
 from marketing.models import BlockedDomain, BlockedEmail
 
 
+app = Celery('redis://')
+
 def get_rendered_html(template_name, context={}):
     html_content = render_to_string(template_name, context)
     return html_content
 
 
-@task
+@app.task
 def send_email(
     subject,
     html_content,
@@ -44,7 +46,7 @@ def send_email(
     email.send()
 
 
-@task
+@app.task
 def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
     lead_instance = Lead.objects.filter(
         ~Q(status="converted"), pk=lead_id, is_active=True
@@ -74,7 +76,7 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
             send_email.delay(**mail_kwargs)
 
 
-@task
+@app.task
 def send_email_to_assigned_user(
     recipients, lead_id, domain="demo.django-crm.io", protocol="http", source=""
 ):
@@ -111,7 +113,7 @@ def send_email_to_assigned_user(
                 msg.send()
 
 
-@task
+@app.task
 def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company_id):
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
@@ -146,7 +148,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     print(e)
 
 
-@task
+@app.task
 def update_leads_cache():
     queryset = (
         Lead.objects.all()

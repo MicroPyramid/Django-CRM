@@ -1,6 +1,6 @@
 from accounts.models import Account
 from cases.models import Case
-from celery.task import task
+from celery import Celery
 from common.models import Document, User
 from contacts.models import Contact
 from events.models import Event
@@ -9,8 +9,9 @@ from opportunity.models import Opportunity
 from tasks.models import Task
 from teams.models import Teams
 
+app = Celery('redis://')
 
-@task
+@app.task
 def remove_users(removed_users_list, team_id):
     removed_users_list = [i for i in removed_users_list if i.isdigit()]
     users_list = User.objects.filter(id__in=removed_users_list)
@@ -71,7 +72,7 @@ def remove_users(removed_users_list, team_id):
                     event.assigned_to.remove(user)
 
 
-@task
+@app.task
 def update_team_users(team_id):
     """ this function updates assigned_to field on all models when a team is updated """
     pass

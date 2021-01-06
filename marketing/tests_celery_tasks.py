@@ -118,6 +118,7 @@ class TestCeleryTasks(TestMarketingModel, TestCase):
                 [
                     self.contact_list.id,
                 ],
+                self.company.id,
             ),
         )
         self.assertEqual("SUCCESS", task.state)
