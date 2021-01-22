@@ -51,7 +51,7 @@ class CaseForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data["name"]
         case = Case.objects.filter(name__iexact=name).exclude(id=self.instance.id)
-        if case:
+        if case.exists():
             raise forms.ValidationError("Case Already Exists with this Name")
         else:
             return name

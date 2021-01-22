@@ -17,10 +17,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterModelOptions(
-            name="user",
-            options={"ordering": ["-is_active"]},
-        ),
+        migrations.AlterModelOptions(name="user", options={"ordering": ["-is_active"]}),
         migrations.AddField(
             model_name="document",
             name="status",
@@ -30,5 +27,5 @@ class Migration(migrations.Migration):
                 max_length=64,
             ),
         ),
-        migrations.RunPython(generate_document_status),
+        migrations.RunPython(generate_document_status, migrations.RunPython.noop),
     ]
