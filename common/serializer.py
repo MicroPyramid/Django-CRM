@@ -40,7 +40,33 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = "__all__"
+        fields = (
+            "id",
+            "comment",
+            "commented_on",
+            "commented_by",
+            "account",
+            "lead",
+            "opportunity",
+            "contact",
+            "case",
+            "task",
+            "invoice",
+            "event",
+            "user",
+        )
+
+class LeadCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = (
+            "id",
+            "comment",
+            "commented_on",
+            "commented_by",
+            "lead",
+)
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -176,7 +202,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Attachments
-        fields = ["created_by", "file_name", "created_on", "file_path"]
+        fields = ["id", "created_by", "file_name", "created_on", "file_path"]
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
@@ -203,33 +229,55 @@ class BillingAddressSerializer(serializers.ModelSerializer):
 class DocumentSerializer(serializers.ModelSerializer):
     shared_to = UserSerializer(read_only=True, many=True)
     teams = serializers.SerializerMethodField()
+    created_by = UserSerializer()
+    company = CompanySerializer()
 
     def get_teams(self, obj):
         return obj.teams.all().values()
 
     class Meta:
         model = Document
-        fields = "__all__"
+        fields = [
+            "id",
+            "title",
+            "document_file",
+            "status",
+            "shared_to",
+            "teams",
+            "created_on",
+            "created_by",
+            "company",
+        ]
 
 
 class DocumentCreateSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Document
-        fields = ["title", "document_file", "status"]
-
     def __init__(self, *args, **kwargs):
-
+        request_obj = kwargs.pop("request_obj", None)
         super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["title"].required = True
+        self.company = request_obj.company
 
     def validate_title(self, title):
-        if not self.instance:
-            if Document.objects.filter(title=title).exists():
+        if self.instance:
+            if Document.objects.filter(
+                title__iexact=title, company=self.company
+                ).exclude(id=self.instance.id).exists():
                 raise serializers.ValidationError(
                     "Document with this Title already exists")
-            return title
-        if Document.objects.filter(title=title).exclude(id=self.instance.id).exists():
-            raise serializers.ValidationError(
-                "Document with this Title already exists")
+        else:
+            if Document.objects.filter(
+                title__iexact=title, company=self.company
+                ).exists():
+                raise serializers.ValidationError(
+                    "Document with this Title already exists")
         return title
+
+    class Meta:
+        model = Document
+        fields = [
+            "title",
+            "document_file",
+            "status",
+            "company",
+        ]

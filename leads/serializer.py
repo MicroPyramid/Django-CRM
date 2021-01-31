@@ -1,23 +1,31 @@
 from rest_framework import serializers
 from leads.models import Lead
 from accounts.models import Tags, Account
-from common.serializer import UserSerializer
+from common.serializer import (
+    UserSerializer,
+    AttachmentsSerializer,
+    LeadCommentSerializer,
+    CompanySerializer
+)
 from contacts.serializer import ContactSerializer
+from teams.serializer import TeamsSerializer
 
 
-class TagsSerailizer(serializers.ModelSerializer):
+class TagsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tags
-        fields = ("name", "slug")
+        fields = ("id", "name", "slug")
 
 
 class LeadSerializer(serializers.ModelSerializer):
-    # user = UserSerializer()
     assigned_to = UserSerializer(read_only=True, many=True)
     created_by = UserSerializer()
-    tags = TagsSerailizer(read_only=True, many=True)
-    contacts = ContactSerializer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
+    lead_attachment = AttachmentsSerializer(read_only=True, many=True)
+    teams = TeamsSerializer(read_only=True, many=True)
+    company = CompanySerializer()
+    lead_comments = LeadCommentSerializer(read_only=True, many=True)
 
     class Meta:
         model = Lead
@@ -27,8 +35,8 @@ class LeadSerializer(serializers.ModelSerializer):
             "title",
             "first_name",
             "last_name",
-            "email",
             "phone",
+            "email",
             "status",
             "source",
             "address_line",
@@ -39,6 +47,8 @@ class LeadSerializer(serializers.ModelSerializer):
             "country",
             "website",
             "description",
+            "lead_attachment",
+            "lead_comments",
             "assigned_to",
             "account_name",
             "opportunity_amount",
@@ -47,15 +57,9 @@ class LeadSerializer(serializers.ModelSerializer):
             "is_active",
             "enquery_type",
             "tags",
-            "contacts",
             "created_from_site",
             "teams",
             "company",
-            # "phone_raw_input",
-            # "created_on_arrow",
-            # "get_team_users",
-            # "get_team_and_assigned_users",
-            # "get_assigned_users_not_in_teams",
         )
 
 
@@ -79,23 +83,37 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 self.fields["source"]._set_choices(prev_choices)
         self.company = request_obj.company
 
-    def clean_account_name(self, account_name):
+    def validate_account_name(self, account_name):
         if self.instance:
-            if self.instance.account_name != account_name:
-                if not Account.objects.filter(
+            if Account.objects.filter(
                     name__iexact=account_name,
                     company=self.company,
-                ).exists():
-                    return account_name
+            ).exclude(id=self.instance.id).exists():
                 raise serializers.ValidationError(
                     "Account already exists with this name")
-            return account_name
-        if not Account.objects.filter(
-            name__iexact=account_name, company=self.company
-        ).exists():
-            return account_name
-        raise serializers.ValidationError(
-            "Account already exists with this name")
+        else:
+            if Account.objects.filter(
+                name__iexact=account_name, company=self.company
+            ).exists():                
+                raise serializers.ValidationError(
+                    "Account already exists with this name")
+        return account_name
+
+    def validate_title(self, title):
+        if self.instance:
+            if Lead.objects.filter(
+                    title__iexact=title,
+                    company=self.company,
+            ).exclude(id=self.instance.id).exists():
+                raise serializers.ValidationError(
+                    "Lead already exists with this title")
+        else:
+            if Lead.objects.filter(
+                title__iexact=title, company=self.company
+            ).exists():                
+                raise serializers.ValidationError(
+                    "Lead already exists with this title")
+        return title
 
     class Meta:
         model = Lead

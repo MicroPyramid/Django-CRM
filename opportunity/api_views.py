@@ -2,58 +2,50 @@ import pytz
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
-
+from opportunity.models import Opportunity
+from opportunity.tasks import send_email_to_assigned_user
+from opportunity import swagger_params
+from opportunity.serializer import (
+    OpportunitySerializer,
+    TagsSerializer,
+    OpportunityCreateSerializer,
+)
 from accounts.models import Account, Tags
-from accounts.tasks import send_email_to_assigned_user
-from accounts import swagger_params
-from accounts.serializer import (
-    AccountSerializer,
-    TagsSerailizer,
-    AccountCreateSerializer,
-)
+from accounts.serializer import AccountSerializer
 from common.models import User, Attachments, Comment
-from common.utils import (
-    COUNTRIES,
-    INDCHOICES,
-)
 from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import UserSerializer, CommentSerializer, AttachmentsSerializer
+from common.serializer import (
+    UserSerializer,
+    CommentSerializer,
+    AttachmentsSerializer,
+    LeadCommentSerializer
+)
 from common.utils import (
-    CASE_TYPE,
-    COUNTRIES,
+    STAGES,
+    SOURCES,
     CURRENCY_CODES,
-    INDCHOICES,
-    PRIORITY_CHOICE,
-    STATUS_CHOICE,
 )
 from contacts.models import Contact
 from leads.models import Lead
 from opportunity.models import SOURCES, STAGES, Opportunity
-from cases.models import Case
-from cases.serializer import CaseSerializer
 from contacts.serializer import ContactSerializer
-from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
-from tasks.serializer import TaskSerializer
 from opportunity.serializer import OpportunitySerializer
-from invoices.serializer import InvoiceSerailizer
-from emails.serializer import EmailSerailizer
 from teams.models import Teams
 
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
 
 
-class AccountsListView(APIView, LimitOffsetPagination):
+class OpportunityListView(APIView):
 
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
-    model = Account
+    model = Opportunity
 
     def get_context_data(self, **kwargs):
         params = (
@@ -62,137 +54,147 @@ class AccountsListView(APIView, LimitOffsetPagination):
             else self.request.data
         )
         queryset = self.model.objects.filter(company=self.request.company)
+        accounts = Account.objects.filter(company=self.request.company)
+        contacts = Contact.objects.filter(company=self.request.company)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
             ).distinct()
+            accounts = accounts.filter(
+                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
+            ).distinct()
+            contacts = contacts.filter(
+                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
+            ).distinct()
+
         
         if params:
             request_post = params
-            if request_post:
-                if request_post.get("name"):
-                    queryset = queryset.filter(name__icontains=request_post.get("name"))
-                if request_post.get("city"):
-                    queryset = queryset.filter(
-                        billing_city__contains=request_post.get("city")
-                    )
-                if request_post.get("industry"):
-                    queryset = queryset.filter(
-                        industry__icontains=request_post.get("industry")
-                    )
-                if request_post.get("tags"):
-                    queryset = queryset.filter(tags__in=json.loads(request_post.get("tags"))).distinct()
+            if request_post.get("name"):
+                queryset = queryset.filter(
+                    name__icontains=request_post.get("name")
+                )
+            if request_post.get("account"):
+                queryset = queryset.filter(
+                    account=request_post.get("account")
+                )
+            if request_post.get("stage"):
+                queryset = queryset.filter(
+                    stage__contains=request_post.get("stage")
+                )
+            if request_post.get("lead_source"):
+                queryset = queryset.filter(
+                    lead_source__contains=request_post.get("lead_source")
+                )
+            if request_post.get("tags"):
+                queryset = queryset.filter(
+                    tags__in=json.loads(request_post.get("tags"))
+                ).distinct()
+
         context = {}
         search = False
         if (
             params.get("name")
-            or params.get("city")
-            or params.get("industry")
-            or params.get("tag")
+            or params.get("account")
+            or params.get("stage")
+            or params.get("lead_source")
+            or params.get("tags")
         ):
             search = True
+
         context["search"] = search
-
-        queryset_open = queryset.filter(status="open").order_by("id")
-        results_accounts_open = self.paginate_queryset(
-                        queryset_open.distinct(), self.request, view=self)
-        accounts_open = AccountSerializer(
-            results_accounts_open, many=True
-        ).data
-        context["per_page"] = 10
-        context["active_accounts"] = {
-            "accounts_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number":int(self.offset/10)+1,
-            "open_accounts":accounts_open
-            }
-
-        queryset_close = queryset.filter(status="close").order_by("id")
-        results_accounts_close = self.paginate_queryset(
-                        queryset_close.distinct(), self.request, view=self)
-        accounts_close = AccountSerializer(
-            results_accounts_close, many=True
+        opportunities = OpportunitySerializer(
+            queryset, many=True
         ).data
 
-        context["closed_accounts"] = {
-            "accounts_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number":int(self.offset/10)+1,
-            "close_accounts":accounts_close
-            }
-
+        context["opportunities"] = opportunities  
         context["users"] = UserSerializer(
             User.objects.filter(is_active=True, company=self.request.company).order_by("email"), many=True
         ).data   
-        context["industries"] = INDCHOICES
-        tag_ids = Account.objects.filter(
-            company=self.request.company).values_list("tags", flat=True).distinct()
-        context["tags"] = TagsSerailizer(
+        tag_ids = list(set(Opportunity.objects.filter(
+            company=self.request.company).values_list("tags", flat=True)))
+        context["tags"] = TagsSerializer(
             Tags.objects.filter(id__in=tag_ids), many=True
         ).data
-        if params.get("tag", None):
-            context["request_tags"] = self.params.get("tag")
-        else:
-            context["request_tags"] = None
+        context["accounts_list"] = AccountSerializer(
+            accounts, many=True
+        ).data
+        context["contacts_list"] = ContactSerializer(
+            contacts, many=True
+        ).data
+        if self.request.user == "ADMIN":
+            context["teams_list"] = TeamsSerializer(
+                Teams.objects.filter(company=self.request.company), many=True
+            ).data
+        context["stage"] = STAGES
+        context["lead_source"] = SOURCES
+        context["currency"] = CURRENCY_CODES        
 
-        TIMEZONE_CHOICES = [(tz, tz) for tz in pytz.common_timezones]
-        context["timezones"] = TIMEZONE_CHOICES
-        context["settings_timezone"] = settings.TIME_ZONE
         return context
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_get_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_list_get_params
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_post_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_create_post_params
     )
     def post(self, request, *args, **kwargs):
         params = request.query_params if len(request.data) == 0 else request.data
         data = {}
-        serializer = AccountCreateSerializer(
-            data=params, request_obj=request, account=True
+        serializer = OpportunityCreateSerializer(
+            data=params, request_obj=request
         )
-        # Save Account
         if serializer.is_valid():
-            account_object = serializer.save(
-                created_by=request.user, company=request.company
+            opportunity_obj = serializer.save(
+                created_by=request.user,
+                company=request.company,
+                closed_on = params.get("due_date")
             )
+
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))                
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact, company=request.company)
                     if obj_contact:
-                        account_object.contacts.add(contact)
+                        opportunity_obj.contacts.add(contact)
                     else:
-                        account_object.delete()
+                        opportunity_obj.delete()
                         data["contacts"] = "Please enter valid contact"
                         return Response({"error": True, "errors":data})
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
+                # for t in tags:
+                #     tag,_ = Tags.objects.get_or_create(slug=t.lower())
+                #     opportunity_obj.tags.add(tag)
+
                 for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
-                    if tag_obj:
-                        tag_obj = tag_obj[0]
+                    obj_tag = Tags.objects.filter(slug=tag.lower())
+                    if obj_tag:
+                        obj_tag = obj_tag[0]
                     else:
-                        tag_obj = Tags.objects.create(name=tag)
-                    account_object.tags.add(tag_obj)
+                        obj_tag = Tags.objects.create(name=tag)
+                    opportunity_obj.tags.add(obj_tag)
+
+            if params.get("stage"):
+                stage = params.get("stage")
+                if stage in ["CLOSED WON","CLOSED LOST"]:
+                    opportunity_obj.closed_by = self.request.user
+
             if self.request.user.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team,company=request.company)
-                        if teams_ids:
-                            account_object.teams.add(team)
+                        obj_team = Teams.objects.filter(id=team,company=request.company)
+                        if obj_team:
+                            opportunity_obj.teams.add(team)
                         else:
-                            account_object.delete()
+                            opportunity_obj.delete()
                             data["team"] = "Please enter valid Team"
                             return Response({"error": True, "errors":data})
                 if params.get("assigned_to"):
@@ -201,155 +203,170 @@ class AccountsListView(APIView, LimitOffsetPagination):
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
                         if user:                            
-                            account_object.assigned_to.add(user_id)
+                            opportunity_obj.assigned_to.add(user_id)
                         else:
-                            account_object.delete()
+                            opportunity_obj.delete()
                             data["assigned_to"] = "Please enter valid user"
                             return Response({"error": True, "errors":data})
            
-            if self.request.FILES.get("account_attachment"):
+            if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
-                attachment.created_by = request.user
-                attachment.file_name = request.FILES.get("account_attachment").name
-                attachment.account = account_object
-                attachment.attachment = request.FILES.get("account_attachment")
+                attachment.created_by = self.request.user
+                attachment.file_name = self.request.FILES.get("opportunity_attachment").name
+                attachment.opportunity = opportunity_obj
+                attachment.attachment = self.request.FILES.get("opportunity_attachment")
                 attachment.save()
 
             assigned_to_list = list(
-                account_object.assigned_to.all().values_list("id", flat=True)
+                opportunity_obj.assigned_to.all().values_list("id", flat=True)
             )
 
             current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email_to_assigned_user.delay(
                 recipients,
-                account_object.id,
+                opportunity_obj.id,
                 domain=current_site.domain,
                 protocol=self.request.scheme,
             )
-            return Response({"error": False, "message": "Account Created Successfully"})
-        return Response(
-            {"error": True, "errors": serializer.errors},
-             status=status.HTTP_400_BAD_REQUEST
-        )
+            return Response({"error": False,
+                             "message": "Opportunity Created Successfully"})
+
+        return Response({"error": True,
+                         "errors": serializer.errors},
+                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class AccountDetailView(APIView):
+class OpportunityDetailView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    model = Opportunity
 
     def get_object(self, pk):
-        return Account.objects.filter(id=pk).first()
+        return self.model.objects.filter(id=pk).first()
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_post_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_create_post_params
     )
     def put(self, request, pk, format=None):
         params = request.query_params if len(
             request.data) == 0 else request.data
-        account_object = self.get_object(pk=pk)
+        opportunity_object = self.get_object(pk=pk)
         data = {}
-        if account_object.company != request.company:
+        if opportunity_object.company != request.company:
             return Response({
                 "error":True,
                 "errors":"User company doesnot match with header...."},
                 status=status.HTTP_404_NOT_FOUND
             )
-        serializer = AccountCreateSerializer(
-            account_object, data=params, request_obj=request, account=True
+        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+            if not (
+                (self.request.user == opportunity_object.created_by)
+                or (self.request.user in opportunity_object.assigned_to.all())
+            ):
+                return Response(
+                    {"error": True,
+                     "errors": "You do not have Permission to perform this action"},
+                     status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        serializer = OpportunityCreateSerializer(
+            opportunity_object,
+            data=params,
+            request_obj=request,
+            opportunity=True,
         )
 
         if serializer.is_valid():
-            if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-                if not (
-                    (self.request.user == account_object.created_by)
-                    or (self.request.user in account_object.assigned_to.all())
-                ):
-                    return Response(
-                        {"error": True,
-                         "errors": "You do not have Permission to perform this action"},
-                         status=status.HTTP_401_UNAUTHORIZED,
-                    )
-            account_object = serializer.save()
+            opportunity_object = serializer.save(
+                                    closed_on = params.get("due_date")
+                                )
             previous_assigned_to_users = list(
-                account_object.assigned_to.all().values_list("id", flat=True)
+                opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
-            account_object.contacts.clear()
+            opportunity_object.contacts.clear()
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))               
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact, company=request.company)
                     if obj_contact:
-                        account_object.contacts.add(contact)
+                        opportunity_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
                         return Response({"error":True, "errors":data})
-            account_object.tags.clear()
+            opportunity_object.tags.clear()
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
+                # for t in tags:
+                #     tag,_ = Tags.objects.get_or_create(name=t.lower())
+                #     opportunity_object.tags.add(tag) 
                 for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
-                    if tag_obj:
-                        tag_obj = tag_obj[0]
+                    obj_tag = Tags.objects.filter(slug=tag.lower())
+                    if obj_tag:
+                        obj_tag = obj_tag[0]
                     else:
-                        tag_obj = Tags.objects.create(name=tag)
-                    account_object.tags.add(tag_obj)
+                        obj_tag = Tags.objects.create(name=tag)
+                    opportunity_object.tags.add(obj_tag)
+
+            if params.get("stage"):
+                stage = params.get("stage")
+                if stage in ["CLOSED WON","CLOSED LOST"]:
+                    opportunity_object.closed_by_id = self.request.user.id
                         
             if self.request.user.role == "ADMIN":
-                account_object.teams.clear()
+                opportunity_object.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team,company=request.company)
-                        if teams_ids:
-                            account_object.teams.add(team)
+                        obj_team = Teams.objects.filter(id=team,company=request.company)
+                        if obj_team:
+                            opportunity_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
                             return Response({"error": True, "errors":data})
 
-                account_object.assigned_to.clear()               
+                opportunity_object.assigned_to.clear()               
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
                         if user:                            
-                            account_object.assigned_to.add(user_id)
+                            opportunity_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
                             return Response({"error": True, "errors":data})
                 
-            if self.request.FILES.get("account_attachment"):
+            if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.user
-                attachment.file_name = self.request.FILES.get("account_attachment").name
-                attachment.account = account_object
-                attachment.attachment = self.request.FILES.get("account_attachment")
+                attachment.file_name = self.request.FILES.get(
+                    "opportunity_attachment").name
+                attachment.opportunity = opportunity_object
+                attachment.attachment = self.request.FILES.get(
+                    "opportunity_attachment")
                 attachment.save()
 
             assigned_to_list = list(
-                account_object.assigned_to.all().values_list("id", flat=True)
+                opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
             current_site = get_current_site(self.request)
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(
                 recipients,
-                account_object.id,
+                opportunity_object.id,
                 domain=current_site.domain,
                 protocol=self.request.scheme,
             )
             return Response(
-                {"error": False, "message": "Account Updated Successfully"},
+                {"error": False, "message": "Opportunity Updated Successfully"},
                 status=status.HTTP_200_OK,
             )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-             status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": True, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.company_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_delete_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -365,36 +382,36 @@ class AccountDetailView(APIView):
                     "errors": "You do not have Permission to perform this action"}
                 )
         self.object.delete()
-        return Response({"error": False, "message": "Account Deleted Successfully."}, status=status.HTTP_200_OK)
+        return Response({"error": False, "message": "Opportunity Deleted Successfully."}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_get_detail_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_delete_params
     )
     def get(self, request, pk, format=None):
-        self.account = self.get_object(pk=pk)
-        if self.account.company != request.company:
+        self.opportunity = self.get_object(pk=pk)
+        if self.opportunity.company != request.company:
            return Response({
                "error": True,
                "errors":"User company doesnot match with header...."},
                status=status.HTTP_404_NOT_FOUND
             )
         context = {}
-        context["account_obj"] = AccountSerializer(self.account).data
+        context["opportunity_obj"] = OpportunitySerializer(self.opportunity).data
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
-                (self.request.user == self.account.created_by)
-                or (self.request.user in self.account.assigned_to.all())
+                (self.request.user == self.opportunity.created_by)
+                or (self.request.user in self.opportunity.assigned_to.all())
             ):
                 return Response({
                     "error": True,
-                    "errors": "You do not have Permission to perform this action"}
+                    "errors": "You don't have Permission to perform this action"}
                 )
 
         comment_permission = (
             True
             if (
-                self.request.user == self.account.created_by
+                self.request.user == self.opportunity.created_by
                 or self.request.user.is_superuser
                 or self.request.user.role == "ADMIN"
             )
@@ -408,29 +425,24 @@ class AccountDetailView(APIView):
                     company=self.request.company,
                 ).values("username")
             )
-        elif self.request.user != self.account.created_by:
-            if self.account.created_by:
-                users_mention = [{"username": self.account.created_by.username}]
+        elif self.request.user != self.opportunity.created_by:
+            if self.opportunity.created_by:
+                users_mention = [{"username": self.opportunity.created_by.username}]
             else:
                 users_mention = []
         else:
             users_mention = []
 
-        case_obj = Case.objects.get(account__id=self.account.id)
-
         context.update(
             {
-                "attachments": AttachmentsSerializer(
-                    self.account.account_attachment.all(), many=True
-                ).data,
                 "comments": CommentSerializer(
-                    self.account.accounts_comments.all(), many=True
+                    self.opportunity.opportunity_comments.all(), many=True
+                ).data,
+                "attachments": AttachmentsSerializer(
+                    self.opportunity.opportunity_attachment.all(), many=True
                 ).data,
                 "contacts": ContactSerializer(
-                    self.account.contacts.all(), many=True
-                ).data,
-                "opportunity_list": OpportunitySerializer(
-                    Opportunity.objects.filter(account=self.account), many=True
+                    self.opportunity.contacts.all(), many=True
                 ).data,
                 "users": UserSerializer(
                     User.objects.filter(
@@ -439,34 +451,18 @@ class AccountDetailView(APIView):
                     ).order_by("email"),
                     many=True,
                 ).data,
-                # "cases": CaseSerializer(
-                #     case_obj, many=True
-                # ).data,
-                "stages": STAGES,
-                "sources": SOURCES,
-                "countries": COUNTRIES,
-                "currencies": CURRENCY_CODES,
-                "case_types": CASE_TYPE,
-                "case_priority": PRIORITY_CHOICE,
-                "case_status": STATUS_CHOICE,
+                "stage": STAGES,
+                "lead_source": SOURCES,
+                "currency": CURRENCY_CODES,
                 "comment_permission": comment_permission,
-                "tasks": TaskSerializer(
-                    self.account.accounts_tasks.all(), many=True
-                ).data,
-                "invoices": InvoiceSerailizer(
-                    self.account.accounts_invoices.all(), many=True
-                ).data,
-                "emails": EmailSerailizer(
-                    self.account.sent_email.all(), many=True
-                ).data,
                 "users_mention": users_mention,
             }
         )
         return Response(context)
-
+    
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_detail_get_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_detail_get_params
     )
     def post(self, request, pk, **kwargs):
         params = (
@@ -475,54 +471,56 @@ class AccountDetailView(APIView):
             else self.request.data
         )
         context = {}
-        self.account_obj = Account.objects.get(pk=pk)
-        if self.account_obj.company != request.company:
+        self.opportunity_obj = Opportunity.objects.get(pk=pk)
+        if self.opportunity_obj.company != request.company:
             return Response(
                 {"error": True,
-                 "errors": "User company does not match with header...."}
+                 "errors": "User company doesnot match with header...."}
             )
 
+        comment_serializer = CommentSerializer(
+            data=params)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
-                (self.request.user == self.account_obj.created_by)
-                or (self.request.user in self.account_obj.assigned_to.all())
+                (self.request.user == self.opportunity_obj.created_by)
+                or (self.request.user in self.opportunity_obj.assigned_to.all())
             ):
                 return Response(
                     {"error": True,
-                     "errors": "You do not have Permission to perform this action"},
+                     "errors": "You don't have Permission to perform this action"},
                      status = status.HTTP_401_UNAUTHORIZED
                 )
-        comment_serializer = CommentSerializer(
-            data=params)
         if comment_serializer.is_valid():
             if params.get("comment"):
                 comment_serializer.save(
-                    account_id = self.account_obj.id,
+                    opportunity_id = self.opportunity_obj.id,
                     commented_by_id = self.request.user.id,)
-          
-        if self.request.FILES.get("account_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                "account_attachment").name
-            attachment.account = self.account_obj
-            attachment.attachment = self.request.FILES.get("account_attachment")
-            attachment.save()
+            
+            if self.request.FILES.get("opportunity_attachment"):
+                attachment = Attachments()
+                attachment.created_by = self.request.user
+                attachment.file_name = self.request.FILES.get(
+                    "opportunity_attachment").name
+                attachment.opportunity = self.opportunity_obj
+                attachment.attachment = self.request.FILES.get(
+                    "opportunity_attachment")
+                attachment.save()
 
         comments = Comment.objects.filter(
-            account__id=self.account_obj.id).order_by("-id")
+            opportunity=self.opportunity_obj).order_by("-id")
         attachments = Attachments.objects.filter(
-            account__id=self.account_obj.id).order_by("-id")
+            opportunity=self.opportunity_obj
+        ).order_by("-id")
         context.update(
             {
-                "account_obj": AccountSerializer(self.account_obj).data,
+                "opportunity_obj": OpportunitySerializer(self.opportunity_obj).data,
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
                 "comments": CommentSerializer(comments, many=True).data,
             }
         )
         return Response(context)
 
-class AccountCommentView(APIView):
+class OpportunityCommentView(APIView):
     model = Comment
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -531,8 +529,8 @@ class AccountCommentView(APIView):
         return self.model.objects.get(pk=pk)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_comment_edit_params
+        tags=["Opportunities"],
+        manual_parameters=swagger_params.opportunity_comment_edit_params
     )
     def put(self, request, pk, format=None):
         params = request.query_params if len(
@@ -559,12 +557,12 @@ class AccountCommentView(APIView):
         else:
             return Response({
                     "error": True,
-                    "errors": "You don't have permission to edit this Comment"}
+                    "errors": "You don't have permission to perform this action."}
                 )
 
     @swagger_auto_schema(
-        tags=["Accounts"], 
-        manual_parameters=swagger_params.company_params
+        tags=["Opportunities"], 
+        manual_parameters=swagger_params.opportunity_delete_params
     )
     def delete(self, request, pk, format=None):        
         self.object = self.get_object(pk)
@@ -581,17 +579,17 @@ class AccountCommentView(APIView):
         else:
             return Response({
                 "error": True,
-                "errors": "You don't have permission to perform this action"}
+                "errors": "You do not have permission to perform this action"}
             )
 
-class AccountAttachmentView(APIView):
+class OpportunityAttachmentView(APIView):
     model = Attachments
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Accounts"], 
-        manual_parameters=swagger_params.company_params
+        tags=["Opportunities"], 
+        manual_parameters=swagger_params.opportunity_delete_params
     )
     def delete(self, request, pk, format=None):        
         self.object = self.model.objects.get(pk=pk)
@@ -608,5 +606,5 @@ class AccountAttachmentView(APIView):
         else:
             return Response({
                 "error": True,
-                "errors": "You don't have permission to delete this Attachment"}
+                "errors": "You don't have permission to perform this action."}
             )
