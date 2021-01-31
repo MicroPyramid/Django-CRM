@@ -34,10 +34,9 @@ lxml==4.6.2
 msgpack==1.0.0
 openpyxl==3.0.5
 pdfkit==0.6.1
-pep517==0.9.1
-phonenumbers==8.12.14
-Pillow==8.0.1
-pkg-resources==0.0.0
+pep517==0.8.2
+phonenumbers==8.10.4
+Pillow==7.1.2
 progress==1.5
 psycopg2-binary==2.8.6
 pyparsing==2.4.7
