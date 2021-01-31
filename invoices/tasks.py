@@ -1,4 +1,4 @@
-from celery.task import task
+from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -8,8 +8,9 @@ from common.models import User
 from invoices.models import Invoice, InvoiceHistory
 from marketing.models import BlockedDomain, BlockedEmail
 
+app = Celery('redis://')
 
-@task
+@app.task
 def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     created_by = invoice.created_by
@@ -73,7 +74,7 @@ def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="ht
             msg.send()
 
 
-@task
+@app.task
 def send_invoice_email(invoice_id, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
@@ -93,7 +94,7 @@ def send_invoice_email(invoice_id, domain="demo.django-crm.io", protocol="http")
         msg.send()
 
 
-@task
+@app.task
 def send_invoice_email_cancel(invoice_id, domain="demo.django-crm.io", protocol="http"):
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
@@ -113,7 +114,7 @@ def send_invoice_email_cancel(invoice_id, domain="demo.django-crm.io", protocol=
         msg.send()
 
 
-@task
+@app.task
 def create_invoice_history(original_invoice_id, updated_by_user_id, changed_fields):
     """original_invoice_id, updated_by_user_id, changed_fields"""
     original_invoice = Invoice.objects.filter(id=original_invoice_id).first()

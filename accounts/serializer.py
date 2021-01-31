@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.models import Account, Email, Tags
-from common.serializer import UserSerializer, CompanySerializer
+from common.serializer import UserSerializer, CompanySerializer, AttachmentsSerializer
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
 from contacts.serializer import ContactSerializer
@@ -9,7 +9,7 @@ from contacts.serializer import ContactSerializer
 class TagsSerailizer(serializers.ModelSerializer):
     class Meta:
         model = Tags
-        fields = ("name", "slug")
+        fields = ("id", "name", "slug")
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -20,6 +20,7 @@ class AccountSerializer(serializers.ModelSerializer):
     assigned_to = UserSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
+    account_attachment = AttachmentsSerializer(read_only=True, many=True)
 
     class Meta:
         model = Account
@@ -38,6 +39,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "billing_country",
             "website",
             "description",
+            "account_attachment",
             "created_by",
             "created_on",
             "is_active",
@@ -78,6 +80,7 @@ class EmailLogSerializer(serializers.ModelSerializer):
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
+
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
         request_obj = kwargs.pop("request_obj", None)
@@ -128,5 +131,4 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "billing_postcode",
             "billing_country",
             "lead",
-            "contacts",
         )

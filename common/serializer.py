@@ -5,12 +5,15 @@ from django.contrib.auth.tokens import default_token_generator
 
 
 class CompanySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Company
-        fields = ("id", "name", "address", "sub_domain", "user_limit", "country")
+        fields = ("id", "name", "address",
+                  "sub_domain", "user_limit", "country")
 
 
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = (
@@ -34,9 +37,36 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Comment
-        fields = "__all__"
+        fields = (
+            "id",
+            "comment",
+            "commented_on",
+            "commented_by",
+            "account",
+            "lead",
+            "opportunity",
+            "contact",
+            "case",
+            "task",
+            "invoice",
+            "event",
+            "user",
+        )
+
+class LeadCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = (
+            "id",
+            "comment",
+            "commented_on",
+            "commented_by",
+            "lead",
+)
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -86,7 +116,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 marketing = self.initial_data.get(
                     "has_marketing_access", False)
                 if not has_sales_access and not marketing:
-                    raise serializers.ValidationError("Select atleast one option.")
+                    raise serializers.ValidationError(
+                        "Select atleast one option.")
         if self.request_user.role == "USER":
             has_sales_access = self.instance.has_sales_access
         return has_sales_access
@@ -107,7 +138,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
         else:
             if not User.objects.filter(email=email).exists():
                 return email
-            raise serializers.ValidationError("User already exists with this email")
+            raise serializers.ValidationError(
+                "User already exists with this email")
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -155,20 +187,30 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
         new_password2 = data.get("new_password2")
         new_password1 = data.get("new_password1")
         if new_password1 != new_password2:
-            raise serializers.ValidationError("The two password fields didn't match.")
+            raise serializers.ValidationError(
+                "The two password fields didn't match.")
         return new_password2
 
 
 class AttachmentsSerializer(serializers.ModelSerializer):
+    file_path = serializers.SerializerMethodField()
+
+    def get_file_path(self, obj):
+        if obj.attachment:
+            return obj.attachment.url
+        None
+
     class Meta:
         model = Attachments
-        fields = ["created_by", "file_name", "created_on"]
+        fields = ["id", "created_by", "file_name", "created_on", "file_path"]
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Address
-        fields = ("address_line", "street", "city", "state", "postcode", "country")
+        fields = ("address_line", "street", "city",
+                  "state", "postcode", "country")
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
@@ -187,10 +229,55 @@ class BillingAddressSerializer(serializers.ModelSerializer):
 class DocumentSerializer(serializers.ModelSerializer):
     shared_to = UserSerializer(read_only=True, many=True)
     teams = serializers.SerializerMethodField()
+    created_by = UserSerializer()
+    company = CompanySerializer()
 
     def get_teams(self, obj):
         return obj.teams.all().values()
 
     class Meta:
         model = Document
-        fields = "__all__"
+        fields = [
+            "id",
+            "title",
+            "document_file",
+            "status",
+            "shared_to",
+            "teams",
+            "created_on",
+            "created_by",
+            "company",
+        ]
+
+
+class DocumentCreateSerializer(serializers.ModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        request_obj = kwargs.pop("request_obj", None)
+        super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
+        self.fields["title"].required = True
+        self.company = request_obj.company
+
+    def validate_title(self, title):
+        if self.instance:
+            if Document.objects.filter(
+                title__iexact=title, company=self.company
+                ).exclude(id=self.instance.id).exists():
+                raise serializers.ValidationError(
+                    "Document with this Title already exists")
+        else:
+            if Document.objects.filter(
+                title__iexact=title, company=self.company
+                ).exists():
+                raise serializers.ValidationError(
+                    "Document with this Title already exists")
+        return title
+
+    class Meta:
+        model = Document
+        fields = [
+            "title",
+            "document_file",
+            "status",
+            "company",
+        ]

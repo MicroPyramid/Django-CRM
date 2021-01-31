@@ -1,4 +1,4 @@
-from celery.task import task
+from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, EmailMessage
 from django.db.models import Q
@@ -9,8 +9,9 @@ from accounts.models import User
 from cases.models import Case
 from marketing.models import BlockedDomain, BlockedEmail
 
+app = Celery('redis://')
 
-@task
+@app.task
 def send_email_to_assigned_user(
     recipients, case_id, domain="demo.django-crm.io", protocol="http"
 ):

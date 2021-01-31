@@ -1,4 +1,4 @@
-from celery.task import task
+from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -9,8 +9,9 @@ from contacts.models import Contact
 from events.models import Event
 from marketing.models import BlockedDomain, BlockedEmail
 
+app = Celery('redis://')
 
-@task
+@app.task
 def send_email(event_id, recipients, domain="demo.django-crm.io", protocol="http"):
     event = Event.objects.filter(id=event_id).first()
     subject = " Invitation for an event."
