@@ -4,8 +4,38 @@ company_params_in_header = openapi.Parameter(
     "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
 )
 
+lead_list_get_params = [
+    company_params_in_header,
+    openapi.Parameter(
+        "title", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "source", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "status", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "tags", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+]
 
-lead_list_get_params = [company_params_in_header]
+lead_detail_get_params = [
+    company_params_in_header,
+    openapi.Parameter(
+        "lead_attachment", openapi.IN_QUERY, type=openapi.TYPE_FILE, 
+    ),
+    openapi.Parameter(
+        "comment", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+]
+
+lead_delete_params = [
+    company_params_in_header,
+]
 
 lead_create_post_params = [
     company_params_in_header,
@@ -19,16 +49,16 @@ lead_create_post_params = [
         "last_name", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
-        "email", openapi.IN_QUERY, type=openapi.TYPE_STRING
+        "account_name", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
         "phone", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
-        "status", openapi.IN_QUERY, type=openapi.TYPE_STRING
+        "email", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
-        "source", openapi.IN_QUERY, type=openapi.TYPE_STRING
+        "lead_attachment", openapi.IN_QUERY, type=openapi.TYPE_FILE, 
     ),
     openapi.Parameter(
         "website", openapi.IN_QUERY, type=openapi.TYPE_STRING
@@ -37,15 +67,19 @@ lead_create_post_params = [
         "description", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
-        "assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
         "teams", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
-        "address_line",
-        openapi.IN_QUERY,
-        type=openapi.TYPE_STRING,
+        "assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "status", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "source", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "address_line", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
     openapi.Parameter(
         "street", openapi.IN_QUERY, type=openapi.TYPE_STRING
@@ -64,5 +98,19 @@ lead_create_post_params = [
     ),
     openapi.Parameter(
         "tags", openapi.IN_QUERY, type=openapi.TYPE_STRING
+    ),
+]
+
+lead_upload_post_params = [
+    company_params_in_header,
+    openapi.Parameter(
+        "leads_file", openapi.IN_QUERY, type=openapi.TYPE_FILE, 
+    ),
+]
+
+lead_comment_edit_params = [
+    company_params_in_header,
+    openapi.Parameter(
+        "comment", openapi.IN_QUERY, type=openapi.TYPE_STRING
     ),
 ]

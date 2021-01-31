@@ -19,4 +19,13 @@ urlpatterns = [
     path("users/<int:pk>/", api_views.UserDetailView.as_view()),
     path("documents/", api_views.DocumentListView.as_view()),
     path("documents/<int:pk>/", api_views.DocumentDetailView.as_view()),
+
+    path("settings/contacts/", api_views.ContactsEmailCampaignListView.as_view()),
+    path("settings/contacts/<int:pk>/", api_views.ContactsEmailCampaignDetailView.as_view()),
+    path("settings/block-domains/", api_views.BlockDomainsListView.as_view()),
+    path("settings/block-domains/<int:pk>/", api_views.BlockDomainsDetailView.as_view()),
+    path("settings/block-emails/", api_views.BlockEmailsListView.as_view()),
+    path("settings/block-emails/<int:pk>/", api_views.BlockEmailsDetailView.as_view()),
+
+    path("users/<int:pk>/status/", api_views.UserStatusView.as_view()),
 ]
