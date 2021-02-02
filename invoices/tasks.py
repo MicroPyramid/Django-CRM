@@ -8,7 +8,8 @@ from common.models import User
 from invoices.models import Invoice, InvoiceHistory
 from marketing.models import BlockedDomain, BlockedEmail
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="http"):

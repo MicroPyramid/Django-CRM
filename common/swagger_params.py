@@ -116,19 +116,16 @@ reset_password_params = [
 ]
 user_list_params = [
     company_params_in_header,
+    openapi.Parameter("username", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
-        "username", openapi.IN_QUERY, type=openapi.TYPE_STRING
+        "role", openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=["ADMIN", "USER"]
     ),
     openapi.Parameter(
-        "email", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "role", openapi.IN_QUERY, type=openapi.TYPE_STRING,
-         enum=["ADMIN","USER"]
-    ),
-    openapi.Parameter(
-        "status", openapi.IN_QUERY, type=openapi.TYPE_STRING,
-         enum=["Active","In Active"]
+        "status",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_STRING,
+        enum=["Active", "In Active"],
     ),
 ]
 
@@ -156,8 +153,12 @@ user_create_params = [
 
 document_create_params = [
     company_params_in_header,
-    openapi.Parameter("title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True),
-    openapi.Parameter("document_file", openapi.IN_QUERY, type=openapi.TYPE_FILE, required=True),
+    openapi.Parameter(
+        "title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
+    ),
+    openapi.Parameter(
+        "document_file", openapi.IN_QUERY, type=openapi.TYPE_FILE, required=True
+    ),
     openapi.Parameter("teams", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("shared_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
@@ -165,19 +166,31 @@ document_create_params = [
 document_get_params = [
     company_params_in_header,
     openapi.Parameter("title", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("status", openapi.IN_QUERY,
-                     type=openapi.TYPE_STRING, enum=["active","inactive"]),
+    openapi.Parameter(
+        "status",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_STRING,
+        enum=["active", "inactive"],
+    ),
     openapi.Parameter("shared_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 document_update_params = [
     company_params_in_header,
-    openapi.Parameter("title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True),
-    openapi.Parameter("document_file", openapi.IN_QUERY, type=openapi.TYPE_FILE, required=True),
+    openapi.Parameter(
+        "title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
+    ),
+    openapi.Parameter(
+        "document_file", openapi.IN_QUERY, type=openapi.TYPE_FILE, required=True
+    ),
     openapi.Parameter("teams", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("shared_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("status", openapi.IN_QUERY,
-                     type=openapi.TYPE_STRING, enum=["active","inactive"]),
+    openapi.Parameter(
+        "status",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_STRING,
+        enum=["active", "inactive"],
+    ),
 ]
 
 settings_contact_create_params = [
@@ -206,7 +219,10 @@ settings_blockemails_create_params = [
 
 users_status_params = [
     company_params_in_header,
-    openapi.Parameter("status", openapi.IN_QUERY,
-                     type=openapi.TYPE_STRING,
-                     enum=["Active","Inactive"]),
+    openapi.Parameter(
+        "status",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_STRING,
+        enum=["Active", "Inactive"],
+    ),
 ]

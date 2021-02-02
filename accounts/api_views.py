@@ -66,7 +66,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             queryset = queryset.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
             ).distinct()
-        
+
         if params:
             request_post = params
             if request_post:
@@ -81,7 +81,9 @@ class AccountsListView(APIView, LimitOffsetPagination):
                         industry__icontains=request_post.get("industry")
                     )
                 if request_post.get("tags"):
-                    queryset = queryset.filter(tags__in=json.loads(request_post.get("tags"))).distinct()
+                    queryset = queryset.filter(
+                        tags__in=json.loads(request_post.get("tags"))
+                    ).distinct()
         context = {}
         search = False
         if (
@@ -95,40 +97,44 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
         queryset_open = queryset.filter(status="open").order_by("id")
         results_accounts_open = self.paginate_queryset(
-                        queryset_open.distinct(), self.request, view=self)
-        accounts_open = AccountSerializer(
-            results_accounts_open, many=True
-        ).data
+            queryset_open.distinct(), self.request, view=self
+        )
+        accounts_open = AccountSerializer(results_accounts_open, many=True).data
         context["per_page"] = 10
         context["active_accounts"] = {
             "accounts_count": self.count,
             "next": self.get_next_link(),
             "previous": self.get_previous_link(),
-            "page_number":int(self.offset/10)+1,
-            "open_accounts":accounts_open
-            }
+            "page_number": int(self.offset / 10) + 1,
+            "open_accounts": accounts_open,
+        }
 
         queryset_close = queryset.filter(status="close").order_by("id")
         results_accounts_close = self.paginate_queryset(
-                        queryset_close.distinct(), self.request, view=self)
-        accounts_close = AccountSerializer(
-            results_accounts_close, many=True
-        ).data
+            queryset_close.distinct(), self.request, view=self
+        )
+        accounts_close = AccountSerializer(results_accounts_close, many=True).data
 
         context["closed_accounts"] = {
             "accounts_count": self.count,
             "next": self.get_next_link(),
             "previous": self.get_previous_link(),
-            "page_number":int(self.offset/10)+1,
-            "close_accounts":accounts_close
-            }
+            "page_number": int(self.offset / 10) + 1,
+            "close_accounts": accounts_close,
+        }
 
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True, company=self.request.company).order_by("email"), many=True
-        ).data   
+            User.objects.filter(is_active=True, company=self.request.company).order_by(
+                "email"
+            ),
+            many=True,
+        ).data
         context["industries"] = INDCHOICES
-        tag_ids = Account.objects.filter(
-            company=self.request.company).values_list("tags", flat=True).distinct()
+        tag_ids = (
+            Account.objects.filter(company=self.request.company)
+            .values_list("tags", flat=True)
+            .distinct()
+        )
         context["tags"] = TagsSerailizer(
             Tags.objects.filter(id__in=tag_ids), many=True
         ).data
@@ -143,16 +149,14 @@ class AccountsListView(APIView, LimitOffsetPagination):
         return context
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_get_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_get_params
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_post_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_post_params
     )
     def post(self, request, *args, **kwargs):
         params = request.query_params if len(request.data) == 0 else request.data
@@ -166,15 +170,17 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 created_by=request.user, company=request.company
             )
             if params.get("contacts"):
-                contacts = json.loads(params.get("contacts"))                
+                contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact, company=request.company)
+                    obj_contact = Contact.objects.filter(
+                        id=contact, company=request.company
+                    )
                     if obj_contact:
                         account_object.contacts.add(contact)
                     else:
                         account_object.delete()
                         data["contacts"] = "Please enter valid contact"
-                        return Response({"error": True, "errors":data})
+                        return Response({"error": True, "errors": data})
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
@@ -188,25 +194,27 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team,company=request.company)
+                        teams_ids = Teams.objects.filter(
+                            id=team, company=request.company
+                        )
                         if teams_ids:
                             account_object.teams.add(team)
                         else:
                             account_object.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors":data})
+                            return Response({"error": True, "errors": data})
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:                            
+                        if user:
                             account_object.assigned_to.add(user_id)
                         else:
                             account_object.delete()
                             data["assigned_to"] = "Please enter valid user"
-                            return Response({"error": True, "errors":data})
-           
+                            return Response({"error": True, "errors": data})
+
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
                 attachment.created_by = request.user
@@ -230,7 +238,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             return Response({"error": False, "message": "Account Created Successfully"})
         return Response(
             {"error": True, "errors": serializer.errors},
-             status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
@@ -242,19 +250,16 @@ class AccountDetailView(APIView):
         return Account.objects.filter(id=pk).first()
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_post_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         account_object = self.get_object(pk=pk)
         data = {}
         if account_object.company != request.company:
-            return Response({
-                "error":True,
-                "errors":"User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         serializer = AccountCreateSerializer(
             account_object, data=params, request_obj=request, account=True
@@ -267,9 +272,11 @@ class AccountDetailView(APIView):
                     or (self.request.user in account_object.assigned_to.all())
                 ):
                     return Response(
-                        {"error": True,
-                         "errors": "You do not have Permission to perform this action"},
-                         status=status.HTTP_401_UNAUTHORIZED,
+                        {
+                            "error": True,
+                            "errors": "You do not have Permission to perform this action",
+                        },
+                        status=status.HTTP_401_UNAUTHORIZED,
                     )
             account_object = serializer.save()
             previous_assigned_to_users = list(
@@ -277,14 +284,16 @@ class AccountDetailView(APIView):
             )
             account_object.contacts.clear()
             if params.get("contacts"):
-                contacts = json.loads(params.get("contacts"))               
+                contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact, company=request.company)
+                    obj_contact = Contact.objects.filter(
+                        id=contact, company=request.company
+                    )
                     if obj_contact:
                         account_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error":True, "errors":data})
+                        return Response({"error": True, "errors": data})
             account_object.tags.clear()
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
@@ -295,30 +304,32 @@ class AccountDetailView(APIView):
                     else:
                         tag_obj = Tags.objects.create(name=tag)
                     account_object.tags.add(tag_obj)
-                        
+
             if self.request.user.role == "ADMIN":
                 account_object.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team,company=request.company)
+                        teams_ids = Teams.objects.filter(
+                            id=team, company=request.company
+                        )
                         if teams_ids:
                             account_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors":data})
+                            return Response({"error": True, "errors": data})
 
-                account_object.assigned_to.clear()               
+                account_object.assigned_to.clear()
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:                            
+                        if user:
                             account_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors":data})
-                
+                            return Response({"error": True, "errors": data})
+
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.user
@@ -344,40 +355,41 @@ class AccountDetailView(APIView):
             )
         return Response(
             {"error": True, "errors": serializer.errors},
-             status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.company_params
+        tags=["Accounts"], manual_parameters=swagger_params.company_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.company != request.company:
-            return Response({
-                "error": True,
-                "errors": "User company doesnot match with header...."}
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."}
             )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
-                return Response({
-                    "error": True,
-                    "errors": "You do not have Permission to perform this action"}
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    }
                 )
         self.object.delete()
-        return Response({"error": False, "message": "Account Deleted Successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"error": False, "message": "Account Deleted Successfully."},
+            status=status.HTTP_200_OK,
+        )
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_get_detail_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_get_detail_params
     )
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
         if self.account.company != request.company:
-           return Response({
-               "error": True,
-               "errors":"User company doesnot match with header...."},
-               status=status.HTTP_404_NOT_FOUND
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         context = {}
         context["account_obj"] = AccountSerializer(self.account).data
@@ -386,9 +398,11 @@ class AccountDetailView(APIView):
                 (self.request.user == self.account.created_by)
                 or (self.request.user in self.account.assigned_to.all())
             ):
-                return Response({
-                    "error": True,
-                    "errors": "You do not have Permission to perform this action"}
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    }
                 )
 
         comment_permission = (
@@ -416,8 +430,6 @@ class AccountDetailView(APIView):
         else:
             users_mention = []
 
-        case_obj = Case.objects.get(account__id=self.account.id)
-
         context.update(
             {
                 "attachments": AttachmentsSerializer(
@@ -439,9 +451,9 @@ class AccountDetailView(APIView):
                     ).order_by("email"),
                     many=True,
                 ).data,
-                # "cases": CaseSerializer(
-                #     case_obj, many=True
-                # ).data,
+                "cases": CaseSerializer(
+                    Case.objects.filter(account=self.account), many=True
+                ).data,
                 "stages": STAGES,
                 "sources": SOURCES,
                 "countries": COUNTRIES,
@@ -465,8 +477,7 @@ class AccountDetailView(APIView):
         return Response(context)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_detail_get_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_detail_get_params
     )
     def post(self, request, pk, **kwargs):
         params = (
@@ -478,8 +489,7 @@ class AccountDetailView(APIView):
         self.account_obj = Account.objects.get(pk=pk)
         if self.account_obj.company != request.company:
             return Response(
-                {"error": True,
-                 "errors": "User company does not match with header...."}
+                {"error": True, "errors": "User company does not match with header...."}
             )
 
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -488,31 +498,34 @@ class AccountDetailView(APIView):
                 or (self.request.user in self.account_obj.assigned_to.all())
             ):
                 return Response(
-                    {"error": True,
-                     "errors": "You do not have Permission to perform this action"},
-                     status = status.HTTP_401_UNAUTHORIZED
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
                 )
-        comment_serializer = CommentSerializer(
-            data=params)
+        comment_serializer = CommentSerializer(data=params)
         if comment_serializer.is_valid():
             if params.get("comment"):
                 comment_serializer.save(
-                    account_id = self.account_obj.id,
-                    commented_by_id = self.request.user.id,)
-          
+                    account_id=self.account_obj.id,
+                    commented_by_id=self.request.user.id,
+                )
+
         if self.request.FILES.get("account_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                "account_attachment").name
+            attachment.file_name = self.request.FILES.get("account_attachment").name
             attachment.account = self.account_obj
             attachment.attachment = self.request.FILES.get("account_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(
-            account__id=self.account_obj.id).order_by("-id")
+        comments = Comment.objects.filter(account__id=self.account_obj.id).order_by(
+            "-id"
+        )
         attachments = Attachments.objects.filter(
-            account__id=self.account_obj.id).order_by("-id")
+            account__id=self.account_obj.id
+        ).order_by("-id")
         context.update(
             {
                 "account_obj": AccountSerializer(self.account_obj).data,
@@ -521,6 +534,7 @@ class AccountDetailView(APIView):
             }
         )
         return Response(context)
+
 
 class AccountCommentView(APIView):
     model = Comment
@@ -531,25 +545,22 @@ class AccountCommentView(APIView):
         return self.model.objects.get(pk=pk)
 
     @swagger_auto_schema(
-        tags=["Accounts"],
-        manual_parameters=swagger_params.account_comment_edit_params
+        tags=["Accounts"], manual_parameters=swagger_params.account_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == obj.commented_by
-        ): 
-            serializer = CommentSerializer(
-                obj, data=params)
+        ):
+            serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
                 if serializer.is_valid():
                     serializer.save()
                     return Response(
-                        {"error": False, "message":"Comment Submitted"},
+                        {"error": False, "message": "Comment Submitted"},
                         status=status.HTTP_200_OK,
                     )
                 return Response(
@@ -557,32 +568,36 @@ class AccountCommentView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
-            return Response({
+            return Response(
+                {
                     "error": True,
-                    "errors": "You don't have permission to edit this Comment"}
-                )
+                    "errors": "You don't have permission to edit this Comment",
+                }
+            )
 
     @swagger_auto_schema(
-        tags=["Accounts"], 
-        manual_parameters=swagger_params.company_params
+        tags=["Accounts"], manual_parameters=swagger_params.company_params
     )
-    def delete(self, request, pk, format=None):        
+    def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.commented_by
-        ):    
+        ):
             self.object.delete()
-            return Response({
-                    "error": False,
-                    "message": "Comment Deleted Successfully"},
-                    status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "error": True,
-                "errors": "You don't have permission to perform this action"}
+            return Response(
+                {"error": False, "message": "Comment Deleted Successfully"},
+                status=status.HTTP_200_OK,
             )
+        else:
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action",
+                }
+            )
+
 
 class AccountAttachmentView(APIView):
     model = Attachments
@@ -590,23 +605,24 @@ class AccountAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Accounts"], 
-        manual_parameters=swagger_params.company_params
+        tags=["Accounts"], manual_parameters=swagger_params.company_params
     )
-    def delete(self, request, pk, format=None):        
+    def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.created_by
-        ):    
+        ):
             self.object.delete()
-            return Response({
-                    "error": False,
-                    "message": "Attachment Deleted Successfully"},
-                    status=status.HTTP_200_OK)
+            return Response(
+                {"error": False, "message": "Attachment Deleted Successfully"},
+                status=status.HTTP_200_OK,
+            )
         else:
-            return Response({
-                "error": True,
-                "errors": "You don't have permission to delete this Attachment"}
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You don't have permission to delete this Attachment",
+                }
             )

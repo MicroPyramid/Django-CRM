@@ -56,6 +56,14 @@ python manage.py runserver
 ```
 Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped test.localhost to 127.0.0.1 So, it should work properly.
 
+
+### Useful tools and packages
+```
+pipdeptree # to see pip dependancy tree
+black # to format code to meet python coding standards
+pip-check -H  # to see upgradable packages 
+```
+
 Community
 =========
 

@@ -25,7 +25,8 @@ from marketing.models import (
     FailedContact,
 )
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def campaign_sechedule(request):
@@ -51,7 +52,7 @@ def upload_csv_file(data, invalid_data, user, contact_lists, company):
                 email=each["email"],
                 created_by_id=user,
                 name=each["first name"],
-                company_id=company
+                company_id=company,
             )
             if each.get("company name", None):
                 contact.company_name = each["company name"]
@@ -81,7 +82,7 @@ def upload_csv_file(data, invalid_data, user, contact_lists, company):
                 email=each["email"],
                 created_by_id=user,
                 name=each["first name"],
-                company_id=company
+                company_id=company,
             )
             if each.get("company name", None):
                 contact.company_name = each["company name"]

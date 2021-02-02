@@ -222,7 +222,9 @@ def contact_list_new(request):
             instance.save()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
+                tag, _ = Tag.objects.get_or_create(
+                    name=each, created_by=request.user, company=request.company
+                )
                 instance.tags.add(tag)
             if request.FILES.get("contacts_file"):
                 upload_csv_file.delay(
@@ -267,7 +269,9 @@ def edit_contact_list(request, pk):
             instance.tags.clear()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
+                tag, _ = Tag.objects.get_or_create(
+                    name=each, created_by=request.user, company=request.company
+                )
                 instance.tags.add(tag)
             if request.FILES.get("contacts_file"):
                 upload_csv_file.delay(
@@ -760,7 +764,9 @@ def campaign_new(request):
             instance.save()
             tags = request.POST["tags"].split(",") if request.POST["tags"] else []
             for each in tags:
-                tag, _ = Tag.objects.get_or_create(name=each, created_by=request.user, company=request.company)
+                tag, _ = Tag.objects.get_or_create(
+                    name=each, created_by=request.user, company=request.company
+                )
                 instance.tags.add(tag)
 
             camp = instance
@@ -1620,7 +1626,9 @@ def contacts_list_elastic_search(request):
         bounced_contacts = Contact.objects.filter(
             is_bounced=True, company=request.company
         )
-        failed_contacts = FailedContact.objects.filter(company=request.company).order_by("id")
+        failed_contacts = FailedContact.objects.filter(
+            company=request.company
+        ).order_by("id")
         contact_lists = ContactList.objects.filter(company=request.company)
     else:
         contact_ids = request.user.marketing_contactlist.all().values_list(
@@ -1631,7 +1639,9 @@ def contacts_list_elastic_search(request):
         # failed_contacts = SearchQuerySet().models(FailedContact).filter(created_by_id=str(request.user.id))
         contacts = Contact.objects.filter(id__in=contact_ids).exclude(is_bounced=True)
         bounced_contacts = Contact.objects.filter(id__in=contact_ids, is_bounced=True)
-        failed_contacts = FailedContact.objects.filter(created_by=request.user).order_by("id")
+        failed_contacts = FailedContact.objects.filter(
+            created_by=request.user
+        ).order_by("id")
         contact_lists = ContactList.objects.filter(created_by=request.user)
         # contacts = Contact.objects.filter(created_by=request.user)
 

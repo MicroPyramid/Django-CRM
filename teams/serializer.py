@@ -21,8 +21,8 @@ class TeamsSerializer(serializers.ModelSerializer):
             "created_on_arrow",
         )
 
-class TeamCreateSerializer(serializers.ModelSerializer):
 
+class TeamCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super(TeamCreateSerializer, self).__init__(*args, **kwargs)
@@ -33,18 +33,18 @@ class TeamCreateSerializer(serializers.ModelSerializer):
 
     def validate_name(self, name):
         if self.instance:
-            if Teams.objects.filter(
+            if (
+                Teams.objects.filter(
                     name__iexact=name,
                     company=self.company,
-            ).exclude(id=self.instance.id).exists():
-                raise serializers.ValidationError(
-                    "Team already exists with this name")
+                )
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
+                raise serializers.ValidationError("Team already exists with this name")
         else:
-            if Teams.objects.filter(
-                name__iexact=name, company=self.company
-            ).exists():                
-                raise serializers.ValidationError(
-                    "Team already exists with this name")
+            if Teams.objects.filter(name__iexact=name, company=self.company).exists():
+                raise serializers.ValidationError("Team already exists with this name")
         return name
 
     class Meta:

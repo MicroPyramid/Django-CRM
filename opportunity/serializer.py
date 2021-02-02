@@ -6,11 +6,12 @@ from teams.serializer import TeamsSerializer
 from common.serializer import UserSerializer, CompanySerializer, AttachmentsSerializer
 from accounts.models import Tags
 
-class TagsSerializer(serializers.ModelSerializer):
 
+class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = ("id", "name", "slug")
+
 
 class OpportunitySerializer(serializers.ModelSerializer):
     account = AccountSerializer()
@@ -53,6 +54,7 @@ class OpportunitySerializer(serializers.ModelSerializer):
             # "get_assigned_users_not_in_teams",
         )
 
+
 class OpportunityCreateSerializer(serializers.ModelSerializer):
     probability = serializers.IntegerField(max_value=100)
     closed_on = serializers.DateField
@@ -66,9 +68,11 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
 
     def validate_name(self, name):
         if self.instance:
-            if Opportunity.objects.filter(
-                name__iexact=name, company=self.company
-            ).exclude(id=self.instance.id).exists():
+            if (
+                Opportunity.objects.filter(name__iexact=name, company=self.company)
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
                 raise serializers.ValidationError(
                     "Opportunity already exists with this name"
                 )
@@ -76,7 +80,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
         else:
             if Opportunity.objects.filter(
                 name__iexact=name, company=self.company
-            ).exists():               
+            ).exists():
                 raise serializers.ValidationError(
                     "Opportunity already exists with this name"
                 )

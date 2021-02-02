@@ -49,24 +49,31 @@ class CreateContactSerializer(serializers.ModelSerializer):
         contact_view = kwargs.pop("contact", False)
         request_obj = kwargs.pop("request_obj", None)
         super(CreateContactSerializer, self).__init__(*args, **kwargs)
-        
+
         self.company = request_obj.company
 
     def validate_first_name(self, first_name):
         if self.instance:
-            if Contact.objects.filter(
-                first_name__iexact=first_name, company=self.company
-            ).exclude(id=self.instance.id).exists():
+            if (
+                Contact.objects.filter(
+                    first_name__iexact=first_name, company=self.company
+                )
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
                 raise serializers.ValidationError(
-                "Contact already exists with this name"
+                    "Contact already exists with this name"
                 )
 
         else:
-            if Contact.objects.filter(first_name__iexact=first_name, company=self.company).exists():               
-                raise serializers.ValidationError("Contact already exists with this name")
+            if Contact.objects.filter(
+                first_name__iexact=first_name, company=self.company
+            ).exists():
+                raise serializers.ValidationError(
+                    "Contact already exists with this name"
+                )
         return first_name
 
-    
     class Meta:
         model = Contact
         fields = (
