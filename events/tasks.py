@@ -9,7 +9,8 @@ from contacts.models import Contact
 from events.models import Event
 from marketing.models import BlockedDomain, BlockedEmail
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def send_email(event_id, recipients, domain="demo.django-crm.io", protocol="http"):

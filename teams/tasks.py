@@ -9,7 +9,8 @@ from opportunity.models import Opportunity
 from tasks.models import Task
 from teams.models import Teams
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def remove_users(removed_users_list, team_id):

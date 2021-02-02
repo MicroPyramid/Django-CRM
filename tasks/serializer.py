@@ -4,7 +4,7 @@ from common.serializer import (
     UserSerializer,
     AttachmentsSerializer,
     CommentSerializer,
-    CompanySerializer
+    CompanySerializer,
 )
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
@@ -38,8 +38,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "company",
         )
 
-class TaskCreateSerializer(serializers.ModelSerializer):
 
+class TaskCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super(TaskCreateSerializer, self).__init__(*args, **kwargs)
@@ -49,18 +49,18 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
     def validate_title(self, title):
         if self.instance:
-            if Task.objects.filter(
+            if (
+                Task.objects.filter(
                     title__iexact=title,
                     company=self.company,
-            ).exclude(id=self.instance.id).exists():
-                raise serializers.ValidationError(
-                    "Task already exists with this title")
+                )
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
+                raise serializers.ValidationError("Task already exists with this title")
         else:
-            if Task.objects.filter(
-                title__iexact=title, company=self.company
-            ).exists():                
-                raise serializers.ValidationError(
-                    "Task already exists with this title")
+            if Task.objects.filter(title__iexact=title, company=self.company).exists():
+                raise serializers.ValidationError("Task already exists with this title")
         return title
 
     class Meta:

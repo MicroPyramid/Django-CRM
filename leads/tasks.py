@@ -13,7 +13,8 @@ from leads.models import Lead
 from marketing.models import BlockedDomain, BlockedEmail
 
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 def get_rendered_html(template_name, context={}):
     html_content = render_to_string(template_name, context)

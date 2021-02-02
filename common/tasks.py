@@ -15,7 +15,8 @@ from common.token_generator import account_activation_token
 from django.contrib.auth.tokens import default_token_generator
 from marketing.models import BlockedDomain, BlockedEmail
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def send_email_to_new_user(

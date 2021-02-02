@@ -13,7 +13,8 @@ from common.models import User
 from common.utils import convert_to_custom_timezone
 from marketing.models import BlockedDomain, BlockedEmail
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def send_email(email_obj_id):

@@ -7,7 +7,7 @@ from contacts.serializer import ContactSerializer
 
 
 class CaseSerializer(serializers.ModelSerializer):
-    account = AccountSerializer(read_only=True, many=True)
+    account = AccountSerializer()
     contacts = ContactSerializer(read_only=True, many=True)
     assigned_to = UserSerializer(read_only=True, many=True)
     created_by = UserSerializer(read_only=True)

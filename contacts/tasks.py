@@ -7,7 +7,8 @@ from common.models import User
 from contacts.models import Contact
 from marketing.models import BlockedDomain, BlockedEmail
 
-app = Celery('redis://')
+app = Celery("redis://")
+
 
 @app.task
 def send_email_to_assigned_user(

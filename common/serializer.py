@@ -5,15 +5,12 @@ from django.contrib.auth.tokens import default_token_generator
 
 
 class CompanySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Company
-        fields = ("id", "name", "address",
-                  "sub_domain", "user_limit", "country")
+        fields = ("id", "name", "address", "sub_domain", "user_limit", "country")
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = (
@@ -37,7 +34,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Comment
         fields = (
@@ -56,8 +52,8 @@ class CommentSerializer(serializers.ModelSerializer):
             "user",
         )
 
-class LeadCommentSerializer(serializers.ModelSerializer):
 
+class LeadCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = (
@@ -66,7 +62,7 @@ class LeadCommentSerializer(serializers.ModelSerializer):
             "commented_on",
             "commented_by",
             "lead",
-)
+        )
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -113,11 +109,9 @@ class CreateUserSerializer(serializers.ModelSerializer):
             is_admin = False
         if self.request_user.role == "ADMIN" or self.request_user.is_superuser:
             if not is_admin:
-                marketing = self.initial_data.get(
-                    "has_marketing_access", False)
+                marketing = self.initial_data.get("has_marketing_access", False)
                 if not has_sales_access and not marketing:
-                    raise serializers.ValidationError(
-                        "Select atleast one option.")
+                    raise serializers.ValidationError("Select atleast one option.")
         if self.request_user.role == "USER":
             has_sales_access = self.instance.has_sales_access
         return has_sales_access
@@ -138,8 +132,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         else:
             if not User.objects.filter(email=email).exists():
                 return email
-            raise serializers.ValidationError(
-                "User already exists with this email")
+            raise serializers.ValidationError("User already exists with this email")
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -187,8 +180,7 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
         new_password2 = data.get("new_password2")
         new_password1 = data.get("new_password1")
         if new_password1 != new_password2:
-            raise serializers.ValidationError(
-                "The two password fields didn't match.")
+            raise serializers.ValidationError("The two password fields didn't match.")
         return new_password2
 
 
@@ -206,11 +198,9 @@ class AttachmentsSerializer(serializers.ModelSerializer):
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Address
-        fields = ("address_line", "street", "city",
-                  "state", "postcode", "country")
+        fields = ("address_line", "street", "city", "state", "postcode", "country")
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
@@ -251,7 +241,6 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class DocumentCreateSerializer(serializers.ModelSerializer):
-
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
@@ -260,17 +249,21 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
 
     def validate_title(self, title):
         if self.instance:
-            if Document.objects.filter(
-                title__iexact=title, company=self.company
-                ).exclude(id=self.instance.id).exists():
+            if (
+                Document.objects.filter(title__iexact=title, company=self.company)
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
                 raise serializers.ValidationError(
-                    "Document with this Title already exists")
+                    "Document with this Title already exists"
+                )
         else:
             if Document.objects.filter(
                 title__iexact=title, company=self.company
-                ).exists():
+            ).exists():
                 raise serializers.ValidationError(
-                    "Document with this Title already exists")
+                    "Document with this Title already exists"
+                )
         return title
 
     class Meta:

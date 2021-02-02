@@ -80,7 +80,6 @@ class EmailLogSerializer(serializers.ModelSerializer):
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
-
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
         request_obj = kwargs.pop("request_obj", None)
