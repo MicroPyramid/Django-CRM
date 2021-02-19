@@ -55,15 +55,15 @@ pip install -r requirements.txt
 ```
 
 #### env variables
-* Then refer to env.md for environment variables and keep those in the .env file in the current folder as your project is in.
-* add ```127.0.0.1   test.localhost``` to your hosts file ```/etc/hosts``` Then you can use test as company name to register and login
+* Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
+* Add ```127.0.0.1   test.localhost``` to your hosts file ```/etc/hosts```. Then you can use test as company name to register and login.
 
 #### next steps
 ```
 python manage.py migrate
 python manage.py runserver
 ```
-Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped test.localhost to 127.0.0.1 So, it should work properly.
+Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
 
 
 ### Useful tools and packages
