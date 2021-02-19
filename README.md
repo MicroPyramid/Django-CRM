@@ -7,7 +7,7 @@ and feature requests via github.
 
 <http://django-crm.readthedocs.io> for latest documentation
 
-This project contains the following modules.
+This project contains the following modules:
 
 > -   Contacts
 > -   Accounts
@@ -21,13 +21,13 @@ This project contains the following modules.
 ---
 
 # Installation
-We recommend ubuntu 18.04 or ubuntu 20.04. These instructions are verified for ubuntu 20.04
+We recommend ubuntu 18.04 or ubuntu 20.04. These instructions are verified for ubuntu 20.04.
 
 #### System Requirements
 ---
 
 ```
-sudo apt install postgresql xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip gem ruby ruby-dev build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools -y
+sudo apt install postgresql xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip gem ruby ruby-dev build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
 
 sudo gem install sass
 
@@ -40,6 +40,15 @@ sudo apt-get install postfix
 
 #### Install dependencies
 ---
+
+* Create and activate a virtual environment.
+
+```
+virtualenv venv
+source venv/bin/activate
+```
+
+* Install the project's dependencie
 
 ```
 pip install -r requirements.txt
