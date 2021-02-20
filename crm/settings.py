@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "corsheaders",
     "django_ses",
+    "django_blog_it"
 ]
 
 MIDDLEWARE = [
@@ -183,13 +184,13 @@ if ENV_TYPE == "dev":
     ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
 
 elif ENV_TYPE == "live":
-    INSTALLED_APPS = INSTALLED_APPS + [
-        "elasticapm.contrib.django",
-    ]
+    # INSTALLED_APPS = INSTALLED_APPS + [
+    #     "elasticapm.contrib.django",
+    # ]
 
-    MIDDLEWARE = MIDDLEWARE + [
-        "elasticapm.contrib.django.middleware.TracingMiddleware",
-    ]
+    # MIDDLEWARE = MIDDLEWARE + [
+    #     "elasticapm.contrib.django.middleware.TracingMiddleware",
+    # ]
 
     from .server_settings import *
 
