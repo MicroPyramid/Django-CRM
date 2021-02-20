@@ -26,6 +26,7 @@ from common.utils import (
     PRIORITY_CHOICE,
     STATUS_CHOICE,
 )
+from django.shortcuts import get_object_or_404
 from contacts.models import Contact
 from leads.models import Lead
 from opportunity.models import SOURCES, STAGES, Opportunity
@@ -247,7 +248,7 @@ class AccountDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return Account.objects.filter(id=pk).first()
+        return get_object_or_404(Account, id=pk)
 
     @swagger_auto_schema(
         tags=["Accounts"], manual_parameters=swagger_params.account_post_params
@@ -429,7 +430,6 @@ class AccountDetailView(APIView):
                 users_mention = []
         else:
             users_mention = []
-
         context.update(
             {
                 "attachments": AttachmentsSerializer(
@@ -452,7 +452,7 @@ class AccountDetailView(APIView):
                     many=True,
                 ).data,
                 "cases": CaseSerializer(
-                    Case.objects.filter(account=self.account), many=True
+                    self.account.accounts_cases.all(), many=True
                 ).data,
                 "stages": STAGES,
                 "sources": SOURCES,

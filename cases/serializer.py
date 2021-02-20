@@ -13,9 +13,6 @@ class CaseSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
     company = CompanySerializer()
-    get_team_users = UserSerializer(read_only=True, many=True)
-    get_team_and_assigned_users = UserSerializer(read_only=True, many=True)
-    get_assigned_users_not_in_teams = UserSerializer(read_only=True, many=True)
 
     class Meta:
         model = Case
@@ -25,18 +22,58 @@ class CaseSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "case_type",
-            "account",
-            "contacts",
             "closed_on",
             "description",
-            "assigned_to",
             "created_by",
             "created_on",
             "is_active",
+            "account",
+            "contacts",
             "teams",
+            "assigned_to",
             "company",
-            "get_team_users",
-            "get_team_and_assigned_users",
-            "get_assigned_users_not_in_teams",
+            "created_on_arrow",
+        )
+
+class CaseCreateSerializer(serializers.ModelSerializer):
+    closed_on = serializers.DateField
+
+    def __init__(self, *args, **kwargs):
+        case_view = kwargs.pop("case", False)
+        request_obj = kwargs.pop("request_obj", None)
+        super(CaseCreateSerializer, self).__init__(*args, **kwargs)
+
+        self.company = request_obj.company
+
+    def validate_name(self, name):
+        if self.instance:
+            if Case.objects.filter(
+                name__iexact=name, company=self.company
+            ).exclude(id=self.instance.id).exists():
+                raise serializers.ValidationError(
+                    "Case already exists with this name"
+                )
+
+        else:
+            if Case.objects.filter(
+                name__iexact=name, company=self.company
+            ).exists():               
+                raise serializers.ValidationError(
+                    "Case already exists with this name"
+                )
+        return name
+
+    class Meta:
+        model = Case
+        fields = (
+            "name",
+            "status",
+            "priority",
+            "description",
+            "created_by",
+            "created_on",
+            "is_active",
+            "account",
+            "company",
             "created_on_arrow",
         )

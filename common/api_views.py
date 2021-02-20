@@ -296,7 +296,7 @@ class LoginView(APIView):
     )
     def post(self, request, format=None):
         params = request.query_params if len(request.data) == 0 else request.data
-        company = request.headers["company"]
+        company = request.headers.get("company")
         username = params.get("email", None)
         password = params.get("password", None)
         company_obj = Company.objects.filter(sub_domain=company).first()
