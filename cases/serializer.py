@@ -35,6 +35,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "created_on_arrow",
         )
 
+
 class CaseCreateSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField
 
@@ -47,20 +48,16 @@ class CaseCreateSerializer(serializers.ModelSerializer):
 
     def validate_name(self, name):
         if self.instance:
-            if Case.objects.filter(
-                name__iexact=name, company=self.company
-            ).exclude(id=self.instance.id).exists():
-                raise serializers.ValidationError(
-                    "Case already exists with this name"
-                )
+            if (
+                Case.objects.filter(name__iexact=name, company=self.company)
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
+                raise serializers.ValidationError("Case already exists with this name")
 
         else:
-            if Case.objects.filter(
-                name__iexact=name, company=self.company
-            ).exists():               
-                raise serializers.ValidationError(
-                    "Case already exists with this name"
-                )
+            if Case.objects.filter(name__iexact=name, company=self.company).exists():
+                raise serializers.ValidationError("Case already exists with this name")
         return name
 
     class Meta:

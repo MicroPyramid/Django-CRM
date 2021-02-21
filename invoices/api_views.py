@@ -13,7 +13,7 @@ from invoices import swagger_params
 from invoices.serializer import (
     InvoiceSerailizer,
     InvoiceHistorySerializer,
-    InvoiceCreateSerializer
+    InvoiceCreateSerializer,
 )
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
@@ -23,7 +23,7 @@ from common.serializer import (
     UserSerializer,
     CommentSerializer,
     AttachmentsSerializer,
-    BillingAddressSerializer
+    BillingAddressSerializer,
 )
 from common.utils import (
     COUNTRIES,
@@ -41,12 +41,13 @@ from drf_yasg.utils import swagger_auto_schema
 import json
 
 INVOICE_STATUS = (
-        ("Draft", "Draft"),
-        ("Sent", "Sent"),
-        ("Paid", "Paid"),
-        ("Pending", "Pending"),
-        ("Cancelled", "Cancel"),
-    )
+    ("Draft", "Draft"),
+    ("Sent", "Sent"),
+    ("Paid", "Paid"),
+    ("Pending", "Pending"),
+    ("Cancelled", "Cancel"),
+)
+
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
@@ -69,26 +70,22 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             accounts = accounts.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
             ).distinct()
-        
+
         if params:
             if params.get("invoice_title_or_number"):
                 queryset = queryset.filter(
-                    Q(invoice_title__icontains=params.get("invoice_title_or_number")) |
-                    Q(invoice_number__icontains=params.get("invoice_title_or_number"))
+                    Q(invoice_title__icontains=params.get("invoice_title_or_number"))
+                    | Q(invoice_number__icontains=params.get("invoice_title_or_number"))
                 ).distinct()
 
             if params.get("created_by"):
-                queryset = queryset.filter(
-                    created_by=params.get("created_by")
-                )
+                queryset = queryset.filter(created_by=params.get("created_by"))
             if params.get("assigned_users"):
                 queryset = queryset.filter(
                     assigned_to__in=json.loads(params.get("assigned_users"))
                 )
             if params.get("status"):
-                queryset = queryset.filter(
-                    status=params.get("status")
-                )
+                queryset = queryset.filter(status=params.get("status"))
             if params.get("total_amount"):
                 queryset = queryset.filter(
                     total_amount__icontains=params.get("total_amount")
@@ -107,33 +104,33 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
         context["search"] = search
         results_invoice = self.paginate_queryset(
-                        queryset.distinct(), self.request, view=self)
-        invoices = InvoiceSerailizer(
-            results_invoice, many=True
-        ).data
+            queryset.distinct(), self.request, view=self
+        )
+        invoices = InvoiceSerailizer(results_invoice, many=True).data
         context["per_page"] = 10
         context.update(
             {
-            "invoices_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number":int(self.offset / 10) + 1,
+                "invoices_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
             }
         )
-        context["invoices"] = invoices  
+        context["invoices"] = invoices
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True, company=self.request.company).order_by("email"), many=True
-        ).data   
-        context["accounts_list"] = AccountSerializer(
-            accounts, many=True
+            User.objects.filter(is_active=True, company=self.request.company).order_by(
+                "email"
+            ),
+            many=True,
         ).data
+        context["accounts_list"] = AccountSerializer(accounts, many=True).data
         if self.request.user == "ADMIN":
             context["teams_list"] = TeamsSerializer(
                 Teams.objects.filter(company=self.request.company), many=True
             ).data
         context["status"] = INVOICE_STATUS
         context["currency"] = CURRENCY_CODES
-        context["countries"] = COUNTRIES        
+        context["countries"] = COUNTRIES
 
         return context
 
@@ -150,9 +147,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
     def post(self, request, *args, **kwargs):
         params = request.query_params if len(request.data) == 0 else request.data
         data = {}
-        serializer = InvoiceCreateSerializer(
-            data=params, request_obj=request
-        )
+        serializer = InvoiceCreateSerializer(data=params, request_obj=request)
         from_address_serializer = BillingAddressSerializer(data=params)
         to_address_serializer = BillingAddressSerializer(data=params)
         if not from_address_serializer.is_valid():
@@ -170,35 +165,37 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             total_amount = quantity + tax
 
             from_address_obj = from_address_serializer.save(
-                address_line = params.get("from_address_line"),
-                street = params.get("from_street"),
-                city = params.get("from_city"),
-                state = params.get("from_state"),
-                postcode = params.get("from_postcode"),
-                country = params.get("from_country")
+                address_line=params.get("from_address_line"),
+                street=params.get("from_street"),
+                city=params.get("from_city"),
+                state=params.get("from_state"),
+                postcode=params.get("from_postcode"),
+                country=params.get("from_country"),
             )
             to_address_obj = to_address_serializer.save(
-                address_line = params.get("to_address_line"),
-                street = params.get("to_street"),
-                city = params.get("to_city"),
-                state = params.get("to_state"),
-                postcode = params.get("to_postcode"),
-                country = params.get("to_country")
+                address_line=params.get("to_address_line"),
+                street=params.get("to_street"),
+                city=params.get("to_city"),
+                state=params.get("to_state"),
+                postcode=params.get("to_postcode"),
+                country=params.get("to_country"),
             )
 
             invoice_obj = serializer.save(
-                created_by = request.user,
-                company = request.company,
-                quantity = params.get("quality_hours"),
-                total_amount = total_amount,
-                from_address_id = from_address_obj.id,
-                to_address_id = to_address_obj.id
+                created_by=request.user,
+                company=request.company,
+                quantity=params.get("quality_hours"),
+                total_amount=total_amount,
+                from_address_id=from_address_obj.id,
+                to_address_id=to_address_obj.id,
             )
 
             if params.get("accounts"):
-                accounts = json.loads(params.get("accounts"))                
+                accounts = json.loads(params.get("accounts"))
                 for account in accounts:
-                    obj_account = Account.objects.filter(id=account, company=request.company)
+                    obj_account = Account.objects.filter(
+                        id=account, company=request.company
+                    )
                     if obj_account:
                         invoice_obj.accounts.add(account)
                     else:
@@ -210,7 +207,9 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(id=team,company=request.company)
+                        obj_team = Teams.objects.filter(
+                            id=team, company=request.company
+                        )
                         if obj_team:
                             invoice_obj.teams.add(team)
                         else:
@@ -222,7 +221,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:                            
+                        if user:
                             invoice_obj.assigned_to.add(user_id)
                         else:
                             invoice_obj.delete()
@@ -241,11 +240,10 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                 domain=current_site.domain,
                 protocol=self.request.scheme,
             )
-            return Response(
-                {"error": False, "message": "Invoice Created Successfully"}
-            )
+            return Response({"error": False, "message": "Invoice Created Successfully"})
         return Response(
-            {"error": True, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
@@ -261,16 +259,15 @@ class InvoiceDetailView(APIView):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_create_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         invoice_obj = self.get_object(pk=pk)
         from_address_obj = invoice_obj.from_address
         to_address_obj = invoice_obj.to_address
         data = {}
         if invoice_obj.company != request.company:
             return Response(
-                {"error":True, "errors":"User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
@@ -278,8 +275,11 @@ class InvoiceDetailView(APIView):
                 or (self.request.user in invoice_obj.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "errors": "You don't have Permission to perform this action"},
-                     status=status.HTTP_401_UNAUTHORIZED,
+                    {
+                        "error": True,
+                        "errors": "You don't have Permission to perform this action",
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
                 )
 
         serializer = InvoiceCreateSerializer(
@@ -289,35 +289,37 @@ class InvoiceDetailView(APIView):
             invoice=True,
         )
         from_address_serializer = BillingAddressSerializer(
-            data=params, instance=from_address_obj)
+            data=params, instance=from_address_obj
+        )
         to_address_serializer = BillingAddressSerializer(
-            data=params, instance=to_address_obj)
+            data=params, instance=to_address_obj
+        )
         if not from_address_serializer.is_valid():
             data["from_address_errors"] = from_address_serializer.errors
         if not to_address_serializer.is_valid():
             data["to_address_errors"] = to_address_serializer.errors
         if data:
-            return Response({"error": True},data)
+            return Response({"error": True}, data)
         if serializer.is_valid():
             invoice_obj = serializer.save()
             previous_assigned_to_users = list(
                 invoice_obj.assigned_to.all().values_list("id", flat=True)
             )
             from_address_obj = from_address_serializer.save(
-                address_line = params.get("from_address_line"),
-                street = params.get("from_street"),
-                city = params.get("from_city"),
-                state = params.get("from_state"),
-                postcode = params.get("from_postcode"),
-                country = params.get("from_country")
+                address_line=params.get("from_address_line"),
+                street=params.get("from_street"),
+                city=params.get("from_city"),
+                state=params.get("from_state"),
+                postcode=params.get("from_postcode"),
+                country=params.get("from_country"),
             )
             to_address_obj = to_address_serializer.save(
-                address_line = params.get("to_address_line"),
-                street = params.get("to_street"),
-                city = params.get("to_city"),
-                state = params.get("to_state"),
-                postcode = params.get("to_postcode"),
-                country = params.get("to_country")
+                address_line=params.get("to_address_line"),
+                street=params.get("to_street"),
+                city=params.get("to_city"),
+                state=params.get("to_state"),
+                postcode=params.get("to_postcode"),
+                country=params.get("to_country"),
             )
             invoice_obj.from_address = from_address_obj
             invoice_obj.to_address = to_address_obj
@@ -331,38 +333,42 @@ class InvoiceDetailView(APIView):
 
             invoice_obj.accounts.clear()
             if params.get("accounts"):
-                accounts = json.loads(params.get("accounts"))               
+                accounts = json.loads(params.get("accounts"))
                 for account in accounts:
-                    obj_account = Account.objects.filter(id=account, company=request.company)
+                    obj_account = Account.objects.filter(
+                        id=account, company=request.company
+                    )
                     if obj_account:
                         invoice_obj.accounts.add(account)
                     else:
                         data["accounts"] = "Please enter valid account"
                         return Response({"error": True}, data)
-                        
+
             if self.request.user.role == "ADMIN":
                 invoice_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(id=team,company=request.company)
+                        obj_team = Teams.objects.filter(
+                            id=team, company=request.company
+                        )
                         if obj_team:
                             invoice_obj.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
                             return Response({"error": True}, data)
 
-                invoice_obj.assigned_to.clear()               
+                invoice_obj.assigned_to.clear()
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:                            
+                        if user:
                             invoice_obj.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
                             return Response({"error": True}, data)
-                
+
             assigned_to_list = list(
                 invoice_obj.assigned_to.all().values_list("id", flat=True)
             )
@@ -375,10 +381,12 @@ class InvoiceDetailView(APIView):
                 protocol=self.request.scheme,
             )
             return Response(
-                {"error": False, "message": "Invoice Updated Successfully"}, status=status.HTTP_200_OK,
+                {"error": False, "message": "Invoice Updated Successfully"},
+                status=status.HTTP_200_OK,
             )
         return Response(
-            {"error": True, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     @swagger_auto_schema(
@@ -393,7 +401,10 @@ class InvoiceDetailView(APIView):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
                 return Response(
-                    {"error": True, "errors": "You do not have Permission to perform this action"}
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    }
                 )
         if self.object.from_address_id:
             self.object.from_address.delete()
@@ -401,7 +412,8 @@ class InvoiceDetailView(APIView):
             self.object.to_address.delete()
         self.object.delete()
         return Response(
-            {"error": False, "message": "Invoice Deleted Successfully."}, status=status.HTTP_200_OK
+            {"error": False, "message": "Invoice Deleted Successfully."},
+            status=status.HTTP_200_OK,
         )
 
     @swagger_auto_schema(
@@ -410,9 +422,9 @@ class InvoiceDetailView(APIView):
     def get(self, request, pk, format=None):
         self.invoice = self.get_object(pk=pk)
         if self.invoice.company != request.company:
-           return Response(
-               {"error": True, "errors":"User company doesnot match with header...."},
-               status=status.HTTP_404_NOT_FOUND
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         context = {}
         context["invoice_obj"] = InvoiceSerailizer(self.invoice).data
@@ -422,7 +434,10 @@ class InvoiceDetailView(APIView):
                 or (self.request.user in self.invoice.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "errors": "You don't have Permission to perform this action"}
+                    {
+                        "error": True,
+                        "errors": "You don't have Permission to perform this action",
+                    }
                 )
 
         comment_permission = (
@@ -450,19 +465,12 @@ class InvoiceDetailView(APIView):
         else:
             users_mention = []
 
-        attachments = Attachments.objects.filter(
-            invoice = self.invoice
-        ).order_by("-id")
-        comments = Comment.objects.filter(
-            invoice=self.invoice).order_by("-id")
+        attachments = Attachments.objects.filter(invoice=self.invoice).order_by("-id")
+        comments = Comment.objects.filter(invoice=self.invoice).order_by("-id")
         context.update(
             {
-                "attachments": AttachmentsSerializer(
-                    attachments, many=True
-                ).data,
-                "comments": CommentSerializer(
-                    comments, many=True
-                ).data,
+                "attachments": AttachmentsSerializer(attachments, many=True).data,
+                "comments": CommentSerializer(comments, many=True).data,
                 "invoice_history": InvoiceHistorySerializer(
                     self.invoice.invoice_history.all(), many=True
                 ).data,
@@ -484,7 +492,7 @@ class InvoiceDetailView(APIView):
             }
         )
         return Response(context)
-    
+
     @swagger_auto_schema(
         tags=["Invoices"], manual_parameters=swagger_params.invoice_detail_post_params
     )
@@ -501,38 +509,38 @@ class InvoiceDetailView(APIView):
                 {"error": True, "errors": "User company doesnot match with header...."}
             )
 
-        comment_serializer = CommentSerializer(
-            data=params)
+        comment_serializer = CommentSerializer(data=params)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == self.invoice_obj.created_by)
                 or (self.request.user in self.invoice_obj.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "errors": "You don't have Permission to perform this action"},
-                     status = status.HTTP_401_UNAUTHORIZED
+                    {
+                        "error": True,
+                        "errors": "You don't have Permission to perform this action",
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
                 )
         if comment_serializer.is_valid():
             if params.get("comment"):
                 comment_serializer.save(
-                    invoice_id = self.invoice_obj.id,
-                    commented_by_id = self.request.user.id,)
-            
+                    invoice_id=self.invoice_obj.id,
+                    commented_by_id=self.request.user.id,
+                )
+
         if self.request.FILES.get("invoice_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get(
-                "invoice_attachment").name
+            attachment.file_name = self.request.FILES.get("invoice_attachment").name
             attachment.invoice = self.invoice_obj
-            attachment.attachment = self.request.FILES.get(
-                "invoice_attachment")
+            attachment.attachment = self.request.FILES.get("invoice_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(
-            invoice=self.invoice_obj).order_by("-id")
-        attachments = Attachments.objects.filter(
-            invoice=self.invoice_obj
-        ).order_by("-id")
+        comments = Comment.objects.filter(invoice=self.invoice_obj).order_by("-id")
+        attachments = Attachments.objects.filter(invoice=self.invoice_obj).order_by(
+            "-id"
+        )
         context.update(
             {
                 "invoice_obj": InvoiceSerailizer(self.invoice_obj).data,
@@ -541,6 +549,7 @@ class InvoiceDetailView(APIView):
             }
         )
         return Response(context)
+
 
 class InvoiceCommentView(APIView):
     model = Comment
@@ -554,48 +563,56 @@ class InvoiceCommentView(APIView):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == obj.commented_by
-        ): 
-            serializer = CommentSerializer(
-                obj, data=params)
+        ):
+            serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
                 if serializer.is_valid():
                     serializer.save()
                     return Response(
-                        {"error": False, "message":"Comment Submitted"}, status=status.HTTP_200_OK,
+                        {"error": False, "message": "Comment Submitted"},
+                        status=status.HTTP_200_OK,
                     )
                 return Response(
-                    {"error": True, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST,
+                    {"error": True, "errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
             return Response(
-                {"error": True, "errors": "You don't have permission to perform this action."}
-                )
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action.",
+                }
+            )
 
     @swagger_auto_schema(
         tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
     )
-    def delete(self, request, pk, format=None):        
+    def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.commented_by
-        ):    
+        ):
             self.object.delete()
             return Response(
-                {"error": False, "message": "Comment Deleted Successfully"}, status=status.HTTP_200_OK
+                {"error": False, "message": "Comment Deleted Successfully"},
+                status=status.HTTP_200_OK,
             )
         else:
             return Response(
-                {"error": True, "errors": "You don't have permission to perform this action"}
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action",
+                }
             )
+
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
@@ -605,18 +622,22 @@ class InvoiceAttachmentView(APIView):
     @swagger_auto_schema(
         tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
     )
-    def delete(self, request, pk, format=None):        
+    def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.created_by
-        ):    
+        ):
             self.object.delete()
             return Response(
-                {"error": False, "message": "Attachment Deleted Successfully"}, status=status.HTTP_200_OK
+                {"error": False, "message": "Attachment Deleted Successfully"},
+                status=status.HTTP_200_OK,
             )
         else:
             return Response(
-                {"error": True, "errors": "You don't have permission to perform this action."}
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action.",
+                }
             )

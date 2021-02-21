@@ -89,17 +89,14 @@ account_comment_edit_params = [
 account_detail_get_params = [
     company_params_in_header,
     openapi.Parameter(
-        "account_attachment", openapi.IN_QUERY, type=openapi.TYPE_FILE, 
+        "account_attachment",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_FILE,
     ),
-    openapi.Parameter(
-        "comment", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
+    openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 account_comment_edit_params = [
     company_params_in_header,
-    openapi.Parameter(
-        "comment", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
+    openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
-
