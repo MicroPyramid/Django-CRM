@@ -19,7 +19,11 @@ class Case(models.Model):
         choices=CASE_TYPE, max_length=255, blank=True, null=True, default=""
     )
     account = models.ForeignKey(
-        Account, on_delete=models.CASCADE, blank=True, null=True, related_name="accounts_cases",
+        Account,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="accounts_cases",
     )
     contacts = models.ManyToManyField(Contact)
     # closed_on = models.DateTimeField()

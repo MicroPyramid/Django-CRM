@@ -187,7 +187,7 @@ def event_create(request):
                         start_time=data["start_time"],
                         end_time=data["end_time"],
                         date_of_meeting=each,
-                        company=request.company
+                        company=request.company,
                     )
                     event.contacts.add(*request.POST.getlist("contacts"))
                     event.assigned_to.add(*request.POST.getlist("assigned_to"))

@@ -42,8 +42,9 @@ class InvoiceSerailizer(serializers.ModelSerializer):
             "details",
             "teams",
             "assigned_to",
-            "company"
+            "company",
         )
+
 
 class InvoiceHistorySerializer(serializers.ModelSerializer):
     updated_by = UserSerializer()
@@ -67,12 +68,12 @@ class InvoiceHistorySerializer(serializers.ModelSerializer):
             "amount_due",
             "amount_paid",
             "is_email_sent",
-            "details",            
+            "details",
             "updated_by",
         )
 
+
 class InvoiceCreateSerializer(serializers.ModelSerializer):
-    
     def __init__(self, *args, **kwargs):
         invoice_view = kwargs.pop("invoice", False)
         request_obj = kwargs.pop("request_obj", None)
@@ -82,16 +83,20 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
 
     def validate_invoice_title(self, invoice_title):
         if self.instance:
-            if Invoice.objects.filter(
-                invoice_title__iexact=invoice_title, company=self.company
-            ).exclude(id=self.instance.id).exists():
+            if (
+                Invoice.objects.filter(
+                    invoice_title__iexact=invoice_title, company=self.company
+                )
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
                 raise serializers.ValidationError(
                     "Invoice already exists with this invoice_title"
                 )
         else:
             if Invoice.objects.filter(
                 invoice_title__iexact=invoice_title, company=self.company
-            ).exists():               
+            ).exists():
                 raise serializers.ValidationError(
                     "Invoice already exists with this invoice_title"
                 )
@@ -118,5 +123,5 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "amount_paid",
             "is_email_sent",
             "details",
-            "company"
+            "company",
         )

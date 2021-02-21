@@ -11,7 +11,10 @@ env_path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", '&q1&ftrxho9lrzm$$%6!cplb5ac957-9y@t@17u(3yqqb#9xl%')
+SECRET_KEY = os.getenv(
+    "SECRET_KEY", "&q1&ftrxho9lrzm$$%6!cplb5ac957-9y@t@17u(3yqqb#9xl%"
+)
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
@@ -54,7 +57,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "corsheaders",
     "django_ses",
-    "django_blog_it"
+    "django_blog_it",
 ]
 
 MIDDLEWARE = [
