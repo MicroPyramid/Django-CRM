@@ -66,16 +66,14 @@ python manage.py runserver
 Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
 
 
-### Try Our Django Blog it.
+### To edit content
 
 ```
-pip install git+https://github.com/MicroPyramid/django-blog-it.git@master
-python manage.py migrate
-add django_blog_it to installed apps
-include django_blog_it urls in project urls
 python manage.py create_blog_user 'username'
 
 ```
+
+The above command will add the user as blog admin to edit content at /blog/admin/
 
 ### Useful tools and packages
 ```
