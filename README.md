@@ -40,6 +40,7 @@ sudo apt-get install postfix
 
 #### Install dependencies
 ---
+
 * Create and activate a virtual environment.
 
 ```
