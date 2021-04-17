@@ -37,11 +37,13 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
+from crm import settings
 
 
-class OpportunityListView(APIView):
+class OpportunityListView(APIView, LimitOffsetPagination):
 
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -53,9 +55,9 @@ class OpportunityListView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
-        accounts = Account.objects.filter(company=self.request.company)
-        contacts = Contact.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
+        accounts = Account.objects.all()
+        contacts = Contact.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
@@ -94,33 +96,34 @@ class OpportunityListView(APIView):
             or params.get("tags")
         ):
             search = True
-
         context["search"] = search
-        opportunities = OpportunitySerializer(queryset, many=True).data
 
+        results_opportunities = self.paginate_queryset(
+            queryset.distinct(), self.request, view=self
+        )
+        opportunities = OpportunitySerializer(results_opportunities, many=True).data
+        context["per_page"] = 10
+        context.update(
+            {
+                "opportunities_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
+            }
+        )
         context["opportunities"] = opportunities
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True, company=self.request.company).order_by(
-                "email"
-            ),
+            User.objects.filter(is_active=True).order_by("email"),
             many=True,
         ).data
-        tag_ids = list(
-            set(
-                Opportunity.objects.filter(company=self.request.company).values_list(
-                    "tags", flat=True
-                )
-            )
-        )
+        tag_ids = list(set(Opportunity.objects.all().values_list("tags", flat=True)))
         context["tags"] = TagsSerializer(
             Tags.objects.filter(id__in=tag_ids), many=True
         ).data
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(
-                Teams.objects.filter(company=self.request.company), many=True
-            ).data
+            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
         context["currency"] = CURRENCY_CODES
@@ -146,28 +149,24 @@ class OpportunityListView(APIView):
         if serializer.is_valid():
             opportunity_obj = serializer.save(
                 created_by=request.user,
-                company=request.company,
                 closed_on=params.get("due_date"),
             )
 
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         opportunity_obj.contacts.add(contact)
                     else:
                         opportunity_obj.delete()
                         data["contacts"] = "Please enter valid contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
-                # for t in tags:
-                #     tag,_ = Tags.objects.get_or_create(slug=t.lower())
-                #     opportunity_obj.tags.add(tag)
-
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
                     if obj_tag:
@@ -185,26 +184,30 @@ class OpportunityListView(APIView):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        obj_team = Teams.objects.filter(id=team)
                         if obj_team:
                             opportunity_obj.teams.add(team)
                         else:
                             opportunity_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
 
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             opportunity_obj.assigned_to.add(user_id)
                         else:
                             opportunity_obj.delete()
                             data["assigned_to"] = "Please enter valid user"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
@@ -220,16 +223,16 @@ class OpportunityListView(APIView):
                 opportunity_obj.assigned_to.all().values_list("id", flat=True)
             )
 
-            current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email_to_assigned_user.delay(
                 recipients,
                 opportunity_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response(
-                {"error": False, "message": "Opportunity Created Successfully"}
+                {"error": False, "message": "Opportunity Created Successfully"},
+                status=status.HTTP_200_OK,
             )
 
         return Response(
@@ -254,11 +257,6 @@ class OpportunityDetailView(APIView):
         params = request.query_params if len(request.data) == 0 else request.data
         opportunity_object = self.get_object(pk=pk)
         data = {}
-        if opportunity_object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == opportunity_object.created_by)
@@ -269,7 +267,7 @@ class OpportunityDetailView(APIView):
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         serializer = OpportunityCreateSerializer(
@@ -288,20 +286,18 @@ class OpportunityDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         opportunity_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             opportunity_object.tags.clear()
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
-                # for t in tags:
-                #     tag,_ = Tags.objects.get_or_create(name=t.lower())
-                #     opportunity_object.tags.add(tag)
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
                     if obj_tag:
@@ -320,25 +316,29 @@ class OpportunityDetailView(APIView):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        obj_team = Teams.objects.filter(id=team)
                         if obj_team:
                             opportunity_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
                 opportunity_object.assigned_to.clear()
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             opportunity_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
@@ -353,12 +353,11 @@ class OpportunityDetailView(APIView):
             assigned_to_list = list(
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(self.request)
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(
                 recipients,
                 opportunity_object.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response(
@@ -372,21 +371,17 @@ class OpportunityDetailView(APIView):
 
     @swagger_auto_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_delete_params,
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         self.object.delete()
         return Response(
@@ -396,15 +391,9 @@ class OpportunityDetailView(APIView):
 
     @swagger_auto_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_delete_params,
     )
     def get(self, request, pk, format=None):
         self.opportunity = self.get_object(pk=pk)
-        if self.opportunity.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         context = {}
         context["opportunity_obj"] = OpportunitySerializer(self.opportunity).data
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -416,7 +405,8 @@ class OpportunityDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comment_permission = (
@@ -433,7 +423,6 @@ class OpportunityDetailView(APIView):
             users_mention = list(
                 User.objects.filter(
                     is_active=True,
-                    company=self.request.company,
                 ).values("username")
             )
         elif self.request.user != self.opportunity.created_by:
@@ -458,7 +447,6 @@ class OpportunityDetailView(APIView):
                 "users": UserSerializer(
                     User.objects.filter(
                         is_active=True,
-                        company=self.request.company,
                     ).order_by("email"),
                     many=True,
                 ).data,
@@ -483,11 +471,6 @@ class OpportunityDetailView(APIView):
         )
         context = {}
         self.opportunity_obj = Opportunity.objects.get(pk=pk)
-        if self.opportunity_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-
         comment_serializer = CommentSerializer(data=params)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
@@ -499,7 +482,7 @@ class OpportunityDetailView(APIView):
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         if comment_serializer.is_valid():
             if params.get("comment"):
@@ -571,12 +554,12 @@ class OpportunityCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to perform this action.",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     @swagger_auto_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_delete_params,
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -595,7 +578,8 @@ class OpportunityCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You do not have permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -606,7 +590,6 @@ class OpportunityAttachmentView(APIView):
 
     @swagger_auto_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_delete_params,
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
@@ -625,5 +608,6 @@ class OpportunityAttachmentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to perform this action.",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )

@@ -1,6 +1,6 @@
 import arrow
 from django.db import models
-from common.models import User, Company
+from common.models import User
 from accounts.models import Account
 from contacts.models import Contact
 from django.utils.translation import ugettext_lazy as _
@@ -42,9 +42,6 @@ class Task(models.Model):
         on_delete=models.SET_NULL,
     )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     def __str__(self):
         return self.title

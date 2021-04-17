@@ -5,7 +5,6 @@ from common.serializer import (
     UserSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
-    CompanySerializer,
 )
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
@@ -23,7 +22,6 @@ class LeadSerializer(serializers.ModelSerializer):
     tags = TagsSerializer(read_only=True, many=True)
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    company = CompanySerializer()
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
 
     class Meta:
@@ -54,11 +52,10 @@ class LeadSerializer(serializers.ModelSerializer):
             "created_by",
             "created_on",
             "is_active",
-            "enquery_type",
+            "enquiry_type",
             "tags",
             "created_from_site",
             "teams",
-            "company",
         )
 
 
@@ -78,14 +75,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 prev_choices = self.fields["source"]._get_choices()
                 prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
-        self.company = request_obj.company
 
     def validate_account_name(self, account_name):
         if self.instance:
             if (
                 Account.objects.filter(
                     name__iexact=account_name,
-                    company=self.company,
                 )
                 .exclude(id=self.instance.id)
                 .exists()
@@ -95,7 +90,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 )
         else:
             if Account.objects.filter(
-                name__iexact=account_name, company=self.company
+                name__iexact=account_name,
             ).exists():
                 raise serializers.ValidationError(
                     "Account already exists with this name"
@@ -107,14 +102,13 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             if (
                 Lead.objects.filter(
                     title__iexact=title,
-                    company=self.company,
                 )
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Lead already exists with this title")
         else:
-            if Lead.objects.filter(title__iexact=title, company=self.company).exists():
+            if Lead.objects.filter(title__iexact=title).exists():
                 raise serializers.ValidationError("Lead already exists with this title")
         return title
 

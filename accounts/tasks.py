@@ -11,7 +11,6 @@ from django.template.loader import render_to_string
 from accounts.models import Account, Email, EmailLog
 from common.models import User
 from common.utils import convert_to_custom_timezone
-from marketing.models import BlockedDomain, BlockedEmail
 
 app = Celery("redis://")
 
@@ -19,8 +18,6 @@ app = Celery("redis://")
 @app.task
 def send_email(email_obj_id):
     email_obj = Email.objects.filter(id=email_obj_id).first()
-    blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
-    blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
     if email_obj:
         from_email = email_obj.from_email
         contacts = email_obj.recipients.all()
@@ -28,39 +25,36 @@ def send_email(email_obj_id):
             if not EmailLog.objects.filter(
                 email=email_obj, contact=contact_obj, is_sent=True
             ).exists():
-                if (contact_obj.email not in blocked_emails) and (
-                    contact_obj.email.split("@")[-1] not in blocked_domains
-                ):
-                    html = email_obj.message_body
-                    context_data = {
-                        "email": contact_obj.email if contact_obj.email else "",
-                        "name": contact_obj.first_name
-                        if contact_obj.first_name
-                        else "" + " " + contact_obj.last_name
-                        if contact_obj.last_name
-                        else "",
-                    }
-                    try:
-                        html_content = Template(html).render(Context(context_data))
-                        subject = email_obj.message_subject
-                        msg = EmailMessage(
-                            subject,
-                            html_content,
-                            from_email=from_email,
-                            to=[
-                                contact_obj.email,
-                            ],
+                html = email_obj.message_body
+                context_data = {
+                    "email": contact_obj.email if contact_obj.email else "",
+                    "name": contact_obj.first_name
+                    if contact_obj.first_name
+                    else "" + " " + contact_obj.last_name
+                    if contact_obj.last_name
+                    else "",
+                }
+                try:
+                    html_content = Template(html).render(Context(context_data))
+                    subject = email_obj.message_subject
+                    msg = EmailMessage(
+                        subject,
+                        html_content,
+                        from_email=from_email,
+                        to=[
+                            contact_obj.email,
+                        ],
+                    )
+                    msg.content_subtype = "html"
+                    res = msg.send()
+                    if res:
+                        email_obj.rendered_message_body = html_content
+                        email_obj.save()
+                        EmailLog.objects.create(
+                            email=email_obj, contact=contact_obj, is_sent=True
                         )
-                        msg.content_subtype = "html"
-                        res = msg.send()
-                        if res:
-                            email_obj.rendered_message_body = html_content
-                            email_obj.save()
-                            EmailLog.objects.create(
-                                email=email_obj, contact=contact_obj, is_sent=True
-                            )
-                    except Exception as e:
-                        print(e)
+                except Exception as e:
+                    print(e)
 
 
 @app.task
@@ -71,35 +65,24 @@ def send_email_to_assigned_user(
     account = Account.objects.filter(id=from_email).first()
     created_by = account.created_by
 
-    blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
-    blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
-
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()
         if user:
-            if (user.email not in blocked_emails) and (
-                user.email.split("@")[-1] not in blocked_domains
-            ):
-                recipients_list.append(user.email)
-                context = {}
-                context["url"] = (
-                    protocol
-                    + "://"
-                    + domain
-                    + reverse("accounts:view_account", args=(account.id,))
-                )
-                context["user"] = user
-                context["account"] = account
-                context["created_by"] = created_by
-                subject = "Assigned a account for you."
-                html_content = render_to_string(
-                    "assigned_to/account_assigned.html", context=context
-                )
+            recipients_list.append(user.email)
+            context = {}
+            context["url"] = protocol + "://" + domain
+            context["user"] = user
+            context["account"] = account
+            context["created_by"] = created_by
+            subject = "Assigned a account for you."
+            html_content = render_to_string(
+                "assigned_to/account_assigned.html", context=context
+            )
 
-                msg = EmailMessage(subject, html_content, to=recipients_list)
-                msg.content_subtype = "html"
-                msg.send()
+            msg = EmailMessage(subject, html_content, to=recipients_list)
+            msg.content_subtype = "html"
+            msg.send()
 
 
 @app.task

@@ -13,7 +13,6 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from common.models import Comment, Profile, User
 from common.token_generator import account_activation_token
 from django.contrib.auth.tokens import default_token_generator
-from marketing.models import BlockedDomain, BlockedEmail
 
 app = Celery("redis://")
 
@@ -39,10 +38,16 @@ def send_email_to_new_user(
         )
         context["token"] = context["token"]
         activation_key = context["token"] + time_delta_two_hours
-        Profile.objects.create(user=user_obj, activation_key=activation_key)
-        context["complete_url"] = context["url"] + reverse(
-            "common:activate_user",
-            args=(context["uid"][0], context["token"], activation_key),
+        profile_obj = Profile.objects.create(
+            user=user_obj, activation_key=activation_key
+        )
+        profile_obj.save()
+        context["complete_url"] = context[
+            "url"
+        ] + "/auth/activate-user/{}/{}/{}/".format(
+            context["uid"][0],
+            context["token"],
+            activation_key,
         )
         recipients = []
         recipients.append(user_email)
@@ -83,94 +88,47 @@ def send_email_user_mentions(
         context["commented_by"] = comment.commented_by
         context["comment_description"] = comment.comment
         if called_from == "accounts":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("accounts:view_account", args=(comment.account.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Account. "
         elif called_from == "contacts":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("contacts:view_contact", args=(comment.contact.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Contact. "
         elif called_from == "leads":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("leads:view_lead", args=(comment.lead.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Lead. "
         elif called_from == "opportunity":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("opportunity:opp_view", args=(comment.opportunity.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Opportunity. "
         elif called_from == "cases":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("cases:view_case", args=(comment.case.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Case. "
         elif called_from == "tasks":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("tasks:task_detail", args=(comment.task.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Task. "
         elif called_from == "invoices":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("invoices:invoice_details", args=(comment.invoice.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Invoice. "
         elif called_from == "events":
-            context["url"] = (
-                protocol
-                + "://"
-                + domain
-                + reverse("events:detail_view", args=(comment.event.id,))
-            )
+            context["url"] = protocol + "://" + domain
             subject = "New comment on Event. "
         else:
             context["url"] = ""
         # subject = 'Django CRM : comment '
-        blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
-        blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
         if recipients:
             for recipient in recipients:
-                if (recipient not in blocked_emails) and (
-                    recipient.split("@")[-1] not in blocked_domains
-                ):
-                    recipients_list = [
-                        recipient,
-                    ]
-                    context["mentioned_user"] = recipient
-                    html_content = render_to_string(
-                        "comment_email.html", context=context
-                    )
-                    msg = EmailMessage(
-                        subject,
-                        html_content,
-                        from_email=comment.commented_by.email,
-                        to=recipients_list,
-                    )
-                    msg.content_subtype = "html"
-                    msg.send()
+                recipients_list = [
+                    recipient,
+                ]
+                context["mentioned_user"] = recipient
+                html_content = render_to_string("comment_email.html", context=context)
+                msg = EmailMessage(
+                    subject,
+                    html_content,
+                    from_email=comment.commented_by.email,
+                    to=recipients_list,
+                )
+                msg.content_subtype = "html"
+                msg.send()
 
 
 @app.task
@@ -254,9 +212,12 @@ def resend_activation_link_to_user(
             activation_key=activation_key,
             key_expires=timezone.now() + datetime.timedelta(hours=2),
         )
-        context["complete_url"] = context["url"] + reverse(
-            "common:activate_user",
-            args=(context["uid"][0], context["token"], activation_key),
+        context["complete_url"] = context[
+            "url"
+        ] + "/auth/activate_user/{}/{}/{}/".format(
+            context["uid"][0],
+            context["token"],
+            activation_key,
         )
         recipients = []
         recipients.append(user_email)
@@ -282,14 +243,16 @@ def send_email_to_reset_password(
     context["token"] = context["token"]
     context["complete_url"] = context[
         "url"
-    ] + "/api-common/reset-password/{uidb64}/{token}/".format(
-        uidb64=context["uid"], token=context["token"]
+    ] + "/auth/reset-password/{uidb64}/{token}/".format(
+        uidb64=context["uid"][0], token=context["token"]
     )
     recipients = []
     recipients.append(user_email)
     subject = "Password Reset"
     html_content = render_to_string("password_reset_email.html", context=context)
     if recipients:
-        msg = EmailMessage(subject, html_content, to=recipients)
+        msg = EmailMessage(
+            subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients
+        )
         msg.content_subtype = "html"
         msg.send()

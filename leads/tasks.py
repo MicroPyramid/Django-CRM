@@ -8,9 +8,8 @@ from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import User, Company
+from accounts.models import User
 from leads.models import Lead
-from marketing.models import BlockedDomain, BlockedEmail
 
 
 app = Celery("redis://")
@@ -84,44 +83,33 @@ def send_email_to_assigned_user(
     """ Send Mail To Users When they are assigned to a lead """
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
-    blocked_domains = BlockedDomain.objects.values_list("domain", flat=True)
-    blocked_emails = BlockedEmail.objects.values_list("email", flat=True)
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()
         if user:
-            if (user.email not in blocked_emails) and (
-                user.email.split("@")[-1] not in blocked_domains
-            ):
-                recipients_list.append(user.email)
-                context = {}
-                context["url"] = (
-                    protocol
-                    + "://"
-                    + domain
-                    + reverse("leads:view_lead", args=(lead.id,))
-                )
-                context["user"] = user
-                context["lead"] = lead
-                context["created_by"] = created_by
-                context["source"] = source
-                subject = "Assigned a lead for you. "
-                html_content = render_to_string(
-                    "assigned_to/leads_assigned.html", context=context
-                )
-                msg = EmailMessage(subject, html_content, to=recipients_list)
-                msg.content_subtype = "html"
-                msg.send()
+            recipients_list.append(user.email)
+            context = {}
+            context["url"] = protocol + "://" + domain
+            context["user"] = user
+            context["lead"] = lead
+            context["created_by"] = created_by
+            context["source"] = source
+            subject = "Assigned a lead for you. "
+            html_content = render_to_string(
+                "assigned_to/leads_assigned.html", context=context
+            )
+            msg = EmailMessage(subject, html_content, to=recipients_list)
+            msg.content_subtype = "html"
+            msg.send()
 
 
 @app.task
-def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company_id):
+def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
     """
     email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
     user = User.objects.get(id=user_id)
-    company = Company.objects.filter(id=company_id).first()
     for row in validated_rows:
         if not Lead.objects.filter(title=row.get("title")).exists():
             if re.match(email_regex, row.get("email")) is not None:
@@ -143,7 +131,6 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     lead.account_name = row.get("account_name", "")[:255]
                     lead.created_from_site = False
                     lead.created_by = user
-                    lead.company = company
                     lead.save()
                 except Exception as e:
                     print(e)

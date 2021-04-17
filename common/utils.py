@@ -18,7 +18,6 @@ def jwt_payload_handler(user):
         "id": user.pk,
         # 'name': user.name,
         "email": user.email,
-        "company": user.company.id,
         "role": user.role,
         "has_sales_access": user.has_sales_access,
         "has_marketing_access": user.has_marketing_access,

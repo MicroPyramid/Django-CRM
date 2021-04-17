@@ -39,6 +39,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
+from crm import settings
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),
@@ -232,12 +233,11 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                 invoice_obj.assigned_to.all().values_list("id", flat=True)
             )
 
-            current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email.delay(
                 recipients,
                 invoice_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response({"error": False, "message": "Invoice Created Successfully"})
@@ -372,12 +372,11 @@ class InvoiceDetailView(APIView):
             assigned_to_list = list(
                 invoice_obj.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(self.request)
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email.delay(
                 recipients,
                 invoice_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response(

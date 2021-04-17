@@ -51,9 +51,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     has_sales_access = models.BooleanField(default=False)
     has_marketing_access = models.BooleanField(default=False)
-    company = models.ForeignKey(
-        Company, on_delete=models.CASCADE, null=True, blank=True
-    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = [
@@ -64,13 +61,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.username
-
-    @property
-    def get_app_name(self):
-        if self.company:
-            return self.company.sub_domain + "." + settings.APPLICATION_NAME
-        else:
-            return settings.APPLICATION_NAME
 
     def documents(self):
         return self.document_uploaded.all()
@@ -353,9 +343,6 @@ class Document(models.Model):
     )
     shared_to = models.ManyToManyField(User, related_name="document_shared_to")
     teams = models.ManyToManyField("teams.Teams", related_name="document_teams")
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     class Meta:
         ordering = ("-created_on",)
@@ -459,7 +446,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User, related_name="profile", on_delete=models.CASCADE
     )  # 1 to 1 link with Django User
-    activation_key = models.CharField(max_length=50)
+    activation_key = models.CharField(max_length=150)
     key_expires = models.DateTimeField()
 
     def save(self, *args, **kwargs):

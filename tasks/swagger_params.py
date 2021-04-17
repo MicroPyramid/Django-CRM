@@ -1,18 +1,12 @@
 from drf_yasg import openapi
 
-company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
-)
-
 task_list_get_params = [
-    company_params_in_header,
     openapi.Parameter("title", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("status", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("priority", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 task_detail_post_params = [
-    company_params_in_header,
     openapi.Parameter(
         "task_attachment",
         openapi.IN_QUERY,
@@ -21,12 +15,7 @@ task_detail_post_params = [
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
-task_delete_params = [
-    company_params_in_header,
-]
-
 task_create_post_params = [
-    company_params_in_header,
     openapi.Parameter(
         "title", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -46,6 +35,5 @@ task_create_post_params = [
 ]
 
 task_comment_edit_params = [
-    company_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]

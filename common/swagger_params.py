@@ -1,12 +1,6 @@
 from drf_yasg import openapi
 
-company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
-)
-
-
 login_page_params = [
-    company_params_in_header,
     openapi.Parameter(
         "email", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -20,7 +14,6 @@ login_page_params = [
 ]
 
 change_password_params = [
-    company_params_in_header,
     openapi.Parameter(
         "old_password",
         openapi.IN_QUERY,
@@ -44,10 +37,7 @@ change_password_params = [
     ),
 ]
 
-dashboard_params = [company_params_in_header]
-
 user_update_params = [
-    company_params_in_header,
     openapi.Parameter(
         "username", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
     ),
@@ -64,22 +54,12 @@ user_update_params = [
 ]
 
 user_delete_params = [
-    company_params_in_header,
     openapi.Parameter(
         "user_id", openapi.IN_QUERY, required=True, type=openapi.TYPE_NUMBER
     ),
 ]
 
-check_sub_domain_params = [
-    openapi.Parameter(
-        "sub_domain", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
-    ),
-]
-
 registration_page_params = [
-    openapi.Parameter(
-        "sub_domain", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
-    ),
     openapi.Parameter(
         "username", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -100,13 +80,8 @@ forgot_password_params = [
         "email", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
 ]
+
 reset_password_params = [
-    openapi.Parameter(
-        "uidb64", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "token", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
-    ),
     openapi.Parameter(
         "new_password1", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -114,8 +89,8 @@ reset_password_params = [
         "new_password2", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
 ]
+
 user_list_params = [
-    company_params_in_header,
     openapi.Parameter("username", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
@@ -130,7 +105,6 @@ user_list_params = [
 ]
 
 user_create_params = [
-    company_params_in_header,
     openapi.Parameter("username", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("role", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -152,7 +126,6 @@ user_create_params = [
 ]
 
 document_create_params = [
-    company_params_in_header,
     openapi.Parameter(
         "title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
     ),
@@ -164,7 +137,6 @@ document_create_params = [
 ]
 
 document_get_params = [
-    company_params_in_header,
     openapi.Parameter("title", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
         "status",
@@ -176,7 +148,6 @@ document_get_params = [
 ]
 
 document_update_params = [
-    company_params_in_header,
     openapi.Parameter(
         "title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
     ),
@@ -193,36 +164,26 @@ document_update_params = [
     ),
 ]
 
-settings_contact_create_params = [
-    company_params_in_header,
-    openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("last_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-]
-
-settings_contact_get_params = [
-    company_params_in_header,
-    openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("created_by", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-]
-
-settings_blockdomains_create_params = [
-    company_params_in_header,
-    openapi.Parameter("domain", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-]
-
-settings_blockemails_create_params = [
-    company_params_in_header,
-    openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-]
-
 users_status_params = [
-    company_params_in_header,
     openapi.Parameter(
         "status",
         openapi.IN_QUERY,
         type=openapi.TYPE_STRING,
         enum=["Active", "Inactive"],
+    ),
+]
+
+api_setting_create_params = [
+    openapi.Parameter(
+        "title", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
+    ),
+    openapi.Parameter(
+        "website", openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True
+    ),
+    openapi.Parameter("lead_assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter(
+        "tags",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_STRING,
     ),
 ]

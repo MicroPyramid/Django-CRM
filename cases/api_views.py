@@ -36,6 +36,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
+from crm import settings
 
 
 class CaseListView(APIView, LimitOffsetPagination):
@@ -50,10 +51,10 @@ class CaseListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
-        accounts = Account.objects.filter(company=self.request.company)
-        contacts = Contact.objects.filter(company=self.request.company)
-        users = User.objects.filter(is_active=True, company=self.request.company)
+        queryset = self.model.objects.all()
+        accounts = Account.objects.all()
+        contacts = Contact.objects.all()
+        users = User.objects.filter(is_active=True)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
@@ -110,9 +111,7 @@ class CaseListView(APIView, LimitOffsetPagination):
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(
-                Teams.objects.filter(company=self.request.company), many=True
-            ).data
+            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
     @swagger_auto_schema(
@@ -132,7 +131,6 @@ class CaseListView(APIView, LimitOffsetPagination):
         if serializer.is_valid():
             cases_obj = serializer.save(
                 created_by=request.user,
-                company=request.company,
                 closed_on=params.get("closed_on"),
                 case_type=params.get("type_of_case"),
             )
@@ -140,40 +138,45 @@ class CaseListView(APIView, LimitOffsetPagination):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         cases_obj.contacts.add(contact)
                     else:
                         cases_obj.delete()
                         data["contacts"] = "Please enter valid contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
             if self.request.user.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        obj_team = Teams.objects.filter(id=team)
                         if obj_team:
                             cases_obj.teams.add(team)
                         else:
                             cases_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
 
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             cases_obj.assigned_to.add(user_id)
                         else:
                             cases_obj.delete()
                             data["assigned_to"] = "Please enter valid user"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
@@ -186,15 +189,17 @@ class CaseListView(APIView, LimitOffsetPagination):
             assigned_to_list = list(
                 cases_obj.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
-            return Response({"error": False, "message": "Case Created Successfully"})
+            return Response(
+                {"error": False, "message": "Case Created Successfully"},
+                status=status.HTTP_200_OK,
+            )
 
         return Response(
             {"error": True, "errors": serializer.errors},
@@ -217,11 +222,6 @@ class CaseDetailView(APIView):
         params = request.query_params if len(request.data) == 0 else request.data
         cases_object = self.get_object(pk=pk)
         data = {}
-        if cases_object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == cases_object.created_by)
@@ -232,7 +232,7 @@ class CaseDetailView(APIView):
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         serializer = CaseCreateSerializer(
@@ -253,39 +253,44 @@ class CaseDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         cases_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
             if self.request.user.role == "ADMIN":
                 cases_object.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        obj_team = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        obj_team = Teams.objects.filter(id=team)
                         if obj_team:
                             cases_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
                 cases_object.assigned_to.clear()
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             cases_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
@@ -298,12 +303,11 @@ class CaseDetailView(APIView):
             assigned_to_list = list(
                 cases_object.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(self.request)
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_object.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response(
@@ -316,21 +320,18 @@ class CaseDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Cases"], manual_parameters=swagger_params.cases_delete_params
+        tags=["Cases"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         self.object.delete()
         return Response(
@@ -339,15 +340,10 @@ class CaseDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Cases"], manual_parameters=swagger_params.cases_delete_params
+        tags=["Cases"],
     )
     def get(self, request, pk, format=None):
         self.cases = self.get_object(pk=pk)
-        if self.cases.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         context = {}
         context["cases_obj"] = CaseSerializer(self.cases).data
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -359,7 +355,8 @@ class CaseDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comment_permission = (
@@ -376,7 +373,6 @@ class CaseDetailView(APIView):
             users_mention = list(
                 User.objects.filter(
                     is_active=True,
-                    company=self.request.company,
                 ).values("username")
             )
         elif self.request.user != self.cases.created_by:
@@ -400,7 +396,6 @@ class CaseDetailView(APIView):
                 "users": UserSerializer(
                     User.objects.filter(
                         is_active=True,
-                        company=self.request.company,
                     ).order_by("email"),
                     many=True,
                 ).data,
@@ -424,11 +419,6 @@ class CaseDetailView(APIView):
         )
         context = {}
         self.cases_obj = Case.objects.get(pk=pk)
-        if self.cases_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-
         comment_serializer = CommentSerializer(data=params)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
@@ -440,7 +430,7 @@ class CaseDetailView(APIView):
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         if comment_serializer.is_valid():
             if params.get("comment"):
@@ -506,11 +496,12 @@ class CaseCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to perform this action.",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     @swagger_auto_schema(
-        tags=["Cases"], manual_parameters=swagger_params.cases_delete_params
+        tags=["Cases"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -529,7 +520,8 @@ class CaseCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You do not have permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -539,7 +531,7 @@ class CaseAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Cases"], manual_parameters=swagger_params.cases_delete_params
+        tags=["Cases"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
@@ -558,5 +550,6 @@ class CaseAttachmentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to perform this action.",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )

@@ -1,23 +1,12 @@
 from drf_yasg import openapi
 
-company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
-)
-
-
 contact_list_get_params = [
-    company_params_in_header,
     openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
-contact_detail_get_params = [company_params_in_header]
-
-contact_delete_get_params = [company_params_in_header]
-
 contact_create_post_params = [
-    company_params_in_header,
     openapi.Parameter(
         "first_name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -40,4 +29,17 @@ contact_create_post_params = [
     openapi.Parameter("country", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("description", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("contact_attachment", openapi.IN_QUERY, type=openapi.TYPE_FILE),
+]
+
+contact_detail_get_params = [
+    openapi.Parameter(
+        "contact_attachment",
+        openapi.IN_QUERY,
+        type=openapi.TYPE_FILE,
+    ),
+    openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+]
+
+contact_comment_edit_params = [
+    openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]

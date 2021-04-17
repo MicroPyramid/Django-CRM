@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Tags
-from common.models import User, Company
+from common.models import User
 from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, return_complete_address
 from contacts.models import Contact
 from teams.models import Teams
@@ -46,14 +46,11 @@ class Lead(models.Model):
     )
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
-    enquery_type = models.CharField(max_length=255, blank=True, null=True)
+    enquiry_type = models.CharField(max_length=255, blank=True, null=True)
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
     teams = models.ManyToManyField(Teams, related_name="lead_teams")
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     class Meta:
         ordering = ["-created_on"]

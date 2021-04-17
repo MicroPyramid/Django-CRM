@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from cases.models import Case
-from common.serializer import UserSerializer, CompanySerializer
+from common.serializer import UserSerializer
 from teams.serializer import TeamsSerializer
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
@@ -12,7 +12,6 @@ class CaseSerializer(serializers.ModelSerializer):
     assigned_to = UserSerializer(read_only=True, many=True)
     created_by = UserSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    company = CompanySerializer()
 
     class Meta:
         model = Case
@@ -31,7 +30,6 @@ class CaseSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "assigned_to",
-            "company",
             "created_on_arrow",
         )
 
@@ -44,19 +42,17 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(CaseCreateSerializer, self).__init__(*args, **kwargs)
 
-        self.company = request_obj.company
-
     def validate_name(self, name):
         if self.instance:
             if (
-                Case.objects.filter(name__iexact=name, company=self.company)
+                Case.objects.filter(name__iexact=name)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Case already exists with this name")
 
         else:
-            if Case.objects.filter(name__iexact=name, company=self.company).exists():
+            if Case.objects.filter(name__iexact=name).exists():
                 raise serializers.ValidationError("Case already exists with this name")
         return name
 
@@ -71,6 +67,5 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "created_on",
             "is_active",
             "account",
-            "company",
             "created_on_arrow",
         )

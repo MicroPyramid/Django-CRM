@@ -1,5 +1,0 @@
-<select>
-{% for cont in con %}
-<option value="{{cont.id}}" {% for sel in selcon %} {% ifequal cont.id sel.id %} selected {% endifequal%}{% endfor %}>{{cont.name}}</option>
-{% endfor %}
-</select>

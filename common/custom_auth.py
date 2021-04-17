@@ -68,10 +68,6 @@ class BaseJSONWebTokenAuthentication(BaseAuthentication):
             raise exceptions.AuthenticationFailed(msg)
         try:
             account = User.objects.get(pk=account_id)
-            if account.company.sub_domain != self.company:
-                raise exceptions.AuthenticationFailed(
-                    "user company doesnot match with header...."
-                )
 
         except User.DoesNotExist:
             msg = _("Invalid signature.")

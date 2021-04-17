@@ -1,5 +1,14 @@
+import re
 from rest_framework import serializers
-from common.models import User, Company, Comment, Address, Attachments, Document
+from common.models import (
+    User,
+    Company,
+    Comment,
+    Address,
+    Attachments,
+    Document,
+    APISettings,
+)
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 
@@ -28,8 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_pic",
             "has_sales_access",
             "has_marketing_access",
-            "company",
-            "get_app_name",
+            # "get_app_name",
         )
 
 
@@ -63,6 +71,41 @@ class LeadCommentSerializer(serializers.ModelSerializer):
             "commented_by",
             "lead",
         )
+
+
+class RegisterUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "username",
+            "password",
+        )
+
+    def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop("request_user", None)
+        super(RegisterUserSerializer, self).__init__(*args, **kwargs)
+        if not self.instance:
+            self.fields["password"].required = True
+        else:
+            self.fields["password"].required = False
+
+    def validate_password(self, password):
+        if password:
+            if len(password) < 4:
+                raise serializers.ValidationError(
+                    "Password must be at least 4 characters long!"
+                )
+        return password
+
+    def validate_username(self, username):
+        if not username[0].isalpha():
+            raise serializers.ValidationError("Username should start with Alphabet")
+        if User.objects.filter(username__iexact=username).exists():
+            raise serializers.ValidationError("Username already exist")
+        return username
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -169,7 +212,7 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
     new_password2 = serializers.CharField()
 
     def validate(self, data):
-        self.user = self.get_user(data.get("uidb64"))
+        self.user = self.get_user(data.get("uid"))
         if not self.user:
             raise serializers.ValidationError(self.error_message)
         is_valid_token = default_token_generator.check_token(
@@ -220,7 +263,6 @@ class DocumentSerializer(serializers.ModelSerializer):
     shared_to = UserSerializer(read_only=True, many=True)
     teams = serializers.SerializerMethodField()
     created_by = UserSerializer()
-    company = CompanySerializer()
 
     def get_teams(self, obj):
         return obj.teams.all().values()
@@ -236,7 +278,6 @@ class DocumentSerializer(serializers.ModelSerializer):
             "teams",
             "created_on",
             "created_by",
-            "company",
         ]
 
 
@@ -245,12 +286,11 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["title"].required = True
-        self.company = request_obj.company
 
     def validate_title(self, title):
         if self.instance:
             if (
-                Document.objects.filter(title__iexact=title, company=self.company)
+                Document.objects.filter(title__iexact=title)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -258,9 +298,7 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                     "Document with this Title already exists"
                 )
         else:
-            if Document.objects.filter(
-                title__iexact=title, company=self.company
-            ).exists():
+            if Document.objects.filter(title__iexact=title).exists():
                 raise serializers.ValidationError(
                     "Document with this Title already exists"
                 )
@@ -272,5 +310,59 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
             "title",
             "document_file",
             "status",
-            "company",
+        ]
+
+
+def find_urls(string):
+    # website_regex = "^((http|https)://)?([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com or google.com
+    # website_regex = "^https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,63})?$"  # (http(s)://)google.com
+    # http(s)://google.com
+    website_regex = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$"
+    # http(s)://google.com:8000
+    website_regex_port = "^https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,63}:[0-9]{2,4}$"
+    url = re.findall(website_regex, string)
+    url_port = re.findall(website_regex_port, string)
+    if url and url[0] != "":
+        return url
+    return url_port
+
+
+class APISettingsSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(APISettingsSerializer, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = APISettings
+        fields = ("title", "website")
+
+    def validate_website(self, website):
+        if website and not (
+            website.startswith("http://") or website.startswith("https://")
+        ):
+            raise serializers.ValidationError("Please provide valid schema")
+        if not len(find_urls(website)) > 0:
+            raise serializers.ValidationError(
+                "Please provide a valid URL with schema and without trailing slash - Example: http://google.com"
+            )
+        return website
+
+
+class APISettingsListSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer()
+    lead_assigned_to = UserSerializer(read_only=True, many=True)
+    tags = serializers.SerializerMethodField()
+
+    def get_tags(self, obj):
+        return obj.tags.all().values()
+
+    class Meta:
+        model = APISettings
+        fields = [
+            "title",
+            "apikey",
+            "website",
+            "created_on",
+            "created_by",
+            "lead_assigned_to",
+            "tags",
         ]
