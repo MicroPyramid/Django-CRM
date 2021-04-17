@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import Account, Tags
 from contacts.models import Contact
-from common.models import User, Company
+from common.models import User
 from common.utils import STAGES, SOURCES, CURRENCY_CODES
 from teams.models import Teams
 
@@ -48,9 +48,6 @@ class Opportunity(models.Model):
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
     teams = models.ManyToManyField(Teams, related_name="oppurtunity_teams")
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     class Meta:
         ordering = ["-created_on"]

@@ -3,7 +3,7 @@ import arrow
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
-from common.models import User, Company
+from common.models import User
 from contacts.models import Contact
 from teams.models import Teams
 
@@ -50,10 +50,6 @@ class Event(models.Model):
     disabled = models.BooleanField(default=False)
     date_of_meeting = models.DateField(blank=True, null=True)
     teams = models.ManyToManyField(Teams, related_name="event_teams")
-
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     # tags = models.ManyToManyField(Tag)
 

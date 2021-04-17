@@ -48,8 +48,8 @@ class EventListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
-        contacts = Contact.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
+        contacts = Contact.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
@@ -102,18 +102,14 @@ class EventListView(APIView, LimitOffsetPagination):
         users = []
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         else:
-            users = User.objects.filter(
-                role="ADMIN", company=self.request.company
-            ).order_by("email")
+            users = User.objects.filter(role="ADMIN").order_by("email")
         context["recurring_days"] = WEEKDAYS
         context["users"] = UserSerializer(users, many=True).data
         if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(
-                Teams.objects.filter(company=self.request.company), many=True
-            ).data
+            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
@@ -142,7 +138,6 @@ class EventListView(APIView, LimitOffsetPagination):
             if params.get("event_type") == "Non-Recurring":
                 event_obj = serializer.save(
                     created_by=request.user,
-                    company=request.company,
                     date_of_meeting=params.get("start_date"),
                     is_active=True,
                     disabled=False,
@@ -150,40 +145,43 @@ class EventListView(APIView, LimitOffsetPagination):
                 if params.get("contacts"):
                     contacts = json.loads(params.get("contacts"))
                     for contact in contacts:
-                        obj_contact = Contact.objects.filter(
-                            id=contact, company=request.company
-                        )
+                        obj_contact = Contact.objects.filter(id=contact)
                         if obj_contact:
                             event_obj.contacts.add(contact)
                         else:
                             event_obj.delete()
                             data["contacts"] = "Please enter valid contact"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if self.request.user.role == "ADMIN":
                     if params.get("teams"):
                         teams = json.loads(params.get("teams"))
                         for team in teams:
-                            teams_ids = Teams.objects.filter(
-                                id=team, company=request.company
-                            )
+                            teams_ids = Teams.objects.filter(id=team)
                             if teams_ids:
                                 event_obj.teams.add(team)
                             else:
                                 event_obj.delete()
                                 data["team"] = "Please enter valid Team"
-                                return Response({"error": True, "errors": data})
+                                return Response(
+                                    {"error": True, "errors": data},
+                                    status=status.HTTP_400_BAD_REQUEST,
+                                )
                     if params.get("assigned_to"):
                         assinged_to_users_ids = json.loads(params.get("assigned_to"))
                         for user_id in assinged_to_users_ids:
-                            user = User.objects.filter(
-                                id=user_id, company=request.company
-                            )
+                            user = User.objects.filter(id=user_id)
                             if user:
                                 event_obj.assigned_to.add(user_id)
                             else:
                                 event_obj.delete()
                                 data["assigned_to"] = "Please enter valid User"
-                                return Response({"error": True, "errors": data})
+                                return Response(
+                                    {"error": True, "errors": data},
+                                    status=status.HTTP_400_BAD_REQUEST,
+                                )
                 assigned_to_list = list(
                     event_obj.assigned_to.all().values_list("id", flat=True)
                 )
@@ -197,7 +195,8 @@ class EventListView(APIView, LimitOffsetPagination):
                 recurring_days = params.get("recurring_days")
                 if not recurring_days:
                     return Response(
-                        {"error": True, "errors": "Choose atleast one recurring day"}
+                        {"error": True, "errors": "Choose atleast one recurring day"},
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
                 end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
                 start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -224,48 +223,50 @@ class EventListView(APIView, LimitOffsetPagination):
                         start_time=data["start_time"],
                         end_time=data["end_time"],
                         date_of_meeting=each,
-                        company=request.company,
                     )
 
                     if params.get("contacts"):
                         contacts = json.loads(params.get("contacts"))
                         for contact in contacts:
-                            obj_contact = Contact.objects.filter(
-                                id=contact, company=request.company
-                            )
+                            obj_contact = Contact.objects.filter(id=contact)
                             if obj_contact:
                                 event.contacts.add(contact)
                             else:
                                 event.delete()
                                 data["contacts"] = "Please enter valid contact"
-                                return Response({"error": True, "errors": data})
+                                return Response(
+                                    {"error": True, "errors": data},
+                                    status=status.HTTP_400_BAD_REQUEST,
+                                )
                     if self.request.user.role == "ADMIN":
                         if params.get("teams"):
                             teams = json.loads(params.get("teams"))
                             for team in teams:
-                                teams_ids = Teams.objects.filter(
-                                    id=team, company=request.company
-                                )
+                                teams_ids = Teams.objects.filter(id=team)
                                 if teams_ids:
                                     event.teams.add(team)
                                 else:
                                     event.delete()
                                     data["team"] = "Please enter valid Team"
-                                    return Response({"error": True, "errors": data})
+                                    return Response(
+                                        {"error": True, "errors": data},
+                                        status=status.HTTP_400_BAD_REQUEST,
+                                    )
                         if params.get("assigned_to"):
                             assinged_to_users_ids = json.loads(
                                 params.get("assigned_to")
                             )
                             for user_id in assinged_to_users_ids:
-                                user = User.objects.filter(
-                                    id=user_id, company=request.company
-                                )
+                                user = User.objects.filter(id=user_id)
                                 if user:
                                     event.assigned_to.add(user_id)
                                 else:
                                     event.delete()
                                     data["assigned_to"] = "Please enter valid User"
-                                    return Response({"error": True, "errors": data})
+                                    return Response(
+                                        {"error": True, "errors": data},
+                                        status=status.HTTP_400_BAD_REQUEST,
+                                    )
                     assigned_to_list = list(
                         event.assigned_to.all().values_list("id", flat=True)
                     )
@@ -306,7 +307,8 @@ class EventDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comments = Comment.objects.filter(event=self.event_obj).order_by("-id")
@@ -315,7 +317,7 @@ class EventDetailView(APIView):
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
             users_mention = list(
                 User.objects.filter(
-                    is_active=True, company=self.request.company
+                    is_active=True,
                 ).values("username")
             )
         elif self.request.user != self.event_obj.created_by:
@@ -324,11 +326,11 @@ class EventDetailView(APIView):
             users_mention = list(self.event_obj.assigned_to.all().values("username"))
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         else:
             users = User.objects.filter(
-                role="ADMIN", company=self.request.company
+                role="ADMIN",
             ).order_by("email")
 
         if self.request.user == self.event_obj.created_by:
@@ -339,7 +341,8 @@ class EventDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         team_ids = [user.id for user in self.event_obj.get_team_users]
         all_user_ids = users.values_list("id", flat=True)
@@ -367,20 +370,14 @@ class EventDetailView(APIView):
         context["users_excluding_team"] = UserSerializer(
             users_excluding_team, many=True
         ).data
-        context["teams"] = TeamsSerializer(
-            Teams.objects.filter(company=self.request.company), many=True
-        ).data
+        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
     @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_delete_params
+        tags=["Events"],
     )
     def get(self, request, pk, **kwargs):
         self.event_obj = self.get_object(pk)
-        if self.event_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         context = self.get_context_data(**kwargs)
         return Response(context)
 
@@ -395,11 +392,6 @@ class EventDetailView(APIView):
         )
         context = {}
         self.event_obj = Event.objects.get(pk=pk)
-        if self.event_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company does not match with header...."}
-            )
-
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == self.event_obj.created_by)
@@ -410,7 +402,7 @@ class EventDetailView(APIView):
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         comment_serializer = CommentSerializer(data=params)
         if comment_serializer.is_valid():
@@ -452,10 +444,6 @@ class EventDetailView(APIView):
         )
         data = {}
         self.event_obj = self.get_object(pk)
-        if self.event_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         serializer = EventCreateSerializer(
             data=params,
             instance=self.event_obj,
@@ -473,28 +461,30 @@ class EventDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         event_obj.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if self.request.user.role == "ADMIN":
                 event_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             event_obj.teams.add(team)
                         else:
                             event_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 else:
                     event_obj.teams.clear()
 
@@ -502,13 +492,16 @@ class EventDetailView(APIView):
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             event_obj.assigned_to.add(user_id)
                         else:
                             event_obj.delete()
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
                 else:
                     event_obj.assigned_to.clear()
@@ -532,7 +525,7 @@ class EventDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_delete_params
+        tags=["Events"],
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -540,7 +533,7 @@ class EventDetailView(APIView):
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.created_by
-        ) and self.object.company == request.company:
+        ):
             self.object.delete()
             return Response(
                 {"error": False, "message": "Event deleted Successfully"},
@@ -588,11 +581,12 @@ class EventCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_delete_params
+        tags=["Events"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -611,7 +605,8 @@ class EventCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -621,7 +616,7 @@ class EventAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_delete_params
+        tags=["Events"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
@@ -640,5 +635,6 @@ class EventAttachmentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )

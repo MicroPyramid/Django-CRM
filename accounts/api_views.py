@@ -3,8 +3,8 @@ from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
 
-from accounts.models import Account, Tags
-from accounts.tasks import send_email_to_assigned_user
+from accounts.models import Account, Tags, Email
+from accounts.tasks import send_email_to_assigned_user, send_email
 from accounts import swagger_params
 from accounts.serializer import (
     AccountSerializer,
@@ -38,7 +38,7 @@ from teams.serializer import TeamsSerializer
 from tasks.serializer import TaskSerializer
 from opportunity.serializer import OpportunitySerializer
 from invoices.serializer import InvoiceSerailizer
-from emails.serializer import EmailSerailizer
+from accounts.serializer import EmailSerializer
 from teams.models import Teams
 
 from rest_framework import status
@@ -48,6 +48,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
+from crm import settings
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
@@ -62,7 +63,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
@@ -125,17 +126,11 @@ class AccountsListView(APIView, LimitOffsetPagination):
         }
 
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True, company=self.request.company).order_by(
-                "email"
-            ),
+            User.objects.filter(is_active=True).order_by("email"),
             many=True,
         ).data
         context["industries"] = INDCHOICES
-        tag_ids = (
-            Account.objects.filter(company=self.request.company)
-            .values_list("tags", flat=True)
-            .distinct()
-        )
+        tag_ids = Account.objects.all().values_list("tags", flat=True).distinct()
         context["tags"] = TagsSerailizer(
             Tags.objects.filter(id__in=tag_ids), many=True
         ).data
@@ -167,21 +162,20 @@ class AccountsListView(APIView, LimitOffsetPagination):
         )
         # Save Account
         if serializer.is_valid():
-            account_object = serializer.save(
-                created_by=request.user, company=request.company
-            )
+            account_object = serializer.save(created_by=request.user)
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         account_object.contacts.add(contact)
                     else:
                         account_object.delete()
                         data["contacts"] = "Please enter valid contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
@@ -195,26 +189,30 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             account_object.teams.add(team)
                         else:
                             account_object.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
 
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             account_object.assigned_to.add(user_id)
                         else:
                             account_object.delete()
                             data["assigned_to"] = "Please enter valid user"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
@@ -228,15 +226,17 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
 
-            current_site = get_current_site(request)
             recipients = assigned_to_list
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
-            return Response({"error": False, "message": "Account Created Successfully"})
+            return Response(
+                {"error": False, "message": "Account Created Successfully"},
+                status=status.HTTP_200_OK,
+            )
         return Response(
             {"error": True, "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
@@ -257,11 +257,6 @@ class AccountDetailView(APIView):
         params = request.query_params if len(request.data) == 0 else request.data
         account_object = self.get_object(pk=pk)
         data = {}
-        if account_object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         serializer = AccountCreateSerializer(
             account_object, data=params, request_obj=request, account=True
         )
@@ -277,7 +272,7 @@ class AccountDetailView(APIView):
                             "error": True,
                             "errors": "You do not have Permission to perform this action",
                         },
-                        status=status.HTTP_401_UNAUTHORIZED,
+                        status=status.HTTP_403_FORBIDDEN,
                     )
             account_object = serializer.save()
             previous_assigned_to_users = list(
@@ -287,14 +282,15 @@ class AccountDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         account_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             account_object.tags.clear()
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
@@ -311,25 +307,29 @@ class AccountDetailView(APIView):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             account_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
                 account_object.assigned_to.clear()
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             account_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
@@ -342,12 +342,11 @@ class AccountDetailView(APIView):
             assigned_to_list = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
-            current_site = get_current_site(self.request)
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=self.request.scheme,
             )
             return Response(
@@ -359,22 +358,17 @@ class AccountDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.company_params
-    )
+    @swagger_auto_schema(tags=["Accounts"])
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if self.request.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         self.object.delete()
         return Response(
@@ -383,15 +377,10 @@ class AccountDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_get_detail_params
+        tags=["Accounts"],
     )
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
-        if self.account.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         context = {}
         context["account_obj"] = AccountSerializer(self.account).data
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -403,7 +392,8 @@ class AccountDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comment_permission = (
@@ -417,12 +407,7 @@ class AccountDetailView(APIView):
         )
 
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
-            users_mention = list(
-                User.objects.filter(
-                    is_active=True,
-                    company=self.request.company,
-                ).values("username")
-            )
+            users_mention = list(User.objects.filter(is_active=True).values("username"))
         elif self.request.user != self.account.created_by:
             if self.account.created_by:
                 users_mention = [{"username": self.account.created_by.username}]
@@ -445,10 +430,7 @@ class AccountDetailView(APIView):
                     Opportunity.objects.filter(account=self.account), many=True
                 ).data,
                 "users": UserSerializer(
-                    User.objects.filter(
-                        is_active=True,
-                        company=self.request.company,
-                    ).order_by("email"),
+                    User.objects.filter(is_active=True).order_by("email"),
                     many=True,
                 ).data,
                 "cases": CaseSerializer(
@@ -468,7 +450,7 @@ class AccountDetailView(APIView):
                 "invoices": InvoiceSerailizer(
                     self.account.accounts_invoices.all(), many=True
                 ).data,
-                "emails": EmailSerailizer(
+                "emails": EmailSerializer(
                     self.account.sent_email.all(), many=True
                 ).data,
                 "users_mention": users_mention,
@@ -487,11 +469,6 @@ class AccountDetailView(APIView):
         )
         context = {}
         self.account_obj = Account.objects.get(pk=pk)
-        if self.account_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company does not match with header...."}
-            )
-
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == self.account_obj.created_by)
@@ -502,7 +479,7 @@ class AccountDetailView(APIView):
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         comment_serializer = CommentSerializer(data=params)
         if comment_serializer.is_valid():
@@ -572,12 +549,11 @@ class AccountCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to edit this Comment",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.company_params
-    )
+    @swagger_auto_schema(tags=["Accounts"])
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -595,7 +571,8 @@ class AccountCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -604,9 +581,7 @@ class AccountAttachmentView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.company_params
-    )
+    @swagger_auto_schema(tags=["Accounts"])
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
@@ -624,5 +599,61 @@ class AccountAttachmentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have permission to delete this Attachment",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+
+class AccountCreateMailView(APIView):
+
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    model = Account
+
+    @swagger_auto_schema(
+        tags=["Accounts"], manual_parameters=swagger_params.account_mail_params
+    )
+    def post(self, request, pk, *args, **kwargs):
+        params = request.query_params if len(request.data) == 0 else request.data
+        scheduled_later = params.get("scheduled_later")
+        scheduled_date_time = params.get("scheduled_date_time")
+        account = Account.objects.filter(id=pk).first()
+        serializer = EmailSerializer(
+            data=params,
+            request_obj=request,  # account=account,
+        )
+
+        data = {}
+        if serializer.is_valid():
+            email_obj = serializer.save(from_account=account)
+            if scheduled_later not in ["", None, False, "false"]:
+                if scheduled_date_time in ["", None]:
+                    return Response(
+                        {"error": True, "errors": serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            if params.get("recipients"):
+                contacts = json.loads(params.get("recipients"))
+                for contact in contacts:
+                    obj_contact = Contact.objects.filter(id=contact)
+                    if obj_contact:
+                        email_obj.recipients.add(contact)
+                    else:
+                        email_obj.delete()
+                        data["recipients"] = "Please enter valid recipient"
+                        return Response({"error": True, "errors": data})
+            if params.get("scheduled_later") != "true":
+                send_email.delay(email_obj.id)
+            else:
+                email_obj.scheduled_later = True
+                email_obj.scheduled_date_time = scheduled_date_time
+            return Response(
+                {"error": False, "message": "Email sent successfully"},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )

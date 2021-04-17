@@ -4,7 +4,6 @@ from common.serializer import (
     UserSerializer,
     AttachmentsSerializer,
     CommentSerializer,
-    CompanySerializer,
 )
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
@@ -16,7 +15,6 @@ class EventSerializer(serializers.ModelSerializer):
     assigned_to = UserSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    company = CompanySerializer()
     event_attachment = AttachmentsSerializer(read_only=True, many=True)
     event_comments = CommentSerializer(read_only=True, many=True)
 
@@ -42,7 +40,6 @@ class EventSerializer(serializers.ModelSerializer):
             "assigned_to",
             "event_attachment",
             "event_comments",
-            "company",
         )
 
 
@@ -51,18 +48,17 @@ class EventCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(EventCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["event_type"].required = True
-        self.company = request_obj.company
 
     def validate_name(self, name):
         if self.instance:
             if (
-                Event.objects.filter(name__iexact=name, company=self.company)
+                Event.objects.filter(name__iexact=name)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Event already exists with this name")
         else:
-            if Event.objects.filter(name__iexact=name, company=self.company).exists():
+            if Event.objects.filter(name__iexact=name).exists():
                 raise serializers.ValidationError("Event already exists with this name")
         return name
 
@@ -125,5 +121,4 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "description",
             "created_by",
             "created_on",
-            "company",
         )

@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import Account
 from contacts.models import Contact
-from common.models import User, Company
+from common.models import User
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from planner.models import Event
 from teams.models import Teams
@@ -36,9 +36,6 @@ class Case(models.Model):
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     class Meta:
         ordering = ["-created_on"]

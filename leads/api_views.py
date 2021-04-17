@@ -1,10 +1,12 @@
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from accounts.models import Account, Tags
 from accounts.tasks import send_email_to_assigned_user
+from contacts.models import Contact
 from leads import swagger_params
-from common.models import User, Attachments, Comment
+from common.models import User, Attachments, Comment, APISettings
 from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
@@ -28,11 +30,14 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 import json
+from crm import settings
 
 
-class LeadListView(APIView):
+class LeadListView(APIView, LimitOffsetPagination):
     model = Lead
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -44,7 +49,7 @@ class LeadListView(APIView):
             else self.request.data
         )
         queryset = (
-            self.model.objects.filter(company=self.request.company)
+            self.model.objects.all()
             .exclude(status="converted")
             .select_related("created_by")
             .prefetch_related(
@@ -93,26 +98,46 @@ class LeadListView(APIView):
         ):
             search = True
         context["search"] = search
-        open_leads = queryset.exclude(status="closed").distinct()
-        close_leads = queryset.filter(status="closed").distinct()
-        if search:
-            context["open_leads"] = LeadSerializer(open_leads, many=True).data
-            return context
+        queryset_open = queryset.exclude(status="closed").order_by("id")
+        results_leads_open = self.paginate_queryset(
+            queryset_open.distinct(), self.request, view=self
+        )
+        open_leads = LeadSerializer(results_leads_open, many=True).data
+        context["per_page"] = 10
+        context["open_leads"] = {
+            "leads_count": self.count,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "page_number": int(self.offset / 10) + 1,
+            "open_leads": open_leads,
+        }
 
-        context["open_leads"] = LeadSerializer(open_leads, many=True).data
-        context["close_leads"] = LeadSerializer(close_leads, many=True).data
+        queryset_close = queryset.filter(status="closed").order_by("id")
+        results_leads_close = self.paginate_queryset(
+            queryset_close.distinct(), self.request, view=self
+        )
+        close_leads = LeadSerializer(results_leads_close, many=True).data
+
+        context["close_leads"] = {
+            "leads_count": self.count,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "page_number": int(self.offset / 10) + 1,
+            "close_leads": close_leads,
+        }
+
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
         users = []
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         elif self.request.user.google.all():
             users = []
         else:
             users = User.objects.filter(
-                role="ADMIN", company=self.request.company
+                role="ADMIN",
             ).order_by("email")
         context["users"] = UserSerializer(users, many=True).data
         tag_ids = list(
@@ -150,7 +175,7 @@ class LeadListView(APIView):
         data = {}
         serializer = LeadCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
-            lead_obj = serializer.save(created_by=request.user, company=request.company)
+            lead_obj = serializer.save(created_by=request.user)
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
                 # for t in tags:
@@ -164,12 +189,11 @@ class LeadListView(APIView):
                         tag = Tags.objects.create(name=t)
                     lead_obj.tags.add(tag)
 
-            current_site = get_current_site(request)
             recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=request.scheme,
             )
 
@@ -185,25 +209,29 @@ class LeadListView(APIView):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             lead_obj.teams.add(team)
                         else:
                             lead_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             lead_obj.assigned_to.add(user_id)
                         else:
                             lead_obj.delete()
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
                     created_by=request.user,
@@ -212,7 +240,6 @@ class LeadListView(APIView):
                     phone=lead_obj.phone,
                     description=params.get("description"),
                     website=params.get("website"),
-                    company=request.company,
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -233,12 +260,11 @@ class LeadListView(APIView):
 
                 if params.get("assigned_to"):
                     assigned_to_list = json.loads(params.getlist("assigned_to"))
-                    current_site = get_current_site(request)
                     recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=current_site.domain,
+                        domain=settings.Domain,
                         protocol=request.scheme,
                     )
                 return Response(
@@ -264,7 +290,7 @@ class LeadDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return Lead.objects.get(pk=pk)
+        return get_object_or_404(Lead, id=pk)
 
     def get_context_data(self, **kwargs):
         params = (
@@ -284,7 +310,8 @@ class LeadDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comments = Comment.objects.filter(lead=self.lead_obj).order_by("-id")
@@ -299,7 +326,7 @@ class LeadDetailView(APIView):
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
             users_mention = list(
                 User.objects.filter(
-                    is_active=True, company=self.request.company
+                    is_active=True,
                 ).values("username")
             )
         elif self.request.user != self.lead_obj.created_by:
@@ -308,11 +335,11 @@ class LeadDetailView(APIView):
             users_mention = list(self.lead_obj.assigned_to.all().values("username"))
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         else:
             users = User.objects.filter(
-                role="ADMIN", company=self.request.company
+                role="ADMIN",
             ).order_by("email")
         user_assgn_list = [
             assigned_to.id
@@ -327,7 +354,8 @@ class LeadDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         team_ids = [user.id for user in self.lead_obj.get_team_users]
         all_user_ids = [user.id for user in users]
@@ -348,22 +376,16 @@ class LeadDetailView(APIView):
         ).data
         context["source"] = LEAD_SOURCE
         context["status"] = LEAD_STATUS
-        context["teams"] = TeamsSerializer(
-            Teams.objects.filter(company=self.request.company), many=True
-        ).data
+        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         context["countries"] = COUNTRIES
 
         return context
 
     @swagger_auto_schema(
-        tags=["Leads"], manual_parameters=swagger_params.lead_delete_params
+        tags=["Leads"],
     )
     def get(self, request, pk, **kwargs):
         self.lead_obj = self.get_object(pk)
-        if self.lead_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         context = self.get_context_data(**kwargs)
         return Response(context)
 
@@ -378,11 +400,6 @@ class LeadDetailView(APIView):
         )
         context = {}
         self.lead_obj = Lead.objects.get(pk=pk)
-        if self.lead_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company does not match with header...."}
-            )
-
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == self.lead_obj.created_by)
@@ -393,7 +410,7 @@ class LeadDetailView(APIView):
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         comment_serializer = CommentSerializer(data=params)
         if comment_serializer.is_valid():
@@ -435,10 +452,6 @@ class LeadDetailView(APIView):
         )
         data = {}
         self.lead_obj = self.get_object(pk)
-        if self.lead_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         serializer = LeadCreateSerializer(
             data=params,
             instance=self.lead_obj,
@@ -463,7 +476,6 @@ class LeadDetailView(APIView):
                         tag = Tags.objects.create(name=t)
                     lead_obj.tags.add(tag)
 
-            current_site = get_current_site(request)
             assigned_to_list = list(
                 lead_obj.assigned_to.all().values_list("id", flat=True)
             )
@@ -471,7 +483,7 @@ class LeadDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=current_site.domain,
+                domain=settings.Domain,
                 protocol=request.scheme,
             )
             if request.FILES.get("lead_attachment"):
@@ -487,15 +499,16 @@ class LeadDetailView(APIView):
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             lead_obj.teams.add(team)
                         else:
                             lead_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 else:
                     lead_obj.teams.clear()
 
@@ -503,13 +516,16 @@ class LeadDetailView(APIView):
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             lead_obj.assigned_to.add(user_id)
                         else:
                             lead_obj.delete()
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 else:
                     lead_obj.assigned_to.clear()
 
@@ -522,7 +538,6 @@ class LeadDetailView(APIView):
                     description=params.get("description"),
                     website=params.get("website"),
                     lead=lead_obj,
-                    company=request.company,
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -543,12 +558,11 @@ class LeadDetailView(APIView):
                 if params.get("assigned_to"):
                     # account_object.assigned_to.add(*params.getlist('assigned_to'))
                     assigned_to_list = json.loads(params.get("assigned_to"))
-                    current_site = get_current_site(request)
                     recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=current_site.domain,
+                        domain=settings.Domain,
                         protocol=request.scheme,
                     )
 
@@ -573,7 +587,7 @@ class LeadDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Leads"], manual_parameters=swagger_params.lead_delete_params
+        tags=["Leads"],
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -581,7 +595,7 @@ class LeadDetailView(APIView):
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.created_by
-        ) and self.object.company == request.company:
+        ):
             self.object.delete()
             return Response(
                 {"error": False, "message": "Lead deleted Successfully"},
@@ -610,16 +624,15 @@ class LeadUploadView(APIView):
                     lead_form.invalid_rows,
                     request.user.id,
                     request.get_host(),
-                    request.company.id,
                 )
                 return Response(
                     {"error": False, "message": "Leads created Successfully"},
-                    status=status.HTTP_201_CREATED,
+                    status=status.HTTP_200_OK,
                 )
             else:
                 return Response(
                     {"error": True, "errors": lead_form.errors},
-                    status=status.HTTP_200_OK,
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
 
@@ -656,11 +669,15 @@ class LeadCommentView(APIView):
                 )
         else:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     @swagger_auto_schema(
-        tags=["Leads"], manual_parameters=swagger_params.lead_delete_params
+        tags=["Leads"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -679,7 +696,8 @@ class LeadCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You do not have permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -689,7 +707,7 @@ class LeadAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Leads"], manual_parameters=swagger_params.lead_delete_params
+        tags=["Leads"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
@@ -705,5 +723,73 @@ class LeadAttachmentView(APIView):
             )
         else:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
+
+
+class CreateLeadFromSite(APIView):
+    @swagger_auto_schema(
+        tags=["Leads"], manual_parameters=swagger_params.create_lead_from_site
+    )
+    def post(self, request, *args, **kwargs):
+        params = request.query_params if len(request.data) == 0 else request.data
+        api_key = params.get("apikey")
+        # api_setting = APISettings.objects.filter(
+        #     website=website_address, apikey=api_key).first()
+        api_setting = APISettings.objects.filter(apikey=api_key).first()
+        if not api_setting:
+            return Response(
+                {
+                    "error": True,
+                    "message": "You don't have permission, please contact the admin!.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if api_setting and params.get("email") and params.get("title"):
+            # user = User.objects.filter(is_admin=True, is_active=True).first()
+            user = api_setting.created_by
+            lead = Lead.objects.create(
+                title=params.get("title"),
+                first_name=params.get("first_name"),
+                last_name=params.get("last_name"),
+                status="assigned",
+                source=api_setting.website,
+                description=params.get("message"),
+                email=params.get("email"),
+                phone=params.get("phone"),
+                is_active=True,
+                created_by=user,
+            )
+            lead.assigned_to.add(user)
+            # Send Email to Assigned Users
+            site_address = request.scheme + "://" + request.META["HTTP_HOST"]
+            send_lead_assigned_emails.delay(lead.id, [user.id], site_address)
+            # Create Contact
+            try:
+                contact = Contact.objects.create(
+                    first_name=params.get("title"),
+                    email=params.get("email"),
+                    phone=params.get("phone"),
+                    description=params.get("message"),
+                    created_by=user,
+                    is_active=True,
+                )
+                contact.assigned_to.add(user)
+
+                lead.contacts.add(contact)
+            except Exception:
+                pass
+
+            return Response(
+                {"error": False, "message": "Lead Created sucessfully."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "message": "Invalid data"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )

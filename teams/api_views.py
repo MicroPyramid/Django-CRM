@@ -13,11 +13,12 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
 
 
-class TeamsListView(APIView):
+class TeamsListView(APIView, LimitOffsetPagination):
     model = Teams
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -28,7 +29,7 @@ class TeamsListView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
 
         request_post = params
         if request_post:
@@ -53,9 +54,23 @@ class TeamsListView(APIView):
             search = True
         context["search"] = search
 
-        context["teams"] = TeamsSerializer(queryset.distinct(), many=True).data
+        results_teams = self.paginate_queryset(
+            queryset.distinct(), self.request, view=self
+        )
+        teams = TeamsSerializer(results_teams, many=True).data
+        context["per_page"] = 10
+        context.update(
+            {
+                "teams_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
+            }
+        )
+        context["teams"] = teams
+
         users = User.objects.filter(
-            is_active=True, company=self.request.company
+            is_active=True,
         ).order_by("id")
         context["users"] = UserSerializer(users, many=True).data
         return context
@@ -96,18 +111,21 @@ class TeamsListView(APIView):
         serializer = TeamCreateSerializer(data=params, request_obj=request)
         data = {}
         if serializer.is_valid():
-            team_obj = serializer.save(created_by=request.user, company=request.company)
+            team_obj = serializer.save(created_by=request.user)
 
             if params.get("assign_users"):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id, company=request.company)
+                    user = User.objects.filter(id=user_id)
                     if user:
                         team_obj.users.add(user_id)
                     else:
                         team_obj.delete()
                         data["users"] = "Please enter valid user"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             return Response(
                 {"error": False, "message": "Team Created Successfully"},
                 status=status.HTTP_200_OK,
@@ -127,7 +145,7 @@ class TeamsDetailView(APIView):
         return self.model.objects.get(pk=pk)
 
     @swagger_auto_schema(
-        tags=["Teams"], manual_parameters=swagger_params.teams_delete_params
+        tags=["Teams"],
     )
     def get(self, request, pk, **kwargs):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -139,16 +157,10 @@ class TeamsDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         self.team_obj = self.get_object(pk)
-        if self.team_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         context = {}
         context["team"] = TeamsSerializer(self.team_obj).data
         context["users"] = UserSerializer(
-            User.objects.filter(is_active=True, company=self.request.company).order_by(
-                "email"
-            ),
+            User.objects.filter(is_active=True).order_by("email"),
             many=True,
         ).data
         return Response(context)
@@ -171,10 +183,6 @@ class TeamsDetailView(APIView):
             else self.request.data
         )
         self.team = self.get_object(pk)
-        if self.team.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         actual_users = self.team.get_users()
         removed_users = []
         serializer = TeamCreateSerializer(
@@ -188,12 +196,15 @@ class TeamsDetailView(APIView):
             if params.get("assign_users"):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id, company=request.company)
+                    user = User.objects.filter(id=user_id)
                     if user:
                         team_obj.users.add(user_id)
                     else:
                         data["users"] = "Please enter valid user"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             update_team_users.delay(pk)
             latest_users = team_obj.get_users()
             for user in actual_users:
@@ -212,7 +223,7 @@ class TeamsDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Teams"], manual_parameters=swagger_params.teams_delete_params
+        tags=["Teams"],
     )
     def delete(self, request, pk, **kwargs):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -224,9 +235,8 @@ class TeamsDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         self.team_obj = self.get_object(pk)
-        if self.team_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         self.team_obj.delete()
-        return Response({"error": False, "message": "Team Deleted Successfully"})
+        return Response(
+            {"error": False, "message": "Team Deleted Successfully"},
+            status=status.HTTP_200_OK,
+        )

@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 
-from common.models import User, Company
+from common.models import User
 from common.utils import INDCHOICES, COUNTRIES
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
@@ -69,10 +69,6 @@ class Account(models.Model):
     )
     assigned_to = models.ManyToManyField(User, related_name="account_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="account_teams")
-
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     def __str__(self):
         return self.name

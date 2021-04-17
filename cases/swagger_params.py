@@ -1,11 +1,6 @@
 from drf_yasg import openapi
 
-company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
-)
-
 cases_list_get_params = [
-    company_params_in_header,
     openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("status", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("priority", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -13,7 +8,6 @@ cases_list_get_params = [
 ]
 
 cases_detail_get_params = [
-    company_params_in_header,
     openapi.Parameter(
         "case_attachment",
         openapi.IN_QUERY,
@@ -22,12 +16,7 @@ cases_detail_get_params = [
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
-cases_delete_params = [
-    company_params_in_header,
-]
-
 cases_create_post_params = [
-    company_params_in_header,
     openapi.Parameter(
         "name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -58,6 +47,5 @@ cases_create_post_params = [
 ]
 
 cases_comment_edit_params = [
-    company_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]

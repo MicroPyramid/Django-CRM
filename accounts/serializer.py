@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.models import Account, Email, Tags
-from common.serializer import UserSerializer, CompanySerializer, AttachmentsSerializer
+from common.serializer import UserSerializer, AttachmentsSerializer
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
 from contacts.serializer import ContactSerializer
@@ -15,7 +15,6 @@ class TagsSerailizer(serializers.ModelSerializer):
 class AccountSerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
     lead = LeadSerializer()
-    company = CompanySerializer()
     tags = TagsSerailizer(read_only=True, many=True)
     assigned_to = UserSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
@@ -50,25 +49,43 @@ class AccountSerializer(serializers.ModelSerializer):
             "contacts",
             "assigned_to",
             "teams",
-            "company",
         )
 
 
 class EmailSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        request_obj = kwargs.pop("request_obj", None)
+        super(EmailSerializer, self).__init__(*args, **kwargs)
+
     class Meta:
         model = Email
         fields = (
-            "from_account"
-            "recipients"
-            "message_subject"
-            "message_body"
-            "timezone"
-            "scheduled_date_time"
-            "scheduled_later"
-            "created_on"
-            "from_email"
-            "rendered_message_body"
+            "message_subject",
+            "message_body",
+            "timezone",
+            "scheduled_date_time",
+            "scheduled_later",
+            "created_on",
+            "from_email",
+            "rendered_message_body",
         )
+
+    def validate_message_body(self, message_body):
+        count = 0
+        for i in message_body:
+            if i == "{":
+                count += 1
+            elif i == "}":
+                count -= 1
+            if count < 0:
+                raise serializers.ValidationError(
+                    "Brackets do not match, Enter valid tags."
+                )
+        if count != 0:
+            raise serializers.ValidationError(
+                "Brackets do not match, Enter valid tags."
+            )
+        return message_body
 
 
 class EmailLogSerializer(serializers.ModelSerializer):
@@ -96,20 +113,17 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             self.fields["lead"].required = False
         self.fields["lead"].required = False
-        self.company = request_obj.company
 
     def validate_name(self, name):
         if self.instance:
             if self.instance.name != name:
-                if not Account.objects.filter(
-                    name__iexact=name, company=self.company
-                ).exists():
+                if not Account.objects.filter(name__iexact=name).exists():
                     return name
                 raise serializers.ValidationError(
                     "Account already exists with this name"
                 )
             return name
-        if not Account.objects.filter(name__iexact=name, company=self.company).exists():
+        if not Account.objects.filter(name__iexact=name).exists():
             return name
         raise serializers.ValidationError("Account already exists with this name")
 

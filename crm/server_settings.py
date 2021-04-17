@@ -17,19 +17,11 @@ AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=86400",
 }
 
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 DEFAULT_S3_PATH = "media"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-STATIC_S3_PATH = "static"
-COMPRESS_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-COMPRESS_JS_FILTERS = ["compressor.filters.jsmin.JSMinFilter"]
 
 MEDIA_ROOT = "/%s/" % DEFAULT_S3_PATH
 MEDIA_URL = "//%s/%s/" % (S3_DOMAIN, DEFAULT_S3_PATH)
-STATIC_ROOT = "/%s/" % STATIC_S3_PATH
 STATIC_URL = "https://%s/" % (S3_DOMAIN)
 ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
 
@@ -38,7 +30,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 AWS_IS_GZIPPED = True
 AWS_ENABLED = True
 AWS_S3_SECURE_URLS = True
-COMPRESS_URL = STATIC_URL
 
 EMAIL_BACKEND = "django_ses.SESBackend"
 
@@ -52,3 +43,19 @@ sentry_sdk.init(
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True,
 )
+
+
+SENTRY_ENABLED = os.getenv("SENTRY_ENABLED", False)
+
+if SENTRY_ENABLED and not DEBUG:
+    if os.getenv("SENTRY_DSN") is not None:
+        RAVEN_CONFIG = {
+            "dsn": os.getenv("SENTRY_DSN", ""),
+        }
+        INSTALLED_APPS = INSTALLED_APPS + [
+            "raven.contrib.django.raven_compat",
+        ]
+        MIDDLEWARE = [
+            "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
+            "raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware",
+        ] + MIDDLEWARE

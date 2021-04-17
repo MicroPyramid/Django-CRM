@@ -13,5 +13,4 @@ urlpatterns = [
     path("tasks/", include("tasks.api_urls", namespace="api_tasks")),
     path("events/", include("events.api_urls", namespace="api_events")),
     path("cases/", include("cases.api_urls", namespace="api_cases")),
-    path("invoices/", include("invoices.api_urls", namespace="api_invoices")),
 ]

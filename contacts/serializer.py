@@ -2,7 +2,6 @@ from rest_framework import serializers
 from contacts.models import Contact
 from common.serializer import (
     UserSerializer,
-    CompanySerializer,
     BillingAddressSerializer,
     AttachmentsSerializer,
 )
@@ -11,7 +10,6 @@ from teams.serializer import TeamsSerializer
 
 class ContactSerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
-    company = CompanySerializer()
     teams = TeamsSerializer(read_only=True, many=True)
     assigned_to = UserSerializer(read_only=True, many=True)
     address = BillingAddressSerializer(read_only=True)
@@ -36,7 +34,6 @@ class ContactSerializer(serializers.ModelSerializer):
             "created_on",
             "is_active",
             "teams",
-            "company",
             "created_on_arrow",
             "get_team_users",
             "get_team_and_assigned_users",
@@ -50,14 +47,10 @@ class CreateContactSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(CreateContactSerializer, self).__init__(*args, **kwargs)
 
-        self.company = request_obj.company
-
     def validate_first_name(self, first_name):
         if self.instance:
             if (
-                Contact.objects.filter(
-                    first_name__iexact=first_name, company=self.company
-                )
+                Contact.objects.filter(first_name__iexact=first_name)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -66,9 +59,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
                 )
 
         else:
-            if Contact.objects.filter(
-                first_name__iexact=first_name, company=self.company
-            ).exists():
+            if Contact.objects.filter(first_name__iexact=first_name).exists():
                 raise serializers.ValidationError(
                     "Contact already exists with this name"
                 )

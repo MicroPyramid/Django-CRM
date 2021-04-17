@@ -1,23 +1,12 @@
 from drf_yasg import openapi
 
-company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
-)
-
-
 account_get_params = [
-    company_params_in_header,
     openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("tags", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
-account_get_detail_params = [
-    company_params_in_header,
-]
-
 account_post_params = [
-    company_params_in_header,
     openapi.Parameter(
         "name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -67,12 +56,7 @@ account_post_params = [
     openapi.Parameter("lead", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
-company_params = [
-    company_params_in_header,
-]
-
 account_detail_get_params = [
-    company_params_in_header,
     openapi.Parameter(
         "account_attachment",
         openapi.IN_QUERY,
@@ -82,12 +66,10 @@ account_detail_get_params = [
 ]
 
 account_comment_edit_params = [
-    company_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 account_detail_get_params = [
-    company_params_in_header,
     openapi.Parameter(
         "account_attachment",
         openapi.IN_QUERY,
@@ -97,6 +79,20 @@ account_detail_get_params = [
 ]
 
 account_comment_edit_params = [
-    company_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+]
+
+account_mail_params = [
+    openapi.Parameter("from_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("recipients", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("message_subject", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("scheduled_later", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+    openapi.Parameter("timezone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter(
+        "scheduled_date_time",
+        openapi.IN_QUERY,
+        type=openapi.FORMAT_DATETIME,
+        example="2021-01-01 00:00",
+    ),
+    openapi.Parameter("message_body", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]

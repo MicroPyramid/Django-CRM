@@ -2,7 +2,6 @@ from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from django.http import Http404
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
 from opportunity.serializer import OpportunitySerializer
@@ -12,19 +11,16 @@ from common.serializer import *
 from cases.serializer import CaseSerializer
 from accounts.models import Account, Contact
 from opportunity.models import Opportunity
+from accounts.models import Tags
 from cases.models import Case
 from leads.models import Lead
 from teams.models import Teams
-from common.forms import DocumentForm
 from common.utils import ROLES
-from common.models import User, Company, Document
-from common.access_decorators_mixins import (
-    MarketingAccessRequiredMixin,
-    SalesAccessRequiredMixin,
-    admin_login_required,
-    marketing_access_required,
-    sales_access_required,
+from common.serializer import (
+    RegisterUserSerializer,
+    CreateUserSerializer,
 )
+from common.models import User, Company, Document, APISettings
 from common.tasks import (
     resend_activation_link_to_user,
     send_email_to_new_user,
@@ -40,19 +36,19 @@ from rest_framework_jwt.serializers import jwt_encode_handler
 from common.utils import jwt_payload_handler
 from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
 from common.custom_auth import JSONWebTokenAuthentication
 from common import swagger_params
 from django.db.models import Q
 from rest_framework.decorators import api_view
 import json
-from marketing.models import BlockedDomain, BlockedEmail, ContactEmailCampaign
-from marketing.serializer import (
-    ContactEmailCampaignSerailizer,
-    BlockedDomainSerailizer,
-    BlockedEmailSerailizer,
-    BlockedDomainAddSerailizer,
-    BlockedEmailAddSerailizer,
-)
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_text
+from django.utils.http import urlsafe_base64_decode
+from common.token_generator import account_activation_token
+from common.models import Profile
+from django.utils import timezone
+from crm import settings
 
 
 class GetTeamsAndUsersView(APIView):
@@ -61,18 +57,18 @@ class GetTeamsAndUsersView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Users"], manual_parameters=swagger_params.dashboard_params
+        tags=["Users"],
     )
     def get(self, request, *args, **kwargs):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             return Response(
-                {"error": True, "Message": "Permission Denied"},
+                {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         data = {}
-        teams = Teams.objects.filter(company=request.company)
+        teams = Teams.objects.filter.all()
         teams_data = TeamsSerializer(teams, many=True).data
-        users = User.objects.filter(company=request.company, is_active=True)
+        users = User.objects.filter(is_active=True)
         users_data = UserSerializer(users, many=True).data
         data["teams"] = teams_data
         data["users_data"] = users_data
@@ -88,20 +84,21 @@ class UserDetailView(APIView):
         return user
 
     @swagger_auto_schema(
-        tags=["Users"], manual_parameters=swagger_params.dashboard_params
+        tags=["Users"],
     )
     def get(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        user_obj = self.get_object(pk)
+        if (
+            self.request.user.role != "ADMIN"
+            and not self.request.user.is_superuser
+            and self.request.user.id != user_obj.id
+        ):
             return Response(
-                {"error": True, "message": "Permission Denied"},
+                {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        user_obj = self.get_object(pk)
-        if user_obj.company != request.company:
-            # return Response({'error': 'Id Not found'}, status=status.HTTP_404_NOT_FOUND)
-            raise Http404
         users_data = []
-        for each in User.objects.filter(company=request.company):
+        for each in User.objects.all():
             assigned_dict = {}
             assigned_dict["id"] = each.id
             assigned_dict["name"] = each.username
@@ -119,40 +116,44 @@ class UserDetailView(APIView):
         context["assigned_data"] = users_data
         comments = user_obj.user_comments.all()
         context["comments"] = CommentSerializer(comments, many=True).data
-        return Response({"error": False, "data": context}, status=status.HTTP_200_OK)
+        return Response(
+            {"error": False, "data": context},
+            status=status.HTTP_200_OK,
+        )
 
     @swagger_auto_schema(
         tags=["Users"], manual_parameters=swagger_params.user_update_params
     )
     def put(self, request, pk, format=None):
-        if request.user.role != "ADMIN" and not request.user.is_superuser:
-            return Response(
-                {"error": True, "Message": "Permission Denied"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-            # raise PermissionDenied
         params = request.query_params if len(request.data) == 0 else request.data
         user = self.get_object(pk)
-        if user.company != request.company:
-            # return Response({'error': 'Id Not found'}, status=status.HTTP_404_NOT_FOUND)
-            raise Http404
+        if (
+            self.request.user.role != "ADMIN"
+            and not self.request.user.is_superuser
+            and self.request.user.id != user.id
+        ):
+            return Response(
+                {"error": True, "errors": "Permission Denied"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = CreateUserSerializer(user, data=params, request_user=request.user)
         if serializer.is_valid():
             user = serializer.save()
-            if params.getlist("teams"):
-                user_teams = user.user_teams.all()
+            if self.request.user.role == "ADMIN":
+                if params.getlist("teams"):
+                    user_teams = user.user_teams.all()
 
-                team_obj = Teams.objects.filter(company=request.company)
-                for team in params.getlist("teams"):
-                    try:
-                        team_obj = team_obj.filter(id=team).first()
-                        if team_obj != user_teams:
-                            team_obj.users.add(user)
-                    except:
-                        return Response(
-                            {"detail": "No such Team Available"},
-                            status=status.HTTP_404_NOT_FOUND,
-                        )
+                    team_obj = Teams.objects.all()
+                    for team in params.getlist("teams"):
+                        try:
+                            team_obj = team_obj.filter(id=team).first()
+                            if team_obj != user_teams:
+                                team_obj.users.add(user)
+                        except:
+                            return Response(
+                                {"detail": "No such Team Available"},
+                                status=status.HTTP_404_NOT_FOUND,
+                            )
             return Response(
                 {"error": False, "message": "User Updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -163,35 +164,29 @@ class UserDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Users"], manual_parameters=swagger_params.dashboard_params
+        tags=["Users"],
     )
     def delete(self, request, pk, format=None):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             return Response(
-                {"error": True, "Message": "Permission Denied"},
+                {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-            # raise PermissionDenied
         self.object = self.get_object(pk)
-        if self.object.company == request.company:
-            if self.object.id == request.user.id:
-                return Response(
-                    {"error": True, "Message": "Permission Denied"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            current_site = request.get_host()
-            deleted_by = self.request.user.email
-            send_email_user_delete.delay(
-                self.object.email,
-                deleted_by=deleted_by,
-                domain=current_site,
-                protocol=request.scheme,
+        if self.object.id == request.user.id:
+            return Response(
+                {"error": True, "errors": "Permission Denied"},
+                status=status.HTTP_403_FORBIDDEN,
             )
-            self.object.delete()
-            return Response({"status": "success"}, status=status.HTTP_200_OK)
-        return Response(
-            {"error": True, "Message": "Id Not Found"}, status=status.HTTP_404_NOT_FOUND
+        deleted_by = self.request.user.email
+        send_email_user_delete.delay(
+            self.object.email,
+            deleted_by=deleted_by,
+            domain=settings.Domain,
+            protocol=request.scheme,
         )
+        self.object.delete()
+        return Response({"status": "success"}, status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(APIView):
@@ -228,7 +223,8 @@ class ChangePasswordView(APIView):
 
         if errors:
             return Response(
-                {"error": True, "errors": errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         user = request.user
         user.set_password(new_password)
@@ -246,16 +242,14 @@ class ApiHomeView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["dashboard"], manual_parameters=swagger_params.dashboard_params
+        tags=["dashboard"],
     )
     def get(self, request, format=None):
 
-        accounts = Account.objects.filter(status="open", company=request.company)
-        contacts = Contact.objects.filter(company=request.company)
-        leads = Lead.objects.filter(company=request.company).exclude(
-            Q(status="converted") | Q(status="closed")
-        )
-        opportunities = Opportunity.objects.filter(company=request.company)
+        accounts = Account.objects.filter(status="open")
+        contacts = Contact.objects.all()
+        leads = Lead.objects.all().exclude(Q(status="converted") | Q(status="closed"))
+        opportunities = Opportunity.objects.all()
 
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             pass
@@ -296,29 +290,26 @@ class LoginView(APIView):
     )
     def post(self, request, format=None):
         params = request.query_params if len(request.data) == 0 else request.data
-        company = request.headers.get("company")
         username = params.get("email", None)
         password = params.get("password", None)
-        company_obj = Company.objects.filter(sub_domain=company).first()
-        if not company_obj:
-            company_field = "doesnot exit"
-            msg = _("company with this subdomin {company_field}")
-            msg = msg.format(company_field=company_field)
-            return Response(
-                {"error": True, "message": msg}, status=status.HTTP_400_BAD_REQUEST
-            )
         if not username:
             username_field = "User Name/Email"
             msg = _('Must include "{username_field}"')
             msg = msg.format(username_field=username_field)
             return Response(
-                {"error": True, "message": msg}, status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": msg},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = User.objects.filter(email=username, company=company_obj).first()
+        user = User.objects.filter(email=username).first()
         if not user:
             return Response(
-                {"error": True, "message": "user not avaliable in our records"},
+                {"error": True, "errors": "user not avaliable in our records"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not user.is_active:
+            return Response(
+                {"error": True, "errors": "Please activate account to proceed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if user.check_password(password):
@@ -326,16 +317,15 @@ class LoginView(APIView):
             response_data = {
                 "token": jwt_encode_handler(payload),
                 "error": False,
-                "company": user.company.id,
-                "subdomin": company_obj.sub_domain,
             }
-            return Response(response_data)
+            return Response(response_data, status=status.HTTP_200_OK)
         else:
             password_field = "doesnot match"
             msg = _("Email and password {password_field}")
             msg = msg.format(password_field=password_field)
             return Response(
-                {"error": True, "message": msg}, status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": msg},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -347,67 +337,40 @@ class RegistrationView(APIView):
     )
     def post(self, request, format=None):
         params = request.query_params if len(request.data) == 0 else request.data
-        sub_domain = params.get("sub_domain", None)
-        username = params.get("username", None)
-        email = params.get("email", None)
-        password = params.get("password", None)
+        user_serializer = RegisterUserSerializer(
+            data=params,
+            request_user=request.user,
+        )
         errors = {}
-        if sub_domain:
-            if Company.objects.filter(sub_domain__iexact=sub_domain):
-                errors["sub_domain"] = "company with this subdomin already exit"
-
-        if username:
-            if User.objects.filter(username__iexact=username):
-                errors["username"] = "User name already exit."
-        if email:
-            if User.objects.filter(email__iexact=email):
-                errors["email"] = "Email already exit."
-
-        if password:
-            if len(password) < 8:
-                errors["password"] = "Password must be at least 8 characters long!"
-
+        if not user_serializer.is_valid():
+            errors.update(user_serializer.errors)
         if errors:
             return Response(
-                {"error": True, "errors": errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        else:
-            user = User.objects.create(username=username, email=email)
-            company = Company.objects.create(sub_domain=sub_domain)
-            company.save()
-            user.company = company
-            user.role = "ADMIN"
-            user.is_superuser = False
-            user.has_marketing_access = True
-            user.has_sales_access = True
-            user.is_admin = True
-            user.set_password(password)
+        if user_serializer.is_valid():
+            user = user_serializer.save(
+                role="ADMIN",
+                is_superuser=False,
+                has_marketing_access=True,
+                has_sales_access=True,
+                is_admin=True,
+            )
+            if params.get("password"):
+                user.set_password(params.get("password"))
             user.save()
-            return Response({"error": False}, status=status.HTTP_201_CREATED)
-
-
-@swagger_auto_schema(
-    method="post",
-    tags=["Auth"],
-    manual_parameters=swagger_params.check_sub_domain_params,
-)
-@api_view(["POST"])
-def check_sub_domain(request):
-    if request.method == "POST":
-        params = request.query_params if len(request.data) == 0 else request.data
-        sub_domain = params.get("sub_domain", None)
-        msg = _("Given sub_domain {domain_name} is {validity_status}")
-        company = Company.objects.filter(sub_domain=sub_domain).first()
-        if company:
-            request.session["company"] = company.id
-            msg = msg.format(domain_name=sub_domain, validity_status="Valid")
-            status_code = status.HTTP_200_OK
-            status_msg = False
-        else:
-            msg = msg.format(domain_name=sub_domain, validity_status="Invalid")
-            status_code = status.HTTP_400_BAD_REQUEST
-            status_msg = True
-        return Response({"error": status_msg, "message": msg}, status=status_code)
+            protocol = request.scheme
+            send_email_to_new_user.delay(
+                user.email,
+                user.email,
+                domain=settings.Domain,
+                protocol=protocol,
+            )
+            return Response(
+                {"error": False, "message": "User created Successfully."},
+                status=status.HTTP_200_OK,
+            )
 
 
 class ProfileView(APIView):
@@ -415,7 +378,7 @@ class ProfileView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Profile"], manual_parameters=swagger_params.dashboard_params
+        tags=["Profile"],
     )
     def get(self, request, format=None):
         context = {}
@@ -423,7 +386,7 @@ class ProfileView(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 
-class UsersListView(APIView):
+class UsersListView(APIView, LimitOffsetPagination):
 
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -434,7 +397,7 @@ class UsersListView(APIView):
     def post(self, request, format=None):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             return Response(
-                {"error": True, "Message": "Permission Denied"},
+                {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         else:
@@ -447,15 +410,13 @@ class UsersListView(APIView):
                     user = user_serializer.save()
                     if params.get("password"):
                         user.set_password(params.get("password"))
-                    user.company = self.request.company
-                    user.save()
+                    user.is_active = False
 
-                    current_site = request.get_host()
                     protocol = request.scheme
                     send_email_to_new_user.delay(
                         user.email,
                         self.request.user.email,
-                        domain=current_site,
+                        domain=settings.Domain,
                         protocol=protocol,
                     )
                     return Response(
@@ -473,11 +434,11 @@ class UsersListView(APIView):
     def get(self, request, format=None):
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             return Response(
-                {"error": True, "Message": "Permission Denied"},
+                {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         else:
-            queryset = User.objects.filter(company=self.request.company)
+            queryset = User.objects.all()
             params = (
                 self.request.query_params
                 if len(self.request.data) == 0
@@ -496,17 +457,40 @@ class UsersListView(APIView):
                     queryset = queryset.filter(is_active=params.get("status"))
 
             context = {}
-            active_users = queryset.filter(is_active=True)
-            inactive_users = queryset.filter(is_active=False)
-            context["active_users"] = UserSerializer(active_users, many=True).data
-            context["inactive_users"] = UserSerializer(inactive_users, many=True).data
+            queryset_active_users = queryset.filter(is_active=True)
+            results_active_users = self.paginate_queryset(
+                queryset_active_users.distinct(), self.request, view=self
+            )
+            active_users = UserSerializer(results_active_users, many=True).data
+            context["per_page"] = 10
+            context["active_users"] = {
+                "active_users_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
+                "active_users": active_users,
+            }
+
+            queryset_inactive_users = queryset.filter(is_active=False)
+            results_inactive_users = self.paginate_queryset(
+                queryset_inactive_users.distinct(), self.request, view=self
+            )
+            inactive_users = UserSerializer(results_inactive_users, many=True).data
+            context["inactive_users"] = {
+                "inactive_users_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
+                "inactive_users": inactive_users,
+            }
+
             context["admin_email"] = settings.ADMIN_EMAIL
             context["roles"] = ROLES
             context["status"] = [("True", "Active"), ("False", "In Active")]
             return Response(context)
 
 
-class DocumentListView(APIView):
+class DocumentListView(APIView, LimitOffsetPagination):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Document
@@ -517,7 +501,7 @@ class DocumentListView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
             queryset = queryset
         else:
@@ -546,13 +530,9 @@ class DocumentListView(APIView):
 
         context = {}
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True, company=self.request.company
-            ).order_by("email")
+            users = User.objects.filter(is_active=True).order_by("email")
         else:
-            users = User.objects.filter(
-                role="ADMIN", company=self.request.company
-            ).order_by("email")
+            users = User.objects.filter(role="ADMIN").order_by("email")
         search = False
         if (
             params.get("document_file")
@@ -561,12 +541,37 @@ class DocumentListView(APIView):
         ):
             search = True
         context["search"] = search
-        context["documents_active"] = DocumentSerializer(
-            queryset.filter(status="active").distinct(), many=True
+
+        queryset_documents_active = queryset.filter(status="active")
+        results_documents_active = self.paginate_queryset(
+            queryset_documents_active.distinct(), self.request, view=self
+        )
+        documents_active = DocumentSerializer(results_documents_active, many=True).data
+        context["per_page"] = 10
+        context["documents_active"] = {
+            "documents_active_count": self.count,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "page_number": int(self.offset / 10) + 1,
+            "documents_active": documents_active,
+        }
+
+        queryset_documents_inactive = queryset.filter(status="inactive")
+        results_documents_inactive = self.paginate_queryset(
+            queryset_documents_inactive.distinct(), self.request, view=self
+        )
+        documents_inactive = DocumentSerializer(
+            results_documents_inactive, many=True
         ).data
-        context["documents_inactive"] = DocumentSerializer(
-            queryset.filter(status="inactive").distinct(), many=True
-        ).data
+
+        context["documents_inactive"] = {
+            "documents_inactive_count": self.count,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "page_number": int(self.offset / 10) + 1,
+            "documents_inactive": documents_inactive,
+        }
+
         context["users"] = UserSerializer(users, many=True).data
         context["status_choices"] = Document.DOCUMENT_STATUS_CHOICE
         return context
@@ -587,31 +592,32 @@ class DocumentListView(APIView):
         if serializer.is_valid():
             doc = serializer.save(
                 created_by=request.user,
-                company=request.company,
                 document_file=request.FILES.get("document_file"),
             )
             if params.get("shared_to"):
                 assinged_to_users_ids = json.loads(params.get("shared_to"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id, company=request.company)
+                    user = User.objects.filter(id=user_id)
                     if user:
                         doc.shared_to.add(user_id)
                     else:
                         doc.delete()
-                        return Response({"error": True, "error": "Enter Valid User"})
+                        return Response(
+                            {"error": True, "errors": "Enter Valid User"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if self.request.user.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             doc.teams.add(team)
                         else:
                             doc.delete()
                             return Response(
-                                {"error": True, "error": "Enter Valid Team"}
+                                {"error": True, "errors": "Enter Valid Team"},
+                                status=status.HTTP_400_BAD_REQUEST,
                             )
 
             return Response(
@@ -632,13 +638,13 @@ class DocumentDetailView(APIView):
         return Document.objects.filter(id=pk).first()
 
     @swagger_auto_schema(
-        tags=["documents"], manual_parameters=swagger_params.dashboard_params
+        tags=["documents"],
     )
     def get(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if not self.object or self.object.company != self.request.company:
+        if not self.object:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
+                {"error": True, "errors": "Document does not exist"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -650,12 +656,11 @@ class DocumentDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         if request.user.role == "ADMIN" or request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True, company=request.company
-            ).order_by("email")
+            users = User.objects.filter(is_active=True).order_by("email")
         else:
             users = User.objects.filter(role="ADMIN").order_by("email")
         context = {}
@@ -669,13 +674,13 @@ class DocumentDetailView(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        tags=["documents"], manual_parameters=swagger_params.dashboard_params
+        tags=["documents"],
     )
     def delete(self, request, pk, format=None):
         document = self.get_object(pk)
-        if not document or document.company != self.request.company:
+        if not document:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
+                {"error": True, "errors": "Documdnt does not exist"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -702,9 +707,9 @@ class DocumentDetailView(APIView):
     def put(self, request, pk, format=None):
         self.object = self.get_object(pk)
         params = request.query_params if len(request.data) == 0 else request.data
-        if not self.object or self.object.company != self.request.company:
+        if not self.object:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
+                {"error": True, "errors": "Document does not exist"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -716,7 +721,8 @@ class DocumentDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You do not have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         serializer = DocumentCreateSerializer(
             data=params, instance=self.object, request_obj=request
@@ -730,25 +736,27 @@ class DocumentDetailView(APIView):
             if params.get("shared_to"):
                 assinged_to_users_ids = json.loads(params.get("shared_to"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id, company=request.company)
+                    user = User.objects.filter(id=user_id)
                     if user:
                         doc.shared_to.add(user_id)
                     else:
-                        return Response({"error": True, "error": "Enter Valid User"})
+                        return Response(
+                            {"error": True, "errors": "Enter Valid User"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
             if self.request.user.role == "ADMIN":
                 doc.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             doc.teams.add(team)
                         else:
                             return Response(
-                                {"error": True, "error": "Enter Valid Team"}
+                                {"error": True, "errors": "Enter Valid Team"},
+                                status=status.HTTP_400_BAD_REQUEST,
                             )
             return Response(
                 {"error": False, "message": "Document Updated Successfully"},
@@ -769,10 +777,14 @@ class ForgotPasswordView(APIView):
         serializer = ForgotPasswordSerializer(data=params)
         if serializer.is_valid():
             user = get_object_or_404(User, email=params.get("email"))
-            current_site = self.request.get_host()
+            if not user.is_active:
+                return Response(
+                    {"error": True, "errors": "Please activate account to proceed."},
+                    status=status.HTTP_406_NOT_ACCEPTABLE,
+                )
             protocol = self.request.scheme
             send_email_to_reset_password.delay(
-                user.email, protocol=protocol, domain=current_site
+                user.email, protocol=protocol, domain=settings.Domain
             )
             data = {
                 "error": False,
@@ -789,7 +801,7 @@ class ResetPasswordView(APIView):
     @swagger_auto_schema(
         tags=["Auth"], manual_parameters=swagger_params.reset_password_params
     )
-    def post(self, request, format=None):
+    def post(self, request, uid, token, format=None):
         params = request.query_params if len(request.data) == 0 else request.data
         serializer = ResetPasswordSerailizer(data=params)
         if serializer.is_valid():
@@ -806,507 +818,6 @@ class ResetPasswordView(APIView):
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ContactsEmailCampaignListView(APIView):
-    model = ContactEmailCampaign
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-        queryset = self.model.objects.filter(company=self.request.company)
-
-        context = {}
-        search = False
-        if params:
-            if params.get("name"):
-                queryset = queryset.filter(
-                    Q(name__icontains=params.get("name"))
-                    | Q(last_name__icontains=params.get("name"))
-                )
-            if params.get("email"):
-                queryset = queryset.filter(email__icontains=params.get("email"))
-            if params.get("created_by"):
-                queryset = queryset.filter(created_by=params.get("created_by"))
-            search = True
-
-        context["search"] = search
-
-        context["contacts"] = ContactEmailCampaignSerailizer(queryset, many=True).data
-        users = User.objects.filter(
-            is_active=True, role="ADMIN", company=self.request.company
-        ).order_by("email")
-
-        context["users"] = UserSerializer(users, many=True).data
-        return context
-
-    @swagger_auto_schema(
-        tags=["Settings"], manual_parameters=swagger_params.settings_contact_get_params
-    )
-    def get(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_contact_create_params,
-    )
-    def post(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-
-        serializer = ContactEmailCampaignSerailizer(data=params, request_obj=request)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user, company=request.company)
-            return Response(
-                {"error": False, "message": "Email for Campaign created Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class ContactsEmailCampaignDetailView(APIView):
-    model = ContactEmailCampaign
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
-
-    # def get_context_data(self, **kwargs):
-    #     context = {}
-    #     context["contacts"] = ContactEmailCampaignSerailizer(
-    #                                 self.contact_obj).data
-    #     users = User.objects.filter(
-    #             is_active=True,
-    #             role = "ADMIN",
-    #             company=self.request.company).order_by("email")
-
-    #     context["users"] = UserSerializer(users, many=True).data
-    #     return context
-
-    # @swagger_auto_schema(
-    #     tags=["Settings"], manual_parameters=swagger_params.dashboard_params
-    # )
-    # def get(self, request, pk, **kwargs):
-    #     if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-    #         return Response({
-    #             "error": True,
-    #             "errors": "You do not have permission to perform this action"},
-    #              status = status.HTTP_403_FORBIDDEN
-    #         )
-    #     self.contact_obj = self.get_object(pk)
-    #     if self.contact_obj.company != request.company:
-    #         return Response(
-    #             {"error": True,
-    #              "errors": "User company doesnot match with header...."}
-    #         )
-    #     context = self.get_context_data(**kwargs)
-    #     return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_contact_create_params,
-    )
-    def put(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = request.query_params if len(request.data) == 0 else request.data
-        obj = self.get_object(pk)
-        if obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        serializer = ContactEmailCampaignSerailizer(obj, data=params)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"error": False, "message": "Email for Campaign Updated Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    @swagger_auto_schema(
-        tags=["Settings"], manual_parameters=swagger_params.dashboard_params
-    )
-    def delete(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        self.object.delete()
-        return Response(
-            {"error": True, "errors": "Email for Campaign Deleted Successfully"},
-            status=status.HTTP_200_OK,
-        )
-
-
-class BlockDomainsListView(APIView):
-    model = BlockedDomain
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-        queryset = self.model.objects.filter(company=self.request.company)
-
-        context = {}
-        search = False
-        if params:
-            if params.get("domain"):
-                queryset = queryset.filter(Q(domain__icontains=params.get("domain")))
-            search = True
-
-        context["search"] = search
-
-        context["blocked_domains"] = BlockedDomainSerailizer(queryset, many=True).data
-        return context
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockdomains_create_params,
-    )
-    def get(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockdomains_create_params,
-    )
-    def post(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-
-        serializer = BlockedDomainAddSerailizer(data=params, request_obj=request)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user, company=request.company)
-            return Response(
-                {"error": False, "message": "Blocked Domain created Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class BlockDomainsDetailView(APIView):
-    model = BlockedDomain
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
-
-    # def get_context_data(self, **kwargs):
-    #     context = {}
-    #     context["blocked_domains"] = BlockedDomainSerailizer(
-    #                                 self.obj).data
-    #     return context
-
-    # @swagger_auto_schema(
-    #     tags=["Settings"], manual_parameters=swagger_params.dashboard_params
-    # )
-    # def get(self, request, pk, **kwargs):
-    #     if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-    #         return Response({
-    #             "error": True,
-    #             "errors": "You do not have permission to perform this action"},
-    #              status = status.HTTP_403_FORBIDDEN
-    #         )
-    #     self.obj = self.get_object(pk)
-    #     if self.obj.company != request.company:
-    #         return Response(
-    #             {"error": True,
-    #              "errors": "User company doesnot match with header...."}
-    #         )
-    #     context = self.get_context_data(**kwargs)
-    #     return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockdomains_create_params,
-    )
-    def put(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = request.query_params if len(request.data) == 0 else request.data
-        obj = self.get_object(pk)
-        if obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        serializer = BlockedDomainAddSerailizer(obj, data=params, request_obj=request)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"error": False, "message": "Blocked Domain Updated Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    @swagger_auto_schema(
-        tags=["Settings"], manual_parameters=swagger_params.dashboard_params
-    )
-    def delete(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        self.object.delete()
-        return Response(
-            {"error": True, "errors": "Blocked Domain Deleted Successfully"},
-            status=status.HTTP_200_OK,
-        )
-
-
-class BlockEmailsListView(APIView):
-    model = BlockedEmail
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-        queryset = self.model.objects.filter(company=self.request.company)
-
-        context = {}
-        search = False
-        if params:
-            if params.get("email"):
-                queryset = queryset.filter(Q(email__icontains=params.get("email")))
-            search = True
-
-        context["search"] = search
-
-        context["blocked_emails"] = BlockedEmailSerailizer(queryset, many=True).data
-        return context
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockemails_create_params,
-    )
-    def get(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        context = self.get_context_data(**kwargs)
-        return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockemails_create_params,
-    )
-    def post(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-
-        serializer = BlockedEmailAddSerailizer(data=params, request_obj=request)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user, company=request.company)
-            return Response(
-                {"error": False, "message": "Blocked Email added Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class BlockEmailsDetailView(APIView):
-    model = BlockedEmail
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
-
-    # def get_context_data(self, **kwargs):
-    #     context = {}
-    #     context["blocked_emails"] = BlockedEmailSerailizer(
-    #                                 self.obj).data
-    #     return context
-
-    # @swagger_auto_schema(
-    #     tags=["Settings"],
-    #     manual_parameters=swagger_params.dashboard_params
-    # )
-    # def get(self, request, pk, **kwargs):
-    #     if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-    #         return Response({
-    #             "error": True,
-    #             "errors": "You do not have permission to perform this action"},
-    #              status = status.HTTP_403_FORBIDDEN
-    #         )
-    #     self.obj = self.get_object(pk)
-    #     if self.obj.company != request.company:
-    #         return Response(
-    #             {"error": True,
-    #              "errors": "User company doesnot match with header...."}
-    #         )
-    #     context = self.get_context_data(**kwargs)
-    #     return Response(context)
-
-    @swagger_auto_schema(
-        tags=["Settings"],
-        manual_parameters=swagger_params.settings_blockemails_create_params,
-    )
-    def put(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        params = request.query_params if len(request.data) == 0 else request.data
-        obj = self.get_object(pk)
-        if obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        serializer = BlockedEmailAddSerailizer(obj, data=params, request_obj=request)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"error": False, "message": "Blocked Email Updated Successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    @swagger_auto_schema(
-        tags=["Settings"], manual_parameters=swagger_params.dashboard_params
-    )
-    def delete(self, request, pk, format=None):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        self.object = self.get_object(pk)
-        if self.object.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
-        self.object.delete()
-        return Response(
-            {"error": True, "errors": "Blocked Email Deleted Successfully"},
-            status=status.HTTP_200_OK,
-        )
-
-
 class UserStatusView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -1320,18 +831,11 @@ class UserStatusView(APIView):
                 {
                     "error": True,
                     "errors": "You do not have permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
         params = request.query_params if len(request.data) == 0 else request.data
-        user = User.objects.get(id=pk, company=request.company)
-        if user.company != request.company:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with the header",
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        user = User.objects.get(id=pk)
 
         if params.get("status"):
             status = params.get("status")
@@ -1341,13 +845,206 @@ class UserStatusView(APIView):
                 user.is_active = False
             else:
                 return Response(
-                    {"error": True, "errors": "Please enter Valid Status for user"}
+                    {"error": True, "errors": "Please enter Valid Status for user"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             user.save()
 
         context = {}
-        users_Active = User.objects.filter(is_active=True, company=request.company)
-        users_Inactive = User.objects.filter(is_active=False, company=request.company)
+        users_Active = User.objects.filter(is_active=True)
+        users_Inactive = User.objects.filter(is_active=False)
         context["Users_Active"] = UserSerializer(users_Active, many=True).data
         context["Users_Inactive"] = UserSerializer(users_Inactive, many=True).data
         return Response(context)
+
+
+class DomainList(APIView):
+    model = APISettings
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(
+        tags=["Settings"],
+    )
+    def get(self, request, *args, **kwargs):
+        api_settings = APISettings.objects.all()
+        users = User.objects.filter(is_active=True).order_by("email")
+        return Response(
+            {
+                "error": False,
+                "api_settings": APISettingsListSerializer(api_settings, many=True).data,
+                "users": UserSerializer(users, many=True).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        tags=["Settings"], manual_parameters=swagger_params.api_setting_create_params
+    )
+    def post(self, request, *args, **kwargs):
+        params = (
+            self.request.query_params
+            if len(self.request.data) == 0
+            else self.request.data
+        )
+        assign_to_list = []
+        if params.get("lead_assigned_to"):
+            assign_to_list = json.loads(params.get("lead_assigned_to"))
+        serializer = APISettingsSerializer(data=params)
+        if serializer.is_valid():
+            settings_obj = serializer.save(created_by=request.user)
+            if params.get("tags"):
+                tags = json.loads(params.get("tags"))
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(name=tag).first()
+                    if not tag_obj:
+                        tag_obj = Tags.objects.create(name=tag)
+                    settings_obj.tags.add(tag_obj)
+            if assign_to_list:
+                settings_obj.lead_assigned_to.add(*assign_to_list)
+            return Response(
+                {"error": False, "message": "API key added sucessfully"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class DomainDetailView(APIView):
+    model = APISettings
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self, pk):
+        return self.model.objects.get(pk=pk)
+
+    @swagger_auto_schema(
+        tags=["Settings"],
+    )
+    def get(self, request, pk, format=None):
+        api_setting = self.get_object(pk)
+        return Response(
+            {"error": False, "domain": APISettingsListSerializer(api_setting).data},
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        tags=["Settings"], manual_parameters=swagger_params.api_setting_create_params
+    )
+    def put(self, request, pk, **kwargs):
+        api_setting = self.get_object(pk)
+        params = (
+            self.request.query_params
+            if len(self.request.data) == 0
+            else self.request.data
+        )
+        assign_to_list = []
+        if params.get("lead_assigned_to"):
+            assign_to_list = json.loads(params.get("lead_assigned_to"))
+        serializer = APISettingsSerializer(data=params, instance=api_setting)
+        if serializer.is_valid():
+            api_setting = serializer.save()
+            api_setting.tags.clear()
+            api_setting.lead_assigned_to.clear()
+            if params.get("tags"):
+                tags = json.loads(params.get("tags"))
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(name=tag).first()
+                    if not tag_obj:
+                        tag_obj = Tags.objects.create(name=tag)
+                    api_setting.tags.add(tag_obj)
+            if assign_to_list:
+                api_setting.lead_assigned_to.add(*assign_to_list)
+            return Response(
+                {"error": False, "message": "API setting Updated sucessfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @swagger_auto_schema(
+        tags=["Settings"],
+    )
+    def delete(self, request, pk, **kwargs):
+        api_setting = self.get_object(pk)
+        if api_setting:
+            api_setting.delete()
+        return Response(
+            {"error": False, "message": "API setting deleted sucessfully"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ActivateUserView(APIView):
+    @swagger_auto_schema(
+        tags=["Auth"],
+    )
+    def post(self, request, uid, token, activation_key, format=None):
+        profile = get_object_or_404(Profile, activation_key=activation_key)
+        if profile.user:
+            if timezone.now() > profile.key_expires:
+                protocol = request.scheme
+                resend_activation_link_to_user.delay(
+                    profile.user.email,
+                    domain=settings.Domain,
+                    protocol=protocol,
+                )
+                return Response(
+                    {
+                        "error": False,
+                        "message": "Link expired. Please use the Activation link sent now to your mail.",
+                    },
+                    status=status.HTTP_406_NOT_ACCEPTABLE,
+                )
+            else:
+                try:
+                    uid = force_text(urlsafe_base64_decode(uid))
+                    user = User.objects.get(pk=uid)
+                except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                    user = None
+                if user is not None and account_activation_token.check_token(
+                    user, token
+                ):
+                    user.is_active = True
+                    user.save()
+                    return Response(
+                        {
+                            "error": False,
+                            "message": "Thank you for your email confirmation. Now you can login to your account.",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                else:
+                    return Response(
+                        {"error": True, "errors": "Activation link is invalid!"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+
+class ResendActivationLinkView(APIView):
+    @swagger_auto_schema(
+        tags=["Auth"], manual_parameters=swagger_params.forgot_password_params
+    )
+    def post(self, request, format=None):
+        params = request.query_params if len(request.data) == 0 else request.data
+        user = get_object_or_404(User, email=params.get("email"))
+        if user.is_active:
+            return Response(
+                {"error": False, "message": "Account is active. Please login"},
+                status=status.HTTP_200_OK,
+            )
+        protocol = request.scheme
+        resend_activation_link_to_user.delay(
+            user.email,
+            domain=settings.Domain,
+            protocol=protocol,
+        )
+        data = {
+            "error": False,
+            "message": "Please use the Activation link sent to your mail to activate account.",
+        }
+        return Response(data, status=status.HTTP_200_OK)

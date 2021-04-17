@@ -1,7 +1,7 @@
 import arrow
 
 from django.db import models
-from common.models import User, Company
+from common.models import User
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -16,10 +16,6 @@ class Teams(models.Model):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-    )
-
-    company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True
     )
 
     def __str__(self):

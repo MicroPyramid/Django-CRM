@@ -5,7 +5,7 @@ from django.test.utils import override_settings
 
 from accounts.tests import AccountCreateTest
 from cases.tests import CaseCreation
-from common.models import User, Comment, Company
+from common.models import User, Comment
 from common.tasks import (
     resend_activation_link_to_user,
     send_email_to_new_user,
@@ -88,15 +88,11 @@ class TestUserMentionsForAccountComments(AccountCreateTest, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_account_comment(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -121,15 +117,11 @@ class TestUserMentionsForContactsComments(ContactObjectsCreation, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_contacts_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -154,15 +146,11 @@ class TestUserMentionsForLeadsComments(TestLeadModel, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_leads_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -187,15 +175,11 @@ class TestUserMentionsForOpportunityComments(OpportunityModel, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_opportunity_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -220,15 +204,11 @@ class TestUserMentionsForCasesComments(CaseCreation, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_cases_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -253,15 +233,11 @@ class TestUserMentionsForTasksComments(TaskCreateTest, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_tasks_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -286,15 +262,11 @@ class TestUserMentionsForInvoiceComments(InvoiceCreateTest, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_invoice_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()
@@ -319,15 +291,11 @@ class TestUserMentionsForEventsComments(EventObjectTest, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_user_mentions_for_events_comments(self):
-        self.company, _ = Company.objects.get_or_create(
-            name="test company", address="IN", sub_domain="test", country="IN"
-        )
         self.user_comment = User.objects.create(
             first_name="johnComment",
             username="johnDoeComment",
             email="johnDoeComment@example.com",
             role="ADMIN",
-            company=self.company,
         )
         self.user_comment.set_password("password")
         self.user_comment.save()

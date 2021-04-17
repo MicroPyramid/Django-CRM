@@ -24,11 +24,12 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
 
 
-class TaskListView(APIView):
+class TaskListView(APIView, LimitOffsetPagination):
     model = Task
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -39,9 +40,9 @@ class TaskListView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(company=self.request.company)
-        accounts = Account.objects.filter(company=self.request.company)
-        contacts = Contact.objects.filter(company=self.request.company)
+        queryset = self.model.objects.all()
+        accounts = Account.objects.all()
+        contacts = Contact.objects.all()
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
@@ -66,30 +67,36 @@ class TaskListView(APIView):
         if params.get("title") or params.get("status") or params.get("priority"):
             search = True
         context["search"] = search
-
-        if search:
-            context["tasks"] = TaskSerializer(queryset.distinct(), many=True).data
-            return context
-
-        context["tasks"] = TaskSerializer(queryset.distinct(), many=True).data
+        results_tasks = self.paginate_queryset(
+            queryset.distinct(), self.request, view=self
+        )
+        tasks = TaskSerializer(results_tasks, many=True).data
+        context["per_page"] = 10
+        context.update(
+            {
+                "tasks_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "page_number": int(self.offset / 10) + 1,
+            }
+        )
+        context["tasks"] = tasks
         context["status"] = STATUS_CHOICES
         context["priority"] = PRIORITY_CHOICES
         users = []
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         elif self.request.user.google.all():
             users = []
         else:
             users = User.objects.filter(
-                role="ADMIN", company=self.request.company
+                role="ADMIN",
             ).order_by("email")
         context["users"] = UserSerializer(users, many=True).data
         if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(
-                Teams.objects.filter(company=self.request.company), many=True
-            ).data
+            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
@@ -115,44 +122,50 @@ class TaskListView(APIView):
         if serializer.is_valid():
             task_obj = serializer.save(
                 created_by=request.user,
-                company=request.company,
                 due_date=params.get("due_date"),
             )
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
+                        id=contact,
                     )
                     if obj_contact:
                         task_obj.contacts.add(contact)
                     else:
                         task_obj.delete()
                         data["contacts"] = "Please enter valid contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if self.request.user.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             task_obj.teams.add(team)
                         else:
                             task_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
             return Response(
                 {"error": False, "message": "Task Created Successfully"},
@@ -185,7 +198,8 @@ class TaskDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
         comments = Comment.objects.filter(task=self.task_obj).order_by("-id")
@@ -196,7 +210,7 @@ class TaskDetailView(APIView):
         if self.request.user.is_superuser or self.request.user.role == "ADMIN":
             users_mention = list(
                 User.objects.filter(
-                    is_active=True, company=self.request.company
+                    is_active=True,
                 ).values("username")
             )
         elif self.request.user != self.task_obj.created_by:
@@ -205,11 +219,11 @@ class TaskDetailView(APIView):
             users_mention = list(self.task_obj.assigned_to.all().values("username"))
         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
             users = User.objects.filter(
-                is_active=True, company=self.request.company
+                is_active=True,
             ).order_by("email")
         else:
             users = User.objects.filter(
-                role="ADMIN", company=self.request.company
+                role="ADMIN",
             ).order_by("email")
 
         if self.request.user == self.task_obj.created_by:
@@ -220,7 +234,8 @@ class TaskDetailView(APIView):
                     {
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
-                    }
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         team_ids = [user.id for user in self.task_obj.get_team_users]
         all_user_ids = users.values_list("id", flat=True)
@@ -239,20 +254,14 @@ class TaskDetailView(APIView):
         context["users_excluding_team"] = UserSerializer(
             users_excluding_team, many=True
         ).data
-        context["teams"] = TeamsSerializer(
-            Teams.objects.filter(company=self.request.company), many=True
-        ).data
+        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
     @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_delete_params
+        tags=["Tasks"],
     )
     def get(self, request, pk, **kwargs):
         self.task_obj = self.get_object(pk)
-        if self.task_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         context = self.get_context_data(**kwargs)
         return Response(context)
 
@@ -267,11 +276,6 @@ class TaskDetailView(APIView):
         )
         context = {}
         self.task_obj = Task.objects.get(pk=pk)
-        if self.task_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company does not match with header...."}
-            )
-
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.user == self.task_obj.created_by)
@@ -282,7 +286,7 @@ class TaskDetailView(APIView):
                         "error": True,
                         "errors": "You don't have Permission to perform this action",
                     },
-                    status=status.HTTP_401_UNAUTHORIZED,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         comment_serializer = CommentSerializer(data=params)
         if comment_serializer.is_valid():
@@ -324,10 +328,6 @@ class TaskDetailView(APIView):
         )
         data = {}
         self.task_obj = self.get_object(pk)
-        if self.task_obj.company != request.company:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."}
-            )
         serializer = TaskCreateSerializer(
             data=params,
             instance=self.task_obj,
@@ -342,28 +342,30 @@ class TaskDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, company=request.company
-                    )
+                    obj_contact = Contact.objects.filter(id=contact)
                     if obj_contact:
                         task_obj.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
-                        return Response({"error": True, "errors": data})
+                        return Response(
+                            {"error": True, "errors": data},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
             if self.request.user.role == "ADMIN":
                 task_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, company=request.company
-                        )
+                        teams_ids = Teams.objects.filter(id=team)
                         if teams_ids:
                             task_obj.teams.add(team)
                         else:
                             task_obj.delete()
                             data["team"] = "Please enter valid Team"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 else:
                     task_obj.teams.clear()
 
@@ -371,13 +373,16 @@ class TaskDetailView(APIView):
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id, company=request.company)
+                        user = User.objects.filter(id=user_id)
                         if user:
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()
                             data["assigned_to"] = "Please enter valid User"
-                            return Response({"error": True, "errors": data})
+                            return Response(
+                                {"error": True, "errors": data},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
                 else:
                     task_obj.assigned_to.clear()
             return Response(
@@ -390,7 +395,7 @@ class TaskDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_delete_params
+        tags=["Tasks"],
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -398,7 +403,7 @@ class TaskDetailView(APIView):
             request.user.role == "ADMIN"
             or request.user.is_superuser
             or request.user == self.object.created_by
-        ) and self.object.company == request.company:
+        ):
             self.object.delete()
             return Response(
                 {"error": False, "message": "Task deleted Successfully"},
@@ -446,11 +451,12 @@ class TaskCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_delete_params
+        tags=["Tasks"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -469,7 +475,8 @@ class TaskCommentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -479,7 +486,7 @@ class TaskAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_delete_params
+        tags=["Tasks"],
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
@@ -498,5 +505,6 @@ class TaskAttachmentView(APIView):
                 {
                     "error": True,
                     "errors": "You don't have Permission to perform this action",
-                }
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
