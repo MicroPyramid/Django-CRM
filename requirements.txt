@@ -1,7 +1,6 @@
 amqp==5.0.5
 appdirs==1.4.4
 arrow==0.17.0
-asgiref==3.3.1
 attrs==20.3.0
 billiard==3.6.3.0
 black==20.8b1
