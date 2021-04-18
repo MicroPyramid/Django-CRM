@@ -88,15 +88,13 @@ class Invoice(models.Model):
                     prev_invoice_number=self.invoice_number
                 )
         super(Invoice, self).save(*args, **kwargs)
-        
+
     def invoice_id_generator(self, prev_invoice_number=None):
         if prev_invoice_number:
             prev_invoice_number += 1
             return prev_invoice_number
         date = datetime.datetime.now().strftime("%d%m%Y")
         return int(date + "0001")
-
-
 
     def formatted_total_amount(self):
         return self.currency + " " + str(self.total_amount)
@@ -229,7 +227,7 @@ class InvoiceHistory(models.Model):
 
     class Meta:
         ordering = ("created_on",)
-        
+
     def formatted_total_amount(self):
         return self.currency + " " + str(self.total_amount)
 

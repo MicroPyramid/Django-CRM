@@ -20,10 +20,9 @@ class Teams(models.Model):
 
     class Meta:
         ordering = ("id",)
-        
+
     def __str__(self):
         return self.name
-
 
     @property
     def created_on_arrow(self):
