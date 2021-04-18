@@ -86,14 +86,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
-
-
 class Address(models.Model):
-    address_line = models.CharField(_("Address"), max_length=255, blank=True, default="")
+    address_line = models.CharField(
+        _("Address"), max_length=255, blank=True, default=""
+    )
     street = models.CharField(_("Street"), max_length=55, blank=True, default="")
     city = models.CharField(_("City"), max_length=255, blank=True, default="")
     state = models.CharField(_("State"), max_length=255, blank=True, default="")
-    postcode = models.CharField(_("Post/Zip-code"), max_length=64, blank=True, default="")
+    postcode = models.CharField(
+        _("Post/Zip-code"), max_length=64, blank=True, default=""
+    )
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
@@ -380,7 +382,6 @@ class Document(models.Model):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
-
 
     @property
     def get_team_users(self):

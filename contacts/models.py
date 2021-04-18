@@ -38,7 +38,6 @@ class Contact(models.Model):
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
 
-
     @property
     def get_team_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))

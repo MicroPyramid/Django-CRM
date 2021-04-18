@@ -8,73 +8,101 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0026_auto_20210325_1923'),
+        ("common", "0026_auto_20210325_1923"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='address',
-            name='address_line',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='Address'),
+            model_name="address",
+            name="address_line",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="Address"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='city',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='City'),
+            model_name="address",
+            name="city",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="City"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='postcode',
-            field=models.CharField(blank=True, default='', max_length=64, verbose_name='Post/Zip-code'),
+            model_name="address",
+            name="postcode",
+            field=models.CharField(
+                blank=True, default="", max_length=64, verbose_name="Post/Zip-code"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='state',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='State'),
+            model_name="address",
+            name="state",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="State"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='street',
-            field=models.CharField(blank=True, default='', max_length=55, verbose_name='Street'),
+            model_name="address",
+            name="street",
+            field=models.CharField(
+                blank=True, default="", max_length=55, verbose_name="Street"
+            ),
         ),
         migrations.AlterField(
-            model_name='apisettings',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='settings_created_by', to=settings.AUTH_USER_MODEL),
+            model_name="apisettings",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="settings_created_by",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='apisettings',
-            name='title',
+            model_name="apisettings",
+            name="title",
             field=models.TextField(),
         ),
         migrations.AlterField(
-            model_name='attachments',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='attachment_created_by', to=settings.AUTH_USER_MODEL),
+            model_name="attachments",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="attachment_created_by",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='address',
-            field=models.TextField(blank=True, default=''),
+            model_name="company",
+            name="address",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='name',
-            field=models.CharField(blank=True, default='', max_length=100),
+            model_name="company",
+            name="name",
+            field=models.CharField(blank=True, default="", max_length=100),
         ),
         migrations.AlterField(
-            model_name='document',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='document_uploaded', to=settings.AUTH_USER_MODEL),
+            model_name="document",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="document_uploaded",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='document',
-            name='title',
-            field=models.TextField(blank=True, default=''),
+            model_name="document",
+            name="title",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='google_url',
-            field=models.TextField(default=''),
+            model_name="google",
+            name="google_url",
+            field=models.TextField(default=""),
         ),
     ]

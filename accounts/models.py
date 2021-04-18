@@ -70,13 +70,11 @@ class Account(models.Model):
     assigned_to = models.ManyToManyField(User, related_name="account_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="account_teams")
 
-
     class Meta:
         ordering = ["-created_on"]
-        
+
     def __str__(self):
         return self.name
-
 
     def get_complete_address(self):
         """Concatenates complete address."""
