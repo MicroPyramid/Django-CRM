@@ -18,11 +18,12 @@ class Teams(models.Model):
         on_delete=models.SET_NULL,
     )
 
+    class Meta:
+        ordering = ("id",)
+        
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ("id",)
 
     @property
     def created_on_arrow(self):

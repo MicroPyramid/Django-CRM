@@ -146,7 +146,7 @@ class EventListView(APIView, LimitOffsetPagination):
                     contacts = json.loads(params.get("contacts"))
                     for contact in contacts:
                         obj_contact = Contact.objects.filter(id=contact)
-                        if obj_contact:
+                        if obj_contact.exists():
                             event_obj.contacts.add(contact)
                         else:
                             event_obj.delete()
@@ -160,7 +160,7 @@ class EventListView(APIView, LimitOffsetPagination):
                         teams = json.loads(params.get("teams"))
                         for team in teams:
                             teams_ids = Teams.objects.filter(id=team)
-                            if teams_ids:
+                            if teams_ids.exists():
                                 event_obj.teams.add(team)
                             else:
                                 event_obj.delete()
@@ -173,7 +173,7 @@ class EventListView(APIView, LimitOffsetPagination):
                         assinged_to_users_ids = json.loads(params.get("assigned_to"))
                         for user_id in assinged_to_users_ids:
                             user = User.objects.filter(id=user_id)
-                            if user:
+                            if user.exists():
                                 event_obj.assigned_to.add(user_id)
                             else:
                                 event_obj.delete()
@@ -229,7 +229,7 @@ class EventListView(APIView, LimitOffsetPagination):
                         contacts = json.loads(params.get("contacts"))
                         for contact in contacts:
                             obj_contact = Contact.objects.filter(id=contact)
-                            if obj_contact:
+                            if obj_contact.exists():
                                 event.contacts.add(contact)
                             else:
                                 event.delete()
@@ -243,7 +243,7 @@ class EventListView(APIView, LimitOffsetPagination):
                             teams = json.loads(params.get("teams"))
                             for team in teams:
                                 teams_ids = Teams.objects.filter(id=team)
-                                if teams_ids:
+                                if teams_ids.exists():
                                     event.teams.add(team)
                                 else:
                                     event.delete()
@@ -258,7 +258,7 @@ class EventListView(APIView, LimitOffsetPagination):
                             )
                             for user_id in assinged_to_users_ids:
                                 user = User.objects.filter(id=user_id)
-                                if user:
+                                if user.exists():
                                     event.assigned_to.add(user_id)
                                 else:
                                     event.delete()
@@ -462,7 +462,7 @@ class EventDetailView(APIView):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         event_obj.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
@@ -476,7 +476,7 @@ class EventDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             event_obj.teams.add(team)
                         else:
                             event_obj.delete()
@@ -493,7 +493,7 @@ class EventDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             event_obj.assigned_to.add(user_id)
                         else:
                             event_obj.delete()

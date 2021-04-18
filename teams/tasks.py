@@ -16,7 +16,7 @@ app = Celery("redis://")
 def remove_users(removed_users_list, team_id):
     removed_users_list = [i for i in removed_users_list if i.isdigit()]
     users_list = User.objects.filter(id__in=removed_users_list)
-    if users_list:
+    if users_list.exists():
         team = Teams.objects.filter(id=team_id).first()
         if team:
             accounts = team.account_teams.all()

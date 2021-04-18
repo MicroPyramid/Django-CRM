@@ -24,7 +24,7 @@ from tasks.serializer import TaskSerializer
 from django.contrib.sites.shortcuts import get_current_site
 from contacts.tasks import send_email_to_assigned_user
 import json
-from crm import settings
+from django.conf import settings
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
@@ -138,7 +138,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 teams = json.loads(params.get("teams"))
                 for team in teams:
                     teams_ids = Teams.objects.filter(id=team)
-                    if teams_ids:
+                    if teams_ids.exists():
                         contact_obj.teams.add(team)
                     else:
                         contact_obj.delete()
@@ -151,7 +151,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 assinged_to_users_ids = json.loads(params.get("assigned_to"))
                 for user_id in assinged_to_users_ids:
                     user = User.objects.filter(id=user_id)
-                    if user:
+                    if user.exists():
                         contact_obj.assigned_to.add(user_id)
                     else:
                         contact_obj.delete()
@@ -241,7 +241,7 @@ class ContactDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             contact_obj.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
@@ -255,7 +255,7 @@ class ContactDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             contact_obj.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid user"

@@ -34,7 +34,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 import json
-from crm import settings
+from django.conf import settings
 
 
 class LeadListView(APIView, LimitOffsetPagination):
@@ -183,7 +183,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                 #     lead_obj.tags.add(tag)
                 for t in tags:
                     tag = Tags.objects.filter(slug=t.lower())
-                    if tag:
+                    if tag.exists():
                         tag = tag[0]
                     else:
                         tag = Tags.objects.create(name=t)
@@ -210,7 +210,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             lead_obj.teams.add(team)
                         else:
                             lead_obj.delete()
@@ -223,7 +223,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             lead_obj.assigned_to.add(user_id)
                         else:
                             lead_obj.delete()
@@ -248,11 +248,11 @@ class LeadListView(APIView, LimitOffsetPagination):
                 account_object.billing_postcode = lead_obj.postcode
                 account_object.billing_country = lead_obj.country
                 comments = Comment.objects.filter(lead=self.lead_obj)
-                if comments:
+                if comments.exists():
                     for comment in comments:
                         comment.account_id = account_object.id
                 attachments = Attachments.objects.filter(lead=self.lead_obj)
-                if attachments:
+                if attachments.exists():
                     for attachment in attachments:
                         attachment.account_id = account_object.id
                 for tag in lead_obj.tags.all():
@@ -470,7 +470,7 @@ class LeadDetailView(APIView):
                 #     lead_obj.tags.add(tag)
                 for t in tags:
                     tag = Tags.objects.filter(slug=t.lower())
-                    if tag:
+                    if tag.exists():
                         tag = tag[0]
                     else:
                         tag = Tags.objects.create(name=t)
@@ -500,7 +500,7 @@ class LeadDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             lead_obj.teams.add(team)
                         else:
                             lead_obj.delete()
@@ -517,7 +517,7 @@ class LeadDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             lead_obj.assigned_to.add(user_id)
                         else:
                             lead_obj.delete()
@@ -546,11 +546,11 @@ class LeadDetailView(APIView):
                 account_object.billing_postcode = lead_obj.postcode
                 account_object.billing_country = lead_obj.country
                 comments = Comment.objects.filter(lead=self.lead_obj)
-                if comments:
+                if comments.exists():
                     for comment in comments:
                         comment.account_id = account_object.id
                 attachments = Attachments.objects.filter(lead=self.lead_obj)
-                if attachments:
+                if attachments.exists():
                     for attachment in attachments:
                         attachment.account_id = account_object.id
                 for tag in lead_obj.tags.all():

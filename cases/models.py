@@ -108,7 +108,7 @@ class Case(models.Model):
         ).exclude(status="Planned")
 
     def get_assigned_user(self):
-        return User.objects.get(id=self.assigned_to.id)
+        return User.objects.get(id=self.assigned_to_id)
 
     @property
     def created_on_arrow(self):

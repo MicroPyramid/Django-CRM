@@ -36,7 +36,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
-from crm import settings
+from django.conf import settings
 
 
 class CaseListView(APIView, LimitOffsetPagination):
@@ -139,7 +139,7 @@ class CaseListView(APIView, LimitOffsetPagination):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         cases_obj.contacts.add(contact)
                     else:
                         cases_obj.delete()
@@ -154,7 +154,7 @@ class CaseListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         obj_team = Teams.objects.filter(id=team)
-                        if obj_team:
+                        if obj_team.exists():
                             cases_obj.teams.add(team)
                         else:
                             cases_obj.delete()
@@ -168,7 +168,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             cases_obj.assigned_to.add(user_id)
                         else:
                             cases_obj.delete()
@@ -254,7 +254,7 @@ class CaseDetailView(APIView):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         cases_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
@@ -269,7 +269,7 @@ class CaseDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         obj_team = Teams.objects.filter(id=team)
-                        if obj_team:
+                        if obj_team.exists():
                             cases_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
@@ -283,7 +283,7 @@ class CaseDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             cases_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"

@@ -26,5 +26,5 @@ class Migration(migrations.Migration):
                 max_length=64,
             ),
         ),
-        migrations.RunPython(generate_status),
+        migrations.RunPython(generate_status, migrations.RunPython.noop),
     ]

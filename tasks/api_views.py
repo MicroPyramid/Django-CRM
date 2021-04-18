@@ -130,7 +130,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                     obj_contact = Contact.objects.filter(
                         id=contact,
                     )
-                    if obj_contact:
+                    if obj_contact.exists():
                         task_obj.contacts.add(contact)
                     else:
                         task_obj.delete()
@@ -144,7 +144,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             task_obj.teams.add(team)
                         else:
                             task_obj.delete()
@@ -157,7 +157,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()
@@ -343,7 +343,7 @@ class TaskDetailView(APIView):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         task_obj.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
@@ -357,7 +357,7 @@ class TaskDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             task_obj.teams.add(team)
                         else:
                             task_obj.delete()
@@ -374,7 +374,7 @@ class TaskDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()

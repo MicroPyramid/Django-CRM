@@ -31,12 +31,13 @@ class Contact(models.Model):
     def __str__(self):
         return self.first_name
 
+    class Meta:
+        ordering = ["-created_on"]
+
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
 
-    class Meta:
-        ordering = ["-created_on"]
 
     @property
     def get_team_users(self):
