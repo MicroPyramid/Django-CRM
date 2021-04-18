@@ -48,7 +48,7 @@ from django.utils.http import urlsafe_base64_decode
 from common.token_generator import account_activation_token
 from common.models import Profile
 from django.utils import timezone
-from crm import settings
+from django.conf import settings
 
 
 class GetTeamsAndUsersView(APIView):
@@ -598,7 +598,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
                 assinged_to_users_ids = json.loads(params.get("shared_to"))
                 for user_id in assinged_to_users_ids:
                     user = User.objects.filter(id=user_id)
-                    if user:
+                    if user.exists():
                         doc.shared_to.add(user_id)
                     else:
                         doc.delete()
@@ -611,7 +611,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             doc.teams.add(team)
                         else:
                             doc.delete()
@@ -737,7 +737,7 @@ class DocumentDetailView(APIView):
                 assinged_to_users_ids = json.loads(params.get("shared_to"))
                 for user_id in assinged_to_users_ids:
                     user = User.objects.filter(id=user_id)
-                    if user:
+                    if user.exists():
                         doc.shared_to.add(user_id)
                     else:
                         return Response(
@@ -751,7 +751,7 @@ class DocumentDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             doc.teams.add(team)
                         else:
                             return Response(

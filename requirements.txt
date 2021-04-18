@@ -26,7 +26,7 @@ coverage==5.4
 cssselect==1.1.0
 distlib==0.3.1
 distro==1.5.0
-Django==3.1.6
+Django==3.2
 django-appconf==1.0.4
 django-compressor==2.4
 django-cors-headers==3.7.0

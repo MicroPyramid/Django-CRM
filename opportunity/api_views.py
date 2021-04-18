@@ -40,7 +40,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
-from crm import settings
+from django.conf import settings
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
@@ -156,7 +156,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         opportunity_obj.contacts.add(contact)
                     else:
                         opportunity_obj.delete()
@@ -169,7 +169,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
-                    if obj_tag:
+                    if obj_tag.exists():
                         obj_tag = obj_tag[0]
                     else:
                         obj_tag = Tags.objects.create(name=tag)
@@ -185,7 +185,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         obj_team = Teams.objects.filter(id=team)
-                        if obj_team:
+                        if obj_team.exists():
                             opportunity_obj.teams.add(team)
                         else:
                             opportunity_obj.delete()
@@ -199,7 +199,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             opportunity_obj.assigned_to.add(user_id)
                         else:
                             opportunity_obj.delete()
@@ -287,7 +287,7 @@ class OpportunityDetailView(APIView):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         opportunity_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
@@ -300,7 +300,7 @@ class OpportunityDetailView(APIView):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
-                    if obj_tag:
+                    if obj_tag.exists():
                         obj_tag = obj_tag[0]
                     else:
                         obj_tag = Tags.objects.create(name=tag)
@@ -317,7 +317,7 @@ class OpportunityDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         obj_team = Teams.objects.filter(id=team)
-                        if obj_team:
+                        if obj_team.exists():
                             opportunity_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
@@ -331,7 +331,7 @@ class OpportunityDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             opportunity_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"

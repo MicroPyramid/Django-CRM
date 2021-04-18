@@ -39,7 +39,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
-from crm import settings
+from django.conf import settings
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),
@@ -197,7 +197,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                     obj_account = Account.objects.filter(
                         id=account, company=request.company
                     )
-                    if obj_account:
+                    if obj_account.exists():
                         invoice_obj.accounts.add(account)
                     else:
                         invoice_obj.delete()
@@ -211,7 +211,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                         obj_team = Teams.objects.filter(
                             id=team, company=request.company
                         )
-                        if obj_team:
+                        if obj_team.exists():
                             invoice_obj.teams.add(team)
                         else:
                             invoice_obj.delete()
@@ -222,7 +222,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:
+                        if user.exists():
                             invoice_obj.assigned_to.add(user_id)
                         else:
                             invoice_obj.delete()
@@ -338,7 +338,7 @@ class InvoiceDetailView(APIView):
                     obj_account = Account.objects.filter(
                         id=account, company=request.company
                     )
-                    if obj_account:
+                    if obj_account.exists():
                         invoice_obj.accounts.add(account)
                     else:
                         data["accounts"] = "Please enter valid account"
@@ -352,7 +352,7 @@ class InvoiceDetailView(APIView):
                         obj_team = Teams.objects.filter(
                             id=team, company=request.company
                         )
-                        if obj_team:
+                        if obj_team.exists():
                             invoice_obj.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
@@ -363,7 +363,7 @@ class InvoiceDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
-                        if user:
+                        if user.exists():
                             invoice_obj.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"

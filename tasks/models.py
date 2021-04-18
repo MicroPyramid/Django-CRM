@@ -43,6 +43,9 @@ class Task(models.Model):
     )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
 
+    class Meta:
+        ordering = ["-due_date"]
+
     def __str__(self):
         return self.title
 
@@ -61,6 +64,3 @@ class Task(models.Model):
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
         return User.objects.filter(id__in=user_ids)
-
-    class Meta:
-        ordering = ["-due_date"]

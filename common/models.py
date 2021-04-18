@@ -28,8 +28,8 @@ def img_url(self, filename):
 
 
 class Company(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    address = models.CharField(max_length=2000, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, default="")
+    address = models.TextField(blank=True, default="")
     sub_domain = models.CharField(max_length=30)
     user_limit = models.IntegerField(default=5)
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
@@ -79,21 +79,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     def created_on_arrow(self):
         return arrow.get(self.date_joined).humanize()
 
-    def __str__(self):
-        return self.email
-
     class Meta:
         ordering = ["-is_active"]
 
+    def __str__(self):
+        return self.email
+
+
+
 
 class Address(models.Model):
-    address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
-    street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
-    city = models.CharField(_("City"), max_length=255, blank=True, null=True)
-    state = models.CharField(_("State"), max_length=255, blank=True, null=True)
-    postcode = models.CharField(
-        _("Post/Zip-code"), max_length=64, blank=True, null=True
-    )
+    address_line = models.CharField(_("Address"), max_length=255, blank=True, default="")
+    street = models.CharField(_("Street"), max_length=55, blank=True, default="")
+    city = models.CharField(_("City"), max_length=255, blank=True, default="")
+    state = models.CharField(_("State"), max_length=255, blank=True, default="")
+    postcode = models.CharField(_("Post/Zip-code"), max_length=64, blank=True, default="")
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
@@ -226,7 +226,11 @@ class Comment_Files(models.Model):
 
 class Attachments(models.Model):
     created_by = models.ForeignKey(
-        User, related_name="attachment_created_by", on_delete=models.SET_NULL, null=True
+        User,
+        related_name="attachment_created_by",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
@@ -332,10 +336,14 @@ class Document(models.Model):
 
     DOCUMENT_STATUS_CHOICE = (("active", "active"), ("inactive", "inactive"))
 
-    title = models.CharField(max_length=1000, blank=True, null=True)
+    title = models.TextField(blank=True, default="")
     document_file = models.FileField(upload_to=document_path, max_length=5000)
     created_by = models.ForeignKey(
-        User, related_name="document_uploaded", on_delete=models.SET_NULL, null=True
+        User,
+        related_name="document_uploaded",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     created_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
@@ -346,6 +354,9 @@ class Document(models.Model):
 
     class Meta:
         ordering = ("-created_on",)
+
+    def __str__(self):
+        return self.title
 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
@@ -370,8 +381,6 @@ class Document(models.Model):
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
 
-    def __str__(self):
-        return self.title
 
     @property
     def get_team_users(self):
@@ -402,13 +411,17 @@ def generate_key():
 
 
 class APISettings(models.Model):
-    title = models.CharField(max_length=1000)
+    title = models.TextField()
     apikey = models.CharField(max_length=16, blank=True)
     website = models.URLField(max_length=255, default="")
     lead_assigned_to = models.ManyToManyField(User, related_name="lead_assignee_users")
     tags = models.ManyToManyField("accounts.Tags", blank=True)
     created_by = models.ForeignKey(
-        User, related_name="settings_created_by", on_delete=models.SET_NULL, null=True
+        User,
+        related_name="settings_created_by",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     created_on = models.DateTimeField(auto_now_add=True)
 
@@ -427,7 +440,7 @@ class APISettings(models.Model):
 class Google(models.Model):
     user = models.ForeignKey(User, related_name="google", on_delete=models.CASCADE)
     google_id = models.CharField(max_length=200, default="")
-    google_url = models.CharField(max_length=1000, default="")
+    google_url = models.TextField(default="")
     verified_email = models.CharField(max_length=200, default="")
     family_name = models.CharField(max_length=200, default="")
     name = models.CharField(max_length=200, default="")

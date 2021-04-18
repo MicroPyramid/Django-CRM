@@ -117,7 +117,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
                     user = User.objects.filter(id=user_id)
-                    if user:
+                    if user.exists():
                         team_obj.users.add(user_id)
                     else:
                         team_obj.delete()
@@ -197,7 +197,7 @@ class TeamsDetailView(APIView):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
                     user = User.objects.filter(id=user_id)
-                    if user:
+                    if user.exists():
                         team_obj.users.add(user_id)
                     else:
                         data["users"] = "Please enter valid user"

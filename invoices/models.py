@@ -80,13 +80,6 @@ class Invoice(models.Model):
         """Unicode representation of Invoice."""
         return self.invoice_number
 
-    def invoice_id_generator(self, prev_invoice_number=None):
-        if prev_invoice_number:
-            prev_invoice_number += 1
-            return prev_invoice_number
-        date = datetime.datetime.now().strftime("%d%m%Y")
-        return int(date + "0001")
-
     def save(self, *args, **kwargs):
         if not self.invoice_number:
             self.invoice_number = self.invoice_id_generator()
@@ -95,6 +88,15 @@ class Invoice(models.Model):
                     prev_invoice_number=self.invoice_number
                 )
         super(Invoice, self).save(*args, **kwargs)
+        
+    def invoice_id_generator(self, prev_invoice_number=None):
+        if prev_invoice_number:
+            prev_invoice_number += 1
+            return prev_invoice_number
+        date = datetime.datetime.now().strftime("%d%m%Y")
+        return int(date + "0001")
+
+
 
     def formatted_total_amount(self):
         return self.currency + " " + str(self.total_amount)
@@ -225,6 +227,9 @@ class InvoiceHistory(models.Model):
         """Unicode representation of Invoice."""
         return self.invoice_number
 
+    class Meta:
+        ordering = ("created_on",)
+        
     def formatted_total_amount(self):
         return self.currency + " " + str(self.total_amount)
 
@@ -237,6 +242,3 @@ class InvoiceHistory(models.Model):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_on).humanize()
-
-    class Meta:
-        ordering = ("created_on",)

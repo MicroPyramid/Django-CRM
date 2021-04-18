@@ -48,7 +48,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
-from crm import settings
+from django.conf import settings
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
@@ -167,7 +167,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         account_object.contacts.add(contact)
                     else:
                         account_object.delete()
@@ -180,7 +180,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
                     tag_obj = Tags.objects.filter(slug=tag.lower())
-                    if tag_obj:
+                    if tag_obj.exists():
                         tag_obj = tag_obj[0]
                     else:
                         tag_obj = Tags.objects.create(name=tag)
@@ -190,7 +190,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             account_object.teams.add(team)
                         else:
                             account_object.delete()
@@ -204,7 +204,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             account_object.assigned_to.add(user_id)
                         else:
                             account_object.delete()
@@ -283,7 +283,7 @@ class AccountDetailView(APIView):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         account_object.contacts.add(contact)
                     else:
                         data["contacts"] = "Please enter valid Contact"
@@ -296,7 +296,7 @@ class AccountDetailView(APIView):
                 tags = json.loads(params.get("tags"))
                 for tag in tags:
                     tag_obj = Tags.objects.filter(slug=tag.lower())
-                    if tag_obj:
+                    if tag_obj.exists():
                         tag_obj = tag_obj[0]
                     else:
                         tag_obj = Tags.objects.create(name=tag)
@@ -308,7 +308,7 @@ class AccountDetailView(APIView):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
                         teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids:
+                        if teams_ids.exists():
                             account_object.teams.add(team)
                         else:
                             data["team"] = "Please enter valid Team"
@@ -322,7 +322,7 @@ class AccountDetailView(APIView):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id)
-                        if user:
+                        if user.exists():
                             account_object.assigned_to.add(user_id)
                         else:
                             data["assigned_to"] = "Please enter valid User"
@@ -637,7 +637,7 @@ class AccountCreateMailView(APIView):
                 contacts = json.loads(params.get("recipients"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact:
+                    if obj_contact.exists():
                         email_obj.recipients.add(contact)
                     else:
                         email_obj.delete()
