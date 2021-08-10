@@ -1,6 +1,6 @@
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
@@ -49,6 +49,10 @@ from common.token_generator import account_activation_token
 from common.models import Profile
 from django.utils import timezone
 from django.conf import settings
+
+
+def index(request):
+    return redirect("/app/")
 
 
 class GetTeamsAndUsersView(APIView):

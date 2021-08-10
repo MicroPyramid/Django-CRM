@@ -44,18 +44,6 @@ sentry_sdk.init(
     send_default_pii=True,
 )
 
-
-SENTRY_ENABLED = os.getenv("SENTRY_ENABLED", False)
-
-if SENTRY_ENABLED and not DEBUG:
-    if os.getenv("SENTRY_DSN") is not None:
-        RAVEN_CONFIG = {
-            "dsn": os.getenv("SENTRY_DSN", ""),
-        }
-        INSTALLED_APPS = INSTALLED_APPS + [
-            "raven.contrib.django.raven_compat",
-        ]
-        MIDDLEWARE = [
-            "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
-            "raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware",
-        ] + MIDDLEWARE
+RAVEN_CONFIG = {
+    "dsn": os.getenv("SENTRY_DSN", ""),
+}

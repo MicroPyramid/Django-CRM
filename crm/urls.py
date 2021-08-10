@@ -6,6 +6,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf.urls import url
 from rest_framework import permissions
+from common.views import index
 
 
 openapi_info = openapi.Info(
@@ -33,12 +34,11 @@ urlpatterns = [
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
+    path("", index),
     url(
         r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"
     ),
-    # path("", include("common.urls", namespace="common")),
     path("api/", include("common.app_urls", namespace="common_urls")),
-    path("", include("django.contrib.auth.urls")),
     path("logout/", views.LogoutView, {"next_page": "/login/"}, name="logout"),
 ]
 
