@@ -252,3 +252,8 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT_ENABLED") != "False"
+
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE_ENABLED") != "False"
