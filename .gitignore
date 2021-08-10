@@ -23,4 +23,3 @@ local_settings.py
 media
 .sass-cache
 server.log
-venv

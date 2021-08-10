@@ -1,15 +1,32 @@
-deploy_live:
-  stage: deploy
-  environment:
-    name: live
+stages:
+  - build
+  - deploy
+
+buildstage:
+  stage: build
   script:
     - df -h
-    - sudo /bin/rm -rf /home/bottlecrm/bottlecrm/; cp -r . /home/bottlecrm/bottlecrm/
-    - source /home/bottlecrm/env/bin/activate
-    - pip install -r /home/bottlecrm/bottlecrm/requirements.txt
-    - python /home/bottlecrm/bottlecrm/manage.py migrate --noinput
-    - sudo /usr/bin/supervisorctl restart all
+    - cd /home/gitlab-runner/bottlecrm/deploy
+    - git pull https://bottlecrm-runner:unbjh8yr9j9JYFSHGN83dh@gitx.micropyramid.com/bottlecrm/deploy master
+    - . ../env/bin/activate
+    - . .env
+    - cd docker
+    - ./buildimage.sh bottlecrm-runner unbjh8yr9j9JYFSHGN83dh
   only:
-    - master
+    - stage
   tags:
-    - bottlecrm-com
+    - bottlecrm
+
+deploystage:
+  stage: deploy
+  script:
+    - df -h
+    - cd /home/gitlab-runner/bottlecrm/deploy
+    - git pull https://bottlecrm-runner:unbjh8yr9j9JYFSHGN83dh@gitx.micropyramid.com/bottlecrm/deploy master
+    - . ../env/bin/activate
+    - . .env
+    - sudo /usr/bin/bash deploystage.sh
+  only:
+    - stage
+  tags:
+    - bottlecrm

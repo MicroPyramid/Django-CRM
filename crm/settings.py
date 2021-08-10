@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -126,7 +127,8 @@ USE_TZ = True
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 AUTH_USER_MODEL = "common.User"
-
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_URL = "/static/"
 ENV_TYPE = os.getenv("ENV_TYPE", "dev")
 if ENV_TYPE == "dev":
     DOMAIN_NAME = "localhost:8000"
@@ -135,10 +137,17 @@ if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
     STATIC_URL = "/static/"
-elif ENV_TYPE == "live":
 
+elif ENV_TYPE == "live":
     from .server_settings import *
 
+    INSTALLED_APPS = INSTALLED_APPS + [
+        "raven.contrib.django.raven_compat",
+    ]
+    MIDDLEWARE = [
+        "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
+        "raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware",
+    ] + MIDDLEWARE
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
@@ -241,3 +250,10 @@ SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT_ENABLED") != "False"
+
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE_ENABLED") != "False"
