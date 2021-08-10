@@ -1,5 +1,5 @@
-*.pyc
 *~
+*.pyc
 *.swo
 *.swp
 db.sqlite3
