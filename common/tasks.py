@@ -1,46 +1,40 @@
 import datetime
-from django.conf import settings
 from celery import Celery
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+
+from django.conf import settings
 from django.core.mail import EmailMessage
-from django.shortcuts import reverse
 from django.template.loader import render_to_string
 from django.utils import timezone
-import six
-from django.utils.encoding import force_bytes, force_text
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
 
 from common.models import Comment, Profile, User
 from common.token_generator import account_activation_token
-from django.contrib.auth.tokens import default_token_generator
 
 app = Celery("redis://")
 
 
 @app.task
 def send_email_to_new_user(
-    user_email, created_by, domain="demo.django-crm.io", protocol="http"
+    profile_id, org_id, domain="demo.django-crm.io", protocol="http"
 ):
     """ Send Mail To Users When their account is created """
+    
+    profile_obj = Profile.objects.filter(id=profile_id).last()
+    user_obj = profile_obj.user
 
-    user_obj = User.objects.filter(email=user_email).first()
-    user_obj.is_active = False
-    user_obj.save()
-    if user_obj:
+    if profile_obj:
         context = {}
-        context["user_email"] = user_email
-        context["created_by"] = created_by
+        user_email = user_obj.email
         context["url"] = protocol + "://" + domain
         context["uid"] = (urlsafe_base64_encode(force_bytes(user_obj.pk)),)
         context["token"] = account_activation_token.make_token(user_obj)
         time_delta_two_hours = datetime.datetime.strftime(
             timezone.now() + datetime.timedelta(hours=2), "%Y-%m-%d-%H-%M-%S"
         )
-        context["token"] = context["token"]
         activation_key = context["token"] + time_delta_two_hours
-        profile_obj = Profile.objects.create(
-            user=user_obj, activation_key=activation_key
-        )
+        profile_obj.activation_key = activation_key
         profile_obj.save()
         context["complete_url"] = context[
             "url"
@@ -54,7 +48,7 @@ def send_email_to_new_user(
         subject = "Welcome to Django CRM"
         html_content = render_to_string("user_status_in.html", context=context)
         if recipients:
-            msg = EmailMessage(subject, html_content, to=recipients)
+            msg = EmailMessage(subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients)
             msg.content_subtype = "html"
             msg.send()
 
@@ -120,11 +114,12 @@ def send_email_user_mentions(
                     recipient,
                 ]
                 context["mentioned_user"] = recipient
-                html_content = render_to_string("comment_email.html", context=context)
+                html_content = render_to_string(
+                    "comment_email.html", context=context)
                 msg = EmailMessage(
                     subject,
                     html_content,
-                    from_email=comment.commented_by.email,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     to=recipients_list,
                 )
                 msg.content_subtype = "html"
@@ -163,7 +158,7 @@ def send_email_user_status(
         recipients = []
         recipients.append(user.email)
         if recipients:
-            msg = EmailMessage(subject, html_content, to=recipients)
+            msg = EmailMessage(subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients)
             msg.content_subtype = "html"
             msg.send()
 
@@ -181,9 +176,10 @@ def send_email_user_delete(
         recipients = []
         recipients.append(user_email)
         subject = "CRM : Your account is Deleted. "
-        html_content = render_to_string("user_delete_email.html", context=context)
+        html_content = render_to_string(
+            "user_delete_email.html", context=context)
         if recipients:
-            msg = EmailMessage(subject, html_content, to=recipients)
+            msg = EmailMessage(subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients)
             msg.content_subtype = "html"
             msg.send()
 
@@ -224,7 +220,7 @@ def resend_activation_link_to_user(
         subject = "Welcome to Django CRM"
         html_content = render_to_string("user_status_in.html", context=context)
         if recipients:
-            msg = EmailMessage(subject, html_content, to=recipients)
+            msg = EmailMessage(subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients)
             msg.content_subtype = "html"
             msg.send()
 
@@ -246,10 +242,10 @@ def send_email_to_reset_password(
     ] + "/auth/reset-password/{uidb64}/{token}/".format(
         uidb64=context["uid"][0], token=context["token"]
     )
+    subject = "Set a New Password"
     recipients = []
     recipients.append(user_email)
-    subject = "Password Reset"
-    html_content = render_to_string("password_reset_email.html", context=context)
+    html_content = render_to_string("registration/password_reset_email.html", context=context)
     if recipients:
         msg = EmailMessage(
             subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients

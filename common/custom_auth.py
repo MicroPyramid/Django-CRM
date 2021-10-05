@@ -36,7 +36,7 @@ class BaseJSONWebTokenAuthentication(BaseAuthentication):
         """
 
         authorization = request.META.get("HTTP_AUTHORIZATION", None)
-        self.company = request.META.get("HTTP_COMPANY", None)
+        self.org = request.META.get("HTTP_COMPANY", None)
         jwt_value = self.get_jwt_value(request)
         if jwt_value is None:
             return None
@@ -119,3 +119,23 @@ class JSONWebTokenAuthentication(BaseJSONWebTokenAuthentication):
         return '{0} realm="{1}"'.format(
             api_settings.JWT_AUTH_HEADER_PREFIX, self.www_authenticate_realm
         )
+
+
+class TokenAuthMiddleware(object):
+    """adding profile and company to request object
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        self.process_request(request)
+        return self.get_response(request)
+
+    def process_request(self, request):
+        try:
+            token_auth_user = JSONWebTokenAuthentication().authenticate(request)
+        except exceptions.AuthenticationFailed:
+            token_auth_user = None
+        if isinstance(token_auth_user, tuple):
+            request.user = token_auth_user[0]

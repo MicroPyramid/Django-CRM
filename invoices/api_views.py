@@ -39,7 +39,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 import json
-from django.conf import settings
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),
@@ -237,7 +236,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             send_email.delay(
                 recipients,
                 invoice_obj.id,
-                domain=settings.Domain,
+                domain=settings.DOMAIN_NAME,
                 protocol=self.request.scheme,
             )
             return Response({"error": False, "message": "Invoice Created Successfully"})
@@ -376,7 +375,7 @@ class InvoiceDetailView(APIView):
             send_email.delay(
                 recipients,
                 invoice_obj.id,
-                domain=settings.Domain,
+                domain=settings.DOMAIN_NAME,
                 protocol=self.request.scheme,
             )
             return Response(

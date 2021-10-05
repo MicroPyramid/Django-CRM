@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from events.models import Event
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     AttachmentsSerializer,
     CommentSerializer,
+    OrganizationSerializer,
 )
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
@@ -11,12 +12,13 @@ from datetime import date, datetime, timedelta
 
 
 class EventSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer()
-    assigned_to = UserSerializer(read_only=True, many=True)
+    created_by = ProfileSerializer()
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     event_attachment = AttachmentsSerializer(read_only=True, many=True)
     event_comments = CommentSerializer(read_only=True, many=True)
+    org = OrganizationSerializer()
 
     class Meta:
         model = Event
@@ -40,6 +42,7 @@ class EventSerializer(serializers.ModelSerializer):
             "assigned_to",
             "event_attachment",
             "event_comments",
+            "org"
         )
 
 
@@ -48,17 +51,18 @@ class EventCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(EventCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["event_type"].required = True
+        self.org = request_obj.org
 
     def validate_name(self, name):
         if self.instance:
             if (
-                Event.objects.filter(name__iexact=name)
+                Event.objects.filter(name__iexact=name, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Event already exists with this name")
         else:
-            if Event.objects.filter(name__iexact=name).exists():
+            if Event.objects.filter(name__iexact=name, org=self.org).exists():
                 raise serializers.ValidationError("Event already exists with this name")
         return name
 
@@ -121,4 +125,5 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "description",
             "created_by",
             "created_on",
+            "org"
         )

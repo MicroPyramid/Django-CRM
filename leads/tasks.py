@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import User
+from common.models import User
 from leads.models import Lead
 
 
@@ -54,7 +54,7 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
     if not (lead_instance and new_assigned_to_list):
         return False
 
-    users = User.objects.filter(id__in=new_assigned_to_list).distinct()
+    users = Profile.objects.filter(id__in=new_assigned_to_list).distinct()
     subject = "Lead '%s' has been assigned to you" % lead_instance
     from_email = settings.DEFAULT_FROM_EMAIL
     template_name = "lead_assigned.html"
@@ -67,12 +67,12 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
         "lead_detail_url": url,
     }
     mail_kwargs = {"subject": subject, "from_email": from_email}
-    for user in users:
+    for profile_id in users:
         if user.email:
-            context["user"] = user
+            context["user"] = profile.user
             html_content = get_rendered_html(template_name, context)
             mail_kwargs["html_content"] = html_content
-            mail_kwargs["recipients"] = [user.email]
+            mail_kwargs["recipients"] = [profile.user.email]
             send_email.delay(**mail_kwargs)
 
 
@@ -104,12 +104,13 @@ def send_email_to_assigned_user(
 
 
 @app.task
-def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
+def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company_id):
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
     """
     email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
     user = User.objects.get(id=user_id)
+    org = Org.objects.filter(id=company_id).first()
     for row in validated_rows:
         if not Lead.objects.filter(title=row.get("title")).exists():
             if re.match(email_regex, row.get("email")) is not None:
@@ -131,6 +132,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source):
                     lead.account_name = row.get("account_name", "")[:255]
                     lead.created_from_site = False
                     lead.created_by = user
+                    lead.org = org
                     lead.save()
                 except Exception as e:
                     print(e)
