@@ -2,10 +2,10 @@ from django.db.models import Q
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
-from common.models import User, Attachments, Comment
+from common.models import User, Attachments, Comment, Profile
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     CommentSerializer,
     AttachmentsSerializer,
     CommentSerializer,
@@ -48,14 +48,16 @@ class EventListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.all()
-        contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        queryset = self.model.objects.filter(org=self.request.org)
+        contacts = Contact.objects.filter(org=self.request.org)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
+                Q(assigned_to__in=[self.request.profile]) | Q(
+                    created_by=self.request.profile)
             )
             contacts = contacts.filter(
-                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
+                Q(created_by=self.request.profile) | Q(
+                    assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -65,7 +67,8 @@ class EventListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.getlist("assigned_users"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(params.get("assigned_users"))
+                    assigned_to__id__in=json.loads(
+                        params.get("assigned_users"))
                 )
             if params.get("date_of_meeting"):
                 queryset = queryset.filter(
@@ -81,7 +84,8 @@ class EventListView(APIView, LimitOffsetPagination):
         ):
             search = True
         context["search"] = search
-        results_events = self.paginate_queryset(queryset, self.request, view=self)
+        results_events = self.paginate_queryset(
+            queryset, self.request, view=self)
         events = EventSerializer(results_events, many=True).data
 
         context["per_page"] = 10
@@ -100,16 +104,18 @@ class EventListView(APIView, LimitOffsetPagination):
 
         context["events"] = events
         users = []
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
+        profile_list = Profile.objects.filter(
+            is_active=True, org=self.request.org)
+        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+            profiles = profile_list.order_by("user__email")
         else:
-            users = User.objects.filter(role="ADMIN").order_by("email")
+            profiles = profile_list.filter(
+                role="ADMIN").order_by("user__email")
         context["recurring_days"] = WEEKDAYS
-        context["users"] = UserSerializer(users, many=True).data
-        if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
+        context["users"] = ProfileSerializer(profiles, many=True).data
+        if self.request.profile == "ADMIN":
+            context["teams_list"] = TeamsSerializer(
+                Teams.objects.filter(org=self.request.org), many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
@@ -137,15 +143,17 @@ class EventListView(APIView, LimitOffsetPagination):
             recurring_days = json.dumps(params.get("recurring_days"))
             if params.get("event_type") == "Non-Recurring":
                 event_obj = serializer.save(
-                    created_by=request.user,
+                    created_by=request.profile,
                     date_of_meeting=params.get("start_date"),
                     is_active=True,
                     disabled=False,
+                    org=request.org
                 )
                 if params.get("contacts"):
                     contacts = json.loads(params.get("contacts"))
                     for contact in contacts:
-                        obj_contact = Contact.objects.filter(id=contact)
+                        obj_contact = Contact.objects.filter(
+                            id=contact, org=request.org)
                         if obj_contact.exists():
                             event_obj.contacts.add(contact)
                         else:
@@ -155,11 +163,12 @@ class EventListView(APIView, LimitOffsetPagination):
                                 {"error": True, "errors": data},
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
-                if self.request.user.role == "ADMIN":
+                if self.request.profile.role == "ADMIN":
                     if params.get("teams"):
                         teams = json.loads(params.get("teams"))
                         for team in teams:
-                            teams_ids = Teams.objects.filter(id=team)
+                            teams_ids = Teams.objects.filter(
+                                id=team, org=request.org)
                             if teams_ids.exists():
                                 event_obj.teams.add(team)
                             else:
@@ -170,9 +179,11 @@ class EventListView(APIView, LimitOffsetPagination):
                                     status=status.HTTP_400_BAD_REQUEST,
                                 )
                     if params.get("assigned_to"):
-                        assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                        assinged_to_users_ids = json.loads(
+                            params.get("assigned_to"))
                         for user_id in assinged_to_users_ids:
-                            user = User.objects.filter(id=user_id)
+                            user = Profile.objects.filter(
+                                id=user_id, org=request.org)
                             if user.exists():
                                 event_obj.assigned_to.add(user_id)
                             else:
@@ -214,7 +225,7 @@ class EventListView(APIView, LimitOffsetPagination):
                     data = serializer.validated_data
 
                     event = Event.objects.create(
-                        created_by=request.user,
+                        created_by=request.profile,
                         start_date=start_date,
                         end_date=end_date,
                         name=data["name"],
@@ -223,12 +234,14 @@ class EventListView(APIView, LimitOffsetPagination):
                         start_time=data["start_time"],
                         end_time=data["end_time"],
                         date_of_meeting=each,
+                        org=request.org
                     )
 
                     if params.get("contacts"):
                         contacts = json.loads(params.get("contacts"))
                         for contact in contacts:
-                            obj_contact = Contact.objects.filter(id=contact)
+                            obj_contact = Contact.objects.filter(
+                                id=contact, org=request.org)
                             if obj_contact.exists():
                                 event.contacts.add(contact)
                             else:
@@ -238,11 +251,12 @@ class EventListView(APIView, LimitOffsetPagination):
                                     {"error": True, "errors": data},
                                     status=status.HTTP_400_BAD_REQUEST,
                                 )
-                    if self.request.user.role == "ADMIN":
+                    if self.request.profile.role == "ADMIN":
                         if params.get("teams"):
                             teams = json.loads(params.get("teams"))
                             for team in teams:
-                                teams_ids = Teams.objects.filter(id=team)
+                                teams_ids = Teams.objects.filter(
+                                    id=team, org=request.org)
                                 if teams_ids.exists():
                                     event.teams.add(team)
                                 else:
@@ -257,7 +271,8 @@ class EventListView(APIView, LimitOffsetPagination):
                                 params.get("assigned_to")
                             )
                             for user_id in assinged_to_users_ids:
-                                user = User.objects.filter(id=user_id)
+                                user = Profile.objects.filter(
+                                    id=user_id, org=request.org)
                                 if user.exists():
                                     event.assigned_to.add(user_id)
                                 else:
@@ -299,10 +314,10 @@ class EventDetailView(APIView):
         user_assgn_list = [
             assigned_to.id for assigned_to in self.event_obj.assigned_to.all()
         ]
-        if self.request.user == self.event_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.event_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -312,31 +327,33 @@ class EventDetailView(APIView):
                 )
 
         comments = Comment.objects.filter(event=self.event_obj).order_by("-id")
-        attachments = Attachments.objects.filter(event=self.event_obj).order_by("-id")
-        assigned_data = self.event_obj.assigned_to.values("id", "email")
-        if self.request.user.is_superuser or self.request.user.role == "ADMIN":
+        attachments = Attachments.objects.filter(
+            event=self.event_obj).order_by("-id")
+        assigned_data = self.event_obj.assigned_to.values("id", "user__email")
+        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                User.objects.filter(
+                Profile.objects.filter(
                     is_active=True,
-                ).values("username")
+                ).values("user__username")
             )
-        elif self.request.user != self.event_obj.created_by:
-            users_mention = [{"username": self.event_obj.created_by.username}]
+        elif self.request.profile != self.event_obj.created_by:
+            users_mention = [
+                {"username": self.event_obj.created_by.user.username}]
         else:
-            users_mention = list(self.event_obj.assigned_to.all().values("username"))
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
+            users_mention = list(
+                self.event_obj.assigned_to.all().values("user__username"))
+        profile_list = Profile.objects.filter(
+            is_active=True, org=self.request.org)
+        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+            profiles = profile_list.order_by("user__email")
         else:
-            users = User.objects.filter(
-                role="ADMIN",
-            ).order_by("email")
+            profiles = profile_list.filter(
+                role="ADMIN").order_by("user__email")
 
-        if self.request.user == self.event_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.event_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -345,9 +362,10 @@ class EventDetailView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
         team_ids = [user.id for user in self.event_obj.get_team_users]
-        all_user_ids = users.values_list("id", flat=True)
+        all_user_ids = profiles.values_list("id", flat=True)
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
-        users_excluding_team = User.objects.filter(id__in=users_excluding_team_id)
+        users_excluding_team = Profile.objects.filter(
+            id__in=users_excluding_team_id)
 
         selected_recurring_days = Event.objects.filter(
             name=self.event_obj.name
@@ -366,18 +384,23 @@ class EventDetailView(APIView):
             }
         )
 
-        context["users"] = UserSerializer(users, many=True).data
-        context["users_excluding_team"] = UserSerializer(
+        context["users"] = ProfileSerializer(profiles, many=True).data
+        context["users_excluding_team"] = ProfileSerializer(
             users_excluding_team, many=True
         ).data
         context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
     @swagger_auto_schema(
-        tags=["Events"],
+        tags=["Events"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, pk, **kwargs):
         self.event_obj = self.get_object(pk)
+        if self.event_obj.org != request.org:
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         context = self.get_context_data(**kwargs)
         return Response(context)
 
@@ -392,10 +415,16 @@ class EventDetailView(APIView):
         )
         context = {}
         self.event_obj = Event.objects.get(pk=pk)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.event_obj.org != request.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
-                (self.request.user == self.event_obj.created_by)
-                or (self.request.user in self.event_obj.assigned_to.all())
+                (self.request.profile == self.event_obj.created_by)
+                or (self.request.profile in self.event_obj.assigned_to.all())
             ):
                 return Response(
                     {
@@ -409,18 +438,20 @@ class EventDetailView(APIView):
             if params.get("comment"):
                 comment_serializer.save(
                     event_id=self.event_obj.id,
-                    commented_by_id=self.request.user.id,
+                    commented_by_id=self.request.profile.id,
                 )
 
         if self.request.FILES.get("event_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.user
-            attachment.file_name = self.request.FILES.get("event_attachment").name
+            attachment.created_by = self.request.profile
+            attachment.file_name = self.request.FILES.get(
+                "event_attachment").name
             attachment.event = self.event_obj
             attachment.attachment = self.request.FILES.get("event_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(event__id=self.event_obj.id).order_by("-id")
+        comments = Comment.objects.filter(
+            event__id=self.event_obj.id).order_by("-id")
         attachments = Attachments.objects.filter(event__id=self.event_obj.id).order_by(
             "-id"
         )
@@ -444,6 +475,11 @@ class EventDetailView(APIView):
         )
         data = {}
         self.event_obj = self.get_object(pk)
+        if self.event_obj.org != request.org:
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         serializer = EventCreateSerializer(
             data=params,
             instance=self.event_obj,
@@ -461,7 +497,8 @@ class EventDetailView(APIView):
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact)
+                    obj_contact = Contact.objects.filter(
+                        id=contact, org=request.org)
                     if obj_contact.exists():
                         event_obj.contacts.add(contact)
                     else:
@@ -470,12 +507,13 @@ class EventDetailView(APIView):
                             {"error": True, "errors": data},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-            if self.request.user.role == "ADMIN":
+            if self.request.profile.role == "ADMIN":
                 event_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team)
+                        teams_ids = Teams.objects.filter(
+                            id=team, org=request.org)
                         if teams_ids.exists():
                             event_obj.teams.add(team)
                         else:
@@ -490,9 +528,10 @@ class EventDetailView(APIView):
 
                 event_obj.assigned_to.clear()
                 if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                    assinged_to_users_ids = json.loads(
+                        params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id)
+                        user = Profile.objects.filter(id=user_id, org=request.org)
                         if user.exists():
                             event_obj.assigned_to.add(user_id)
                         else:
@@ -508,7 +547,8 @@ class EventDetailView(APIView):
             assigned_to_list = list(
                 event_obj.assigned_to.all().values_list("id", flat=True)
             )
-            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+            recipients = list(set(assigned_to_list) -
+                              set(previous_assigned_to_users))
             send_email.delay(
                 event_obj.id,
                 recipients,
@@ -525,15 +565,15 @@ class EventDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Events"],
+        tags=["Events"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.created_by
-        ):
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.created_by
+        ) and self.object.org == request.org:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Event deleted Successfully"},
@@ -557,12 +597,13 @@ class EventCommentView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.query_params if len(
+            request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == obj.commented_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
         ):
             serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
@@ -586,14 +627,14 @@ class EventCommentView(APIView):
             )
 
     @swagger_auto_schema(
-        tags=["Events"],
+        tags=["Events"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.commented_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.commented_by
         ):
             self.object.delete()
             return Response(
@@ -616,14 +657,14 @@ class EventAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Events"],
+        tags=["Events"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.created_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.created_by
         ):
             self.object.delete()
             return Response(

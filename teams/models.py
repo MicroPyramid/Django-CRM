@@ -1,21 +1,24 @@
 import arrow
 
 from django.db import models
-from common.models import User
+from common.models import User, Org, Profile
 from django.utils.translation import ugettext_lazy as _
 
 
 class Teams(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    users = models.ManyToManyField(User, related_name="user_teams")
+    users = models.ManyToManyField(Profile, related_name="user_teams")
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     created_by = models.ForeignKey(
-        User,
+        Profile,
         related_name="teams_created",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
+    )
+    org = models.ForeignKey(
+        Org, on_delete=models.SET_NULL, null=True, blank=True
     )
 
     class Meta:
