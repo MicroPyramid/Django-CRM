@@ -6,10 +6,10 @@ from accounts.serializer import AccountSerializer
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
-from common.models import User, Attachments, Comment
+from common.models import Profile, Attachments, Comment
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     CommentSerializer,
     AttachmentsSerializer,
     CommentSerializer,
@@ -40,18 +40,18 @@ class TaskListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.all()
-        accounts = Account.objects.all()
-        contacts = Contact.objects.all()
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        queryset = self.model.objects.filter(org=self.request.org)
+        accounts = Account.objects.filter(org=self.request.org)
+        contacts = Contact.objects.filter(org=self.request.org)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
+                Q(assigned_to__in=[self.request.profile]) | Q(created_by=self.request.profile)
             )
             accounts = accounts.filter(
-                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.user) | Q(assigned_to=self.request.user)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         request_post = params
@@ -84,19 +84,20 @@ class TaskListView(APIView, LimitOffsetPagination):
         context["status"] = STATUS_CHOICES
         context["priority"] = PRIORITY_CHOICES
         users = []
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
-        elif self.request.user.google.all():
+        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+            users = Profile.objects.filter(
+                is_active=True, org=self.request.org
+            ).order_by("user__email")
+        elif self.request.profile.google.all():
             users = []
         else:
-            users = User.objects.filter(
-                role="ADMIN",
-            ).order_by("email")
-        context["users"] = UserSerializer(users, many=True).data
-        if self.request.user == "ADMIN":
-            context["teams_list"] = TeamsSerializer(Teams.objects.all(), many=True).data
+            users = Profile.objects.filter(
+                role="ADMIN", org=self.request.org
+            ).order_by("user__email")
+        context["users"] = ProfileSerializer(users, many=True).data
+        if self.request.profile == "ADMIN":
+            context["teams_list"] = TeamsSerializer(Teams.objects.filter(
+                org=self.request.org), many=True).data
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
@@ -121,14 +122,15 @@ class TaskListView(APIView, LimitOffsetPagination):
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             task_obj = serializer.save(
-                created_by=request.user,
+                created_by=request.profile,
                 due_date=params.get("due_date"),
+                org=request.org
             )
             if params.get("contacts"):
                 contacts = json.loads(params.get("contacts"))
                 for contact in contacts:
                     obj_contact = Contact.objects.filter(
-                        id=contact,
+                        id=contact, org=request.org
                     )
                     if obj_contact.exists():
                         task_obj.contacts.add(contact)
@@ -139,11 +141,11 @@ class TaskListView(APIView, LimitOffsetPagination):
                             {"error": True, "errors": data},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-            if self.request.user.role == "ADMIN":
+            if self.request.profile.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team)
+                        teams_ids = Teams.objects.filter(id=team, org=request.org)
                         if teams_ids.exists():
                             task_obj.teams.add(team)
                         else:
@@ -156,8 +158,8 @@ class TaskListView(APIView, LimitOffsetPagination):
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id)
-                        if user.exists():
+                        profile = Profile.objects.filter(id=user_id, org=request.org)
+                        if profile.exists():
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()
@@ -190,10 +192,10 @@ class TaskDetailView(APIView):
         user_assgn_list = [
             assigned_to.id for assigned_to in self.task_obj.assigned_to.all()
         ]
-        if self.request.user == self.task_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.task_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -205,31 +207,31 @@ class TaskDetailView(APIView):
         comments = Comment.objects.filter(task=self.task_obj).order_by("-id")
         attachments = Attachments.objects.filter(task=self.task_obj).order_by("-id")
 
-        assigned_data = self.task_obj.assigned_to.values("id", "email")
+        assigned_data = self.task_obj.assigned_to.values("id", "user__email")
 
-        if self.request.user.is_superuser or self.request.user.role == "ADMIN":
+        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                User.objects.filter(
-                    is_active=True,
-                ).values("username")
+                Profile.objects.filter(
+                    is_active=True, org=self.request.org
+                ).values("user__username")
             )
-        elif self.request.user != self.task_obj.created_by:
-            users_mention = [{"username": self.task_obj.created_by.username}]
+        elif self.request.profile != self.task_obj.created_by:
+            users_mention = [{"username": self.task_obj.created_by.user.username}]
         else:
-            users_mention = list(self.task_obj.assigned_to.all().values("username"))
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
+            users_mention = list(self.task_obj.assigned_to.all().values("user__username"))
+        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+            users = Profile.objects.filter(
+                is_active=True, org=self.request.org
+            ).order_by("user__email")
         else:
-            users = User.objects.filter(
-                role="ADMIN",
-            ).order_by("email")
+            users = Profile.objects.filter(
+                role="ADMIN", org=self.request.org
+            ).order_by("user__email")
 
-        if self.request.user == self.task_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.task_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -240,7 +242,7 @@ class TaskDetailView(APIView):
         team_ids = [user.id for user in self.task_obj.get_team_users]
         all_user_ids = users.values_list("id", flat=True)
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
-        users_excluding_team = User.objects.filter(id__in=users_excluding_team_id)
+        users_excluding_team = Profile.objects.filter(id__in=users_excluding_team_id)
         context.update(
             {
                 "task_obj": TaskSerializer(self.task_obj).data,
@@ -250,15 +252,15 @@ class TaskDetailView(APIView):
                 "assigned_data": assigned_data,
             }
         )
-        context["users"] = UserSerializer(users, many=True).data
-        context["users_excluding_team"] = UserSerializer(
+        context["users"] = ProfileSerializer(users, many=True).data
+        context["users_excluding_team"] = ProfileSerializer(
             users_excluding_team, many=True
         ).data
         context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
     @swagger_auto_schema(
-        tags=["Tasks"],
+        tags=["Tasks"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, pk, **kwargs):
         self.task_obj = self.get_object(pk)
@@ -276,10 +278,10 @@ class TaskDetailView(APIView):
         )
         context = {}
         self.task_obj = Task.objects.get(pk=pk)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
-                (self.request.user == self.task_obj.created_by)
-                or (self.request.user in self.task_obj.assigned_to.all())
+                (self.request.profile == self.task_obj.created_by)
+                or (self.request.profile in self.task_obj.assigned_to.all())
             ):
                 return Response(
                     {
@@ -293,12 +295,12 @@ class TaskDetailView(APIView):
             if params.get("comment"):
                 comment_serializer.save(
                     task_id=self.task_obj.id,
-                    commented_by_id=self.request.user.id,
+                    commented_by_id=self.request.profile.id,
                 )
 
         if self.request.FILES.get("task_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.user
+            attachment.created_by = self.request.profile
             attachment.file_name = self.request.FILES.get("task_attachment").name
             attachment.task = self.task_obj
             attachment.attachment = self.request.FILES.get("task_attachment")
@@ -351,7 +353,7 @@ class TaskDetailView(APIView):
                             {"error": True, "errors": data},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-            if self.request.user.role == "ADMIN":
+            if self.request.profile.role == "ADMIN":
                 task_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
@@ -373,8 +375,8 @@ class TaskDetailView(APIView):
                 if params.get("assigned_to"):
                     assinged_to_users_ids = json.loads(params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id)
-                        if user.exists():
+                        profile = Profile.objects.filter(id=user_id, org=request.org)
+                        if profile.exists():
                             task_obj.assigned_to.add(user_id)
                         else:
                             task_obj.delete()
@@ -395,14 +397,14 @@ class TaskDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Tasks"],
+        tags=["Tasks"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.created_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.created_by
         ):
             self.object.delete()
             return Response(
@@ -430,9 +432,9 @@ class TaskCommentView(APIView):
         params = request.query_params if len(request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == obj.commented_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
         ):
             serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
@@ -456,14 +458,14 @@ class TaskCommentView(APIView):
             )
 
     @swagger_auto_schema(
-        tags=["Tasks"],
+        tags=["Tasks"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.commented_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.commented_by
         ):
             self.object.delete()
             return Response(
@@ -486,14 +488,14 @@ class TaskAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Tasks"],
+        tags=["Tasks"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
-            request.user.role == "ADMIN"
-            or request.user.is_superuser
-            or request.user == self.object.created_by
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == self.object.created_by
         ):
             self.object.delete()
             return Response(

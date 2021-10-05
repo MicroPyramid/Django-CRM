@@ -22,8 +22,8 @@ DEFAULT_S3_PATH = "media"
 
 MEDIA_ROOT = "/%s/" % DEFAULT_S3_PATH
 MEDIA_URL = "//%s/%s/" % (S3_DOMAIN, DEFAULT_S3_PATH)
-STATIC_URL = "https://%s/" % (S3_DOMAIN)
-ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
+# STATIC_URL = "https://%s/" % (S3_DOMAIN)
+# ADMIN_MEDIA_PREFIX = STATIC_URL + "admin/"
 
 CORS_ORIGIN_ALLOW_ALL = True
 

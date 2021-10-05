@@ -3,7 +3,7 @@ from opportunity.models import Opportunity
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
-from common.serializer import UserSerializer, AttachmentsSerializer
+from common.serializer import ProfileSerializer, AttachmentsSerializer
 from accounts.models import Tags
 
 
@@ -15,10 +15,10 @@ class TagsSerializer(serializers.ModelSerializer):
 
 class OpportunitySerializer(serializers.ModelSerializer):
     account = AccountSerializer()
-    closed_by = UserSerializer()
-    created_by = UserSerializer()
+    closed_by = ProfileSerializer()
+    created_by = ProfileSerializer()
     tags = TagsSerializer(read_only=True, many=True)
-    assigned_to = UserSerializer(read_only=True, many=True)
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     opportunity_attachment = AttachmentsSerializer(read_only=True, many=True)
@@ -61,11 +61,12 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
         opportunity_view = kwargs.pop("opportunity", False)
         request_obj = kwargs.pop("request_obj", None)
         super(OpportunityCreateSerializer, self).__init__(*args, **kwargs)
+        self.org = request_obj.org
 
     def validate_name(self, name):
         if self.instance:
             if (
-                Opportunity.objects.filter(name__iexact=name)
+                Opportunity.objects.filter(name__iexact=name, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -74,7 +75,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
                 )
 
         else:
-            if Opportunity.objects.filter(name__iexact=name).exists():
+            if Opportunity.objects.filter(name__iexact=name, org=self.org).exists():
                 raise serializers.ValidationError(
                     "Opportunity already exists with this name"
                 )
@@ -96,6 +97,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "created_on",
             "is_active",
             "created_on_arrow",
+            "org"
             # "get_team_users",
             # "get_team_and_assigned_users",
             # "get_assigned_users_not_in_teams",

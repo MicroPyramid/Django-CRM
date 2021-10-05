@@ -2,7 +2,7 @@ from rest_framework import serializers
 from leads.models import Lead
 from accounts.models import Tags, Account
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
 )
@@ -17,12 +17,16 @@ class TagsSerializer(serializers.ModelSerializer):
 
 
 class LeadSerializer(serializers.ModelSerializer):
-    assigned_to = UserSerializer(read_only=True, many=True)
-    created_by = UserSerializer()
+    assigned_to = ProfileSerializer(read_only=True, many=True)
+    created_by = ProfileSerializer()
+    country = serializers.SerializerMethodField()
     tags = TagsSerializer(read_only=True, many=True)
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
+
+    def get_country(self, obj):
+        return obj.get_country_display()
 
     class Meta:
         model = Lead
@@ -69,6 +73,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         self.fields["first_name"].required = False
         self.fields["last_name"].required = False
         self.fields["title"].required = True
+        self.org = request_obj.org
 
         if self.instance:
             if self.instance.created_from_site:
@@ -81,6 +86,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             if (
                 Account.objects.filter(
                     name__iexact=account_name,
+                    org=self.org
                 )
                 .exclude(id=self.instance.id)
                 .exists()
@@ -91,6 +97,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         else:
             if Account.objects.filter(
                 name__iexact=account_name,
+                org=self.org
             ).exists():
                 raise serializers.ValidationError(
                     "Account already exists with this name"
@@ -102,13 +109,14 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             if (
                 Lead.objects.filter(
                     title__iexact=title,
+                    org=self.org
                 )
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Lead already exists with this title")
         else:
-            if Lead.objects.filter(title__iexact=title).exists():
+            if Lead.objects.filter(title__iexact=title, org=self.org).exists():
                 raise serializers.ValidationError("Lead already exists with this title")
         return title
 
@@ -131,4 +139,5 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "state",
             "postcode",
             "country",
+            "org"
         )

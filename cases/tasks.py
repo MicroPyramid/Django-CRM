@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import User
+from accounts.models import Profile
 from cases.models import Case
 
 app = Celery("redis://")
@@ -18,14 +18,14 @@ def send_email_to_assigned_user(
     """ Send Mail To Users When they are assigned to a case """
     case = Case.objects.get(id=case_id)
     created_by = case.created_by
-    for user in recipients:
+    for profile_id in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=profile_id, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             context = {}
             context["url"] = protocol + "://" + domain
-            context["user"] = user
+            context["user"] = profile.user
             context["case"] = case
             context["created_by"] = created_by
             subject = "Assigned to case."
