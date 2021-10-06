@@ -1,6 +1,6 @@
 import arrow
 from django.db import models
-from common.models import User
+from common.models import Profile, Org
 from accounts.models import Account
 from contacts.models import Contact
 from django.utils.translation import ugettext_lazy as _
@@ -32,16 +32,19 @@ class Task(models.Model):
 
     contacts = models.ManyToManyField(Contact, related_name="contacts_tasks")
 
-    assigned_to = models.ManyToManyField(User, related_name="users_tasks")
+    assigned_to = models.ManyToManyField(Profile, related_name="users_tasks")
 
     created_by = models.ForeignKey(
-        User,
+        Profile,
         related_name="task_created",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
     )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
+    org = models.ForeignKey(
+        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="task_org"
+    )
 
     class Meta:
         ordering = ["-due_date"]
@@ -56,11 +59,11 @@ class Task(models.Model):
     @property
     def get_team_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return User.objects.filter(id__in=team_user_ids)
+        return Profile.objects.filter(id__in=team_user_ids)
 
     @property
     def get_team_and_assigned_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
-        return User.objects.filter(id__in=user_ids)
+        return Profile.objects.filter(id__in=user_ids)

@@ -9,7 +9,7 @@ from django.template import Context, Template
 from django.template.loader import render_to_string
 
 from accounts.models import Account, Email, EmailLog
-from common.models import User
+from common.models import User, Profile
 from common.utils import convert_to_custom_timezone
 
 app = Celery("redis://")
@@ -27,7 +27,7 @@ def send_email(email_obj_id):
             ).exists():
                 html = email_obj.message_body
                 context_data = {
-                    "email": contact_obj.email if contact_obj.email else "",
+                    "email": contact_obj.primary_email if contact_obj.primary_email else "",
                     "name": contact_obj.first_name
                     if contact_obj.first_name
                     else "" + " " + contact_obj.last_name
@@ -42,7 +42,7 @@ def send_email(email_obj_id):
                         html_content,
                         from_email=from_email,
                         to=[
-                            contact_obj.email,
+                            contact_obj.primary_email,
                         ],
                     )
                     msg.content_subtype = "html"
@@ -65,14 +65,14 @@ def send_email_to_assigned_user(
     account = Account.objects.filter(id=from_email).first()
     created_by = account.created_by
 
-    for user in recipients:
+    for profile_id in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=profile_id, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             context = {}
             context["url"] = protocol + "://" + domain
-            context["user"] = user
+            context["user"] = profile.user
             context["account"] = account
             context["created_by"] = created_by
             subject = "Assigned a account for you."

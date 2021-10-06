@@ -3,7 +3,7 @@ from django.core.mail import EmailMessage
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from common.models import User
+from common.models import User, Profile
 from contacts.models import Contact
 
 app = Celery("redis://")
@@ -16,14 +16,14 @@ def send_email_to_assigned_user(
     """ Send Mail To Users When they are assigned to a contact """
     contact = Contact.objects.get(id=contact_id)
     created_by = contact.created_by
-    for user in recipients:
+    for profile_id in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=profile_id, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             context = {}
             context["url"] = protocol + "://" + domain
-            context["user"] = user
+            context["user"] = profile.user
             context["contact"] = contact
             context["created_by"] = created_by
             subject = "Assigned a contact for you."

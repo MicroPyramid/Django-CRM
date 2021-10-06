@@ -6,11 +6,11 @@ from accounts.models import Account, Tags
 from accounts.tasks import send_email_to_assigned_user
 from contacts.models import Contact
 from leads import swagger_params
-from common.models import User, Attachments, Comment, APISettings
+from common.models import User, Attachments, Comment, APISettings, Profile
 from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     CommentSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
@@ -49,7 +49,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             else self.request.data
         )
         queryset = (
-            self.model.objects.all()
+            self.model.objects.filter(org=self.request.org)
             .exclude(status="converted")
             .select_related("created_by")
             .prefetch_related(
@@ -57,9 +57,10 @@ class LeadListView(APIView, LimitOffsetPagination):
                 "assigned_to",
             )
         )
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.user]) | Q(created_by=self.request.user)
+                Q(assigned_to__in=[self.request.profile]) | Q(
+                    created_by=self.request.profile)
             )
 
         request_post = params
@@ -70,12 +71,14 @@ class LeadListView(APIView, LimitOffsetPagination):
                     & Q(last_name__icontains=request_post.get("name"))
                 )
             if request_post.get("title"):
-                queryset = queryset.filter(title__icontains=request_post.get("title"))
+                queryset = queryset.filter(
+                    title__icontains=request_post.get("title"))
             if request_post.get("source"):
                 queryset = queryset.filter(source=request_post.get("source"))
             if request_post.getlist("assigned_to"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(request_post.get("assigned_to"))
+                    assigned_to__id__in=json.loads(
+                        request_post.get("assigned_to"))
                 )
             if request_post.get("status"):
                 queryset = queryset.filter(status=request_post.get("status"))
@@ -84,9 +87,11 @@ class LeadListView(APIView, LimitOffsetPagination):
                     tags__in=json.loads(request_post.get("tags"))
                 )
             if request_post.get("city"):
-                queryset = queryset.filter(city__icontains=request_post.get("city"))
+                queryset = queryset.filter(
+                    city__icontains=request_post.get("city"))
             if request_post.get("email"):
-                queryset = queryset.filter(email__icontains=request_post.get("email"))
+                queryset = queryset.filter(
+                    email__icontains=request_post.get("email"))
         context = {}
         search = False
         if (
@@ -129,17 +134,17 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
         users = []
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
-        elif self.request.user.google.all():
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            users = Profile.objects.filter(
+                is_active=True, org=self.request.org
+            ).order_by("user__email")
+        elif self.request.profile.google.all():
             users = []
         else:
-            users = User.objects.filter(
-                role="ADMIN",
-            ).order_by("email")
-        context["users"] = UserSerializer(users, many=True).data
+            users = Profile.objects.filter(
+                role="ADMIN", org=self.request.org
+            ).order_by("user__email")
+        context["users"] = ProfileSerializer(users, many=True).data
         tag_ids = list(
             set(
                 queryset.values_list(
@@ -175,7 +180,8 @@ class LeadListView(APIView, LimitOffsetPagination):
         data = {}
         serializer = LeadCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
-            lead_obj = serializer.save(created_by=request.user)
+            lead_obj = serializer.save(
+                created_by=request.profile, org=request.org)
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
                 # for t in tags:
@@ -189,27 +195,31 @@ class LeadListView(APIView, LimitOffsetPagination):
                         tag = Tags.objects.create(name=t)
                     lead_obj.tags.add(tag)
 
-            recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+            recipients = list(
+                lead_obj.assigned_to.all().values_list("id", flat=True))
+            current_site = get_current_site(self.request)
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=settings.Domain,
+                domain=current_site.domain,
                 protocol=request.scheme,
             )
 
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
-                attachment.created_by = request.user
-                attachment.file_name = request.FILES.get("lead_attachment").name
+                attachment.created_by = request.profile
+                attachment.file_name = request.FILES.get(
+                    "lead_attachment").name
                 attachment.lead = lead_obj
                 attachment.attachment = request.FILES.get("lead_attachment")
                 attachment.save()
 
-            if self.request.user.role == "ADMIN":
+            if self.request.profile.role == "ADMIN":
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team)
+                        teams_ids = Teams.objects.filter(
+                            id=team, org=request.org)
                         if teams_ids.exists():
                             lead_obj.teams.add(team)
                         else:
@@ -220,9 +230,11 @@ class LeadListView(APIView, LimitOffsetPagination):
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
                 if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                    assinged_to_users_ids = json.loads(
+                        params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id)
+                        user = Profile.objects.filter(
+                            id=user_id, org=request.org)
                         if user.exists():
                             lead_obj.assigned_to.add(user_id)
                         else:
@@ -234,12 +246,13 @@ class LeadListView(APIView, LimitOffsetPagination):
                             )
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
-                    created_by=request.user,
+                    created_by=request.profile,
                     name=lead_obj.account_name,
                     email=lead_obj.email,
                     phone=lead_obj.phone,
                     description=params.get("description"),
                     website=params.get("website"),
+                    org=request.org
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -259,12 +272,14 @@ class LeadListView(APIView, LimitOffsetPagination):
                     account_object.tags.add(tag)
 
                 if params.get("assigned_to"):
-                    assigned_to_list = json.loads(params.getlist("assigned_to"))
+                    assigned_to_list = json.loads(
+                        params.getlist("assigned_to"))
                     recipients = assigned_to_list
+                    current_site = get_current_site(self.request)
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=settings.Domain,
+                        domain=current_site.domain,
                         protocol=request.scheme,
                     )
                 return Response(
@@ -302,10 +317,10 @@ class LeadDetailView(APIView):
         user_assgn_list = [
             assigned_to.id for assigned_to in self.lead_obj.assigned_to.all()
         ]
-        if self.request.user == self.lead_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.lead_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -315,7 +330,8 @@ class LeadDetailView(APIView):
                 )
 
         comments = Comment.objects.filter(lead=self.lead_obj).order_by("-id")
-        attachments = Attachments.objects.filter(lead=self.lead_obj).order_by("-id")
+        attachments = Attachments.objects.filter(
+            lead=self.lead_obj).order_by("-id")
         assigned_data = []
         for each in self.lead_obj.assigned_to.all():
             assigned_dict = {}
@@ -323,33 +339,34 @@ class LeadDetailView(APIView):
             assigned_dict["name"] = each.email
             assigned_data.append(assigned_dict)
 
-        if self.request.user.is_superuser or self.request.user.role == "ADMIN":
+        if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             users_mention = list(
-                User.objects.filter(
-                    is_active=True,
-                ).values("username")
+                Profile.objects.filter(
+                    is_active=True, org=self.request.org
+                ).values("user__username")
             )
-        elif self.request.user != self.lead_obj.created_by:
+        elif self.request.profile != self.lead_obj.created_by:
             users_mention = [{"username": self.lead_obj.created_by.username}]
         else:
-            users_mention = list(self.lead_obj.assigned_to.all().values("username"))
-        if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-            users = User.objects.filter(
-                is_active=True,
-            ).order_by("email")
+            users_mention = list(
+                self.lead_obj.assigned_to.all().values("user__username"))
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            users = Profile.objects.filter(
+                is_active=True, org=self.request.org
+            ).order_by("user__email")
         else:
-            users = User.objects.filter(
-                role="ADMIN",
-            ).order_by("email")
+            users = Profile.objects.filter(
+                role="ADMIN", org=self.request.org
+            ).order_by("user__email")
         user_assgn_list = [
             assigned_to.id
             for assigned_to in self.lead_obj.get_assigned_users_not_in_teams
         ]
 
-        if self.request.user == self.lead_obj.created_by:
-            user_assgn_list.append(self.request.user.id)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.user.id not in user_assgn_list:
+        if self.request.profile == self.lead_obj.created_by:
+            user_assgn_list.append(self.request.profile.id)
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+            if self.request.profile.id not in user_assgn_list:
                 return Response(
                     {
                         "error": True,
@@ -360,7 +377,8 @@ class LeadDetailView(APIView):
         team_ids = [user.id for user in self.lead_obj.get_team_users]
         all_user_ids = [user.id for user in users]
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
-        users_excluding_team = User.objects.filter(id__in=users_excluding_team_id)
+        users_excluding_team = Profile.objects.filter(
+            id__in=users_excluding_team_id)
         context.update(
             {
                 "lead_obj": LeadSerializer(self.lead_obj).data,
@@ -370,19 +388,20 @@ class LeadDetailView(APIView):
                 "assigned_data": assigned_data,
             }
         )
-        context["users"] = UserSerializer(users, many=True).data
-        context["users_excluding_team"] = UserSerializer(
+        context["users"] = ProfileSerializer(users, many=True).data
+        context["users_excluding_team"] = ProfileSerializer(
             users_excluding_team, many=True
         ).data
         context["source"] = LEAD_SOURCE
         context["status"] = LEAD_STATUS
-        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
+        context["teams"] = TeamsSerializer(Teams.objects.filter(
+            org=self.request.org), many=True).data
         context["countries"] = COUNTRIES
 
         return context
 
     @swagger_auto_schema(
-        tags=["Leads"],
+        tags=["Leads"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, pk, **kwargs):
         self.lead_obj = self.get_object(pk)
@@ -400,10 +419,15 @@ class LeadDetailView(APIView):
         )
         context = {}
         self.lead_obj = Lead.objects.get(pk=pk)
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.lead_obj.org != request.org:
+            return Response(
+                {"error": True, "errors": "User company doesnot match with header...."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
-                (self.request.user == self.lead_obj.created_by)
-                or (self.request.user in self.lead_obj.assigned_to.all())
+                (self.request.profile == self.lead_obj.created_by)
+                or (self.request.profile in self.lead_obj.assigned_to.all())
             ):
                 return Response(
                     {
@@ -417,18 +441,21 @@ class LeadDetailView(APIView):
             if params.get("comment"):
                 comment_serializer.save(
                     lead_id=self.lead_obj.id,
-                    commented_by_id=self.request.user.id,
+                    commented_by_id=self.request.profile.id,
                 )
 
             if self.request.FILES.get("lead_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.user
-                attachment.file_name = self.request.FILES.get("lead_attachment").name
+                attachment.created_by = self.request.profile
+                attachment.file_name = self.request.FILES.get(
+                    "lead_attachment").name
                 attachment.lead = self.lead_obj
-                attachment.attachment = self.request.FILES.get("lead_attachment")
+                attachment.attachment = self.request.FILES.get(
+                    "lead_attachment")
                 attachment.save()
 
-        comments = Comment.objects.filter(lead__id=self.lead_obj.id).order_by("-id")
+        comments = Comment.objects.filter(
+            lead__id=self.lead_obj.id).order_by("-id")
         attachments = Attachments.objects.filter(lead__id=self.lead_obj.id).order_by(
             "-id"
         )
@@ -452,6 +479,11 @@ class LeadDetailView(APIView):
         )
         data = {}
         self.lead_obj = self.get_object(pk)
+        if self.lead_obj.org != request.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         serializer = LeadCreateSerializer(
             data=params,
             instance=self.lead_obj,
@@ -479,27 +511,30 @@ class LeadDetailView(APIView):
             assigned_to_list = list(
                 lead_obj.assigned_to.all().values_list("id", flat=True)
             )
-            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
+            recipients = list(set(assigned_to_list) -
+                              set(previous_assigned_to_users))
+            current_site = get_current_site(self.request)
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=settings.Domain,
+                domain=current_site.domain,
                 protocol=request.scheme,
             )
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
-                attachment.created_by = request.user
-                attachment.file_name = request.FILES.get("lead_attachment").name
+                attachment.created_by = request.profile
+                attachment.file_name = request.FILES.get(
+                    "lead_attachment").name
                 attachment.lead = lead_obj
                 attachment.attachment = request.FILES.get("lead_attachment")
                 attachment.save()
 
-            if self.request.user.role == "ADMIN":
+            if self.request.profile.role == "ADMIN":
                 lead_obj.teams.clear()
                 if params.get("teams"):
                     teams = json.loads(params.get("teams"))
                     for team in teams:
-                        teams_ids = Teams.objects.filter(id=team)
+                        teams_ids = Teams.objects.filter(id=team, org=request.org)
                         if teams_ids.exists():
                             lead_obj.teams.add(team)
                         else:
@@ -514,9 +549,10 @@ class LeadDetailView(APIView):
 
                 lead_obj.assigned_to.clear()
                 if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                    assinged_to_users_ids = json.loads(
+                        params.get("assigned_to"))
                     for user_id in assinged_to_users_ids:
-                        user = User.objects.filter(id=user_id)
+                        user = Profile.objects.filter(id=user_id, org=request.org)
                         if user.exists():
                             lead_obj.assigned_to.add(user_id)
                         else:
@@ -531,13 +567,14 @@ class LeadDetailView(APIView):
 
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
-                    created_by=request.user,
+                    created_by=request.profile,
                     name=lead_obj.account_name,
                     email=lead_obj.email,
                     phone=lead_obj.phone,
                     description=params.get("description"),
                     website=params.get("website"),
                     lead=lead_obj,
+                    org=request.org
                 )
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
@@ -559,10 +596,11 @@ class LeadDetailView(APIView):
                     # account_object.assigned_to.add(*params.getlist('assigned_to'))
                     assigned_to_list = json.loads(params.get("assigned_to"))
                     recipients = assigned_to_list
+                    current_site = get_current_site(self.request)
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=settings.Domain,
+                        domain=current_site.domain,
                         protocol=request.scheme,
                     )
 
@@ -587,15 +625,15 @@ class LeadDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Leads"],
+        tags=["Leads"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
+            request.profile.role == "ADMIN"
             or request.user.is_superuser
-            or request.user == self.object.created_by
-        ):
+            or request.profile == self.object.created_by
+        ) and self.object.org == request.org:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Lead deleted Successfully"},
@@ -622,8 +660,9 @@ class LeadUploadView(APIView):
                 create_lead_from_file.delay(
                     lead_form.validated_rows,
                     lead_form.invalid_rows,
-                    request.user.id,
+                    request.profile.id,
                     request.get_host(),
+                    request.org.id
                 )
                 return Response(
                     {"error": False, "message": "Leads created Successfully"},
@@ -648,12 +687,13 @@ class LeadCommentView(APIView):
         tags=["Leads"], manual_parameters=swagger_params.lead_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.query_params if len(
+            request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
+            request.profile.role == "ADMIN"
             or request.user.is_superuser
-            or request.user == obj.commented_by
+            or request.profile == obj.commented_by
         ):
             serializer = LeadCommentSerializer(obj, data=params)
             if params.get("comment"):
@@ -677,14 +717,14 @@ class LeadCommentView(APIView):
             )
 
     @swagger_auto_schema(
-        tags=["Leads"],
+        tags=["Leads"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.user.role == "ADMIN"
+            request.profile.role == "ADMIN"
             or request.user.is_superuser
-            or request.user == self.object.commented_by
+            or request.profile == self.object.commented_by
         ):
             self.object.delete()
             return Response(
@@ -707,14 +747,14 @@ class LeadAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Leads"],
+        tags=["Leads"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
-            request.user.role == "ADMIN"
+            request.profile.role == "ADMIN"
             or request.user.is_superuser
-            or request.user == self.object.created_by
+            or request.profile == self.object.created_by
         ):
             self.object.delete()
             return Response(
@@ -736,7 +776,8 @@ class CreateLeadFromSite(APIView):
         tags=["Leads"], manual_parameters=swagger_params.create_lead_from_site
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.query_params if len(
+            request.data) == 0 else request.data
         api_key = params.get("apikey")
         # api_setting = APISettings.objects.filter(
         #     website=website_address, apikey=api_key).first()
@@ -764,6 +805,7 @@ class CreateLeadFromSite(APIView):
                 phone=params.get("phone"),
                 is_active=True,
                 created_by=user,
+                org=api_setting.org
             )
             lead.assigned_to.add(user)
             # Send Email to Assigned Users
@@ -778,6 +820,7 @@ class CreateLeadFromSite(APIView):
                     description=params.get("message"),
                     created_by=user,
                     is_active=True,
+                    org=api_setting.org
                 )
                 contact.assigned_to.add(user)
 

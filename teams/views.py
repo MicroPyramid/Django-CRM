@@ -5,9 +5,9 @@ from teams import swagger_params
 from teams.models import Teams
 from teams.tasks import update_team_users, remove_users
 from teams.serializer import TeamsSerializer, TeamCreateSerializer
-from common.models import User
+from common.models import Profile
 from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import UserSerializer
+from common.serializer import ProfileSerializer
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -29,7 +29,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.all()
+        queryset = self.model.objects.filter(org=self.request.org)
 
         request_post = params
         if request_post:
@@ -69,17 +69,17 @@ class TeamsListView(APIView, LimitOffsetPagination):
         )
         context["teams"] = teams
 
-        users = User.objects.filter(
-            is_active=True,
+        users = Profile.objects.filter(
+            is_active=True, org=self.request.org
         ).order_by("id")
-        context["users"] = UserSerializer(users, many=True).data
+        context["users"] = ProfileSerializer(users, many=True).data
         return context
 
     @swagger_auto_schema(
         tags=["Teams"], manual_parameters=swagger_params.teams_list_get_params
     )
     def get(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
                 {
                     "error": True,
@@ -94,7 +94,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
         tags=["Teams"], manual_parameters=swagger_params.teams_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
                 {
                     "error": True,
@@ -111,12 +111,12 @@ class TeamsListView(APIView, LimitOffsetPagination):
         serializer = TeamCreateSerializer(data=params, request_obj=request)
         data = {}
         if serializer.is_valid():
-            team_obj = serializer.save(created_by=request.user)
+            team_obj = serializer.save(created_by=request.profile, org=request.org)
 
             if params.get("assign_users"):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id)
+                    user = Profile.objects.filter(id=user_id, org=request.org)
                     if user.exists():
                         team_obj.users.add(user_id)
                     else:
@@ -142,13 +142,13 @@ class TeamsDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.org)
 
     @swagger_auto_schema(
-        tags=["Teams"],
+        tags=["Teams"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, pk, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
                 {
                     "error": True,
@@ -159,8 +159,8 @@ class TeamsDetailView(APIView):
         self.team_obj = self.get_object(pk)
         context = {}
         context["team"] = TeamsSerializer(self.team_obj).data
-        context["users"] = UserSerializer(
-            User.objects.filter(is_active=True).order_by("email"),
+        context["users"] = ProfileSerializer(
+            Profile.objects.filter(is_active=True, org=request.org).order_by("user__email"),
             many=True,
         ).data
         return Response(context)
@@ -169,7 +169,7 @@ class TeamsDetailView(APIView):
         tags=["Teams"], manual_parameters=swagger_params.teams_create_post_params
     )
     def put(self, request, pk, *args, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
                 {
                     "error": True,
@@ -196,7 +196,7 @@ class TeamsDetailView(APIView):
             if params.get("assign_users"):
                 assinged_to_users_ids = json.loads(params.get("assign_users"))
                 for user_id in assinged_to_users_ids:
-                    user = User.objects.filter(id=user_id)
+                    user = Profile.objects.filter(id=user_id, org=request.org)
                     if user.exists():
                         team_obj.users.add(user_id)
                     else:
@@ -223,10 +223,10 @@ class TeamsDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Teams"],
+        tags=["Teams"], manual_parameters=swagger_params.organization_params
     )
     def delete(self, request, pk, **kwargs):
-        if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
                 {
                     "error": True,

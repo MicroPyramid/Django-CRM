@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import Account
 from contacts.models import Contact
-from common.models import User
+from common.models import Org, Profile
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from planner.models import Event
 from teams.models import Teams
@@ -29,13 +29,17 @@ class Case(models.Model):
     # closed_on = models.DateTimeField()
     closed_on = models.DateField()
     description = models.TextField(blank=True, null=True)
-    assigned_to = models.ManyToManyField(User, related_name="case_assigned_users")
+    assigned_to = models.ManyToManyField(Profile, related_name="case_assigned_users")
     created_by = models.ForeignKey(
-        User, related_name="case_created_by", on_delete=models.SET_NULL, null=True
+        Profile, related_name="case_created_by", on_delete=models.SET_NULL, null=True
     )
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
+    org = models.ForeignKey(
+        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="case_org"
+    )
+
 
     class Meta:
         ordering = ["-created_on"]
@@ -46,21 +50,21 @@ class Case(models.Model):
     @property
     def get_team_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return User.objects.filter(id__in=team_user_ids)
+        return Profile.objects.filter(id__in=team_user_ids)
 
     @property
     def get_team_and_assigned_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
-        return User.objects.filter(id__in=user_ids)
+        return Profile.objects.filter(id__in=user_ids)
 
     @property
     def get_assigned_users_not_in_teams(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return User.objects.filter(id__in=list(user_ids))
+        return Profile.objects.filter(id__in=list(user_ids))
 
     def get_meetings(self):
         content_type = ContentType.objects.get(app_label="cases", model="case")
@@ -108,7 +112,7 @@ class Case(models.Model):
         ).exclude(status="Planned")
 
     def get_assigned_user(self):
-        return User.objects.get(id=self.assigned_to_id)
+        return Profile.objects.get(id=self.assigned_to_id)
 
     @property
     def created_on_arrow(self):

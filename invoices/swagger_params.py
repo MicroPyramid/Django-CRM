@@ -1,7 +1,7 @@
 from drf_yasg import openapi
 
 company_params_in_header = openapi.Parameter(
-    "company", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
+    "org", openapi.IN_HEADER, required=True, type=openapi.TYPE_STRING
 )
 
 invoice_list_get_params = [

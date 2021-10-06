@@ -1,6 +1,15 @@
 from drf_yasg import openapi
 
+organization_params_in_header = openapi.Parameter(
+    "org", openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER
+)
+
+organization_params = [
+    organization_params_in_header,
+]
+
 opportunity_list_get_params = [
+    organization_params_in_header,
     openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("account", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("stage", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -9,6 +18,7 @@ opportunity_list_get_params = [
 ]
 
 opportunity_detail_get_params = [
+    organization_params_in_header,
     openapi.Parameter(
         "opportunity_attachment",
         openapi.IN_QUERY,
@@ -18,6 +28,7 @@ opportunity_detail_get_params = [
 ]
 
 opportunity_create_post_params = [
+    organization_params_in_header,
     openapi.Parameter(
         "name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -43,5 +54,6 @@ opportunity_create_post_params = [
 ]
 
 opportunity_comment_edit_params = [
+    organization_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]

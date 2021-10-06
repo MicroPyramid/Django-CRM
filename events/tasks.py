@@ -22,21 +22,21 @@ def send_email(event_id, recipients, domain="demo.django-crm.io", protocol="http
     context["event_date_of_meeting"] = event.date_of_meeting
     context["url"] = protocol + "://" + domain
     # recipients = event.assigned_to.filter(is_active=True)
-    for user in recipients:
+    for profile_id in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=profile_id, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             event_members = event.assigned_to.filter(is_active=True)
 
             context["other_members"] = list(
-                event_members.exclude(id=user.id).values_list("email", flat=True)
+                event_members.exclude(id=profile.id).values_list("user__email", flat=True)
             )
             if len(context["other_members"]) > 0:
                 context["other_members"] = ", ".join(context["other_members"])
             else:
                 context["other_members"] = ""
-            context["user"] = user.email
+            context["user"] = profile.user.email
             html_content = render_to_string(
                 "assigned_to_email_template_event.html", context=context
             )

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.models import Account, Email, Tags
-from common.serializer import UserSerializer, AttachmentsSerializer
+from common.serializer import ProfileSerializer, AttachmentsSerializer, OrganizationSerializer
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
 from contacts.serializer import ContactSerializer
@@ -13,10 +13,11 @@ class TagsSerailizer(serializers.ModelSerializer):
 
 
 class AccountSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer()
+    created_by = ProfileSerializer()
     lead = LeadSerializer()
+    org = OrganizationSerializer()
     tags = TagsSerailizer(read_only=True, many=True)
-    assigned_to = UserSerializer(read_only=True, many=True)
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     account_attachment = AttachmentsSerializer(read_only=True, many=True)
@@ -49,6 +50,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "contacts",
             "assigned_to",
             "teams",
+            "org"
         )
 
 
@@ -113,17 +115,18 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             self.fields["lead"].required = False
         self.fields["lead"].required = False
+        self.org = request_obj.org
 
     def validate_name(self, name):
         if self.instance:
             if self.instance.name != name:
-                if not Account.objects.filter(name__iexact=name).exists():
+                if not Account.objects.filter(name__iexact=name, org=self.org).exists():
                     return name
                 raise serializers.ValidationError(
                     "Account already exists with this name"
                 )
             return name
-        if not Account.objects.filter(name__iexact=name).exists():
+        if not Account.objects.filter(name__iexact=name, org=self.org).exists():
             return name
         raise serializers.ValidationError("Account already exists with this name")
 
