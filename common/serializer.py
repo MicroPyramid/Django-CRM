@@ -1,44 +1,24 @@
 import re
+from django.contrib.auth.hashers import check_password
 from rest_framework import serializers
 from common.models import (
     User,
-    Company,
+    Org,
     Comment,
     Address,
     Attachments,
     Document,
     APISettings,
+    Profile
 )
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 
 
-class CompanySerializer(serializers.ModelSerializer):
+class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Company
-        fields = ("id", "name", "address", "sub_domain", "user_limit", "country")
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "file_prepend",
-            "username",
-            "first_name",
-            "last_name",
-            "email",
-            "is_active",
-            "is_admin",
-            "is_staff",
-            "date_joined",
-            "role",
-            "profile_pic",
-            "has_sales_access",
-            "has_marketing_access",
-            # "get_app_name",
-        )
+        model = Org
+        fields = ("id", "name")
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -57,7 +37,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "task",
             "invoice",
             "event",
-            "user",
+            "profile",
         )
 
 
@@ -73,24 +53,11 @@ class LeadCommentSerializer(serializers.ModelSerializer):
         )
 
 
-class RegisterUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField()
-
-    class Meta:
-        model = User
-        fields = (
-            "email",
-            "username",
-            "password",
-        )
-
-    def __init__(self, *args, **kwargs):
-        self.request_user = kwargs.pop("request_user", None)
-        super(RegisterUserSerializer, self).__init__(*args, **kwargs)
-        if not self.instance:
-            self.fields["password"].required = True
-        else:
-            self.fields["password"].required = False
+class RegisterOrganizationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=255)
+    password = serializers.CharField(max_length=100)
+    org_name = serializers.CharField(max_length=100)
 
     def validate_password(self, password):
         if password:
@@ -100,12 +67,47 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                 )
         return password
 
-    def validate_username(self, username):
-        if not username[0].isalpha():
-            raise serializers.ValidationError("Username should start with Alphabet")
-        if User.objects.filter(username__iexact=username).exists():
-            raise serializers.ValidationError("Username already exist")
-        return username
+    def validate_email(self, email):
+        org_name = self.initial_data.get('org_name')
+        if Profile.objects.filter(user__email__iexact=email,
+                                  org__name=org_name).exists():
+            raise serializers.ValidationError(
+                "This email is already registered in this organization")
+        return email
+
+    def validate_org_name(self, org_name):
+        if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", org_name)):
+            raise serializers.ValidationError(
+                "organization name should not contain any special characters")
+        if Org.objects.filter(name=org_name).exists():
+            raise serializers.ValidationError(
+                "Organization already exists with this name")
+        return org_name
+
+
+class BillingAddressSerializer(serializers.ModelSerializer):
+    country = serializers.SerializerMethodField()
+
+    def get_country(self, obj):
+        return obj.get_country_display()
+
+    class Meta:
+        model = Address
+        fields = ("address_line", "street", "city",
+                  "state", "postcode", "country")
+
+    def __init__(self, *args, **kwargs):
+        account_view = kwargs.pop("account", False)
+
+        super(BillingAddressSerializer, self).__init__(*args, **kwargs)
+
+        if account_view:
+            self.fields["address_line"].required = True
+            self.fields["street"].required = True
+            self.fields["city"].required = True
+            self.fields["state"].required = True
+            self.fields["postcode"].required = True
+            self.fields["country"].required = True
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -114,68 +116,87 @@ class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "email",
             "first_name",
             "last_name",
-            "username",
-            "role",
+            "email",
+            "alternate_email",
+            "skype_ID",
+            "description",
             "profile_pic",
-            "has_sales_access",
-            "has_marketing_access",
             "password",
         )
 
     def __init__(self, *args, **kwargs):
-        self.request_user = kwargs.pop("request_user", None)
+        self.org = kwargs.pop("org", None)
         super(CreateUserSerializer, self).__init__(*args, **kwargs)
         self.fields["first_name"].required = True
-        if not self.instance:
-            self.fields["password"].required = True
-        else:
-            self.fields["password"].required = False
-            self.fields["email"].required = False
-            self.fields["role"].required = False
+        self.fields["password"].required = False
+        self.fields["profile_pic"].required = False
+        self.fields["skype_ID"].required = False
 
-    def validate_password(self, password):
-        if password:
-            if len(password) < 4:
-                raise serializers.ValidationError(
-                    "Password must be at least 4 characters long!"
-                )
-        return password
-
-    def validate_has_sales_access(self, has_sales_access):
-        user_role = self.initial_data.get("role")
-        if user_role == "ADMIN":
-            is_admin = True
-        else:
-            is_admin = False
-        if self.request_user.role == "ADMIN" or self.request_user.is_superuser:
-            if not is_admin:
-                marketing = self.initial_data.get("has_marketing_access", False)
-                if not has_sales_access and not marketing:
-                    raise serializers.ValidationError("Select atleast one option.")
-        if self.request_user.role == "USER":
-            has_sales_access = self.instance.has_sales_access
-        return has_sales_access
-
-    def validate_has_marketing_access(self, marketing):
-        if self.request_user.role == "USER":
-            marketing = self.instance.has_marketing_access
-        return marketing
 
     def validate_email(self, email):
         if self.instance:
             if self.instance.email != email:
-                if not User.objects.filter(email=email).exists():
+                if not Profile.objects.filter(
+                        user__email=email, org=self.org).exists():
                     return email
                 raise serializers.ValidationError("Email already exists")
-            else:
-                return email
+            return email
         else:
-            if not User.objects.filter(email=email).exists():
+            if not Profile.objects.filter(user__email=email.lower(), org=self.org).exists():
                 return email
-            raise serializers.ValidationError("User already exists with this email")
+            raise serializers.ValidationError('Given Email id already exists')
+
+
+class CreateProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Profile
+        fields = (
+            "role",
+            "phone",
+            "alternate_phone",
+            "has_sales_access",
+            "has_marketing_access",
+            "is_organization_admin"
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(CreateProfileSerializer, self).__init__(*args, **kwargs)
+        self.fields["alternate_phone"].required = False
+        self.fields["role"].required = True
+        self.fields["phone"].required = True
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "alternate_email",
+            "skype_ID",
+            "description",
+            "profile_pic",
+        )
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    user_details = serializers.SerializerMethodField()
+    address = BillingAddressSerializer()
+
+    def get_user_details(self, obj):
+        return UserSerializer(obj.user).data
+
+    class Meta:
+        model = Profile
+        fields = ("id", 'user_details', 'role', 'address',
+                  'has_marketing_access', 'has_sales_access',
+                  'phone', 'date_of_joining', 'is_active')
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -223,7 +244,8 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
         new_password2 = data.get("new_password2")
         new_password1 = data.get("new_password1")
         if new_password1 != new_password2:
-            raise serializers.ValidationError("The two password fields didn't match.")
+            raise serializers.ValidationError(
+                "The two password fields didn't match.")
         return new_password2
 
 
@@ -240,29 +262,11 @@ class AttachmentsSerializer(serializers.ModelSerializer):
         fields = ["id", "created_by", "file_name", "created_on", "file_path"]
 
 
-class BillingAddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ("address_line", "street", "city", "state", "postcode", "country")
-
-    def __init__(self, *args, **kwargs):
-        account_view = kwargs.pop("account", False)
-
-        super(BillingAddressSerializer, self).__init__(*args, **kwargs)
-
-        if account_view:
-            self.fields["address_line"].required = True
-            self.fields["street"].required = True
-            self.fields["city"].required = True
-            self.fields["state"].required = True
-            self.fields["postcode"].required = True
-            self.fields["country"].required = True
-
-
 class DocumentSerializer(serializers.ModelSerializer):
-    shared_to = UserSerializer(read_only=True, many=True)
+    shared_to = ProfileSerializer(read_only=True, many=True)
     teams = serializers.SerializerMethodField()
-    created_by = UserSerializer()
+    created_by = ProfileSerializer()
+    org = OrganizationSerializer()
 
     def get_teams(self, obj):
         return obj.teams.all().values()
@@ -278,6 +282,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             "teams",
             "created_on",
             "created_by",
+            "org"
         ]
 
 
@@ -286,11 +291,13 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["title"].required = True
+        self.org = request_obj.org
 
     def validate_title(self, title):
         if self.instance:
             if (
-                Document.objects.filter(title__iexact=title)
+                Document.objects.filter(
+                    title__iexact=title, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -298,7 +305,7 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                     "Document with this Title already exists"
                 )
         else:
-            if Document.objects.filter(title__iexact=title).exists():
+            if Document.objects.filter(title__iexact=title, org=self.org).exists():
                 raise serializers.ValidationError(
                     "Document with this Title already exists"
                 )
@@ -310,6 +317,7 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
             "title",
             "document_file",
             "status",
+            "org"
         ]
 
 
@@ -348,9 +356,10 @@ class APISettingsSerializer(serializers.ModelSerializer):
 
 
 class APISettingsListSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer()
-    lead_assigned_to = UserSerializer(read_only=True, many=True)
+    created_by = ProfileSerializer()
+    lead_assigned_to = ProfileSerializer(read_only=True, many=True)
     tags = serializers.SerializerMethodField()
+    org = OrganizationSerializer()
 
     def get_tags(self, obj):
         return obj.tags.all().values()
@@ -365,4 +374,32 @@ class APISettingsListSerializer(serializers.ModelSerializer):
             "created_by",
             "lead_assigned_to",
             "tags",
+            "org"
         ]
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=100)
+    new_password = serializers.CharField(max_length=100)
+    retype_password = serializers.CharField(max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        super(PasswordChangeSerializer, self).__init__(*args, **kwargs)
+
+    def validate_old_password(self, pwd):
+        if not check_password(pwd, self.context.get('user').password):
+            raise serializers.ValidationError(
+                "old password entered is incorrect.")
+        return pwd
+
+    def validate(self, data):
+        if len(data.get('new_password')) < 8:
+            raise serializers.ValidationError(
+                "Password must be at least 8 characters long!")
+        if data.get('new_password') == data.get('old_password'):
+            raise serializers.ValidationError(
+                "New_password and old password should not be the same")
+        if data.get('new_password') != data.get('retype_password'):
+            raise serializers.ValidationError(
+                "New_password and Retype_password did not match.")
+        return data

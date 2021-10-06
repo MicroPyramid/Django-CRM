@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 
-from common.models import User
+from common.models import Org, Profile
 from common.utils import INDCHOICES, COUNTRIES
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
@@ -50,7 +50,7 @@ class Account(models.Model):
     website = models.URLField(_("Website"), blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(
-        User, related_name="account_created_by", on_delete=models.SET_NULL, null=True
+        Profile, related_name="account_created_by", on_delete=models.SET_NULL, null=True
     )
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
@@ -67,8 +67,11 @@ class Account(models.Model):
     contacts = models.ManyToManyField(
         "contacts.Contact", related_name="account_contacts"
     )
-    assigned_to = models.ManyToManyField(User, related_name="account_assigned_users")
+    assigned_to = models.ManyToManyField(Profile, related_name="account_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="account_teams")
+    org = models.ForeignKey(
+        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="account_org"
+    )
 
     class Meta:
         ordering = ["-created_on"]
@@ -102,21 +105,21 @@ class Account(models.Model):
     @property
     def get_team_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return User.objects.filter(id__in=team_user_ids)
+        return Profile.objects.filter(id__in=team_user_ids)
 
     @property
     def get_team_and_assigned_users(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
-        return User.objects.filter(id__in=user_ids)
+        return Profile.objects.filter(id__in=user_ids)
 
     @property
     def get_assigned_users_not_in_teams(self):
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return User.objects.filter(id__in=list(user_ids))
+        return Profile.objects.filter(id__in=list(user_ids))
 
 
 class Email(models.Model):

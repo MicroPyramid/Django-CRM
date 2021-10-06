@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from tasks.models import Task
 from common.serializer import (
-    UserSerializer,
+    ProfileSerializer,
     AttachmentsSerializer,
     CommentSerializer,
 )
@@ -10,8 +10,8 @@ from teams.serializer import TeamsSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer()
-    assigned_to = UserSerializer(read_only=True, many=True)
+    created_by = ProfileSerializer()
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     task_attachment = AttachmentsSerializer(read_only=True, many=True)

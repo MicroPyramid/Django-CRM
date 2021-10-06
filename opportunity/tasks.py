@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import User
+from common.models import User
 from opportunity.models import Opportunity
 
 app = Celery("redis://")
@@ -20,12 +20,12 @@ def send_email_to_assigned_user(
     created_by = opportunity.created_by
     for user in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=user, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             context = {}
             context["url"] = protocol + "://" + domain
-            context["user"] = user
+            context["user"] = profile.user
             context["opportunity"] = opportunity
             context["created_by"] = created_by
             subject = "Assigned an opportunity for you."

@@ -1,5 +1,5 @@
-*~
 *.pyc
+*~
 *.swo
 *.swp
 db.sqlite3
@@ -23,3 +23,5 @@ local_settings.py
 media
 .sass-cache
 server.log
+.vscode
+static

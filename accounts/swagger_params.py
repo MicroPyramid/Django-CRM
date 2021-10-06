@@ -1,12 +1,21 @@
 from drf_yasg import openapi
 
+organization_params_in_header = openapi.Parameter(
+    'org', openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER)
+
+organization_params = [
+    organization_params_in_header,
+]
+
 account_get_params = [
+    organization_params_in_header,
     openapi.Parameter("name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("tags", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 account_post_params = [
+    organization_params_in_header,
     openapi.Parameter(
         "name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -57,6 +66,7 @@ account_post_params = [
 ]
 
 account_detail_get_params = [
+    organization_params_in_header,
     openapi.Parameter(
         "account_attachment",
         openapi.IN_QUERY,
@@ -66,10 +76,12 @@ account_detail_get_params = [
 ]
 
 account_comment_edit_params = [
+    organization_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 account_detail_get_params = [
+    organization_params_in_header,
     openapi.Parameter(
         "account_attachment",
         openapi.IN_QUERY,
@@ -79,10 +91,12 @@ account_detail_get_params = [
 ]
 
 account_comment_edit_params = [
+    organization_params_in_header,
     openapi.Parameter("comment", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 account_mail_params = [
+    organization_params_in_header,
     openapi.Parameter("from_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("recipients", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("message_subject", openapi.IN_QUERY, type=openapi.TYPE_STRING),

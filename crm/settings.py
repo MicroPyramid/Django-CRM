@@ -7,20 +7,18 @@ from corsheaders.defaults import default_headers
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-env_path = Path(".") / ".env"
-load_dotenv(dotenv_path=env_path)
+# env_path = Path(".") / ".env"
+load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv(
     "SECRET_KEY", "&q1&ftrxho9lrzm$$%6!cplb5ac957-9y@t@17u(3yqqb#9xl%"
 )
 
-Domain = os.getenv("DOMAIN_NAME")
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".bottlecrm.com"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -56,6 +54,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "common.custom_auth.TokenAuthMiddleware",
+    "common.middleware.get_company.GetProfileAndOrg",
 ]
 
 ROOT_URLCONF = "crm.urls"
@@ -140,14 +140,6 @@ if ENV_TYPE == "dev":
 
 elif ENV_TYPE == "live":
     from .server_settings import *
-
-    INSTALLED_APPS = INSTALLED_APPS + [
-        "raven.contrib.django.raven_compat",
-    ]
-    MIDDLEWARE = [
-        "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
-        "raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware",
-    ] + MIDDLEWARE
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
@@ -243,7 +235,9 @@ SWAGGER_SETTINGS = {
     },
 }
 
+CORS_ALLOW_HEADERS = default_headers + ("org",)
 CORS_ORIGIN_ALLOW_ALL = True
+
 SECURE_HSTS_SECONDS = 3600
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
@@ -252,8 +246,3 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-
-SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT_ENABLED") != "False"
-
-SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE_ENABLED") != "False"

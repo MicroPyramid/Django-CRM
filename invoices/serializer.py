@@ -2,7 +2,7 @@ from rest_framework import serializers
 from invoices.models import Invoice, InvoiceHistory
 from common.serializer import (
     UserSerializer,
-    CompanySerializer,
+    OrganizationSerializer,
     BillingAddressSerializer,
 )
 from teams.serializer import TeamsSerializer
@@ -12,7 +12,7 @@ class InvoiceSerailizer(serializers.ModelSerializer):
     from_address = BillingAddressSerializer()
     to_address = BillingAddressSerializer()
     created_by = UserSerializer()
-    company = CompanySerializer()
+    org = OrganizationSerializer()
     teams = TeamsSerializer(read_only=True, many=True)
     assigned_to = UserSerializer(read_only=True, many=True)
 
@@ -42,7 +42,7 @@ class InvoiceSerailizer(serializers.ModelSerializer):
             "details",
             "teams",
             "assigned_to",
-            "company",
+            "org",
         )
 
 
@@ -79,13 +79,13 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(InvoiceCreateSerializer, self).__init__(*args, **kwargs)
 
-        self.company = request_obj.company
+        self.org = request_obj.org
 
     def validate_invoice_title(self, invoice_title):
         if self.instance:
             if (
                 Invoice.objects.filter(
-                    invoice_title__iexact=invoice_title, company=self.company
+                    invoice_title__iexact=invoice_title, org=self.org
                 )
                 .exclude(id=self.instance.id)
                 .exists()
@@ -95,7 +95,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                 )
         else:
             if Invoice.objects.filter(
-                invoice_title__iexact=invoice_title, company=self.company
+                invoice_title__iexact=invoice_title, org=self.org
             ).exists():
                 raise serializers.ValidationError(
                     "Invoice already exists with this invoice_title"
@@ -123,5 +123,5 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "amount_paid",
             "is_email_sent",
             "details",
-            "company",
+            "org",
         )
