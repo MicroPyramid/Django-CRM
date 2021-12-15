@@ -4,12 +4,11 @@ import pytz
 from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
-from django.shortcuts import reverse
 from django.template import Context, Template
 from django.template.loader import render_to_string
 
 from accounts.models import Account, Email, EmailLog
-from common.models import User, Profile
+from common.models import Profile
 from common.utils import convert_to_custom_timezone
 
 app = Celery("redis://")
@@ -59,7 +58,7 @@ def send_email(email_obj_id):
 
 @app.task
 def send_email_to_assigned_user(
-    recipients, from_email, domain="demo.django-crm.io", protocol="http"
+    recipients, from_email
 ):
     """ Send Mail To Users When they are assigned to a contact """
     account = Account.objects.filter(id=from_email).first()
@@ -71,7 +70,7 @@ def send_email_to_assigned_user(
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = protocol + "://" + domain
+            context["url"] = settings.DOMAIN_NAME
             context["user"] = profile.user
             context["account"] = account
             context["created_by"] = created_by

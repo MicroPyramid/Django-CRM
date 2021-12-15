@@ -4,8 +4,6 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 DEBUG = False
 
-DOMAIN_NAME = "bottlecrm.com"
-
 AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", "")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")

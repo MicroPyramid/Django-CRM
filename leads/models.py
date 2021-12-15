@@ -1,5 +1,4 @@
 import arrow
-from django.core.cache import cache
 from django.db import models
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -7,9 +6,16 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Tags
 from common.models import Org, Profile
-from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, return_complete_address
+from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, return_complete_address, INDCHOICES
 from contacts.models import Contact
 from teams.models import Teams
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    org = models.ForeignKey(
+        Org, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
 
 class Lead(models.Model):
@@ -24,7 +30,7 @@ class Lead(models.Model):
         _("Status of Lead"), max_length=255, blank=True, null=True, choices=LEAD_STATUS
     )
     source = models.CharField(
-        _("Source of Lead"), max_length=255, blank=True, null=True
+        _("Source of Lead"), max_length=255, blank=True, null=True, choices=LEAD_SOURCE
     )
     address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
     street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
@@ -53,6 +59,13 @@ class Lead(models.Model):
     teams = models.ManyToManyField(Teams, related_name="lead_teams")
     org = models.ForeignKey(
         Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="lead_org"
+    )
+    company = models.ForeignKey(
+        Company, on_delete=models.SET_NULL, null=True, blank=True, related_name="lead_company"
+    )
+    skype_ID = models.CharField(max_length=100, null=True, blank=True)
+    industry = models.CharField(
+        _("Industry Type"), max_length=255, choices=INDCHOICES, blank=True, null=True
     )
 
 

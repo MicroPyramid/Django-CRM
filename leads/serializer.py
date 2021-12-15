@@ -1,12 +1,11 @@
 from rest_framework import serializers
-from leads.models import Lead
+from leads.models import Lead, Company
 from accounts.models import Tags, Account
 from common.serializer import (
     ProfileSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
 )
-from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
 
 
@@ -14,6 +13,12 @@ class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = ("id", "name", "slug")
+
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ("id", "name")
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -60,13 +65,16 @@ class LeadSerializer(serializers.ModelSerializer):
             "tags",
             "created_from_site",
             "teams",
+            "skype_ID",
+            "industry",
+            "company"
         )
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
-        super(LeadCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if self.initial_data.get("status") == "converted":
             self.fields["account_name"].required = True
             self.fields["email"].required = True
@@ -78,7 +86,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             if self.instance.created_from_site:
                 prev_choices = self.fields["source"]._get_choices()
-                prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
+                prev_choices = prev_choices + \
+                    [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
 
     def validate_account_name(self, account_name):
@@ -114,10 +123,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 .exclude(id=self.instance.id)
                 .exists()
             ):
-                raise serializers.ValidationError("Lead already exists with this title")
+                raise serializers.ValidationError(
+                    "Lead already exists with this title")
         else:
             if Lead.objects.filter(title__iexact=title, org=self.org).exists():
-                raise serializers.ValidationError("Lead already exists with this title")
+                raise serializers.ValidationError(
+                    "Lead already exists with this title")
         return title
 
     class Meta:
@@ -139,5 +150,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "state",
             "postcode",
             "country",
-            "org"
+            "org",
+            "skype_ID",
+            "industry",
+            "company"
         )

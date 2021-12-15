@@ -1,12 +1,5 @@
 import pytz
-from datetime import datetime
-from datetime import datetime, timedelta
-
 from django.utils.translation import ugettext_lazy as _
-from django.conf import settings
-from django.forms.models import model_to_dict
-from .custom_auth import BaseJSONWebTokenAuthentication
-from rest_framework.authentication import get_authorization_header
 
 
 def jwt_payload_handler(user):

@@ -39,20 +39,21 @@ class TaskSerializer(serializers.ModelSerializer):
 class TaskCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
-        super(TaskCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self.org = request_obj.org
 
         self.fields["title"].required = True
 
     def validate_title(self, title):
         if self.instance:
             if (
-                Task.objects.filter(title__iexact=title)
+                Task.objects.filter(title__iexact=title, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
                 raise serializers.ValidationError("Task already exists with this title")
         else:
-            if Task.objects.filter(title__iexact=title).exists():
+            if Task.objects.filter(title__iexact=title, org=self.org).exists():
                 raise serializers.ValidationError("Task already exists with this title")
         return title
 

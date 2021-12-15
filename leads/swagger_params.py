@@ -46,6 +46,7 @@ lead_create_post_params = [
     openapi.Parameter("description", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("teams", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("assigned_to", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("contacts", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("status", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("source", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("address_line", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -55,6 +56,9 @@ lead_create_post_params = [
     openapi.Parameter("postcode", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("country", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("tags", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("company", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("industry", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("skype_ID", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
 lead_upload_post_params = [

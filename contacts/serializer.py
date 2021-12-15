@@ -59,9 +59,8 @@ class ContactSerializer(serializers.ModelSerializer):
 
 class CreateContactSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
-        contact_view = kwargs.pop("contact", False)
         request_obj = kwargs.pop("request_obj", None)
-        super(CreateContactSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.org = request_obj.org
 
     def validate_first_name(self, first_name):

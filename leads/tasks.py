@@ -5,10 +5,9 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
-from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from common.models import User
+from common.models import Profile, Org
 from leads.models import Lead
 
 
@@ -67,8 +66,8 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
         "lead_detail_url": url,
     }
     mail_kwargs = {"subject": subject, "from_email": from_email}
-    for profile_id in users:
-        if user.email:
+    for profile in users:
+        if profile.user.email:
             context["user"] = profile.user
             html_content = get_rendered_html(template_name, context)
             mail_kwargs["html_content"] = html_content
@@ -78,19 +77,19 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
 
 @app.task
 def send_email_to_assigned_user(
-    recipients, lead_id, domain="demo.django-crm.io", protocol="http", source=""
+    recipients, lead_id, source=""
 ):
     """ Send Mail To Users When they are assigned to a lead """
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
     for user in recipients:
         recipients_list = []
-        user = User.objects.filter(id=user, is_active=True).first()
-        if user:
-            recipients_list.append(user.email)
+        profile = Profile.objects.filter(id=user, is_active=True).first()
+        if profile:
+            recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = protocol + "://" + domain
-            context["user"] = user
+            context["url"] = settings.DOMAIN_NAME
+            context["user"] = profile.user
             context["lead"] = lead
             context["created_by"] = created_by
             context["source"] = source
@@ -109,7 +108,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
     This function is used to create leads from a given file.
     """
     email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
-    user = User.objects.get(id=user_id)
+    profile = Profile.objects.get(id=user_id)
     org = Org.objects.filter(id=company_id).first()
     for row in validated_rows:
         if not Lead.objects.filter(title=row.get("title")).exists():
@@ -131,7 +130,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     lead.status = row.get("status", "")
                     lead.account_name = row.get("account_name", "")[:255]
                     lead.created_from_site = False
-                    lead.created_by = user
+                    lead.created_by = profile
                     lead.org = org
                     lead.save()
                 except Exception as e:

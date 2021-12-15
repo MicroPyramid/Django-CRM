@@ -23,7 +23,7 @@ class TeamsSerializer(serializers.ModelSerializer):
 class TeamCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
-        super(TeamCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.org = request_obj.org
 
         self.fields["name"].required = True

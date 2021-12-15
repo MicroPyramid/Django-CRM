@@ -1,7 +1,6 @@
 import arrow
 
 from django.db import models
-from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 from common.models import Org, Profile
 from contacts.models import Contact

@@ -56,8 +56,7 @@ class AccountSerializer(serializers.ModelSerializer):
 
 class EmailSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
-        request_obj = kwargs.pop("request_obj", None)
-        super(EmailSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         model = Email
@@ -95,14 +94,14 @@ class EmailLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Email
-        fields = "email" "contact" "is_sent"
+        fields = ["email", "contact", "is_sent"]
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
         request_obj = kwargs.pop("request_obj", None)
-        super(AccountCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["status"].required = False
         if account_view:
             self.fields["billing_address_line"].required = True

@@ -58,9 +58,8 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField
 
     def __init__(self, *args, **kwargs):
-        opportunity_view = kwargs.pop("opportunity", False)
         request_obj = kwargs.pop("request_obj", None)
-        super(OpportunityCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.org = request_obj.org
 
     def validate_name(self, name):
