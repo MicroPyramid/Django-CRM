@@ -17,17 +17,17 @@ app = Celery("redis://")
 
 @app.task
 def send_email_to_new_user(
-    profile_id, org_id, domain="demo.django-crm.io", protocol="http"
+    profile_id, org_id
 ):
     """ Send Mail To Users When their account is created """
     
-    profile_obj = Profile.objects.filter(id=profile_id).last()
+    profile_obj = Profile.objects.filter(id=profile_id, org_id=org_id).last()
     user_obj = profile_obj.user
 
     if profile_obj:
         context = {}
         user_email = user_obj.email
-        context["url"] = protocol + "://" + domain
+        context["url"] = settings.DOMAIN_NAME
         context["uid"] = (urlsafe_base64_encode(force_bytes(user_obj.pk)),)
         context["token"] = account_activation_token.make_token(user_obj)
         time_delta_two_hours = datetime.datetime.strftime(
@@ -55,7 +55,7 @@ def send_email_to_new_user(
 
 @app.task
 def send_email_user_mentions(
-    comment_id, called_from, domain="demo.django-crm.io", protocol="http"
+    comment_id, called_from, 
 ):
     """ Send Mail To Mentioned Users In The Comment """
     comment = Comment.objects.filter(id=comment_id).first()
@@ -81,30 +81,25 @@ def send_email_user_mentions(
         context = {}
         context["commented_by"] = comment.commented_by
         context["comment_description"] = comment.comment
+        subject = None
         if called_from == "accounts":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Account. "
         elif called_from == "contacts":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Contact. "
         elif called_from == "leads":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Lead. "
         elif called_from == "opportunity":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Opportunity. "
         elif called_from == "cases":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Case. "
         elif called_from == "tasks":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Task. "
         elif called_from == "invoices":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Invoice. "
         elif called_from == "events":
-            context["url"] = protocol + "://" + domain
             subject = "New comment on Event. "
+        if subject:
+            context["url"] = settings.DOMAIN_NAME
         else:
             context["url"] = ""
         # subject = 'Django CRM : comment '
@@ -128,7 +123,7 @@ def send_email_user_mentions(
 
 @app.task
 def send_email_user_status(
-    user_id, status_changed_user="", domain="demo.django-crm.io", protocol="http"
+    user_id, status_changed_user="",
 ):
     """ Send Mail To Users Regarding their status i.e active or inactive """
     user = User.objects.filter(id=user_id).first()
@@ -136,12 +131,9 @@ def send_email_user_status(
         context = {}
         context["message"] = "deactivated"
         context["email"] = user.email
-        if user.has_sales_access:
-            context["url"] = protocol + "://" + domain + "/"
-        elif user.has_marketing_access:
-            context["url"] = protocol + "://" + domain + "/marketing"
-        else:
-            context["url"] = protocol + "://" + domain + "/"
+        context["url"] = settings.DOMAIN_NAME
+        if user.has_marketing_access:
+            context["url"] = context["url"] + "/marketing"
         if user.is_active:
             context["message"] = "activated"
         context["status_changed_user"] = status_changed_user
@@ -165,7 +157,7 @@ def send_email_user_status(
 
 @app.task
 def send_email_user_delete(
-    user_email, deleted_by="", domain="demo.django-crm.io", protocol="http"
+    user_email, deleted_by="",
 ):
     """ Send Mail To Users When their account is deleted """
     if user_email:
@@ -186,7 +178,7 @@ def send_email_user_delete(
 
 @app.task
 def resend_activation_link_to_user(
-    user_email="", domain="demo.django-crm.io", protocol="http"
+    user_email="",
 ):
     """ Send Mail To Users When their account is created """
 
@@ -196,7 +188,7 @@ def resend_activation_link_to_user(
     if user_obj:
         context = {}
         context["user_email"] = user_email
-        context["url"] = protocol + "://" + domain
+        context["url"] = settings.DOMAIN_NAME
         context["uid"] = (urlsafe_base64_encode(force_bytes(user_obj.pk)),)
         context["token"] = account_activation_token.make_token(user_obj)
         time_delta_two_hours = datetime.datetime.strftime(
@@ -215,7 +207,7 @@ def resend_activation_link_to_user(
             context["token"],
             activation_key,
         )
-        recipients = []
+        recipients = [context["complete_url"]]
         recipients.append(user_email)
         subject = "Welcome to Django CRM"
         html_content = render_to_string("user_status_in.html", context=context)
@@ -226,14 +218,12 @@ def resend_activation_link_to_user(
 
 
 @app.task
-def send_email_to_reset_password(
-    user_email, domain="demo.django-crm.io", protocol="http"
-):
+def send_email_to_reset_password(user_email):
     """ Send Mail To Users When their account is created """
     user = User.objects.filter(email=user_email).first()
     context = {}
     context["user_email"] = user_email
-    context["url"] = protocol + "://" + domain
+    context["url"] = settings.DOMAIN_NAME
     context["uid"] = (urlsafe_base64_encode(force_bytes(user.pk)),)
     context["token"] = default_token_generator.make_token(user)
     context["token"] = context["token"]

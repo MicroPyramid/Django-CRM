@@ -1,5 +1,3 @@
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
@@ -12,7 +10,6 @@ from common.serializer import (
     ProfileSerializer,
     CommentSerializer,
     AttachmentsSerializer,
-    CommentSerializer,
 )
 from tasks import swagger_params
 from tasks.models import Task
@@ -40,64 +37,53 @@ class TaskListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(org=self.request.org)
+        queryset = self.model.objects.filter(
+            org=self.request.org).order_by('-id')
         accounts = Account.objects.filter(org=self.request.org)
         contacts = Contact.objects.filter(org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.profile]) | Q(created_by=self.request.profile)
+                Q(assigned_to__in=[self.request.profile]) | Q(
+                    created_by=self.request.profile)
             )
             accounts = accounts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(
+                    assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(
+                    assigned_to=self.request.profile)
             ).distinct()
 
-        request_post = params
-        if request_post:
-            if request_post.get("title"):
-                queryset = queryset.filter(title__icontains=request_post.get("title"))
-            if request_post.get("status"):
-                queryset = queryset.filter(status=request_post.get("status"))
-            if request_post.get("priority"):
-                queryset = queryset.filter(priority=request_post.get("priority"))
+        if params:
+            if params.get("title"):
+                queryset = queryset.filter(
+                    title__icontains=params.get("title"))
+            if params.get("status"):
+                queryset = queryset.filter(status=params.get("status"))
+            if params.get("priority"):
+                queryset = queryset.filter(
+                    priority=params.get("priority"))
         context = {}
-        search = False
-        if params.get("title") or params.get("status") or params.get("priority"):
-            search = True
-        context["search"] = search
         results_tasks = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
         tasks = TaskSerializer(results_tasks, many=True).data
-        context["per_page"] = 10
+        if results_tasks:
+            offset = queryset.filter(id__gte=results_tasks[-1].id).count()
+            if offset == queryset.count():
+                offset = None
+        else:
+            offset = 0
         context.update(
             {
                 "tasks_count": self.count,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "page_number": int(self.offset / 10) + 1,
+                "offset": offset,
             }
         )
         context["tasks"] = tasks
         context["status"] = STATUS_CHOICES
         context["priority"] = PRIORITY_CHOICES
-        users = []
-        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
-            users = Profile.objects.filter(
-                is_active=True, org=self.request.org
-            ).order_by("user__email")
-        elif self.request.profile.google.all():
-            users = []
-        else:
-            users = Profile.objects.filter(
-                role="ADMIN", org=self.request.org
-            ).order_by("user__email")
-        context["users"] = ProfileSerializer(users, many=True).data
-        if self.request.profile == "ADMIN":
-            context["teams_list"] = TeamsSerializer(Teams.objects.filter(
-                org=self.request.org), many=True).data
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
@@ -118,7 +104,6 @@ class TaskListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        data = {}
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             task_obj = serializer.save(
@@ -127,47 +112,24 @@ class TaskListView(APIView, LimitOffsetPagination):
                 org=request.org
             )
             if params.get("contacts"):
-                contacts = json.loads(params.get("contacts"))
-                for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, org=request.org
-                    )
-                    if obj_contact.exists():
-                        task_obj.contacts.add(contact)
-                    else:
-                        task_obj.delete()
-                        data["contacts"] = "Please enter valid contact"
-                        return Response(
-                            {"error": True, "errors": data},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-            if self.request.profile.role == "ADMIN":
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(id=team, org=request.org)
-                        if teams_ids.exists():
-                            task_obj.teams.add(team)
-                        else:
-                            task_obj.delete()
-                            data["team"] = "Please enter valid Team"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
-                    for user_id in assinged_to_users_ids:
-                        profile = Profile.objects.filter(id=user_id, org=request.org)
-                        if profile.exists():
-                            task_obj.assigned_to.add(user_id)
-                        else:
-                            task_obj.delete()
-                            data["assigned_to"] = "Please enter valid User"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+                contacts_list = json.loads(params.get("contacts"))
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.org
+                )
+                task_obj.contacts.add(*contacts)
+
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                task_obj.teams.add(*teams)
+
+            if params.get("assigned_to"):
+                assinged_to_list = json.loads(
+                    params.get("assigned_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org, is_active=True)
+                task_obj.assigned_to.add(*profiles)
 
             return Response(
                 {"error": False, "message": "Task Created Successfully"},
@@ -205,7 +167,8 @@ class TaskDetailView(APIView):
                 )
 
         comments = Comment.objects.filter(task=self.task_obj).order_by("-id")
-        attachments = Attachments.objects.filter(task=self.task_obj).order_by("-id")
+        attachments = Attachments.objects.filter(
+            task=self.task_obj).order_by("-id")
 
         assigned_data = self.task_obj.assigned_to.values("id", "user__email")
 
@@ -216,9 +179,11 @@ class TaskDetailView(APIView):
                 ).values("user__username")
             )
         elif self.request.profile != self.task_obj.created_by:
-            users_mention = [{"username": self.task_obj.created_by.user.username}]
+            users_mention = [
+                {"username": self.task_obj.created_by.user.username}]
         else:
-            users_mention = list(self.task_obj.assigned_to.all().values("user__username"))
+            users_mention = list(
+                self.task_obj.assigned_to.all().values("user__username"))
         if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
             users = Profile.objects.filter(
                 is_active=True, org=self.request.org
@@ -242,7 +207,8 @@ class TaskDetailView(APIView):
         team_ids = [user.id for user in self.task_obj.get_team_users]
         all_user_ids = users.values_list("id", flat=True)
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
-        users_excluding_team = Profile.objects.filter(id__in=users_excluding_team_id)
+        users_excluding_team = Profile.objects.filter(
+            id__in=users_excluding_team_id)
         context.update(
             {
                 "task_obj": TaskSerializer(self.task_obj).data,
@@ -301,12 +267,14 @@ class TaskDetailView(APIView):
         if self.request.FILES.get("task_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.profile
-            attachment.file_name = self.request.FILES.get("task_attachment").name
+            attachment.file_name = self.request.FILES.get(
+                "task_attachment").name
             attachment.task = self.task_obj
             attachment.attachment = self.request.FILES.get("task_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(task__id=self.task_obj.id).order_by("-id")
+        comments = Comment.objects.filter(
+            task__id=self.task_obj.id).order_by("-id")
         attachments = Attachments.objects.filter(task__id=self.task_obj.id).order_by(
             "-id"
         )
@@ -328,7 +296,6 @@ class TaskDetailView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        data = {}
         self.task_obj = self.get_object(pk)
         serializer = TaskCreateSerializer(
             data=params,
@@ -342,51 +309,27 @@ class TaskDetailView(APIView):
             )
             task_obj.contacts.clear()
             if params.get("contacts"):
-                contacts = json.loads(params.get("contacts"))
-                for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact)
-                    if obj_contact.exists():
-                        task_obj.contacts.add(contact)
-                    else:
-                        data["contacts"] = "Please enter valid Contact"
-                        return Response(
-                            {"error": True, "errors": data},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-            if self.request.profile.role == "ADMIN":
-                task_obj.teams.clear()
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(id=team)
-                        if teams_ids.exists():
-                            task_obj.teams.add(team)
-                        else:
-                            task_obj.delete()
-                            data["team"] = "Please enter valid Team"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                else:
-                    task_obj.teams.clear()
+                contacts_list = json.loads(params.get("contacts"))
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.org
+                )
+                task_obj.contacts.add(*contacts)
 
-                task_obj.assigned_to.clear()
-                if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
-                    for user_id in assinged_to_users_ids:
-                        profile = Profile.objects.filter(id=user_id, org=request.org)
-                        if profile.exists():
-                            task_obj.assigned_to.add(user_id)
-                        else:
-                            task_obj.delete()
-                            data["assigned_to"] = "Please enter valid User"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                else:
-                    task_obj.assigned_to.clear()
+            task_obj.teams.clear()
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                task_obj.teams.add(*teams)
+
+            task_obj.assigned_to.clear()
+            if params.get("assigned_to"):
+                assinged_to_list = json.loads(
+                    params.get("assigned_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org, is_active=True)
+                task_obj.assigned_to.add(*profiles)
+
             return Response(
                 {"error": False, "message": "Task updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -429,7 +372,8 @@ class TaskCommentView(APIView):
         tags=["Tasks"], manual_parameters=swagger_params.task_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.query_params if len(
+            request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -448,14 +392,14 @@ class TaskCommentView(APIView):
                     {"error": True, "errors": serializer.errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     @swagger_auto_schema(
         tags=["Tasks"], manual_parameters=swagger_params.organization_params
@@ -472,14 +416,13 @@ class TaskCommentView(APIView):
                 {"error": False, "message": "Comment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 class TaskAttachmentView(APIView):
@@ -502,11 +445,10 @@ class TaskAttachmentView(APIView):
                 {"error": False, "message": "Attachment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )

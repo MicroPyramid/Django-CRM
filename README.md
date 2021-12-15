@@ -66,14 +66,6 @@ python manage.py runserver
 Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
 
 
-### To edit content
-
-```
-python manage.py create_blog_user 'username'
-
-```
-
-The above command will add the user as blog admin to edit content at /blog/admin/
 
 ### Useful tools and packages
 ```

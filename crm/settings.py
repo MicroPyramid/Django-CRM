@@ -1,7 +1,5 @@
 import os
 from dotenv import load_dotenv
-from pathlib import Path
-from celery.schedules import crontab
 from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -131,7 +129,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = "/static/"
 ENV_TYPE = os.getenv("ENV_TYPE", "dev")
 if ENV_TYPE == "dev":
-    DOMAIN_NAME = "localhost:8000"
     # SESSION_COOKIE_DOMAIN = "localhost:8000"
 
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -246,3 +243,5 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+DOMAIN_NAME = os.getenv("DOMAIN_NAME")

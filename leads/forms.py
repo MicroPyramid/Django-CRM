@@ -73,7 +73,7 @@ class LeadListForm(forms.Form):
     leads_file = forms.FileField(required=False)
 
     def __init__(self, *args, **kwargs):
-        super(LeadListForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["leads_file"].widget.attrs.update(
             {
                 "accept": ".csv",

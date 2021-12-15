@@ -1,9 +1,9 @@
 from celery import Celery
+from django.conf import settings
 from django.core.mail import EmailMessage
-from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from common.models import User, Profile
+from common.models import Profile
 from contacts.models import Contact
 
 app = Celery("redis://")
@@ -11,7 +11,7 @@ app = Celery("redis://")
 
 @app.task
 def send_email_to_assigned_user(
-    recipients, contact_id, domain="demo.django-crm.io", protocol="http"
+    recipients, contact_id
 ):
     """ Send Mail To Users When they are assigned to a contact """
     contact = Contact.objects.get(id=contact_id)
@@ -22,7 +22,7 @@ def send_email_to_assigned_user(
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = protocol + "://" + domain
+            context["url"] = settings.DOMAIN_NAME
             context["user"] = profile.user
             context["contact"] = contact
             context["created_by"] = created_by

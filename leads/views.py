@@ -1,13 +1,10 @@
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from accounts.models import Account, Tags
-from accounts.tasks import send_email_to_assigned_user
 from contacts.models import Contact
 from leads import swagger_params
-from common.models import User, Attachments, Comment, APISettings, Profile
-from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS
+from common.models import Attachments, Comment, APISettings, Profile
+from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, INDCHOICES
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
     ProfileSerializer,
@@ -15,14 +12,13 @@ from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
 )
-from leads.models import Lead
+from leads.models import Lead, Company
 from leads.forms import LeadListForm
-from leads.serializer import LeadSerializer, LeadCreateSerializer, TagsSerializer
+from leads.serializer import LeadSerializer, LeadCreateSerializer, CompanySerializer
 from leads.tasks import (
     create_lead_from_file,
     send_email_to_assigned_user,
     send_lead_assigned_emails,
-    update_leads_cache,
 )
 from teams.serializer import TeamsSerializer
 from teams.models import Teams
@@ -31,10 +27,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 import json
-from django.conf import settings
 
 
 class LeadListView(APIView, LimitOffsetPagination):
@@ -56,109 +50,86 @@ class LeadListView(APIView, LimitOffsetPagination):
                 "tags",
                 "assigned_to",
             )
-        )
+        ).order_by('-id')
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile]) | Q(
                     created_by=self.request.profile)
             )
 
-        request_post = params
-        if request_post:
-            if request_post.get("name"):
+        if params:
+            if params.get("name"):
                 queryset = queryset.filter(
-                    Q(first_name__icontains=request_post.get("name"))
-                    & Q(last_name__icontains=request_post.get("name"))
+                    Q(first_name__icontains=params.get("name"))
+                    & Q(last_name__icontains=params.get("name"))
                 )
-            if request_post.get("title"):
+            if params.get("title"):
                 queryset = queryset.filter(
-                    title__icontains=request_post.get("title"))
-            if request_post.get("source"):
-                queryset = queryset.filter(source=request_post.get("source"))
-            if request_post.getlist("assigned_to"):
+                    title__icontains=params.get("title"))
+            if params.get("source"):
+                queryset = queryset.filter(source=params.get("source"))
+            if params.getlist("assigned_to"):
                 queryset = queryset.filter(
                     assigned_to__id__in=json.loads(
-                        request_post.get("assigned_to"))
+                        params.get("assigned_to"))
                 )
-            if request_post.get("status"):
-                queryset = queryset.filter(status=request_post.get("status"))
-            if request_post.get("tags"):
+            if params.get("status"):
+                queryset = queryset.filter(status=params.get("status"))
+            if params.get("tags"):
                 queryset = queryset.filter(
-                    tags__in=json.loads(request_post.get("tags"))
+                    tags__in=json.loads(params.get("tags"))
                 )
-            if request_post.get("city"):
+            if params.get("city"):
                 queryset = queryset.filter(
-                    city__icontains=request_post.get("city"))
-            if request_post.get("email"):
+                    city__icontains=params.get("city"))
+            if params.get("email"):
                 queryset = queryset.filter(
-                    email__icontains=request_post.get("email"))
+                    email__icontains=params.get("email"))
         context = {}
-        search = False
-        if (
-            params.get("title")
-            or params.get("source")
-            or params.get("assigned_to")
-            or params.get("status")
-            or params.get("tags")
-        ):
-            search = True
-        context["search"] = search
-        queryset_open = queryset.exclude(status="closed").order_by("id")
+        queryset_open = queryset.exclude(status="closed")
         results_leads_open = self.paginate_queryset(
             queryset_open.distinct(), self.request, view=self
         )
         open_leads = LeadSerializer(results_leads_open, many=True).data
+        if results_leads_open:
+            offset = queryset_open.filter(
+                id__gte=results_leads_open[-1].id).count()
+            if offset == queryset_open.count():
+                offset = None
+        else:
+            offset = 0
         context["per_page"] = 10
         context["open_leads"] = {
             "leads_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number": int(self.offset / 10) + 1,
             "open_leads": open_leads,
+            "offset": offset
         }
 
-        queryset_close = queryset.filter(status="closed").order_by("id")
+        queryset_close = queryset.filter(status="closed")
         results_leads_close = self.paginate_queryset(
             queryset_close.distinct(), self.request, view=self
         )
         close_leads = LeadSerializer(results_leads_close, many=True).data
+        if results_leads_close:
+            offset = queryset_close.filter(
+                id__gte=results_leads_close[-1].id).count()
+            if offset == queryset_close.count():
+                offset = None
+        else:
+            offset = 0
 
         context["close_leads"] = {
             "leads_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number": int(self.offset / 10) + 1,
             "close_leads": close_leads,
+            "offset": offset
         }
 
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
-        users = []
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
-            users = Profile.objects.filter(
-                is_active=True, org=self.request.org
-            ).order_by("user__email")
-        elif self.request.profile.google.all():
-            users = []
-        else:
-            users = Profile.objects.filter(
-                role="ADMIN", org=self.request.org
-            ).order_by("user__email")
-        context["users"] = ProfileSerializer(users, many=True).data
-        tag_ids = list(
-            set(
-                queryset.values_list(
-                    "tags",
-                    flat=True,
-                )
-            )
-        )
-
-        context["tags"] = TagsSerializer(
-            Tags.objects.filter(id__in=tag_ids), many=True
-        ).data
-
+        context["companies"] = CompanySerializer(
+            Company.objects.filter(org=self.request.org), many=True).data
         context["countries"] = COUNTRIES
+        context["industries"] = INDCHOICES
         return context
 
     @swagger_auto_schema(
@@ -177,16 +148,12 @@ class LeadListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        data = {}
         serializer = LeadCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             lead_obj = serializer.save(
                 created_by=request.profile, org=request.org)
             if params.get("tags"):
                 tags = json.loads(params.get("tags"))
-                # for t in tags:
-                #     tag,_ = Tags.objects.get_or_create(name=t)
-                #     lead_obj.tags.add(tag)
                 for t in tags:
                     tag = Tags.objects.filter(slug=t.lower())
                     if tag.exists():
@@ -195,14 +162,16 @@ class LeadListView(APIView, LimitOffsetPagination):
                         tag = Tags.objects.create(name=t)
                     lead_obj.tags.add(tag)
 
+            if params.get("contacts"):
+                obj_contact = Contact.objects.filter(
+                    id=params.get("contacts"), org=request.org)
+                lead_obj.contacts.add(obj_contact)
+
             recipients = list(
                 lead_obj.assigned_to.all().values_list("id", flat=True))
-            current_site = get_current_site(self.request)
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=current_site.domain,
-                protocol=request.scheme,
             )
 
             if request.FILES.get("lead_attachment"):
@@ -214,36 +183,19 @@ class LeadListView(APIView, LimitOffsetPagination):
                 attachment.attachment = request.FILES.get("lead_attachment")
                 attachment.save()
 
-            if self.request.profile.role == "ADMIN":
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, org=request.org)
-                        if teams_ids.exists():
-                            lead_obj.teams.add(team)
-                        else:
-                            lead_obj.delete()
-                            data["team"] = "Please enter valid Team"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(
-                        params.get("assigned_to"))
-                    for user_id in assinged_to_users_ids:
-                        user = Profile.objects.filter(
-                            id=user_id, org=request.org)
-                        if user.exists():
-                            lead_obj.assigned_to.add(user_id)
-                        else:
-                            lead_obj.delete()
-                            data["assigned_to"] = "Please enter valid User"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                lead_obj.teams.add(*teams)
+
+            if params.get("assigned_to"):
+                assinged_to_list = json.loads(
+                    params.get("assigned_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org)
+                lead_obj.assigned_to.add(*profiles)
+
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
                     created_by=request.profile,
@@ -275,12 +227,9 @@ class LeadListView(APIView, LimitOffsetPagination):
                     assigned_to_list = json.loads(
                         params.getlist("assigned_to"))
                     recipients = assigned_to_list
-                    current_site = get_current_site(self.request)
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=current_site.domain,
-                        protocol=request.scheme,
                     )
                 return Response(
                     {
@@ -477,7 +426,6 @@ class LeadDetailView(APIView):
             if len(self.request.data) == 0
             else self.request.data
         )
-        data = {}
         self.lead_obj = self.get_object(pk)
         if self.lead_obj.org != request.org:
             return Response(
@@ -513,12 +461,9 @@ class LeadDetailView(APIView):
             )
             recipients = list(set(assigned_to_list) -
                               set(previous_assigned_to_users))
-            current_site = get_current_site(self.request)
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
-                domain=current_site.domain,
-                protocol=request.scheme,
             )
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
@@ -529,41 +474,26 @@ class LeadDetailView(APIView):
                 attachment.attachment = request.FILES.get("lead_attachment")
                 attachment.save()
 
-            if self.request.profile.role == "ADMIN":
-                lead_obj.teams.clear()
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(id=team, org=request.org)
-                        if teams_ids.exists():
-                            lead_obj.teams.add(team)
-                        else:
-                            lead_obj.delete()
-                            data["team"] = "Please enter valid Team"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                else:
-                    lead_obj.teams.clear()
+            lead_obj.contacts.clear()
+            if params.get("contacts"):
+                obj_contact = Contact.objects.filter(
+                    id=params.get("contacts"), org=request.org)
+                lead_obj.contacts.add(obj_contact)
 
-                lead_obj.assigned_to.clear()
-                if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(
-                        params.get("assigned_to"))
-                    for user_id in assinged_to_users_ids:
-                        user = Profile.objects.filter(id=user_id, org=request.org)
-                        if user.exists():
-                            lead_obj.assigned_to.add(user_id)
-                        else:
-                            lead_obj.delete()
-                            data["assigned_to"] = "Please enter valid User"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                else:
-                    lead_obj.assigned_to.clear()
+            lead_obj.teams.clear()
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                lead_obj.teams.add(*teams)
+
+            lead_obj.assigned_to.clear()
+            if params.get("assigned_to"):
+                assinged_to_list = json.loads(
+                    params.get("assigned_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org)
+                lead_obj.assigned_to.add(*profiles)
 
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
@@ -596,12 +526,9 @@ class LeadDetailView(APIView):
                     # account_object.assigned_to.add(*params.getlist('assigned_to'))
                     assigned_to_list = json.loads(params.get("assigned_to"))
                     recipients = assigned_to_list
-                    current_site = get_current_site(self.request)
                     send_email_to_assigned_user.delay(
                         recipients,
                         lead_obj.id,
-                        domain=current_site.domain,
-                        protocol=request.scheme,
                     )
 
                 for comment in lead_obj.leads_comments.all():
@@ -654,25 +581,23 @@ class LeadUploadView(APIView):
         tags=["Leads"], manual_parameters=swagger_params.lead_upload_post_params
     )
     def post(self, request, *args, **kwargs):
-        if request.method == "POST":
-            lead_form = LeadListForm(request.POST, request.FILES)
-            if lead_form.is_valid():
-                create_lead_from_file.delay(
-                    lead_form.validated_rows,
-                    lead_form.invalid_rows,
-                    request.profile.id,
-                    request.get_host(),
-                    request.org.id
-                )
-                return Response(
-                    {"error": False, "message": "Leads created Successfully"},
-                    status=status.HTTP_200_OK,
-                )
-            else:
-                return Response(
-                    {"error": True, "errors": lead_form.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        lead_form = LeadListForm(request.POST, request.FILES)
+        if lead_form.is_valid():
+            create_lead_from_file.delay(
+                lead_form.validated_rows,
+                lead_form.invalid_rows,
+                request.profile.id,
+                request.get_host(),
+                request.org.id
+            )
+            return Response(
+                {"error": False, "message": "Leads created Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": lead_form.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class LeadCommentView(APIView):
@@ -696,25 +621,23 @@ class LeadCommentView(APIView):
             or request.profile == obj.commented_by
         ):
             serializer = LeadCommentSerializer(obj, data=params)
-            if params.get("comment"):
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        {"error": False, "message": "Comment Submitted"},
-                        status=status.HTTP_200_OK,
-                    )
+            if serializer.is_valid():
+                serializer.save()
                 return Response(
-                    {"error": True, "errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
                 )
-        else:
             return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     @swagger_auto_schema(
         tags=["Leads"], manual_parameters=swagger_params.organization_params
@@ -731,14 +654,14 @@ class LeadCommentView(APIView):
                 {"error": False, "message": "Comment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You do not have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+
+        return Response(
+            {
+                "error": True,
+                "errors": "You do not have permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 class LeadAttachmentView(APIView):
@@ -761,14 +684,13 @@ class LeadAttachmentView(APIView):
                 {"error": False, "message": "Attachment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 class CreateLeadFromSite(APIView):

@@ -1,14 +1,9 @@
 import jwt
-import base64
-
-# from .models import User
-# from django.contrib.auth import get_user_model
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext as _
 from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.authentication import get_authorization_header
-from django.conf import settings
 from rest_framework_jwt.settings import api_settings
 
 try:

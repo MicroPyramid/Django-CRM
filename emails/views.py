@@ -177,10 +177,8 @@ def email_sent_edit(request, pk):
                 f.status = "sent"
             f.save()
             return HttpResponseRedirect(reverse("emails:list"))
-        else:
-            return render(request, "create_mail.html", {"form": form, "em": em})
-    else:
-        form = EmailForm()
+        return render(request, "create_mail.html", {"form": form, "em": em})
+    form = EmailForm()
     return render(request, "create_mail.html", {"form": form, "em": em})
 
 

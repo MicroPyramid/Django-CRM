@@ -1,8 +1,6 @@
 from celery import Celery
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, EmailMessage
-from django.db.models import Q
-from django.shortcuts import reverse
+from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 from accounts.models import Profile
@@ -13,7 +11,7 @@ app = Celery("redis://")
 
 @app.task
 def send_email_to_assigned_user(
-    recipients, case_id, domain="demo.django-crm.io", protocol="http"
+    recipients, case_id
 ):
     """ Send Mail To Users When they are assigned to a case """
     case = Case.objects.get(id=case_id)
@@ -24,7 +22,7 @@ def send_email_to_assigned_user(
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = protocol + "://" + domain
+            context["url"] = settings.DOMAIN_NAME
             context["user"] = profile.user
             context["case"] = case
             context["created_by"] = created_by

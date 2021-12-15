@@ -8,7 +8,7 @@ from common.serializer import (
 )
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 
 class EventSerializer(serializers.ModelSerializer):

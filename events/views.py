@@ -8,7 +8,6 @@ from common.serializer import (
     ProfileSerializer,
     CommentSerializer,
     AttachmentsSerializer,
-    CommentSerializer,
 )
 from events import swagger_params
 from events.models import Event
@@ -48,7 +47,7 @@ class EventListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(org=self.request.org)
+        queryset = self.model.objects.filter(org=self.request.org).order_by('-id')
         contacts = Contact.objects.filter(org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
@@ -75,47 +74,23 @@ class EventListView(APIView, LimitOffsetPagination):
                     date_of_meeting=params.get("date_of_meeting")
                 )
         context = {}
-        search = False
-        if (
-            params.get("name")
-            or params.get("created_by")
-            or params.get("assigned_users")
-            or params.get("date_of_meeting")
-        ):
-            search = True
-        context["search"] = search
         results_events = self.paginate_queryset(
             queryset, self.request, view=self)
         events = EventSerializer(results_events, many=True).data
-
-        context["per_page"] = 10
+        if results_events:
+            offset = queryset.filter(id__gte=results_events[-1].id).count()
+            if offset == queryset.count():
+                offset = None
+        else:
+            offset = 0
         context.update(
             {
                 "events_count": self.count,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "page_number": int(self.offset / 10) + 1,
+                "offset": offset
             }
         )
-
-        if search:
-            context["events"] = events
-            return context
-
         context["events"] = events
-        users = []
-        profile_list = Profile.objects.filter(
-            is_active=True, org=self.request.org)
-        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
-            profiles = profile_list.order_by("user__email")
-        else:
-            profiles = profile_list.filter(
-                role="ADMIN").order_by("user__email")
         context["recurring_days"] = WEEKDAYS
-        context["users"] = ProfileSerializer(profiles, many=True).data
-        if self.request.profile == "ADMIN":
-            context["teams_list"] = TeamsSerializer(
-                Teams.objects.filter(org=self.request.org), many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
@@ -149,58 +124,32 @@ class EventListView(APIView, LimitOffsetPagination):
                     disabled=False,
                     org=request.org
                 )
+
+
                 if params.get("contacts"):
-                    contacts = json.loads(params.get("contacts"))
-                    for contact in contacts:
-                        obj_contact = Contact.objects.filter(
-                            id=contact, org=request.org)
-                        if obj_contact.exists():
-                            event_obj.contacts.add(contact)
-                        else:
-                            event_obj.delete()
-                            data["contacts"] = "Please enter valid contact"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                if self.request.profile.role == "ADMIN":
-                    if params.get("teams"):
-                        teams = json.loads(params.get("teams"))
-                        for team in teams:
-                            teams_ids = Teams.objects.filter(
-                                id=team, org=request.org)
-                            if teams_ids.exists():
-                                event_obj.teams.add(team)
-                            else:
-                                event_obj.delete()
-                                data["team"] = "Please enter valid Team"
-                                return Response(
-                                    {"error": True, "errors": data},
-                                    status=status.HTTP_400_BAD_REQUEST,
-                                )
-                    if params.get("assigned_to"):
-                        assinged_to_users_ids = json.loads(
-                            params.get("assigned_to"))
-                        for user_id in assinged_to_users_ids:
-                            user = Profile.objects.filter(
-                                id=user_id, org=request.org)
-                            if user.exists():
-                                event_obj.assigned_to.add(user_id)
-                            else:
-                                event_obj.delete()
-                                data["assigned_to"] = "Please enter valid User"
-                                return Response(
-                                    {"error": True, "errors": data},
-                                    status=status.HTTP_400_BAD_REQUEST,
-                                )
+                    obj_contact = Contact.objects.filter(
+                        id=params.get("contacts"), org=request.org)
+                    event_obj.contacts.add(obj_contact)
+
+                if params.get("teams"):
+                    teams_list = json.loads(params.get("teams"))
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.org)
+                    event_obj.teams.add(*teams)
+
+                if params.get("assigned_to"):
+                    assinged_to_list = json.loads(
+                        params.get("assigned_to"))
+                    profiles = Profile.objects.filter(
+                        id__in=assinged_to_list, org=request.org)
+                    event_obj.assigned_to.add(*profiles)
+
                 assigned_to_list = list(
                     event_obj.assigned_to.all().values_list("id", flat=True)
                 )
                 send_email.delay(
                     event_obj.id,
                     assigned_to_list,
-                    domain=request.get_host(),
-                    protocol=request.scheme,
                 )
             if params.get("event_type") == "Recurring":
                 recurring_days = params.get("recurring_days")
@@ -238,58 +187,29 @@ class EventListView(APIView, LimitOffsetPagination):
                     )
 
                     if params.get("contacts"):
-                        contacts = json.loads(params.get("contacts"))
-                        for contact in contacts:
-                            obj_contact = Contact.objects.filter(
-                                id=contact, org=request.org)
-                            if obj_contact.exists():
-                                event.contacts.add(contact)
-                            else:
-                                event.delete()
-                                data["contacts"] = "Please enter valid contact"
-                                return Response(
-                                    {"error": True, "errors": data},
-                                    status=status.HTTP_400_BAD_REQUEST,
-                                )
-                    if self.request.profile.role == "ADMIN":
-                        if params.get("teams"):
-                            teams = json.loads(params.get("teams"))
-                            for team in teams:
-                                teams_ids = Teams.objects.filter(
-                                    id=team, org=request.org)
-                                if teams_ids.exists():
-                                    event.teams.add(team)
-                                else:
-                                    event.delete()
-                                    data["team"] = "Please enter valid Team"
-                                    return Response(
-                                        {"error": True, "errors": data},
-                                        status=status.HTTP_400_BAD_REQUEST,
-                                    )
-                        if params.get("assigned_to"):
-                            assinged_to_users_ids = json.loads(
-                                params.get("assigned_to")
-                            )
-                            for user_id in assinged_to_users_ids:
-                                user = Profile.objects.filter(
-                                    id=user_id, org=request.org)
-                                if user.exists():
-                                    event.assigned_to.add(user_id)
-                                else:
-                                    event.delete()
-                                    data["assigned_to"] = "Please enter valid User"
-                                    return Response(
-                                        {"error": True, "errors": data},
-                                        status=status.HTTP_400_BAD_REQUEST,
-                                    )
+                        obj_contact = Contact.objects.filter(
+                            id=params.get("contacts"), org=request.org)
+                        event.contacts.add(obj_contact)
+            
+                    if params.get("teams"):
+                        teams_list = json.loads(params.get("teams"))
+                        teams = Teams.objects.filter(
+                            id__in=teams_list, org=request.org)
+                        event.teams.add(*teams)
+
+                    if params.get("assigned_to"):
+                        assinged_to_list = json.loads(
+                            params.get("assigned_to"))
+                        profiles = Profile.objects.filter(
+                            id__in=assinged_to_list, org=request.org)
+                        event.assigned_to.add(*profiles)
+
                     assigned_to_list = list(
                         event.assigned_to.all().values_list("id", flat=True)
                     )
                     send_email.delay(
                         event.id,
                         assigned_to_list,
-                        domain=request.get_host(),
-                        protocol=request.scheme,
                     )
             return Response(
                 {"error": False, "message": "Event Created Successfully"},
@@ -495,55 +415,25 @@ class EventDetailView(APIView):
 
             event_obj.contacts.clear()
             if params.get("contacts"):
-                contacts = json.loads(params.get("contacts"))
-                for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, org=request.org)
-                    if obj_contact.exists():
-                        event_obj.contacts.add(contact)
-                    else:
-                        data["contacts"] = "Please enter valid Contact"
-                        return Response(
-                            {"error": True, "errors": data},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-            if self.request.profile.role == "ADMIN":
-                event_obj.teams.clear()
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, org=request.org)
-                        if teams_ids.exists():
-                            event_obj.teams.add(team)
-                        else:
-                            event_obj.delete()
-                            data["team"] = "Please enter valid Team"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
-                else:
-                    event_obj.teams.clear()
+                obj_contact = Contact.objects.filter(
+                    id=params.get("contacts"), org=request.org)
+                event_obj.contacts.add(obj_contact)
 
-                event_obj.assigned_to.clear()
-                if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(
-                        params.get("assigned_to"))
-                    for user_id in assinged_to_users_ids:
-                        user = Profile.objects.filter(id=user_id, org=request.org)
-                        if user.exists():
-                            event_obj.assigned_to.add(user_id)
-                        else:
-                            event_obj.delete()
-                            data["assigned_to"] = "Please enter valid User"
-                            return Response(
-                                {"error": True, "errors": data},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+            event_obj.teams.clear()
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                event_obj.teams.add(*teams)
 
-                else:
-                    event_obj.assigned_to.clear()
+            event_obj.assigned_to.clear()
+            if params.get("assigned_to"):
+                assinged_to_list = json.loads(
+                    params.get("assigned_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org)
+                event_obj.assigned_to.add(*profiles)
+
             assigned_to_list = list(
                 event_obj.assigned_to.all().values_list("id", flat=True)
             )
@@ -552,8 +442,6 @@ class EventDetailView(APIView):
             send_email.delay(
                 event_obj.id,
                 recipients,
-                domain=request.get_host(),
-                protocol=request.scheme,
             )
             return Response(
                 {"error": False, "message": "Event updated Successfully"},
@@ -606,25 +494,23 @@ class EventCommentView(APIView):
             or request.profile == obj.commented_by
         ):
             serializer = CommentSerializer(obj, data=params)
-            if params.get("comment"):
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        {"error": False, "message": "Comment Submitted"},
-                        status=status.HTTP_200_OK,
-                    )
+            if serializer.is_valid():
+                serializer.save()
                 return Response(
-                    {"error": True, "errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
                 )
-        else:
             return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     @swagger_auto_schema(
         tags=["Events"], manual_parameters=swagger_params.organization_params
@@ -641,14 +527,13 @@ class EventCommentView(APIView):
                 {"error": False, "message": "Comment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 class EventAttachmentView(APIView):
@@ -671,11 +556,10 @@ class EventAttachmentView(APIView):
                 {"error": False, "message": "Attachment Deleted Successfully"},
                 status=status.HTTP_200_OK,
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "You don't have Permission to perform this action",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )

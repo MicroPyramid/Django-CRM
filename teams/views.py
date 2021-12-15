@@ -1,14 +1,9 @@
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import PermissionDenied
-from django.db.models import Q
 from teams import swagger_params
 from teams.models import Teams
 from teams.tasks import update_team_users, remove_users
 from teams.serializer import TeamsSerializer, TeamCreateSerializer
 from common.models import Profile
 from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import ProfileSerializer
-
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -29,50 +24,37 @@ class TeamsListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(org=self.request.org)
-
-        request_post = params
-        if request_post:
-            if request_post.get("team_name"):
+        queryset = self.model.objects.filter(org=self.request.org).order_by('-id')
+        if params:
+            if params.get("team_name"):
                 queryset = queryset.filter(
-                    name__icontains=request_post.get("team_name")
+                    name__icontains=params.get("team_name")
                 )
-            if request_post.get("created_by"):
-                queryset = queryset.filter(created_by=request_post.get("created_by"))
-            if request_post.get("assigned_users"):
+            if params.get("created_by"):
+                queryset = queryset.filter(created_by=params.get("created_by"))
+            if params.get("assigned_users"):
                 queryset = queryset.filter(
-                    users__id__in=json.loads(request_post.get("assigned_users"))
+                    users__id__in=json.loads(params.get("assigned_users"))
                 )
 
         context = {}
-        search = False
-        if (
-            params.get("team_name")
-            or params.get("created_by")
-            or params.get("assigned_users")
-        ):
-            search = True
-        context["search"] = search
-
         results_teams = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
         teams = TeamsSerializer(results_teams, many=True).data
-        context["per_page"] = 10
+        if results_teams:
+            offset = queryset.filter(id__gte=results_teams[-1].id).count()
+            if offset == queryset.count():
+                offset = None
+        else:
+            offset = 0
         context.update(
             {
                 "teams_count": self.count,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "page_number": int(self.offset / 10) + 1,
+                "offset": offset
             }
         )
         context["teams"] = teams
-
-        users = Profile.objects.filter(
-            is_active=True, org=self.request.org
-        ).order_by("id")
-        context["users"] = ProfileSerializer(users, many=True).data
         return context
 
     @swagger_auto_schema(
@@ -109,23 +91,14 @@ class TeamsListView(APIView, LimitOffsetPagination):
         )
 
         serializer = TeamCreateSerializer(data=params, request_obj=request)
-        data = {}
         if serializer.is_valid():
             team_obj = serializer.save(created_by=request.profile, org=request.org)
 
             if params.get("assign_users"):
-                assinged_to_users_ids = json.loads(params.get("assign_users"))
-                for user_id in assinged_to_users_ids:
-                    user = Profile.objects.filter(id=user_id, org=request.org)
-                    if user.exists():
-                        team_obj.users.add(user_id)
-                    else:
-                        team_obj.delete()
-                        data["users"] = "Please enter valid user"
-                        return Response(
-                            {"error": True, "errors": data},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
+                assinged_to_list = json.loads(params.get("assign_users"))
+                profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.org)
+                if profiles:
+                    team_obj.users.add(*profiles)
             return Response(
                 {"error": False, "message": "Team Created Successfully"},
                 status=status.HTTP_200_OK,
@@ -159,10 +132,6 @@ class TeamsDetailView(APIView):
         self.team_obj = self.get_object(pk)
         context = {}
         context["team"] = TeamsSerializer(self.team_obj).data
-        context["users"] = ProfileSerializer(
-            Profile.objects.filter(is_active=True, org=request.org).order_by("user__email"),
-            many=True,
-        ).data
         return Response(context)
 
     @swagger_auto_schema(
@@ -188,29 +157,19 @@ class TeamsDetailView(APIView):
         serializer = TeamCreateSerializer(
             data=params, instance=self.team, request_obj=request
         )
-        data = {}
         if serializer.is_valid():
             team_obj = serializer.save()
 
             team_obj.users.clear()
             if params.get("assign_users"):
-                assinged_to_users_ids = json.loads(params.get("assign_users"))
-                for user_id in assinged_to_users_ids:
-                    user = Profile.objects.filter(id=user_id, org=request.org)
-                    if user.exists():
-                        team_obj.users.add(user_id)
-                    else:
-                        data["users"] = "Please enter valid user"
-                        return Response(
-                            {"error": True, "errors": data},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
+                assinged_to_list = json.loads(params.get("assign_users"))
+                profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.org)
+                if profiles:
+                    team_obj.users.add(*profiles)
             update_team_users.delay(pk)
             latest_users = team_obj.get_users()
             for user in actual_users:
-                if user in latest_users:
-                    pass
-                else:
+                if user not in latest_users:
                     removed_users.append(user)
             remove_users.delay(removed_users, pk)
             return Response(

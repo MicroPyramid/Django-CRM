@@ -3,7 +3,6 @@ import binascii
 import datetime
 import os
 import time
-from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
@@ -20,7 +19,6 @@ from common.templatetags.common_tags import (
 )
 from common.utils import COUNTRIES, ROLES
 from django.utils import timezone
-from django.conf import settings
 
 
 def img_url(self, filename):
@@ -135,7 +133,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    org = models.ForeignKey(Org, null=True, on_delete=models.CASCADE, blank=True)
+    org = models.ForeignKey(
+        Org, null=True, on_delete=models.CASCADE, blank=True)
     phone = PhoneNumberField(null=True, unique=True)
     alternate_phone = PhoneNumberField(null=True)
     address = models.ForeignKey(
@@ -160,7 +159,7 @@ class Profile(models.Model):
     def save(self, *args, **kwargs):
         """ by default the expiration time is set to 2 hours """
         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-        super(Profile, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @property
     def is_admin(self):
@@ -387,7 +386,8 @@ class Document(models.Model):
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
     )
-    shared_to = models.ManyToManyField(Profile, related_name="document_shared_to")
+    shared_to = models.ManyToManyField(
+        Profile, related_name="document_shared_to")
     teams = models.ManyToManyField(
         "teams.Teams", related_name="document_teams")
     org = models.ForeignKey(
@@ -478,7 +478,7 @@ class APISettings(models.Model):
     def save(self, *args, **kwargs):
         if not self.apikey or self.apikey is None or self.apikey == "":
             self.apikey = generate_key()
-        super(APISettings, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Google(models.Model):

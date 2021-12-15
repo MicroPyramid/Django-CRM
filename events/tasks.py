@@ -1,18 +1,15 @@
 from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
-from django.shortcuts import reverse
 from django.template.loader import render_to_string
-
-from common.models import User
-from contacts.models import Contact
+from common.models import Profile
 from events.models import Event
 
 app = Celery("redis://")
 
 
 @app.task
-def send_email(event_id, recipients, domain="demo.django-crm.io", protocol="http"):
+def send_email(event_id, recipients):
     event = Event.objects.filter(id=event_id).first()
     subject = " Invitation for an event."
     context = {}
@@ -20,7 +17,7 @@ def send_email(event_id, recipients, domain="demo.django-crm.io", protocol="http
     context["event_id"] = event_id
     context["event_created_by"] = event.created_by
     context["event_date_of_meeting"] = event.date_of_meeting
-    context["url"] = protocol + "://" + domain
+    context["url"] = settings.DOMAIN_NAME
     # recipients = event.assigned_to.filter(is_active=True)
     for profile_id in recipients:
         recipients_list = []

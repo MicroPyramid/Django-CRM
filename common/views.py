@@ -1,7 +1,6 @@
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
-from django.contrib.sites.shortcuts import get_current_site
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
@@ -27,7 +26,6 @@ from common.tasks import (
     resend_activation_link_to_user,
     send_email_to_new_user,
     send_email_user_delete,
-    send_email_user_status,
     send_email_to_reset_password,
 )
 from django.utils.translation import gettext as _
@@ -36,21 +34,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_jwt.serializers import jwt_encode_handler
 from common.utils import jwt_payload_handler
-from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from common.custom_auth import JSONWebTokenAuthentication
 from common import swagger_params
 from django.db.models import Q
-from rest_framework.decorators import api_view
 import json
-from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_text
 from django.utils.http import urlsafe_base64_decode
 from common.token_generator import account_activation_token
-from common.models import Profile
 from django.utils import timezone
-from django.conf import settings
 from common.utils import COUNTRIES
 
 
@@ -63,18 +56,14 @@ class GetTeamsAndUsersView(APIView):
         tags=["Users"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, *args, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            return Response(
-                {"error": True, "errors": "Permission Denied"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         data = {}
-        teams = Teams.objects.filter(org=request.org)
+        teams = Teams.objects.filter(org=request.org).order_by('-id')
         teams_data = TeamsSerializer(teams, many=True).data
-        users = Profile.objects.filter(is_active=True, org=request.org)
-        users_data = ProfileSerializer(users, many=True).data
+        profiles = Profile.objects.filter(
+            is_active=True, org=request.org).order_by('user__email')
+        profiles_data = ProfileSerializer(profiles, many=True).data
         data["teams"] = teams_data
-        data["users_data"] = users_data
+        data["profiles"] = profiles_data
         return Response(data)
 
 
@@ -90,39 +79,35 @@ class UserDetailView(APIView):
         tags=["Users"], manual_parameters=swagger_params.organization_params
     )
     def get(self, request, pk, format=None):
-        user_obj = self.get_object(pk)
+        profile_obj = self.get_object(pk)
         if (
             self.request.profile.role != "ADMIN"
             and not self.request.profile.is_admin
-            and self.request.profile.id != user_obj.id
+            and self.request.profile.id != profile_obj.id
         ):
             return Response(
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if user_obj.org != request.org:
+        if profile_obj.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
+                status=status.HTTP_403_FORBIDDEN,
             )
-        users_data = []
-        for each in Profile.objects.filter(org=request.org, is_active=True):
-            assigned_dict = {}
-            assigned_dict["id"] = each.id
-            assigned_dict["name"] = each.user.first_name
-            users_data.append(assigned_dict)
+        assigned_data = Profile.objects.filter(
+            org=request.org, is_active=True).values('id', 'user__first_name')
         context = {}
-        context["user_obj"] = ProfileSerializer(user_obj).data
-        opportunity_list = Opportunity.objects.filter(assigned_to=user_obj)
+        context["profile_obj"] = ProfileSerializer(profile_obj).data
+        opportunity_list = Opportunity.objects.filter(assigned_to=profile_obj)
         context["opportunity_list"] = OpportunitySerializer(
             opportunity_list, many=True
         ).data
-        contacts = Contact.objects.filter(assigned_to=user_obj)
+        contacts = Contact.objects.filter(assigned_to=profile_obj)
         context["contacts"] = ContactSerializer(contacts, many=True).data
-        cases = Case.objects.filter(assigned_to=user_obj)
+        cases = Case.objects.filter(assigned_to=profile_obj)
         context["cases"] = CaseSerializer(cases, many=True).data
-        context["assigned_data"] = users_data
-        comments = user_obj.user_comments.all()
+        context["assigned_data"] = assigned_data
+        comments = profile_obj.user_comments.all()
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
         return Response(
@@ -151,7 +136,7 @@ class UserDetailView(APIView):
         if profile.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
+                status=status.HTTP_403_FORBIDDEN,
             )
         serializer = CreateUserSerializer(
             data=params, instance=profile.user, org=request.org)
@@ -178,21 +163,6 @@ class UserDetailView(APIView):
             user.username = user.first_name
             user.save()
             profile = profile_serializer.save()
-            if self.request.profile.role == "ADMIN":
-                if params.getlist("teams"):
-                    user_teams = profile.user_teams.all()
-
-                    team_obj = Teams.objects.filter(org=request.org)
-                    for team in params.getlist("teams"):
-                        try:
-                            team_obj = team_obj.filter(id=team).first()
-                            if team_obj != user_teams:
-                                team_obj.users.add(profile)
-                        except:
-                            return Response(
-                                {"detail": "No such Team Available"},
-                                status=status.HTTP_404_NOT_FOUND,
-                            )
             return Response(
                 {"error": False, "message": "User Updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -221,8 +191,6 @@ class UserDetailView(APIView):
         send_email_user_delete.delay(
             self.object.user.email,
             deleted_by=deleted_by,
-            domain=settings.DOMAIN_NAME,
-            protocol=request.scheme,
         )
         self.object.delete()
         return Response({"status": "success"}, status=status.HTTP_200_OK)
@@ -273,24 +241,22 @@ class ApiHomeView(APIView):
             Q(status="converted") | Q(status="closed"))
         opportunities = Opportunity.objects.filter(org=request.org)
 
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
-            pass
-        else:
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             accounts = accounts.filter(
-                Q(assigned_to__id__in=[self.request.profile.id])
-                | Q(created_by=self.request.profile.id)
+                Q(assigned_to=self.request.profile)
+                | Q(created_by=self.request.profile)
             )
             contacts = contacts.filter(
-                Q(assigned_to__id__in=[self.request.profile.id])
-                | Q(created_by=self.request.profile.id)
+                Q(assigned_to__id__in=self.request.profile)
+                | Q(created_by=self.request.profile)
             )
             leads = leads.filter(
-                Q(assigned_to__id__in=[self.request.profile.id])
-                | Q(created_by=self.request.profile.id)
+                Q(assigned_to__id__in=self.request.profile)
+                | Q(created_by=self.request.profile)
             ).exclude(status="closed")
             opportunities = opportunities.filter(
-                Q(assigned_to__id__in=[self.request.profile.id])
-                | Q(created_by=self.request.profile.id)
+                Q(assigned_to__id__in=self.request.profile)
+                | Q(created_by=self.request.profile)
             )
         context = {}
         context["accounts_count"] = accounts.count()
@@ -342,14 +308,13 @@ class LoginView(APIView):
                 "error": False,
             }
             return Response(response_data, status=status.HTTP_200_OK)
-        else:
-            password_field = "doesnot match"
-            msg = _("Email and password {password_field}")
-            msg = msg.format(password_field=password_field)
-            return Response(
-                {"error": True, "errors": msg},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        password_field = "doesnot match"
+        msg = _("Email and password {password_field}")
+        msg = msg.format(password_field=password_field)
+        return Response(
+            {"error": True, "errors": msg},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class RegistrationView(APIView):
@@ -381,13 +346,9 @@ class RegistrationView(APIView):
             if created:
                 user.is_active = False
                 user.save()
-                protocol = request.scheme
-                current_site = get_current_site(self.request)
                 send_email_to_new_user.delay(
                     profile.id,
                     org.id,
-                    domain=current_site.domain,
-                    protocol=protocol,
                 )
                 return Response(
                     {"error": False, "message": "User created Successfully."},
@@ -466,15 +427,11 @@ class UsersListView(APIView, LimitOffsetPagination):
                                                          'role'),
                                                      address=address_obj,
                                                      org=request.org,
-                                                     ),
+                                                     )
 
-                    current_site = get_current_site(self.request)
-                    protocol = request.scheme
                     send_email_to_new_user.delay(
-                        profile[0].id,
+                        profile.id,
                         request.org.id,
-                        domain=current_site.domain,
-                        protocol=protocol,
                     )
                     return Response(
                         {"error": False, "message": "User Created Successfully"},
@@ -490,56 +447,64 @@ class UsersListView(APIView, LimitOffsetPagination):
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        queryset = Profile.objects.filter(org=request.org).order_by('-id')
+        params = (
+            self.request.query_params
+            if len(self.request.data) == 0
+            else self.request.data
+        )
+        if params:
+            if params.get("email"):
+                queryset = queryset.filter(
+                    user__email__icontains=params.get("email"))
+            if params.get("role"):
+                queryset = queryset.filter(role=params.get("role"))
+            if params.get("status"):
+                queryset = queryset.filter(is_active=params.get("status"))
+
+        context = {}
+        queryset_active_users = queryset.filter(is_active=True)
+        results_active_users = self.paginate_queryset(
+            queryset_active_users.distinct(), self.request, view=self
+        )
+        active_users = ProfileSerializer(
+            results_active_users, many=True).data
+        if results_active_users:
+            offset = queryset_active_users.filter(
+                id__gte=results_active_users[-1].id).count()
+            if offset == queryset_active_users.count():
+                offset = None
         else:
-            queryset = Profile.objects.filter(org=request.org)
-            params = (
-                self.request.query_params
-                if len(self.request.data) == 0
-                else self.request.data
-            )
-            if params:
-                if params.get("email"):
-                    queryset = queryset.filter(
-                        user__email__icontains=params.get("email"))
-                if params.get("role"):
-                    queryset = queryset.filter(role=params.get("role"))
-                if params.get("status"):
-                    queryset = queryset.filter(is_active=params.get("status"))
+            offset = 0
+        context["active_users"] = {
+            "active_users_count": self.count,
+            "active_users": active_users,
+            "offset": offset
+        }
 
-            context = {}
-            queryset_active_users = queryset.filter(is_active=True)
-            results_active_users = self.paginate_queryset(
-                queryset_active_users.distinct(), self.request, view=self
-            )
-            active_users = ProfileSerializer(
-                results_active_users, many=True).data
-            context["per_page"] = 10
-            context["active_users"] = {
-                "active_users_count": self.count,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "page_number": int(self.offset / 10) + 1,
-                "active_users": active_users,
-            }
+        queryset_inactive_users = queryset.filter(is_active=False)
+        results_inactive_users = self.paginate_queryset(
+            queryset_inactive_users.distinct(), self.request, view=self
+        )
+        inactive_users = ProfileSerializer(
+            results_inactive_users, many=True).data
+        if results_inactive_users:
+            offset = queryset_inactive_users.filter(
+                id__gte=results_inactive_users[-1].id).count()
+            if offset == queryset_inactive_users.count():
+                offset = None
+        else:
+            offset = 0
+        context["inactive_users"] = {
+            "inactive_users_count": self.count,
+            "inactive_users": inactive_users,
+            "offset": offset
+        }
 
-            queryset_inactive_users = queryset.filter(is_active=False)
-            results_inactive_users = self.paginate_queryset(
-                queryset_inactive_users.distinct(), self.request, view=self
-            )
-            inactive_users = ProfileSerializer(
-                results_inactive_users, many=True).data
-            context["inactive_users"] = {
-                "inactive_users_count": self.count,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "page_number": int(self.offset / 10) + 1,
-                "inactive_users": inactive_users,
-            }
-
-            context["admin_email"] = settings.ADMIN_EMAIL
-            context["roles"] = ROLES
-            context["status"] = [("True", "Active"), ("False", "In Active")]
-            return Response(context)
+        context["admin_email"] = settings.ADMIN_EMAIL
+        context["roles"] = ROLES
+        context["status"] = [("True", "Active"), ("False", "In Active")]
+        return Response(context)
 
 
 class DocumentListView(APIView, LimitOffsetPagination):
@@ -553,7 +518,8 @@ class DocumentListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(org=self.request.org)
+        queryset = self.model.objects.filter(
+            org=self.request.org).order_by('-id')
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             queryset = queryset
         else:
@@ -607,13 +573,17 @@ class DocumentListView(APIView, LimitOffsetPagination):
         )
         documents_active = DocumentSerializer(
             results_documents_active, many=True).data
-        context["per_page"] = 10
+        if results_documents_active:
+            offset = queryset_documents_active.filter(
+                id__gte=results_documents_active[-1].id).count()
+            if offset == queryset_documents_active.count():
+                offset = None
+        else:
+            offset = 0
         context["documents_active"] = {
             "documents_active_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number": int(self.offset / 10) + 1,
             "documents_active": documents_active,
+            "offset": offset
         }
 
         queryset_documents_inactive = queryset.filter(status="inactive")
@@ -623,13 +593,17 @@ class DocumentListView(APIView, LimitOffsetPagination):
         documents_inactive = DocumentSerializer(
             results_documents_inactive, many=True
         ).data
-
+        if results_documents_inactive:
+            offset = queryset_documents_inactive.filter(
+                id__gte=results_documents_active[-1].id).count()
+            if offset == queryset_documents_inactive.count():
+                offset = None
+        else:
+            offset = 0
         context["documents_inactive"] = {
             "documents_inactive_count": self.count,
-            "next": self.get_next_link(),
-            "previous": self.get_previous_link(),
-            "page_number": int(self.offset / 10) + 1,
             "documents_inactive": documents_inactive,
+            "offset": offset
         }
 
         context["users"] = ProfileSerializer(profiles, many=True).data
@@ -657,32 +631,17 @@ class DocumentListView(APIView, LimitOffsetPagination):
                 document_file=request.FILES.get("document_file"),
             )
             if params.get("shared_to"):
-                assinged_to_users_ids = json.loads(params.get("shared_to"))
-                for user_id in assinged_to_users_ids:
-                    user = Profile.objects.filter(
-                        id=user_id, org=request.org)
-                    if user.exists():
-                        doc.shared_to.add(user_id)
-                    else:
-                        doc.delete()
-                        return Response(
-                            {"error": True, "errors": "Enter Valid User"},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-            if self.request.profile.role == "ADMIN":
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, org=request.org)
-                        if teams_ids.exists():
-                            doc.teams.add(team)
-                        else:
-                            doc.delete()
-                            return Response(
-                                {"error": True, "errors": "Enter Valid Team"},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+                assinged_to_list = json.loads(params.get("shared_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org, is_active=True)
+                if profiles:
+                    doc.shared_to.add(*profiles)
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                if teams:
+                    doc.teams.add(*teams)
 
             return Response(
                 {"error": False, "message": "Document Created Successfully"},
@@ -816,32 +775,19 @@ class DocumentDetailView(APIView):
             )
             doc.shared_to.clear()
             if params.get("shared_to"):
-                assinged_to_users_ids = json.loads(params.get("shared_to"))
-                for user_id in assinged_to_users_ids:
-                    user = Profile.objects.filter(
-                        id=user_id, org=request.org)
-                    if user.exists():
-                        doc.shared_to.add(user_id)
-                    else:
-                        return Response(
-                            {"error": True, "errors": "Enter Valid User"},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
+                assinged_to_list = json.loads(params.get("shared_to"))
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org, is_active=True)
+                if profiles:
+                    doc.shared_to.add(*profiles)
 
-            if self.request.profile.role == "ADMIN":
-                doc.teams.clear()
-                if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
-                    for team in teams:
-                        teams_ids = Teams.objects.filter(
-                            id=team, org=request.org)
-                        if teams_ids.exists():
-                            doc.teams.add(team)
-                        else:
-                            return Response(
-                                {"error": True, "errors": "Enter Valid Team"},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+            doc.teams.clear()
+            if params.get("teams"):
+                teams_list = json.loads(params.get("teams"))
+                teams = Teams.objects.filter(
+                    id__in=teams_list, org=request.org)
+                if teams:
+                    doc.teams.add(*teams)
             return Response(
                 {"error": False, "message": "Document Updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -867,18 +813,16 @@ class ForgotPasswordView(APIView):
                     {"error": True, "errors": "Please activate account to proceed."},
                     status=status.HTTP_406_NOT_ACCEPTABLE,
                 )
-            protocol = self.request.scheme
             send_email_to_reset_password.delay(
-                user.email, protocol=protocol, domain=settings.DOMAIN_NAME
+                user.email
             )
             data = {
                 "error": False,
                 "message": "We have sent you an email. please reset password",
             }
             return Response(data, status=status.HTTP_200_OK)
-        else:
-            data = {"error": True, "errors": serializer.errors}
-            response_status = status.HTTP_400_BAD_REQUEST
+        data = {"error": True, "errors": serializer.errors}
+        response_status = status.HTTP_400_BAD_REQUEST
         return Response(data, status=response_status)
 
 
@@ -1096,11 +1040,8 @@ class ActivateUserView(APIView):
         profile = get_object_or_404(Profile, activation_key=activation_key)
         if profile.user:
             if timezone.now() > profile.key_expires:
-                protocol = request.scheme
                 resend_activation_link_to_user.delay(
                     profile.user.email,
-                    domain=settings.DOMAIN_NAME,
-                    protocol=protocol,
                 )
                 return Response(
                     {
@@ -1127,11 +1068,10 @@ class ActivateUserView(APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
-                else:
-                    return Response(
-                        {"error": True, "errors": "Activation link is invalid!"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                return Response(
+                    {"error": True, "errors": "Activation link is invalid!"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
 
 class ResendActivationLinkView(APIView):
@@ -1147,11 +1087,8 @@ class ResendActivationLinkView(APIView):
                 {"error": False, "message": "Account is active. Please login"},
                 status=status.HTTP_200_OK,
             )
-        protocol = request.scheme
         resend_activation_link_to_user.delay(
             user.email,
-            domain=settings.DOMAIN_NAME,
-            protocol=protocol,
         )
         data = {
             "error": False,
@@ -1176,34 +1113,3 @@ class OrganizationListView(APIView, LimitOffsetPagination):
                          'companies': OrganizationSerializer(
                              companies, many=True).data},
                         status=status.HTTP_200_OK)
-
-
-# class UsersDelete(APIView):
-
-#     authentication_classes = (JSONWebTokenAuthentication,)
-#     permission_classes = (IsAuthenticated,)
-
-#     @swagger_auto_schema(
-#         tags=["Users"], manual_parameters=swagger_params.users_delete_params,
-#         operation_description="To delete multiple users",
-#     )
-#     def post(self, request, *args, **kwargs):
-#         if self.request.user.role == "ADMIN" or self.request.user.is_superuser:
-#             params = request.query_params if len(request.data) == 0 else request.data
-#             users_list = json.loads(params.get("users_list"))
-#             users = User.objects.filter(
-#                 id__in = users_list
-#             )
-#             users.delete()
-#             return Response(
-#                 {
-#                     "error": False,
-#                     "message": "Users deleted successfully",
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-#         else:
-#             return Response(
-#                 {"error": True, "errors": "Permission Denied"},
-#                 status=status.HTTP_403_FORBIDDEN,
-#             )

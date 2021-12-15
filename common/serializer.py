@@ -99,7 +99,7 @@ class BillingAddressSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
 
-        super(BillingAddressSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if account_view:
             self.fields["address_line"].required = True
@@ -128,12 +128,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         self.org = kwargs.pop("org", None)
-        super(CreateUserSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
         self.fields["password"].required = False
         self.fields["profile_pic"].required = False
         self.fields["skype_ID"].required = False
-
 
     def validate_email(self, email):
         if self.instance:
@@ -143,10 +142,9 @@ class CreateUserSerializer(serializers.ModelSerializer):
                     return email
                 raise serializers.ValidationError("Email already exists")
             return email
-        else:
-            if not Profile.objects.filter(user__email=email.lower(), org=self.org).exists():
-                return email
-            raise serializers.ValidationError('Given Email id already exists')
+        if not Profile.objects.filter(user__email=email.lower(), org=self.org).exists():
+            return email
+        raise serializers.ValidationError('Given Email id already exists')
 
 
 class CreateProfileSerializer(serializers.ModelSerializer):
@@ -163,7 +161,7 @@ class CreateProfileSerializer(serializers.ModelSerializer):
         )
 
     def __init__(self, *args, **kwargs):
-        super(CreateProfileSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["alternate_phone"].required = False
         self.fields["role"].required = True
         self.fields["phone"].required = True
@@ -289,7 +287,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 class DocumentCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
-        super(DocumentCreateSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["title"].required = True
         self.org = request_obj.org
 
@@ -304,11 +302,10 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Document with this Title already exists"
                 )
-        else:
-            if Document.objects.filter(title__iexact=title, org=self.org).exists():
-                raise serializers.ValidationError(
-                    "Document with this Title already exists"
-                )
+        if Document.objects.filter(title__iexact=title, org=self.org).exists():
+            raise serializers.ValidationError(
+                "Document with this Title already exists"
+            )
         return title
 
     class Meta:
@@ -337,7 +334,7 @@ def find_urls(string):
 
 class APISettingsSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
-        super(APISettingsSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         model = APISettings
@@ -384,7 +381,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     retype_password = serializers.CharField(max_length=100)
 
     def __init__(self, *args, **kwargs):
-        super(PasswordChangeSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def validate_old_password(self, pwd):
         if not check_password(pwd, self.context.get('user').password):
