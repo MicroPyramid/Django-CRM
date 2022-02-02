@@ -196,6 +196,7 @@ class UserDetailView(APIView):
         return Response({"status": "success"}, status=status.HTTP_200_OK)
 
 
+
 class ChangePasswordView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -968,9 +969,6 @@ class DomainDetailView(APIView):
     model = APISettings
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
-
-    def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
 
     @swagger_auto_schema(
         tags=["Settings"], manual_parameters=swagger_params.organization_params

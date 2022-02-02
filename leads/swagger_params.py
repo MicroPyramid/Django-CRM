@@ -32,9 +32,9 @@ lead_create_post_params = [
     openapi.Parameter(
         "title", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
-    openapi.Parameter("first_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("first_name", openapi.IN_QUERY,required=True, type=openapi.TYPE_STRING),
     openapi.Parameter("last_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("account_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("account_name", openapi.IN_QUERY,type=openapi.TYPE_STRING),
     openapi.Parameter("phone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
@@ -42,6 +42,7 @@ lead_create_post_params = [
         openapi.IN_QUERY,
         type=openapi.TYPE_FILE,
     ),
+    openapi.Parameter("opportunity_amount",openapi.IN_QUERY,required=True, type=openapi.TYPE_STRING),
     openapi.Parameter("website", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("description", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("teams", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -49,7 +50,7 @@ lead_create_post_params = [
     openapi.Parameter("contacts", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("status", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("source", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("address_line", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("address_line", openapi.IN_QUERY,required=True, type=openapi.TYPE_STRING),
     openapi.Parameter("street", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("state", openapi.IN_QUERY, type=openapi.TYPE_STRING),

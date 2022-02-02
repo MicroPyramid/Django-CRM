@@ -123,7 +123,12 @@ class LeadListView(APIView, LimitOffsetPagination):
             "close_leads": close_leads,
             "offset": offset
         }
-
+    
+        contacts = Contact.objects.filter(org=self.request.org).values(
+            "id",
+            "first_name"
+        )
+        context["contacts"] = contacts
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
         context["companies"] = CompanySerializer(
