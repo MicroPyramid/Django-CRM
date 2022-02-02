@@ -177,7 +177,7 @@ class ContactDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
         contact_serializer = CreateContactSerializer(
-            data=params, instance=contact_obj, request_obj=request, contact=True
+            data=params, instance=contact_obj, request_obj=request
         )
         address_serializer = BillingAddressSerializer(
             data=params, instance=address_obj)
@@ -206,6 +206,7 @@ class ContactDetailView(APIView):
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
+
             address_obj = address_serializer.save()
             contact_obj = contact_serializer.save(
                 date_of_birth=params.get("date_of_birth")
@@ -299,7 +300,7 @@ class ContactDetailView(APIView):
                 {"username": contact_obj.created_by.user.username}]
         else:
             users_mention = list(
-                contact_obj.assigned_to.all().values("username"))
+                contact_obj.assigned_to.all().values("user__username"))
 
         if request.profile == contact_obj.created_by:
             user_assgn_list.append(self.request.profile.id)
