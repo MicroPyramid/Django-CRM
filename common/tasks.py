@@ -19,8 +19,8 @@ app = Celery("redis://")
 def send_email_to_new_user(
     profile_id, org_id
 ):
+   
     """ Send Mail To Users When their account is created """
-    
     profile_obj = Profile.objects.filter(id=profile_id, org_id=org_id).last()
     user_obj = profile_obj.user
 

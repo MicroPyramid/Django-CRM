@@ -299,7 +299,7 @@ class ContactDetailView(APIView):
                 {"username": contact_obj.created_by.user.username}]
         else:
             users_mention = list(
-                contact_obj.assigned_to.all().values("username"))
+                contact_obj.assigned_to.all().values("user__username"))
 
         if request.profile == contact_obj.created_by:
             user_assgn_list.append(self.request.profile.id)

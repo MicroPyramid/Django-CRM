@@ -196,6 +196,7 @@ class UserDetailView(APIView):
         return Response({"status": "success"}, status=status.HTTP_200_OK)
 
 
+
 class ChangePasswordView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -969,8 +970,21 @@ class DomainDetailView(APIView):
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        google, _ = Google.objects.get_or_create(user=user)
+        google.google_user = user
+        google.google_url = link
+        google.verified_email = verified_email
+        google.google_id = user_document["id"]
+        google.family_name = last_name
+        google.name = name
+        google.given_name = first_name
+        google.dob = dob
+        google.email = email
+        google.gender = gender
+        google.save()
+
+        user.last_login = datetime.datetime.now()
+        user.save()
 
     @swagger_auto_schema(
         tags=["Settings"], manual_parameters=swagger_params.organization_params

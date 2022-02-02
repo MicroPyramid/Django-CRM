@@ -27,18 +27,14 @@ def img_url(self, filename):
 
 
 class Address(models.Model):
-    address_line = models.CharField(
-        _("Address"), max_length=255, blank=True, null=True
-    )
-    street = models.CharField(
-        _("Street"), max_length=55, blank=True, null=True)
+    address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
+    street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
     city = models.CharField(_("City"), max_length=255, blank=True, null=True)
     state = models.CharField(_("State"), max_length=255, blank=True, null=True)
     postcode = models.CharField(
         _("Post/Zip-code"), max_length=64, blank=True, null=True
     )
-    country = models.CharField(
-        max_length=3, choices=COUNTRIES, blank=True, null=True)
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     def __str__(self):
         return self.city if self.city else ""
@@ -79,8 +75,7 @@ class Org(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     user_limit = models.IntegerField(default=5)
-    country = models.CharField(
-        max_length=3, choices=COUNTRIES, blank=True, null=True)
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -100,7 +95,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     description = models.TextField(blank=True, null=True)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ["username"]
 
     objects = UserManager()
 
@@ -133,8 +128,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    org = models.ForeignKey(
-        Org, null=True, on_delete=models.CASCADE, blank=True)
+    org = models.ForeignKey(Org, null=True, on_delete=models.CASCADE, blank=True)
     phone = PhoneNumberField(null=True, unique=True)
     alternate_phone = PhoneNumberField(null=True)
     address = models.ForeignKey(
@@ -250,8 +244,7 @@ class Comment(models.Model):
 class Comment_Files(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     updated_on = models.DateTimeField(auto_now_add=True)
-    comment_file = models.FileField(
-        "File", upload_to="comment_files", null=True)
+    comment_file = models.FileField("File", upload_to="comment_files", null=True)
 
     def get_file_name(self):
         if self.comment_file:
@@ -270,8 +263,7 @@ class Attachments(models.Model):
     )
     file_name = models.CharField(max_length=60)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
-    attachment = models.FileField(
-        max_length=1001, upload_to="attachments/%Y/%m/")
+    attachment = models.FileField(max_length=1001, upload_to="attachments/%Y/%m/")
     lead = models.ForeignKey(
         "leads.Lead",
         null=True,
@@ -386,13 +378,9 @@ class Document(models.Model):
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
     )
-    shared_to = models.ManyToManyField(
-        Profile, related_name="document_shared_to")
-    teams = models.ManyToManyField(
-        "teams.Teams", related_name="document_teams")
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    shared_to = models.ManyToManyField(Profile, related_name="document_shared_to")
+    teams = models.ManyToManyField("teams.Teams", related_name="document_teams")
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         ordering = ("-created_on",)
@@ -456,7 +444,8 @@ class APISettings(models.Model):
     apikey = models.CharField(max_length=16, blank=True)
     website = models.URLField(max_length=255, null=True)
     lead_assigned_to = models.ManyToManyField(
-        Profile, related_name="lead_assignee_users")
+        Profile, related_name="lead_assignee_users"
+    )
     tags = models.ManyToManyField("accounts.Tags", blank=True)
     created_by = models.ForeignKey(
         Profile,
@@ -465,8 +454,7 @@ class APISettings(models.Model):
         null=True,
         blank=True,
     )
-    org = models.ForeignKey(
-        Org, blank=True, on_delete=models.SET_NULL, null=True)
+    org = models.ForeignKey(Org, blank=True, on_delete=models.SET_NULL, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -482,17 +470,16 @@ class APISettings(models.Model):
 
 
 class Google(models.Model):
-    profile = models.ForeignKey(
-        Profile, related_name="google", null=True, on_delete=models.CASCADE)
-    google_id = models.CharField(max_length=200, null=True)
-    google_url = models.TextField(null=True)
-    verified_email = models.CharField(max_length=200, null=True)
-    family_name = models.CharField(max_length=200, null=True)
-    name = models.CharField(max_length=200, null=True)
-    gender = models.CharField(max_length=10, null=True)
-    dob = models.CharField(max_length=50, null=True)
-    given_name = models.CharField(max_length=200, null=True)
-    email = models.CharField(max_length=200, null=True, db_index=True)
+    user = models.ForeignKey(User, related_name="google_user", on_delete=models.CASCADE)
+    google_id = models.CharField(max_length=200, default="")
+    google_url = models.TextField(default="")
+    verified_email = models.CharField(max_length=200, default="")
+    family_name = models.CharField(max_length=200, default="")
+    name = models.CharField(max_length=200, default="")
+    gender = models.CharField(max_length=10, default="")
+    dob = models.CharField(max_length=50, default="")
+    given_name = models.CharField(max_length=200, default="")
+    email = models.CharField(max_length=200, default="", db_index=True)
 
     def __str__(self):
         return self.email
