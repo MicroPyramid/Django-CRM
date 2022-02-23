@@ -48,10 +48,11 @@ virtualenv venv
 source venv/bin/activate
 ```
 
-* Install the project's dependencie
+* Install the project's dependencies
 
 ```
-pip install -r requirements.txt
+# pip install -r requirements.txt
+poetry install
 ```
 
 #### env variables
@@ -63,7 +64,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
+Then open http://localhost:8000 in your browser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
 
 
 

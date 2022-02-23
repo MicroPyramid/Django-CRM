@@ -1,22 +1,23 @@
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from corsheaders.defaults import default_headers
+
+from .environ import env
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # env_path = Path(".") / ".env"
-load_dotenv()
+# load_dotenv()
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "SECRET_KEY", "&q1&ftrxho9lrzm$$%6!cplb5ac957-9y@t@17u(3yqqb#9xl%"
-)
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".bottlecrm.com"]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -84,14 +85,7 @@ WSGI_APPLICATION = "crm.wsgi.application"
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DBNAME"),
-        "USER": os.getenv("DBUSER"),
-        "PASSWORD": os.getenv("DBPASSWORD"),
-        "HOST": os.getenv("DBHOST"),
-        "PORT": os.getenv("DBPORT"),
-    }
+    "default": env.db()
 }
 
 # Password validation
@@ -116,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
 
-TIME_ZONE = "Asia/Kolkata"
+TIME_ZONE = env('TIME_ZONE')
 
 USE_I18N = True
 
@@ -127,7 +121,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 AUTH_USER_MODEL = "common.User"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = "/static/"
-ENV_TYPE = os.getenv("ENV_TYPE", "dev")
+ENV_TYPE = env("ENV_TYPE")
 if ENV_TYPE == "dev":
     # SESSION_COOKIE_DOMAIN = "localhost:8000"
 
@@ -138,15 +132,15 @@ if ENV_TYPE == "dev":
 elif ENV_TYPE == "live":
     from .server_settings import *
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
-MARKETING_REPLY_EMAIL = os.getenv("MARKETING_REPLY_EMAIL", "")
-PASSWORD_RESET_MAIL_FROM_USER = os.getenv("PASSWORD_RESET_MAIL_FROM_USER", "")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "")
+ADMIN_EMAIL = env("ADMIN_EMAIL", "")
+MARKETING_REPLY_EMAIL = env("MARKETING_REPLY_EMAIL", "")
+PASSWORD_RESET_MAIL_FROM_USER = env("PASSWORD_RESET_MAIL_FROM_USER", "")
 
 
 # celery Tasks
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+CELERY_BROKER_URL = env.cache_url("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env.cache_url("CELERY_RESULT_BACKEND")
 
 
 LOGGING = {
@@ -244,4 +238,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-DOMAIN_NAME = os.getenv("DOMAIN_NAME")
+DOMAIN_NAME = env("DOMAIN_NAME")
