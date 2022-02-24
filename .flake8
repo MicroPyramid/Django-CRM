@@ -1,0 +1,15 @@
+[flake8]
+max-complexity = 12
+max-line-length = 120
+exclude =
+    .*/
+    __pycache__
+    docs
+    src/aws
+    ~build
+    dist
+    *.md
+    datahub_notebooks/*
+
+per-file-ignores =
+    src/**/migrations/*.py:E501
