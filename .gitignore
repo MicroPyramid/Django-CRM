@@ -17,6 +17,10 @@ ref.css.map
 crm/dev_settings\.py
 env
 .env
+.envrc
+.direnv
+.history
+dist
 docs/build
 celerybeat-schedule
 local_settings.py
