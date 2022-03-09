@@ -25,7 +25,7 @@ from contacts.serializer import ContactSerializer
 from tasks.serializer import TaskSerializer
 from opportunity.serializer import OpportunitySerializer
 from invoices.serializer import InvoiceSerailizer
-from accounts.serializer import EmailSerializer
+from accounts.serializer import EmailSerializer,TagsSerailizer
 from teams.models import Teams
 
 from rest_framework import status
@@ -113,6 +113,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
             "close_accounts": accounts_close,
         }
         context["industries"] = INDCHOICES
+
+        tags = Tags.objects.all()
+        tags=TagsSerailizer(tags,many=True).data
+
+        context['tags']=tags
+
         return context
 
     @swagger_auto_schema(

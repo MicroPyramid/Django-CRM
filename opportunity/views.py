@@ -7,7 +7,7 @@ from opportunity.serializer import (
     OpportunityCreateSerializer,
 )
 from accounts.models import Account, Tags
-from accounts.serializer import AccountSerializer
+from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
 from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
@@ -101,6 +101,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["opportunities"] = opportunities
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
+        context['tags'] = TagsSerailizer(Tags.objects.filter(),many=True).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
         context["currency"] = CURRENCY_CODES

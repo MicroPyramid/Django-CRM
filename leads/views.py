@@ -14,7 +14,7 @@ from common.serializer import (
 )
 from leads.models import Lead, Company
 from leads.forms import LeadListForm
-from leads.serializer import LeadSerializer, LeadCreateSerializer, CompanySerializer
+from leads.serializer import LeadSerializer, LeadCreateSerializer, CompanySerializer, TagsSerializer
 from leads.tasks import (
     create_lead_from_file,
     send_email_to_assigned_user,
@@ -123,7 +123,6 @@ class LeadListView(APIView, LimitOffsetPagination):
             "close_leads": close_leads,
             "offset": offset
         }
-    
         contacts = Contact.objects.filter(org=self.request.org).values(
             "id",
             "first_name"
@@ -133,6 +132,12 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["source"] = LEAD_SOURCE
         context["companies"] = CompanySerializer(
             Company.objects.filter(org=self.request.org), many=True).data
+        context["tags"] = TagsSerializer(Tags.objects.all(),many=True).data 
+
+        users = Profile.objects.filter(is_active=True, org=self.request.org).values(
+                        "id",
+                        "user__email")
+        context["users"]=users
         context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
         return context
@@ -211,6 +216,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                     website=params.get("website"),
                     org=request.org
                 )
+
                 account_object.billing_address_line = lead_obj.address_line
                 account_object.billing_street = lead_obj.street
                 account_object.billing_city = lead_obj.city
