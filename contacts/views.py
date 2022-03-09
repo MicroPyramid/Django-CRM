@@ -1,5 +1,5 @@
 from rest_framework import status
-from common.models import Attachments, Comment
+from common.models import Attachments, Comment, Profile 
 from contacts.models import Contact, Profile
 from teams.models import Teams
 from django.db.models import Q
@@ -41,6 +41,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 Q(assigned_to__in=[self.request.profile]) | Q(
                     created_by=self.request.profile)
             ).distinct()
+
         if params:
             if params.get("name"):
                 queryset = queryset.filter(
@@ -81,6 +82,12 @@ class ContactsListView(APIView, LimitOffsetPagination):
         context["contact_obj_list"] = contacts
         context["countries"] = COUNTRIES
         context["per_page"] = params.get("per_page")
+        users = Profile.objects.filter(is_active=True, org=self.request.org).values(
+                        "id",
+                        "user__email"
+                        )
+        context["users"]=users
+
         return context
 
     @swagger_auto_schema(
@@ -93,6 +100,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
     @swagger_auto_schema(
         tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params
     )
+    
     def post(self, request, *args, **kwargs):
         params = request.query_params if len(
             request.data) == 0 else request.data
@@ -192,6 +200,7 @@ class ContactDetailView(APIView):
                 data,
                 status=status.HTTP_400_BAD_REQUEST,
             )
+                          
 
         if contact_serializer.is_valid():
             if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -412,7 +421,6 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
-
 class ContactCommentView(APIView):
     model = Comment
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -472,7 +480,6 @@ class ContactCommentView(APIView):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
-
 
 class ContactAttachmentView(APIView):
     model = Attachments
