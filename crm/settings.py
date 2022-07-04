@@ -16,7 +16,7 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".bottlecrm.com"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".bottlecrm.com", "django-crm-backend.herokuapp.com"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
