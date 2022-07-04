@@ -18,6 +18,9 @@ crm/dev_settings\.py
 env
 .env
 docs/build
+venv
+.venv
+testDB
 celerybeat-schedule
 local_settings.py
 media
