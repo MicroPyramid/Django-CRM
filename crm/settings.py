@@ -85,12 +85,12 @@ WSGI_APPLICATION = "crm.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DBNAME"),
-        "USER": os.getenv("DBUSER"),
-        "PASSWORD": os.getenv("DBPASSWORD"),
-        "HOST": os.getenv("DBHOST"),
-        "PORT": os.getenv("DBPORT"),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.getenv("DBNAME") or "testDB",
+        # "USER": os.getenv("DBUSER") or "testDB",
+        # "PASSWORD": os.getenv("DBPASSWORD") or "testDB",
+        # "HOST": os.getenv("DBHOST"),
+        # "PORT": os.getenv("DBPORT"),
     }
 }
 
@@ -116,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
 
-TIME_ZONE = "Asia/Kolkata"
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
