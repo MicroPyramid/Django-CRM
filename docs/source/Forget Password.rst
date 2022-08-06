@@ -9,7 +9,7 @@ Forget Password
 
 |  **Fig** Email Sent acknowledgement view
 
-|  When you check the mail you will recieve a email similar to the below figure.
+|  When you check the mail you will receive a email similar to the below figure.
 
 
 |  **Fig** Email recieved
