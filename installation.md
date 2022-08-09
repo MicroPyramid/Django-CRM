@@ -5,7 +5,7 @@
 docker pull micropyramid/crm:0.1
 ```
 
-- setup environment variables, below varialbes are required.
+- setup environment variables, below variables are required.
 ```sh
 # environment type, eg: stage, live
 export ENV_TYPE=""
