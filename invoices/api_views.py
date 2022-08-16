@@ -108,6 +108,8 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         )
         invoices = InvoiceSerailizer(results_invoice, many=True).data
         context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context.update(
             {
                 "invoices_count": self.count,

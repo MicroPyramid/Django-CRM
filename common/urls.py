@@ -9,6 +9,8 @@ urlpatterns = [
     path("dashboard/", views.ApiHomeView.as_view()),
     path("auth/register/", views.RegistrationView.as_view()),
     path("auth/login/", views.LoginView.as_view()),
+    # GoogleLoginView
+    path("auth/google/", views.GoogleLoginView.as_view()),
     path("auth/companies-list/", views.OrganizationListView.as_view()),
     path("profile/", views.ProfileView.as_view()),
     path("users/get-teams-and-users/", views.GetTeamsAndUsersView.as_view()),

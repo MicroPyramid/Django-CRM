@@ -67,6 +67,9 @@ class Lead(models.Model):
     industry = models.CharField(
         _("Industry Type"), max_length=255, choices=INDCHOICES, blank=True, null=True
     )
+    organization = models.CharField(_("Organization"), max_length=255,null=True )
+    probability = models.IntegerField(default=0, blank=True, null=True)
+    close_date = models.DateField(default=None, null=True)
 
 
     class Meta:

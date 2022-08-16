@@ -89,6 +89,8 @@ class AccountsListView(APIView, LimitOffsetPagination):
         accounts_open = AccountSerializer(
             results_accounts_open, many=True).data
         context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context["active_accounts"] = {
             "offset": offset,
             "open_accounts": accounts_open,

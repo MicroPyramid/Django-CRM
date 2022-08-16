@@ -1,26 +1,32 @@
+import requests
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from accounts.serializer import AccountSerializer
 from contacts.serializer import ContactSerializer
 from opportunity.serializer import OpportunitySerializer
+from django.http.response import JsonResponse
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
 from common.serializer import *
 from cases.serializer import CaseSerializer
 from accounts.models import Account, Contact
+from django.contrib.auth import authenticate, login
 from opportunity.models import Opportunity
 from accounts.models import Tags
 from cases.models import Case
 from leads.models import Lead
 from teams.models import Teams
 from common.utils import ROLES
+from django.views.decorators.csrf import csrf_exempt
 from common.serializer import (
     RegisterOrganizationSerializer,
     CreateUserSerializer,
     PasswordChangeSerializer
 )
+from django.views.decorators.http import require_http_methods
 from common.models import User, Org, Document, APISettings, Profile
 from common.tasks import (
     resend_activation_link_to_user,
@@ -125,7 +131,7 @@ class UserDetailView(APIView):
         address_obj = profile.address
         if (
             self.request.profile.role != "ADMIN"
-            and not self.request.user.is_admin
+            and not self.request.user.is_superuser
             and self.request.profile.id != profile.id
         ):
             return Response(
@@ -822,9 +828,13 @@ class ForgotPasswordView(APIView):
                 "message": "We have sent you an email. please reset password",
             }
             return Response(data, status=status.HTTP_200_OK)
-        data = {"error": True, "errors": serializer.errors}
-        response_status = status.HTTP_400_BAD_REQUEST
-        return Response(data, status=response_status)
+        else:
+
+            error=(serializer.errors.get('non_field_errors'))
+            
+            data = {"error": True, "errors": serializer.errors,"error_text":error[0]}
+            response_status = status.HTTP_400_BAD_REQUEST
+            return Response(data, status=response_status)
 
 
 class ResetPasswordView(APIView):
@@ -1111,3 +1121,46 @@ class OrganizationListView(APIView, LimitOffsetPagination):
                          'companies': OrganizationSerializer(
                              companies, many=True).data},
                         status=status.HTTP_200_OK)
+
+
+# @require_http_methods(["POST"])
+# @csrf_exempt
+class GoogleLoginView(APIView):
+    """
+    Check for authentication with google
+    post:
+        Returns token of logged In user
+    """
+
+    @swagger_auto_schema(
+        tags=["Auth"],
+    )
+
+    def post(self, request):
+
+        form = SocialLoginSerializer(data=request.POST)
+        if form.is_valid():
+            params = {'access_token': request.POST.get('accessToken')}
+            url = 'https://www.googleapis.com/oauth2/v1/userinfo'
+            kw = dict(params=params, headers={}, timeout=60)
+            response = requests.request('GET', url, **kw)
+            if response.status_code == 200:
+                email_matches = User.objects.filter(email=response.json().get('email'))
+                if email_matches:
+                    user = email_matches.first()
+                    # user = authenticate(email=user.email)
+                    login(request, user)
+
+                    payload = jwt_payload_handler(user)
+                    response_data = {
+                        "token": jwt_encode_handler(payload),
+                        "error": False,
+                        "id": user.id,
+                        "employee_name": user.get_full_name()
+                    }
+                    return JsonResponse(response_data, status=status.HTTP_200_OK)
+                return JsonResponse(
+                    {"error": True, "message": "Email not valid"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"error": True, "message": "Email not valid"}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({"error": True, "errors": form.errors}, status=status.HTTP_200_OK)
+

@@ -92,6 +92,9 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
+        context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context.update(
             {
                 "opportunities_count": self.count,
@@ -235,7 +238,7 @@ class OpportunityDetailView(APIView):
             opportunity_object,
             data=params,
             request_obj=request,
-            opportunity=True,
+            # opportunity=True,
         )
 
         if serializer.is_valid():

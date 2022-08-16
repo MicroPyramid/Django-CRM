@@ -27,6 +27,7 @@ class TeamCreateSerializer(serializers.ModelSerializer):
         self.org = request_obj.org
 
         self.fields["name"].required = True
+        self.fields["description"].required=False
 
     def validate_name(self, name):
         if self.instance:
