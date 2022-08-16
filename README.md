@@ -1,57 +1,77 @@
 # Django-CRM
 
-============
 
 Django CRM is opensource CRM developed on django framework. It has all
 the basic features of CRM to start with. We welcome code contributions
 and feature requests via github.
 
+This is divided into three parts
+1. Backend API [Django CRM](https://github.com/MicroPyramid/Django-CRM)
+2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
+3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
+
 <http://django-crm.readthedocs.io> for latest documentation
 
 This project contains the following modules:
-
-> -   Contacts
-> -   Accounts
-> -   Invoices
-> -   Cases
-> -   Leads
-> -   Opportunity
-> -   Planner
+- Contacts
+- Companies
+- Leads
+- Accounts
+- Invoices (todo)
+- Cases (todo)
+- Opportunity (todo)
 
 ## Try for free [here](https://bottlecrm.com/)
-
----
 
 ## Installation
 
 We recommend ubuntu 20.04. These instructions are verified for ubuntu 20.04.
 
-### System Requirements
+#### To install required software
 
 ```
-sudo apt install postgresql xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip build-essential 
-libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
-
-
 sudo apt update && sudo apt upgrade -y
 
-sudo apt install python-is-python3 python3-pip git redis-server
-
-pip install virtualenv
-
-
+sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
 ```
 
-### Install dependencies
+#### Install dependencies
 
-* Create and activate a virtual environment.
+##### Optional (based on personal choice)
 
+```
+sudo apt update && sudo apt upgrade -y && sudo apt install zsh python3-virtualenv
+
+sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+pip install virtualenvwrapper
+```
+
+then add the following to ```~/.zshrc``` file
+```
+source /home/ubuntu/.local/bin/virtualenvwrapper.sh
+```
+
+If you want to install postgres, follow https://www.postgresql.org/download/
+#### to change postgresql root password
+
+```
+sudo -u postgres psql
+ALTER USER postgres WITH PASSWORD 'root';
+```
+
+#### Create and activate a virtual environment.
+if you installed and configured virtualenv wrapper then use the following
+``` 
+mkvirtualenv <env_name>
+workon <env_name>
+```
+or else
 ```
 virtualenv venv
 source venv/bin/activate
 ```
-
-* Install the project's dependency
+Install the project's dependency after activating env
 
 ```
 pip install -r requirements.txt
@@ -60,7 +80,6 @@ pip install -r requirements.txt
 ### env variables
 
 * Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
-* Add ```127.0.0.1   test.localhost``` to your hosts file ```/etc/hosts```. Then you can use test as company name to register and login.
 
 ### next steps
 
@@ -68,7 +87,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-Then open http://localhost:8000 in your borwser and create a new account with test as company name. We mapped `test.localhost` to `127.0.0.1`. So, it should work properly.
+Then open http://localhost:8000/swagger/ in your borwser to explore API.
 
 
 
