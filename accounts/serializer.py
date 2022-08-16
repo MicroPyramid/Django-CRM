@@ -146,4 +146,5 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "billing_postcode",
             "billing_country",
             "lead",
+            "contact_name",
         )

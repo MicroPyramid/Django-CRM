@@ -48,6 +48,9 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
+        context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context.update(
             {
                 "teams_count": self.count,

@@ -5,8 +5,10 @@ from common.serializer import (
     ProfileSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
+    OrganizationSerializer
 )
 from teams.serializer import TeamsSerializer
+from contacts.serializer import ContactSerializer
 
 
 class TagsSerializer(serializers.ModelSerializer):
@@ -22,6 +24,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 class LeadSerializer(serializers.ModelSerializer):
+    contacts=ContactSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     created_by = ProfileSerializer()
     country = serializers.SerializerMethodField()
@@ -29,6 +32,7 @@ class LeadSerializer(serializers.ModelSerializer):
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
+    
 
     def get_country(self, obj):
         return obj.get_country_display()
@@ -46,6 +50,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "status",
             "source",
             "address_line",
+            "contacts",
             "street",
             "city",
             "state",
@@ -67,11 +72,15 @@ class LeadSerializer(serializers.ModelSerializer):
             "teams",
             "skype_ID",
             "industry",
-            "company"
+            "company",
+            "organization",
+            "probability",
+            "close_date"
         )
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
+    probability = serializers.IntegerField(max_value=100)
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
@@ -145,13 +154,19 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "website",
             "description",
             "address_line",
+            #"contacts",
             "street",
             "city",
             "state",
             "postcode",
+            "opportunity_amount",
             "country",
             "org",
             "skype_ID",
             "industry",
-            "company"
+            "company",
+            "organization",
+            "probability",
+            "close_date",
+            #"lead_attachment",
         )

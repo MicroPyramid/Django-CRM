@@ -20,6 +20,10 @@ class ContactSerializer(serializers.ModelSerializer):
     contact_attachment = AttachmentsSerializer(read_only=True, many=True)
     date_of_birth = serializers.DateField()
     org = OrganizationSerializer()
+    country = serializers.SerializerMethodField()
+
+    def get_country(self, obj):
+        return obj.get_country_display()
 
     class Meta:
         model = Contact
@@ -36,6 +40,7 @@ class ContactSerializer(serializers.ModelSerializer):
             "mobile_number",
             "secondary_number",
             "department",
+            "country",
             "language",
             "do_not_call",
             "address",
@@ -53,7 +58,8 @@ class ContactSerializer(serializers.ModelSerializer):
             "get_team_users",
             "get_team_and_assigned_users",
             "get_assigned_users_not_in_teams",
-            "org"
+            "org",
+            
         )
 
 
@@ -94,6 +100,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "mobile_number",
             "secondary_number",
             "department",
+            "country",
             "language",
             "do_not_call",
             "address",
@@ -101,4 +108,5 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "linked_in_url",
             "facebook_url",
             "twitter_username",
+           
         )

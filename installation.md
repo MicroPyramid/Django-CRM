@@ -1,11 +1,13 @@
 # CRM Installation using docker
 
 - pull application image
+
 ```sh
 docker pull micropyramid/crm:0.1
 ```
 
 - setup environment variables, below variables are required.
+
 ```sh
 # environment type, eg: stage, live
 export ENV_TYPE=""
@@ -34,6 +36,7 @@ export AWS_SECRET_ACCESS_KEY=""
 ```
 
 - run application
+
 ```sh
 docker run \
   -n crm \

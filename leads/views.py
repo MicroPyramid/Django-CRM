@@ -99,6 +99,8 @@ class LeadListView(APIView, LimitOffsetPagination):
         else:
             offset = 0
         context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context["open_leads"] = {
             "leads_count": self.count,
             "open_leads": open_leads,
@@ -127,6 +129,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             "id",
             "first_name"
         )
+        
         context["contacts"] = contacts
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
@@ -137,7 +140,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         users = Profile.objects.filter(is_active=True, org=self.request.org).values(
                         "id",
                         "user__email")
-        context["users"]=users
+        context["users"] = users
         context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
         return context
@@ -171,11 +174,10 @@ class LeadListView(APIView, LimitOffsetPagination):
                     else:
                         tag = Tags.objects.create(name=t)
                     lead_obj.tags.add(tag)
-
+            
             if params.get("contacts"):
-                obj_contact = Contact.objects.filter(
-                    id=params.get("contacts"), org=request.org)
-                lead_obj.contacts.add(obj_contact)
+                obj_contact = Contact.objects.filter(id__in=json.loads(params.get("contacts")), org=request.org)               
+                lead_obj.contacts.add(*obj_contact)
 
             recipients = list(
                 lead_obj.assigned_to.all().values_list("id", flat=True))
@@ -296,7 +298,7 @@ class LeadDetailView(APIView):
         for each in self.lead_obj.assigned_to.all():
             assigned_dict = {}
             assigned_dict["id"] = each.id
-            assigned_dict["name"] = each.email
+            assigned_dict["name"] = each.user.email
             assigned_data.append(assigned_dict)
 
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":

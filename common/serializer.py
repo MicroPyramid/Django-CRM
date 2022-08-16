@@ -21,6 +21,10 @@ class OrganizationSerializer(serializers.ModelSerializer):
         fields = ("id", "name")
 
 
+class SocialLoginSerializer(serializers.Serializer):
+    accessToken = serializers.CharField()
+
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
@@ -168,7 +172,13 @@ class CreateProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
+    profile_pic = serializers.SerializerMethodField()
+    
+    def get_profile_pic(self, obj):
+        if obj.profile_pic:
+            return obj.profile_pic.url
+        return None
+    
     class Meta:
         model = User
         fields = (

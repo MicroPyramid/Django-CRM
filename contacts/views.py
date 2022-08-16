@@ -73,6 +73,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
+        context["per_page"] = 10
+        page_number = int(self.offset / 10) + 1,
+        context["page_number"] = page_number
         context.update(
             {
                 "contacts_count": self.count,
@@ -81,7 +84,6 @@ class ContactsListView(APIView, LimitOffsetPagination):
         )
         context["contact_obj_list"] = contacts
         context["countries"] = COUNTRIES
-        context["per_page"] = params.get("per_page")
         users = Profile.objects.filter(is_active=True, org=self.request.org).values(
                         "id",
                         "user__email"
@@ -297,8 +299,8 @@ class ContactDetailView(APIView):
         assigned_data = []
         for each in contact_obj.assigned_to.all():
             assigned_dict = {}
-            assigned_dict["id"] = each.id
-            assigned_dict["name"] = each.email
+            assigned_dict["id"] = each.user.id
+            assigned_dict["name"] = each.user.email
             assigned_data.append(assigned_dict)
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":

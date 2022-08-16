@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from common.models import Address, Org, Profile
 from phonenumber_field.modelfields import PhoneNumberField
 from teams.models import Teams
-
+from common.utils import COUNTRIES
 
 class Contact(models.Model):
     salutation = models.CharField(_("Salutation"), max_length=255, default="", blank=True)
@@ -42,6 +42,7 @@ class Contact(models.Model):
     org = models.ForeignKey(
         Org, on_delete=models.SET_NULL, null=True, blank=True
     )
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
 
     def __str__(self):
