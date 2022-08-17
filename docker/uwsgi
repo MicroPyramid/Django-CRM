@@ -1,9 +1,0 @@
-[uwsgi]
-
-chdir           = /djcrm
-module          = crm.wsgi
-master          = true
-socket          = /djcrm/djcrm.sock
-chmod-socket    = 666
-vacuum          = true
-plugins         = python3

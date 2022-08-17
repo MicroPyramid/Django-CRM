@@ -8,7 +8,7 @@ shift
 cmd="$@"
 
 echo "Testing Postgres connection with psql ..."
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h "$host" -U "postgres" -c '\q'; do
+until PGPASSWORD=$DBPASSWORD psql -h $DBHOST -U $DBUSER -c '\q'; do
   #~ >&2 echo "Postgres is unavailable - sleeping"
   >&2 echo -n .
   sleep 1

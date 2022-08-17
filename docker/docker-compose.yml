@@ -1,53 +1,35 @@
 version: '3'
 services:
-  djcrm8000:
-    network_mode: host
-    build:
-      context: ..
-      dockerfile: docker/dockerfile
-      args:
-        UWSGI_HTTP: 8000
-    env_file:
-      - ./db.env
-    volumes:
-      - /root/djcrm/media:/root/djcrm/media
-      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+  crm-app:
+    image: djcrm:1
+    container_name: crm-app
+    environment:
+      - DBNAME=crm
+      - DBUSER=crm
+      - DBPASSWORD=crm
+      - DBHOST=crm-db
+      - DBPORT=5432
 
-  djcrm8001:
-    network_mode: host
-    build:
-      context: ..
-      dockerfile: docker/dockerfile
-      args:
-        UWSGI_HTTP: 8001
-    env_file:
-      - ./db.env
-    volumes:
-      - /root/djcrm/media:/root/djcrm/media
-      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+    depends_on:
+      - crm-db
+    ports:
+      - 8000:8000
+    networks:
+      - nw
 
-  djcrm8002:
-    network_mode: host
-    build:
-      context: ..
-      dockerfile: docker/dockerfile
-      args:
-        UWSGI_HTTP: 8002
-    env_file:
-      - ./db.env
+  crm-db:
+    image: postgres:latest
+    container_name: crm-db
+    environment:
+      - POSTGRES_DB=crm
+      - POSTGRES_USER=crm
+      - POSTGRES_PASSWORD=crm
+    ports:
+      - 5432:5432
     volumes:
-      - /root/djcrm/media:/root/djcrm/media
-      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+      - /var/run/postgresql/:/var/run/postgresql
+    networks:
+      - nw
 
-  djcrm8003:
-    network_mode: host
-    build:
-      context: ..
-      dockerfile: docker/dockerfile
-      args:
-        UWSGI_HTTP: 8003
-    env_file:
-      - ./db.env
-    volumes:
-      - /root/djcrm/media:/root/djcrm/media
-      - /root/djcrm/static/CACHE:/root/djcrm/static/CACHE
+networks:
+  nw: {}
