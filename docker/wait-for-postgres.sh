@@ -5,7 +5,7 @@ set -e
 
 host="$1"
 shift
-cmd="$@"
+cmd=( "$@" )
 
 echo "Testing Postgres connection with psql ..."
 until PGPASSWORD="$DBPASSWORD" psql -h "$host" -U "$DBUSER" -c "\q"; do
