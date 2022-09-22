@@ -1,5 +1,6 @@
 # Django-CRM
 
+============
 
 Django CRM is opensource CRM developed on django framework. It has all
 the basic features of CRM to start with. We welcome code contributions
@@ -32,7 +33,7 @@ We recommend ubuntu 20.04. These instructions are verified for ubuntu 20.04.
 ```
 sudo apt update && sudo apt upgrade -y
 
-sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
+sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
 ```
 
 #### Install dependencies
@@ -45,11 +46,8 @@ sudo apt update && sudo apt upgrade -y && sudo apt install zsh python3-virtualen
 sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 pip install virtualenvwrapper
-```
 
-then add the following to ```~/.zshrc``` file
-```
-source /home/ubuntu/.local/bin/virtualenvwrapper.sh
+echo "source /home/ubuntu/.local/bin/virtualenvwrapper.sh" >> ~/.zshrc
 ```
 
 If you want to install postgres, follow https://www.postgresql.org/download/
@@ -89,7 +87,9 @@ python manage.py runserver
 ```
 Then open http://localhost:8000/swagger/ in your borwser to explore API.
 
+## start celery worker in another terminal window
 
+celery -A tasks worker --loglevel=INFO
 
 ### Useful tools and packages
 
@@ -123,3 +123,7 @@ We welcome your feedback and support, raise github issue if you want to
 report a bug or request new feature. we are glad to help.
 
 For commercial support [Contact us](https://micropyramid.com/contact-us/)
+
+# trigger deploy
+
+

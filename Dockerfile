@@ -1,21 +1,40 @@
-FROM python:3.6
+FROM ubuntu:20.04
 
-WORKDIR /app
+ARG APP_NAME
 
-# Intall dependencies
-COPY requirements.txt /app/
+# test arg
+RUN test -n "$APP_NAME"
 
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-  apt update && \
-  apt install -y git ruby-dev nodejs postgresql-client redis-server wkhtmltopdf && \
-  apt clean && \
-  gem install compass sass && \
-  npm -g install less && \
-  pip install --no-cache-dir -r requirements.txt && \
-  pip install --no-cache-dir redis
+# install system packages
+RUN apt-get update -y
+RUN apt-get install -y \
+  python3-pip \
+  python3-venv \
+  build-essential \
+  libpq-dev \
+  libmariadbclient-dev \
+  libjpeg62-dev \
+  zlib1g-dev \
+  libwebp-dev \
+  curl  \
+  vim \
+  net-tools
 
-COPY . /app/
+# setup user
+RUN useradd -ms /bin/bash ubuntu
+USER ubuntu
 
-RUN chmod +x /app/entrypoint.sh \
-  /app/wait-for-postgres.sh
-ENTRYPOINT ["/app/entrypoint.sh"]
+# install app
+RUN mkdir -p /home/ubuntu/"$APP_NAME"/"$APP_NAME"
+WORKDIR /home/ubuntu/"$APP_NAME"/"$APP_NAME"
+COPY . .
+RUN python3 -m venv ../venv
+RUN . ../venv/bin/activate
+RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -U pip
+RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -r requirements.txt
+RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install gunicorn
+
+# setup path
+ENV PATH="${PATH}:/home/ubuntu/$APP_NAME/$APP_NAME/scripts"
+
+USER ubuntu

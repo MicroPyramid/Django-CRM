@@ -1,7 +1,7 @@
 import datetime
 import arrow
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from common.models import Address, User, Org
 from common.utils import CURRENCY_CODES
 from accounts.models import Account
@@ -65,9 +65,7 @@ class Invoice(models.Model):
     accounts = models.ManyToManyField(Account, related_name="accounts_invoices")
     teams = models.ManyToManyField(Teams, related_name="invoices_teams")
 
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
     tax = models.DecimalField(blank=True, null=True, max_digits=12, decimal_places=2)
 
     class Meta:

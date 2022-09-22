@@ -6,28 +6,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contacts', '0009_rename_company_contact_org'),
+        ("contacts", "0009_rename_company_contact_org"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contact',
-            name='date_of_birth',
+            model_name="contact",
+            name="date_of_birth",
             field=models.DateField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='contact',
-            name='salutation',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='Salutation'),
+            model_name="contact",
+            name="salutation",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="Salutation"
+            ),
         ),
         migrations.AlterField(
-            model_name='contact',
-            name='secondary_email',
-            field=models.EmailField(blank=True, default='', max_length=254),
+            model_name="contact",
+            name="secondary_email",
+            field=models.EmailField(blank=True, default="", max_length=254),
         ),
         migrations.AlterField(
-            model_name='contact',
-            name='title',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='Title'),
+            model_name="contact",
+            name="title",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="Title"
+            ),
         ),
     ]

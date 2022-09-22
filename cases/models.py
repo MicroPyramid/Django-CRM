@@ -1,7 +1,7 @@
 import arrow
 from django.db import models
 from django.utils.translation import pgettext_lazy
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import Account
 from contacts.models import Contact
@@ -39,7 +39,6 @@ class Case(models.Model):
     org = models.ForeignKey(
         Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="case_org"
     )
-
 
     class Meta:
         ordering = ["-created_on"]

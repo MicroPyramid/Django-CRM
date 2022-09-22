@@ -10,7 +10,8 @@ from cases.serializer import (
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile
-from common.custom_auth import JSONWebTokenAuthentication
+
+# from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
     CommentSerializer,
     AttachmentsSerializer,
@@ -35,7 +36,7 @@ import json
 
 class CaseListView(APIView, LimitOffsetPagination):
 
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -45,24 +46,19 @@ class CaseListView(APIView, LimitOffsetPagination):
             if len(self.request.data) == 0
             else self.request.data
         )
-        queryset = self.model.objects.filter(
-            org=self.request.org).order_by('-id')
-        accounts = Account.objects.filter(org=self.request.org).order_by('-id')
-        contacts = Contact.objects.filter(org=self.request.org).order_by('-id')
-        profiles = Profile.objects.filter(
-            is_active=True, org=self.request.org)
+        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
+        accounts = Account.objects.filter(org=self.request.org).order_by("-id")
+        contacts = Contact.objects.filter(org=self.request.org).order_by("-id")
+        profiles = Profile.objects.filter(is_active=True, org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile) | Q(
-                    assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
-                Q(created_by=self.request.profile) | Q(
-                    assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(
-                    assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
             profiles = profiles.filter(role="ADMIN")
 
@@ -78,8 +74,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
         context = {}
 
-        results_cases = self.paginate_queryset(
-            queryset, self.request, view=self)
+        results_cases = self.paginate_queryset(queryset, self.request, view=self)
         cases = CaseSerializer(results_cases, many=True).data
 
         if results_cases:
@@ -113,8 +108,7 @@ class CaseListView(APIView, LimitOffsetPagination):
         tags=["Cases"], manual_parameters=swagger_params.cases_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         serializer = CaseCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             cases_obj = serializer.save(
@@ -126,39 +120,33 @@ class CaseListView(APIView, LimitOffsetPagination):
 
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(
-                    id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
                 if contacts:
                     cases_obj.contacts.add(*contacts)
 
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(
-                    id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
                 if teams.exists():
                     cases_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(
-                    params.get("assigned_to"))
+                assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True)
+                    id__in=assinged_to_list, org=request.org, is_active=True
+                )
                 if profiles:
                     cases_obj.assigned_to.add(*profiles)
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile
-                attachment.file_name = self.request.FILES.get(
-                    "case_attachment").name
+                attachment.file_name = self.request.FILES.get("case_attachment").name
                 attachment.cases = cases_obj
-                attachment.attachment = self.request.FILES.get(
-                    "case_attachment")
+                attachment.attachment = self.request.FILES.get("case_attachment")
                 attachment.save()
 
-            recipients = list(
-                cases_obj.assigned_to.all().values_list("id", flat=True)
-            )
+            recipients = list(cases_obj.assigned_to.all().values_list("id", flat=True))
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_obj.id,
@@ -175,7 +163,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 
 class CaseDetailView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -186,8 +174,7 @@ class CaseDetailView(APIView):
         tags=["Cases"], manual_parameters=swagger_params.cases_create_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         cases_object = self.get_object(pk=pk)
         if cases_object.org != request.org:
             return Response(
@@ -223,43 +210,38 @@ class CaseDetailView(APIView):
             cases_object.contacts.clear()
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(
-                    id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
                 if contacts:
                     cases_object.contacts.add(*contacts)
 
             cases_object.teams.clear()
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(
-                    id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
                 if teams.exists():
                     cases_object.teams.add(*teams)
 
             cases_object.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(
-                    params.get("assigned_to"))
+                assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True)
+                    id__in=assinged_to_list, org=request.org, is_active=True
+                )
                 if profiles:
                     cases_object.assigned_to.add(*profiles)
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile
-                attachment.file_name = self.request.FILES.get(
-                    "case_attachment").name
+                attachment.file_name = self.request.FILES.get("case_attachment").name
                 attachment.case = cases_object
-                attachment.attachment = self.request.FILES.get(
-                    "case_attachment")
+                attachment.attachment = self.request.FILES.get("case_attachment")
                 attachment.save()
 
             assigned_to_list = list(
                 cases_object.assigned_to.all().values_list("id", flat=True)
             )
-            recipients = list(set(assigned_to_list) -
-                              set(previous_assigned_to_users))
+            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_object.id,
@@ -281,7 +263,7 @@ class CaseDetailView(APIView):
         if self.object.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if self.request.profile != self.object.created_by:
@@ -334,21 +316,19 @@ class CaseDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(
-                    is_active=True, org=self.request.org
-                ).values("user__username")
+                Profile.objects.filter(is_active=True, org=self.request.org).values(
+                    "user__username"
+                )
             )
         elif self.request.profile != self.cases.created_by:
             if self.cases.created_by:
-                users_mention = [
-                    {"username": self.cases.created_by.user.username}]
+                users_mention = [{"username": self.cases.created_by.user.username}]
             else:
                 users_mention = []
         else:
             users_mention = []
 
-        attachments = Attachments.objects.filter(
-            case=self.cases).order_by("-id")
+        attachments = Attachments.objects.filter(case=self.cases).order_by("-id")
         comments = Comment.objects.filter(case=self.cases).order_by("-id")
 
         context.update(
@@ -380,7 +360,7 @@ class CaseDetailView(APIView):
         if self.cases_obj.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
         context = {}
         comment_serializer = CommentSerializer(data=params)
@@ -406,14 +386,12 @@ class CaseDetailView(APIView):
         if self.request.FILES.get("case_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.profile
-            attachment.file_name = self.request.FILES.get(
-                "case_attachment").name
+            attachment.file_name = self.request.FILES.get("case_attachment").name
             attachment.case = self.cases_obj
             attachment.attachment = self.request.FILES.get("case_attachment")
             attachment.save()
 
-        attachments = Attachments.objects.filter(
-            case=self.cases_obj).order_by("-id")
+        attachments = Attachments.objects.filter(case=self.cases_obj).order_by("-id")
         comments = Comment.objects.filter(case=self.cases_obj).order_by("-id")
 
         context.update(
@@ -428,7 +406,7 @@ class CaseDetailView(APIView):
 
 class CaseCommentView(APIView):
     model = Comment
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -438,8 +416,7 @@ class CaseCommentView(APIView):
         tags=["Cases"], manual_parameters=swagger_params.cases_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.query_params if len(request.data) == 0 else request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -492,7 +469,7 @@ class CaseCommentView(APIView):
 
 class CaseAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
