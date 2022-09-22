@@ -26,7 +26,9 @@ def send_email(email_obj_id):
             ).exists():
                 html = email_obj.message_body
                 context_data = {
-                    "email": contact_obj.primary_email if contact_obj.primary_email else "",
+                    "email": contact_obj.primary_email
+                    if contact_obj.primary_email
+                    else "",
                     "name": contact_obj.first_name
                     if contact_obj.first_name
                     else "" + " " + contact_obj.last_name
@@ -57,10 +59,8 @@ def send_email(email_obj_id):
 
 
 @app.task
-def send_email_to_assigned_user(
-    recipients, from_email
-):
-    """ Send Mail To Users When they are assigned to a contact """
+def send_email_to_assigned_user(recipients, from_email):
+    """Send Mail To Users When they are assigned to a contact"""
     account = Account.objects.filter(id=from_email).first()
     created_by = account.created_by
 

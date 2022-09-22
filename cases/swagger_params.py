@@ -1,7 +1,8 @@
 from drf_yasg import openapi
 
 organization_params_in_header = openapi.Parameter(
-    'org', openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER)
+    "org", openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER
+)
 
 organization_params = [
     organization_params_in_header,

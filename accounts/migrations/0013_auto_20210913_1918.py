@@ -7,24 +7,36 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0034_auto_20210913_1918'),
-        ('accounts', '0012_remove_account_company'),
+        ("common", "0034_auto_20210913_1918"),
+        ("accounts", "0012_remove_account_company"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='account',
-            name='company',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='common.company'),
+            model_name="account",
+            name="company",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="common.company",
+            ),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='assigned_to',
-            field=models.ManyToManyField(related_name='account_assigned_users', to='common.Profile'),
+            model_name="account",
+            name="assigned_to",
+            field=models.ManyToManyField(
+                related_name="account_assigned_users", to="common.Profile"
+            ),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='created_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='account_created_by', to='common.profile'),
+            model_name="account",
+            name="created_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="account_created_by",
+                to="common.profile",
+            ),
         ),
     ]

@@ -5,7 +5,7 @@ from common.serializer import (
     ProfileSerializer,
     AttachmentsSerializer,
     LeadCommentSerializer,
-    OrganizationSerializer
+    OrganizationSerializer,
 )
 from teams.serializer import TeamsSerializer
 from contacts.serializer import ContactSerializer
@@ -24,7 +24,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 class LeadSerializer(serializers.ModelSerializer):
-    contacts=ContactSerializer(read_only=True, many=True)
+    contacts = ContactSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     created_by = ProfileSerializer()
     country = serializers.SerializerMethodField()
@@ -32,7 +32,6 @@ class LeadSerializer(serializers.ModelSerializer):
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
-    
 
     def get_country(self, obj):
         return obj.get_country_display()
@@ -75,12 +74,13 @@ class LeadSerializer(serializers.ModelSerializer):
             "company",
             "organization",
             "probability",
-            "close_date"
+            "close_date",
         )
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
     probability = serializers.IntegerField(max_value=100)
+
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
@@ -95,17 +95,13 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             if self.instance.created_from_site:
                 prev_choices = self.fields["source"]._get_choices()
-                prev_choices = prev_choices + \
-                    [("micropyramid", "Micropyramid")]
+                prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
 
     def validate_account_name(self, account_name):
         if self.instance:
             if (
-                Account.objects.filter(
-                    name__iexact=account_name,
-                    org=self.org
-                )
+                Account.objects.filter(name__iexact=account_name, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -113,10 +109,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                     "Account already exists with this name"
                 )
         else:
-            if Account.objects.filter(
-                name__iexact=account_name,
-                org=self.org
-            ).exists():
+            if Account.objects.filter(name__iexact=account_name, org=self.org).exists():
                 raise serializers.ValidationError(
                     "Account already exists with this name"
                 )
@@ -125,19 +118,14 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     def validate_title(self, title):
         if self.instance:
             if (
-                Lead.objects.filter(
-                    title__iexact=title,
-                    org=self.org
-                )
+                Lead.objects.filter(title__iexact=title, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
-                raise serializers.ValidationError(
-                    "Lead already exists with this title")
+                raise serializers.ValidationError("Lead already exists with this title")
         else:
             if Lead.objects.filter(title__iexact=title, org=self.org).exists():
-                raise serializers.ValidationError(
-                    "Lead already exists with this title")
+                raise serializers.ValidationError("Lead already exists with this title")
         return title
 
     class Meta:
@@ -154,7 +142,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "website",
             "description",
             "address_line",
-            #"contacts",
+            # "contacts",
             "street",
             "city",
             "state",
@@ -168,5 +156,5 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "organization",
             "probability",
             "close_date",
-            #"lead_attachment",
+            # "lead_attachment",
         )

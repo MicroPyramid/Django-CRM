@@ -3,7 +3,7 @@ from django.db import models
 from common.models import Profile, Org
 from accounts.models import Account
 from contacts.models import Contact
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from teams.models import Teams
 
 
