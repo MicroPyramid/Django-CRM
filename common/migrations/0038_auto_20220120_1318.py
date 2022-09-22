@@ -8,62 +8,67 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0037_alter_profile_org'),
+        ("common", "0037_alter_profile_org"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='google',
-            name='profile',
+            model_name="google",
+            name="profile",
         ),
         migrations.AddField(
-            model_name='google',
-            name='user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='google_user', to=settings.AUTH_USER_MODEL),
+            model_name="google",
+            name="user",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="google_user",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='dob',
-            field=models.CharField(default='', max_length=50),
+            model_name="google",
+            name="dob",
+            field=models.CharField(default="", max_length=50),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='email',
-            field=models.CharField(db_index=True, default='', max_length=200),
+            model_name="google",
+            name="email",
+            field=models.CharField(db_index=True, default="", max_length=200),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='family_name',
-            field=models.CharField(default='', max_length=200),
+            model_name="google",
+            name="family_name",
+            field=models.CharField(default="", max_length=200),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='gender',
-            field=models.CharField(default='', max_length=10),
+            model_name="google",
+            name="gender",
+            field=models.CharField(default="", max_length=10),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='given_name',
-            field=models.CharField(default='', max_length=200),
+            model_name="google",
+            name="given_name",
+            field=models.CharField(default="", max_length=200),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='google_id',
-            field=models.CharField(default='', max_length=200),
+            model_name="google",
+            name="google_id",
+            field=models.CharField(default="", max_length=200),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='google_url',
-            field=models.TextField(default=''),
+            model_name="google",
+            name="google_url",
+            field=models.TextField(default=""),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='name',
-            field=models.CharField(default='', max_length=200),
+            model_name="google",
+            name="name",
+            field=models.CharField(default="", max_length=200),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='verified_email',
-            field=models.CharField(default='', max_length=200),
+            model_name="google",
+            name="verified_email",
+            field=models.CharField(default="", max_length=200),
         ),
     ]

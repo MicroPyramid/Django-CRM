@@ -1,6 +1,6 @@
 from django.urls import path
 from common import views
-
+from rest_framework_simplejwt import views as jwt_views
 
 app_name = "api_common"
 
@@ -9,9 +9,15 @@ urlpatterns = [
     path("dashboard/", views.ApiHomeView.as_view()),
     path("auth/register/", views.RegistrationView.as_view()),
     path("auth/login/", views.LoginView.as_view()),
+    path(
+        "auth/token/refresh/",
+        jwt_views.TokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
     # GoogleLoginView
     path("auth/google/", views.GoogleLoginView.as_view()),
-    path("auth/companies-list/", views.OrganizationListView.as_view()),
+    path("auth/create-org/", views.OrgProfileCreateView.as_view()),
+    # path("auth/companies-list/", views.OrganizationListView.as_view()),
     path("profile/", views.ProfileView.as_view()),
     path("users/get-teams-and-users/", views.GetTeamsAndUsersView.as_view()),
     path("profile/change-password/", views.ChangePasswordView.as_view()),

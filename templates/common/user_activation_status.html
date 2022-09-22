@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Account Activation Status</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <style>
+        .main_div{
+            height: 550px;
+            background: #e9dbdb;
+            width: 42%;
+        }
+        @media only screen and (max-width: 600px) {
+            .main_div {
+                width: 100%;
+            }
+        }
+        .main_div .main_heading{
+            font-size: 29px;
+            font-weight: 800;
+        }
+        .activated{
+            color: green;
+            font-size: 163px;
+        }
+        .not_activated{
+            color: #f11616;
+            font-size: 163px;
+        }
+        @media only screen and (max-width: 600px) {
+            .activated {
+                font-size: 100px;
+            }
+            .not_activated {
+                font-size: 100px;
+            }
+        }
+    </style>
+</head>
+  <body>
+    <center>
+        <div class="main_div">
+            <span class="main_heading">BOTTLE CRM</span>
+            <hr style="width:60%;">
+            {% if success == True %}
+            <div>
+                <i class="bi bi-check-circle activated"></i>
+                <p>{{message}}</p>
+            </div>
+            {% else %}
+            <div>
+                <i class="bi bi-x-circle not_activated"></i>
+                <p>{{message}}</p>
+            </div>
+            {% endif %}
+        </div>
+    </center>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
+  </body>
+</html>

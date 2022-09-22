@@ -6,108 +6,120 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0030_alter_user_role'),
+        ("common", "0030_alter_user_role"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='user',
-            old_name='type',
-            new_name='user_type',
+            model_name="user",
+            old_name="type",
+            new_name="user_type",
         ),
         migrations.AlterField(
-            model_name='address',
-            name='address_line',
-            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='Address'),
+            model_name="address",
+            name="address_line",
+            field=models.CharField(
+                blank=True, max_length=255, null=True, verbose_name="Address"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='city',
-            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='City'),
+            model_name="address",
+            name="city",
+            field=models.CharField(
+                blank=True, max_length=255, null=True, verbose_name="City"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='postcode',
-            field=models.CharField(blank=True, max_length=64, null=True, verbose_name='Post/Zip-code'),
+            model_name="address",
+            name="postcode",
+            field=models.CharField(
+                blank=True, max_length=64, null=True, verbose_name="Post/Zip-code"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='state',
-            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='State'),
+            model_name="address",
+            name="state",
+            field=models.CharField(
+                blank=True, max_length=255, null=True, verbose_name="State"
+            ),
         ),
         migrations.AlterField(
-            model_name='address',
-            name='street',
-            field=models.CharField(blank=True, max_length=55, null=True, verbose_name='Street'),
+            model_name="address",
+            name="street",
+            field=models.CharField(
+                blank=True, max_length=55, null=True, verbose_name="Street"
+            ),
         ),
         migrations.AlterField(
-            model_name='apisettings',
-            name='website',
+            model_name="apisettings",
+            name="website",
             field=models.URLField(max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='comment_files',
-            name='comment_file',
-            field=models.FileField(null=True, upload_to='comment_files', verbose_name='File'),
+            model_name="comment_files",
+            name="comment_file",
+            field=models.FileField(
+                null=True, upload_to="comment_files", verbose_name="File"
+            ),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='address',
+            model_name="company",
+            name="address",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='name',
+            model_name="company",
+            name="name",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='document',
-            name='title',
+            model_name="document",
+            name="title",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='dob',
+            model_name="google",
+            name="dob",
             field=models.CharField(max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='email',
+            model_name="google",
+            name="email",
             field=models.CharField(db_index=True, max_length=200, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='family_name',
+            model_name="google",
+            name="family_name",
             field=models.CharField(max_length=200, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='gender',
+            model_name="google",
+            name="gender",
             field=models.CharField(max_length=10, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='given_name',
+            model_name="google",
+            name="given_name",
             field=models.CharField(max_length=200, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='google_id',
+            model_name="google",
+            name="google_id",
             field=models.CharField(max_length=200, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='google_url',
+            model_name="google",
+            name="google_url",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='name',
+            model_name="google",
+            name="name",
             field=models.CharField(max_length=200, null=True),
         ),
         migrations.AlterField(
-            model_name='google',
-            name='verified_email',
+            model_name="google",
+            name="verified_email",
             field=models.CharField(max_length=200, null=True),
         ),
     ]

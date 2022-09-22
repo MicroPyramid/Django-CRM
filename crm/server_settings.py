@@ -4,12 +4,12 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 DEBUG = False
 
-AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", "")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+AWS_STORAGE_BUCKET_NAME = AWS_BUCKET_NAME = os.environ["AWS_BUCKET_NAME"]
+AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
 S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN = str(AWS_BUCKET_NAME) + ".s3.amazonaws.com"
-AWS_SES_REGION_NAME = os.getenv("AWS_SES_REGION_NAME", "")
-AWS_SES_REGION_ENDPOINT = os.getenv("AWS_SES_REGION_ENDPOINT", "")
+AWS_SES_REGION_NAME = os.environ["AWS_SES_REGION_NAME"]
+AWS_SES_REGION_ENDPOINT = os.environ["AWS_SES_REGION_ENDPOINT"]
 
 AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=86400",
@@ -34,7 +34,7 @@ EMAIL_BACKEND = "django_ses.SESBackend"
 SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
 
 sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),
+    dsn=os.environ["SENTRY_DSN"],
     integrations=[DjangoIntegration()],
     traces_sample_rate=1.0,
     # If you wish to associate users to errors (assuming you are using
@@ -43,5 +43,5 @@ sentry_sdk.init(
 )
 
 RAVEN_CONFIG = {
-    "dsn": os.getenv("SENTRY_DSN", ""),
+    "dsn": os.environ["SENTRY_DSN"],
 }

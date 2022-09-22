@@ -76,10 +76,8 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
 
 
 @app.task
-def send_email_to_assigned_user(
-    recipients, lead_id, source=""
-):
-    """ Send Mail To Users When they are assigned to a lead """
+def send_email_to_assigned_user(recipients, lead_id, source=""):
+    """Send Mail To Users When they are assigned to a lead"""
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
     for user in recipients:

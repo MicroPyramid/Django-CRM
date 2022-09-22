@@ -1,7 +1,8 @@
 from drf_yasg import openapi
 
 organization_params_in_header = openapi.Parameter(
-    'org', openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER)
+    "org", openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER
+)
 
 organization_params = [
     organization_params_in_header,
@@ -49,13 +50,17 @@ user_update_params = [
     organization_params_in_header,
     openapi.Parameter("first_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("last_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("role", openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=["ADMIN", "USER"]),
+    openapi.Parameter(
+        "role", openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=["ADMIN", "USER"]
+    ),
     openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("alternate_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("phone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("alternate_phone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("skype_ID", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING),
+    openapi.Parameter(
+        "address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
     openapi.Parameter("street", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("state", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -64,8 +69,12 @@ user_update_params = [
     openapi.Parameter("description", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("profile_pic", openapi.IN_QUERY, type=openapi.TYPE_FILE),
     openapi.Parameter("has_sales_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
-    openapi.Parameter("has_marketing_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
-    openapi.Parameter("is_organization_admin", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+    openapi.Parameter(
+        "has_marketing_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN
+    ),
+    openapi.Parameter(
+        "is_organization_admin", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN
+    ),
     openapi.Parameter("teams", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 
@@ -77,11 +86,7 @@ user_delete_params = [
 ]
 
 
-
 registration_page_params = [
-    openapi.Parameter(
-        "org_name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
-    ),
     openapi.Parameter(
         "first_name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
@@ -96,6 +101,22 @@ registration_page_params = [
         type=openapi.TYPE_STRING,
     ),
 ]
+
+post_org_creation_page_params = [
+    openapi.Parameter(
+        "name", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "address", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "user_limit", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
+    openapi.Parameter(
+        "country", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
+]
+
 
 forgot_password_params = [
     openapi.Parameter(
@@ -131,13 +152,17 @@ user_create_params = [
     organization_params_in_header,
     openapi.Parameter("first_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("last_name", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("role", openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=["ADMIN", "USER"]),
+    openapi.Parameter(
+        "role", openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=["ADMIN", "USER"]
+    ),
     openapi.Parameter("email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("alternate_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("phone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("alternate_phone", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("skype_ID", openapi.IN_QUERY, type=openapi.TYPE_STRING),
-    openapi.Parameter("address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING),
+    openapi.Parameter(
+        "address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
+    ),
     openapi.Parameter("street", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("state", openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -146,8 +171,12 @@ user_create_params = [
     openapi.Parameter("description", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("profile_pic", openapi.IN_QUERY, type=openapi.TYPE_FILE),
     openapi.Parameter("has_sales_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
-    openapi.Parameter("has_marketing_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
-    openapi.Parameter("is_organization_admin", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+    openapi.Parameter(
+        "has_marketing_access", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN
+    ),
+    openapi.Parameter(
+        "is_organization_admin", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN
+    ),
     openapi.Parameter("status", openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ]
 

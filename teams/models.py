@@ -2,7 +2,7 @@ import arrow
 
 from django.db import models
 from common.models import Org, Profile
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 class Teams(models.Model):
@@ -17,9 +17,7 @@ class Teams(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         ordering = ("id",)

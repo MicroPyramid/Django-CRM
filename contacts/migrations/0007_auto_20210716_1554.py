@@ -7,78 +7,86 @@ import phonenumber_field.modelfields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contacts', '0006_remove_contact_company'),
+        ("contacts", "0006_remove_contact_company"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='contact',
-            old_name='phone',
-            new_name='mobile_number',
+            model_name="contact",
+            old_name="phone",
+            new_name="mobile_number",
         ),
         migrations.RenameField(
-            model_name='contact',
-            old_name='email',
-            new_name='primary_email',
+            model_name="contact",
+            old_name="email",
+            new_name="primary_email",
         ),
         migrations.AddField(
-            model_name='contact',
-            name='date_of_birth',
+            model_name="contact",
+            name="date_of_birth",
             field=models.DateField(null=True),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='department',
-            field=models.CharField(max_length=255, null=True, verbose_name='Department'),
+            model_name="contact",
+            name="department",
+            field=models.CharField(
+                max_length=255, null=True, verbose_name="Department"
+            ),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='do_not_call',
+            model_name="contact",
+            name="do_not_call",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='facebook_url',
+            model_name="contact",
+            name="facebook_url",
             field=models.URLField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='language',
-            field=models.CharField(max_length=255, null=True, verbose_name='Language'),
+            model_name="contact",
+            name="language",
+            field=models.CharField(max_length=255, null=True, verbose_name="Language"),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='linked_in_url',
+            model_name="contact",
+            name="linked_in_url",
             field=models.URLField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='organization',
-            field=models.CharField(max_length=255, null=True, verbose_name='Organization'),
+            model_name="contact",
+            name="organization",
+            field=models.CharField(
+                max_length=255, null=True, verbose_name="Organization"
+            ),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='salutation',
-            field=models.CharField(max_length=255, null=True, verbose_name='Salutation'),
+            model_name="contact",
+            name="salutation",
+            field=models.CharField(
+                max_length=255, null=True, verbose_name="Salutation"
+            ),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='secondary_email',
+            model_name="contact",
+            name="secondary_email",
             field=models.EmailField(max_length=254, null=True),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='secondary_number',
-            field=phonenumber_field.modelfields.PhoneNumberField(max_length=128, null=True, region=None),
+            model_name="contact",
+            name="secondary_number",
+            field=phonenumber_field.modelfields.PhoneNumberField(
+                max_length=128, null=True, region=None
+            ),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='title',
-            field=models.CharField(max_length=255, null=True, verbose_name='Title'),
+            model_name="contact",
+            name="title",
+            field=models.CharField(max_length=255, null=True, verbose_name="Title"),
         ),
         migrations.AddField(
-            model_name='contact',
-            name='twitter_username',
+            model_name="contact",
+            name="twitter_username",
             field=models.CharField(max_length=255, null=True),
         ),
     ]

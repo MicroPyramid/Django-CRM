@@ -18,7 +18,8 @@ from invoices.serializer import (
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import User, Attachments, Comment
-from common.custom_auth import JSONWebTokenAuthentication
+
+# from common.custom_auth import JSONWebTokenAuthentication
 from common.serializer import (
     UserSerializer,
     CommentSerializer,
@@ -51,7 +52,7 @@ INVOICE_STATUS = (
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -108,7 +109,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         )
         invoices = InvoiceSerailizer(results_invoice, many=True).data
         context["per_page"] = 10
-        page_number = int(self.offset / 10) + 1,
+        page_number = (int(self.offset / 10) + 1,)
         context["page_number"] = page_number
         context.update(
             {
@@ -249,7 +250,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
 
 class InvoiceDetailView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -553,7 +554,7 @@ class InvoiceDetailView(APIView):
 
 class InvoiceCommentView(APIView):
     model = Comment
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -616,7 +617,7 @@ class InvoiceCommentView(APIView):
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
