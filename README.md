@@ -75,11 +75,11 @@ Install the project's dependency after activating env
 pip install -r requirements.txt
 ```
 
-### env variables
+### Env variables
 
 * Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
 
-### next steps
+### Next steps
 
 ```
 python manage.py migrate
@@ -87,7 +87,7 @@ python manage.py runserver
 ```
 Then open http://localhost:8000/swagger/ in your borwser to explore API.
 
-## start celery worker in another terminal window
+## Start celery worker in another terminal window
 
 celery -A tasks worker --loglevel=INFO
 
@@ -124,6 +124,6 @@ report a bug or request new feature. we are glad to help.
 
 For commercial support [Contact us](https://micropyramid.com/contact-us/)
 
-# trigger deploy
+# Trigger deploy
 
 
