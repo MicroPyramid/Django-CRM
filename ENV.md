@@ -1,6 +1,6 @@
 # Environment variables
 
-SECRET_KEY=""
+SECRET_KEY="mco934$@)NHUYTC%6789"
 ENV_TYPE="dev"
 DOMAIN_NAME=""
 
