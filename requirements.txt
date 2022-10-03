@@ -4,7 +4,7 @@ python-dotenv==0.21.0
 django-cors-headers==3.13.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.0
-drf-yasg==1.21.3
+drf-yasg==1.21.4
 django-ses==3.1.2
 psycopg2-binary==2.9.3
 whitenoise==6.2.0
