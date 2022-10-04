@@ -11,7 +11,12 @@ This is divided into three parts
 2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
 3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
 
+## Runcode set-up
+
+- Open below link to create django-crm workspace on runcode.io. It will cretae django-crm API
 [![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io)
+
+- Go to  Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to cretae new workpsace on runcode.
 
 <http://django-crm.readthedocs.io> for latest documentation
 
