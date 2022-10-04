@@ -1,0 +1,144 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>table {width: 100%;}</style>
+{% endblock %}
+
+{% block extrahead %}
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Time');
+        data.addColumn('number', 'Delivery Attempts');
+        data.addColumn('number', 'Bounces');
+        data.addColumn('number', 'Complaints');
+        data.addColumn('number', 'Rejected');
+        data.addRows({{ datapoints|length }});
+        {% for datapoint in datapoints %}
+            data.setValue({{ forloop.counter0 }}, 0, {% if local_time %}'{{ datapoint.Timestamp }}'{% else %}'{{ datapoint.Timestamp|slice:"11:19" }} {{ datapoint.Timestamp|slice:":10" }}'{% endif %});
+            data.setValue({{ forloop.counter0 }}, 1, {{ datapoint.DeliveryAttempts }});
+            data.setValue({{ forloop.counter0 }}, 2, {{ datapoint.Bounces }});
+            data.setValue({{ forloop.counter0 }}, 3, {{ datapoint.Complaints }});
+            data.setValue({{ forloop.counter0 }}, 4, {{ datapoint.Rejects }});
+        {% endfor %}
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart'));
+        chart.draw(data, {
+            width: 498,
+            height: 300,
+            title: 'Sending Stats',
+            hAxis: {textPosition: 'none'},
+            chartArea: {left:30,top:30,width:460,height:230},
+            legend: 'bottom'
+        });
+      }
+    </script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block content_title %}<h1>SES Stats</h1>{% endblock %}
+
+{% block content %}
+<p>Access Key: <span id="aws_access_key_id">{{ access_key }}</span></p>
+<div id="content-main">
+    <div class="module">
+        <table id="quota">
+            <caption>Quotas</caption>
+            <thead>
+                <tr>
+                    <th>24 Quota</th>
+                    <th>24 Sent</th>
+                    <th>Quota Remaining</th>
+                    <th>Per/s Quota</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ 24hour_quota }}</td>
+                    <td>{{ 24hour_sent }}</td>
+                    <td>{{ 24hour_remaining }}</td>
+                    <td>{{ persecond_rate }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module">
+        <table id="sending_totals">
+            <caption>Sending Stats</caption>
+            <thead>
+                <tr>
+                    <th>Delivery Attempts</th>
+                    <th>Bounces</th>
+                    <th>Complaints</th>
+                    <th>Rejected</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ summary.DeliveryAttempts }}</td>
+                    <td>{{ summary.Bounces }}</td>
+                    <td>{{ summary.Complaints }}</td>
+                    <td>{{ summary.Rejects }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="chart"></div>
+    </div>
+    <div class="module">
+        <table id="sending_stats">
+            <caption>Sending Activity</caption>
+            <thead>
+            <tr>
+                <th style="width:35px">Delivery Attempts</th>
+                <th>Bounces</th>
+                <th>Complaints</th>
+                <th>Rejected</th>
+                <th>{% if local_time %}Local Time{% else %}Timestamp{% endif %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for datapoint in datapoints %}
+            <tr>
+                <td>{{ datapoint.DeliveryAttempts }}</td>
+                <td>{{ datapoint.Bounces }}</td>
+                <td>{{ datapoint.Complaints }}</td>
+                <td>{{ datapoint.Rejects }}</td>
+                <td>{{ datapoint.Timestamp }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>Verified Emails</h2>
+        <table id="verified_emails">
+            <thead>
+                <tr>
+                    <th>Email Address</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for email_address in verified_emails %}
+                <tr>
+                    <td>{{ email_address }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr><td><strong>{{ verified_emails|length }}</strong></td></tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

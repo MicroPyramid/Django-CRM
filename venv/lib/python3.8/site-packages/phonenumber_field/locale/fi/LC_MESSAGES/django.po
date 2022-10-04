@@ -1,0 +1,44 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Ville Skyttä <ville.skytta@iki.fi>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-05-28 13:04-0700\n"
+"PO-Revision-Date: 2015-10-26 10:25+0200\n"
+"Last-Translator: Ville Skyttä <ville.skytta@iki.fi>\n"
+"Language-Team: \n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.5\n"
+
+#: formfields.py:27
+#, python-brace-format
+msgid ""
+"Enter a valid phone number (e.g. {example_number}) or a number with an "
+"international call prefix."
+msgstr ""
+
+#. Translators: {example_number} is an international phone number.
+#: formfields.py:33
+#, fuzzy, python-brace-format
+#| msgid "Enter a valid phone number."
+msgid "Enter a valid phone number (e.g. {example_number})."
+msgstr "Syötä oikea puhelinnumero."
+
+#: modelfields.py:51
+msgid "Phone number"
+msgstr "Puhelinnumero"
+
+#: serializerfields.py:9
+msgid "Enter a valid phone number."
+msgstr "Syötä oikea puhelinnumero."
+
+#: validators.py:11
+msgid "The phone number entered is not valid."
+msgstr "Syötetty puhelinnumero on virheellinen."

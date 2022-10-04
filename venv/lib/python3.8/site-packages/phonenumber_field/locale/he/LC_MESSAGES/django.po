@@ -1,0 +1,44 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-05-28 13:04-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: formfields.py:27
+#, python-brace-format
+msgid ""
+"Enter a valid phone number (e.g. {example_number}) or a number with an "
+"international call prefix."
+msgstr "הזן מספר טלפון חוקי (לדוגמה {example_number}) או מספר עם קידומת בינלאומית."
+
+#. Translators: {example_number} is an international phone number.
+#: formfields.py:33
+#, python-brace-format
+msgid "Enter a valid phone number (e.g. {example_number})."
+msgstr "הזן מספר טלפון חוקי (לדוגמה {example_number})."
+
+#: modelfields.py:51
+msgid "Phone number"
+msgstr "מספר טלפון"
+
+#: serializerfields.py:9
+msgid "Enter a valid phone number."
+msgstr "הזן מספר טלפון חוקי"
+
+#: validators.py:11
+msgid "The phone number entered is not valid."
+msgstr "מספר הטלפון שהוזן אינו חוקי"

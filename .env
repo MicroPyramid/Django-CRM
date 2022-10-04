@@ -18,7 +18,7 @@ DBNAME="bottlecrm"
 DBUSER="postgres"
 DBPASSWORD="root"
 DBHOST="localhost"
-DBPORT=""
+DBPORT="5432"
 
 # Sentry
 SENTRY_DSN=""

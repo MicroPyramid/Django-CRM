@@ -1,0 +1,42 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR mahmoodh1378@gmail.com, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-12-10 14:27+0330\n"
+"PO-Revision-Date: 2021-12-10 14:27+0330\n"
+"Last-Translator: Mahmood Heidari mahmoodh1378@gmail.com\n"
+"Language-Team: \n"
+"Language: fa\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: formfields.py:29
+#, python-brace-format
+msgid ""
+"Enter a valid phone number (e.g. {example_number}) or a number with an "
+"international call prefix."
+msgstr "یک شماره تماس معتبر (مانند {example_number}) یا یک شماره با پیشوند کشور مورد نظر وارد نمایید."
+
+#. Translators: {example_number} is an international phone number.
+#: formfields.py:35
+#, python-brace-format
+msgid "Enter a valid phone number (e.g. {example_number})."
+msgstr "یک شماره تماس معتبر وارد نمایید (مانند {example_number})."
+
+#: modelfields.py:53
+msgid "Phone number"
+msgstr "شماره تماس"
+
+#: serializerfields.py:9
+msgid "Enter a valid phone number."
+msgstr "یک شماره تماس معتبر وارد نمایید."
+
+#: validators.py:11
+msgid "The phone number entered is not valid."
+msgstr "شماره تماس وارد شده معتبر نیست."

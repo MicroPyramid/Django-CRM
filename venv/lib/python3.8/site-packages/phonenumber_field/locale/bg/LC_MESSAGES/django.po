@@ -1,0 +1,44 @@
+# Bulgarian translations
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Elena Rogleva <elena.rogleva@gmail.com>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-11-12 13:04+0200\n"
+"PO-Revision-Date: 2020-11-12 13:04+0200\n"
+"Last-Translator: ELENA ROGLEVA <elena.rogleva@gmail.com>\n"
+"Language-Team: \n"
+"Language: bg\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: formfields.py:27
+#, python-brace-format
+msgid ""
+"Enter a valid phone number (e.g. {example_number}) or a number with an "
+"international call prefix."
+msgstr ""
+"Моля, въведете валиден телефонен номер (например {example_number}) или "
+"номер с международен телефонен код."
+
+#. Translators: {example_number} is an international phone number.
+#: formfields.py:33
+msgid "Enter a valid phone number (e.g. {example_number})."
+msgstr "Моля, въведете валиден телефонен номер (например {example_number})."
+
+#: modelfields.py:51
+msgid "Phone number"
+msgstr "Телефонен номер"
+
+#: serializerfields.py:9
+msgid "Enter a valid phone number."
+msgstr "Моля, въведете валиден телефонен номер."
+
+#: validators.py:11
+msgid "The phone number entered is not valid."
+msgstr "Въведеният телефонен номер е невалиден."

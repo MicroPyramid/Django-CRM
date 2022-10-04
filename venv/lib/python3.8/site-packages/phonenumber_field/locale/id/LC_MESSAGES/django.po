@@ -1,0 +1,43 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <arsyiaziz@gmail.com>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-02-05 21:42+0700\n"
+"PO-Revision-Date: 2021-02-05 21:42+0700\n"
+"Last-Translator: Arsyi Syarief Aziz <arsyiaziz@gmail.com>\n"
+"Language-Team: Indonesian <LL@li.org>\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: phonenumber_field/formfields.py:27
+#, python-brace-format
+msgid ""
+"Enter a valid phone number (e.g. {example_number}) or a number with an "
+"international call prefix."
+msgstr "Masukkan nomor telepon yang benar (misalkan {example_number}) "
+"atau nomor yang dilengkapi dengan prefiks kode panggilan internasional."
+
+#. Translators: {example_number} is an international phone number.
+#: phonenumber_field/formfields.py:33
+#, python-brace-format
+msgid "Enter a valid phone number (e.g. {example_number})."
+msgstr "Masukkan nomor telepon yang benar (misalkan {example_number})."
+
+#: phonenumber_field/modelfields.py:53
+msgid "Phone number"
+msgstr "Nomor telepon"
+
+#: phonenumber_field/serializerfields.py:9
+msgid "Enter a valid phone number."
+msgstr "Masukkan nomor telepon yang benar."
+
+#: phonenumber_field/validators.py:11
+msgid "The phone number entered is not valid."
+msgstr "Nomor telepon yang dimasukkan tidak benar."

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "corsheaders",
     "django_ses",
+
 ]
 
 MIDDLEWARE = [
@@ -83,17 +84,27 @@ WSGI_APPLICATION = "crm.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
+#DATABASES = {
+#    "default": {
+#        "ENGINE": "django.db.backends.postgresql",
+#        "NAME": os.environ["DBNAME"],
+#        "USER": os.environ["DBUSER"],
+#        "PASSWORD": os.environ["DBPASSWORD"],
+#        "HOST": os.environ["DBHOST"],
+#        "PORT": os.environ["DBPORT"],
+#    }
+#}
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["DBNAME"],
-        "USER": os.environ["DBUSER"],
-        "PASSWORD": os.environ["DBPASSWORD"],
-        "HOST": os.environ["DBHOST"],
-        "PORT": os.environ["DBPORT"],
+'default': {
+    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    'NAME': 'bottlecrm',
+    'USER': 'postgres',
+    'PASSWORD': 'root',
+    'HOST': 'localhost',
+    'PORT': '5432',
+    'AUTO_CREATE': True
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
