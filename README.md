@@ -11,10 +11,22 @@ This is divided into three parts
 2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
 3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
 
+## Runcode 
+
+ Runcode is online developer workspace. It is cloud based simple, secure and ready to code workspaces, assuring high performance & fully configurable coding environment. With runcode you can run django-crm(API) with one-click.
+
+
+- Open below link to create django-crm workspace on [RunCode](https://runcode.io/ "RunCode"). It will cretae django-crm API
+
 [![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io)
 
-<http://django-crm.readthedocs.io> for latest documentation
+- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to cretae new workpsace with runcode.
 
+## Docs
+
+Please [Click Here](http://django-crm.readthedocs.io "Click Here") for latest documentation.
+
+## Project Modules
 This project contains the following modules:
 - Contacts
 - Companies
@@ -26,11 +38,11 @@ This project contains the following modules:
 
 ## Try for free [here](https://bottlecrm.com/)
 
-## Installation
+## Installation Guide
 
 We recommend ubuntu 20.04. These instructions are verified for ubuntu 20.04.
 
-#### To install required software
+#### To install system requirments
 
 ```
 sudo apt update && sudo apt upgrade -y
@@ -53,7 +65,7 @@ echo "source /home/ubuntu/.local/bin/virtualenvwrapper.sh" >> ~/.zshrc
 ```
 
 If you want to install postgres, follow https://www.postgresql.org/download/
-#### to change postgresql root password
+#### To modify postgresql root password
 
 ```
 sudo -u postgres psql
@@ -87,7 +99,10 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-Then open http://localhost:8000/swagger/ in your borwser to explore API.
+- Then open http://localhost:8000/swagger/ in your borwser to explore API.
+
+- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
+
 
 ## Start celery worker in another terminal window
 
