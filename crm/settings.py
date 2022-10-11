@@ -100,7 +100,7 @@ DATABASES = {
     'NAME': 'dbfb33e3uecbj9',
     'USER': 'csqjtuwmhycdmk',
     'PASSWORD': 'f2063fe8c1609f4fcdfb0bdab7e818548dec73456b7eb6f4ea66b5ddaa91cf7b',
-    'HOST': 'heroku pg:psql postgresql-defined-94777 --app dddjango-crm',
+    'HOST': 'ec2-99-81-16-126.eu-west-1.compute.amazonaws.com',
     'PORT': '5432',
     'AUTO_CREATE': True
     }
