@@ -97,10 +97,10 @@ WSGI_APPLICATION = "crm.wsgi.application"
 DATABASES = {
 'default': {
     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    'NAME': 'bottlecrm',
-    'USER': 'postgres',
-    'PASSWORD': 'root',
-    'HOST': 'localhost',
+    'NAME': 'dbfb33e3uecbj9',
+    'USER': 'csqjtuwmhycdmk',
+    'PASSWORD': 'f2063fe8c1609f4fcdfb0bdab7e818548dec73456b7eb6f4ea66b5ddaa91cf7b',
+    'HOST': 'postgres://csqjtuwmhycdmk:f2063fe8c1609f4fcdfb0bdab7e818548dec73456b7eb6f4ea66b5ddaa91cf7b@ec2-99-81-16-126.eu-west-1.compute.amazonaws.com:5432/dbfb33e3uecbj9',
     'PORT': '5432',
     'AUTO_CREATE': True
     }
