@@ -1,45 +1,33 @@
-from django.db.models import Q
-from accounts.models import Account, Tags
-from accounts.tasks import send_email_to_assigned_user, send_email
-from accounts import swagger_params
-from accounts.serializer import (
-    AccountSerializer,
-    AccountCreateSerializer,
-)
-from common.models import Profile, Attachments, Comment
-
-# from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-)
-from common.utils import (
-    CASE_TYPE,
-    COUNTRIES,
-    CURRENCY_CODES,
-    INDCHOICES,
-    PRIORITY_CHOICE,
-    STATUS_CHOICE,
-)
-from django.shortcuts import get_object_or_404
-from contacts.models import Contact
-from opportunity.models import SOURCES, STAGES, Opportunity
-from cases.serializer import CaseSerializer
-from contacts.serializer import ContactSerializer
-from tasks.serializer import TaskSerializer
-from opportunity.serializer import OpportunitySerializer
-from invoices.serializer import InvoiceSerailizer
-from accounts.serializer import EmailSerializer, TagsSerailizer
-from teams.models import Teams
-
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
 import json
+
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts import swagger_params
+from accounts.models import Account, Tags
+from accounts.serializer import (AccountCreateSerializer, AccountSerializer,
+                                 EmailSerializer, TagsSerailizer)
+from accounts.tasks import send_email, send_email_to_assigned_user
+from cases.serializer import CaseSerializer
+from common.models import Attachments, Comment, Profile
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
+from common.utils import (CASE_TYPE, COUNTRIES, CURRENCY_CODES, INDCHOICES,
+                          PRIORITY_CHOICE, STATUS_CHOICE)
+from contacts.models import Contact
+from contacts.serializer import ContactSerializer
+from invoices.serializer import InvoiceSerailizer
+from opportunity.models import SOURCES, STAGES, Opportunity
+from opportunity.serializer import OpportunitySerializer
+from tasks.serializer import TaskSerializer
+from teams.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
@@ -49,11 +37,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
     model = Account
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
@@ -130,7 +114,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         tags=["Accounts"], manual_parameters=swagger_params.account_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         serializer = AccountCreateSerializer(
             data=params, request_obj=request, account=True
         )
@@ -202,7 +186,7 @@ class AccountDetailView(APIView):
         tags=["Accounts"], manual_parameters=swagger_params.account_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         account_object = self.get_object(pk=pk)
         if account_object.org != request.org:
             return Response(
@@ -413,11 +397,7 @@ class AccountDetailView(APIView):
         tags=["Accounts"], manual_parameters=swagger_params.account_detail_get_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.account_obj = Account.objects.get(pk=pk)
         if self.account_obj.org != request.org:
@@ -484,7 +464,7 @@ class AccountCommentView(APIView):
         tags=["Accounts"], manual_parameters=swagger_params.account_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -574,7 +554,7 @@ class AccountCreateMailView(APIView):
         tags=["Accounts"], manual_parameters=swagger_params.account_mail_params
     )
     def post(self, request, pk, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         scheduled_later = params.get("scheduled_later")
         scheduled_date_time = params.get("scheduled_date_time")
         account = Account.objects.filter(id=pk).first()

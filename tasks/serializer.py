@@ -1,11 +1,9 @@
 from rest_framework import serializers
-from tasks.models import Task
-from common.serializer import (
-    ProfileSerializer,
-    AttachmentsSerializer,
-    CommentSerializer,
-)
+
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
 from contacts.serializer import ContactSerializer
+from tasks.models import Task
 from teams.serializer import TeamsSerializer
 
 

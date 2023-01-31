@@ -1,0 +1,39 @@
+{% load wagtailimages_tags static %}
+
+<!-- Start About Area -->
+<div class="about-area ptb-100">
+    <div class="container">
+        <div class="section-title">
+            <h2>{{ self.heading }}</h2>
+            <p>{{ self.paragraph }}</p>
+        </div>
+
+        <div class="row align-items-center">
+            <div class="col-lg-6 col-md-12">
+                <div class="app-about-content">
+                    <h3>{{ self.sub_heading }}</h3>
+                    <p>{{ self.sub_paragraph }}</p>
+
+                    <ul class="features-list">
+                       {% for link in self.links %}
+                            <li><i class="fas fa-check-circle"></i>{{ link.text }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% if self.cta_url %} 
+                        <a href="{{ self.cta_url }}" class="default-btn app-color">{{ self.cta_text }}<i class="fas fa-chevron-right"></i></a>
+                    {% else %}
+                        <a href="{{ self.cta_page.url }}" class="default-btn app-color">{{ self.cta_text }}<i class="fas fa-chevron-right"></i></a>
+                    {% endif %}    
+
+                </div>
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+                <div class="app-about-image">
+                    <img src="{% static 'assets/img/about/about-img4.png' %}" alt="image">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End About Area -->

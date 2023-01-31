@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import Account
-from common.models import Address, Attachments, Comment, User, Company
+from common.models import Address, Attachments, Comment, Company, User
 from invoices.models import Invoice, InvoiceHistory
 from teams.models import Teams
 

@@ -1,40 +1,30 @@
+import json
+
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from accounts.models import Account, Tags
+from common.models import APISettings, Attachments, Comment, Profile
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               LeadCommentSerializer, ProfileSerializer)
+from common.utils import COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS
 from contacts.models import Contact
 from leads import swagger_params
-from common.models import Attachments, Comment, APISettings, Profile
-from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, INDCHOICES
-
-# from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-    LeadCommentSerializer,
-)
-from leads.models import Lead, Company
 from leads.forms import LeadListForm
-from leads.serializer import (
-    LeadSerializer,
-    LeadCreateSerializer,
-    CompanySerializer,
-    TagsSerializer,
-)
-from leads.tasks import (
-    create_lead_from_file,
-    send_email_to_assigned_user,
-    send_lead_assigned_emails,
-)
-from teams.serializer import TeamsSerializer
+from leads.models import Company, Lead
+from leads.serializer import (CompanySerializer, LeadCreateSerializer,
+                              LeadSerializer, TagsSerializer)
+from leads.tasks import (create_lead_from_file, send_email_to_assigned_user,
+                         send_lead_assigned_emails)
 from teams.models import Teams
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
+from teams.serializer import TeamsSerializer
 
 
 class LeadListView(APIView, LimitOffsetPagination):
@@ -43,11 +33,7 @@ class LeadListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = (
             self.model.objects.filter(org=self.request.org)
             .exclude(status="converted")
@@ -154,11 +140,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         tags=["Leads"], manual_parameters=swagger_params.lead_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         serializer = LeadCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             lead_obj = serializer.save(created_by=request.profile, org=request.org)
@@ -265,11 +247,7 @@ class LeadDetailView(APIView):
         return get_object_or_404(Lead, id=pk)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         user_assgn_list = [
             assigned_to.id for assigned_to in self.lead_obj.assigned_to.all()
@@ -369,11 +347,7 @@ class LeadDetailView(APIView):
         tags=["Leads"], manual_parameters=swagger_params.lead_detail_get_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.lead_obj = Lead.objects.get(pk=pk)
         if self.lead_obj.org != request.org:
@@ -426,11 +400,7 @@ class LeadDetailView(APIView):
         tags=["Leads"], manual_parameters=swagger_params.lead_create_post_params
     )
     def put(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         self.lead_obj = self.get_object(pk)
         if self.lead_obj.org != request.org:
             return Response(
@@ -618,7 +588,7 @@ class LeadCommentView(APIView):
         tags=["Leads"], manual_parameters=swagger_params.lead_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -703,7 +673,7 @@ class CreateLeadFromSite(APIView):
         tags=["Leads"], manual_parameters=swagger_params.create_lead_from_site
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         api_key = params.get("apikey")
         # api_setting = APISettings.objects.filter(
         #     website=website_address, apikey=api_key).first()

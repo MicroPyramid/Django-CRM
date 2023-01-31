@@ -1,0 +1,44 @@
+{% load wagtailimages_tags static %}
+
+ <!-- Start App Download Area -->
+ <div class="app-download-area pt-100">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 col-md-12">
+                <div class="app-download-image">
+                    {% image self.image scale-100 as photo %} 
+                    <img src="{{ photo.url }}" alt="image">
+                </div>
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+                <div class="app-download-content">
+                    <span class="sub-title">DOWNLOAD APP</span>
+                    <h2>{{ self.heading }}</h2>
+                    <p>{{ self.paragraph }}</p>
+
+                    <div class="btn-box">
+                        {% for cta in self.links %}
+                            {% if cta.cta_url %} 
+                                <a href="{{ cta.cta_url }}" class="store-btn">  
+                                    {% image cta.cta_image height-55 as photo %} 
+                                    <img src="{{ photo.url }}" alt="image">
+                                    Download on
+                                    <span>{{ cta.cta_text }}</span>
+                                </a>
+                            {% else %}
+                            <a href="{{ cta.cta_page.url }}" class="store-btn">
+                                {% image cta.cta_image height-55 as photo %}
+                                <img src="{{ photo.url }}" alt="image">
+                                Download on
+                                <span>{{ cta.cta_text }}</span>
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End App Download Area -->

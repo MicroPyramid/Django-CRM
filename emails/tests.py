@@ -1,8 +1,8 @@
-from django.test import TestCase
-from django.test import Client
-from common.models import User, Org
-from emails.models import Email
+from django.test import Client, TestCase
+
+from common.models import Org, User
 from emails.forms import EmailForm
+from emails.models import Email
 
 
 class UserCreation(TestCase):

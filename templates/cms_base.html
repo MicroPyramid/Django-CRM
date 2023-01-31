@@ -1,0 +1,325 @@
+<!doctype html>
+{% load static menus_tags wagtailimages_tags %}
+{% get_menu "navbar" as media %}
+{% get_menu "footer" as footer %}
+
+<html lang="zxx">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Links of CSS files -->
+        
+        <link rel="stylesheet" href="{% static 'assets/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/animate.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/fontawesome.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/magnific-popup.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/owl.theme.default.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/owl.carousel.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/odometer.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/rangeSlider.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/showMoreItems-theme.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/flaticon.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/meanmenu.min.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+        <link rel="stylesheet" href="{% static 'assets/css/responsive.css' %}">
+        
+        <title>Noke - Creative Multipurpose HTML Template</title>
+
+        <link rel="icon" type="image/png" href="{% static 'assets/img/favicon.png' %}">
+    </head>
+    <body>
+               
+        <!-- Start Navbar Area -->
+        <div class="navbar-area navbar-style-three app-color">
+            <div class="noke-responsive-nav">
+                <div class="container">
+                    <div class="noke-responsive-menu">
+                        <div class="logo">
+                            {% image settings.cms.SiteSettings.logo scale-100  %}
+                            <a href="home-app.html"><img src="{{ logo.url }}" ></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="noke-nav">
+                <div class="container-fluid">
+                    <nav class="navbar navbar-expand-md navbar-light">
+                        <a class="navbar-brand" href="home-app.html">
+                            {% image settings.cms.SiteSettings.logo scale-100  %}
+                            <img src="{{ logo.url }}">
+                        </a>
+
+                        <div class="collapse navbar-collapse mean-menu">
+
+                            <ul class="navbar-nav">                                        
+                                {% for item in media.menu_items.all %}
+                                    {% if item.sub_menu_items.all %}
+                                        <li class="nav-item">                                                     
+                                            <a href="{{ item.link }}" class="dropdown-toggle nav-link" {% if item.open_in_new_tab %} target="_blank" {% endif %}>{{ item.title }}</a>                                                
+                                            <ul class="dropdown-menu"> 
+                                                {% for subitem in item.sub_menu_items.all  %}
+                                                <li class="nav-item">                                                
+                                                    <a href="{{ subitem.link }}" class="nav-link" {% if item.open_in_new_tab %} target="_blank" {% endif %}>                                                                        
+                                                                {{ subitem.title }}                                                
+                                                    </a>
+                                                </li>
+                                                {% endfor %}   
+                                            </ul>                                                                                           
+                                        </li>
+                                    {% else %}
+                                        <li class="nav-item">                                                      
+                                            <a href="{{ item.link }}" class="nav-link" {% if item.open_in_new_tab %} target="_blank" {% endif %}>{{ item.title }}</a>                                    
+                                        </li>
+                                    {% endif %}
+                                {% endfor %} 
+                            </ul>
+
+
+                            <div class="others-option d-flex align-items-center">
+                                <div class="option-item">
+                                    <div class="social-links">
+                                        
+                                        {% if settings.cms.SiteSettings.github %}
+                                            <span><a href="{{ settings.cms.SiteSettings.github }}">
+                                                    <i class="fab fa-github "></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}
+
+                                        {% if settings.cms.SiteSettings.twitter %}
+                                            <span><a href="{{ settings.cms.SiteSettings.twitter }}">
+                                                    <i class="fab fa-twitter"></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}
+                                    
+                                        {% if settings.cms.SiteSettings.linkedin %}
+                                            <span><a href="{{ settings.cms.SiteSettings.linkedin }}">
+                                                    <i class="fab fa-linkedin-in"></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}                                                                                                    
+                                    </div>
+                                </div>
+
+                                <div class="option-item">
+                                    <div class="lang-switcher">
+                                        <label><i class="fas fa-globe"></i></label>
+                                        <select>
+                                            <option>English</option>
+                                            <option>Spanish</option>
+                                            <option>Russian</option>
+                                            <option>French</option>
+                                            <option>Arabic</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="others-option-for-responsive">
+                <div class="container">
+                    <div class="dot-menu">
+                        <div class="inner">
+                            <div class="circle circle-one"></div>
+                            <div class="circle circle-two"></div>
+                            <div class="circle circle-three"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="container">
+                        <div class="option-inner">
+                            <div class="others-option">
+                                <div class="option-item">
+                                    <div class="social-links">
+                                        {% if settings.cms.SiteSettings.github %}
+                                            <span><a href="{{ settings.cms.SiteSettings.github }}">
+                                                    <i class="fab fa-github "></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}
+
+                                        {% if settings.cms.SiteSettings.twitter %}
+                                            <span><a href="{{ settings.cms.SiteSettings.twitter }}">
+                                                    <i class="fab fa-twitter"></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}
+                                    
+                                        {% if settings.cms.SiteSettings.linkedin %}
+                                            <span><a href="{{ settings.cms.SiteSettings.linkedin }}">
+                                                    <i class="fab fa-linkedin-in"></i>
+                                                </a>
+                                            </span>
+                                        {% endif %}                             
+                                    </div>
+                                </div>
+
+                                <div class="option-item">
+                                    <div class="lang-switcher">
+                                        <label><i class="fas fa-globe"></i></label>
+                                        <select>
+                                            <option>English</option>
+                                            <option>Spanish</option>
+                                            <option>Russian</option>
+                                            <option>French</option>
+                                            <option>Arabic</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Navbar Area -->
+
+        {% block content %}
+        
+        {% endblock content %}
+        <!-- Start Footer Area -->
+        <footer class="footer-area app-footer">
+            <div class="container">
+                <div class="footer-top">
+                    <div class="row align-items-center justify-content-between">
+                        <div class="col-xl-6 col-lg-4 col-md-12">
+                            <a href="home-app.html" class="logo">
+                                {% image settings.cms.SiteSettings.logo scale-100  %}
+                                <img src="{{ logo.url }}">
+                            </a>
+                        </div>
+    
+                        <div class="col-xl-6 col-lg-8 col-md-12">
+                            <div class="content d-flex justify-content-between align-items-center">
+                                <h3>Bring Your Project To Startup Today</h3>
+                                <a href="contact-1.html" class="default-btn app-color">Contact Us <i class="fas fa-chevron-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 col-sm-6">
+                        <div class="single-footer-widget">
+                            <h3>Contact Details</h3>
+
+                            <ul class="footer-contact">
+                                <li><i class="fas fa-map-marker-alt"></i> 162 5th Ave, New York, NY 1010, United States</li>
+                                <li><i class="far fa-envelope"></i> <a href="mailto:hello@noke.com">hello@noke.com</a></li>
+                                <li><i class="fas fa-phone-volume"></i> <a href="tel:+44457895789">(+44) - 45789 - 5789</a></li>
+                            </ul>
+                        </div>
+                    </div>                         
+                    {% for item in footer.menu_items.all %}
+                    {% if item.sub_menu_items.all %}
+                            <div class="col-lg-3 col-md-6 col-sm-6">
+                                <div class="single-footer-widget pl-4">
+                                        <h3>{{ item.title }}</h3>
+                                        <ul class="info-links">
+                                            {% for subitem in item.sub_menu_items.all  %}
+                                                <li><a href="{{ subitem.link }}">{{ subitem.title }}</a></li>                                    
+                                            {% endfor %}
+                                        </ul>                                                         
+                                </div>                            
+                            </div>
+                            {% endif %}
+                        {% endfor %}  
+                    <div class="col-lg-3 col-md-6 col-sm-6">
+                        <div class="single-footer-widget">
+                            <h3>Subscribe</h3>
+                            <p>Subscribe to receive latest news and freebies</p>
+                            <form class="newsletter-form" data-toggle="validator">
+                                <input type="email" class="input-newsletter" placeholder="Enter your email" name="EMAIL" required autocomplete="off">
+                                <button type="submit"><i class="far fa-paper-plane"></i></button>
+                                <div id="validator-newsletter" class="form-result"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="copyright-area">
+                <div class="container">
+                    <p>Copyright @2021 Noke is Proudly Crafted by <a href="https://envytheme.com/" target="_blank">EnvyTheme</a></p>
+                </div>
+            </div>
+
+            <div class="shape14"><img src="{% static 'assets/img/shape/shape14.png' %}" alt="image"></div>
+        </footer>
+        <!-- End Footer Area -->
+
+        <div class="go-top app-color"><i class="fas fa-chevron-up"></i></div>
+
+        <!-- Start QuickView Modal Area -->
+        <div class="modal fade productsQuickView" id="productsQuickView" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="row align-items-center">
+                        <div class="col-lg-6 col-md-6">
+                            <div class="products-image">
+                                <img src="{% static 'assets/img/products/products-img13.jpg' %}" alt="image">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6 col-md-6">
+                            <div class="products-content">
+                                <h3><a href="products-details.html">Ergonomic Desk Sofa</a></h3>
+                                <div class="price">
+                                    <span class="old-price">$99.00</span>
+                                    <span class="new-price">$69.00</span>
+                                </div>
+                                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                                <div class="products-add-to-cart">
+                                    <div class="quantities">
+                                        <span class="sub-title">Qty:</span>
+                                        <div class="input-counter">
+                                            <span class="minus-btn"><i class='fas fa-minus'></i></span>
+                                            <input type="text" value="1">
+                                            <span class="plus-btn"><i class='fas fa-plus'></i></span>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="default-btn shop-color">Add to Cart <i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <ul class="social-share">
+                                    <li><span>Share:</span></li>
+                                    <li><a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a></li>
+                                    <li><a href="#" target="_blank"><i class="fab fa-instagram"></i></a></li>
+                                    <li><a href="#" target="_blank"><i class="fab fa-twitter"></i></a></li>
+                                    <li><a href="#" target="_blank"><i class="fab fa-linkedin-in"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End QuickView Modal Area -->
+
+        <!-- Links of JS files -->
+        <script src="{% static 'assets/js/jquery.min.js' %}"></script>
+        <script src="{% static 'assets/js/bootstrap.bundle.min.js' %}"></script>
+        <script src="{% static 'assets/js/magnific-popup.min.js' %}"></script>
+        <script src="{% static 'assets/js/appear.min.js' %}"></script>
+        <script src="{% static 'assets/js/odometer.min.js' %}"></script>
+        <script src="{% static 'assets/js/parallax.min.js' %}"></script>
+        <script src="{% static 'assets/js/smooth-scroll.js' %}"></script>
+        <script src="{% static 'assets/js/rangeSlider.min.js' %}"></script>
+        <script src="{% static 'assets/js/showMoreItems.min.js' %}"></script>
+        <script src="{% static 'assets/js/mixitup.min.js' %}"></script>
+        <script src="{% static 'assets/js/meanmenu.min.js' %}"></script>
+        <script src="{% static 'assets/js/owl.carousel.min.js' %}"></script>
+        <script src="{% static 'assets/js/form-validator.min.js' %}"></script>
+        <script src="{% static 'assets/js/contact-form-script.js' %}"></script>
+        <script src="{% static 'assets/js/ajaxchimp.min.js' %}"></script>
+        <script src="{% static 'assets/js/main.js' %}"></script>
+    </body>
+</html>

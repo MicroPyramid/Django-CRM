@@ -1,0 +1,46 @@
+{% extends 'cms_base.html' %}
+{% load wagtailcore_tags %}
+{% block content %}
+
+    <div class="row align-items-center justify-content-center">
+        <div class="col-lg-12"><a href="{{   self.get_parent.url  }}" class="back_to_blog"><i class="fas fa-chevron-left"></i> Back to Blog List</a></div>
+    </div>
+        <!-- Start Page Title Area -->
+   
+            <div class="container">
+                <div class="page-title-content">
+                    <h4>{{ page.title }}</h4>
+                    <ul>
+                        <li><i class="far fa-calendar-alt"></i> Posted on: {{ self.first_published_at }}</li>                    
+                    </ul>
+                </div>
+            </div>
+        
+        <!-- End Page Title Area -->
+       
+        <section class="blog-details-area ptb-100">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-12">
+                        <div class="blog-details-desc">                            
+                            {% comment %} <div class="article-content">                                                                
+                                <div class="article-image">
+                                    <img src="assets/img/blog/blog-img22.jpg" alt="image">
+                                </div>
+                                <p>Quuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quia non numquam eius modi tempora incidunt ut labore et dolore magnam dolor sit amet, consectetur adipisicing.</p>                                                                                                
+                                <h3>Four major elements that we offer:</h3>                                                                                                                               
+                            </div>                                                  {% endcomment %}
+                            {% for block in page.content %}
+                                {% include_block block %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+       
+
+        
+        <div class="go-top"><i class="fas fa-chevron-up"></i></div>
+        
+{% endblock content %}

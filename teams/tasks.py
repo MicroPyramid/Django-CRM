@@ -1,4 +1,5 @@
 from celery import Celery
+
 from common.models import Profile
 from teams.models import Teams
 

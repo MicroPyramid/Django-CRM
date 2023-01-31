@@ -1,18 +1,13 @@
 import arrow
 from django.db import models
-from django.utils.translation import pgettext_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Tags
 from common.models import Org, Profile
-from common.utils import (
-    COUNTRIES,
-    LEAD_SOURCE,
-    LEAD_STATUS,
-    return_complete_address,
-    INDCHOICES,
-)
+from common.utils import (COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS,
+                          return_complete_address)
 from contacts.models import Contact
 from teams.models import Teams
 

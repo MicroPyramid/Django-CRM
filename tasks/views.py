@@ -1,30 +1,27 @@
+import json
+
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
+from common.models import Attachments, Comment, Profile
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-
-from common.models import Profile, Attachments, Comment
-
-# from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-)
 from tasks import swagger_params
 from tasks.models import Task
-from tasks.serializer import TaskSerializer, TaskCreateSerializer
-from tasks.utils import STATUS_CHOICES, PRIORITY_CHOICES
-from teams.serializer import TeamsSerializer
+from tasks.serializer import TaskCreateSerializer, TaskSerializer
+from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
 from teams.models import Teams
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
+from teams.serializer import TeamsSerializer
 
 
 class TaskListView(APIView, LimitOffsetPagination):
@@ -33,11 +30,7 @@ class TaskListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         accounts = Account.objects.filter(org=self.request.org)
         contacts = Contact.objects.filter(org=self.request.org)
@@ -95,11 +88,7 @@ class TaskListView(APIView, LimitOffsetPagination):
         tags=["Tasks"], manual_parameters=swagger_params.task_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             task_obj = serializer.save(
@@ -228,11 +217,7 @@ class TaskDetailView(APIView):
         tags=["Tasks"], manual_parameters=swagger_params.task_detail_post_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.task_obj = Task.objects.get(pk=pk)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -280,11 +265,7 @@ class TaskDetailView(APIView):
         tags=["Tasks"], manual_parameters=swagger_params.task_create_post_params
     )
     def put(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         self.task_obj = self.get_object(pk)
         serializer = TaskCreateSerializer(
             data=params,
@@ -358,7 +339,7 @@ class TaskCommentView(APIView):
         tags=["Tasks"], manual_parameters=swagger_params.task_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"

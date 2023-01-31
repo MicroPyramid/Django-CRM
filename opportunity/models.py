@@ -1,12 +1,12 @@
 import arrow
 from django.db import models
-from django.utils.translation import pgettext_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account, Tags
-from contacts.models import Contact
 from common.models import Org, Profile
-from common.utils import STAGES, SOURCES, CURRENCY_CODES
+from common.utils import CURRENCY_CODES, SOURCES, STAGES
+from contacts.models import Contact
 from teams.models import Teams
 
 

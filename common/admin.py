@@ -1,5 +1,6 @@
 from django.contrib import admin
-from common.models import User, Address, Comment, Comment_Files
+
+from common.models import Address, Comment, Comment_Files, User
 
 # Register your models here.
 

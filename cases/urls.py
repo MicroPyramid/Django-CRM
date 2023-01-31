@@ -1,4 +1,5 @@
 from django.urls import path
+
 from cases import views
 
 app_name = "api_cases"

@@ -1,14 +1,12 @@
-from rest_framework import serializers
-from events.models import Event
-from common.serializer import (
-    ProfileSerializer,
-    AttachmentsSerializer,
-    CommentSerializer,
-    OrganizationSerializer,
-)
-from contacts.serializer import ContactSerializer
-from teams.serializer import TeamsSerializer
 from datetime import datetime, timedelta
+
+from rest_framework import serializers
+
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               OrganizationSerializer, ProfileSerializer)
+from contacts.serializer import ContactSerializer
+from events.models import Event
+from teams.serializer import TeamsSerializer
 
 
 class EventSerializer(serializers.ModelSerializer):

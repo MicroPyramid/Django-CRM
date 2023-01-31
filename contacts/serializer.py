@@ -1,11 +1,8 @@
 from rest_framework import serializers
+
+from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
+                               OrganizationSerializer, ProfileSerializer)
 from contacts.models import Contact
-from common.serializer import (
-    ProfileSerializer,
-    BillingAddressSerializer,
-    AttachmentsSerializer,
-    OrganizationSerializer,
-)
 from teams.serializer import TeamsSerializer
 
 
