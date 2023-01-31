@@ -10,6 +10,9 @@ psycopg2-binary==2.9.3
 whitenoise==6.2.0
 sentry-sdk==1.9.8
 
+wagtail>=4.0.2,<4.0.3
+django_extensions==3.2.1
+
 # remove it
 django-phonenumber-field==6.3.0
 arrow==1.2.3

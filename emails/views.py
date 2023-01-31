@@ -1,12 +1,12 @@
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.shortcuts import render
-from django.shortcuts import get_object_or_404
-from emails.models import Email
-from emails.forms import EmailForm
+from datetime import datetime, timedelta
+
 from django.core.mail import EmailMessage
-from datetime import datetime
-from datetime import timedelta
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+
+from emails.forms import EmailForm
+from emails.models import Email
 
 
 def emails_list(request):

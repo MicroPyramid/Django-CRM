@@ -1,13 +1,13 @@
-from django.db import models
-from django.utils.translation import pgettext_lazy
-from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
-from leads.models import Lead
-from contacts.models import Contact
 from common.models import User
 from common.utils import EVENT_PARENT_TYPE, EVENT_STATUS
+from contacts.models import Contact
+from leads.models import Lead
 
 
 class Reminder(models.Model):

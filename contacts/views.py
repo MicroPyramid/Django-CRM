@@ -1,27 +1,25 @@
-from rest_framework import status
-from common.models import Attachments, Comment, Profile
-from contacts.models import Contact, Profile
-from teams.models import Teams
+import json
+
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.views import APIView
 
+from common.models import Attachments, Comment, Profile
+from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
+                               CommentSerializer)
+from common.utils import COUNTRIES
 # from common.custom_auth import JSONWebTokenAuthentication
 from contacts import swagger_params
+from contacts.models import Contact, Profile
 from contacts.serializer import *
-from rest_framework.views import APIView
-from common.utils import COUNTRIES
-from common.serializer import (
-    CommentSerializer,
-    AttachmentsSerializer,
-    BillingAddressSerializer,
-)
-from tasks.serializer import TaskSerializer
 from contacts.tasks import send_email_to_assigned_user
-import json
+from tasks.serializer import TaskSerializer
+from teams.models import Teams
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
@@ -30,11 +28,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
     model = Contact
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
@@ -91,7 +85,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
         tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         contact_serializer = CreateContactSerializer(data=params, request_obj=request)
         address_serializer = BillingAddressSerializer(data=params)
 
@@ -154,7 +148,7 @@ class ContactDetailView(APIView):
         tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         contact_obj = self.get_object(pk=pk)
         address_obj = contact_obj.address
         if contact_obj.org != request.org:
@@ -343,11 +337,7 @@ class ContactDetailView(APIView):
         tags=["contacts"], manual_parameters=swagger_params.contact_detail_get_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.contact_obj = Contact.objects.get(pk=pk)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -407,7 +397,7 @@ class ContactCommentView(APIView):
         tags=["contacts"], manual_parameters=swagger_params.contact_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"

@@ -4,11 +4,8 @@ from django.test import TestCase
 from django.test.utils import override_settings
 
 from accounts.models import Email
-from accounts.tasks import (
-    send_email,
-    send_email_to_assigned_user,
-    send_scheduled_emails,
-)
+from accounts.tasks import (send_email, send_email_to_assigned_user,
+                            send_scheduled_emails)
 from accounts.tests import AccountCreateTest
 
 

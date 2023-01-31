@@ -1,30 +1,26 @@
-from django.db.models import Q
-from contacts.models import Contact
-from contacts.serializer import ContactSerializer
-
-from common.models import User, Attachments, Comment, Profile
-
-# from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-)
-from events import swagger_params
-from events.models import Event
-from events.serializer import EventSerializer, EventCreateSerializer
-from events.tasks import send_email
-
-from teams.serializer import TeamsSerializer
-from teams.models import Teams
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
 import json
 from datetime import datetime, timedelta
+
+from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.models import Attachments, Comment, Profile, User
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
+from contacts.models import Contact
+from contacts.serializer import ContactSerializer
+from events import swagger_params
+from events.models import Event
+from events.serializer import EventCreateSerializer, EventSerializer
+from events.tasks import send_email
+from teams.models import Teams
+from teams.serializer import TeamsSerializer
 
 WEEKDAYS = (
     ("Monday", "Monday"),
@@ -43,11 +39,7 @@ class EventListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -98,11 +90,7 @@ class EventListView(APIView, LimitOffsetPagination):
         tags=["Events"], manual_parameters=swagger_params.event_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         data = {}
         serializer = EventCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
@@ -316,11 +304,7 @@ class EventDetailView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_detail_post_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.event_obj = Event.objects.get(pk=pk)
         if self.event_obj.org != request.org:
@@ -377,11 +361,7 @@ class EventDetailView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_create_post_params
     )
     def put(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         data = {}
         self.event_obj = self.get_object(pk)
         if self.event_obj.org != request.org:
@@ -473,7 +453,7 @@ class EventCommentView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"

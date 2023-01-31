@@ -1,64 +1,53 @@
+import json
 from multiprocessing import context
 from re import template
+
 import requests
 from django.conf import settings
-from django.db import transaction
-from common import serializer
-from drf_yasg.utils import swagger_auto_schema
-from django.shortcuts import get_object_or_404, render
-from rest_framework import status
-from django.views import View
-from rest_framework.authtoken.models import Token
-from accounts.serializer import AccountSerializer
-from contacts.serializer import ContactSerializer
-from opportunity.serializer import OpportunitySerializer
-from django.http.response import JsonResponse
-from leads.serializer import LeadSerializer
-from teams.serializer import TeamsSerializer
-from common.serializer import *
-from cases.serializer import CaseSerializer
-from accounts.models import Account, Contact
 from django.contrib.auth import authenticate, login
-from opportunity.models import Opportunity
-from accounts.models import Tags
-from cases.models import Case
-from leads.models import Lead
-from teams.models import Teams
-from common.utils import ROLES
-from django.views.decorators.csrf import csrf_exempt
-from common.serializer import (
-    RegisterOrganizationSerializer,
-    CreateUserSerializer,
-    PasswordChangeSerializer,
-)
-from django.views.decorators.http import require_http_methods
-from common.models import User, Org, Document, APISettings, Profile
-from common.tasks import (
-    resend_activation_link_to_user,
-    send_email_to_new_user,
-    send_email_user_delete,
-    send_email_to_reset_password,
-)
-from django.utils.translation import gettext as _
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-
-# from rest_framework_jwt.serializers import jwt_encode_handler
-from common.utils import jwt_payload_handler
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-
-##from common.custom_auth import JSONWebTokenAuthentication
-from common import swagger_params
+from django.contrib.auth.hashers import make_password
+from django.db import transaction
 from django.db.models import Q
-import json
+from django.http.response import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
+from django.utils.translation import gettext as _
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.models import Account, Contact, Tags
+from accounts.serializer import AccountSerializer
+from cases.models import Case
+from cases.serializer import CaseSerializer
+##from common.custom_auth import JSONWebTokenAuthentication
+from common import serializer, swagger_params
+from common.models import APISettings, Document, Org, Profile, User
+from common.serializer import *
+from common.serializer import (CreateUserSerializer, PasswordChangeSerializer,
+                               RegisterOrganizationSerializer)
+from common.tasks import (resend_activation_link_to_user,
+                          send_email_to_new_user, send_email_to_reset_password,
+                          send_email_user_delete)
 from common.token_generator import account_activation_token
-from django.utils import timezone
-from common.utils import COUNTRIES
-from django.contrib.auth.hashers import make_password
+# from rest_framework_jwt.serializers import jwt_encode_handler
+from common.utils import COUNTRIES, ROLES, jwt_payload_handler
+from contacts.serializer import ContactSerializer
+from leads.models import Lead
+from leads.serializer import LeadSerializer
+from opportunity.models import Opportunity
+from opportunity.serializer import OpportunitySerializer
+from teams.models import Teams
+from teams.serializer import TeamsSerializer
 
 
 class GetTeamsAndUsersView(APIView):
@@ -135,7 +124,7 @@ class UserDetailView(APIView):
         tags=["Users"], manual_parameters=swagger_params.user_update_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         profile = self.get_object(pk)
         address_obj = profile.address
         if (
@@ -220,7 +209,7 @@ class ChangePasswordView(APIView):
         manual_parameters=swagger_params.change_password_params,
     )
     def post(self, request, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         context = {"user": request.user}
         serializer = PasswordChangeSerializer(data=params, context=context)
         if serializer.is_valid():
@@ -291,7 +280,7 @@ class LoginView(APIView):
         manual_parameters=swagger_params.login_page_params,
     )
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.post_data)  #<------
         serializer.is_valid(raise_exception=True)
         return Response(
             {
@@ -313,11 +302,11 @@ class RegistrationView(APIView):
     )
     def post(self, request, format=None):
 
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.post_data)
 
         if serializer.is_valid():
             user_obj = serializer.save()
-            password = request.data.get("password")
+            password = request.post_data.get("password")
             user_obj.password = make_password(password)
             user_obj.save()
             # sending mail for confirm password
@@ -351,9 +340,9 @@ class OrgProfileCreateView(APIView):
         manual_parameters=swagger_params.post_org_creation_page_params,
     )
     def post(self, request, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
 
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.post_data)
         if serializer.is_valid():
             org_obj = serializer.save()
 
@@ -430,7 +419,7 @@ class UsersListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_403_FORBIDDEN,
             )
         else:
-            params = request.query_params if len(request.data) == 0 else request.data
+            params = request.post_data
             if params:
                 user_serializer = CreateUserSerializer(data=params, org=request.org)
                 address_serializer = BillingAddressSerializer(data=params)
@@ -484,11 +473,7 @@ class UsersListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_403_FORBIDDEN,
             )
         queryset = Profile.objects.filter(org=request.org).order_by("-id")
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         if params:
             if params.get("email"):
                 queryset = queryset.filter(user__email__icontains=params.get("email"))
@@ -548,11 +533,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
     model = Document
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             queryset = queryset
@@ -650,7 +631,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
         tags=["documents"], manual_parameters=swagger_params.document_create_params
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         serializer = DocumentCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             doc = serializer.save(
@@ -768,7 +749,7 @@ class DocumentDetailView(APIView):
     )
     def put(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         if not self.object:
             return Response(
                 {"error": True, "errors": "Document does not exist"},
@@ -830,7 +811,7 @@ class ForgotPasswordView(APIView):
         tags=["Auth"], manual_parameters=swagger_params.forgot_password_params
     )
     def post(self, request, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         serializer = ForgotPasswordSerializer(data=params)
         if serializer.is_valid():
             user = get_object_or_404(User, email=params.get("email"))
@@ -859,7 +840,7 @@ class ResetPasswordView(APIView):
         tags=["Auth"], manual_parameters=swagger_params.reset_password_params
     )
     def post(self, request, uid, token, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         try:
             uid = force_str(urlsafe_base64_decode(uid))
             user_obj = User.objects.get(pk=uid)
@@ -907,7 +888,7 @@ class UserStatusView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         profiles = Profile.objects.filter(org=request.org)
         profile = profiles.get(id=pk)
 
@@ -960,11 +941,7 @@ class DomainList(APIView):
         tags=["Settings"], manual_parameters=swagger_params.api_setting_create_params
     )
     def post(self, request, *args, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         assign_to_list = []
         if params.get("lead_assigned_to"):
             assign_to_list = json.loads(params.get("lead_assigned_to"))
@@ -1010,11 +987,7 @@ class DomainDetailView(APIView):
     )
     def put(self, request, pk, **kwargs):
         api_setting = self.get_object(pk)
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         assign_to_list = []
         if params.get("lead_assigned_to"):
             assign_to_list = json.loads(params.get("lead_assigned_to"))
@@ -1135,7 +1108,7 @@ class ResendActivationLinkView(APIView):
         tags=["Auth"], manual_parameters=swagger_params.forgot_password_params
     )
     def post(self, request, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         user = get_object_or_404(User, email=params.get("email"))
         if user.is_active:
             return Response(

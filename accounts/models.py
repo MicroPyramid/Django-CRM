@@ -1,15 +1,15 @@
 import arrow
 from django.db import models
-from django.utils.translation import pgettext_lazy
-from django.utils.translation import gettext_lazy as _
-
-from common.models import Org, Profile
-from common.utils import INDCHOICES, COUNTRIES
-from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
+from phonenumber_field.modelfields import PhoneNumberField
+
+from common import utils
+from common.models import Org, Profile
+from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
 from teams.models import Teams
-from common import utils
 
 
 class Tags(models.Model):

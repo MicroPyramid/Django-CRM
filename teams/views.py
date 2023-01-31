@@ -1,17 +1,18 @@
-from teams import swagger_params
-from teams.models import Teams
-from teams.tasks import update_team_users, remove_users
-from teams.serializer import TeamsSerializer, TeamCreateSerializer
-from common.models import Profile
+import json
 
+from drf_yasg.utils import swagger_auto_schema
 # from common.custom_auth import JSONWebTokenAuthentication
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.models import Profile
+from teams import swagger_params
+from teams.models import Teams
+from teams.serializer import TeamCreateSerializer, TeamsSerializer
+from teams.tasks import remove_users, update_team_users
 
 
 class TeamsListView(APIView, LimitOffsetPagination):
@@ -20,11 +21,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if params:
             if params.get("team_name"):
@@ -81,11 +78,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
 
         serializer = TeamCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
@@ -145,11 +138,7 @@ class TeamsDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         self.team = self.get_object(pk)
         actual_users = self.team.get_users()
         removed_users = []

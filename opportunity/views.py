@@ -1,37 +1,28 @@
+import json
+
 from django.db.models import Q
-from opportunity.models import Opportunity
-from opportunity.tasks import send_email_to_assigned_user
-from opportunity import swagger_params
-from opportunity.serializer import (
-    OpportunitySerializer,
-    OpportunityCreateSerializer,
-)
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from accounts.models import Account, Tags
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
-
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-)
-from common.utils import (
-    STAGES,
-    SOURCES,
-    CURRENCY_CODES,
-)
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
+from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
+from opportunity import swagger_params
+from opportunity.models import Opportunity
+from opportunity.serializer import (OpportunityCreateSerializer,
+                                    OpportunitySerializer)
+from opportunity.tasks import send_email_to_assigned_user
 from teams.models import Teams
-
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
@@ -41,11 +32,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
     model = Opportunity
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         accounts = Account.objects.filter(org=self.request.org)
         contacts = Contact.objects.filter(org=self.request.org)
@@ -119,7 +106,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         manual_parameters=swagger_params.opportunity_create_post_params,
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         serializer = OpportunityCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             opportunity_obj = serializer.save(
@@ -202,7 +189,7 @@ class OpportunityDetailView(APIView):
         manual_parameters=swagger_params.opportunity_create_post_params,
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         opportunity_object = self.get_object(pk=pk)
         if opportunity_object.org != request.org:
             return Response(
@@ -403,11 +390,7 @@ class OpportunityDetailView(APIView):
         manual_parameters=swagger_params.opportunity_detail_get_params,
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.opportunity_obj = Opportunity.objects.get(pk=pk)
         if self.opportunity_obj.org != request.org:
@@ -474,7 +457,7 @@ class OpportunityCommentView(APIView):
         manual_parameters=swagger_params.opportunity_comment_edit_params,
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"

@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from opportunity.models import Opportunity
-from accounts.serializer import AccountSerializer
-from contacts.serializer import ContactSerializer
-from teams.serializer import TeamsSerializer
-from common.serializer import ProfileSerializer, AttachmentsSerializer
+
 from accounts.models import Tags
+from accounts.serializer import AccountSerializer
+from common.serializer import AttachmentsSerializer, ProfileSerializer
+from contacts.serializer import ContactSerializer
+from opportunity.models import Opportunity
+from teams.serializer import TeamsSerializer
 
 
 class TagsSerializer(serializers.ModelSerializer):

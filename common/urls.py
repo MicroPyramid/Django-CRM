@@ -1,6 +1,7 @@
 from django.urls import path
-from common import views
 from rest_framework_simplejwt import views as jwt_views
+
+from common import views
 
 app_name = "api_common"
 

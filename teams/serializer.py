@@ -1,6 +1,7 @@
-from teams.models import Teams
 from rest_framework import serializers
+
 from common.serializer import ProfileSerializer
+from teams.models import Teams
 
 
 class TeamsSerializer(serializers.ModelSerializer):

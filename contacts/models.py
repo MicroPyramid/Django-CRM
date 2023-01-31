@@ -1,11 +1,11 @@
 import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 from common.models import Address, Org, Profile
-from phonenumber_field.modelfields import PhoneNumberField
-from teams.models import Teams
 from common.utils import COUNTRIES
+from teams.models import Teams
 
 
 class Contact(models.Model):

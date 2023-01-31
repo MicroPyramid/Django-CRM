@@ -1,10 +1,11 @@
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import logout
-from common.models import Org, Profile, User
-from django.conf import settings
-from django.core.exceptions import ValidationError
 import jwt
+from django.conf import settings
+from django.contrib.auth import logout
+from django.core.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.response import Response
+
+from common.models import Org, Profile, User
 
 
 def set_profile_request(request, org, token):

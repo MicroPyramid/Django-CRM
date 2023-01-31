@@ -18,7 +18,7 @@ This is divided into three parts
 
 - Open below link to create django-crm workspace on [RunCode](https://runcode.io/ "RunCode"). It will cretae django-crm API
 
-[![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io/)
+    [![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io)
 
 - After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to cretae new workpsace with runcode.
 
@@ -106,7 +106,7 @@ python manage.py runserver
 
 ## Start celery worker in another terminal window
 
-celery -A tasks worker --loglevel=INFO
+celery -A crm worker --loglevel=INFO
 
 ### Useful tools and packages
 
@@ -114,6 +114,7 @@ celery -A tasks worker --loglevel=INFO
 pipdeptree # to see pip dependancy tree
 black # to format code to meet python coding standards
 pip-check -H  # to see upgradable packages
+isort # to sort imports in python
 ```
 
 ### Community

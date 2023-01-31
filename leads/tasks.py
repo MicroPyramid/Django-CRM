@@ -7,9 +7,8 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
 
-from common.models import Profile, Org
+from common.models import Org, Profile
 from leads.models import Lead
-
 
 app = Celery("redis://")
 

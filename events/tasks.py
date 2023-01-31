@@ -2,6 +2,7 @@ from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+
 from common.models import Profile
 from events.models import Event
 

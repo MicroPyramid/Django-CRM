@@ -1,6 +1,6 @@
 from django import forms
-from planner.models import Reminder
 
+from planner.models import Reminder
 
 # class EventForm(forms.ModelForm):
 #     class Meta:
