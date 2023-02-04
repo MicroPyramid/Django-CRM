@@ -1,5 +1,4 @@
 onCreate:
-  - sudo rm /etc/apt/sources.list.d/nodesource.list*
   - sudo apt-get update -y
   - sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf libpq-dev python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv zsh python3-virtualenv -y
   - |
