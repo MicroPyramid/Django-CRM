@@ -11,16 +11,30 @@ from rest_framework.views import APIView
 
 from accounts import swagger_params
 from accounts.models import Account, Tags
-from accounts.serializer import (AccountCreateSerializer, AccountSerializer,
-                                 EmailSerializer, TagsSerailizer)
+from accounts.serializer import (
+    AccountCreateSerializer,
+    AccountSerializer,
+    EmailSerializer,
+    TagsSerailizer,
+)
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
-from common.utils import (CASE_TYPE, COUNTRIES, CURRENCY_CODES, INDCHOICES,
-                          PRIORITY_CHOICE, STATUS_CHOICE)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
+from common.utils import (
+    CASE_TYPE,
+    COUNTRIES,
+    CURRENCY_CODES,
+    INDCHOICES,
+    PRIORITY_CHOICE,
+    STATUS_CHOICE,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from invoices.serializer import InvoiceSerailizer
@@ -31,13 +45,12 @@ from teams.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
+        params = self.request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
@@ -545,7 +558,6 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
