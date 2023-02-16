@@ -93,7 +93,17 @@ pip install -r requirements.txt
 
 * Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
 
-### Next steps
+
+### Docker / docker-compose
+in order to use docker, please run the next commands after cloning repo:
+```
+docker build -t djcrm:1 -f docker/Dockerfile .
+docker-compose -f docker/docker-compose.yml up
+```
+
+**Note**: you must have docker/docker-compose installed on your host. 
+### next steps
+
 
 ```
 python manage.py migrate
