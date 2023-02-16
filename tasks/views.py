@@ -11,9 +11,13 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from tasks import swagger_params
@@ -30,7 +34,7 @@ class TaskListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
+        params = self.request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         accounts = Account.objects.filter(org=self.request.org)
         contacts = Contact.objects.filter(org=self.request.org)

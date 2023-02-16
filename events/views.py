@@ -10,9 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import Attachments, Comment, Profile, User
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from events import swagger_params
@@ -39,7 +43,7 @@ class EventListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
+        params = self.request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:

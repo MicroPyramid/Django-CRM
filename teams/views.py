@@ -1,6 +1,7 @@
 import json
 
 from drf_yasg.utils import swagger_auto_schema
+
 # from common.custom_auth import JSONWebTokenAuthentication
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -21,7 +22,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
+        params = self.request.post_data
         queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if params:
             if params.get("team_name"):
