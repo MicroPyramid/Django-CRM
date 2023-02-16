@@ -1,18 +1,21 @@
 import arrow
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 from common.models import Address, Org, Profile
-from phonenumber_field.modelfields import PhoneNumberField
-from teams.models import Teams
 from common.utils import COUNTRIES
+from teams.models import Teams
+
 
 class Contact(models.Model):
-    salutation = models.CharField(_("Salutation"), max_length=255, default="", blank=True)
+    salutation = models.CharField(
+        _("Salutation"), max_length=255, default="", blank=True
+    )
     first_name = models.CharField(_("First name"), max_length=255)
     last_name = models.CharField(_("Last name"), max_length=255)
     date_of_birth = models.DateField(null=True, blank=True)
-    organization = models.CharField(_("Organization"), max_length=255,null=True )
+    organization = models.CharField(_("Organization"), max_length=255, null=True)
     title = models.CharField(_("Title"), max_length=255, default="", blank=True)
     primary_email = models.EmailField(unique=True)
     secondary_email = models.EmailField(default="", blank=True)
@@ -39,11 +42,8 @@ class Contact(models.Model):
     is_active = models.BooleanField(default=False)
     assigned_to = models.ManyToManyField(Profile, related_name="contact_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="contact_teams")
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
-
 
     def __str__(self):
         return self.first_name

@@ -1,11 +1,10 @@
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
 # from django.utils import six
 import six
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 class TokenGenerator(PasswordResetTokenGenerator):
-    """ this class is used to generate a unique token to identify the user """
+    """this class is used to generate a unique token to identify the user"""
 
     def _make_hash_value(self, user, timestamp):
         return (

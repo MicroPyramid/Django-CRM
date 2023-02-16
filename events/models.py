@@ -1,7 +1,7 @@
 import arrow
-
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+
 from common.models import Org, Profile
 from contacts.models import Contact
 from teams.models import Teams
@@ -43,15 +43,16 @@ class Event(models.Model):
     description = models.TextField(blank=True, null=True)
     created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     created_by = models.ForeignKey(
-        Profile, related_name="event_created_by_user", null=True, on_delete=models.SET_NULL
+        Profile,
+        related_name="event_created_by_user",
+        null=True,
+        on_delete=models.SET_NULL,
     )
     is_active = models.BooleanField(default=True)
     disabled = models.BooleanField(default=False)
     date_of_meeting = models.DateField(blank=True, null=True)
     teams = models.ManyToManyField(Teams, related_name="event_teams")
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
     # tags = models.ManyToManyField(Tag)
 

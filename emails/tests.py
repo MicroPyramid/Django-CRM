@@ -1,15 +1,15 @@
-from django.test import TestCase
-from django.test import Client
-from common.models import User, Org
-from emails.models import Email
+from django.test import Client, TestCase
+
+from common.models import Org, User
 from emails.forms import EmailForm
+from emails.models import Email
 
 
 class UserCreation(TestCase):
     def setUp(self):
         self.client = Client()
         self.org, _ = Org.objects.get_or_create(
-            name="test org", address="IN",  country="IN"
+            name="test org", address="IN", country="IN"
         )
         self.user = User.objects.create(
             first_name="janeEmail@example.com",

@@ -1,12 +1,12 @@
 import arrow
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django.utils.translation import ugettext_lazy as _
 
 from accounts.models import Account, Tags
-from contacts.models import Contact
 from common.models import Org, Profile
-from common.utils import STAGES, SOURCES, CURRENCY_CODES
+from common.utils import CURRENCY_CODES, SOURCES, STAGES
+from contacts.models import Contact
 from teams.models import Teams
 
 
@@ -33,11 +33,19 @@ class Opportunity(models.Model):
     )
     probability = models.IntegerField(default=0, blank=True, null=True)
     contacts = models.ManyToManyField(Contact)
-    closed_by = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, blank=True, related_name="oppurtunity_closed_by")
+    closed_by = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="oppurtunity_closed_by",
+    )
     # closed_on = models.DateTimeField(blank=True, null=True)
     closed_on = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    assigned_to = models.ManyToManyField(Profile, related_name="opportunity_assigned_to")
+    assigned_to = models.ManyToManyField(
+        Profile, related_name="opportunity_assigned_to"
+    )
     created_by = models.ForeignKey(
         Profile,
         related_name="opportunity_created_by",
@@ -49,7 +57,11 @@ class Opportunity(models.Model):
     tags = models.ManyToManyField(Tags, blank=True)
     teams = models.ManyToManyField(Teams, related_name="oppurtunity_teams")
     org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="oppurtunity_org"
+        Org,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="oppurtunity_org",
     )
 
     class Meta:

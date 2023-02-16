@@ -1,14 +1,12 @@
-from rest_framework import serializers
-from events.models import Event
-from common.serializer import (
-    ProfileSerializer,
-    AttachmentsSerializer,
-    CommentSerializer,
-    OrganizationSerializer,
-)
-from contacts.serializer import ContactSerializer
-from teams.serializer import TeamsSerializer
 from datetime import datetime, timedelta
+
+from rest_framework import serializers
+
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               OrganizationSerializer, ProfileSerializer)
+from contacts.serializer import ContactSerializer
+from events.models import Event
+from teams.serializer import TeamsSerializer
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -42,7 +40,7 @@ class EventSerializer(serializers.ModelSerializer):
             "assigned_to",
             "event_attachment",
             "event_comments",
-            "org"
+            "org",
         )
 
 
@@ -67,7 +65,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
         return name
 
     def validate_event_type(self, event_type):
-        """ This Validation Is For Keeping The Field Readonly While Editing or Updating"""
+        """This Validation Is For Keeping The Field Readonly While Editing or Updating"""
         event_type = self.initial_data.get("event_type")
         if self.instance:
             return self.instance.event_type
@@ -125,5 +123,5 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "description",
             "created_by",
             "created_on",
-            "org"
+            "org",
         )

@@ -1,18 +1,40 @@
 import re
+
+from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
-from rest_framework import serializers
-from common.models import (
-    User,
-    Org,
-    Comment,
-    Address,
-    Attachments,
-    Document,
-    APISettings,
-    Profile
-)
-from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from rest_framework import serializers
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+from common.models import (Address, APISettings, Attachments, Comment,
+                           Document, Org, Profile, User)
+
+
+class LoginSealizer(serializers.Serializer):
+
+    email = serializers.CharField(max_length=255)
+    password = serializers.CharField(max_length=128, write_only=True)
+    access_token = serializers.CharField(max_length=None, read_only=True)
+    refresh_token = serializers.CharField(max_length=None, read_only=True)
+
+    def validate(self, data):
+        email = data.get("email", None)
+        password = data.get("password", None)
+        user = authenticate(email=email, password=password)
+        if user:
+
+            refresh = RefreshToken.for_user(user)
+            access = AccessToken.for_user(user)
+            return {
+                "access_token": str(access),
+                "refresh_token": str(refresh),
+                "user_id": str(user.id),
+                "error": False,
+                "email": user.email,
+            }
+        else:
+            raise serializers.ValidationError("Login Failed or Account is inactive.")
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
@@ -57,11 +79,19 @@ class LeadCommentSerializer(serializers.ModelSerializer):
         )
 
 
-class RegisterOrganizationSerializer(serializers.Serializer):
+class RegisterOrganizationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
     first_name = serializers.CharField(max_length=255)
     password = serializers.CharField(max_length=100)
-    org_name = serializers.CharField(max_length=100)
+
+    class Meta:
+        model = User
+        fields = ("email", "first_name", "password")
+        extra_kwargs = {
+            "email": {"required": True},
+            "first_name": {"required": True},
+            "password": {"required": True},
+        }
 
     def validate_password(self, password):
         if password:
@@ -72,21 +102,61 @@ class RegisterOrganizationSerializer(serializers.Serializer):
         return password
 
     def validate_email(self, email):
-        org_name = self.initial_data.get('org_name')
-        if Profile.objects.filter(user__email__iexact=email,
-                                  org__name=org_name).exists():
-            raise serializers.ValidationError(
-                "This email is already registered in this organization")
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("This email is already registered.")
         return email
 
-    def validate_org_name(self, org_name):
-        if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", org_name)):
+
+class OrgProfileCreateSerializer(serializers.ModelSerializer):
+    """
+    It is for creating organization
+    """
+
+    name = serializers.CharField(max_length=255)
+    address = serializers.CharField(max_length=255)
+    user_limit = serializers.CharField(max_length=255)
+    country = serializers.CharField(max_length=255)
+
+    class Meta:
+        model = Org
+        fields = "__all__"
+        extra_kwargs = {
+            "name": {"required": True},
+            "address": {"required": True},
+            "user_limit": {"required": True},
+            "country": {"required": True},
+        }
+
+    def validate_name(self, name):
+        if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", name)):
             raise serializers.ValidationError(
-                "organization name should not contain any special characters")
-        if Org.objects.filter(name=org_name).exists():
+                "organization name should not contain any special characters"
+            )
+        if Org.objects.filter(name=name).exists():
             raise serializers.ValidationError(
-                "Organization already exists with this name")
-        return org_name
+                "Organization already exists with this name"
+            )
+        return name
+
+
+class ShowOrganizationListSerializer(serializers.ModelSerializer):
+    """
+    we are using it for show orjanization list
+    """
+
+    org = OrgProfileCreateSerializer()
+
+    class Meta:
+        model = Profile
+        fields = (
+            "role",
+            "alternate_phone",
+            "has_sales_access",
+            "has_marketing_access",
+            "is_organization_admin",
+            "org",
+        )
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
@@ -97,8 +167,7 @@ class BillingAddressSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Address
-        fields = ("address_line", "street", "city",
-                  "state", "postcode", "country")
+        fields = ("address_line", "street", "city", "state", "postcode", "country")
 
     def __init__(self, *args, **kwargs):
         account_view = kwargs.pop("account", False)
@@ -141,18 +210,16 @@ class CreateUserSerializer(serializers.ModelSerializer):
     def validate_email(self, email):
         if self.instance:
             if self.instance.email != email:
-                if not Profile.objects.filter(
-                        user__email=email, org=self.org).exists():
+                if not Profile.objects.filter(user__email=email, org=self.org).exists():
                     return email
                 raise serializers.ValidationError("Email already exists")
             return email
         if not Profile.objects.filter(user__email=email.lower(), org=self.org).exists():
             return email
-        raise serializers.ValidationError('Given Email id already exists')
+        raise serializers.ValidationError("Given Email id already exists")
 
 
 class CreateProfileSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Profile
         fields = (
@@ -161,7 +228,7 @@ class CreateProfileSerializer(serializers.ModelSerializer):
             "alternate_phone",
             "has_sales_access",
             "has_marketing_access",
-            "is_organization_admin"
+            "is_organization_admin",
         )
 
     def __init__(self, *args, **kwargs):
@@ -173,12 +240,12 @@ class CreateProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile_pic = serializers.SerializerMethodField()
-    
+
     def get_profile_pic(self, obj):
         if obj.profile_pic:
             return obj.profile_pic.url
         return None
-    
+
     class Meta:
         model = User
         fields = (
@@ -202,9 +269,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ("id", 'user_details', 'role', 'address',
-                  'has_marketing_access', 'has_sales_access',
-                  'phone', 'date_of_joining', 'is_active')
+        fields = (
+            "id",
+            "user_details",
+            "role",
+            "address",
+            "has_marketing_access",
+            "has_sales_access",
+            "phone",
+            "date_of_joining",
+            "is_active",
+        )
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -252,8 +327,7 @@ class ResetPasswordSerailizer(CheckTokenSerializer):
         new_password2 = data.get("new_password2")
         new_password1 = data.get("new_password1")
         if new_password1 != new_password2:
-            raise serializers.ValidationError(
-                "The two password fields didn't match.")
+            raise serializers.ValidationError("The two password fields didn't match.")
         return new_password2
 
 
@@ -290,7 +364,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             "teams",
             "created_on",
             "created_by",
-            "org"
+            "org",
         ]
 
 
@@ -304,8 +378,7 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
     def validate_title(self, title):
         if self.instance:
             if (
-                Document.objects.filter(
-                    title__iexact=title, org=self.org)
+                Document.objects.filter(title__iexact=title, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -313,19 +386,12 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                     "Document with this Title already exists"
                 )
         if Document.objects.filter(title__iexact=title, org=self.org).exists():
-            raise serializers.ValidationError(
-                "Document with this Title already exists"
-            )
+            raise serializers.ValidationError("Document with this Title already exists")
         return title
 
     class Meta:
         model = Document
-        fields = [
-            "title",
-            "document_file",
-            "status",
-            "org"
-        ]
+        fields = ["title", "document_file", "status", "org"]
 
 
 def find_urls(string):
@@ -381,7 +447,7 @@ class APISettingsListSerializer(serializers.ModelSerializer):
             "created_by",
             "lead_assigned_to",
             "tags",
-            "org"
+            "org",
         ]
 
 
@@ -394,19 +460,21 @@ class PasswordChangeSerializer(serializers.Serializer):
         super().__init__(*args, **kwargs)
 
     def validate_old_password(self, pwd):
-        if not check_password(pwd, self.context.get('user').password):
-            raise serializers.ValidationError(
-                "old password entered is incorrect.")
+        if not check_password(pwd, self.context.get("user").password):
+            raise serializers.ValidationError("old password entered is incorrect.")
         return pwd
 
     def validate(self, data):
-        if len(data.get('new_password')) < 8:
+        if len(data.get("new_password")) < 8:
             raise serializers.ValidationError(
-                "Password must be at least 8 characters long!")
-        if data.get('new_password') == data.get('old_password'):
+                "Password must be at least 8 characters long!"
+            )
+        if data.get("new_password") == data.get("old_password"):
             raise serializers.ValidationError(
-                "New_password and old password should not be the same")
-        if data.get('new_password') != data.get('retype_password'):
+                "New_password and old password should not be the same"
+            )
+        if data.get("new_password") != data.get("retype_password"):
             raise serializers.ValidationError(
-                "New_password and Retype_password did not match.")
+                "New_password and Retype_password did not match."
+            )
         return data

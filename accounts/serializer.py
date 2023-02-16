@@ -1,9 +1,11 @@
 from rest_framework import serializers
+
 from accounts.models import Account, Email, Tags
-from common.serializer import ProfileSerializer, AttachmentsSerializer, OrganizationSerializer
+from common.serializer import (AttachmentsSerializer, OrganizationSerializer,
+                               ProfileSerializer)
+from contacts.serializer import ContactSerializer
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
-from contacts.serializer import ContactSerializer
 
 
 class TagsSerailizer(serializers.ModelSerializer):
@@ -50,7 +52,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "contacts",
             "assigned_to",
             "teams",
-            "org"
+            "org",
         )
 
 

@@ -6,18 +6,18 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0037_alter_profile_org'),
-        ('leads', '0018_auto_20211022_1731'),
+        ("common", "0037_alter_profile_org"),
+        ("leads", "0018_auto_20211022_1731"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='Organization',
-            new_name='Company',
+            old_name="Organization",
+            new_name="Company",
         ),
         migrations.RenameField(
-            model_name='lead',
-            old_name='organization',
-            new_name='company',
+            model_name="lead",
+            old_name="organization",
+            new_name="company",
         ),
     ]

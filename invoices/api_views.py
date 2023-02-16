@@ -1,44 +1,31 @@
+import json
+
 import pytz
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
-from invoices.models import Invoice
-from invoices.tasks import (
-    send_email,
-    send_invoice_email,
-    send_invoice_email_cancel,
-    create_invoice_history,
-)
-from invoices import swagger_params
-from invoices.serializer import (
-    InvoiceSerailizer,
-    InvoiceHistorySerializer,
-    InvoiceCreateSerializer,
-)
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.models import User, Attachments, Comment
-from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    UserSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-    BillingAddressSerializer,
-)
-from common.utils import (
-    COUNTRIES,
-    CURRENCY_CODES,
-)
-from teams.serializer import TeamsSerializer
+from common.models import Attachments, Comment, User
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
+                               CommentSerializer, UserSerializer)
+from common.utils import COUNTRIES, CURRENCY_CODES
+from invoices import swagger_params
+from invoices.models import Invoice
+from invoices.serializer import (InvoiceCreateSerializer,
+                                 InvoiceHistorySerializer, InvoiceSerailizer)
+from invoices.tasks import (create_invoice_history, send_email,
+                            send_invoice_email, send_invoice_email_cancel)
 from teams.models import Teams
-
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
+from teams.serializer import TeamsSerializer
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),
@@ -51,16 +38,12 @@ INVOICE_STATUS = (
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         queryset = self.model.objects.filter(company=self.request.company)
         accounts = Account.objects.filter(company=self.request.company)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -108,7 +91,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         )
         invoices = InvoiceSerailizer(results_invoice, many=True).data
         context["per_page"] = 10
-        page_number = int(self.offset / 10) + 1,
+        page_number = (int(self.offset / 10) + 1,)
         context["page_number"] = page_number
         context.update(
             {
@@ -147,7 +130,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         data = {}
         serializer = InvoiceCreateSerializer(data=params, request_obj=request)
         from_address_serializer = BillingAddressSerializer(data=params)
@@ -249,7 +232,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
 
 class InvoiceDetailView(APIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -260,7 +243,7 @@ class InvoiceDetailView(APIView):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_create_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         invoice_obj = self.get_object(pk=pk)
         from_address_obj = invoice_obj.from_address
         to_address_obj = invoice_obj.to_address
@@ -497,11 +480,7 @@ class InvoiceDetailView(APIView):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_detail_post_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.invoice_obj = Invoice.objects.get(pk=pk)
         if self.invoice_obj.company != request.company:
@@ -553,7 +532,7 @@ class InvoiceDetailView(APIView):
 
 class InvoiceCommentView(APIView):
     model = Comment
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -563,7 +542,7 @@ class InvoiceCommentView(APIView):
         tags=["Invoices"], manual_parameters=swagger_params.invoice_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
@@ -616,7 +595,7 @@ class InvoiceCommentView(APIView):
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(

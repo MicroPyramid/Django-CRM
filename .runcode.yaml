@@ -1,0 +1,24 @@
+onCreate:
+  - sudo apt-get update -y
+  - sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf libpq-dev python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv zsh python3-virtualenv -y
+  - |
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo apt-get update
+        sudo apt-get -y install postgresql
+  - |
+        sudo -u postgres psql postgres -c "ALTER USER postgres PASSWORD 'root'"
+        sudo -u postgres psql postgres -c "CREATE DATABASE bottlecrm WITH OWNER = postgres"
+  - |
+        virtualenv -p python3 ../venv
+        . ../venv/bin/activate
+        cp ENV.md .env
+        pip install -U pip
+        pip install -r requirements.txt
+        python manage.py migrate
+onStart:
+  - |
+        . ../venv/bin/activate
+        WS_DOMAIN=`cat /home/ubuntu/runcode/ws-url-domain.txt`
+        printf "\nGO TO THIS URL TO VIEW PAGE \033[4;34m https://8000-${WS_DOMAIN}\033[0;30m\n\n"
+        python manage.py runserver

@@ -1,21 +1,20 @@
 import arrow
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Tags
 from common.models import Org, Profile
-from common.utils import COUNTRIES, LEAD_SOURCE, LEAD_STATUS, return_complete_address, INDCHOICES
+from common.utils import (COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS,
+                          return_complete_address)
 from contacts.models import Contact
 from teams.models import Teams
 
 
 class Company(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
-    org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
 
 class Lead(models.Model):
@@ -61,16 +60,19 @@ class Lead(models.Model):
         Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="lead_org"
     )
     company = models.ForeignKey(
-        Company, on_delete=models.SET_NULL, null=True, blank=True, related_name="lead_company"
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lead_company",
     )
     skype_ID = models.CharField(max_length=100, null=True, blank=True)
     industry = models.CharField(
         _("Industry Type"), max_length=255, choices=INDCHOICES, blank=True, null=True
     )
-    organization = models.CharField(_("Organization"), max_length=255,null=True )
+    organization = models.CharField(_("Organization"), max_length=255, null=True)
     probability = models.IntegerField(default=0, blank=True, null=True)
     close_date = models.DateField(default=None, null=True)
-
 
     class Meta:
         ordering = ["-created_on"]

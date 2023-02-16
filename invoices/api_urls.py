@@ -1,4 +1,5 @@
 from django.urls import path
+
 from invoices import api_views
 
 app_name = "api_invoices"

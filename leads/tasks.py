@@ -7,9 +7,8 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
 
-from common.models import Profile, Org
+from common.models import Org, Profile
 from leads.models import Lead
-
 
 app = Celery("redis://")
 
@@ -76,10 +75,8 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
 
 
 @app.task
-def send_email_to_assigned_user(
-    recipients, lead_id, source=""
-):
-    """ Send Mail To Users When they are assigned to a lead """
+def send_email_to_assigned_user(recipients, lead_id, source=""):
+    """Send Mail To Users When they are assigned to a lead"""
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
     for user in recipients:

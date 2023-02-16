@@ -1,0 +1,38 @@
+{% load wagtailimages_tags static %}
+
+<!-- Start Blog Area -->
+<div class="blog-area pt-100 pb-70">
+    <div class="container">
+        <div class="section-title">
+            <h2>{{ self.heading }}</h2>
+            <p>{{ self.description }}</p>
+        </div>
+        
+         <div class="row justify-content-center">            
+            {% for card in self.cards %}
+                <div class="col-lg-4 col-md-6">                    
+                    <div class="single-post-item app-color">                        
+                        <div class="post-image">
+                            <a href="blog-details-2.html" class="d-block">
+                                {% image card.image scale-100 as photo %} 
+                                <img src="{{ photo.url }}" alt="image">
+                            </a>
+                        </div>
+                        <div class="post-content">
+                            <a href="blog-4.html" class="tag"><i class="far fa-folder-open"></i> {{ card.blog_tag }}</a>
+                            <h3><a href="blog-details-2.html">{{ card.blog_heading }}</a></h3>
+                            {% if card.cta_url %}
+                                <a href="{{ card.cta_url }}" class="link-btn">{{ card.cta_text }} <i class="fas fa-chevron-right"></i></a>
+                            {% else %}
+                                <a href="{{ card.cta_page.url }}" class="link-btn">{{ card.cta_text }} <i class="fas fa-chevron-right"></i></a>
+                            {% endif %}
+                        </div>                       
+                    </div>                   
+                </div>         
+                {% endfor %}              
+        </div> 
+    </div>
+</div>
+<!-- End Blog Area -->
+
+

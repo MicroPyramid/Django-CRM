@@ -1,0 +1,25 @@
+{% load wagtailcore_tags  static %}
+
+        <!-- Start Features Area -->
+        <div class="features-area pb-70">
+            <div class="container">
+                <div class="section-title">
+                    <h2>{{ self.heading }}</h2>
+                    <p>{{ self.description }}</p>
+                </div>
+                
+                <div class="row justify-content-center">
+                    {% for card in self.cards %}
+                        <div class="col-lg-4 col-md-6 col-sm-6">
+                            <div class="features-box">
+                                <i class="{{ card.icon }}"></i>
+                                <h3>{{ card.card_heading }}s</h3>
+                                <p>{{ card.card_description }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}                    
+                </div>
+            </div>
+            <div class="shape15"><img src="{% static 'assets/img/shape/shape15.png' %}" alt="image"></div>
+        </div>
+        <!-- End Features Area -->

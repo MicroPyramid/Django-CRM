@@ -1,0 +1,14 @@
+
+{% extends 'cms_base.html' %}
+{% load wagtailcore_tags  static %}
+
+{% block content %}
+
+    {% for block in page.content %}
+        
+        <div>{% include_block block %}</div>
+
+    {% endfor %}
+
+{% endblock content %}
+       

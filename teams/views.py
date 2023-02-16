@@ -1,35 +1,32 @@
+import json
+
+from drf_yasg.utils import swagger_auto_schema
+
+# from common.custom_auth import JSONWebTokenAuthentication
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.models import Profile
 from teams import swagger_params
 from teams.models import Teams
-from teams.tasks import update_team_users, remove_users
-from teams.serializer import TeamsSerializer, TeamCreateSerializer
-from common.models import Profile
-from common.custom_auth import JSONWebTokenAuthentication
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
-import json
+from teams.serializer import TeamCreateSerializer, TeamsSerializer
+from teams.tasks import remove_users, update_team_users
 
 
 class TeamsListView(APIView, LimitOffsetPagination):
     model = Teams
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-        queryset = self.model.objects.filter(org=self.request.org).order_by('-id')
+        params = self.request.post_data
+        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         if params:
             if params.get("team_name"):
-                queryset = queryset.filter(
-                    name__icontains=params.get("team_name")
-                )
+                queryset = queryset.filter(name__icontains=params.get("team_name"))
             if params.get("created_by"):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.get("assigned_users"):
@@ -49,14 +46,9 @@ class TeamsListView(APIView, LimitOffsetPagination):
         else:
             offset = 0
         context["per_page"] = 10
-        page_number = int(self.offset / 10) + 1,
+        page_number = (int(self.offset / 10) + 1,)
         context["page_number"] = page_number
-        context.update(
-            {
-                "teams_count": self.count,
-                "offset": offset
-            }
-        )
+        context.update({"teams_count": self.count, "offset": offset})
         context["teams"] = teams
         return context
 
@@ -87,11 +79,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
 
         serializer = TeamCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
@@ -99,7 +87,9 @@ class TeamsListView(APIView, LimitOffsetPagination):
 
             if params.get("assign_users"):
                 assinged_to_list = json.loads(params.get("assign_users"))
-                profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.org)
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org
+                )
                 if profiles:
                     team_obj.users.add(*profiles)
             return Response(
@@ -114,7 +104,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
 
 class TeamsDetailView(APIView):
     model = Teams
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -149,11 +139,7 @@ class TeamsDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         self.team = self.get_object(pk)
         actual_users = self.team.get_users()
         removed_users = []
@@ -166,7 +152,9 @@ class TeamsDetailView(APIView):
             team_obj.users.clear()
             if params.get("assign_users"):
                 assinged_to_list = json.loads(params.get("assign_users"))
-                profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.org)
+                profiles = Profile.objects.filter(
+                    id__in=assinged_to_list, org=request.org
+                )
                 if profiles:
                     team_obj.users.add(*profiles)
             update_team_users.delay(pk)

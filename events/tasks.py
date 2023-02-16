@@ -2,6 +2,7 @@ from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+
 from common.models import Profile
 from events.models import Event
 
@@ -27,7 +28,9 @@ def send_email(event_id, recipients):
             event_members = event.assigned_to.filter(is_active=True)
 
             context["other_members"] = list(
-                event_members.exclude(id=profile.id).values_list("user__email", flat=True)
+                event_members.exclude(id=profile.id).values_list(
+                    "user__email", flat=True
+                )
             )
             if len(context["other_members"]) > 0:
                 context["other_members"] = ", ".join(context["other_members"])

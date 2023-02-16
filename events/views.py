@@ -1,29 +1,30 @@
-from django.db.models import Q
-from contacts.models import Contact
-from contacts.serializer import ContactSerializer
-
-from common.models import User, Attachments, Comment, Profile
-from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (
-    ProfileSerializer,
-    CommentSerializer,
-    AttachmentsSerializer,
-)
-from events import swagger_params
-from events.models import Event
-from events.serializer import EventSerializer, EventCreateSerializer
-from events.tasks import send_email
-
-from teams.serializer import TeamsSerializer
-from teams.models import Teams
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import LimitOffsetPagination
-from drf_yasg.utils import swagger_auto_schema
 import json
 from datetime import datetime, timedelta
+
+from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.models import Attachments, Comment, Profile, User
+
+# from common.custom_auth import JSONWebTokenAuthentication
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
+from contacts.models import Contact
+from contacts.serializer import ContactSerializer
+from events import swagger_params
+from events.models import Event
+from events.serializer import EventCreateSerializer, EventSerializer
+from events.tasks import send_email
+from teams.models import Teams
+from teams.serializer import TeamsSerializer
 
 WEEKDAYS = (
     ("Monday", "Monday"),
@@ -38,25 +39,20 @@ WEEKDAYS = (
 
 class EventListView(APIView, LimitOffsetPagination):
     model = Event
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
-        queryset = self.model.objects.filter(org=self.request.org).order_by('-id')
+        params = self.request.post_data
+        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.profile]) | Q(
-                    created_by=self.request.profile)
+                Q(assigned_to__in=[self.request.profile])
+                | Q(created_by=self.request.profile)
             )
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(
-                    assigned_to=self.request.profile)
+                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -66,16 +62,14 @@ class EventListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.getlist("assigned_users"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(
-                        params.get("assigned_users"))
+                    assigned_to__id__in=json.loads(params.get("assigned_users"))
                 )
             if params.get("date_of_meeting"):
                 queryset = queryset.filter(
                     date_of_meeting=params.get("date_of_meeting")
                 )
         context = {}
-        results_events = self.paginate_queryset(
-            queryset, self.request, view=self)
+        results_events = self.paginate_queryset(queryset, self.request, view=self)
         events = EventSerializer(results_events, many=True).data
         if results_events:
             offset = queryset.filter(id__gte=results_events[-1].id).count()
@@ -83,12 +77,7 @@ class EventListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
-        context.update(
-            {
-                "events_count": self.count,
-                "offset": offset
-            }
-        )
+        context.update({"events_count": self.count, "offset": offset})
         context["events"] = events
         context["recurring_days"] = WEEKDAYS
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
@@ -105,11 +94,7 @@ class EventListView(APIView, LimitOffsetPagination):
         tags=["Events"], manual_parameters=swagger_params.event_create_post_params
     )
     def post(self, request, *args, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         data = {}
         serializer = EventCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
@@ -122,26 +107,25 @@ class EventListView(APIView, LimitOffsetPagination):
                     date_of_meeting=params.get("start_date"),
                     is_active=True,
                     disabled=False,
-                    org=request.org
+                    org=request.org,
                 )
-
 
                 if params.get("contacts"):
                     obj_contact = Contact.objects.filter(
-                        id=params.get("contacts"), org=request.org)
+                        id=params.get("contacts"), org=request.org
+                    )
                     event_obj.contacts.add(obj_contact)
 
                 if params.get("teams"):
                     teams_list = json.loads(params.get("teams"))
-                    teams = Teams.objects.filter(
-                        id__in=teams_list, org=request.org)
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.org)
                     event_obj.teams.add(*teams)
 
                 if params.get("assigned_to"):
-                    assinged_to_list = json.loads(
-                        params.get("assigned_to"))
+                    assinged_to_list = json.loads(params.get("assigned_to"))
                     profiles = Profile.objects.filter(
-                        id__in=assinged_to_list, org=request.org)
+                        id__in=assinged_to_list, org=request.org
+                    )
                     event_obj.assigned_to.add(*profiles)
 
                 assigned_to_list = list(
@@ -183,25 +167,25 @@ class EventListView(APIView, LimitOffsetPagination):
                         start_time=data["start_time"],
                         end_time=data["end_time"],
                         date_of_meeting=each,
-                        org=request.org
+                        org=request.org,
                     )
 
                     if params.get("contacts"):
                         obj_contact = Contact.objects.filter(
-                            id=params.get("contacts"), org=request.org)
+                            id=params.get("contacts"), org=request.org
+                        )
                         event.contacts.add(obj_contact)
-            
+
                     if params.get("teams"):
                         teams_list = json.loads(params.get("teams"))
-                        teams = Teams.objects.filter(
-                            id__in=teams_list, org=request.org)
+                        teams = Teams.objects.filter(id__in=teams_list, org=request.org)
                         event.teams.add(*teams)
 
                     if params.get("assigned_to"):
-                        assinged_to_list = json.loads(
-                            params.get("assigned_to"))
+                        assinged_to_list = json.loads(params.get("assigned_to"))
                         profiles = Profile.objects.filter(
-                            id__in=assinged_to_list, org=request.org)
+                            id__in=assinged_to_list, org=request.org
+                        )
                         event.assigned_to.add(*profiles)
 
                     assigned_to_list = list(
@@ -223,7 +207,7 @@ class EventListView(APIView, LimitOffsetPagination):
 
 class EventDetailView(APIView):
     model = Event
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -247,8 +231,7 @@ class EventDetailView(APIView):
                 )
 
         comments = Comment.objects.filter(event=self.event_obj).order_by("-id")
-        attachments = Attachments.objects.filter(
-            event=self.event_obj).order_by("-id")
+        attachments = Attachments.objects.filter(event=self.event_obj).order_by("-id")
         assigned_data = self.event_obj.assigned_to.values("id", "user__email")
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
@@ -257,18 +240,16 @@ class EventDetailView(APIView):
                 ).values("user__username")
             )
         elif self.request.profile != self.event_obj.created_by:
-            users_mention = [
-                {"username": self.event_obj.created_by.user.username}]
+            users_mention = [{"username": self.event_obj.created_by.user.username}]
         else:
             users_mention = list(
-                self.event_obj.assigned_to.all().values("user__username"))
-        profile_list = Profile.objects.filter(
-            is_active=True, org=self.request.org)
+                self.event_obj.assigned_to.all().values("user__username")
+            )
+        profile_list = Profile.objects.filter(is_active=True, org=self.request.org)
         if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
             profiles = profile_list.order_by("user__email")
         else:
-            profiles = profile_list.filter(
-                role="ADMIN").order_by("user__email")
+            profiles = profile_list.filter(role="ADMIN").order_by("user__email")
 
         if self.request.profile == self.event_obj.created_by:
             user_assgn_list.append(self.request.profile.id)
@@ -284,8 +265,7 @@ class EventDetailView(APIView):
         team_ids = [user.id for user in self.event_obj.get_team_users]
         all_user_ids = profiles.values_list("id", flat=True)
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
-        users_excluding_team = Profile.objects.filter(
-            id__in=users_excluding_team_id)
+        users_excluding_team = Profile.objects.filter(id__in=users_excluding_team_id)
 
         selected_recurring_days = Event.objects.filter(
             name=self.event_obj.name
@@ -319,7 +299,7 @@ class EventDetailView(APIView):
         if self.event_obj.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
         context = self.get_context_data(**kwargs)
         return Response(context)
@@ -328,17 +308,16 @@ class EventDetailView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_detail_post_params
     )
     def post(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         context = {}
         self.event_obj = Event.objects.get(pk=pk)
         if self.event_obj.org != request.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
-                status=status.HTTP_403_FORBIDDEN
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -364,14 +343,12 @@ class EventDetailView(APIView):
         if self.request.FILES.get("event_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.profile
-            attachment.file_name = self.request.FILES.get(
-                "event_attachment").name
+            attachment.file_name = self.request.FILES.get("event_attachment").name
             attachment.event = self.event_obj
             attachment.attachment = self.request.FILES.get("event_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(
-            event__id=self.event_obj.id).order_by("-id")
+        comments = Comment.objects.filter(event__id=self.event_obj.id).order_by("-id")
         attachments = Attachments.objects.filter(event__id=self.event_obj.id).order_by(
             "-id"
         )
@@ -388,17 +365,13 @@ class EventDetailView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_create_post_params
     )
     def put(self, request, pk, **kwargs):
-        params = (
-            self.request.query_params
-            if len(self.request.data) == 0
-            else self.request.data
-        )
+        params = request.post_data
         data = {}
         self.event_obj = self.get_object(pk)
         if self.event_obj.org != request.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
         serializer = EventCreateSerializer(
             data=params,
@@ -416,29 +389,28 @@ class EventDetailView(APIView):
             event_obj.contacts.clear()
             if params.get("contacts"):
                 obj_contact = Contact.objects.filter(
-                    id=params.get("contacts"), org=request.org)
+                    id=params.get("contacts"), org=request.org
+                )
                 event_obj.contacts.add(obj_contact)
 
             event_obj.teams.clear()
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(
-                    id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
                 event_obj.teams.add(*teams)
 
             event_obj.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(
-                    params.get("assigned_to"))
+                assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org)
+                    id__in=assinged_to_list, org=request.org
+                )
                 event_obj.assigned_to.add(*profiles)
 
             assigned_to_list = list(
                 event_obj.assigned_to.all().values_list("id", flat=True)
             )
-            recipients = list(set(assigned_to_list) -
-                              set(previous_assigned_to_users))
+            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email.delay(
                 event_obj.id,
                 recipients,
@@ -475,7 +447,7 @@ class EventDetailView(APIView):
 
 class EventCommentView(APIView):
     model = Comment
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -485,8 +457,7 @@ class EventCommentView(APIView):
         tags=["Events"], manual_parameters=swagger_params.event_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.query_params if len(
-            request.data) == 0 else request.data
+        params = request.post_data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -538,7 +509,7 @@ class EventCommentView(APIView):
 
 class EventAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(

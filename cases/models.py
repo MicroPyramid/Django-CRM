@@ -1,12 +1,13 @@
 import arrow
-from django.db import models
-from django.utils.translation import pgettext_lazy
-from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
+
 from accounts.models import Account
-from contacts.models import Contact
 from common.models import Org, Profile
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
+from contacts.models import Contact
 from planner.models import Event
 from teams.models import Teams
 
@@ -39,7 +40,6 @@ class Case(models.Model):
     org = models.ForeignKey(
         Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="case_org"
     )
-
 
     class Meta:
         ordering = ["-created_on"]

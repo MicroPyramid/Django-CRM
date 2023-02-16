@@ -1,24 +1,43 @@
 import os
-from dotenv import load_dotenv
+from datetime import timedelta
+
 from corsheaders.defaults import default_headers
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# env_path = Path(".") / ".env"
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "SECRET_KEY", "&q1&ftrxho9lrzm$$%6!cplb5ac957-9y@t@17u(3yqqb#9xl%"
-)
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".bottlecrm.com"]
+
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+
+    'wagtail.contrib.forms',
+    'wagtail.contrib.redirects',
+    'wagtail.embeds',
+    'wagtail.sites',
+    'wagtail.users',
+    'wagtail.snippets',
+    'wagtail.documents',
+    'wagtail.images',
+    'wagtail.search',
+    'wagtail.admin',
+    'wagtail',
+    'cms',
+    'wagtail.contrib.settings',
+    
+
+    'modelcluster',
+    'taggit',
+
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.messages",
@@ -38,6 +57,7 @@ INSTALLED_APPS = [
     "events",
     "teams",
     "rest_framework",
+    "rest_framework_simplejwt",
     "drf_yasg",
     "corsheaders",
     "django_ses",
@@ -52,8 +72,11 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "common.custom_auth.TokenAuthMiddleware",
+    # "common.custom_auth.TokenAuthMiddleware",
     "common.middleware.get_company.GetProfileAndOrg",
+    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
+    'common.middleware.swagger_post.SwaggerMiddleware',
+   
 ]
 
 ROOT_URLCONF = "crm.urls"
@@ -72,7 +95,9 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "common.context_processors.common.app_name",
-                "django_settings_export.settings_export",
+                # "django_settings_export.settings_export",
+                'wagtail.contrib.settings.context_processors.settings',
+                
             ],
         },
     },
@@ -86,13 +111,14 @@ WSGI_APPLICATION = "crm.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DBNAME"),
-        "USER": os.getenv("DBUSER"),
-        "PASSWORD": os.getenv("DBPASSWORD"),
-        "HOST": os.getenv("DBHOST"),
-        "PORT": os.getenv("DBPORT"),
+        "NAME": os.environ["DBNAME"],
+        "USER": os.environ["DBUSER"],
+        "PASSWORD": os.environ["DBPASSWORD"],
+        "HOST": os.environ["DBHOST"],
+        "PORT": os.environ["DBPORT"],
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
@@ -125,28 +151,28 @@ USE_TZ = True
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 AUTH_USER_MODEL = "common.User"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATIC_URL = "/static/"
-ENV_TYPE = os.getenv("ENV_TYPE", "dev")
-if ENV_TYPE == "dev":
-    # SESSION_COOKIE_DOMAIN = "localhost:8000"
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
+
+ENV_TYPE = os.environ["ENV_TYPE"]
+print(">>> ENV_TYPE", ENV_TYPE)
+if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
-    STATIC_URL = "/static/"
-
-elif ENV_TYPE == "live":
+elif ENV_TYPE == "prod":
     from .server_settings import *
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
-MARKETING_REPLY_EMAIL = os.getenv("MARKETING_REPLY_EMAIL", "")
-PASSWORD_RESET_MAIL_FROM_USER = os.getenv("PASSWORD_RESET_MAIL_FROM_USER", "")
+DEFAULT_FROM_EMAIL = os.environ["DEFAULT_FROM_EMAIL"]
+ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
 
 
 # celery Tasks
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
+CELERY_RESULT_BACKEND = os.environ["CELERY_RESULT_BACKEND"]
 
 
 LOGGING = {
@@ -211,13 +237,16 @@ LOGGING = {
 
 APPLICATION_NAME = "bottlecrm"
 
+WAGTAIL_SITE_NAME = 'bottlecrm'
+
+WAGTAILADMIN_BASE_URL = "https://bottlecrm.com"
 
 SETTINGS_EXPORT = ["APPLICATION_NAME"]
 
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_jwt.authentication.JSONWebTokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ),
@@ -234,6 +263,7 @@ SWAGGER_SETTINGS = {
 
 CORS_ALLOW_HEADERS = default_headers + ("org",)
 CORS_ORIGIN_ALLOW_ALL = True
+CSRF_TRUSTED_ORIGINS = ['https://*.runcode.io', 'http://*']
 
 SECURE_HSTS_SECONDS = 3600
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -243,5 +273,32 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 DOMAIN_NAME = os.getenv("DOMAIN_NAME")
+
+
+SIMPLE_JWT = {
+    #'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=365),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "AUTH_HEADER_TYPES": ("Bearer", "jwt", "Jwt"),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+# it is needed in custome middlewere to get the user from the token
+JWT_ALGO = "HS256"
+
+
+DOMAIN_NAME = os.environ["DOMAIN_NAME"]
+SWAGGER_ROOT_URL = os.environ["SWAGGER_ROOT_URL"]
+

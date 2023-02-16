@@ -1,4 +1,5 @@
 from celery import Celery
+
 from common.models import Profile
 from teams.models import Teams
 
@@ -68,7 +69,7 @@ def remove_users(removed_users_list, team_id):
 
 @app.task
 def update_team_users(team_id):
-    """ this function updates assigned_to field on all models when a team is updated """
+    """this function updates assigned_to field on all models when a team is updated"""
     team = Teams.objects.filter(id=team_id).first()
     if team:
         teams_members = team.users.all()

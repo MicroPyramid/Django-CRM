@@ -1,11 +1,8 @@
 from rest_framework import serializers
+
+from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
+                               OrganizationSerializer, ProfileSerializer)
 from contacts.models import Contact
-from common.serializer import (
-    ProfileSerializer,
-    BillingAddressSerializer,
-    AttachmentsSerializer,
-    OrganizationSerializer
-)
 from teams.serializer import TeamsSerializer
 
 
@@ -59,7 +56,6 @@ class ContactSerializer(serializers.ModelSerializer):
             "get_team_and_assigned_users",
             "get_assigned_users_not_in_teams",
             "org",
-            
         )
 
 
@@ -81,7 +77,9 @@ class CreateContactSerializer(serializers.ModelSerializer):
                 )
 
         else:
-            if Contact.objects.filter(first_name__iexact=first_name, org=self.org).exists():
+            if Contact.objects.filter(
+                first_name__iexact=first_name, org=self.org
+            ).exists():
                 raise serializers.ValidationError(
                     "Contact already exists with this name"
                 )
@@ -108,5 +106,4 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "linked_in_url",
             "facebook_url",
             "twitter_username",
-           
         )

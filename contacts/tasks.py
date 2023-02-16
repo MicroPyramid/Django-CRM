@@ -10,10 +10,8 @@ app = Celery("redis://")
 
 
 @app.task
-def send_email_to_assigned_user(
-    recipients, contact_id
-):
-    """ Send Mail To Users When they are assigned to a contact """
+def send_email_to_assigned_user(recipients, contact_id):
+    """Send Mail To Users When they are assigned to a contact"""
     contact = Contact.objects.get(id=contact_id)
     created_by = contact.created_by
     for profile_id in recipients:

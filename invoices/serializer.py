@@ -1,10 +1,8 @@
 from rest_framework import serializers
+
+from common.serializer import (BillingAddressSerializer,
+                               OrganizationSerializer, UserSerializer)
 from invoices.models import Invoice, InvoiceHistory
-from common.serializer import (
-    UserSerializer,
-    OrganizationSerializer,
-    BillingAddressSerializer,
-)
 from teams.serializer import TeamsSerializer
 
 

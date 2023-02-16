@@ -1,5 +1,6 @@
 # Django-CRM
 
+============
 
 Django CRM is opensource CRM developed on django framework. It has all
 the basic features of CRM to start with. We welcome code contributions
@@ -10,8 +11,22 @@ This is divided into three parts
 2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
 3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
 
-<http://django-crm.readthedocs.io> for latest documentation
+## Runcode 
 
+ Runcode is online developer workspace. It is cloud based simple, secure and ready to code workspaces, assuring high performance & fully configurable coding environment. With runcode you can run django-crm(API) with one-click.
+
+
+- Open below link to create django-crm workspace on [RunCode](https://runcode.io/ "RunCode"). It will cretae django-crm API
+
+    [![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io)
+
+- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to cretae new workpsace with runcode.
+
+## Docs
+
+Please [Click Here](http://django-crm.readthedocs.io "Click Here") for latest documentation.
+
+## Project Modules
 This project contains the following modules:
 - Contacts
 - Companies
@@ -23,16 +38,16 @@ This project contains the following modules:
 
 ## Try for free [here](https://bottlecrm.com/)
 
-## Installation
+## Installation Guide
 
 We recommend ubuntu 20.04. These instructions are verified for ubuntu 20.04.
 
-#### To install required software
+#### To install system requirments
 
 ```
 sudo apt update && sudo apt upgrade -y
 
-sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf git libpq-dev python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
+sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
 ```
 
 #### Install dependencies
@@ -45,15 +60,12 @@ sudo apt update && sudo apt upgrade -y && sudo apt install zsh python3-virtualen
 sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 pip install virtualenvwrapper
-```
 
-then add the following to ```~/.zshrc``` file
-```
-source /home/ubuntu/.local/bin/virtualenvwrapper.sh
+echo "source /home/ubuntu/.local/bin/virtualenvwrapper.sh" >> ~/.zshrc
 ```
 
 If you want to install postgres, follow https://www.postgresql.org/download/
-#### to change postgresql root password
+#### To modify postgresql root password
 
 ```
 sudo -u postgres psql
@@ -77,9 +89,10 @@ Install the project's dependency after activating env
 pip install -r requirements.txt
 ```
 
-### env variables
+### Env variables
 
 * Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
+
 
 ### Docker / docker-compose
 in order to use docker, please run the next commands after cloning repo:
@@ -91,13 +104,19 @@ docker-compose -f docker/docker-compose.yml up
 **Note**: you must have docker/docker-compose installed on your host. 
 ### next steps
 
+
 ```
 python manage.py migrate
 python manage.py runserver
 ```
-Then open http://localhost:8000/swagger/ in your borwser to explore API.
+- Then open http://localhost:8000/swagger/ in your borwser to explore API.
+
+- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
 
 
+## Start celery worker in another terminal window
+
+celery -A crm worker --loglevel=INFO
 
 ### Useful tools and packages
 
@@ -105,6 +124,7 @@ Then open http://localhost:8000/swagger/ in your borwser to explore API.
 pipdeptree # to see pip dependancy tree
 black # to format code to meet python coding standards
 pip-check -H  # to see upgradable packages
+isort # to sort imports in python
 ```
 
 ### Community
@@ -131,3 +151,7 @@ We welcome your feedback and support, raise github issue if you want to
 report a bug or request new feature. we are glad to help.
 
 For commercial support [Contact us](https://micropyramid.com/contact-us/)
+
+# Trigger deploy
+
+

@@ -1,24 +1,25 @@
-import arrow
 import binascii
 import datetime
 import os
 import time
+
+import arrow
+from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
+                                        UserManager)
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
-from phonenumber_field.modelfields import PhoneNumberField
-from common.templatetags.common_tags import (
-    is_document_file_image,
-    is_document_file_audio,
-    is_document_file_video,
-    is_document_file_pdf,
-    is_document_file_code,
-    is_document_file_text,
-    is_document_file_sheet,
-    is_document_file_zip,
-)
-from common.utils import COUNTRIES, ROLES
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
+
+from common.templatetags.common_tags import (is_document_file_audio,
+                                             is_document_file_code,
+                                             is_document_file_image,
+                                             is_document_file_pdf,
+                                             is_document_file_sheet,
+                                             is_document_file_text,
+                                             is_document_file_video,
+                                             is_document_file_zip)
+from common.utils import COUNTRIES, ROLES
 
 
 def img_url(self, filename):
@@ -93,6 +94,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_pic = models.FileField(
         max_length=1000, upload_to=img_url, null=True, blank=True
     )
+    activation_key = models.CharField(max_length=150, null=True, blank=True)
+    key_expires = models.DateTimeField(null=True, blank=True)
     skype_ID = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
 
@@ -127,6 +130,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+    def save(self, *args, **kwargs):
+        """by default the expiration time is set to 2 hours"""
+        self.key_expires = timezone.now() + datetime.timedelta(hours=2)
+        super().save(*args, **kwargs)
+
 
 class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -148,16 +156,9 @@ class Profile(models.Model):
     is_active = models.BooleanField(default=True)
     is_organization_admin = models.BooleanField(default=False)
     date_of_joining = models.DateField(null=True, blank=True)
-    activation_key = models.CharField(max_length=150, null=True, blank=True)
-    key_expires = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = (("user", "org"),)
-
-    def save(self, *args, **kwargs):
-        """by default the expiration time is set to 2 hours"""
-        self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-        super().save(*args, **kwargs)
 
     @property
     def is_admin(self):

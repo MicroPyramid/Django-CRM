@@ -1,6 +1,7 @@
-from teams.models import Teams
 from rest_framework import serializers
+
 from common.serializer import ProfileSerializer
+from teams.models import Teams
 
 
 class TeamsSerializer(serializers.ModelSerializer):
@@ -27,14 +28,12 @@ class TeamCreateSerializer(serializers.ModelSerializer):
         self.org = request_obj.org
 
         self.fields["name"].required = True
-        self.fields["description"].required=False
+        self.fields["description"].required = False
 
     def validate_name(self, name):
         if self.instance:
             if (
-                Teams.objects.filter(
-                    name__iexact=name, org=self.org
-                )
+                Teams.objects.filter(name__iexact=name, org=self.org)
                 .exclude(id=self.instance.id)
                 .exists()
             ):
@@ -52,5 +51,5 @@ class TeamCreateSerializer(serializers.ModelSerializer):
             "created_on",
             "created_by",
             "created_on_arrow",
-            "org"
+            "org",
         )

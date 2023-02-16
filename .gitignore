@@ -24,4 +24,4 @@ media
 .sass-cache
 server.log
 .vscode
-static
+staticfiles

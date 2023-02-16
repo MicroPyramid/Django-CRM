@@ -1,7 +1,8 @@
 from drf_yasg import openapi
 
 organization_params_in_header = openapi.Parameter(
-    'org', openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER)
+    "org", openapi.IN_HEADER, required=True, type=openapi.TYPE_INTEGER
+)
 
 organization_params = [
     organization_params_in_header,
@@ -32,34 +33,20 @@ contact_create_post_params = [
         format="date",
         example="2021-01-01",
     ),
-    openapi.Parameter(
-        "organization", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
+    openapi.Parameter("organization", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
         "title", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
+    openapi.Parameter("primary_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("secondary_email", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("mobile_number", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("secondary_number", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("department", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("language", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+    openapi.Parameter("do_not_call", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
     openapi.Parameter(
-        "primary_email", openapi.IN_QUERY, type=openapi.TYPE_STRING
+        "address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING
     ),
-    openapi.Parameter(
-        "secondary_email", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "mobile_number", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "secondary_number", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "department", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "language", openapi.IN_QUERY, type=openapi.TYPE_STRING
-    ),
-    openapi.Parameter(
-        "do_not_call", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN
-    ),
-    openapi.Parameter("address_line", openapi.IN_QUERY, required=True, type=openapi.TYPE_STRING),
     openapi.Parameter("street", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("city", openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter("state", openapi.IN_QUERY, type=openapi.TYPE_STRING),

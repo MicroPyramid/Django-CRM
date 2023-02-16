@@ -1,15 +1,15 @@
 import arrow
 from django.db import models
-from django.utils.translation import pgettext_lazy
-from django.utils.translation import ugettext_lazy as _
-
-from common.models import Org, Profile
-from common.utils import INDCHOICES, COUNTRIES
-from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
+from phonenumber_field.modelfields import PhoneNumberField
+
+from common import utils
+from common.models import Org, Profile
+from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
 from teams.models import Teams
-from common import utils
 
 
 class Tags(models.Model):
@@ -25,8 +25,7 @@ class Account(models.Model):
 
     ACCOUNT_STATUS_CHOICE = (("open", "Open"), ("close", "Close"))
 
-    name = models.CharField(pgettext_lazy(
-        "Name of Account", "Name"), max_length=64)
+    name = models.CharField(pgettext_lazy("Name of Account", "Name"), max_length=64)
     email = models.EmailField()
     phone = PhoneNumberField(null=True)
     industry = models.CharField(
@@ -39,12 +38,9 @@ class Account(models.Model):
     billing_address_line = models.CharField(
         _("Address"), max_length=255, blank=True, null=True
     )
-    billing_street = models.CharField(
-        _("Street"), max_length=55, blank=True, null=True)
-    billing_city = models.CharField(
-        _("City"), max_length=255, blank=True, null=True)
-    billing_state = models.CharField(
-        _("State"), max_length=255, blank=True, null=True)
+    billing_street = models.CharField(_("Street"), max_length=55, blank=True, null=True)
+    billing_city = models.CharField(_("City"), max_length=255, blank=True, null=True)
+    billing_state = models.CharField(_("State"), max_length=255, blank=True, null=True)
     billing_postcode = models.CharField(
         _("Post/Zip-code"), max_length=64, blank=True, null=True
     )
@@ -71,11 +67,14 @@ class Account(models.Model):
     contacts = models.ManyToManyField(
         "contacts.Contact", related_name="account_contacts"
     )
-    assigned_to = models.ManyToManyField(
-        Profile, related_name="account_assigned_users")
+    assigned_to = models.ManyToManyField(Profile, related_name="account_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="account_teams")
     org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="account_org"
+        Org,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="account_org",
     )
 
     class Meta:
@@ -146,7 +145,7 @@ class Email(models.Model):
 
 
 class EmailLog(models.Model):
-    """ this model is used to track if the email is sent or not """
+    """this model is used to track if the email is sent or not"""
 
     email = models.ForeignKey(
         Email, related_name="email_log", on_delete=models.SET_NULL, null=True
