@@ -25,3 +25,4 @@ media
 server.log
 .vscode
 staticfiles
+.venv
