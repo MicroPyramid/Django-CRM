@@ -57,3 +57,10 @@ docker run \
 ```
 
 - GOTO: http://127.0.0.1:8000
+
+
+## Run Docker compose Migrate 
+
+```bash
+docker exec -it crm python manage.py migrate
+```

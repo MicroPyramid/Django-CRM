@@ -1,19 +1,29 @@
-version: '2.0'
+version: "3.9"
 
 services:
-  db:
-    image: postgres
-    # volumes:
-    #   - /home/db:/var/lib/postgresql/data
-    env_file: 
-      - ./db.env
-
   web:
+    image: hartou/django-crm:3.9.16-bullseye-slim
     build: .
-    image: micropyramid/django-crm:1
-    env_file: 
-      - ./db.env
+    command: python /code/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
     ports:
-      - "8001:8000"
+      - 8000:8000
+    # environment:
+      # - POSTGRES_NAME=postgres
+      # - POSTGRES_USER=postgres
+      # - POSTGRES_PASSWORD=postgres
     depends_on:
       - db
+  db:
+    image: postgres:15.3-alpine3.18
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      # - POSTGRES_DB=postgres
+      # - POSTGRES_USER=postgres
+      # - POSTGRES_PASSWORD=postgres
+
+volumes:
+  postgres_data:
