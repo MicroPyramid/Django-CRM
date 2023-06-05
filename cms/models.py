@@ -4,13 +4,13 @@ from django.utils.translation import gettext_lazy as _
 from django_extensions.db.fields import AutoSlugField
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.edit_handlers import (FieldPanel, InlinePanel,
+from wagtail.admin.panels import (FieldPanel, InlinePanel,
                                          MultiFieldPanel, PageChooserPanel)
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
-from wagtail.core import blocks
-from wagtail.core.fields import StreamField
-from wagtail.core.models import Orderable, Page
-from wagtail.images.edit_handlers import ImageChooserPanel
+from wagtail import blocks
+from wagtail.fields import StreamField
+from wagtail.models import Orderable, Page
+from wagtail.admin.panels import FieldPanel
 from wagtail.snippets.models import register_snippet
 from wagtail.contrib.routable_page.models import RoutablePageMixin, route
 from wagtail.fields import RichTextField
