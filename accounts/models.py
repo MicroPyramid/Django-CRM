@@ -10,18 +10,30 @@ from common.models import Org, Profile
 from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
 from teams.models import Teams
+from common.base import BaseModel
 
 
-class Tags(models.Model):
+class Tags(BaseModel):
     name = models.CharField(max_length=20)
     slug = models.CharField(max_length=20, unique=True, blank=True)
+
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+        db_table = "tags"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.name}"
+
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
 
-class Account(models.Model):
+class Account(BaseModel):
 
     ACCOUNT_STATUS_CHOICE = (("open", "Open"), ("close", "Close"))
 
@@ -52,7 +64,6 @@ class Account(models.Model):
     created_by = models.ForeignKey(
         Profile, related_name="account_created_by", on_delete=models.SET_NULL, null=True
     )
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
     status = models.CharField(
@@ -78,10 +89,13 @@ class Account(models.Model):
     )
 
     class Meta:
-        ordering = ["-created_on"]
+        verbose_name = "Account"
+        verbose_name_plural = "Accounts"
+        db_table = "accounts"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.name
+        return f"{self.name}"
 
     def get_complete_address(self):
         """Concatenates complete address."""
@@ -99,7 +113,7 @@ class Account(models.Model):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
     @property
     def contact_values(self):
@@ -126,7 +140,7 @@ class Account(models.Model):
         return Profile.objects.filter(id__in=list(user_ids))
 
 
-class Email(models.Model):
+class AccountEmail(BaseModel):
     from_account = models.ForeignKey(
         Account, related_name="sent_email", on_delete=models.SET_NULL, null=True
     )
@@ -136,21 +150,34 @@ class Email(models.Model):
     timezone = models.CharField(max_length=100, default="UTC")
     scheduled_date_time = models.DateTimeField(null=True)
     scheduled_later = models.BooleanField(default=False)
-    created_on = models.DateTimeField(auto_now_add=True)
     from_email = models.EmailField()
     rendered_message_body = models.TextField(null=True)
 
+    class Meta:
+        verbose_name = "Account Email"
+        verbose_name_plural = "Account Emails"
+        db_table = "account_email"
+        ordering = ("-created_at",)
+
     def __str__(self):
-        return self.message_subject
+        return f"{self.message_subject}"
 
-
-class EmailLog(models.Model):
+class AccountEmailLog(BaseModel):
     """this model is used to track if the email is sent or not"""
 
     email = models.ForeignKey(
-        Email, related_name="email_log", on_delete=models.SET_NULL, null=True
+        AccountEmail, related_name="email_log", on_delete=models.SET_NULL, null=True
     )
     contact = models.ForeignKey(
         Contact, related_name="contact_email_log", on_delete=models.SET_NULL, null=True
     )
     is_sent = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "EmailLog"
+        verbose_name_plural = "EmailLogs"
+        db_table = "emailLogs"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.email.message_subject}"

@@ -2,20 +2,29 @@ import json
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_yasg.utils import swagger_auto_schema
+
+from drf_rw_serializers import generics
+
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 
-from accounts import swagger_params
+from accounts import swagger_params1
 from accounts.models import Account, Tags
 from accounts.serializer import (
     AccountCreateSerializer,
     AccountSerializer,
     EmailSerializer,
     TagsSerailizer,
+    AccountReadSerializer,
+    AccountWriteSerializer,
+    AccountDetailEditSwaggerSerializer,
+    AccountCommentEditSwaggerSerializer,
+    EmailWriteSerializer
 )
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
@@ -48,10 +57,11 @@ class AccountsListView(APIView, LimitOffsetPagination):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
+    serializer_class = AccountReadSerializer
 
     def get_context_data(self, **kwargs):
-        params = self.request.post_data
-        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
+        params = self.request.query_params
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
@@ -116,33 +126,29 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
         return context
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_get_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.account_get_params)
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_post_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params,request=AccountWriteSerializer)
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        data = request.data
         serializer = AccountCreateSerializer(
-            data=params, request_obj=request, account=True
+            data=data, request_obj=request, account=True
         )
         # Save Account
         if serializer.is_valid():
             account_object = serializer.save(
-                created_by=request.profile, org=request.org
+                created_by=request.profile, org=request.profile.org
             )
-            if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+            if data.get("contacts"):
+                contacts_list = json.loads(data.get("contacts"))
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 if contacts:
                     account_object.contacts.add(*contacts)
-            if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+            if data.get("tags"):
+                tags = json.loads(data.get("tags"))
                 for tag in tags:
                     tag_obj = Tags.objects.filter(slug=tag.lower())
                     if tag_obj.exists():
@@ -150,15 +156,15 @@ class AccountsListView(APIView, LimitOffsetPagination):
                     else:
                         tag_obj = Tags.objects.create(name=tag)
                     account_object.tags.add(tag_obj)
-            if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+            if data.get("teams"):
+                teams_list = json.loads(data.get("teams"))
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams:
                     account_object.teams.add(*teams)
-                if params.get("assigned_to"):
-                    assigned_to_list = json.loads(params.get("assigned_to"))
+                if data.get("assigned_to"):
+                    assigned_to_list = json.loads(data.get("assigned_to"))
                     profiles = Profile.objects.filter(
-                        id__in=assigned_to_list, org=request.org, is_active=True
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
                     )
                     if profiles:
                         account_object.assigned_to.add(*profiles)
@@ -191,24 +197,24 @@ class AccountsListView(APIView, LimitOffsetPagination):
 class AccountDetailView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    serializer_class = AccountReadSerializer
 
     def get_object(self, pk):
         return get_object_or_404(Account, id=pk)
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_post_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params,request=AccountWriteSerializer)
     def put(self, request, pk, format=None):
-        params = request.post_data
+        data = request.data
         account_object = self.get_object(pk=pk)
-        if account_object.org != request.org:
+        if account_object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         serializer = AccountCreateSerializer(
-            account_object, data=params, request_obj=request, account=True
+            account_object, data=data, request_obj=request, account=True
         )
+        serializer.data['org'] = request.profile.org
 
         if serializer.is_valid():
             if (
@@ -232,15 +238,15 @@ class AccountDetailView(APIView):
             )
 
             account_object.contacts.clear()
-            if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+            if data.get("contacts"):
+                contacts_list = json.loads(data.get("contacts"))
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 if contacts:
                     account_object.contacts.add(*contacts)
 
             account_object.tags.clear()
-            if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+            if data.get("tags"):
+                tags = json.loads(data.get("tags"))
                 for tag in tags:
                     tag_obj = Tags.objects.filter(slug=tag.lower())
                     if tag_obj.exists():
@@ -250,17 +256,17 @@ class AccountDetailView(APIView):
                     account_object.tags.add(tag_obj)
 
             account_object.teams.clear()
-            if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+            if data.get("teams"):
+                teams_list = json.loads(data.get("teams"))
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams:
                     account_object.teams.add(*teams)
 
             account_object.assigned_to.clear()
-            if params.get("assigned_to"):
-                assigned_to_list = json.loads(params.get("assigned_to"))
+            if data.get("assigned_to"):
+                assigned_to_list = json.loads(data.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assigned_to_list, org=request.org, is_active=True
+                    id__in=assigned_to_list, org=request.profile.org, is_active=True
                 )
                 if profiles:
                     account_object.assigned_to.add(*profiles)
@@ -290,12 +296,10 @@ class AccountDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.org:
+        if self.object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -315,12 +319,10 @@ class AccountDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params)
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
-        if self.account.org != request.org:
+        if self.account.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -350,13 +352,13 @@ class AccountDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.org).values(
-                    "user__username"
+                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
+                    "user__email"
                 )
             )
         elif self.request.profile != self.account.created_by:
             if self.account.created_by:
-                users_mention = [{"username": self.account.created_by.user.username}]
+                users_mention = [{"username": self.account.created_by.user.email}]
             else:
                 users_mention = []
         else:
@@ -377,7 +379,7 @@ class AccountDetailView(APIView):
                 ).data,
                 "users": ProfileSerializer(
                     Profile.objects.filter(
-                        is_active=True, org=self.request.org
+                        is_active=True, org=self.request.profile.org
                     ).order_by("user__email"),
                     many=True,
                 ).data,
@@ -406,14 +408,14 @@ class AccountDetailView(APIView):
         )
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_detail_get_params
+    @extend_schema(
+        tags=["Accounts"], parameters=swagger_params1.organization_params,request=AccountDetailEditSwaggerSerializer
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        data = request.data
         context = {}
         self.account_obj = Account.objects.get(pk=pk)
-        if self.account_obj.org != request.org:
+        if self.account_obj.org != request.profile.org:
             return Response(
                 {
                     "error": True,
@@ -433,9 +435,9 @@ class AccountDetailView(APIView):
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
-        comment_serializer = CommentSerializer(data=params)
+        comment_serializer = CommentSerializer(data=data)
         if comment_serializer.is_valid():
-            if params.get("comment"):
+            if data.get("comment"):
                 comment_serializer.save(
                     account_id=self.account_obj.id,
                     commented_by=self.request.profile,
@@ -469,23 +471,24 @@ class AccountCommentView(APIView):
     model = Comment
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    serializer_class = AccountCommentEditSwaggerSerializer
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk)
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_comment_edit_params
+    @extend_schema(
+        tags=["Accounts"], parameters=swagger_params1.organization_params,request=AccountCommentEditSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        data = request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
             or request.profile.is_admin
             or request.profile == obj.commented_by
         ):
-            serializer = CommentSerializer(obj, data=params)
-            if params.get("comment"):
+            serializer = CommentSerializer(obj, data=data)
+            if data.get("comment"):
                 if serializer.is_valid():
                     serializer.save()
                     return Response(
@@ -504,9 +507,7 @@ class AccountCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -532,10 +533,9 @@ class AccountAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    serializer_class = AccountDetailEditSwaggerSerializer
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
@@ -561,17 +561,16 @@ class AccountCreateMailView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
+    serializer_class = EmailWriteSerializer
 
-    @swagger_auto_schema(
-        tags=["Accounts"], manual_parameters=swagger_params.account_mail_params
-    )
+    @extend_schema(tags=["Accounts"], parameters=swagger_params1.organization_params,request=EmailWriteSerializer)
     def post(self, request, pk, *args, **kwargs):
-        params = request.post_data
-        scheduled_later = params.get("scheduled_later")
-        scheduled_date_time = params.get("scheduled_date_time")
+        data = request.data
+        scheduled_later = data.get("scheduled_later")
+        scheduled_date_time = data.get("scheduled_date_time")
         account = Account.objects.filter(id=pk).first()
         serializer = EmailSerializer(
-            data=params,
+            data=data,
             request_obj=request,  # account=account,
         )
 
@@ -585,17 +584,17 @@ class AccountCreateMailView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            if params.get("recipients"):
-                contacts = json.loads(params.get("recipients"))
+            if data.get("recipients"):
+                contacts = json.loads(data.get("recipients"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact, org=request.org)
+                    obj_contact = Contact.objects.filter(id=contact, org=request.profile.org)
                     if obj_contact.exists():
                         email_obj.recipients.add(contact)
                     else:
                         email_obj.delete()
                         data["recipients"] = "Please enter valid recipient"
                         return Response({"error": True, "errors": data})
-            if params.get("scheduled_later") != "true":
+            if data.get("scheduled_later") != "true":
                 send_email.delay(email_obj.id)
             else:
                 email_obj.scheduled_later = True

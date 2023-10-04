@@ -3,12 +3,13 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
+from common.base import BaseModel
 from common.models import Org, Profile
 from contacts.models import Contact
 from teams.models import Teams
 
 
-class Task(models.Model):
+class Task(BaseModel):
 
     STATUS_CHOICES = (
         ("New", "New"),
@@ -22,7 +23,6 @@ class Task(models.Model):
     status = models.CharField(_("status"), max_length=50, choices=STATUS_CHOICES)
     priority = models.CharField(_("priority"), max_length=50, choices=PRIORITY_CHOICES)
     due_date = models.DateField(blank=True, null=True)
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     account = models.ForeignKey(
         Account,
         related_name="accounts_tasks",
@@ -48,14 +48,17 @@ class Task(models.Model):
     )
 
     class Meta:
-        ordering = ["-due_date"]
+        verbose_name = "Task"
+        verbose_name_plural = "Tasks"
+        db_table = "task"
+        ordering = ("-due_date",)
 
     def __str__(self):
-        return self.title
-
+        return f"{self.title}"
+        
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
     @property
     def get_team_users(self):

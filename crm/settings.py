@@ -4,6 +4,24 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
+# JWT_AUTH = {
+#     'JWT_PAYLOAD_GET_USERNAME_HANDLER':
+#     'path.to.custom_jwt_payload_handler',
+#     'JWT_PUBLIC_KEY': None,
+#     'JWT_PRIVATE_KEY': None,
+#     'JWT_ALGORITHM': 'HS256',
+#     'JWT_VERIFY': True,
+#     'JWT_VERIFY_EXPIRATION': True,
+#     'JWT_LEEWAY': 0,
+#     'JWT_EXPIRATION_DELTA': timedelta(seconds=300),
+#     'JWT_AUDIENCE': None,
+#     'JWT_ISSUER': None,
+#     'JWT_ALLOW_REFRESH': False,
+#     'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
+#     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+#     'JWT_BEARER_FORMAT': 'Bearer'
+# }
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -19,30 +37,32 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
-
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail',
-    'cms',
-    'wagtail.contrib.settings',
-    
-
-    'modelcluster',
-    'taggit',
-
+    "wagtail.contrib.forms",
+    "wagtail.contrib.redirects",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "wagtail",
+    "cms",
+    "wagtail.contrib.settings",
+    "modelcluster",
+    "taggit",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
+    "phonenumber_field",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "corsheaders",
+    "django_ses",
+    "drf_spectacular",
     "common",
     "accounts",
     "cases",
@@ -51,16 +71,10 @@ INSTALLED_APPS = [
     "leads",
     "opportunity",
     "planner",
-    "phonenumber_field",
     "tasks",
     "invoices",
     "events",
     "teams",
-    "rest_framework",
-    "rest_framework_simplejwt",
-    "drf_yasg",
-    "corsheaders",
-    "django_ses",
 ]
 
 MIDDLEWARE = [
@@ -72,11 +86,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    # "common.custom_auth.TokenAuthMiddleware",
+    "crum.CurrentRequestUserMiddleware",
     "common.middleware.get_company.GetProfileAndOrg",
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
-    'common.middleware.swagger_post.SwaggerMiddleware',
-   
+    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
 ROOT_URLCONF = "crm.urls"
@@ -96,8 +108,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "common.context_processors.common.app_name",
                 # "django_settings_export.settings_export",
-                'wagtail.contrib.settings.context_processors.settings',
-                
+                "wagtail.contrib.settings.context_processors.settings",
             ],
         },
     },
@@ -152,11 +163,9 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 AUTH_USER_MODEL = "common.User"
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static')
-]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 ENV_TYPE = os.environ["ENV_TYPE"]
 print(">>> ENV_TYPE", ENV_TYPE)
@@ -237,7 +246,7 @@ LOGGING = {
 
 APPLICATION_NAME = "bottlecrm"
 
-WAGTAIL_SITE_NAME = 'bottlecrm'
+WAGTAIL_SITE_NAME = "bottlecrm"
 
 WAGTAILADMIN_BASE_URL = "https://bottlecrm.com"
 
@@ -247,12 +256,28 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.BasicAuthentication",
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 10,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "BottleCRM API",
+    "DESCRIPTION": "Open source CRM application",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "PREPROCESSING_HOOKS": ["common.custom_openapi.preprocessing_filter_spec"],
+    
+}
+
+# JWT_SETTINGS = {
+#     'bearerFormat': ('Bearer', 'jwt', 'Jwt')
+# }
 
 SWAGGER_SETTINGS = {
     "DEFAULT_INFO": "crm.urls.info",
@@ -263,7 +288,7 @@ SWAGGER_SETTINGS = {
 
 CORS_ALLOW_HEADERS = default_headers + ("org",)
 CORS_ORIGIN_ALLOW_ALL = True
-CSRF_TRUSTED_ORIGINS = ['https://*.runcode.io', 'http://*']
+CSRF_TRUSTED_ORIGINS = ["https://*.runcode.io", "http://*"]
 
 SECURE_HSTS_SECONDS = 3600
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -290,7 +315,6 @@ SIMPLE_JWT = {
     "VERIFYING_KEY": None,
     "AUDIENCE": None,
     "ISSUER": None,
-    "AUTH_HEADER_TYPES": ("Bearer", "jwt", "Jwt"),
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
@@ -301,4 +325,3 @@ JWT_ALGO = "HS256"
 
 DOMAIN_NAME = os.environ["DOMAIN_NAME"]
 SWAGGER_ROOT_URL = os.environ["SWAGGER_ROOT_URL"]
-

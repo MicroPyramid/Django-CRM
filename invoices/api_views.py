@@ -14,16 +14,28 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, User
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
-                               CommentSerializer, UserSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    BillingAddressSerializer,
+    CommentSerializer,
+    UserSerializer,
+)
 from common.utils import COUNTRIES, CURRENCY_CODES
-from invoices import swagger_params
+from invoices import swagger_params1
 from invoices.models import Invoice
-from invoices.serializer import (InvoiceCreateSerializer,
-                                 InvoiceHistorySerializer, InvoiceSerailizer)
-from invoices.tasks import (create_invoice_history, send_email,
-                            send_invoice_email, send_invoice_email_cancel)
+from invoices.serializer import (
+    InvoiceCreateSerializer,
+    InvoiceHistorySerializer,
+    InvoiceSerailizer,
+)
+from invoices.tasks import (
+    create_invoice_history,
+    send_email,
+    send_invoice_email,
+    send_invoice_email_cancel,
+)
 from teams.models import Teams
 from teams.serializer import TeamsSerializer
 
@@ -43,7 +55,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
     model = Invoice
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
+        params = self.request.query_params
         queryset = self.model.objects.filter(company=self.request.company)
         accounts = Account.objects.filter(company=self.request.company)
         if self.request.user.role != "ADMIN" and not self.request.user.is_superuser:
@@ -119,18 +131,14 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
         return context
 
-    @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_list_get_params
-    )
+    @extend_schema(tags=["Invoices"], parameters=swagger_params1.invoice_list_get_params)
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_create_post_params
-    )
+    @extend_schema(tags=["Invoices"], parameters=swagger_params1.organization_params,request=InvoiceSwaggerSerailizer)
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        params = request.data
         data = {}
         serializer = InvoiceCreateSerializer(data=params, request_obj=request)
         from_address_serializer = BillingAddressSerializer(data=params)
@@ -240,10 +248,10 @@ class InvoiceDetailView(APIView):
         return self.model.objects.filter(id=pk).first()
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_create_post_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_create_post_params
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         invoice_obj = self.get_object(pk=pk)
         from_address_obj = invoice_obj.from_address
         to_address_obj = invoice_obj.to_address
@@ -373,7 +381,7 @@ class InvoiceDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_delete_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -400,7 +408,7 @@ class InvoiceDetailView(APIView):
         )
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_delete_params
     )
     def get(self, request, pk, format=None):
         self.invoice = self.get_object(pk=pk)
@@ -477,10 +485,10 @@ class InvoiceDetailView(APIView):
         return Response(context)
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_detail_post_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_detail_post_params
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         context = {}
         self.invoice_obj = Invoice.objects.get(pk=pk)
         if self.invoice_obj.company != request.company:
@@ -539,10 +547,10 @@ class InvoiceCommentView(APIView):
         return self.model.objects.get(pk=pk)
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_comment_edit_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_comment_edit_params
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         obj = self.get_object(pk)
         if (
             request.user.role == "ADMIN"
@@ -570,7 +578,7 @@ class InvoiceCommentView(APIView):
             )
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_delete_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -599,7 +607,7 @@ class InvoiceAttachmentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
-        tags=["Invoices"], manual_parameters=swagger_params.invoice_delete_params
+        tags=["Invoices"], manual_parameters=swagger_params1.invoice_delete_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

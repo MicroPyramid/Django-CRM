@@ -5,12 +5,13 @@ from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account, Tags
 from common.models import Org, Profile
+from common.base import BaseModel
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from teams.models import Teams
 
 
-class Opportunity(models.Model):
+class Opportunity(BaseModel):
     name = models.CharField(pgettext_lazy("Name of Opportunity", "Name"), max_length=64)
     account = models.ForeignKey(
         Account,
@@ -52,7 +53,6 @@ class Opportunity(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
     teams = models.ManyToManyField(Teams, related_name="oppurtunity_teams")
@@ -65,14 +65,17 @@ class Opportunity(models.Model):
     )
 
     class Meta:
-        ordering = ["-created_on"]
+        verbose_name = "Opportunity"
+        verbose_name_plural = "Opportunities"
+        db_table = "opportunity"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.name
+        return f"{self.name}"
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
     @property
     def get_team_users(self):

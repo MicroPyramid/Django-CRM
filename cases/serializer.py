@@ -73,3 +73,28 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "org",
             "created_on_arrow",
         )
+
+class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Case
+        fields = (
+            "name",
+            "status",
+            "priority",
+            "case_type",
+            "closed_on",
+            "teams",
+            "assigned_to",
+            "account",
+            "case_attachment",
+            "contacts",
+            "description",
+        )
+
+class CaseDetailEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    case_attachment = serializers.FileField()
+
+class CaseCommentEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+

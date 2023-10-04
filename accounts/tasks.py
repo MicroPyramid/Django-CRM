@@ -7,7 +7,7 @@ from django.core.mail import EmailMessage
 from django.template import Context, Template
 from django.template.loader import render_to_string
 
-from accounts.models import Account, Email, EmailLog
+from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Profile
 from common.utils import convert_to_custom_timezone
 

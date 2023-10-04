@@ -6,18 +6,32 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Tags
 from common.models import Org, Profile
-from common.utils import (COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS,
-                          return_complete_address)
+from common.base import BaseModel
+from common.utils import (
+    COUNTRIES,
+    INDCHOICES,
+    LEAD_SOURCE,
+    LEAD_STATUS,
+    return_complete_address,
+)
 from contacts.models import Contact
 from teams.models import Teams
 
 
-class Company(models.Model):
+class Company(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
     org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
+    class Meta:
+        verbose_name = "Company"
+        verbose_name_plural = "Companies"
+        db_table = "company"
+        ordering = ("-created_at",)
 
-class Lead(models.Model):
+    def __str__(self):
+        return f"{self.name}"
+
+class Lead(BaseModel):
     title = models.CharField(
         pgettext_lazy("Treatment Pronouns for the customer", "Title"), max_length=64
     )
@@ -46,10 +60,6 @@ class Lead(models.Model):
     opportunity_amount = models.DecimalField(
         _("Opportunity Amount"), decimal_places=2, max_digits=12, blank=True, null=True
     )
-    created_by = models.ForeignKey(
-        Profile, related_name="lead_created_by", on_delete=models.SET_NULL, null=True
-    )
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     is_active = models.BooleanField(default=False)
     enquiry_type = models.CharField(max_length=255, blank=True, null=True)
     tags = models.ManyToManyField(Tags, blank=True)
@@ -75,10 +85,13 @@ class Lead(models.Model):
     close_date = models.DateField(default=None, null=True)
 
     class Meta:
-        ordering = ["-created_on"]
+        verbose_name = "Lead"
+        verbose_name_plural = "Leads"
+        db_table = "lead"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.title
+        return f"{self.title}"
 
     def get_complete_address(self):
         return return_complete_address(self)
@@ -91,7 +104,7 @@ class Lead(models.Model):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
     @property
     def get_team_users(self):

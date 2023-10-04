@@ -2,7 +2,8 @@ import json
 from datetime import datetime, timedelta
 
 from django.db.models import Q
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -15,13 +16,13 @@ from common.models import Attachments, Comment, Profile, User
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
-    ProfileSerializer,
+    ProfileSerializer
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from events import swagger_params
+from events import swagger_params1
 from events.models import Event
-from events.serializer import EventCreateSerializer, EventSerializer
+from events.serializer import EventCreateSerializer, EventSerializer, EventCreateSwaggerSerializer, EventDetailEditSwaggerSerializer, EventCommentEditSwaggerSerializer
 from events.tasks import send_email
 from teams.models import Teams
 from teams.serializer import TeamsSerializer
@@ -43,9 +44,9 @@ class EventListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = self.request.post_data
-        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
-        contacts = Contact.objects.filter(org=self.request.org)
+        params = self.request.query_params
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
@@ -83,18 +84,18 @@ class EventListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_list_get_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.event_list_get_params
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_create_post_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params,request=EventCreateSwaggerSerializer
     )
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        params = request.data
         data = {}
         serializer = EventCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
@@ -107,24 +108,24 @@ class EventListView(APIView, LimitOffsetPagination):
                     date_of_meeting=params.get("start_date"),
                     is_active=True,
                     disabled=False,
-                    org=request.org,
+                    org=request.profile.org,
                 )
 
                 if params.get("contacts"):
                     obj_contact = Contact.objects.filter(
-                        id=params.get("contacts"), org=request.org
+                        id=params.get("contacts"), org=request.profile.org
                     )
                     event_obj.contacts.add(obj_contact)
 
                 if params.get("teams"):
                     teams_list = json.loads(params.get("teams"))
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                     event_obj.teams.add(*teams)
 
                 if params.get("assigned_to"):
                     assinged_to_list = json.loads(params.get("assigned_to"))
                     profiles = Profile.objects.filter(
-                        id__in=assinged_to_list, org=request.org
+                        id__in=assinged_to_list, org=request.profile.org
                     )
                     event_obj.assigned_to.add(*profiles)
 
@@ -167,24 +168,24 @@ class EventListView(APIView, LimitOffsetPagination):
                         start_time=data["start_time"],
                         end_time=data["end_time"],
                         date_of_meeting=each,
-                        org=request.org,
+                        org=request.profile.org,
                     )
 
                     if params.get("contacts"):
                         obj_contact = Contact.objects.filter(
-                            id=params.get("contacts"), org=request.org
+                            id=params.get("contacts"), org=request.profile.org
                         )
                         event.contacts.add(obj_contact)
 
                     if params.get("teams"):
                         teams_list = json.loads(params.get("teams"))
-                        teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                        teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                         event.teams.add(*teams)
 
                     if params.get("assigned_to"):
                         assinged_to_list = json.loads(params.get("assigned_to"))
                         profiles = Profile.objects.filter(
-                            id__in=assinged_to_list, org=request.org
+                            id__in=assinged_to_list, org=request.profile.org
                         )
                         event.assigned_to.add(*profiles)
 
@@ -237,15 +238,15 @@ class EventDetailView(APIView):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True,
-                ).values("user__username")
+                ).values("user__email")
             )
         elif self.request.profile != self.event_obj.created_by:
-            users_mention = [{"username": self.event_obj.created_by.user.username}]
+            users_mention = [{"username": self.event_obj.created_by.user.email}]
         else:
             users_mention = list(
-                self.event_obj.assigned_to.all().values("user__username")
+                self.event_obj.assigned_to.all().values("user__email")
             )
-        profile_list = Profile.objects.filter(is_active=True, org=self.request.org)
+        profile_list = Profile.objects.filter(is_active=True, org=self.request.profile.org)
         if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
             profiles = profile_list.order_by("user__email")
         else:
@@ -291,12 +292,12 @@ class EventDetailView(APIView):
         context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params
     )
     def get(self, request, pk, **kwargs):
         self.event_obj = self.get_object(pk)
-        if self.event_obj.org != request.org:
+        if self.event_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -304,14 +305,14 @@ class EventDetailView(APIView):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_detail_post_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params,request=EventDetailEditSwaggerSerializer
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         context = {}
         self.event_obj = Event.objects.get(pk=pk)
-        if self.event_obj.org != request.org:
+        if self.event_obj.org != request.profile.org:
             return Response(
                 {
                     "error": True,
@@ -361,14 +362,14 @@ class EventDetailView(APIView):
         )
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_create_post_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params,request=EventCreateSwaggerSerializer
     )
     def put(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         data = {}
         self.event_obj = self.get_object(pk)
-        if self.event_obj.org != request.org:
+        if self.event_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -389,21 +390,21 @@ class EventDetailView(APIView):
             event_obj.contacts.clear()
             if params.get("contacts"):
                 obj_contact = Contact.objects.filter(
-                    id=params.get("contacts"), org=request.org
+                    id=params.get("contacts"), org=request.profile.org
                 )
                 event_obj.contacts.add(obj_contact)
 
             event_obj.teams.clear()
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 event_obj.teams.add(*teams)
 
             event_obj.assigned_to.clear()
             if params.get("assigned_to"):
                 assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org
+                    id__in=assinged_to_list, org=request.profile.org
                 )
                 event_obj.assigned_to.add(*profiles)
 
@@ -424,8 +425,8 @@ class EventDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -433,7 +434,7 @@ class EventDetailView(APIView):
             request.profile.role == "ADMIN"
             or request.profile.is_admin
             or request.profile == self.object.created_by
-        ) and self.object.org == request.org:
+        ) and self.object.org == request.profile.org:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Event deleted Successfully"},
@@ -453,11 +454,11 @@ class EventCommentView(APIView):
     def get_object(self, pk):
         return self.model.objects.get(pk=pk)
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.event_comment_edit_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params,request=EventCommentEditSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -483,8 +484,8 @@ class EventCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -512,8 +513,8 @@ class EventAttachmentView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
-        tags=["Events"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Events"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
