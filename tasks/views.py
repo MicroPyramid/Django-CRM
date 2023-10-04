@@ -1,7 +1,7 @@
 import json
 
 from django.db.models import Q
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -20,9 +20,9 @@ from common.serializer import (
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from tasks import swagger_params
+from tasks import swagger_params1
 from tasks.models import Task
-from tasks.serializer import TaskCreateSerializer, TaskSerializer
+from tasks.serializer import *
 from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
 from teams.models import Teams
 from teams.serializer import TeamsSerializer
@@ -34,10 +34,10 @@ class TaskListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
-        params = self.request.post_data
-        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
-        accounts = Account.objects.filter(org=self.request.org)
-        contacts = Contact.objects.filter(org=self.request.org)
+        params = self.request.query_params
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        accounts = Account.objects.filter(org=self.request.profile.org)
+        contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
@@ -81,39 +81,39 @@ class TaskListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_list_get_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.task_list_get_params
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_create_post_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params,request=TaskCreateSwaggerSerializer
     )
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        params = request.data
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             task_obj = serializer.save(
                 created_by=request.profile,
                 due_date=params.get("due_date"),
-                org=request.org,
+                org=request.profile.org,
             )
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 task_obj.contacts.add(*contacts)
 
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
                 assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True
+                    id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 task_obj.assigned_to.add(*profiles)
 
@@ -159,22 +159,22 @@ class TaskDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.org).values(
-                    "user__username"
+                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
+                    "user__email"
                 )
             )
         elif self.request.profile != self.task_obj.created_by:
-            users_mention = [{"username": self.task_obj.created_by.user.username}]
+            users_mention = [{"username": self.task_obj.created_by.user.email}]
         else:
             users_mention = list(
-                self.task_obj.assigned_to.all().values("user__username")
+                self.task_obj.assigned_to.all().values("user__email")
             )
         if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
             users = Profile.objects.filter(
-                is_active=True, org=self.request.org
+                is_active=True, org=self.request.profile.org
             ).order_by("user__email")
         else:
-            users = Profile.objects.filter(role="ADMIN", org=self.request.org).order_by(
+            users = Profile.objects.filter(role="ADMIN", org=self.request.profile.org).order_by(
                 "user__email"
             )
 
@@ -209,19 +209,19 @@ class TaskDetailView(APIView):
         context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params
     )
     def get(self, request, pk, **kwargs):
         self.task_obj = self.get_object(pk)
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_detail_post_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params,request=TaskDetailEditSwaggerSerializer
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         context = {}
         self.task_obj = Task.objects.get(pk=pk)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -265,11 +265,11 @@ class TaskDetailView(APIView):
         )
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_create_post_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params,request=TaskCreateSwaggerSerializer
     )
     def put(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         self.task_obj = self.get_object(pk)
         serializer = TaskCreateSerializer(
             data=params,
@@ -284,20 +284,20 @@ class TaskDetailView(APIView):
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 task_obj.contacts.add(*contacts)
 
             task_obj.teams.clear()
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             task_obj.assigned_to.clear()
             if params.get("assigned_to"):
                 assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True
+                    id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 task_obj.assigned_to.add(*profiles)
 
@@ -310,8 +310,8 @@ class TaskDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -339,11 +339,11 @@ class TaskCommentView(APIView):
     def get_object(self, pk):
         return self.model.objects.get(pk=pk)
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.task_comment_edit_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params,request=TaskCommentEditSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -371,8 +371,8 @@ class TaskCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -400,8 +400,8 @@ class TaskAttachmentView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
-        tags=["Tasks"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Tasks"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

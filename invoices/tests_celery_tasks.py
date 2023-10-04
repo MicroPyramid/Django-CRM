@@ -1,8 +1,7 @@
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from invoices.tasks import (send_email, send_invoice_email,
-                            send_invoice_email_cancel)
+from invoices.tasks import send_email, send_invoice_email, send_invoice_email_cancel
 from invoices.tests import InvoiceCreateTest
 
 

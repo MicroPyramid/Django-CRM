@@ -2,8 +2,12 @@ from datetime import datetime, timedelta
 
 from rest_framework import serializers
 
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               OrganizationSerializer, ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+)
 from contacts.serializer import ContactSerializer
 from events.models import Event
 from teams.serializer import TeamsSerializer
@@ -125,3 +129,29 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "created_on",
             "org",
         )
+
+class EventCreateSwaggerSerializer(serializers.ModelSerializer):
+
+    recurring_days =  serializers.CharField()
+    class Meta:
+        model = Event
+        fields = (
+            "name",
+            "event_type",
+            "contacts",
+            "start_date",
+            "start_time",
+            "end_date",
+            "end_time",
+            "teams",
+            "assigned_to",
+            "description",
+            "recurring_days"
+        )
+
+class EventDetailEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    event_attachment = serializers.FileField()
+
+class EventCommentEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()

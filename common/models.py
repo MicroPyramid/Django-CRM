@@ -2,24 +2,28 @@ import binascii
 import datetime
 import os
 import time
+import uuid
 
 import arrow
-from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin,
-                                        UserManager)
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
-from common.templatetags.common_tags import (is_document_file_audio,
-                                             is_document_file_code,
-                                             is_document_file_image,
-                                             is_document_file_pdf,
-                                             is_document_file_sheet,
-                                             is_document_file_text,
-                                             is_document_file_video,
-                                             is_document_file_zip)
+from common.templatetags.common_tags import (
+    is_document_file_audio,
+    is_document_file_code,
+    is_document_file_image,
+    is_document_file_pdf,
+    is_document_file_sheet,
+    is_document_file_text,
+    is_document_file_video,
+    is_document_file_zip,
+)
 from common.utils import COUNTRIES, ROLES
+from common.base import BaseModel
 
 
 def img_url(self, filename):
@@ -27,7 +31,39 @@ def img_url(self, filename):
     return "%s/%s/%s" % ("profile_pics", hash_, filename)
 
 
-class Address(models.Model):
+class User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(
+        default=uuid.uuid4, unique=True, editable=False, db_index=True, primary_key=True
+    )
+    email = models.EmailField(_("email address"), blank=True, unique=True)
+    profile_pic = models.CharField(
+        max_length=1000, null=True, blank=True
+    )
+    activation_key = models.CharField(max_length=150, null=True, blank=True)
+    key_expires = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
+
+
+    objects = UserManager()
+
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+        db_table = "users"
+        ordering = ("-is_active",)
+
+    def __str__(self):
+        return self.email
+
+    # def save(self, *args, **kwargs):
+    #     """by default the expiration time is set to 2 hours"""
+    #     self.key_expires = timezone.now() + datetime.timedelta(hours=2)
+    #     super().save(*args, **kwargs)
+
+class Address(BaseModel):
     address_line = models.CharField(
         _("Address"), max_length=255, blank=True, default=""
     )
@@ -38,6 +74,12 @@ class Address(models.Model):
         _("Post/Zip-code"), max_length=64, blank=True, default=""
     )
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Address"
+        verbose_name_plural = "Addresses"
+        db_table = "address"
+        ordering = ("-created_at",)
 
     def __str__(self):
         return self.city if self.city else ""
@@ -74,75 +116,77 @@ class Address(models.Model):
         return address
 
 
-class Org(models.Model):
+class Org(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    user_limit = models.IntegerField(default=5)
-    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
-
-
-class User(AbstractBaseUser, PermissionsMixin):
-    file_prepend = "users/profile_pics"
-    username = models.CharField(max_length=100, null=True, blank=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
-    email = models.EmailField(max_length=255, unique=True)
-    alternate_email = models.EmailField(max_length=255, null=True)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(("date joined"), auto_now_add=True)
-    profile_pic = models.FileField(
-        max_length=1000, upload_to=img_url, null=True, blank=True
-    )
-    activation_key = models.CharField(max_length=150, null=True, blank=True)
-    key_expires = models.DateTimeField(null=True, blank=True)
-    skype_ID = models.CharField(max_length=50)
-    description = models.TextField(blank=True, null=True)
-
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
-
-    objects = UserManager()
-
-    def get_short_name(self):
-        return self.username
-
-    def documents(self):
-        return self.document_uploaded.all()
-
-    def get_full_name(self):
-        full_name = None
-        if self.first_name or self.last_name:
-            full_name = self.first_name + " " + self.last_name
-        elif self.username:
-            full_name = self.username
-        else:
-            full_name = self.email
-        return full_name
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.date_joined).humanize()
+    # address = models.TextField(blank=True, null=True)
+    # user_limit = models.IntegerField(default=5)
+    # country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     class Meta:
-        ordering = ["-is_active"]
+        verbose_name = "Organization"
+        verbose_name_plural = "Organizations"
+        db_table = "organization"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.email
-
-    def save(self, *args, **kwargs):
-        """by default the expiration time is set to 2 hours"""
-        self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-        super().save(*args, **kwargs)
+        return str(self.name)
 
 
-class Profile(models.Model):
+# class User(AbstractBaseUser, PermissionsMixin):
+#     email = models.EmailField(_("email address"), blank=True, unique=True)
+#     profile_pic = models.FileField(
+#         max_length=1000, upload_to=img_url, null=True, blank=True
+#     )
+#     activation_key = models.CharField(max_length=150, null=True, blank=True)
+#     key_expires = models.DateTimeField(null=True, blank=True)
+
+
+#     USERNAME_FIELD = "email"
+#     REQUIRED_FIELDS = ["username"]
+
+#     objects = UserManager()
+
+#     def get_short_name(self):
+#         return self.username
+
+#     def documents(self):
+#         return self.document_uploaded.all()
+
+#     def get_full_name(self):
+#         full_name = None
+#         if self.first_name or self.last_name:
+#             full_name = self.first_name + " " + self.last_name
+#         elif self.username:
+#             full_name = self.username
+#         else:
+#             full_name = self.email
+#         return full_name
+
+#     @property
+#     def created_on_arrow(self):
+#         return arrow.get(self.date_joined).humanize()
+
+#     class Meta:
+#         ordering = ["-is_active"]
+
+#     def __str__(self):
+#         return self.email
+
+#     def save(self, *args, **kwargs):
+#         """by default the expiration time is set to 2 hours"""
+#         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
+#         super().save(*args, **kwargs)
+
+
+
+
+class Profile(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     org = models.ForeignKey(
         Org, null=True, on_delete=models.CASCADE, blank=True, related_name="user_org"
     )
     phone = PhoneNumberField(null=True, unique=True)
-    alternate_phone = PhoneNumberField(null=True)
+    alternate_phone = PhoneNumberField(null=True,blank=True)
     address = models.ForeignKey(
         Address,
         related_name="adress_users",
@@ -158,14 +202,30 @@ class Profile(models.Model):
     date_of_joining = models.DateField(null=True, blank=True)
 
     class Meta:
-        unique_together = (("user", "org"),)
+        verbose_name = "Profile"
+        verbose_name_plural = "Profiles"
+        db_table = "profile"
+        ordering = ("-created_at",)
+        unique_together = ["user", "org"]
+
+    def __str__(self):
+        return f"{self.user.email} <{self.org.name}>"
 
     @property
     def is_admin(self):
         return self.is_organization_admin
 
+    @property
+    def user_details(self):
+        return  {
+            'email' : self.user.email,
+            'id' :  self.user.id,
+            'is_active' : self.user.is_active,
+            'profile_pic' : self.user.profile_pic
+        }
 
-class Comment(models.Model):
+
+class Comment(BaseModel):
     case = models.ForeignKey(
         "cases.Case",
         blank=True,
@@ -238,20 +298,38 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
     )
 
+    class Meta:
+        verbose_name = "Comment"
+        verbose_name_plural = "Comments"
+        db_table = "comment"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.comment}"
+
     def get_files(self):
-        return Comment_Files.objects.filter(comment_id=self)
+        return CommentFiles.objects.filter(comment_id=self)
 
     @property
     def commented_on_arrow(self):
         return arrow.get(self.commented_on).humanize()
 
 
-class Comment_Files(models.Model):
+class CommentFiles(BaseModel):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     updated_on = models.DateTimeField(auto_now_add=True)
     comment_file = models.FileField(
-        "File", upload_to="comment_files", null=True, blank=True
+        "File", upload_to="CommentFiles", null=True, blank=True
     )
+
+    class Meta:
+        verbose_name = "CommentFile"
+        verbose_name_plural = "CommentFiles"
+        db_table = "commentFiles"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.comment.comment}"
 
     def get_file_name(self):
         if self.comment_file:
@@ -260,7 +338,7 @@ class Comment_Files(models.Model):
         return None
 
 
-class Attachments(models.Model):
+class Attachments(BaseModel):
     created_by = models.ForeignKey(
         Profile,
         related_name="attachment_created_by",
@@ -269,7 +347,6 @@ class Attachments(models.Model):
         blank=True,
     )
     file_name = models.CharField(max_length=60)
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
     attachment = models.FileField(max_length=1001, upload_to="attachments/%Y/%m/")
     lead = models.ForeignKey(
         "leads.Lead",
@@ -330,6 +407,15 @@ class Attachments(models.Model):
         on_delete=models.CASCADE,
     )
 
+    class Meta:
+        verbose_name = "Attachment"
+        verbose_name_plural = "Attachments"
+        db_table = "attachments"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.file_name}"
+
     def file_type(self):
         name_ext_list = self.attachment.url.split(".")
         if len(name_ext_list) > 1:
@@ -360,7 +446,7 @@ class Attachments(models.Model):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
 
 def document_path(self, filename):
@@ -368,7 +454,7 @@ def document_path(self, filename):
     return "%s/%s/%s" % ("docs", hash_, filename)
 
 
-class Document(models.Model):
+class Document(BaseModel):
 
     DOCUMENT_STATUS_CHOICE = (("active", "active"), ("inactive", "inactive"))
 
@@ -381,7 +467,7 @@ class Document(models.Model):
         null=True,
         blank=True,
     )
-    created_on = models.DateTimeField(auto_now_add=True)
+    
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
     )
@@ -396,11 +482,14 @@ class Document(models.Model):
     )
 
     class Meta:
-        ordering = ("-created_on",)
+        verbose_name = "Document"
+        verbose_name_plural = "Documents"
+        db_table = "document"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.title
-
+        return f"{self.title}"
+ 
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
         if len(name_ext_list) > 1:
@@ -445,14 +534,14 @@ class Document(models.Model):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
 
 
 def generate_key():
     return binascii.hexlify(os.urandom(8)).decode()
 
 
-class APISettings(models.Model):
+class APISettings(BaseModel):
     title = models.TextField()
     apikey = models.CharField(max_length=16, blank=True)
     website = models.URLField(max_length=255, null=True)
@@ -474,33 +563,19 @@ class APISettings(models.Model):
         null=True,
         related_name="org_api_settings",
     )
-    created_on = models.DateTimeField(auto_now_add=True)
+    
 
     class Meta:
-        ordering = ("-created_on",)
+        verbose_name = "APISetting"
+        verbose_name_plural = "APISettings"
+        db_table = "apiSettings"
+        ordering = ("-created_at",)
 
     def __str__(self):
-        return self.title
+        return f"{self.title}"
+    
 
     def save(self, *args, **kwargs):
         if not self.apikey or self.apikey is None or self.apikey == "":
             self.apikey = generate_key()
         super().save(*args, **kwargs)
-
-
-class Google(models.Model):
-    user = models.ForeignKey(
-        User, related_name="google_user", on_delete=models.CASCADE, null=True
-    )
-    google_id = models.CharField(max_length=200, default="")
-    google_url = models.TextField(default="")
-    verified_email = models.CharField(max_length=200, default="")
-    family_name = models.CharField(max_length=200, default="")
-    name = models.CharField(max_length=200, default="")
-    gender = models.CharField(max_length=10, default="")
-    dob = models.CharField(max_length=50, default="")
-    given_name = models.CharField(max_length=200, default="")
-    email = models.CharField(max_length=200, default="", db_index=True)
-
-    def __str__(self):
-        return self.email

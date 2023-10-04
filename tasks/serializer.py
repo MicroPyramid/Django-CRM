@@ -1,7 +1,10 @@
 from rest_framework import serializers
 
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
 from contacts.serializer import ContactSerializer
 from tasks.models import Task
 from teams.serializer import TeamsSerializer
@@ -67,3 +70,25 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "created_by",
             "created_on",
         )
+
+class TaskDetailEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    task_attachment = serializers.FileField()
+
+class TaskCommentEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+
+class TaskCreateSwaggerSerializer(serializers.ModelSerializer): 
+     class Meta:
+        model = Task
+        fields = (
+            "title",
+            "status",
+            "priority",
+            "due_date",
+            "account",
+            "contacts",
+            "teams",
+            "assigned_to"
+        )
+

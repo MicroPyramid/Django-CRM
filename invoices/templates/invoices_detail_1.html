@@ -627,8 +627,8 @@
     data: {{ users_mention| safe}},
     map: function (user) {
       return {
-        value: user.username,
-        text: '<strong>' + user.username + '</strong>'
+        value: user.email,
+        text: '<strong>' + user.email + '</strong>'
       }
     }
  })

@@ -1,9 +1,12 @@
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from leads.tasks import (create_lead_from_file, send_email,
-                         send_email_to_assigned_user,
-                         send_lead_assigned_emails)
+from leads.tasks import (
+    create_lead_from_file,
+    send_email,
+    send_email_to_assigned_user,
+    send_lead_assigned_emails,
+)
 from leads.tests import TestLeadModel
 
 
