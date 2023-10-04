@@ -1,8 +1,11 @@
 from rest_framework import serializers
 
-from accounts.models import Account, Email, Tags
-from common.serializer import (AttachmentsSerializer, OrganizationSerializer,
-                               ProfileSerializer)
+from accounts.models import Account, AccountEmail, Tags, AccountEmailLog
+from common.serializer import (
+    AttachmentsSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+)
 from contacts.serializer import ContactSerializer
 from leads.serializer import LeadSerializer
 from teams.serializer import TeamsSerializer
@@ -61,7 +64,7 @@ class EmailSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     class Meta:
-        model = Email
+        model = AccountEmail
         fields = (
             "message_subject",
             "message_body",
@@ -95,8 +98,21 @@ class EmailLogSerializer(serializers.ModelSerializer):
     email = EmailSerializer()
 
     class Meta:
-        model = Email
+        model = AccountEmailLog
         fields = ["email", "contact", "is_sent"]
+
+
+class AccountReadSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Account
+        fields = ["name", "billing_city", "tags"]
+
+class AccountWriteSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Account
+        fields = ["name","phone", "email", "billing_address_line","billing_street","billing_city", "billing_state", "billing_postcode","billing_country","contacts", "teams", "assigned_to","tags","account_attachment", "website", "status","lead"]
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
@@ -150,3 +166,15 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "lead",
             "contact_name",
         )
+
+class AccountDetailEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    account_attachment = serializers.FileField()
+
+class AccountCommentEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+
+class EmailWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountEmail
+        fields = ("from_email", "recipients", "message_subject","scheduled_later","timezone","scheduled_date_time","message_body")

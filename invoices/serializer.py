@@ -1,7 +1,10 @@
 from rest_framework import serializers
 
-from common.serializer import (BillingAddressSerializer,
-                               OrganizationSerializer, UserSerializer)
+from common.serializer import (
+    BillingAddressSerializer,
+    OrganizationSerializer,
+    UserSerializer,
+)
 from invoices.models import Invoice, InvoiceHistory
 from teams.serializer import TeamsSerializer
 
@@ -123,3 +126,34 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "details",
             "org",
         )
+
+class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
+
+    from_address = BillingAddressSerializer()
+    to_address = BillingAddressSerializer()
+    assigned_to = UserSerializer(read_only=True, many=True)
+    quality_hours = serializers.CharField()
+    class Meta:
+        model = Invoice
+        fields = (
+            "invoice_title",
+            "status",
+            "name",
+            "email",
+            "phone",
+            "due_date",
+            "currency",
+            "rate",
+            "tax",
+            "total_amount",
+            "details",
+            "teams",
+            "from_address",
+            "to_address",
+            "assigned_to",
+            "currency",
+            "accounts",
+            "quality_hours"
+        )
+
+

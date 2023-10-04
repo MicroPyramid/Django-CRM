@@ -1,13 +1,16 @@
 from rest_framework import serializers
 
-from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
-                               OrganizationSerializer, ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    BillingAddressSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+)
 from contacts.models import Contact
 from teams.serializer import TeamsSerializer
 
 
 class ContactSerializer(serializers.ModelSerializer):
-    created_by = ProfileSerializer()
     teams = TeamsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     address = BillingAddressSerializer(read_only=True)
@@ -63,7 +66,8 @@ class CreateContactSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
-        self.org = request_obj.org
+        if request_obj:
+            self.org = request_obj.profile.org
 
     def validate_first_name(self, first_name):
         if self.instance:
@@ -107,3 +111,11 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "facebook_url",
             "twitter_username",
         )
+
+
+class ContactDetailEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    contact_attachment = serializers.FileField()
+
+class ContactCommentEditSwaggerSerializer(serializers.Serializer):
+    comment = serializers.CharField()

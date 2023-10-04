@@ -6,7 +6,7 @@ pipeline {
         APP_NAME = "bottlecrm-api"
         DOCKERHUB = credentials("dockerhub")
         DOCKER_IMAGE_TAG = "build-${env.BUILD_NUMBER}-${env.GIT_COMMIT[0..7]}"
-        DOCKER_IMAGE = "ashwin31/bottlecrm-api:${env.DOCKER_IMAGE_TAG}"
+        DOCKER_IMAGE = "ashwin31/django-crm:${env.DOCKER_IMAGE_TAG}"
         DOCKER_CONFIG = "config.json"
     }
 
@@ -26,7 +26,7 @@ pipeline {
         }
         stage('trigger deploy') {
             steps {
-                build job: 'bottlecrm-api-deploy', parameters: [
+                build job: 'deploy', parameters: [
                     string(
                         name: 'ENV_TYPE',
                         value: "${env.ENV_TYPE}"

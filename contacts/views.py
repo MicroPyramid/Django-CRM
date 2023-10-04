@@ -2,7 +2,7 @@ import json
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -10,11 +10,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import Attachments, Comment, Profile
-from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
-                               CommentSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    BillingAddressSerializer,
+    CommentSerializer,
+)
 from common.utils import COUNTRIES
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from contacts import swagger_params
+from contacts import swagger_params1
 from contacts.models import Contact, Profile
 from contacts.serializer import *
 from contacts.tasks import send_email_to_assigned_user
@@ -28,8 +32,8 @@ class ContactsListView(APIView, LimitOffsetPagination):
     model = Contact
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
-        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
+        params = self.request.query_params
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
@@ -67,25 +71,25 @@ class ContactsListView(APIView, LimitOffsetPagination):
         context.update({"contacts_count": self.count, "offset": offset})
         context["contact_obj_list"] = contacts
         context["countries"] = COUNTRIES
-        users = Profile.objects.filter(is_active=True, org=self.request.org).values(
+        users = Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
             "id", "user__email"
         )
         context["users"] = users
 
         return context
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.contact_list_get_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.contact_list_get_params
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params,request=CreateContactSerializer
     )
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        params = request.data
         contact_serializer = CreateContactSerializer(data=params, request_obj=request)
         address_serializer = BillingAddressSerializer(data=params)
 
@@ -103,18 +107,17 @@ class ContactsListView(APIView, LimitOffsetPagination):
         address_obj = address_serializer.save()
         contact_obj = contact_serializer.save(date_of_birth=params.get("date_of_birth"))
         contact_obj.address = address_obj
-        contact_obj.created_by = self.request.profile
-        contact_obj.org = request.org
+        contact_obj.org = request.profile.org
         contact_obj.save()
 
         if params.get("teams"):
             teams_list = json.loads(params.get("teams"))
-            teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+            teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         if params.get("assigned_to"):
             assinged_to_list = json.loads(params.get("assigned_to"))
-            profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.org)
+            profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.profile.org)
             contact_obj.assigned_to.add(*profiles)
 
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
@@ -144,22 +147,22 @@ class ContactDetailView(APIView):
     def get_object(self, pk):
         return get_object_or_404(Contact, pk=pk)
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.contact_create_post_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.contact_create_post_params,request=CreateContactSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        data = request.data
         contact_obj = self.get_object(pk=pk)
         address_obj = contact_obj.address
-        if contact_obj.org != request.org:
+        if contact_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         contact_serializer = CreateContactSerializer(
-            data=params, instance=contact_obj, request_obj=request
+            data=data, instance=contact_obj, request_obj=request
         )
-        address_serializer = BillingAddressSerializer(data=params, instance=address_obj)
+        address_serializer = BillingAddressSerializer(data=data, instance=address_obj)
         data = {}
         if not contact_serializer.is_valid():
             data["contact_errors"] = contact_serializer.errors
@@ -191,22 +194,22 @@ class ContactDetailView(APIView):
 
             address_obj = address_serializer.save()
             contact_obj = contact_serializer.save(
-                date_of_birth=params.get("date_of_birth")
+                date_of_birth=data.get("date_of_birth")
             )
             contact_obj.address = address_obj
             contact_obj.save()
             contact_obj = contact_serializer.save()
             contact_obj.teams.clear()
-            if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+            if data.get("teams"):
+                teams_list = json.loads(data.get("teams"))
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 contact_obj.teams.add(*teams)
 
             contact_obj.assigned_to.clear()
-            if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+            if data.get("assigned_to"):
+                assinged_to_list = json.loads(data.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org
+                    id__in=assinged_to_list, org=request.profile.org
                 )
                 contact_obj.assigned_to.add(*profiles)
 
@@ -234,8 +237,8 @@ class ContactDetailView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params
     )
     def get(self, request, pk, format=None):
         context = {}
@@ -272,14 +275,14 @@ class ContactDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=request.org).values(
-                    "user__username"
+                Profile.objects.filter(is_active=True, org=request.profile.org).values(
+                    "user__email"
                 )
             )
         elif self.request.profile != contact_obj.created_by:
-            users_mention = [{"username": contact_obj.created_by.user.username}]
+            users_mention = [{"username": contact_obj.created_by.user.email}]
         else:
-            users_mention = list(contact_obj.assigned_to.all().values("user__username"))
+            users_mention = list(contact_obj.assigned_to.all().values("user__email"))
 
         if request.profile == contact_obj.created_by:
             user_assgn_list.append(self.request.profile.id)
@@ -303,12 +306,12 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.org:
+        if self.object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -333,11 +336,11 @@ class ContactDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.contact_detail_get_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params,request=ContactDetailEditSwaggerSerializer
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         context = {}
         self.contact_obj = Contact.objects.get(pk=pk)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -358,7 +361,7 @@ class ContactDetailView(APIView):
                 comment_serializer.save(
                     contact_id=self.contact_obj.id,
                     commented_by_id=self.request.profile.id,
-                    org=request.org,
+                    org=request.profile.org,
                 )
 
         if self.request.FILES.get("contact_attachment"):
@@ -393,11 +396,11 @@ class ContactCommentView(APIView):
     def get_object(self, pk):
         return self.model.objects.get(pk=pk)
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.contact_comment_edit_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params,request=ContactCommentEditSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -423,8 +426,8 @@ class ContactCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -452,8 +455,8 @@ class ContactAttachmentView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
-        tags=["contacts"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["contacts"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

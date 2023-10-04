@@ -6,9 +6,13 @@ from django.test.utils import override_settings
 from accounts.tests import AccountCreateTest
 from cases.tests import CaseCreation
 from common.models import Comment, User
-from common.tasks import (resend_activation_link_to_user,
-                          send_email_to_new_user, send_email_user_delete,
-                          send_email_user_mentions, send_email_user_status)
+from common.tasks import (
+    resend_activation_link_to_user,
+    send_email_to_new_user,
+    send_email_user_delete,
+    send_email_user_mentions,
+    send_email_user_status,
+)
 from common.tests import ObjectsCreation
 from contacts.tests import ContactObjectsCreation
 from events.tests import EventObjectTest

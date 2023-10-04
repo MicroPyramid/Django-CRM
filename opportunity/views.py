@@ -1,7 +1,7 @@
 import json
 
 from django.db.models import Q
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -11,16 +11,19 @@ from rest_framework.views import APIView
 from accounts.models import Account, Tags
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
+
 # from common.custom_auth import JSONWebTokenAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from opportunity import swagger_params
+from opportunity import swagger_params1
 from opportunity.models import Opportunity
-from opportunity.serializer import (OpportunityCreateSerializer,
-                                    OpportunitySerializer)
+from opportunity.serializer import *
 from opportunity.tasks import send_email_to_assigned_user
 from teams.models import Teams
 
@@ -32,10 +35,10 @@ class OpportunityListView(APIView, LimitOffsetPagination):
     model = Opportunity
 
     def get_context_data(self, **kwargs):
-        params = request.post_data
-        queryset = self.model.objects.filter(org=self.request.org).order_by("-id")
-        accounts = Account.objects.filter(org=self.request.org)
-        contacts = Contact.objects.filter(org=self.request.org)
+        params = self.request.query_params
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        accounts = Account.objects.filter(org=self.request.profile.org)
+        contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
@@ -93,31 +96,31 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
         return context
 
-    @swagger_auto_schema(
+    @extend_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_list_get_params,
+        parameters=swagger_params1.opportunity_list_get_params,
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @swagger_auto_schema(
+    @extend_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_create_post_params,
+        parameters=swagger_params1.organization_params,request=OpportunityCreateSwaggerSerializer
     )
     def post(self, request, *args, **kwargs):
-        params = request.post_data
+        params = request.data
         serializer = OpportunityCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             opportunity_obj = serializer.save(
                 created_by=request.profile,
                 closed_on=params.get("due_date"),
-                org=request.org,
+                org=request.profile.org,
             )
 
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 opportunity_obj.contacts.add(*contacts)
 
             if params.get("tags"):
@@ -137,13 +140,13 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 opportunity_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
                 assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True
+                    id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 opportunity_obj.assigned_to.add(*profiles)
 
@@ -184,14 +187,14 @@ class OpportunityDetailView(APIView):
     def get_object(self, pk):
         return self.model.objects.filter(id=pk).first()
 
-    @swagger_auto_schema(
+    @extend_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_create_post_params,
+        parameters=swagger_params1.organization_params,request=OpportunityCreateSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         opportunity_object = self.get_object(pk=pk)
-        if opportunity_object.org != request.org:
+        if opportunity_object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -224,7 +227,7 @@ class OpportunityDetailView(APIView):
             opportunity_object.contacts.clear()
             if params.get("contacts"):
                 contacts_list = json.loads(params.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.org)
+                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 opportunity_object.contacts.add(*contacts)
 
             opportunity_object.tags.clear()
@@ -246,14 +249,14 @@ class OpportunityDetailView(APIView):
             opportunity_object.teams.clear()
             if params.get("teams"):
                 teams_list = json.loads(params.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.org)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 opportunity_object.teams.add(*teams)
 
             opportunity_object.assigned_to.clear()
             if params.get("assigned_to"):
                 assinged_to_list = json.loads(params.get("assigned_to"))
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.org, is_active=True
+                    id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 opportunity_object.assigned_to.add(*profiles)
 
@@ -284,12 +287,12 @@ class OpportunityDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @swagger_auto_schema(
-        tags=["Opportunities"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Opportunities"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.org:
+        if self.object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -309,14 +312,14 @@ class OpportunityDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @swagger_auto_schema(
-        tags=["Opportunities"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Opportunities"], parameters=swagger_params1.organization_params
     )
     def get(self, request, pk, format=None):
         self.opportunity = self.get_object(pk=pk)
         context = {}
         context["opportunity_obj"] = OpportunitySerializer(self.opportunity).data
-        if self.opportunity.org != request.org:
+        if self.opportunity.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -345,14 +348,14 @@ class OpportunityDetailView(APIView):
 
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.org).values(
-                    "user__username"
+                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
+                    "user__email"
                 )
             )
         elif self.request.profile != self.opportunity.created_by:
             if self.opportunity.created_by:
                 users_mention = [
-                    {"username": self.opportunity.created_by.user.username}
+                    {"username": self.opportunity.created_by.user.email}
                 ]
             else:
                 users_mention = []
@@ -372,7 +375,7 @@ class OpportunityDetailView(APIView):
                 ).data,
                 "users": ProfileSerializer(
                     Profile.objects.filter(
-                        is_active=True, org=self.request.org
+                        is_active=True, org=self.request.profile.org
                     ).order_by("user__email"),
                     many=True,
                 ).data,
@@ -385,15 +388,15 @@ class OpportunityDetailView(APIView):
         )
         return Response(context)
 
-    @swagger_auto_schema(
+    @extend_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_detail_get_params,
+        parameters=swagger_params1.organization_params,request=OpportunityDetailEditSwaggerSerializer
     )
     def post(self, request, pk, **kwargs):
-        params = request.post_data
+        params = request.data
         context = {}
         self.opportunity_obj = Opportunity.objects.get(pk=pk)
-        if self.opportunity_obj.org != request.org:
+        if self.opportunity_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -452,12 +455,12 @@ class OpportunityCommentView(APIView):
     def get_object(self, pk):
         return self.model.objects.get(pk=pk)
 
-    @swagger_auto_schema(
+    @extend_schema(
         tags=["Opportunities"],
-        manual_parameters=swagger_params.opportunity_comment_edit_params,
+        parameters=swagger_params1.organization_params,request=OpportunityCommentEditSwaggerSerializer
     )
     def put(self, request, pk, format=None):
-        params = request.post_data
+        params = request.data
         obj = self.get_object(pk)
         if (
             request.profile.role == "ADMIN"
@@ -484,8 +487,8 @@ class OpportunityCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @swagger_auto_schema(
-        tags=["Opportunities"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Opportunities"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -513,8 +516,8 @@ class OpportunityAttachmentView(APIView):
     # authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(
-        tags=["Opportunities"], manual_parameters=swagger_params.organization_params
+    @extend_schema(
+        tags=["Opportunities"], parameters=swagger_params1.organization_params
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

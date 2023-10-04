@@ -5,12 +5,13 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from common.models import User
+from common.base import BaseModel
 from common.utils import EVENT_PARENT_TYPE, EVENT_STATUS
 from contacts.models import Contact
 from leads.models import Lead
 
 
-class Reminder(models.Model):
+class Reminder(BaseModel):
     reminder_type = models.CharField(max_length=5, blank=True, null=True)
     reminder_time = models.IntegerField(
         pgettext_lazy("time of the reminder to event in Seconds", "Reminder"),
@@ -18,11 +19,17 @@ class Reminder(models.Model):
         null=True,
     )
 
+    class Meta:
+        verbose_name = "Reminder"
+        verbose_name_plural = "Reminders"
+        db_table = "reminder"
+        ordering = ("-created_at",)
+
     def __str__(self):
-        return self.reminder_type
+        return f"{self.reminder_type}"
 
 
-class Event(models.Model):
+class PlannerEvent(BaseModel):
     limit = (
         models.Q(app_label="account", model="Account", id=10)
         | models.Q(app_label="leads", model="Lead", id=13)
@@ -84,10 +91,16 @@ class Event(models.Model):
         User, related_name="event_created_by", on_delete=models.SET_NULL, null=True
     )
     assigned_to = models.ManyToManyField(
-        User, blank=True, related_name="event_assigned_users"
+        User, blank=True, related_name="event_assigned_users",
     )
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=False)
 
+    class Meta:
+        verbose_name = "PlannerEvent"
+        verbose_name_plural = "PlannerEvents"
+        db_table = "planner_event"
+        ordering = ("-created_at",)
+
     def __str__(self):
-        return self.name
+        return f"{self.name}"

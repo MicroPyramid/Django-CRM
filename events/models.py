@@ -3,13 +3,14 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.models import Org, Profile
+from common.base import BaseModel
 from contacts.models import Contact
 from teams.models import Teams
 
 # Create your models here.
 
 
-class Event(models.Model):
+class Event(BaseModel):
     EVENT_TYPE = (
         ("Recurring", "Recurring"),
         ("Non-Recurring", "Non-Recurring"),
@@ -55,6 +56,15 @@ class Event(models.Model):
     org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
 
     # tags = models.ManyToManyField(Tag)
+
+    class Meta:
+        verbose_name = "Event"
+        verbose_name_plural = "Events"
+        db_table = "event"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.name}"
 
     @property
     def created_on_arrow(self):

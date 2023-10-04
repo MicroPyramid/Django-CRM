@@ -4,11 +4,12 @@ from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.models import Address, Org, Profile
+from common.base import BaseModel
 from common.utils import COUNTRIES
 from teams.models import Teams
 
 
-class Contact(models.Model):
+class Contact(BaseModel):
     salutation = models.CharField(
         _("Salutation"), max_length=255, default="", blank=True
     )
@@ -20,7 +21,7 @@ class Contact(models.Model):
     primary_email = models.EmailField(unique=True)
     secondary_email = models.EmailField(default="", blank=True)
     mobile_number = PhoneNumberField(null=True, unique=True)
-    secondary_number = PhoneNumberField(null=True)
+    secondary_number = PhoneNumberField(null=True,blank=True)
     department = models.CharField(_("Department"), max_length=255, null=True)
     language = models.CharField(_("Language"), max_length=255, null=True)
     do_not_call = models.BooleanField(default=False)
@@ -34,26 +35,33 @@ class Contact(models.Model):
     description = models.TextField(blank=True, null=True)
     linked_in_url = models.URLField(blank=True, null=True)
     facebook_url = models.URLField(blank=True, null=True)
-    twitter_username = models.CharField(max_length=255, null=True)
-    created_by = models.ForeignKey(
-        Profile, related_name="contact_created_by", on_delete=models.SET_NULL, null=True
-    )
-    created_on = models.DateTimeField(_("Created on"), auto_now_add=True)
+    twitter_username = models.CharField(max_length=255, blank=True,null=True)
+    # created_by = models.ForeignKey(
+    #     Profile, related_name="contact_created_by", on_delete=models.SET_NULL, null=True
+    # )
     is_active = models.BooleanField(default=False)
     assigned_to = models.ManyToManyField(Profile, related_name="contact_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="contact_teams")
     org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
+    class Meta:
+        verbose_name = "Contact"
+        verbose_name_plural = "Contacts"
+        db_table = "contacts"
+        ordering = ("-created_at",)
+
     def __str__(self):
         return self.first_name
 
-    class Meta:
-        ordering = ["-created_on"]
-
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_on).humanize()
+        return arrow.get(self.created_at).humanize()
+    
+    @property
+    def created_on(self):
+        return self.created_at
+
 
     @property
     def get_team_users(self):
