@@ -184,7 +184,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    address = BillingAddressSerializer()
+    # address = BillingAddressSerializer()
 
     class Meta:
         model = Profile
