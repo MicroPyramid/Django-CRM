@@ -150,7 +150,7 @@ class TeamsDetailView(APIView):
 
             team_obj.users.clear()
             if params.get("assign_users"):
-                assinged_to_list = json.loads(params.get("assign_users"))
+                assinged_to_list = params.get("assign_users")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org
                 )
