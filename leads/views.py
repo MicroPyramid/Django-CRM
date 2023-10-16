@@ -821,8 +821,8 @@ class CompanyDetail(APIView):
             )
     @extend_schema(tags=["Company"],parameters=swagger_params1.organization_params)
     def delete(self, request, pk, format=None):
-        Company = self.get_object(pk)
-        Company.delete()
+        company = self.get_object(pk)
+        company.delete()
         return Response(
                 {"error": False, 'message': 'Deleted successfully'},
                 status=status.HTTP_200_OK,
