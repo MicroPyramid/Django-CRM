@@ -46,7 +46,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "description",
             "account_attachment",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "tags",
             "status",
@@ -71,7 +71,7 @@ class EmailSerializer(serializers.ModelSerializer):
             "timezone",
             "scheduled_date_time",
             "scheduled_later",
-            "created_on",
+            "created_at",
             "from_email",
             "rendered_message_body",
         )
@@ -132,7 +132,7 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             self.fields["lead"].required = False
         self.fields["lead"].required = False
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_name(self, name):
         if self.instance:

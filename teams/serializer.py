@@ -15,7 +15,7 @@ class TeamsSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "users",
-            "created_on",
+            "created_at",
             "created_by",
             "created_on_arrow",
         )
@@ -49,7 +49,7 @@ class TeamCreateSerializer(serializers.ModelSerializer):
         fields = (
             "name",
             "description",
-            "created_on",
+            "created_at",
             "created_by",
             "created_on_arrow",
             "org",

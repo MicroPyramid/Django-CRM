@@ -38,7 +38,7 @@ class EventSerializer(serializers.ModelSerializer):
             "description",
             "date_of_meeting",
             "created_by",
-            "created_on",
+            "created_at",
             "contacts",
             "teams",
             "assigned_to",
@@ -53,7 +53,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(EventCreateSerializer, self).__init__(*args, **kwargs)
         self.fields["event_type"].required = True
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_name(self, name):
         if self.instance:
@@ -126,7 +126,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "disabled",
             "description",
             "created_by",
-            "created_on",
+            "created_at",
             "org",
         )
 

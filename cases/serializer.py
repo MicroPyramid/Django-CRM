@@ -26,7 +26,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "closed_on",
             "description",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "account",
             "contacts",
@@ -43,7 +43,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_name(self, name):
         if self.instance:
@@ -67,7 +67,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "priority",
             "description",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "account",
             "org",

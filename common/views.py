@@ -434,8 +434,6 @@ class ProfileView(APIView):
     def get(self, request, format=None):
         # profile=Profile.objects.get(user=request.user)
         context = {}
-        print("I am here")
-        print(self.request.profile)
         context["user_obj"] = ProfileSerializer(self.request.profile).data
         return Response(context, status=status.HTTP_200_OK)
 

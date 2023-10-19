@@ -51,7 +51,7 @@ class ContactSerializer(serializers.ModelSerializer):
             "contact_attachment",
             "assigned_to",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "teams",
             "created_on_arrow",

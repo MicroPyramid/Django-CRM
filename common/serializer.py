@@ -184,6 +184,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    # address = BillingAddressSerializer()
 
     class Meta:
         model = Profile
@@ -210,7 +211,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Attachments
-        fields = ["id", "created_by", "file_name", "created_on", "file_path"]
+        fields = ["id", "created_by", "file_name", "created_at", "file_path"]
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -231,7 +232,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             "status",
             "shared_to",
             "teams",
-            "created_on",
+            "created_at",
             "created_by",
             "org",
         ]
@@ -242,7 +243,7 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
         self.fields["title"].required = True
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_title(self, title):
         if self.instance:
@@ -312,7 +313,7 @@ class APISettingsListSerializer(serializers.ModelSerializer):
             "title",
             "apikey",
             "website",
-            "created_on",
+            "created_at",
             "created_by",
             "lead_assigned_to",
             "tags",

@@ -61,9 +61,9 @@ class Account(BaseModel):
     )
     website = models.URLField(_("Website"), blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(
-        Profile, related_name="account_created_by", on_delete=models.SET_NULL, null=True
-    )
+    # created_by = models.ForeignKey(
+    #     Profile, related_name="account_created_by", on_delete=models.SET_NULL, null=True
+    # )
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
     status = models.CharField(
