@@ -18,7 +18,7 @@ onCreate:
         python manage.py migrate
 onStart:
   - |
-        . ../venv/bin/activate
+        . ../env/bin/activate
         WS_DOMAIN=`cat /home/ubuntu/runcode/ws-url-domain.txt`
         printf "\nGO TO THIS URL TO VIEW PAGE \033[4;34m https://8000-${WS_DOMAIN}\033[0;30m\n\n"
         python manage.py runserver

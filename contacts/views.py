@@ -128,7 +128,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         if request.FILES.get("contact_attachment"):
             attachment = Attachments()
-            attachment.created_by = request.profile
+            attachment.created_by = request.profile.user
             attachment.file_name = request.FILES.get("contact_attachment").name
             attachment.contact = contact_obj
             attachment.attachment = request.FILES.get("contact_attachment")
@@ -227,7 +227,7 @@ class ContactDetailView(APIView):
             )
             if request.FILES.get("contact_attachment"):
                 attachment = Attachments()
-                attachment.created_by = request.profile
+                attachment.created_by = request.profile.user
                 attachment.file_name = request.FILES.get("contact_attachment").name
                 attachment.contact = contact_obj
                 attachment.attachment = request.FILES.get("contact_attachment")

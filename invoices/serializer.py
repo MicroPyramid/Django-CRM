@@ -30,7 +30,7 @@ class InvoiceSerailizer(serializers.ModelSerializer):
             "phone",
             "from_address",
             "to_address",
-            "created_on",
+            "created_at",
             "created_by",
             "currency",
             "quantity",
@@ -61,7 +61,7 @@ class InvoiceHistorySerializer(serializers.ModelSerializer):
             "name",
             "email",
             "phone",
-            "created_on",
+            "created_at",
             "currency",
             "quantity",
             "rate",
@@ -80,7 +80,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super(InvoiceCreateSerializer, self).__init__(*args, **kwargs)
 
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_invoice_title(self, invoice_title):
         if self.instance:
@@ -113,7 +113,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "due_date",
-            "created_on",
+            "created_at",
             "created_by",
             "currency",
             "quantity",

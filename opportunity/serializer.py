@@ -41,7 +41,7 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "description",
             "assigned_to",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "tags",
             "opportunity_attachment",
@@ -61,7 +61,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
-        self.org = request_obj.org
+        self.org = request_obj.profile.org
 
     def validate_name(self, name):
         if self.instance:
@@ -94,7 +94,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "closed_on",
             "description",
             "created_by",
-            "created_on",
+            "created_at",
             "is_active",
             "created_on_arrow",
             "org"

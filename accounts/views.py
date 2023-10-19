@@ -140,7 +140,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         # Save Account
         if serializer.is_valid():
             account_object = serializer.save(
-                created_by=request.profile, org=request.profile.org
+                org=request.profile.org
             )
             if data.get("contacts"):
                 contacts_list = json.loads(data.get("contacts"))
@@ -171,7 +171,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
-                attachment.created_by = request.profile
+                attachment.created_by = request.profile.user
                 attachment.file_name = request.FILES.get("account_attachment").name
                 attachment.account = account_object
                 attachment.attachment = request.FILES.get("account_attachment")
