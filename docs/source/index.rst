@@ -5,7 +5,7 @@ Django CRM
 Introduction:
 =============
 
-Django CRM is opensourse CRM developed on django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via github.
+Django CRM is an Open Source CRM developed on the Django framework. It has all the basic features of CRM to start with. We welcome code contributions and feature requests via Github.
 
 Source Code is available in Micropyramid Repository() `Link <https://github.com/MicroPyramid/Django-CRM.git>`_.
 
@@ -59,7 +59,7 @@ On Windows
 
 On Ubuntu
 *********
-|  First Create a Virtual Environment in a local directory.
+|  First, create a Virtual Environment in a local directory.
 |  Install Pip to install python packages.
 |  Then clone the source code from the repository `click here <https://github.com/MicroPyramid/Django-CRM.git>`_.
 |  Activate Virtual environment, then install the requirements.txt using the command 
@@ -74,7 +74,7 @@ On Ubuntu
 
   python manage.py runserver
 
-Now Go to browser, enter the url ``http://127.0.0.1:8000``
+Now, open your browser and enter the url ``http://127.0.0.1:8000``
 
 Installation - Requirements
 ===========================
@@ -93,22 +93,22 @@ Visit our Django web development page [Here](https://micropyramid.com/django-eco
 Docker
 *********************
 
-To install using Docker, you need have Docker installed in your system.
+To install using Docker, you need to have Docker installed in your system.
 
 1. Clone the repository into your system.
 
-2. Then run the following code to build and run the container:
+2. Then run the following commands to build and run the container:
 
    | $ docker build -t djcrm:1 -f docker/Dockerfile .
    | $ docker-compose -f docker/docker-compose.yml up
  
- The first line will build your container and the second one will run it.
+ The first line will build your container image and the second one will run it.
  
  There you will be able to see what is going on inside the container.
  
  If you head to localhost:8000/admin you will get to the admin panel of Wagtail.
  
- 3. In order to be able to login to the admin panel you have to create an admin user. If you are using Vscode, go to the bottom left corner and click on it, there go to "Attach to running container" and you will see two options, click on the one called "crm-app". Once inside the container, then cd into the app directory and run:
+ 3. In order to be able to login to the admin panel you have to create an admin user. If you are using VSCode, go to the bottom left corner and click on it, there go to "Attach to running container" and you will see two options, click on the one called "crm-app". Once inside the container, then cd into the app directory and run:
  
   | $ python3 manage.py createsuperuser
   
