@@ -1,5 +1,3 @@
-import json
-
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
@@ -80,12 +78,12 @@ class LeadListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(source=params.get("source"))
             if params.getlist("assigned_to"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(params.get("assigned_to"))
+                    assigned_to__id__in=params.get("assigned_to")
                 )
             if params.get("status"):
                 queryset = queryset.filter(status=params.get("status"))
             if params.get("tags"):
-                queryset = queryset.filter(tags__in=json.loads(params.get("tags")))
+                queryset = queryset.filter(tags__in=params.get("tags"))
             if params.get("city"):
                 queryset = queryset.filter(city__icontains=params.get("city"))
             if params.get("email"):
@@ -165,7 +163,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             lead_obj = serializer.save(created_by=request.profile.user
             , org=request.profile.org)
             if data.get("tags",None):
-                tags = json.loads(data.get("tags"))
+                tags = data.get("tags")
                 for t in tags:
                     tag = Tags.objects.filter(slug=t.lower())
                     if tag.exists():
@@ -176,7 +174,7 @@ class LeadListView(APIView, LimitOffsetPagination):
 
             if data.get("contacts",None):
                 obj_contact = Contact.objects.filter(
-                    id__in=json.loads(data.get("contacts")), org=request.profile.org
+                    id__in=data.get("contacts"), org=request.profile.org
                 )
                 lead_obj.contacts.add(*obj_contact)
 
@@ -195,12 +193,12 @@ class LeadListView(APIView, LimitOffsetPagination):
                 attachment.save()
 
             if data.get("teams",None):
-                teams_list = json.loads(data.get("teams"))
+                teams_list = data.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 lead_obj.teams.add(*teams)
 
             if data.get("assigned_to",None):
-                assinged_to_list = json.loads(data.get("assigned_to"))
+                assinged_to_list = data.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org
                 )
@@ -235,7 +233,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                     account_object.tags.add(tag)
 
                 if data.get("assigned_to",None):
-                    assigned_to_list = json.loads(data.getlist("assigned_to"))
+                    assigned_to_list = data.getlist("assigned_to")
                     recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -438,7 +436,7 @@ class LeadDetailView(APIView):
             )
             lead_obj.tags.clear()
             if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+                tags = params.get("tags")
                 # for t in tags:
                 #     tag,_ = Tags.objects.get_or_create(name=t)
                 #     lead_obj.tags.add(tag)
@@ -475,13 +473,13 @@ class LeadDetailView(APIView):
 
             lead_obj.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 lead_obj.teams.add(*teams)
 
             lead_obj.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org
                 )
@@ -516,7 +514,7 @@ class LeadDetailView(APIView):
                     account_object.tags.add(tag)
                 if params.get("assigned_to"):
                     # account_object.assigned_to.add(*params.getlist('assigned_to'))
-                    assigned_to_list = json.loads(params.get("assigned_to"))
+                    assigned_to_list = params.get("assigned_to")
                     recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -823,8 +821,8 @@ class CompanyDetail(APIView):
             )
     @extend_schema(tags=["Company"],parameters=swagger_params1.organization_params)
     def delete(self, request, pk, format=None):
-        Company = self.get_object(pk)
-        Company.delete()
+        company = self.get_object(pk)
+        company.delete()
         return Response(
                 {"error": False, 'message': 'Deleted successfully'},
                 status=status.HTTP_200_OK,
