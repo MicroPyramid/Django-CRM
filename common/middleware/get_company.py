@@ -1,7 +1,7 @@
 import jwt
 from django.conf import settings
 from django.contrib.auth import logout
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError,PermissionDenied
 from rest_framework import status
 from rest_framework.response import Response
 from crum import get_current_user
@@ -44,19 +44,21 @@ class GetProfileAndOrg(object):
         return self.get_response(request)
 
     def process_request(self, request):
-
-        request.profile = None
-        user_id = None
-        # here I am getting the the jwt token passing in header
-        if request.headers.get("Authorization"):
-            token1 = request.headers.get("Authorization")
-            token = token1.split(" ")[1]  # getting the token value
-            decoded = jwt.decode(token, (settings.SECRET_KEY), algorithms=[settings.JWT_ALGO])
-            user_id = decoded['user_id']
-        if user_id is not None:
-            if request.headers.get("org"):
-                profile = Profile.objects.get(
-                    user_id=user_id, org=request.headers.get("org"), is_active=True
-                )
-                if profile:
-                    request.profile = profile
+        try :
+            request.profile = None
+            user_id = None
+            # here I am getting the the jwt token passing in header
+            if request.headers.get("Authorization"):
+                token1 = request.headers.get("Authorization")
+                token = token1.split(" ")[1]  # getting the token value
+                decoded = jwt.decode(token, (settings.SECRET_KEY), algorithms=[settings.JWT_ALGO])
+                user_id = decoded['user_id']
+            if user_id is not None:
+                if request.headers.get("org"):
+                    profile = Profile.objects.get(
+                        user_id=user_id, org=request.headers.get("org"), is_active=True
+                    )
+                    if profile:
+                        request.profile = profile
+        except :
+             raise PermissionDenied()

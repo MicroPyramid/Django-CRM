@@ -26,6 +26,7 @@ from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     EmailWriteSerializer
 )
+from teams.serializer import TeamsSerializer
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile
@@ -113,17 +114,28 @@ class AccountsListView(APIView, LimitOffsetPagination):
             offset = 0
         accounts_close = AccountSerializer(results_accounts_close, many=True).data
 
+        contacts = Contact.objects.filter(org=self.request.profile.org).values(
+            "id", "first_name"
+        )
+        context["contacts"] = contacts
         context["closed_accounts"] = {
             "offset": offset,
             "close_accounts": accounts_close,
         }
+        context["teams"] = TeamsSerializer(
+            Teams.objects.filter(org=self.request.profile.org), many=True
+        ).data
+        context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
 
         tags = Tags.objects.all()
         tags = TagsSerailizer(tags, many=True).data
 
         context["tags"] = tags
-
+        users = Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
+            "id", "user__email"
+        )
+        context["users"] = users
         return context
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params1.account_get_params)
@@ -385,6 +397,9 @@ class AccountDetailView(APIView):
                 ).data,
                 "cases": CaseSerializer(
                     self.account.accounts_cases.all(), many=True
+                ).data,
+               "teams" : TeamsSerializer(
+                    Teams.objects.filter(org=self.request.profile.org), many=True
                 ).data,
                 "stages": STAGES,
                 "sources": SOURCES,
