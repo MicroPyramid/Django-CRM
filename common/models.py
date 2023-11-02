@@ -3,7 +3,6 @@ import datetime
 import os
 import time
 import uuid
-
 import arrow
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
@@ -115,9 +114,15 @@ class Address(BaseModel):
                 address += self.get_country_display()
         return address
 
+def generate_unique_key():
+    return str(uuid.uuid4())
 
 class Org(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
+    api_key = models.TextField(
+        default=generate_unique_key, unique=True, editable=False
+    )
+    is_active = models.BooleanField(default=True)
     # address = models.TextField(blank=True, null=True)
     # user_limit = models.IntegerField(default=5)
     # country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)

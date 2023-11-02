@@ -1,4 +1,5 @@
 import json
+import secrets
 from multiprocessing import context
 from re import template
 
@@ -23,6 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
@@ -340,19 +342,19 @@ class ApiHomeView(APIView):
 
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             accounts = accounts.filter(
-                Q(assigned_to=self.request.profile) | Q(created_by=self.request.profile)
+                Q(assigned_to=self.request.profile) | Q(created_by=self.request.profile.user)
             )
             contacts = contacts.filter(
                 Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             )
             leads = leads.filter(
                 Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             ).exclude(status="closed")
             opportunities = opportunities.filter(
                 Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             )
         context = {}
         context["accounts_count"] = accounts.count()
@@ -367,7 +369,7 @@ class ApiHomeView(APIView):
 
 
 class OrgProfileCreateView(APIView):
-    ##authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     model1 = Org
@@ -380,8 +382,9 @@ class OrgProfileCreateView(APIView):
         request=OrgProfileCreateSerializer
     )
     def post(self, request, format=None):
-        params = request.data
-        serializer = self.serializer_class(data=params)
+        data = request.data
+        data['api_key'] = secrets.token_hex(16)
+        serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             org_obj = serializer.save()
 
@@ -438,7 +441,7 @@ class ProfileView(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 class DocumentListView(APIView, LimitOffsetPagination):
-    ##authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Document
 
@@ -545,19 +548,19 @@ class DocumentListView(APIView, LimitOffsetPagination):
         serializer = DocumentCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             doc = serializer.save(
-                created_by=request.profile,
+                created_by=request.profile.user,
                 org=request.profile.org,
                 document_file=request.FILES.get("document_file"),
             )
             if params.get("shared_to"):
-                assinged_to_list = json.loads(params.get("shared_to"))
+                assinged_to_list = params.get("shared_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 if profiles:
                     doc.shared_to.add(*profiles)
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)
@@ -573,7 +576,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
 
 
 class DocumentDetailView(APIView):
-    ##authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -694,7 +697,7 @@ class DocumentDetailView(APIView):
             )
             doc.shared_to.clear()
             if params.get("shared_to"):
-                assinged_to_list = json.loads(params.get("shared_to"))
+                assinged_to_list = params.get("shared_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -703,7 +706,7 @@ class DocumentDetailView(APIView):
 
             doc.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)
@@ -787,12 +790,12 @@ class DomainList(APIView):
         params = request.data
         assign_to_list = []
         if params.get("lead_assigned_to"):
-            assign_to_list = json.loads(params.get("lead_assigned_to"))
+            assign_to_list = params.get("lead_assigned_to")
         serializer = APISettingsSerializer(data=params)
         if serializer.is_valid():
-            settings_obj = serializer.save(created_by=request.profile, org=request.profile.org)
+            settings_obj = serializer.save(created_by=request.profile.user, org=request.profile.org)
             if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+                tags = params.get("tags")
                 for tag in tags:
                     tag_obj = Tags.objects.filter(name=tag).first()
                     if not tag_obj:
@@ -812,7 +815,7 @@ class DomainList(APIView):
 
 class DomainDetailView(APIView):
     model = APISettings
-    ##authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
@@ -833,14 +836,14 @@ class DomainDetailView(APIView):
         params = request.data
         assign_to_list = []
         if params.get("lead_assigned_to"):
-            assign_to_list = json.loads(params.get("lead_assigned_to"))
+            assign_to_list = params.get("lead_assigned_to")
         serializer = APISettingsSerializer(data=params, instance=api_setting)
         if serializer.is_valid():
             api_setting = serializer.save()
             api_setting.tags.clear()
             api_setting.lead_assigned_to.clear()
             if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+                tags = params.get("tags")
                 for tag in tags:
                     tag_obj = Tags.objects.filter(name=tag).first()
                     if not tag_obj:

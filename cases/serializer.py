@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from cases.models import Case
-from common.serializer import OrganizationSerializer, ProfileSerializer
+from common.serializer import OrganizationSerializer, ProfileSerializer,UserSerializer
 from contacts.serializer import ContactSerializer
 from teams.serializer import TeamsSerializer
 
@@ -11,7 +11,7 @@ class CaseSerializer(serializers.ModelSerializer):
     account = AccountSerializer()
     contacts = ContactSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
-    created_by = ProfileSerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
     org = OrganizationSerializer()
 

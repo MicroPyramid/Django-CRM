@@ -5,6 +5,7 @@ from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    UserSerializer
 )
 from contacts.serializer import ContactSerializer
 from leads.serializer import LeadSerializer
@@ -18,7 +19,7 @@ class TagsSerailizer(serializers.ModelSerializer):
 
 
 class AccountSerializer(serializers.ModelSerializer):
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     lead = LeadSerializer()
     org = OrganizationSerializer()
     tags = TagsSerailizer(read_only=True, many=True)

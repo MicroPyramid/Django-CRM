@@ -87,7 +87,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "crum.CurrentRequestUserMiddleware",
-    "common.middleware.get_company.GetProfileAndOrg",
+    # "common.middleware.get_company.GetProfileAndOrg",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 

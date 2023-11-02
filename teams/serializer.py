@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
-from common.serializer import ProfileSerializer
+from common.serializer import ProfileSerializer,UserSerializer
 from teams.models import Teams
 
 
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
 
     class Meta:
         model = Teams

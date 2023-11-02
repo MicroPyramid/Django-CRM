@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from accounts.models import Tags
 from accounts.serializer import AccountSerializer
-from common.serializer import AttachmentsSerializer, ProfileSerializer
+from common.serializer import AttachmentsSerializer, ProfileSerializer,UserSerializer
 from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
 from teams.serializer import TeamsSerializer
@@ -17,7 +17,7 @@ class TagsSerializer(serializers.ModelSerializer):
 class OpportunitySerializer(serializers.ModelSerializer):
     account = AccountSerializer()
     closed_by = ProfileSerializer()
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     tags = TagsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)

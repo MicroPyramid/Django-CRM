@@ -30,8 +30,10 @@ from teams.serializer import TeamsSerializer
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile
+from leads.models import Lead
+from leads.serializer import LeadSerializer
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -55,7 +57,7 @@ from teams.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = AccountReadSerializer
@@ -65,7 +67,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user.user) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -77,7 +79,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(industry__icontains=params.get("industry"))
             if params.get("tags"):
                 queryset = queryset.filter(
-                    tags__in=json.loads(params.get("tags"))
+                    tags__in=params.get("tags")
                 ).distinct()
 
         context = {}
@@ -136,6 +138,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
             "id", "user__email"
         )
         context["users"] = users
+        leads = Lead.objects.filter(org=self.request.profile.org).exclude(
+            Q(status="converted") | Q(status="closed")
+        )
+        context["users"] = users
+        context["leads"] = LeadSerializer(leads, many=True).data
+        context["status"] = ["open","close"]
         return context
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params1.account_get_params)
@@ -207,7 +215,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 
 class AccountDetailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountReadSerializer
 
@@ -226,7 +234,6 @@ class AccountDetailView(APIView):
         serializer = AccountCreateSerializer(
             account_object, data=data, request_obj=request, account=True
         )
-        serializer.data['org'] = request.profile.org
 
         if serializer.is_valid():
             if (
@@ -285,7 +292,7 @@ class AccountDetailView(APIView):
 
             if self.request.FILES.get("account_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("account_attachment").name
                 attachment.account = account_object
                 attachment.attachment = self.request.FILES.get("account_attachment")
@@ -375,6 +382,9 @@ class AccountDetailView(APIView):
                 users_mention = []
         else:
             users_mention = []
+        leads = Lead.objects.filter(org=self.request.profile.org).exclude(
+            Q(status="converted") | Q(status="closed")
+        )
         context.update(
             {
                 "attachments": AttachmentsSerializer(
@@ -419,6 +429,8 @@ class AccountDetailView(APIView):
                     self.account.sent_email.all(), many=True
                 ).data,
                 "users_mention": users_mention,
+               "leads" : LeadSerializer(leads, many=True).data,
+               "status" : ["open","close"]
             }
         )
         return Response(context)
@@ -460,7 +472,7 @@ class AccountDetailView(APIView):
 
         if self.request.FILES.get("account_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.profile
+            attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("account_attachment").name
             attachment.account = self.account_obj
             attachment.attachment = self.request.FILES.get("account_attachment")
@@ -484,7 +496,7 @@ class AccountDetailView(APIView):
 
 class AccountCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountCommentEditSwaggerSerializer
 
@@ -546,7 +558,7 @@ class AccountCommentView(APIView):
 
 class AccountAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountDetailEditSwaggerSerializer
 
@@ -573,7 +585,7 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = EmailWriteSerializer

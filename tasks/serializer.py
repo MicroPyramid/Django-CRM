@@ -4,6 +4,7 @@ from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
     ProfileSerializer,
+    UserSerializer
 )
 from contacts.serializer import ContactSerializer
 from tasks.models import Task
@@ -11,7 +12,7 @@ from teams.serializer import TeamsSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)

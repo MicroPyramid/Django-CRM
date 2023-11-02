@@ -16,7 +16,7 @@ from cases.serializer import CaseCreateSerializer, CaseSerializer,CaseCreateSwag
 from cases.tasks import send_email_to_assigned_user
 from common.models import Attachments, Comment, Profile
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
@@ -25,7 +25,7 @@ from teams.models import Teams
 
 
 class CaseListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -37,13 +37,13 @@ class CaseListView(APIView, LimitOffsetPagination):
         profiles = Profile.objects.filter(is_active=True, org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             profiles = profiles.filter(role="ADMIN")
 
@@ -97,26 +97,26 @@ class CaseListView(APIView, LimitOffsetPagination):
         serializer = CaseCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             cases_obj = serializer.save(
-                created_by=request.profile,
+                created_by=request.profile.user,
                 org=request.profile.org,
                 closed_on=params.get("closed_on"),
                 case_type=params.get("case_type"),
             )
 
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 if contacts:
                     cases_obj.contacts.add(*contacts)
 
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams.exists():
                     cases_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -125,7 +125,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
                 attachment.cases = cases_obj
                 attachment.attachment = self.request.FILES.get("case_attachment")
@@ -148,7 +148,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 
 class CaseDetailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -194,21 +194,21 @@ class CaseDetailView(APIView):
             )
             cases_object.contacts.clear()
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 if contacts:
                     cases_object.contacts.add(*contacts)
 
             cases_object.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 if teams.exists():
                     cases_object.teams.add(*teams)
 
             cases_object.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -217,7 +217,7 @@ class CaseDetailView(APIView):
 
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
                 attachment.case = cases_object
                 attachment.attachment = self.request.FILES.get("case_attachment")
@@ -366,7 +366,7 @@ class CaseDetailView(APIView):
 
         if self.request.FILES.get("case_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.profile
+            attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("case_attachment").name
             attachment.case = self.cases_obj
             attachment.attachment = self.request.FILES.get("case_attachment")
@@ -387,7 +387,7 @@ class CaseDetailView(APIView):
 
 class CaseCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -450,7 +450,7 @@ class CaseCommentView(APIView):
 
 class CaseAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

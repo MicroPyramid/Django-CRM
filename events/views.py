@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from common.models import Attachments, Comment, Profile, User
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -40,7 +40,7 @@ WEEKDAYS = (
 
 class EventListView(APIView, LimitOffsetPagination):
     model = Event
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -50,10 +50,10 @@ class EventListView(APIView, LimitOffsetPagination):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             )
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -63,7 +63,7 @@ class EventListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.getlist("assigned_users"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(params.get("assigned_users"))
+                    assigned_to__id__in=params.get("assigned_users")
                 )
             if params.get("date_of_meeting"):
                 queryset = queryset.filter(
@@ -104,7 +104,7 @@ class EventListView(APIView, LimitOffsetPagination):
             recurring_days = json.dumps(params.get("recurring_days"))
             if params.get("event_type") == "Non-Recurring":
                 event_obj = serializer.save(
-                    created_by=request.profile,
+                    created_by=request.profile.user,
                     date_of_meeting=params.get("start_date"),
                     is_active=True,
                     disabled=False,
@@ -118,12 +118,12 @@ class EventListView(APIView, LimitOffsetPagination):
                     event_obj.contacts.add(obj_contact)
 
                 if params.get("teams"):
-                    teams_list = json.loads(params.get("teams"))
+                    teams_list = params.get("teams")
                     teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                     event_obj.teams.add(*teams)
 
                 if params.get("assigned_to"):
-                    assinged_to_list = json.loads(params.get("assigned_to"))
+                    assinged_to_list = params.get("assigned_to")
                     profiles = Profile.objects.filter(
                         id__in=assinged_to_list, org=request.profile.org
                     )
@@ -159,7 +159,7 @@ class EventListView(APIView, LimitOffsetPagination):
                     data = serializer.validated_data
 
                     event = Event.objects.create(
-                        created_by=request.profile,
+                        created_by=request.profile.user,
                         start_date=start_date,
                         end_date=end_date,
                         name=data["name"],
@@ -178,12 +178,12 @@ class EventListView(APIView, LimitOffsetPagination):
                         event.contacts.add(obj_contact)
 
                     if params.get("teams"):
-                        teams_list = json.loads(params.get("teams"))
+                        teams_list = params.get("teams")
                         teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                         event.teams.add(*teams)
 
                     if params.get("assigned_to"):
-                        assinged_to_list = json.loads(params.get("assigned_to"))
+                        assinged_to_list = params.get("assigned_to")
                         profiles = Profile.objects.filter(
                             id__in=assinged_to_list, org=request.profile.org
                         )
@@ -208,7 +208,7 @@ class EventListView(APIView, LimitOffsetPagination):
 
 class EventDetailView(APIView):
     model = Event
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -343,7 +343,7 @@ class EventDetailView(APIView):
 
         if self.request.FILES.get("event_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.profile
+            attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("event_attachment").name
             attachment.event = self.event_obj
             attachment.attachment = self.request.FILES.get("event_attachment")
@@ -396,13 +396,13 @@ class EventDetailView(APIView):
 
             event_obj.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 event_obj.teams.add(*teams)
 
             event_obj.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org
                 )
@@ -448,7 +448,7 @@ class EventDetailView(APIView):
 
 class EventCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -510,7 +510,7 @@ class EventCommentView(APIView):
 
 class EventAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

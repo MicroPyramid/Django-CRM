@@ -12,7 +12,7 @@ from accounts.models import Account, Tags
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -30,7 +30,7 @@ from teams.models import Teams
 
 class OpportunityListView(APIView, LimitOffsetPagination):
 
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
@@ -41,13 +41,13 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -63,7 +63,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 )
             if params.get("tags"):
                 queryset = queryset.filter(
-                    tags__in=json.loads(params.get("tags"))
+                    tags__in=params.get("tags")
                 ).distinct()
 
         context = {}
@@ -113,18 +113,18 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         serializer = OpportunityCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             opportunity_obj = serializer.save(
-                created_by=request.profile,
+                created_by=request.profile.user,
                 closed_on=params.get("due_date"),
                 org=request.profile.org,
             )
 
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 opportunity_obj.contacts.add(*contacts)
 
             if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+                tags = params.get("tags")
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
                     if obj_tag.exists():
@@ -139,12 +139,12 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                     opportunity_obj.closed_by = self.request.profile
 
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 opportunity_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -152,7 +152,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
@@ -180,7 +180,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
 
 class OpportunityDetailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
@@ -226,13 +226,13 @@ class OpportunityDetailView(APIView):
             )
             opportunity_object.contacts.clear()
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 opportunity_object.contacts.add(*contacts)
 
             opportunity_object.tags.clear()
             if params.get("tags"):
-                tags = json.loads(params.get("tags"))
+                tags = params.get("tags")
                 for tag in tags:
                     obj_tag = Tags.objects.filter(slug=tag.lower())
                     if obj_tag.exists():
@@ -248,13 +248,13 @@ class OpportunityDetailView(APIView):
 
             opportunity_object.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 opportunity_object.teams.add(*teams)
 
             opportunity_object.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -262,7 +262,7 @@ class OpportunityDetailView(APIView):
 
             if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
@@ -423,7 +423,7 @@ class OpportunityDetailView(APIView):
 
             if self.request.FILES.get("opportunity_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile
+                attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
@@ -449,7 +449,7 @@ class OpportunityDetailView(APIView):
 
 class OpportunityCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -513,7 +513,7 @@ class OpportunityCommentView(APIView):
 
 class OpportunityAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

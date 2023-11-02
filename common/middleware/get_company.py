@@ -61,4 +61,5 @@ class GetProfileAndOrg(object):
                     if profile:
                         request.profile = profile
         except :
+             print('test1')
              raise PermissionDenied()

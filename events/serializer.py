@@ -7,6 +7,7 @@ from common.serializer import (
     CommentSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    UserSerializer
 )
 from contacts.serializer import ContactSerializer
 from events.models import Event
@@ -14,7 +15,7 @@ from teams.serializer import TeamsSerializer
 
 
 class EventSerializer(serializers.ModelSerializer):
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)

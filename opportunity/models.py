@@ -47,12 +47,6 @@ class Opportunity(BaseModel):
     assigned_to = models.ManyToManyField(
         Profile, related_name="opportunity_assigned_to"
     )
-    created_by = models.ForeignKey(
-        Profile,
-        related_name="opportunity_created_by",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
     is_active = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tags, blank=True)
     teams = models.ManyToManyField(Teams, related_name="oppurtunity_teams")
