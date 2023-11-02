@@ -35,13 +35,13 @@ class Task(BaseModel):
 
     assigned_to = models.ManyToManyField(Profile, related_name="users_tasks")
 
-    created_by = models.ForeignKey(
-        Profile,
-        related_name="task_created",
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
+    # created_by = models.ForeignKey(
+    #     Profile,
+    #     related_name="task_created",
+    #     blank=True,
+    #     null=True,
+    #     on_delete=models.SET_NULL,
+    # )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
     org = models.ForeignKey(
         Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="task_org"

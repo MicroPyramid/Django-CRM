@@ -22,7 +22,7 @@ from common.models import (
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
-        fields = ("id", "name")
+        fields = ("id", "name","api_key")
 
 
 class SocialLoginSerializer(serializers.Serializer):
@@ -217,7 +217,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
 class DocumentSerializer(serializers.ModelSerializer):
     shared_to = ProfileSerializer(read_only=True, many=True)
     teams = serializers.SerializerMethodField()
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     org = OrganizationSerializer()
 
     def get_teams(self, obj):
@@ -299,7 +299,7 @@ class APISettingsSerializer(serializers.ModelSerializer):
 
 
 class APISettingsListSerializer(serializers.ModelSerializer):
-    created_by = ProfileSerializer()
+    created_by = UserSerializer()
     lead_assigned_to = ProfileSerializer(read_only=True, many=True)
     tags = serializers.SerializerMethodField()
     org = OrganizationSerializer()

@@ -15,7 +15,7 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, User
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     BillingAddressSerializer,
@@ -50,7 +50,7 @@ INVOICE_STATUS = (
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -77,7 +77,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.get("assigned_users"):
                 queryset = queryset.filter(
-                    assigned_to__in=json.loads(params.get("assigned_users"))
+                    assigned_to__in=params.get("assigned_users")
                 )
             if params.get("status"):
                 queryset = queryset.filter(status=params.get("status"))
@@ -184,7 +184,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             )
 
             if params.get("accounts"):
-                accounts = json.loads(params.get("accounts"))
+                accounts = params.get("accounts")
                 for account in accounts:
                     obj_account = Account.objects.filter(
                         id=account, company=request.company
@@ -198,7 +198,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
             if self.request.user.role == "ADMIN":
                 if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
+                    teams = params.get("teams")
                     for team in teams:
                         obj_team = Teams.objects.filter(
                             id=team, company=request.company
@@ -210,7 +210,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                             data["team"] = "Please enter valid Team"
                             return Response({"error": True}, data)
                 if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                    assinged_to_users_ids = params.get("assigned_to")
 
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
@@ -240,7 +240,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
 
 class InvoiceDetailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -325,7 +325,7 @@ class InvoiceDetailView(APIView):
 
             invoice_obj.accounts.clear()
             if params.get("accounts"):
-                accounts = json.loads(params.get("accounts"))
+                accounts = params.get("accounts")
                 for account in accounts:
                     obj_account = Account.objects.filter(
                         id=account, company=request.company
@@ -339,7 +339,7 @@ class InvoiceDetailView(APIView):
             if self.request.user.role == "ADMIN":
                 invoice_obj.teams.clear()
                 if params.get("teams"):
-                    teams = json.loads(params.get("teams"))
+                    teams = params.get("teams")
                     for team in teams:
                         obj_team = Teams.objects.filter(
                             id=team, company=request.company
@@ -352,7 +352,7 @@ class InvoiceDetailView(APIView):
 
                 invoice_obj.assigned_to.clear()
                 if params.get("assigned_to"):
-                    assinged_to_users_ids = json.loads(params.get("assigned_to"))
+                    assinged_to_users_ids = params.get("assigned_to")
                     for user_id in assinged_to_users_ids:
                         user = User.objects.filter(id=user_id, company=request.company)
                         if user.exists():
@@ -540,7 +540,7 @@ class InvoiceDetailView(APIView):
 
 class InvoiceCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -603,7 +603,7 @@ class InvoiceCommentView(APIView):
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(

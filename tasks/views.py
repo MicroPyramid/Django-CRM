@@ -12,7 +12,7 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -30,7 +30,7 @@ from teams.serializer import TeamsSerializer
 
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -41,13 +41,13 @@ class TaskListView(APIView, LimitOffsetPagination):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             )
             accounts = accounts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -96,22 +96,22 @@ class TaskListView(APIView, LimitOffsetPagination):
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
             task_obj = serializer.save(
-                created_by=request.profile,
+                created_by=request.profile.user,
                 due_date=params.get("due_date"),
                 org=request.profile.org,
             )
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 task_obj.contacts.add(*contacts)
 
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -129,7 +129,7 @@ class TaskListView(APIView, LimitOffsetPagination):
 
 class TaskDetailView(APIView):
     model = Task
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -246,7 +246,7 @@ class TaskDetailView(APIView):
 
         if self.request.FILES.get("task_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.profile
+            attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("task_attachment").name
             attachment.task = self.task_obj
             attachment.attachment = self.request.FILES.get("task_attachment")
@@ -283,19 +283,19 @@ class TaskDetailView(APIView):
             )
             task_obj.contacts.clear()
             if params.get("contacts"):
-                contacts_list = json.loads(params.get("contacts"))
+                contacts_list = params.get("contacts")
                 contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
                 task_obj.contacts.add(*contacts)
 
             task_obj.teams.clear()
             if params.get("teams"):
-                teams_list = json.loads(params.get("teams"))
+                teams_list = params.get("teams")
                 teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             task_obj.assigned_to.clear()
             if params.get("assigned_to"):
-                assinged_to_list = json.loads(params.get("assigned_to"))
+                assinged_to_list = params.get("assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
@@ -333,7 +333,7 @@ class TaskDetailView(APIView):
 
 class TaskCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -397,7 +397,7 @@ class TaskCommentView(APIView):
 
 class TaskAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

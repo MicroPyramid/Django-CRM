@@ -1,7 +1,7 @@
 import json
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +17,7 @@ from teams.tasks import remove_users, update_team_users
 
 class TeamsListView(APIView, LimitOffsetPagination):
     model = Teams
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -30,7 +30,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.get("assigned_users"):
                 queryset = queryset.filter(
-                    users__id__in=json.loads(params.get("assigned_users"))
+                    users__id__in=params.get("assigned_users")
                 )
 
         context = {}
@@ -85,7 +85,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
             team_obj = serializer.save(org=request.profile.org)
 
             if params.get("assign_users"):
-                assinged_to_list = json.loads(params.get("users"))
+                assinged_to_list = params.get("users")
                 profiles = Profile.objects.filter(
                     id__in=assinged_to_list, org=request.profile.org
                 )
@@ -103,7 +103,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
 
 class TeamsDetailView(APIView):
     model = Teams
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):

@@ -17,7 +17,7 @@ from common.serializer import (
 )
 from common.utils import COUNTRIES
 
-# from common.custom_auth import JSONWebTokenAuthentication
+from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params1
 from contacts.models import Contact, Profile
 from contacts.serializer import *
@@ -27,7 +27,7 @@ from teams.models import Teams
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Contact
 
@@ -37,7 +37,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
-                | Q(created_by=self.request.profile)
+                | Q(created_by=self.request.profile.user)
             ).distinct()
 
         if params:
@@ -51,7 +51,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(primary_email__icontains=params.get("email"))
             if params.getlist("assigned_to"):
                 queryset = queryset.filter(
-                    assigned_to__id__in=json.loads(params.get("assigned_to"))
+                    assigned_to__id__in=params.get("assigned_to")
                 ).distinct()
 
         context = {}
@@ -111,12 +111,12 @@ class ContactsListView(APIView, LimitOffsetPagination):
         contact_obj.save()
 
         if params.get("teams"):
-            teams_list = json.loads(params.get("teams"))
+            teams_list = params.get("teams")
             teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         if params.get("assigned_to"):
-            assinged_to_list = json.loads(params.get("assigned_to"))
+            assinged_to_list = params.get("assigned_to")
             profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.profile.org)
             contact_obj.assigned_to.add(*profiles)
 
@@ -140,7 +140,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
 
 class ContactDetailView(APIView):
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Contact
 
@@ -366,7 +366,7 @@ class ContactDetailView(APIView):
 
         if self.request.FILES.get("contact_attachment"):
             attachment = Attachments()
-            attachment.created_by = self.request.profile
+            attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("contact_attachment").name
             attachment.contact = self.contact_obj
             attachment.attachment = self.request.FILES.get("contact_attachment")
@@ -390,7 +390,7 @@ class ContactDetailView(APIView):
 
 class ContactCommentView(APIView):
     model = Comment
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -452,7 +452,7 @@ class ContactCommentView(APIView):
 
 class ContactAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (JSONWebTokenAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
