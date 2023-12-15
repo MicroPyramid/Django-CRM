@@ -33,7 +33,7 @@ from common.models import Attachments, Comment, Profile
 from leads.models import Lead
 from leads.serializer import LeadSerializer
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -57,7 +57,7 @@ from teams.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = AccountReadSerializer
@@ -67,7 +67,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -215,7 +215,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 
 class AccountDetailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountReadSerializer
 
@@ -496,7 +496,7 @@ class AccountDetailView(APIView):
 
 class AccountCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountCommentEditSwaggerSerializer
 
@@ -558,7 +558,7 @@ class AccountCommentView(APIView):
 
 class AccountAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountDetailEditSwaggerSerializer
 
@@ -585,7 +585,7 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = EmailWriteSerializer

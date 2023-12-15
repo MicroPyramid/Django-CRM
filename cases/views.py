@@ -16,7 +16,7 @@ from cases.serializer import CaseCreateSerializer, CaseSerializer,CaseCreateSwag
 from cases.tasks import send_email_to_assigned_user
 from common.models import Attachments, Comment, Profile
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
@@ -25,7 +25,7 @@ from teams.models import Teams
 
 
 class CaseListView(APIView, LimitOffsetPagination):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -148,7 +148,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 
 class CaseDetailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -387,7 +387,7 @@ class CaseDetailView(APIView):
 
 class CaseCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -450,7 +450,7 @@ class CaseCommentView(APIView):
 
 class CaseAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

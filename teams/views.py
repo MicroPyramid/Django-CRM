@@ -1,7 +1,7 @@
 import json
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +17,7 @@ from teams.tasks import remove_users, update_team_users
 
 class TeamsListView(APIView, LimitOffsetPagination):
     model = Teams
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -103,7 +103,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
 
 class TeamsDetailView(APIView):
     model = Teams
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):

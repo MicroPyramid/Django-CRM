@@ -24,7 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
@@ -369,7 +369,7 @@ class ApiHomeView(APIView):
 
 
 class OrgProfileCreateView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     model1 = Org
@@ -413,7 +413,7 @@ class OrgProfileCreateView(APIView):
             )
 
     @extend_schema(
-        description="Just Pass the token, will return ORG list, associated with user",
+        description="Just Pass the token, will return ORG list, associated with user"
     )
     def get(self, request, format=None):
         """
@@ -441,7 +441,7 @@ class ProfileView(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 class DocumentListView(APIView, LimitOffsetPagination):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Document
 
@@ -576,7 +576,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
 
 
 class DocumentDetailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -815,7 +815,7 @@ class DomainList(APIView):
 
 class DomainDetailView(APIView):
     model = APISettings
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

@@ -12,7 +12,7 @@ from accounts.models import Account, Tags
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -30,7 +30,7 @@ from teams.models import Teams
 
 class OpportunityListView(APIView, LimitOffsetPagination):
 
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
@@ -180,7 +180,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
 
 class OpportunityDetailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
@@ -449,7 +449,7 @@ class OpportunityDetailView(APIView):
 
 class OpportunityCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -513,7 +513,7 @@ class OpportunityCommentView(APIView):
 
 class OpportunityAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

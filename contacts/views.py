@@ -17,7 +17,7 @@ from common.serializer import (
 )
 from common.utils import COUNTRIES
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params1
 from contacts.models import Contact, Profile
 from contacts.serializer import *
@@ -27,7 +27,7 @@ from teams.models import Teams
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Contact
 
@@ -140,7 +140,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
 
 class ContactDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
+    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Contact
 
@@ -390,7 +390,7 @@ class ContactDetailView(APIView):
 
 class ContactCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
+    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -452,7 +452,7 @@ class ContactCommentView(APIView):
 
 class ContactAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
+    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

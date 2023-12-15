@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from accounts.models import Account, Tags
 from common.models import APISettings, Attachments, Comment, Profile
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -63,7 +63,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
-                | Q(created_by=self.request.profile.user.user)
+                | Q(created_by=self.request.profile.user)
             )
 
         if params:
@@ -258,7 +258,7 @@ class LeadListView(APIView, LimitOffsetPagination):
 
 class LeadDetailView(APIView):
     model = Lead
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -563,7 +563,7 @@ class LeadDetailView(APIView):
 
 class LeadUploadView(APIView):
     model = Lead
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(tags=["Leads"], parameters=swagger_params1.organization_params,request=LeadUploadSwaggerSerializer)
@@ -589,7 +589,7 @@ class LeadUploadView(APIView):
 
 class LeadCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -648,7 +648,7 @@ class LeadCommentView(APIView):
 
 class LeadAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(tags=["Leads"], parameters=swagger_params1.organization_params)
