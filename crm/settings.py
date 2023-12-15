@@ -87,7 +87,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "crum.CurrentRequestUserMiddleware",
-    # "common.middleware.get_company.GetProfileAndOrg",
+    # "common.external_auth.CustomDualAuthentication"
+    "common.middleware.get_company.GetProfileAndOrg",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
@@ -256,6 +257,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "common.external_auth.CustomDualAuthentication"
         # "rest_framework.authentication.SessionAuthentication",
         # "rest_framework.authentication.BasicAuthentication",
     ),
@@ -282,7 +284,12 @@ SPECTACULAR_SETTINGS = {
 SWAGGER_SETTINGS = {
     "DEFAULT_INFO": "crm.urls.info",
     "SECURITY_DEFINITIONS": {
-        "api_key": {"type": "apiKey", "name": "Authorization", "in": "header"},
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Enter 'Bearer <token>'",
+        },
     },
 }
 

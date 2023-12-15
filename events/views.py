@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from common.models import Attachments, Comment, Profile, User
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -40,7 +40,7 @@ WEEKDAYS = (
 
 class EventListView(APIView, LimitOffsetPagination):
     model = Event
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -208,7 +208,7 @@ class EventListView(APIView, LimitOffsetPagination):
 
 class EventDetailView(APIView):
     model = Event
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -448,7 +448,7 @@ class EventDetailView(APIView):
 
 class EventCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -510,7 +510,7 @@ class EventCommentView(APIView):
 
 class EventAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

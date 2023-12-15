@@ -12,7 +12,7 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -30,7 +30,7 @@ from teams.serializer import TeamsSerializer
 
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
@@ -129,7 +129,7 @@ class TaskListView(APIView, LimitOffsetPagination):
 
 class TaskDetailView(APIView):
     model = Task
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -333,7 +333,7 @@ class TaskDetailView(APIView):
 
 class TaskCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -397,7 +397,7 @@ class TaskCommentView(APIView):
 
 class TaskAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

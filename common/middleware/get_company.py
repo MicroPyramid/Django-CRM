@@ -53,6 +53,16 @@ class GetProfileAndOrg(object):
                 token = token1.split(" ")[1]  # getting the token value
                 decoded = jwt.decode(token, (settings.SECRET_KEY), algorithms=[settings.JWT_ALGO])
                 user_id = decoded['user_id']
+            api_key = request.headers.get('Token')  # Get API key from request query params
+            if api_key:
+                try:
+                    organization = Org.objects.get(api_key=api_key)
+                    api_key_user = organization
+                    request.META['org'] = api_key_user.id
+                    profile = Profile.objects.filter(org=api_key_user, role="ADMIN").first()
+                    user_id = profile.user.id
+                except Org.DoesNotExist:
+                    raise AuthenticationFailed('Invalid API Key')
             if user_id is not None:
                 if request.headers.get("org"):
                     profile = Profile.objects.get(

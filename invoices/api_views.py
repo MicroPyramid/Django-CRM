@@ -15,7 +15,7 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, User
 
-from common.external_auth import CustomDualAuthentication
+#from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     BillingAddressSerializer,
@@ -50,7 +50,7 @@ INVOICE_STATUS = (
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -240,7 +240,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
 
 class InvoiceDetailView(APIView):
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -540,7 +540,7 @@ class InvoiceDetailView(APIView):
 
 class InvoiceCommentView(APIView):
     model = Comment
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -603,7 +603,7 @@ class InvoiceCommentView(APIView):
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
-    authentication_classes = (CustomDualAuthentication,)
+    #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
