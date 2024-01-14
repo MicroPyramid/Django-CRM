@@ -764,7 +764,7 @@ class CompaniesView(APIView):
         tags=["Company"],description="Company Create",parameters=swagger_params1.organization_params,request=CompanySwaggerSerializer
     )
     def post(self, request, *args, **kwargs):
-        request.data['org'] = request.profile.org.id;
+        request.data['org'] = request.profile.org.id
         print(request.data)
         company=CompanySerializer(data=request.data)
         if Company.objects.filter(**request.data).exists():
