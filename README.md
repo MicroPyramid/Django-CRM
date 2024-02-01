@@ -36,7 +36,7 @@ This project contains the following modules:
 - Cases (todo)
 - Opportunity (todo)
 
-## Try for free [here](https://bottlecrm.com/)
+## Try for free [here](https://bottlecrm.io/)
 
 ## Installation Guide
 
