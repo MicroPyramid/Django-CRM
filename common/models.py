@@ -345,7 +345,7 @@ class CommentFiles(BaseModel):
 
 class Attachments(BaseModel):
     created_by = models.ForeignKey(
-        Profile,
+        User,
         related_name="attachment_created_by",
         on_delete=models.SET_NULL,
         null=True,
