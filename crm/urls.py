@@ -1,5 +1,5 @@
 import os
-
+from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views
@@ -31,6 +31,8 @@ urlpatterns = [
         "logout/", views.LogoutView.as_view(), {"next_page": "/login/"}, name="logout"
     ),
     path("admin/", include(wagtailadmin_urls)),
+    
+    path("django/admin/", admin.site.urls),
     path("documents/", include(wagtaildocs_urls)),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     # Optional UI:

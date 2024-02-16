@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from planner.models import Event, Reminder
+from .models import  Reminder
 
 # Register your models here.
 
-admin.site.register(Event)
+# admin.site.register(Event)
 admin.site.register(Reminder)
