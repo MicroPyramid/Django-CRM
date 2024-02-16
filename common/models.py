@@ -5,7 +5,8 @@ import time
 import uuid
 import arrow
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .manager import UserManager
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -41,9 +42,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     activation_key = models.CharField(max_length=150, null=True, blank=True)
     key_expires = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(_('staff status'),default=False)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = []
 
 
     objects = UserManager()
