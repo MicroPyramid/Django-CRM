@@ -36,6 +36,7 @@ from leads.serializer import (
     CreateLeadFromSiteSwaggerSerializer,
     LeadUploadSwaggerSerializer
 )
+from common.models import User
 from leads.tasks import (
     create_lead_from_file,
     send_email_to_assigned_user,
@@ -392,7 +393,7 @@ class LeadDetailView(APIView):
 
             if self.request.FILES.get("lead_attachment"):
                 attachment = Attachments()
-                attachment.created_by = self.request.profile.user
+                attachment.created_by = User.objects.get(id=self.request.profile.user.id)
 
                 attachment.file_name = self.request.FILES.get("lead_attachment").name
                 attachment.lead = self.lead_obj
@@ -764,7 +765,7 @@ class CompaniesView(APIView):
         tags=["Company"],description="Company Create",parameters=swagger_params1.organization_params,request=CompanySwaggerSerializer
     )
     def post(self, request, *args, **kwargs):
-        request.data['org'] = request.profile.org.id;
+        request.data['org'] = request.profile.org.id
         print(request.data)
         company=CompanySerializer(data=request.data)
         if Company.objects.filter(**request.data).exists():
