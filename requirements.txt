@@ -16,6 +16,7 @@ django_storages==1.13.2
 drf-rw-serializers==1.0.5
 django-crum==0.7.9
 Redis==4.6.0
+SQLAlchemy==2.0.28
 # remove it
 django-phonenumber-field==7.1.0
 arrow==1.2.3

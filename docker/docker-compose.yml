@@ -1,7 +1,22 @@
 version: '3'
 services:
+  celery:
+    image: celery-bottlecrm-broker
+    build:
+      context: ..
+      dockerfile: docker/celery.dockerfile
+    container_name: celery-bottlecrm
+    depends_on:
+      - crm-app
+      - redis
+    networks:
+      - custom_network
+
   crm-app:
     image: djcrm:1
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
     container_name: crm-app
     environment:
       - DBNAME=crm
@@ -9,27 +24,42 @@ services:
       - DBPASSWORD=crm
       - DBHOST=crm-db
       - DBPORT=5432
-
     depends_on:
       - crm-db
+      - redis
     ports:
-      - 8000:8000
+      - "8000:8000"
     networks:
-      - nw
+      - custom_network
+
+  redis:
+    image: redis:latest
+    container_name: redis-bottlecrm
+    ports:
+      - "6379:6379"
+    networks:
+      - custom_network
 
   crm-db:
     image: postgres:latest
     container_name: crm-db
+    volumes:
+      - /var/lib/containers/storage/volumes/bottlecrm/_data:/var/lib/postgresql/data/pgdata
     environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PGHOST=localhost
+      - PGPORT=5432
       - POSTGRES_DB=crm
+      - PGDATABASE=crm
       - POSTGRES_USER=crm
+      - PGUSER=crm
       - POSTGRES_PASSWORD=crm
     ports:
-      - 5432:5432
-    volumes:
-      - /var/run/postgresql/:/var/run/postgresql
+      - "5432:5432"
     networks:
-      - nw
+      - custom_network
 
 networks:
-  nw: {}
+  custom_network:
+    driver: bridge
+
