@@ -1,31 +1,21 @@
-FROM ubuntu:22.04
+FROM common-bottle-dockerfile
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG PIP_EXTRA_INDEX_URL
-
-WORKDIR /app
-
-RUN apt update -y
-RUN apt install -y git ruby-dev ruby-ffi postgresql-client redis-server wkhtmltopdf
-RUN apt clean
 RUN gem install sass
 RUN gem install compass
 # install nvm/npm
 # RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 RUN apt install nodejs npm -y
 RUN npm -g install less
-RUN apt install -y python3-pip
+
+RUN apt install -y postgresql-client
 
 # Install dependencies
 COPY requirements.txt /app
 
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
-RUN python3 -m pip install --no-cache-dir redis
-
 COPY . /app
 COPY docker/entrypoint.sh /app
 COPY docker/wait-for-postgres.sh /app
-
 
 RUN chmod +x entrypoint.sh 
 RUN chmod +x wait-for-postgres.sh
