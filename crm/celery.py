@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+import django.conf as conf
 
 from celery import Celery
 
@@ -18,4 +19,4 @@ app = Celery("crm")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django app configs.
-app.autodiscover_tasks()
+app.autodiscover_tasks(lambda: conf.settings.INSTALLED_APPS)
