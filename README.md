@@ -97,7 +97,7 @@ pip install -r requirements.txt
 ### Docker / docker-compose
 in order to use docker, please run the next commands after cloning repo:
 ```
-docker build -t djcrm:1 -f docker/Dockerfile .
+docker build -t djcrm:1 -f docker/dockerfile .
 docker-compose -f docker/docker-compose.yml up
 ```
 
