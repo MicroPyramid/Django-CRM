@@ -39,3 +39,5 @@ RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install gunicorn
 ENV PATH="${PATH}:/home/ubuntu/$APP_NAME/$APP_NAME/scripts"
 
 USER ubuntu
+
+#...
