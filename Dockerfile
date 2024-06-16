@@ -1,41 +1,39 @@
 FROM ubuntu:20.04
 
-# invalidate cache
-ARG APP_NAME
+# Instalação de pacotes do sistema
+RUN apt-get update -y && \
+    apt-get install -y \
+    python3-pip \
+    python3-venv \
+    build-essential \
+    libpq-dev \
+    libmariadbclient-dev \
+    libjpeg62-dev \
+    zlib1g-dev \
+    libwebp-dev \
+    curl \
+    vim \
+    net-tools
 
-# test arg
-RUN test -n "$APP_NAME"
-
-# install system packages
-RUN apt-get update -y
-RUN apt-get install -y \
-  python3-pip \
-  python3-venv \
-  build-essential \
-  libpq-dev \
-  libmariadbclient-dev \
-  libjpeg62-dev \
-  zlib1g-dev \
-  libwebp-dev \
-  curl  \
-  vim \
-  net-tools
-
-# setup user
+# Setup do usuário
 RUN useradd -ms /bin/bash ubuntu
 USER ubuntu
 
-# install app
-RUN mkdir -p /home/ubuntu/"$APP_NAME"/"$APP_NAME"
-WORKDIR /home/ubuntu/"$APP_NAME"/"$APP_NAME"
+# Configuração do ambiente virtual Python
+WORKDIR /home/ubuntu/app
+COPY requirements.txt .
+
+# Identificador: Configuração do ambiente virtual Python
+RUN python3 -m venv venv
+RUN /home/ubuntu/app/venv/bin/pip install -U pip
+RUN /home/ubuntu/app/venv/bin/pip install -r requirements.txt
+
+# Configuração da aplicação
 COPY . .
-RUN python3 -m venv ../venv
-RUN . ../venv/bin/activate
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -U pip
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -r requirements.txt
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install gunicorn
 
-# setup path
-ENV PATH="${PATH}:/home/ubuntu/$APP_NAME/$APP_NAME/scripts"
+# Configuração do servidor WSGI (Gunicorn)
+RUN /home/ubuntu/app/venv/bin/pip install gunicorn
 
-USER ubuntu
+# Comando padrão para iniciar a aplicação
+CMD ["/home/ubuntu/app/venv/bin/gunicorn", "--bind", "0.0.0.0:8000", "myapp.wsgi:application"]
+
