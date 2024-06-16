@@ -35,7 +35,13 @@ RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -U pip
 RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -r requirements.txt
 RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install gunicorn
 
+# BEGIN: Modificações para o desafio
+# Install a new Python library as per the challenge requirements
+RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install nova-biblioteca
+# END: Modificações para o desafio
+
 # setup path
 ENV PATH="${PATH}:/home/ubuntu/$APP_NAME/$APP_NAME/scripts"
 
 USER ubuntu
+
