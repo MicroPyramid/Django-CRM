@@ -1,0 +1,46 @@
+2024-07-31 12:05:04.149 EDT [9492] LOG:  starting PostgreSQL 12.15, compiled by Visual C++ build 1916, 64-bit
+2024-07-31 12:05:04.152 EDT [9492] LOG:  listening on IPv6 address "::1", port 5432
+2024-07-31 12:05:04.152 EDT [9492] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2024-07-31 12:05:04.188 EDT [21444] LOG:  database system was shut down at 2024-07-31 12:04:42 EDT
+2024-07-31 12:05:04.215 EDT [9492] LOG:  database system is ready to accept connections
+2024-07-31 12:05:15.643 EDT [3668] FATAL:  role "postgres" does not exist
+2024-07-31 12:08:45.260 EDT [16532] FATAL:  database "your_database_name" does not exist
+2024-07-31 12:09:06.416 EDT [32900] FATAL:  role "postgres" does not exist
+2024-07-31 12:10:16.679 EDT [29604] FATAL:  database "marko" does not exist
+2024-07-31 12:10:22.127 EDT [29068] FATAL:  database "marko" does not exist
+2024-07-31 12:41:42.439 EDT [9492] LOG:  received fast shutdown request
+2024-07-31 12:41:42.440 EDT [9492] LOG:  aborting any active transactions
+2024-07-31 12:41:42.443 EDT [17800] FATAL:  terminating connection due to administrator command
+2024-07-31 12:41:42.444 EDT [38360] ERROR:  canceling statement due to user request
+2024-07-31 12:41:42.451 EDT [9492] LOG:  background worker "logical replication launcher" (PID 38360) exited with exit code 1
+2024-07-31 12:41:42.452 EDT [8544] LOG:  shutting down
+2024-07-31 12:41:42.482 EDT [9492] LOG:  database system is shut down
+2024-07-31 12:42:57.563 EDT [18992] LOG:  starting PostgreSQL 12.15, compiled by Visual C++ build 1916, 64-bit
+2024-07-31 12:42:57.566 EDT [18992] LOG:  listening on IPv6 address "::1", port 5432
+2024-07-31 12:42:57.566 EDT [18992] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2024-07-31 12:42:57.622 EDT [29820] LOG:  database system was shut down at 2024-07-31 12:41:42 EDT
+2024-07-31 12:42:57.655 EDT [18992] LOG:  database system is ready to accept connections
+2024-07-31 12:43:19.024 EDT [18992] LOG:  received fast shutdown request
+2024-07-31 12:43:19.024 EDT [31260] ERROR:  canceling statement due to user request
+2024-07-31 12:43:19.033 EDT [18992] LOG:  aborting any active transactions
+2024-07-31 12:43:19.034 EDT [18992] LOG:  background worker "logical replication launcher" (PID 31260) exited with exit code 1
+2024-07-31 12:43:19.038 EDT [39800] LOG:  shutting down
+2024-07-31 12:43:19.063 EDT [18992] LOG:  database system is shut down
+2024-07-31 12:43:38.708 EDT [29560] LOG:  starting PostgreSQL 12.15, compiled by Visual C++ build 1916, 64-bit
+2024-07-31 12:43:38.710 EDT [29560] LOG:  listening on IPv6 address "::1", port 5432
+2024-07-31 12:43:38.711 EDT [29560] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2024-07-31 12:43:38.745 EDT [32496] LOG:  database system was shut down at 2024-07-31 12:43:19 EDT
+2024-07-31 12:43:38.774 EDT [29560] LOG:  database system is ready to accept connections
+2024-08-02 10:33:23.907 EDT [35772] LOG:  starting PostgreSQL 12.15, compiled by Visual C++ build 1916, 64-bit
+2024-08-02 10:33:23.911 EDT [35772] LOG:  listening on IPv6 address "::1", port 5432
+2024-08-02 10:33:23.911 EDT [35772] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2024-08-02 10:33:23.959 EDT [39140] LOG:  database system was shut down at 2024-08-02 10:32:42 EDT
+2024-08-02 10:33:23.995 EDT [35772] LOG:  database system is ready to accept connections
+2024-08-02 16:53:38.676 EDT [35772] LOG:  received fast shutdown request
+2024-08-02 16:53:38.678 EDT [35772] LOG:  aborting any active transactions
+2024-08-02 16:53:38.679 EDT [33852] FATAL:  terminating connection due to administrator command
+2024-08-02 16:53:38.679 EDT [38548] ERROR:  canceling statement due to user request
+2024-08-02 16:53:38.679 EDT [32172] FATAL:  terminating connection due to administrator command
+2024-08-02 16:53:38.685 EDT [35772] LOG:  background worker "logical replication launcher" (PID 38548) exited with exit code 1
+2024-08-02 16:53:38.691 EDT [24808] LOG:  shutting down
+2024-08-02 16:53:38.717 EDT [35772] LOG:  database system is shut down

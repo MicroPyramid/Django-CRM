@@ -376,4 +376,28 @@ class UserUpdateStatusSwaggerSerializer(serializers.Serializer):
 
     status = serializers.ChoiceField(choices = STATUS_CHOICES,required=True)
 
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "password",
+            "email",
+        )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = True
+        self.fields["password"].required = True
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "password",
+            "email",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = True
+        self.fields["password"].required = True

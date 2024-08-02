@@ -909,3 +909,61 @@ class GoogleLoginView(APIView):
         response['refresh_token'] = str(token)
         response['user_id'] = user.id
         return Response(response)
+
+class UserRegistrationView(APIView):
+    """
+        User Registration View
+    """
+    @extend_schema(
+        description="Login through Google",  request=UserRegistrationSerializer,
+    )
+
+    def post(self, request):
+        print(request)
+        try:
+            test = User.objects.get(email=request.data["email"])
+            content = {'message': 'user already exists'}
+            return Response(content)
+        except User.DoesNotExist:
+            user = User()
+            user.email = request.data['email']
+            user.profile_pic = "https://lh3.googleusercontent.com/a/ACg8ocJFBDQSoXsa-w7Ps-KHX9nIiXdhzX8A-QuBfRMvQlfjT585Xw=s96-c"
+            # provider random default password
+            user.password = make_password(request.data['password'])
+            user.save()
+        token = RefreshToken.for_user(user)  # generate token without username & password
+        response = {}
+        response['username'] = user.email
+        response['access_token'] = str(token.access_token)
+        response['refresh_token'] = str(token)
+        response['user_id'] = user.id
+        return Response(response)
+    
+class UserEmailLoginView(APIView):
+    """
+        User Login View
+    """
+    @extend_schema(
+        description="Login through Google",  request=UserLoginSerializer,
+    )
+
+    def post(self, request):
+        print(request)
+        try:
+            user = User.objects.get(email=request.data["email"])
+            print(user.password)
+            print(request.data["password"])
+            if not check_password(request.data["password"], user.password):
+                content = {'message': 'wrong password'}
+                return Response(content, status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                token = RefreshToken.for_user(user)
+                response = {}
+                response['username'] = user.email
+                response['access_token'] = str(token.access_token)
+                response['refresh_token'] = str(token)
+                response['user_id'] = user.id
+                return Response(response)
+        except User.DoesNotExist:
+            content = {'message': 'wrong username'}
+            return Response(response, status=status.HTTP_401_UNAUTHORIZED)
