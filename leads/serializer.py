@@ -105,6 +105,11 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
 
+    def to_internal_value(self, data):
+        if 'status' in data:
+            data['status'] = data['status'].lower()
+        return super().to_internal_value(data)
+
     def validate_account_name(self, account_name):
         if self.instance:
             if (
