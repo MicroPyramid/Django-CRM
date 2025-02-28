@@ -109,7 +109,7 @@ docker-compose -f docker/docker-compose.yml up
 python manage.py migrate
 python manage.py runserver
 ```
-- Then open http://localhost:8000/swagger/ in your browser to explore API.
+- Then open http://localhost:8000/swagger-ui/ in your browser to explore API.
 
 - After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
 
