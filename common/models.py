@@ -120,7 +120,7 @@ def generate_unique_key():
     return str(uuid.uuid4())
 
 class Org(BaseModel):
-    name = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100)
     api_key = models.TextField(
         default=generate_unique_key, unique=True, editable=False
     )
@@ -183,8 +183,6 @@ class Org(BaseModel):
 #         """by default the expiration time is set to 2 hours"""
 #         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
 #         super().save(*args, **kwargs)
-
-
 
 
 class Profile(BaseModel):

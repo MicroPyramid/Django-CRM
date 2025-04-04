@@ -92,7 +92,10 @@ pip install -r requirements.txt
 ### Env variables
 
 * Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
-
+```
+cp ENV.md .env
+sed -i "s|^SECRET_KEY=.*|SECRET_KEY=\"$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')\"|" .env
+```
 
 ### Docker / docker-compose
 in order to use docker, please run the next commands after cloning repo:
@@ -107,9 +110,10 @@ docker-compose -f docker/docker-compose.yml up
 
 ```
 python manage.py migrate
+uvicorn apiv2.main:app --reload
 python manage.py runserver
 ```
-- Then open http://localhost:8000/swagger/ in your browser to explore API.
+- Then open http://localhost:8000/docs/ in your browser to explore API.
 
 - After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
 

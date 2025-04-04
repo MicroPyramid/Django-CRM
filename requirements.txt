@@ -4,7 +4,7 @@ python-dotenv==1.0.0
 django-cors-headers==4.0.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.2
-drf-spectacular==0.26.2
+drf-spectacular==0.28.0
 django-ses==3.5.0
 psycopg2-binary==2.9.6
 whitenoise==6.4.0
@@ -20,3 +20,7 @@ Redis==4.6.0
 django-phonenumber-field==7.1.0
 arrow==1.2.3
 phonenumbers==8.13.13
+uvicorn==0.34.0
+fastapi==0.115.12
+django-environ==0.12.0
+httpx==0.28.1
