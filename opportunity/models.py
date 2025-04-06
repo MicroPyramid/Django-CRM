@@ -3,8 +3,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
-from accounts.models import Account, Tags
-from common.models import Org, Profile
+from accounts.models import Account
+from common.models import Org, Profile, Tag
 from common.base import BaseModel
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
@@ -48,7 +48,7 @@ class Opportunity(BaseModel):
         Profile, related_name="opportunity_assigned_to"
     )
     is_active = models.BooleanField(default=False)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     teams = models.ManyToManyField(Teams, related_name="oppurtunity_teams")
     org = models.ForeignKey(
         Org,

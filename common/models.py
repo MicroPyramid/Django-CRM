@@ -11,6 +11,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 from common.templatetags.common_tags import (
     is_document_file_audio,
@@ -64,6 +66,29 @@ class User(AbstractBaseUser, PermissionsMixin):
     #     self.key_expires = timezone.now() + datetime.timedelta(hours=2)
     #     super().save(*args, **kwargs)
 
+
+class UserPreference(BaseModel):
+    """
+    Stores user-specific preferences for UI and functionality
+    """
+    user = models.OneToOneField(User, related_name="preferences", on_delete=models.CASCADE)
+    theme = models.CharField(max_length=20, default="light", choices=(
+        ("light", "Light"),
+        ("dark", "Dark"),
+        ("system", "System Default")
+    ))
+    email_notifications = models.BooleanField(default=True)
+    dashboard_layout = models.JSONField(default=dict, blank=True)
+    timezone = models.CharField(max_length=50, default="UTC")
+    language = models.CharField(max_length=10, default="en-us")
+    items_per_page = models.PositiveIntegerField(default=25)
+    
+    class Meta:
+        verbose_name = "User Preference"
+        verbose_name_plural = "User Preferences"
+        db_table = "user_preferences"
+
+
 class Address(BaseModel):
     address_line = models.CharField(
         _("Address"), max_length=255, blank=True, default=""
@@ -116,11 +141,16 @@ class Address(BaseModel):
                 address += self.get_country_display()
         return address
 
+
 def generate_unique_key():
     return str(uuid.uuid4())
 
+
 class Org(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,
+                            error_messages={
+            'max_length': 'Organization name must be at most 100 characters long.'
+        })
     api_key = models.TextField(
         default=generate_unique_key, unique=True, editable=False
     )
@@ -137,52 +167,6 @@ class Org(BaseModel):
 
     def __str__(self):
         return str(self.name)
-
-
-# class User(AbstractBaseUser, PermissionsMixin):
-#     email = models.EmailField(_("email address"), blank=True, unique=True)
-#     profile_pic = models.FileField(
-#         max_length=1000, upload_to=img_url, null=True, blank=True
-#     )
-#     activation_key = models.CharField(max_length=150, null=True, blank=True)
-#     key_expires = models.DateTimeField(null=True, blank=True)
-
-
-#     USERNAME_FIELD = "email"
-#     REQUIRED_FIELDS = ["username"]
-
-#     objects = UserManager()
-
-#     def get_short_name(self):
-#         return self.username
-
-#     def documents(self):
-#         return self.document_uploaded.all()
-
-#     def get_full_name(self):
-#         full_name = None
-#         if self.first_name or self.last_name:
-#             full_name = self.first_name + " " + self.last_name
-#         elif self.username:
-#             full_name = self.username
-#         else:
-#             full_name = self.email
-#         return full_name
-
-#     @property
-#     def created_on_arrow(self):
-#         return arrow.get(self.date_joined).humanize()
-
-#     class Meta:
-#         ordering = ["-is_active"]
-
-#     def __str__(self):
-#         return self.email
-
-#     def save(self, *args, **kwargs):
-#         """by default the expiration time is set to 2 hours"""
-#         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-#         super().save(*args, **kwargs)
 
 
 class Profile(BaseModel):
@@ -278,7 +262,6 @@ class Comment(BaseModel):
         related_name="user_comments",
         on_delete=models.CASCADE,
     )
-
     task = models.ForeignKey(
         "tasks.Task",
         blank=True,
@@ -286,7 +269,6 @@ class Comment(BaseModel):
         related_name="tasks_comments",
         on_delete=models.CASCADE,
     )
-
     invoice = models.ForeignKey(
         "invoices.Invoice",
         blank=True,
@@ -294,7 +276,6 @@ class Comment(BaseModel):
         related_name="invoice_comments",
         on_delete=models.CASCADE,
     )
-
     event = models.ForeignKey(
         "events.Event",
         blank=True,
@@ -388,7 +369,6 @@ class Attachments(BaseModel):
         on_delete=models.CASCADE,
         related_name="case_attachment",
     )
-
     task = models.ForeignKey(
         "tasks.Task",
         blank=True,
@@ -396,7 +376,6 @@ class Attachments(BaseModel):
         related_name="tasks_attachment",
         on_delete=models.CASCADE,
     )
-
     invoice = models.ForeignKey(
         "invoices.Invoice",
         blank=True,
@@ -460,7 +439,6 @@ def document_path(self, filename):
 
 
 class Document(BaseModel):
-
     DOCUMENT_STATUS_CHOICE = (("active", "active"), ("inactive", "inactive"))
 
     title = models.TextField(blank=True, null=True)
@@ -472,7 +450,6 @@ class Document(BaseModel):
         null=True,
         blank=True,
     )
-    
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
     )
@@ -553,7 +530,6 @@ class APISettings(BaseModel):
     lead_assigned_to = models.ManyToManyField(
         Profile, related_name="lead_assignee_users"
     )
-    tags = models.ManyToManyField("accounts.Tags", blank=True)
     created_by = models.ForeignKey(
         Profile,
         related_name="settings_created_by",
@@ -568,7 +544,6 @@ class APISettings(BaseModel):
         null=True,
         related_name="org_api_settings",
     )
-    
 
     class Meta:
         verbose_name = "APISetting"
@@ -578,9 +553,170 @@ class APISettings(BaseModel):
 
     def __str__(self):
         return f"{self.title}"
-    
 
     def save(self, *args, **kwargs):
         if not self.apikey or self.apikey is None or self.apikey == "":
             self.apikey = generate_key()
         super().save(*args, **kwargs)
+
+
+class AuditLog(BaseModel):
+    """
+    Comprehensive audit trail system to track all user actions
+    """
+    user = models.ForeignKey(User, related_name="audit_logs", on_delete=models.SET_NULL, null=True)
+    content_type = models.ForeignKey('contenttypes.ContentType', on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=255)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    action = models.CharField(max_length=50, choices=(
+        ('create', 'Created'),
+        ('update', 'Updated'),
+        ('delete', 'Deleted'),
+        ('view', 'Viewed'),
+        ('export', 'Exported'),
+    ))
+    data = models.JSONField(null=True, blank=True)  # Store changed fields
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, null=True)
+    
+    class Meta:
+        verbose_name = "Audit Log"
+        verbose_name_plural = "Audit Logs"
+        db_table = "audit_logs"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.user} {self.action} {self.content_type} - {self.created_at}"
+
+
+class Tag(BaseModel):
+    """
+    Enhanced tagging system with color support and organization scoping
+    """
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tags")
+    name = models.CharField(max_length=100)
+    color = models.CharField(max_length=7, default="#808080")  # Hex color code
+    description = models.CharField(max_length=255, blank=True)
+    
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+        db_table = "tags"
+        unique_together = ["org", "name"]
+        ordering = ("name",)
+        
+    def __str__(self):
+        return self.name
+
+
+class TaggedItem(BaseModel):
+    """
+    Associates tags with any model using generic relations
+    """
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="tagged_items")
+    content_type = models.ForeignKey('contenttypes.ContentType', on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=255)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    class Meta:
+        verbose_name = "Tagged Item"
+        verbose_name_plural = "Tagged Items"
+        db_table = "tagged_items"
+        unique_together = ["tag", "content_type", "object_id"]
+        
+    def __str__(self):
+        return f"{self.tag.name} - {self.content_type.name}"
+
+
+class CustomField(BaseModel):
+    """
+    Allow administrators to define custom fields for different entity types
+    """
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="custom_fields")
+    name = models.CharField(max_length=100)
+    field_type = models.CharField(max_length=20, choices=(
+        ("text", "Text"),
+        ("number", "Number"),
+        ("date", "Date"),
+        ("boolean", "Boolean"),
+        ("dropdown", "Dropdown"),
+        ("email", "Email"),
+        ("url", "URL"),
+        ("phone", "Phone"),
+    ))
+    model_name = models.CharField(max_length=50, choices=(
+        ("lead", "Lead"),
+        ("account", "Account"),
+        ("contact", "Contact"),
+        ("opportunity", "Opportunity"),
+        ("case", "Case"),
+        ("task", "Task"),
+        ("event", "Event"),
+    ))
+    required = models.BooleanField(default=False)
+    choices = models.JSONField(blank=True, null=True)  # For dropdown type
+    default_value = models.JSONField(blank=True, null=True)
+    help_text = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    display_order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        verbose_name = "Custom Field"
+        verbose_name_plural = "Custom Fields"
+        db_table = "custom_fields"
+        unique_together = ["org", "name", "model_name"]
+        ordering = ("display_order", "name")
+
+    def __str__(self):
+        return f"{self.name} ({self.get_model_name_display()})"
+        
+
+class CustomFieldValue(BaseModel):
+    """
+    Stores the values for custom fields
+    """
+    custom_field = models.ForeignKey(CustomField, on_delete=models.CASCADE)
+    content_type = models.ForeignKey('contenttypes.ContentType', on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=255)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    value = models.JSONField(null=True)
+    
+    class Meta:
+        verbose_name = "Custom Field Value"
+        verbose_name_plural = "Custom Field Values"
+        db_table = "custom_field_values"
+        unique_together = ["custom_field", "content_type", "object_id"]
+
+    def __str__(self):
+        return f"{self.custom_field.name}: {self.value}"
+
+
+class Notification(BaseModel):
+    """
+    Comprehensive notification system for users
+    """
+    recipient = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    link = models.CharField(max_length=255, null=True, blank=True)
+    read = models.BooleanField(default=False)
+    notification_type = models.CharField(max_length=20, choices=(
+        ("system", "System"),
+        ("assignment", "Assignment"),
+        ("mention", "Mention"),
+        ("due_date", "Due Date"),
+        ("follow_up", "Follow Up"),
+        ("comment", "Comment"),
+    ))
+    content_type = models.ForeignKey('contenttypes.ContentType', on_delete=models.CASCADE, null=True, blank=True)
+    object_id = models.CharField(max_length=255, null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        db_table = "notifications"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.title} - {self.recipient.email}"

@@ -4,8 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
-from accounts.models import Tags
-from common.models import Org, Profile
+from common.models import Org, Profile, Tag
 from common.base import BaseModel
 from common.utils import (
     COUNTRIES,
@@ -62,7 +61,7 @@ class Lead(BaseModel):
     )
     is_active = models.BooleanField(default=False)
     enquiry_type = models.CharField(max_length=255, blank=True, null=True)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
     teams = models.ManyToManyField(Teams, related_name="lead_teams")

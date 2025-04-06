@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Account, Tags
+from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile
 
@@ -89,7 +89,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["opportunities"] = opportunities
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
-        context["tags"] = TagsSerailizer(Tags.objects.filter(), many=True).data
+        context["tags"] = TagsSerailizer(Tag.objects.filter(), many=True).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
         context["currency"] = CURRENCY_CODES

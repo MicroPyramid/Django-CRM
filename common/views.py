@@ -32,7 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Account, Contact, Tags
+from accounts.models import Account, Contact
 from accounts.serializer import AccountSerializer
 from cases.models import Case
 from cases.serializer import CaseSerializer

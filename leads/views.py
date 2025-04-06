@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Account, Tags
+from accounts.models import Account
 from common.models import APISettings, Attachments, Comment, Profile
 
 #from common.external_auth import CustomDualAuthentication

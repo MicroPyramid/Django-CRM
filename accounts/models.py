@@ -6,31 +6,31 @@ from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common import utils
-from common.models import Org, Profile
+from common.models import Org, Profile, Tag
 from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
 from teams.models import Teams
 from common.base import BaseModel
 
 
-class Tags(BaseModel):
-    name = models.CharField(max_length=20)
-    slug = models.CharField(max_length=20, unique=True, blank=True)
+# class Tags(BaseModel):
+#     name = models.CharField(max_length=20)
+#     slug = models.CharField(max_length=20, unique=True, blank=True)
 
 
-    class Meta:
-        verbose_name = "Tag"
-        verbose_name_plural = "Tags"
-        db_table = "tags"
-        ordering = ("-created_at",)
+#     class Meta:
+#         verbose_name = "Tag"
+#         verbose_name_plural = "Tags"
+#         db_table = "tags"
+#         ordering = ("-created_at",)
 
-    def __str__(self):
-        return f"{self.name}"
+#     def __str__(self):
+#         return f"{self.name}"
 
 
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         self.slug = slugify(self.name)
+#         super().save(*args, **kwargs)
 
 
 class Account(BaseModel):
@@ -65,7 +65,7 @@ class Account(BaseModel):
     #     Profile, related_name="account_created_by", on_delete=models.SET_NULL, null=True
     # )
     is_active = models.BooleanField(default=False)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     status = models.CharField(
         choices=ACCOUNT_STATUS_CHOICE, max_length=64, default="open"
     )

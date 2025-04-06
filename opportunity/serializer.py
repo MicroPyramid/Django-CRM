@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from accounts.models import Tags
 from accounts.serializer import AccountSerializer
+from common.models import Tag
 from common.serializer import AttachmentsSerializer, ProfileSerializer,UserSerializer
 from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
@@ -10,7 +10,7 @@ from teams.serializer import TeamsSerializer
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Tags
+        model = Tag
         fields = ("id", "name", "slug")
 
 

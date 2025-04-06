@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from accounts.models import Account, Tags
+from accounts.models import Account
+from common.models import Tag
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
@@ -15,7 +16,7 @@ from teams.serializer import TeamsSerializer
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Tags
+        model = Tag
         fields = ("id", "name", "slug")
 
 

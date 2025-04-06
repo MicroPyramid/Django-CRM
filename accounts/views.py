@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 
 from accounts import swagger_params1
-from accounts.models import Account, Tags
+from accounts.models import Account
 from accounts.serializer import (
     AccountCreateSerializer,
     AccountSerializer,
@@ -29,7 +29,7 @@ from accounts.serializer import (
 from teams.serializer import TeamsSerializer
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
-from common.models import Attachments, Comment, Profile
+from common.models import Attachments, Comment, Profile, Tag
 from leads.models import Lead
 from leads.serializer import LeadSerializer
 
@@ -130,7 +130,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
 
-        tags = Tags.objects.all()
+        tags = Tag.objects.all()
         tags = TagsSerailizer(tags, many=True).data
 
         context["tags"] = tags
