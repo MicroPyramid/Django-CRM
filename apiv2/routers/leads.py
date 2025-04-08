@@ -133,7 +133,7 @@ def get_leads(
     title: Optional[str] = None,
     source: Optional[str] = None,
     assigned_to: Optional[List[int]] = Query(None),
-    status: Optional[str] = None,
+    lead_status: Optional[str] = Query(None),
     tags: Optional[List[int]] = Query(None),
     city: Optional[str] = None,
     email: Optional[str] = None,
@@ -141,9 +141,10 @@ def get_leads(
     offset: int = 0,
     token_payload: dict = Depends(verify_token)
 ):
-    """
-    Get list of leads with pagination
-    """
+    # ... (initial authentication and profile retrieval)
+
+    # Main queryset
+    queryset = Lead.objects.filter(org=request.state.org).exclude(status="converted").order_by("-id")
     user_id = token_payload.get("user_id")
     if not user_id:
         raise HTTPException(
@@ -151,51 +152,23 @@ def get_leads(
             detail="User ID missing in token payload"
         )
     
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    # Get the most recently created profile for the user
-    try:
-        profiles = Profile.objects.filter(user=user).order_by('-created_on')
-        if not profiles.exists():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Profile not found for this user"
-            )
-        profile = profiles.first()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error retrieving profile: {str(e)}"
-        )
-    
-    # Main queryset
-    queryset = Lead.objects.filter(org=profile.org).exclude(status="converted").order_by("-id")
-    
+    user = User.objects.get(id=user_id)
+    profile = Profile.objects.get(user=user, org=request.state.org)
     # Check permissions
     if profile.role != "ADMIN" and not user.is_superuser:
-        queryset = queryset.filter(
-            Q(assigned_to=profile) | Q(created_by=user)
-        )
+        queryset = queryset.filter(Q(assigned_to=profile) | Q(created_by=user))
     
-    # Apply filters
+    # Apply filters using query parameters
     if name:
-        queryset = queryset.filter(
-            Q(first_name__icontains=name) | Q(last_name__icontains=name)
-        )
+        queryset = queryset.filter(Q(first_name__icontains=name) | Q(last_name__icontains=name))
     if title:
         queryset = queryset.filter(title__icontains=title)
     if source:
         queryset = queryset.filter(source=source)
     if assigned_to:
         queryset = queryset.filter(assigned_to__in=assigned_to)
-    if status:
-        queryset = queryset.filter(status=status)
+    if lead_status:
+        queryset = queryset.filter(status=lead_status)
     if tags:
         queryset = queryset.filter(tags__in=tags)
     if city:
@@ -203,7 +176,7 @@ def get_leads(
     if email:
         queryset = queryset.filter(email__icontains=email)
     
-    # Get open and closed leads
+    # Pagination: open and closed leads
     queryset_open = queryset.exclude(status="closed")
     open_leads_count = queryset_open.count()
     open_leads = list(queryset_open[offset:offset+limit].values())
@@ -212,13 +185,14 @@ def get_leads(
     closed_leads_count = queryset_closed.count()
     closed_leads = list(queryset_closed[offset:offset+limit].values())
     
-    # Context data
+    # Retrieve additional context
     contacts = Contact.objects.filter(org=profile.org).values('id', 'first_name')
     companies = Company.objects.filter(org=profile.org)
-    tags = Tag.objects.all()
+    # Rename the variable to avoid conflict with the query parameter "tags"
+    available_tags = Tag.objects.all()
     users = Profile.objects.filter(is_active=True, org=profile.org).values('id', 'user__email')
     
-    # Log view action for leads list
+    # Log the view action using the original query parameter values
     AuditLog.objects.create(
         user=user,
         content_type=ContentType.objects.get_for_model(Lead),
@@ -230,8 +204,8 @@ def get_leads(
                 "title": title,
                 "source": source,
                 "assigned_to": assigned_to,
-                "status": status,
-                "tags": tags,
+                "status": lead_status,
+                "tags": tags,  # use the query parameter here, not the QuerySet
                 "city": city,
                 "email": email,
                 "limit": limit,
@@ -250,19 +224,19 @@ def get_leads(
             "open_leads": open_leads,
             "offset": offset + min(limit, len(open_leads)),
         },
-        "close_leads": {
-            "leads_count": closed_leads_count,
-            "close_leads": closed_leads,
-            "offset": offset + min(limit, len(closed_leads)),
-        },
+        # "close_leads": {
+        #     "leads_count": closed_leads_count,
+        #     "close_leads": closed_leads,
+        #     "offset": offset + min(limit, len(closed_leads)),
+        # },
         "contacts": list(contacts),
-        "status": LEAD_STATUS,
-        "source": LEAD_SOURCE,
-        "companies": list(companies.values('id', 'name', 'website')),
-        "tags": list(tags.values('id', 'name')),
+        # "status": LEAD_STATUS,
+        # "source": LEAD_SOURCE,
+        # "companies": list(companies.values('id', 'name')),
+        "tags": list(available_tags.values('id', 'name')),
         "users": list(users),
-        "countries": COUNTRIES,
-        "industries": INDCHOICES,
+        # "countries": COUNTRIES,
+        # "industries": INDCHOICES,
     }
 
 @router.post("/", response_model=SuccessResponse)
