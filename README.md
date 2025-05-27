@@ -6,6 +6,31 @@ Django CRM is opensource CRM developed on django framework. It has all
 the basic features of CRM to start with. We welcome code contributions
 and feature requests via github.
 
+## Project Status and Future Direction
+
+### Background
+
+9 years ago, I launched this project with a mission to provide startups with a free, open-source, and customizable CRM solution, addressing the high subscription costs of commercial alternatives. Initially developed as a Django full-stack application, the project evolved significantly with the support of a dedicated team. However, maintaining the team and covering salaries depleted resources, and I was unable to renew the domain. Recognizing the need for a modernized user experience, I explored updating the frontend with React but ultimately faced financial and team constraints.
+
+### Moving Forward
+
+To align with the project’s vision and address these challenges, I’ve shifted development to a new repository using **SvelteKit** and **Prisma** for a robust, fast, and feature-rich framework. A Minimum Viable Product (MVP) was released last week at [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm).
+
+#### Key Updates:
+
+-   **Current Repository:** No further updates will be made to this repository.
+    
+-   **New Repository:** Development will continue in the new SvelteKit-based repository.
+    
+-   **Mobile App:** Enhancements to the Flutter-based mobile app [MicroPyramid/flutter-crm](https://github.com/MicroPyramid/flutter-crm) will depend on increased user engagement or support from a paying client.
+    
+
+### Future Vision
+
+This project is far from dead, it’s evolving. I’m committed to its growth and open to discussions about its direction, contributions, or potential collaborations. Feel free to reach out with ideas or feedback.
+
+Thank you for your support and understanding.
+
 This is divided into three parts
 1. Backend API [Django CRM](https://github.com/MicroPyramid/Django-CRM)
 2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
