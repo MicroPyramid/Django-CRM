@@ -31,11 +31,6 @@ This project is far from dead, it’s evolving. I’m committed to its growth an
 
 Thank you for your support and understanding.
 
-This is divided into three parts
-1. Backend API [Django CRM](https://github.com/MicroPyramid/Django-CRM)
-2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
-3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
-
 ## Runcode 
 
  Runcode is online developer workspace. It is cloud based simple, secure and ready to code workspaces, assuring high performance & fully configurable coding environment. With runcode you can run django-crm(API) with one-click.
@@ -154,26 +149,25 @@ isort # to sort imports in python
 
 ### Community
 
-Get help or stay up to date.
+**Note: This repository is no longer actively maintained.** For the latest development and community support, please visit our new SvelteKit-based CRM project:
 
--   [Issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   **New Project**: [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm)
 -   Follow [@micropyramid](<https://twitter.com/micropyramid>) on Twitter
--   Ask questions on [Stack Overflow](<https://stackoverflow.com/questions/tagged/django-crm>)
--   Chat with community [Gitter](<https://gitter.im/MicroPyramid/Django-CRM>)
--   For customizations, email to <django-crm@micropyramid.com>
+-   For questions about the legacy Django CRM, check [past issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   For new feature requests and active development, visit the [new repository](https://github.com/MicroPyramid/opensource-startup-crm)
+-   For commercial support [Contact us](https://micropyramid.com/contact-us/)
 
 ## Credits
 
 ### Contributors
 
-This project exists thanks to all the people who contribute!
+This project exists thanks to all the people who contributed during its active development!
 
 ![image](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
 
-### Feature requests and bug reports
+### Legacy Project Notice
 
-We welcome your feedback and support, raise github issue if you want to
-report a bug or request new feature. we are glad to help.
+This Django CRM repository is now in maintenance mode. While we welcome your feedback and appreciate past contributions, active development has moved to our new SvelteKit-based CRM solution at [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm).
 
 For commercial support [Contact us](https://micropyramid.com/contact-us/)
 
