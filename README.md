@@ -6,10 +6,30 @@ Django CRM is opensource CRM developed on django framework. It has all
 the basic features of CRM to start with. We welcome code contributions
 and feature requests via github.
 
-This is divided into three parts
-1. Backend API [Django CRM](https://github.com/MicroPyramid/Django-CRM)
-2. Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM")
-3. Mobile app [Flutter CRM]("https://github.com/MicroPyramid/flutter-crm")
+## Project Status and Future Direction
+
+### Background
+
+9 years ago, I launched this project with a mission to provide startups with a free, open-source, and customizable CRM solution, addressing the high subscription costs of commercial alternatives. Initially developed as a Django full-stack application, the project evolved significantly with the support of a dedicated team. However, maintaining the team and covering salaries depleted resources, and I was unable to renew the domain. Recognizing the need for a modernized user experience, I explored updating the frontend with React but ultimately faced financial and team constraints.
+
+### Moving Forward
+
+To align with the project’s vision and address these challenges, I’ve shifted development to a new repository using **SvelteKit** and **Prisma** for a robust, fast, and feature-rich framework. A Minimum Viable Product (MVP) was released last week at [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm).
+
+#### Key Updates:
+
+-   **Current Repository:** No further updates will be made to this repository.
+    
+-   **New Repository:** Development will continue in the new SvelteKit-based repository.
+    
+-   **Mobile App:** Enhancements to the Flutter-based mobile app [MicroPyramid/flutter-crm](https://github.com/MicroPyramid/flutter-crm) will depend on increased user engagement or support from a paying client.
+    
+
+### Future Vision
+
+This project is far from dead, it’s evolving. I’m committed to its growth and open to discussions about its direction, contributions, or potential collaborations. Feel free to reach out with ideas or feedback.
+
+Thank you for your support and understanding.
 
 ## Runcode 
 
@@ -109,7 +129,7 @@ docker-compose -f docker/docker-compose.yml up
 python manage.py migrate
 python manage.py runserver
 ```
-- Then open http://localhost:8000/swagger/ in your browser to explore API.
+- Then open http://localhost:8000/swagger-ui/ in your browser to explore API.
 
 - After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
 
@@ -129,26 +149,25 @@ isort # to sort imports in python
 
 ### Community
 
-Get help or stay up to date.
+**Note: This repository is no longer actively maintained.** For the latest development and community support, please visit our new SvelteKit-based CRM project:
 
--   [Issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   **New Project**: [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm)
 -   Follow [@micropyramid](<https://twitter.com/micropyramid>) on Twitter
--   Ask questions on [Stack Overflow](<https://stackoverflow.com/questions/tagged/django-crm>)
--   Chat with community [Gitter](<https://gitter.im/MicroPyramid/Django-CRM>)
--   For customizations, email to <django-crm@micropyramid.com>
+-   For questions about the legacy Django CRM, check [past issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
+-   For new feature requests and active development, visit the [new repository](https://github.com/MicroPyramid/opensource-startup-crm)
+-   For commercial support [Contact us](https://micropyramid.com/contact-us/)
 
 ## Credits
 
 ### Contributors
 
-This project exists thanks to all the people who contribute!
+This project exists thanks to all the people who contributed during its active development!
 
 ![image](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
 
-### Feature requests and bug reports
+### Legacy Project Notice
 
-We welcome your feedback and support, raise github issue if you want to
-report a bug or request new feature. we are glad to help.
+This Django CRM repository is now in maintenance mode. While we welcome your feedback and appreciate past contributions, active development has moved to our new SvelteKit-based CRM solution at [MicroPyramid/opensource-startup-crm](https://github.com/MicroPyramid/opensource-startup-crm).
 
 For commercial support [Contact us](https://micropyramid.com/contact-us/)
 
