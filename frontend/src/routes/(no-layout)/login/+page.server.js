@@ -74,27 +74,27 @@ export async function load({ url, cookies }) {
 			const { access_token: access, refresh_token: refresh } = djangoResponse.data;
 
 			// Store JWT tokens in cookies
-			await cookies.set('jwt_access', access, {
+			cookies.set('jwt_access', access, {
 				path: '/',
 				httpOnly: true,
-				sameSite: 'strict',
+				sameSite: 'lax',
 				secure: env.NODE_ENV === 'production',
 				maxAge: 60 * 60 * 24 // 1 day for access token
 			});
 
-			await cookies.set('jwt_refresh', refresh, {
+			cookies.set('jwt_refresh', refresh, {
 				path: '/',
 				httpOnly: true,
-				sameSite: 'strict',
+				sameSite: 'lax',
 				secure: env.NODE_ENV === 'production',
 				maxAge: 60 * 60 * 24 * 365 // 1 year for refresh token
 			});
 
 			// Also store user email for convenience
-			await cookies.set('user_email', user_info.email, {
+			cookies.set('user_email', user_info.email, {
 				path: '/',
 				httpOnly: true,
-				sameSite: 'strict',
+				sameSite: 'lax',
 				secure: env.NODE_ENV === 'production',
 				maxAge: 60 * 60 * 24 * 7
 			});

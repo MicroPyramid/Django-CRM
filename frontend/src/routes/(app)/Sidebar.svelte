@@ -2,13 +2,13 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import imgLogo from '$lib/assets/images/logo.png';
-	import { 
-		LayoutDashboard, 
-		Users, 
-		Building, 
-		Briefcase, 
-		CheckSquare, 
-		HelpCircle, 
+	import {
+		LayoutDashboard,
+		Users,
+		Building,
+		Briefcase,
+		CheckSquare,
+		HelpCircle,
 		ChevronDown,
 		UserPlus,
 		Plus,
@@ -19,9 +19,11 @@
 		Menu,
 		Moon,
 		Sun,
+		Monitor,
 		Settings,
 		User,
-		X
+		X,
+		Check
 	} from '@lucide/svelte';
 
 	let { 
@@ -30,17 +32,77 @@
 		org_name = 'BottleCRM'
 	} = $props();
 
-	let isDark = $state(false);
+	/** @type {'light' | 'system' | 'dark'} */
+	let theme = $state('system');
 	let userDropdownOpen = $state(false);
+	let themeDropdownOpen = $state(false);
 	let dropdownRef = $state();
+	let themeDropdownRef = $state();
+
+	// Initialize theme from localStorage on mount
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const savedTheme = localStorage.getItem('theme');
+			if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'system') {
+				theme = savedTheme;
+			}
+		}
+	});
+
+	// Apply theme whenever it changes
+	$effect(() => {
+		// This effect tracks `theme` and re-runs when it changes
+		const currentTheme = theme;
+		if (typeof window !== 'undefined') {
+			if (currentTheme === 'dark') {
+				document.documentElement.classList.add('dark');
+			} else if (currentTheme === 'light') {
+				document.documentElement.classList.remove('dark');
+			} else {
+				// System preference
+				if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
+			}
+		}
+	});
+
+	// Listen for system preference changes
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+			const handleChange = () => {
+				if (theme === 'system') {
+					if (mediaQuery.matches) {
+						document.documentElement.classList.add('dark');
+					} else {
+						document.documentElement.classList.remove('dark');
+					}
+				}
+			};
+			mediaQuery.addEventListener('change', handleChange);
+			return () => mediaQuery.removeEventListener('change', handleChange);
+		}
+	});
 
 	const closeDrawer = () => {
 		drawerHidden = true;
 	};
 
-	const toggleDarkMode = () => {
-		isDark = !isDark;
-		document.documentElement.classList.toggle('dark');
+	const toggleThemeDropdown = () => {
+		themeDropdownOpen = !themeDropdownOpen;
+		if (themeDropdownOpen) {
+			userDropdownOpen = false;
+		}
+	};
+
+	/** @param {'light' | 'system' | 'dark'} newTheme */
+	const setTheme = (newTheme) => {
+		theme = newTheme;
+		localStorage.setItem('theme', newTheme);
+		themeDropdownOpen = false;
 	};
 
 	const toggleUserDropdown = () => {
@@ -66,6 +128,9 @@
 	const handleClickOutside = (/** @type {any} */ event) => {
 		if (userDropdownOpen && dropdownRef && !dropdownRef.contains(event.target)) {
 			userDropdownOpen = false;
+		}
+		if (themeDropdownOpen && themeDropdownRef && !themeDropdownRef.contains(event.target)) {
+			themeDropdownOpen = false;
 		}
 	};
 
@@ -255,18 +320,63 @@
 			
 			<!-- Quick actions -->
 			<div class="flex items-center justify-between">
-				<button
-					onclick={toggleDarkMode}
-					class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-					title="Toggle dark mode"
-				>
-					{#if isDark}
-						<Sun class="w-4 h-4" />
-					{:else}
-						<Moon class="w-4 h-4" />
+				<div class="relative" bind:this={themeDropdownRef}>
+					<button
+						onclick={toggleThemeDropdown}
+						class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+						title="Theme"
+					>
+						{#if theme === 'dark'}
+							<Moon class="w-4 h-4" />
+						{:else if theme === 'light'}
+							<Sun class="w-4 h-4" />
+						{:else}
+							<Monitor class="w-4 h-4" />
+						{/if}
+					</button>
+
+					{#if themeDropdownOpen}
+						<div class="absolute bottom-full left-0 mb-2 w-36 p-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
+							<button
+								onclick={() => setTheme('light')}
+								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+							>
+								<span class="flex items-center gap-2">
+									<Sun class="w-4 h-4" />
+									Light
+								</span>
+								{#if theme === 'light'}
+									<Check class="w-4 h-4 text-blue-500" />
+								{/if}
+							</button>
+							<button
+								onclick={() => setTheme('system')}
+								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+							>
+								<span class="flex items-center gap-2">
+									<Monitor class="w-4 h-4" />
+									System
+								</span>
+								{#if theme === 'system'}
+									<Check class="w-4 h-4 text-blue-500" />
+								{/if}
+							</button>
+							<button
+								onclick={() => setTheme('dark')}
+								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+							>
+								<span class="flex items-center gap-2">
+									<Moon class="w-4 h-4" />
+									Dark
+								</span>
+								{#if theme === 'dark'}
+									<Check class="w-4 h-4 text-blue-500" />
+								{/if}
+							</button>
+						</div>
 					{/if}
-				</button>
-				
+				</div>
+
 				<button
 					onclick={toggleUserDropdown}
 					class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"

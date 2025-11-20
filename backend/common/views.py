@@ -1001,8 +1001,7 @@ class GoogleLoginView(APIView):
             user.email = data['email']
             user.profile_pic = data['picture']
             # provider random default password
-            user.password = make_password(BaseUserManager().make_random_password())
-            user.email = data['email']
+            user.password = make_password(secrets.token_urlsafe(16))
             user.save()
         token = RefreshToken.for_user(user)  # generate token without username & password
         response = {}
