@@ -37,8 +37,8 @@ from invoices.tasks import (
     send_invoice_email,
     send_invoice_email_cancel,
 )
-from teams.models import Teams
-from teams.serializer import TeamsSerializer
+from common.models import Teams
+from common.serializer import TeamsSerializer
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),

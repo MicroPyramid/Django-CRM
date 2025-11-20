@@ -7,6 +7,7 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
 
+from accounts.models import Account
 from common.models import Org, Profile
 from leads.models import Lead
 
@@ -125,7 +126,12 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     lead.country = row.get("country", "")[:3]
                     lead.description = row.get("description", "")
                     lead.status = row.get("status", "")
-                    lead.account_name = row.get("account_name", "")[:255]
+                    # Look up company by name if provided in CSV
+                    account_name = row.get("account_name", "").strip()[:255]
+                    if account_name:
+                        company = Account.objects.filter(name__iexact=account_name, org=org).first()
+                        if company:
+                            lead.company = company
                     lead.created_from_site = False
                     lead.created_by = profile
                     lead.org = org

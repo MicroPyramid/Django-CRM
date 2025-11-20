@@ -3,19 +3,20 @@ from rest_framework import serializers
 from common.serializer import (
     BillingAddressSerializer,
     OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
     UserSerializer,
 )
 from invoices.models import Invoice, InvoiceHistory
-from teams.serializer import TeamsSerializer
 
 
 class InvoiceSerailizer(serializers.ModelSerializer):
     from_address = BillingAddressSerializer()
     to_address = BillingAddressSerializer()
-    created_by = UserSerializer()
+    created_by = ProfileSerializer()
     org = OrganizationSerializer()
     teams = TeamsSerializer(read_only=True, many=True)
-    assigned_to = UserSerializer(read_only=True, many=True)
+    assigned_to = ProfileSerializer(read_only=True, many=True)
 
     class Meta:
         model = Invoice
@@ -48,7 +49,7 @@ class InvoiceSerailizer(serializers.ModelSerializer):
 
 
 class InvoiceHistorySerializer(serializers.ModelSerializer):
-    updated_by = UserSerializer()
+    updated_by = ProfileSerializer()
 
     class Meta:
         model = InvoiceHistory
@@ -131,7 +132,7 @@ class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
 
     from_address = BillingAddressSerializer()
     to_address = BillingAddressSerializer()
-    assigned_to = UserSerializer(read_only=True, many=True)
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     quality_hours = serializers.CharField()
     class Meta:
         model = Invoice
@@ -190,10 +191,10 @@ class InvoiceWithLineItemsSerializer(serializers.ModelSerializer):
     """Enhanced Invoice Serializer with Line Items"""
 
     line_items = InvoiceLineItemSerializer(many=True, read_only=True)
-    created_by = UserSerializer(read_only=True)
+    created_by = ProfileSerializer(read_only=True)
     org = OrganizationSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    assigned_to = UserSerializer(read_only=True, many=True)
+    assigned_to = ProfileSerializer(read_only=True, many=True)
     line_items_total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     line_items_count = serializers.IntegerField(read_only=True)
 

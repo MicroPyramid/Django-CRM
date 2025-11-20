@@ -12,7 +12,8 @@ from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 
 from accounts import swagger_params
-from accounts.models import Account, Tags
+from accounts.models import Account
+from common.models import Tags
 from accounts.serializer import (
     AccountCreateSerializer,
     AccountSerializer,
@@ -24,7 +25,7 @@ from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     EmailWriteSerializer
 )
-from teams.serializer import TeamsSerializer
+from common.serializer import TeamsSerializer
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile
@@ -51,7 +52,7 @@ from invoices.serializer import InvoiceSerailizer
 from opportunity.models import SOURCES, STAGES, Opportunity
 from opportunity.serializer import OpportunitySerializer
 from tasks.serializer import TaskSerializer
-from teams.models import Teams
+from common.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):

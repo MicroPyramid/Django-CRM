@@ -45,7 +45,7 @@ export async function load({ params, locals, cookies }) {
 			lastName: leadData.last_name || '',
 			email: leadData.email,
 			phone: leadData.phone,
-			company: leadData.account_name,
+			company: leadData.company?.name || null,
 			title: leadData.title,
 			industry: leadData.industry,
 			rating: leadData.rating || null,
@@ -176,7 +176,6 @@ export const actions = {
 				last_name: lastName,
 				email: email || null,
 				phone: formattedPhone,
-				account_name: company || null,
 				title: leadTitle, // Required by Django
 				industry: industry || null,
 				rating: rating || null,

@@ -42,7 +42,7 @@ export async function load({ params, locals, cookies }) {
 			id: leadData.id,
 			firstName: leadData.first_name,
 			lastName: leadData.last_name,
-			company: leadData.account_name,
+			company: leadData.company?.name || null,
 			email: leadData.email,
 			phone: leadData.phone,
 			title: leadData.title,

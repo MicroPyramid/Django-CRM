@@ -105,7 +105,6 @@ export const actions = {
 			last_name: lastName,
 			email: formData.get('email')?.toString().trim() || null,
 			phone: formattedPhone,
-			account_name: formData.get('account_name')?.toString().trim() || null,
 			contact_title: formData.get('contact_title')?.toString().trim() || null,
 			website: formData.get('website')?.toString().trim() || null,
 			linkedin_url: formData.get('linkedin_url')?.toString().trim() || null,

@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Account, Tags
-from common.models import APISettings, Attachments, Comment, Profile
+from accounts.models import Account
+from common.models import APISettings, Attachments, Comment, Profile, Tags
 
 #from common.external_auth import CustomDualAuthentication
 from common.serializer import (
@@ -42,8 +42,8 @@ from leads.tasks import (
     send_email_to_assigned_user,
     send_lead_assigned_emails,
 )
-from teams.models import Teams
-from teams.serializer import TeamsSerializer
+from common.models import Teams
+from common.serializer import TeamsSerializer
 
 
 class LeadListView(APIView, LimitOffsetPagination):
@@ -208,7 +208,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             if data.get("status") == "converted":
                 account_object = Account.objects.create(
                     created_by=request.profile.user,
-                    name=lead_obj.account_name,
+                    name=lead_obj.company.name if lead_obj.company else f"{lead_obj.first_name} {lead_obj.last_name}",
                     email=lead_obj.email,
                     phone=lead_obj.phone,
                     description=data.get("description"),
@@ -489,7 +489,7 @@ class LeadDetailView(APIView):
             if params.get("status") == "converted":
                 account_object = Account.objects.create(
                     created_by=request.profile.user,
-                    name=lead_obj.account_name,
+                    name=lead_obj.company.name if lead_obj.company else f"{lead_obj.first_name} {lead_obj.last_name}",
                     email=lead_obj.email,
                     phone=lead_obj.phone,
                     description=params.get("description"),
@@ -575,7 +575,7 @@ class LeadDetailView(APIView):
             # Create Account from Lead
             account_object = Account.objects.create(
                 created_by=request.profile.user,
-                name=self.lead_obj.account_name or f"{self.lead_obj.first_name} {self.lead_obj.last_name}",
+                name=self.lead_obj.company.name if self.lead_obj.company else f"{self.lead_obj.first_name} {self.lead_obj.last_name}",
                 email=self.lead_obj.email,
                 phone=self.lead_obj.phone,
                 description=self.lead_obj.description,
@@ -622,9 +622,9 @@ class LeadDetailView(APIView):
                 contact_obj = Contact.objects.create(
                     first_name=self.lead_obj.first_name or '',
                     last_name=self.lead_obj.last_name or '',
-                    primary_email=self.lead_obj.email,
-                    mobile_number=self.lead_obj.phone,
-                    organization=self.lead_obj.account_name,
+                    email=self.lead_obj.email,
+                    phone=self.lead_obj.phone,
+                    organization=self.lead_obj.company.name if self.lead_obj.company else '',
                     title=self.lead_obj.contact_title,
                     description=self.lead_obj.description,
                     address_line=self.lead_obj.address_line,

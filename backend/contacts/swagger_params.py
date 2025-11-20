@@ -36,9 +36,9 @@ contact_create_post_params = [
     OpenApiParameter(
         "title", OpenApiParameter.QUERY, OpenApiTypes.STR
     ),
-    OpenApiParameter("primary_email", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("email", OpenApiTypes.STR,OpenApiParameter.QUERY),
     OpenApiParameter("secondary_email", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("mobile_number", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("phone", OpenApiTypes.STR,OpenApiParameter.QUERY),
     OpenApiParameter("secondary_number", OpenApiTypes.STR,OpenApiParameter.QUERY),
     OpenApiParameter("department", OpenApiTypes.STR,OpenApiParameter.QUERY),
     OpenApiParameter("language", OpenApiTypes.STR,OpenApiParameter.QUERY),

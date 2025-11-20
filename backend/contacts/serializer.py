@@ -4,9 +4,9 @@ from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TeamsSerializer,
 )
 from contacts.models import Contact
-from teams.serializer import TeamsSerializer
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -30,8 +30,8 @@ class ContactSerializer(serializers.ModelSerializer):
             # Core Contact Information
             "first_name",
             "last_name",
-            "primary_email",
-            "mobile_number",
+            "email",
+            "phone",
             # Professional Information
             "organization",
             "title",
@@ -48,10 +48,10 @@ class ContactSerializer(serializers.ModelSerializer):
             # Assignment
             "assigned_to",
             "teams",
+            # Tags
+            "tags",
             # Notes
             "description",
-            # Related
-            "contact_attachment",
             # System
             "created_by",
             "created_at",
@@ -72,11 +72,11 @@ class CreateContactSerializer(serializers.ModelSerializer):
         if request_obj:
             self.org = request_obj.profile.org
 
-    def validate_primary_email(self, email):
+    def validate_email(self, email):
         if email:
             if self.instance:
                 if (
-                    Contact.objects.filter(primary_email__iexact=email, org=self.org)
+                    Contact.objects.filter(email__iexact=email, org=self.org)
                     .exclude(id=self.instance.id)
                     .exists()
                 ):
@@ -85,7 +85,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
                     )
             else:
                 if Contact.objects.filter(
-                    primary_email__iexact=email, org=self.org
+                    email__iexact=email, org=self.org
                 ).exists():
                     raise serializers.ValidationError(
                         "Contact already exists with this email"
@@ -98,8 +98,8 @@ class CreateContactSerializer(serializers.ModelSerializer):
             # Core Contact Information
             "first_name",
             "last_name",
-            "primary_email",
-            "mobile_number",
+            "email",
+            "phone",
             # Professional Information
             "organization",
             "title",

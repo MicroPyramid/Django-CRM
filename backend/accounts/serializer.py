@@ -1,14 +1,15 @@
 from rest_framework import serializers
 
-from accounts.models import Account, AccountEmail, Tags, AccountEmailLog
+from accounts.models import Account, AccountEmail, AccountEmailLog
+from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TeamsSerializer,
     UserSerializer
 )
 from contacts.serializer import ContactSerializer
-from teams.serializer import TeamsSerializer
 
 
 class TagsSerailizer(serializers.ModelSerializer):

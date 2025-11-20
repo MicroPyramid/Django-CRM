@@ -77,7 +77,7 @@ export const actions = {
 
 		// Validate phone number if provided
 		let formattedPhone = null;
-		const phone = formData.get('mobile_number')?.toString();
+		const phone = formData.get('phone')?.toString();
 		if (phone && phone.trim().length > 0) {
 			const phoneValidation = validatePhoneNumber(phone.trim());
 			if (!phoneValidation.isValid) {
@@ -91,8 +91,8 @@ export const actions = {
 			// Core Contact Information
 			first_name: firstName,
 			last_name: lastName,
-			primary_email: formData.get('primary_email')?.toString().trim() || null,
-			mobile_number: formattedPhone,
+			email: formData.get('email')?.toString().trim() || null,
+			phone: formattedPhone,
 
 			// Professional Information
 			organization: formData.get('organization')?.toString().trim() || null,

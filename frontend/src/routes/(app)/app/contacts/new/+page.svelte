@@ -15,8 +15,8 @@
 		// Core Contact Information
 		first_name: '',
 		last_name: '',
-		primary_email: '',
-		mobile_number: '',
+		email: '',
+		phone: '',
 		// Professional Information
 		organization: '',
 		title: '',
@@ -54,12 +54,12 @@
 
 	// Validate phone number on input
 	function validatePhone() {
-		if (!formData.mobile_number.trim()) {
+		if (!formData.phone.trim()) {
 			phoneError = '';
 			return;
 		}
 
-		const validation = validatePhoneNumber(formData.mobile_number);
+		const validation = validatePhoneNumber(formData.phone);
 		if (!validation.isValid) {
 			phoneError = validation.error || 'Invalid phone number';
 		} else {
@@ -71,8 +71,8 @@
 		formData = {
 			first_name: '',
 			last_name: '',
-			primary_email: '',
-			mobile_number: '',
+			email: '',
+			phone: '',
 			organization: '',
 			title: '',
 			department: '',
@@ -179,29 +179,29 @@
 					<!-- Contact Fields -->
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
-							<label for="primary_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							<label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 								<Mail class="w-4 h-4 inline mr-1" />
 								Email
 							</label>
 							<input
 								type="email"
-								id="primary_email"
-								name="primary_email"
-								bind:value={formData.primary_email}
+								id="email"
+								name="email"
+								bind:value={formData.email}
 								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="contact@example.com"
 							/>
 						</div>
 						<div>
-							<label for="mobile_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							<label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 								<Phone class="w-4 h-4 inline mr-1" />
 								Phone
 							</label>
 							<input
 								type="tel"
-								id="mobile_number"
-								name="mobile_number"
-								bind:value={formData.mobile_number}
+								id="phone"
+								name="phone"
+								bind:value={formData.phone}
 								oninput={validatePhone}
 								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="+1 (555) 123-4567"

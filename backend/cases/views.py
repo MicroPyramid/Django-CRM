@@ -21,7 +21,7 @@ from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from teams.models import Teams
+from common.models import Teams
 
 
 class CaseListView(APIView, LimitOffsetPagination):

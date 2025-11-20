@@ -1,36 +1,16 @@
 import arrow
 from django.db import models
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
-from common.models import Org, Profile
+from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
-from teams.models import Teams
-from common.base import BaseModel
+from common.base import AssignableMixin, BaseModel
 
 
-class Tags(BaseModel):
-    name = models.CharField(max_length=20)
-    slug = models.CharField(max_length=20, unique=True, blank=True)
-
-    class Meta:
-        verbose_name = "Tag"
-        verbose_name_plural = "Tags"
-        db_table = "tags"
-        ordering = ("-created_at",)
-
-    def __str__(self):
-        return f"{self.name}"
-
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
-
-
-class Account(BaseModel):
+class Account(AssignableMixin, BaseModel):
     """
     Account model for CRM - Streamlined for modern sales workflow
     Based on Twenty CRM and Salesforce patterns
@@ -75,13 +55,11 @@ class Account(BaseModel):
     description = models.TextField(_("Notes"), blank=True, null=True)
 
     # System Fields
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     org = models.ForeignKey(
         Org,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="account_org",
+        on_delete=models.CASCADE,
+        related_name="accounts",
     )
 
     class Meta:
@@ -89,6 +67,11 @@ class Account(BaseModel):
         verbose_name_plural = "Accounts"
         db_table = "accounts"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['industry']),
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.name}"
@@ -112,25 +95,6 @@ class Account(BaseModel):
     def contact_values(self):
         contacts = list(self.contacts.values_list("id", flat=True))
         return ",".join(str(contact) for contact in contacts)
-
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))
 
 
 class AccountEmail(BaseModel):

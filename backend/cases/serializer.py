@@ -2,9 +2,8 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from cases.models import Case
-from common.serializer import OrganizationSerializer, ProfileSerializer,UserSerializer
+from common.serializer import OrganizationSerializer, ProfileSerializer, TeamsSerializer, UserSerializer
 from contacts.serializer import ContactSerializer
-from teams.serializer import TeamsSerializer
 
 
 class CaseSerializer(serializers.ModelSerializer):

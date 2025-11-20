@@ -2,9 +2,8 @@ from django import forms
 from django.db.models import Q
 
 from accounts.models import Account
-from common.models import Address, Attachments, Comment, User
+from common.models import Address, Attachments, Comment, Teams, User
 from invoices.models import Invoice
-from teams.models import Teams
 
 
 class InvoiceForm(forms.ModelForm):

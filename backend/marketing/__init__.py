@@ -1,1 +1,0 @@
-# Marketing app for Newsletter and Contact Forms

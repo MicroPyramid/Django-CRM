@@ -22,7 +22,7 @@ from contacts.models import Contact, Profile
 from contacts.serializer import *
 from contacts.tasks import send_email_to_assigned_user
 from tasks.serializer import TaskSerializer
-from teams.models import Teams
+from common.models import Teams
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
@@ -45,9 +45,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
             if params.get("city"):
                 queryset = queryset.filter(address__city__icontains=params.get("city"))
             if params.get("phone"):
-                queryset = queryset.filter(mobile_number__icontains=params.get("phone"))
+                queryset = queryset.filter(phone__icontains=params.get("phone"))
             if params.get("email"):
-                queryset = queryset.filter(primary_email__icontains=params.get("email"))
+                queryset = queryset.filter(email__icontains=params.get("email"))
             if params.getlist("assigned_to"):
                 queryset = queryset.filter(
                     assigned_to__id__in=params.get("assigned_to")

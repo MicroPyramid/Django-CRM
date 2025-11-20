@@ -37,7 +37,7 @@ export async function load({ locals, cookies }) {
 			id: lead.id,
 			firstName: lead.first_name,
 			lastName: lead.last_name,
-			company: lead.account_name,
+			company: lead.company?.name || null,
 			status: lead.status,
 			createdAt: lead.created_on
 		}));

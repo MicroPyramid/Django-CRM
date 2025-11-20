@@ -8,9 +8,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Account, Tags
+from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerailizer
-from common.models import Attachments, Comment, Profile
+from common.models import Attachments, Comment, Profile, Tags
 
 #from common.external_auth import CustomDualAuthentication
 from common.serializer import (
@@ -25,7 +25,7 @@ from opportunity import swagger_params
 from opportunity.models import Opportunity
 from opportunity.serializer import *
 from opportunity.tasks import send_email_to_assigned_user
-from teams.models import Teams
+from common.models import Teams
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):

@@ -26,8 +26,8 @@ def send_email(email_obj_id):
             ).exists():
                 html = email_obj.message_body
                 context_data = {
-                    "email": contact_obj.primary_email
-                    if contact_obj.primary_email
+                    "email": contact_obj.email
+                    if contact_obj.email
                     else "",
                     "name": contact_obj.first_name
                     if contact_obj.first_name
@@ -43,7 +43,7 @@ def send_email(email_obj_id):
                         html_content,
                         from_email=from_email,
                         to=[
-                            contact_obj.primary_email,
+                            contact_obj.email,
                         ],
                     )
                     msg.content_subtype = "html"

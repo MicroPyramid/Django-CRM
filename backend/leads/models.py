@@ -4,9 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
-from accounts.models import Tags
-from common.models import Org, Profile
-from common.base import BaseModel
+from common.models import Org, Profile, Tags, Teams
+from common.base import AssignableMixin, BaseModel
 from common.utils import (
     COUNTRIES,
     INDCHOICES,
@@ -15,12 +14,11 @@ from common.utils import (
     return_complete_address,
 )
 from contacts.models import Contact
-from teams.models import Teams
 
 
 class Company(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
-    org = models.ForeignKey(Org, on_delete=models.SET_NULL, null=True, blank=True)
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="companies")
 
     class Meta:
         verbose_name = "Company"
@@ -31,7 +29,7 @@ class Company(BaseModel):
     def __str__(self):
         return f"{self.name}"
 
-class Lead(BaseModel):
+class Lead(AssignableMixin, BaseModel):
     """
     Lead model for CRM - Streamlined for modern sales workflow
     Based on Twenty CRM and Salesforce patterns
@@ -44,7 +42,6 @@ class Lead(BaseModel):
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
-    account_name = models.CharField(_("Company"), max_length=255, null=True, blank=True)
     contact_title = models.CharField(_("Job Title"), max_length=255, blank=True, null=True)
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     linkedin_url = models.URLField(_("LinkedIn URL"), max_length=500, blank=True, null=True)
@@ -86,12 +83,12 @@ class Lead(BaseModel):
     description = models.TextField(_("Notes"), blank=True, null=True)
 
     # System Fields
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
     org = models.ForeignKey(
-        Org, on_delete=models.SET_NULL, null=True, blank=True, related_name="lead_org"
+        Org, on_delete=models.CASCADE, related_name="leads"
     )
     company = models.ForeignKey(
         Company,
@@ -106,6 +103,11 @@ class Lead(BaseModel):
         verbose_name_plural = "Leads"
         db_table = "lead"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['source']),
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.title}"
@@ -122,25 +124,6 @@ class Lead(BaseModel):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_at).humanize()
-
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))
 
     # def save(self, *args, **kwargs):
     #     super(Lead, self).save(*args, **kwargs)

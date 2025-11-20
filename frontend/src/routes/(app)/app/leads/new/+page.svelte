@@ -40,7 +40,7 @@
       last_name: '',
       email: '',
       phone: '',
-      account_name: '',
+      company: '',
       contact_title: '',
       website: '',
       linkedin_url: '',
@@ -124,7 +124,7 @@
         last_name: '',
         email: '',
         phone: '',
-        account_name: '',
+        company: '',
         contact_title: '',
         website: '',
         linkedin_url: '',
@@ -274,10 +274,10 @@
           </div>
 
           <div>
-            <label for="account_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="company" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <Building class="w-4 h-4 inline mr-1" />Company
             </label>
-            <input id="account_name" name="account_name" type="text" bind:value={formData.account_name} oninput={handleChange}
+            <input id="company" name="company" type="text" bind:value={formData.company} oninput={handleChange}
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" />
           </div>
 

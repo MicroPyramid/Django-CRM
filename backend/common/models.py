@@ -6,9 +6,12 @@ import uuid
 import arrow
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from .manager import UserManager
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -75,6 +78,13 @@ class Address(BaseModel):
         _("Post/Zip-code"), max_length=64, blank=True, default=""
     )
     country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, default="")
+    org = models.ForeignKey(
+        "Org",
+        on_delete=models.CASCADE,
+        related_name="addresses",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Address"
@@ -139,6 +149,33 @@ class Org(BaseModel):
         return str(self.name)
 
 
+class Tags(BaseModel):
+    """Tags for categorizing CRM entities (Accounts, Leads, Opportunities)"""
+    name = models.CharField(max_length=20)
+    slug = models.CharField(max_length=20, blank=True)
+    org = models.ForeignKey(
+        "Org",
+        on_delete=models.CASCADE,
+        related_name="tags",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+        db_table = "tags"
+        ordering = ("-created_at",)
+        unique_together = ["slug", "org"]
+
+    def __str__(self):
+        return f"{self.name}"
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
 # class User(AbstractBaseUser, PermissionsMixin):
 #     email = models.EmailField(_("email address"), blank=True, unique=True)
 #     profile_pic = models.FileField(
@@ -188,15 +225,15 @@ class Org(BaseModel):
 
 
 class Profile(BaseModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="profiles")
     org = models.ForeignKey(
-        Org, null=True, on_delete=models.CASCADE, blank=True, related_name="user_org"
+        Org, on_delete=models.CASCADE, related_name="profiles"
     )
-    phone = PhoneNumberField(null=True, unique=True)
-    alternate_phone = PhoneNumberField(null=True,blank=True)
+    phone = PhoneNumberField(null=True, blank=True)
+    alternate_phone = PhoneNumberField(null=True, blank=True)
     address = models.ForeignKey(
         Address,
-        related_name="adress_users",
+        related_name="address_users",
         on_delete=models.CASCADE,
         blank=True,
         null=True,
@@ -213,7 +250,7 @@ class Profile(BaseModel):
         verbose_name_plural = "Profiles"
         db_table = "profile"
         ordering = ("-created_at",)
-        unique_together = ["user", "org"]
+        unique_together = [["user", "org"], ["phone", "org"]]
 
     def __str__(self):
         return f"{self.user.email} <{self.org.name}>"
@@ -233,68 +270,28 @@ class Profile(BaseModel):
 
 
 class Comment(BaseModel):
-    case = models.ForeignKey(
-        "cases.Case",
-        blank=True,
-        null=True,
-        related_name="cases",
+    """
+    Generic comment model using ContentType framework.
+    Can be attached to any model (Account, Lead, Contact, Opportunity, Case, Task, Invoice, Profile).
+    """
+    # Generic relation to any model
+    content_type = models.ForeignKey(
+        ContentType,
         on_delete=models.CASCADE,
+        related_name="comments"
     )
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
     comment = models.CharField(max_length=255)
     commented_on = models.DateTimeField(auto_now_add=True)
     commented_by = models.ForeignKey(
         Profile, on_delete=models.CASCADE, blank=True, null=True
     )
-    account = models.ForeignKey(
-        "accounts.Account",
-        blank=True,
-        null=True,
-        related_name="accounts_comments",
+    org = models.ForeignKey(
+        "Org",
         on_delete=models.CASCADE,
-    )
-    lead = models.ForeignKey(
-        "leads.Lead",
-        blank=True,
-        null=True,
-        related_name="leads_comments",
-        on_delete=models.CASCADE,
-    )
-    opportunity = models.ForeignKey(
-        "opportunity.Opportunity",
-        blank=True,
-        null=True,
-        related_name="opportunity_comments",
-        on_delete=models.CASCADE,
-    )
-    contact = models.ForeignKey(
-        "contacts.Contact",
-        blank=True,
-        null=True,
-        related_name="contact_comments",
-        on_delete=models.CASCADE,
-    )
-    profile = models.ForeignKey(
-        "Profile",
-        blank=True,
-        null=True,
-        related_name="user_comments",
-        on_delete=models.CASCADE,
-    )
-
-    task = models.ForeignKey(
-        "tasks.Task",
-        blank=True,
-        null=True,
-        related_name="tasks_comments",
-        on_delete=models.CASCADE,
-    )
-
-    invoice = models.ForeignKey(
-        "invoices.Invoice",
-        blank=True,
-        null=True,
-        related_name="invoice_comments",
-        on_delete=models.CASCADE,
+        related_name="comments",
     )
 
     class Meta:
@@ -302,6 +299,10 @@ class Comment(BaseModel):
         verbose_name_plural = "Comments"
         db_table = "comment"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.comment}"
@@ -316,7 +317,6 @@ class Comment(BaseModel):
 
 class CommentFiles(BaseModel):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    updated_on = models.DateTimeField(auto_now_add=True)
     comment_file = models.FileField(
         "File", upload_to="CommentFiles", null=True, blank=True
     )
@@ -338,65 +338,25 @@ class CommentFiles(BaseModel):
 
 
 class Attachments(BaseModel):
-    created_by = models.ForeignKey(
-        User,
-        related_name="attachment_created_by",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+    """
+    Generic attachment model using ContentType framework.
+    Can be attached to any model (Account, Lead, Contact, Opportunity, Case, Task, Invoice).
+    """
+    # Generic relation to any model
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        related_name="attachments"
     )
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
     file_name = models.CharField(max_length=60)
     attachment = models.FileField(max_length=1001, upload_to="attachments/%Y/%m/")
-    lead = models.ForeignKey(
-        "leads.Lead",
-        null=True,
-        blank=True,
-        related_name="lead_attachment",
+    org = models.ForeignKey(
+        "Org",
         on_delete=models.CASCADE,
-    )
-    account = models.ForeignKey(
-        "accounts.Account",
-        null=True,
-        blank=True,
-        related_name="account_attachment",
-        on_delete=models.CASCADE,
-    )
-    contact = models.ForeignKey(
-        "contacts.Contact",
-        on_delete=models.CASCADE,
-        related_name="contact_attachment",
-        blank=True,
-        null=True,
-    )
-    opportunity = models.ForeignKey(
-        "opportunity.Opportunity",
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="opportunity_attachment",
-    )
-    case = models.ForeignKey(
-        "cases.Case",
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="case_attachment",
-    )
-
-    task = models.ForeignKey(
-        "tasks.Task",
-        blank=True,
-        null=True,
-        related_name="tasks_attachment",
-        on_delete=models.CASCADE,
-    )
-
-    invoice = models.ForeignKey(
-        "invoices.Invoice",
-        blank=True,
-        null=True,
-        related_name="invoice_attachment",
-        on_delete=models.CASCADE,
+        related_name="attachments",
     )
 
     class Meta:
@@ -404,6 +364,10 @@ class Attachments(BaseModel):
         verbose_name_plural = "Attachments"
         db_table = "attachments"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.file_name}"
@@ -452,25 +416,15 @@ class Document(BaseModel):
 
     title = models.TextField(blank=True, null=True)
     document_file = models.FileField(upload_to=document_path, max_length=5000)
-    created_by = models.ForeignKey(
-        Profile,
-        related_name="document_uploaded",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-    
     status = models.CharField(
         choices=DOCUMENT_STATUS_CHOICE, max_length=64, default="active"
     )
     shared_to = models.ManyToManyField(Profile, related_name="document_shared_to")
-    teams = models.ManyToManyField("teams.Teams", related_name="document_teams")
+    teams = models.ManyToManyField("Teams", related_name="document_teams")
     org = models.ForeignKey(
         Org,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="document_org",
+        on_delete=models.CASCADE,
+        related_name="documents",
     )
 
     class Meta:
@@ -540,20 +494,11 @@ class APISettings(BaseModel):
     lead_assigned_to = models.ManyToManyField(
         Profile, related_name="lead_assignee_users"
     )
-    tags = models.ManyToManyField("accounts.Tags", blank=True)
-    created_by = models.ForeignKey(
-        Profile,
-        related_name="settings_created_by",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
+    tags = models.ManyToManyField(Tags, blank=True)
     org = models.ForeignKey(
         Org,
-        blank=True,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="org_api_settings",
+        on_delete=models.CASCADE,
+        related_name="api_settings",
     )
     
 
@@ -683,3 +628,107 @@ class Activity(BaseModel):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_at).humanize()
+
+
+# =============================================================================
+# Teams Model (merged from teams app)
+# =============================================================================
+
+class Teams(BaseModel):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    users = models.ManyToManyField(Profile, related_name="user_teams")
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="teams")
+
+    class Meta:
+        verbose_name = "Team"
+        verbose_name_plural = "Teams"
+        db_table = "teams"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    @property
+    def created_on_arrow(self):
+        return arrow.get(self.created_at).humanize()
+
+    def get_users(self):
+        return ",".join(
+            [str(_id) for _id in list(self.users.values_list("id", flat=True))]
+        )
+
+
+# =============================================================================
+# Contact Form Submission (for public website)
+# =============================================================================
+
+class ContactFormSubmission(BaseModel):
+    """
+    Contact form submission from public website.
+    Stores inquiries from potential customers via contact forms.
+    Not org-scoped as these are platform-level submissions.
+    """
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    message = models.TextField()
+    reason = models.CharField(
+        max_length=100,
+        choices=[
+            ('general', 'General Inquiry'),
+            ('sales', 'Sales Question'),
+            ('support', 'Technical Support'),
+            ('partnership', 'Partnership Opportunity'),
+            ('other', 'Other'),
+        ],
+        default='general'
+    )
+
+    # Tracking fields
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    referrer = models.URLField(max_length=500, null=True, blank=True)
+
+    # Status tracking
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('read', 'Read'),
+        ('replied', 'Replied'),
+        ('closed', 'Closed'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    replied_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contact_replies'
+    )
+    replied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Contact Form Submission"
+        verbose_name_plural = "Contact Form Submissions"
+        db_table = "contact_form_submission"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} - {self.email} ({self.reason})"
+
+    def mark_as_read(self):
+        """Mark submission as read"""
+        if self.status == 'new':
+            self.status = 'read'
+            self.save()
+
+    def mark_as_replied(self, user):
+        """Mark submission as replied"""
+        self.status = 'replied'
+        self.replied_by = user
+        self.replied_at = timezone.now()
+        self.save()

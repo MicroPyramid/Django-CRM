@@ -1,16 +1,17 @@
 from rest_framework import serializers
 
-from accounts.models import Account, Tags
+from accounts.models import Account
+from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 from leads.models import Company, Lead
-from teams.serializer import TeamsSerializer
 
 
 class TagsSerializer(serializers.ModelSerializer):
@@ -53,7 +54,6 @@ class LeadSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "phone",
-            "account_name",
             "contact_title",
             "website",
             "linkedin_url",
@@ -101,7 +101,6 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
         if self.initial_data and self.initial_data.get("status") == "converted":
-            self.fields["account_name"].required = True
             self.fields["email"].required = True
         self.fields["first_name"].required = False
         self.fields["last_name"].required = False
@@ -114,11 +113,6 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
                 self.fields["source"]._set_choices(prev_choices)
 
-    # Note: account_name validation removed - multiple leads can have the same company name
-    # The uniqueness check against Account.name was incorrect since leads represent
-    # potential customers that may or may not convert to accounts
-
-
     class Meta:
         model = Lead
         fields = (
@@ -128,7 +122,6 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "phone",
-            "account_name",
             "contact_title",
             "website",
             "linkedin_url",
@@ -161,7 +154,7 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
         fields = [
             # Core Lead Information
             "title", "first_name", "last_name", "email", "phone",
-            "account_name", "contact_title", "website", "linkedin_url",
+            "contact_title", "website", "linkedin_url",
             # Sales Pipeline
             "status", "source", "industry", "rating",
             "opportunity_amount", "probability", "close_date",

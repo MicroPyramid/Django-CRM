@@ -3,15 +3,14 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
-from accounts.models import Account, Tags
-from common.models import Org, Profile
-from common.base import BaseModel
+from accounts.models import Account
+from common.models import Org, Profile, Tags, Teams
+from common.base import AssignableMixin, BaseModel
 from common.utils import CURRENCY_CODES, SOURCES, STAGES, OPPORTUNITY_TYPES
 from contacts.models import Contact
-from teams.models import Teams
 
 
-class Opportunity(BaseModel):
+class Opportunity(AssignableMixin, BaseModel):
     """
     Opportunity model for CRM - Sales pipeline management
     Based on Twenty CRM and Salesforce patterns
@@ -72,13 +71,11 @@ class Opportunity(BaseModel):
     description = models.TextField(_("Notes"), blank=True, null=True)
 
     # System Fields
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     org = models.ForeignKey(
         Org,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="opportunity_org",
+        on_delete=models.CASCADE,
+        related_name="opportunities",
     )
 
     class Meta:
@@ -86,6 +83,10 @@ class Opportunity(BaseModel):
         verbose_name_plural = "Opportunities"
         db_table = "opportunity"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['stage']),
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.name}"
@@ -93,22 +94,3 @@ class Opportunity(BaseModel):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_at).humanize()
-
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))

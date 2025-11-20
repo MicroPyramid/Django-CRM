@@ -16,6 +16,7 @@ from common.models import (
     Document,
     Org,
     Profile,
+    Teams,
     User,
 )
 
@@ -31,6 +32,12 @@ class SocialLoginSerializer(serializers.Serializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for Comment model using ContentType"""
+    content_type = serializers.SlugRelatedField(
+        slug_field='model',
+        read_only=True
+    )
+
     class Meta:
         model = Comment
         fields = (
@@ -38,15 +45,36 @@ class CommentSerializer(serializers.ModelSerializer):
             "comment",
             "commented_on",
             "commented_by",
-            "account",
-            "lead",
-            "opportunity",
-            "contact",
-            "case",
-            "task",
-            "invoice",
-            "profile",
+            "content_type",
+            "object_id",
+            "org",
         )
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating comments with ContentType"""
+    content_type = serializers.CharField(write_only=True)
+    object_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = Comment
+        fields = (
+            "comment",
+            "content_type",
+            "object_id",
+        )
+
+    def create(self, validated_data):
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type_str = validated_data.pop('content_type')
+        try:
+            content_type = ContentType.objects.get(model=content_type_str.lower())
+        except ContentType.DoesNotExist:
+            raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
+
+        validated_data['content_type'] = content_type
+        return super().create(validated_data)
 
 
 class LeadCommentSerializer(serializers.ModelSerializer):
@@ -57,7 +85,6 @@ class LeadCommentSerializer(serializers.ModelSerializer):
             "comment",
             "commented_on",
             "commented_by",
-            "lead",
         )
 
 
@@ -202,16 +229,57 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class AttachmentsSerializer(serializers.ModelSerializer):
+    """Serializer for Attachments model using ContentType"""
     file_path = serializers.SerializerMethodField()
+    content_type = serializers.SlugRelatedField(
+        slug_field='model',
+        read_only=True
+    )
 
     def get_file_path(self, obj):
         if obj.attachment:
             return obj.attachment.url
-        None
+        return None
 
     class Meta:
         model = Attachments
-        fields = ["id", "created_by", "file_name", "created_at", "file_path"]
+        fields = [
+            "id",
+            "created_by",
+            "file_name",
+            "created_at",
+            "file_path",
+            "content_type",
+            "object_id",
+            "org",
+        ]
+
+
+class AttachmentsCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating attachments with ContentType"""
+    content_type = serializers.CharField(write_only=True)
+    object_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = Attachments
+        fields = (
+            "file_name",
+            "attachment",
+            "content_type",
+            "object_id",
+        )
+
+    def create(self, validated_data):
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type_str = validated_data.pop('content_type')
+        try:
+            content_type = ContentType.objects.get(model=content_type_str.lower())
+        except ContentType.DoesNotExist:
+            raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
+
+        validated_data['content_type'] = content_type
+        return super().create(validated_data)
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -496,4 +564,70 @@ class ActivitySerializer(serializers.ModelSerializer):
             'humanized_time',
         ]
 
+
+# =============================================================================
+# Teams Serializers (merged from teams app)
+# =============================================================================
+
+class TeamsSerializer(serializers.ModelSerializer):
+    users = ProfileSerializer(read_only=True, many=True)
+    created_by = UserSerializer()
+
+    class Meta:
+        model = Teams
+        fields = (
+            "id",
+            "name",
+            "description",
+            "users",
+            "created_at",
+            "created_by",
+            "created_on_arrow",
+        )
+
+
+class TeamCreateSerializer(serializers.ModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        request_obj = kwargs.pop("request_obj", None)
+        super().__init__(*args, **kwargs)
+        self.org = request_obj.profile.org
+
+        self.fields["name"].required = True
+        self.fields["description"].required = False
+
+    def validate_name(self, name):
+        if self.instance:
+            if (
+                Teams.objects.filter(name__iexact=name, org=self.org)
+                .exclude(id=self.instance.id)
+                .exists()
+            ):
+                raise serializers.ValidationError("Team already exists with this name")
+        else:
+            if Teams.objects.filter(name__iexact=name).exists():
+                raise serializers.ValidationError("Team already exists with this name")
+        return name
+
+    class Meta:
+        model = Teams
+        fields = (
+            "name",
+            "description",
+            "created_at",
+            "created_by",
+            "created_on_arrow",
+            "org",
+        )
+
+
+class TeamswaggerCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Teams
+        fields = (
+            "name",
+            "description",
+            "users",
+        )
 

@@ -57,9 +57,7 @@ INSTALLED_APPS = [
     "opportunity",
     "tasks",
     "invoices",
-    "teams",
-    "marketing",  # Phase 3: Newsletter & Contact Forms
-    "boards",  # Phase 3: Kanban Boards
+    # "teams",  # Merged into common app
 ]
 
 MIDDLEWARE = [

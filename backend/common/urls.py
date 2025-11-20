@@ -44,4 +44,8 @@ urlpatterns = [
 
     # Activities (for dashboard recent activities)
     path("activities/", views.ActivityListView.as_view(), name="activities"),
+
+    # Teams (merged from teams app)
+    path("teams/", views.TeamsListView.as_view()),
+    path("teams/<str:pk>/", views.TeamsDetailView.as_view()),
 ]
