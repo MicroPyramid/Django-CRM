@@ -1,0 +1,99 @@
+{
+    "version": "v1.0.0",
+
+    "entity": {
+        "type": "organisation",
+        "role": "owner",
+        "name": "MicroPyramid Informatics Private Limited",
+        "email": "hello@micropyramid.com",
+        "phone": "+91-9959166266",
+        "description": "MicroPyramid is a technology company specializing in web development, mobile applications, and SaaS solutions. We build modern, scalable software solutions for businesses of all sizes, with expertise in Python, Django, React, and other cutting-edge technologies.",
+        "webpageUrl": {
+            "url": "https://micropyramid.com",
+            "wellKnown": ""
+        }
+    },
+
+    "projects": [{
+        "guid": "startup-crm",
+        "name": "BottleCRM",
+        "description": "BottleCRM is a dynamic, SaaS CRM platform designed to streamline the entire CRM needs of startups and enterprises. Built with modern web technologies including SvelteKit, Svelte 5, and Prisma, it offers a seamless experience for users through robust role-based access control (RBAC). Each user role is equipped with tailored functionalities to enhance efficiency, engagement, and management, ensuring a streamlined and secure business process.",
+        "webpageUrl": {
+            "url": "https://bottlecrm.io",
+            "wellKnown": ""
+        },
+        "repositoryUrl": {
+            "url": "https://github.com/MicroPyramid/opensource-startup-crm",
+            "wellKnown": ""
+        },
+        "licenses": ["spdx:MIT"],
+        "tags": ["crm", "saas", "business-tools", "customer-management", "sales", "svelte", "typescript", "web-application", "enterprise", "startup"]
+    }],
+
+    "funding": {
+        "channels": [{
+            "guid": "paypal",
+            "type": "payment-provider",
+            "address": "paypal@micropyramid.com",
+            "description": "PayPal payments for international transactions"
+        }, {
+            "guid": "bank-transfer",
+            "type": "bank",
+            "address": "Contact hello@micropyramid.com for bank details",
+            "description": "Direct bank transfers for larger contributions"
+        }, {
+            "guid": "github-sponsors",
+            "type": "payment-provider",
+            "address": "https://github.com/sponsors/micropyramid",
+            "description": "GitHub Sponsors for recurring monthly support"
+        }],
+
+        "plans": [{
+            "guid": "monthly-supporter",
+            "status": "active",
+            "name": "Monthly Supporter",
+            "description": "Monthly support to help maintain and improve BottleCRM with regular updates, bug fixes, and new features.",
+            "amount": 25,
+            "currency": "USD",
+            "frequency": "monthly",
+            "channels": ["paypal", "github-sponsors"]
+        }, {
+            "guid": "yearly-backer",
+            "status": "active",
+            "name": "Yearly Backer",
+            "description": "Annual support for sustained development and maintenance of BottleCRM platform.",
+            "amount": 250,
+            "currency": "USD",
+            "frequency": "yearly",
+            "channels": ["paypal", "bank-transfer", "github-sponsors"]
+        }, {
+            "guid": "enterprise-sponsor",
+            "status": "active",
+            "name": "Enterprise Sponsor",
+            "description": "Enterprise-level sponsorship for priority support, custom features, and dedicated development resources.",
+            "amount": 1000,
+            "currency": "USD",
+            "frequency": "monthly",
+            "channels": ["bank-transfer", "paypal"]
+        }, {
+            "guid": "one-time-donation",
+            "status": "active",
+            "name": "One-time Contribution",
+            "description": "One-time donation to support BottleCRM development. Any amount is appreciated.",
+            "amount": 0,
+            "currency": "USD",
+            "frequency": "one-time",
+            "channels": ["paypal", "github-sponsors"]
+        }],
+
+        "history": [{
+            "year": 2025,
+            "income": 0,
+            "expenses": 5000,
+            "taxes": 0,
+            "currency": "USD",
+            "description": "Initial development phase with investment in infrastructure, development tools, and hosting."
+        }]
+    }
+}
+
