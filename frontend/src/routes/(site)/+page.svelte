@@ -126,7 +126,7 @@
             <Zap class="w-5 h-5 mr-2" />
             Start Free Demo
           </a>
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-4 border-2 border-white text-base font-semibold rounded-lg text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-4 border-2 border-white text-base font-semibold rounded-lg text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">
             <Github class="w-5 h-5 mr-2" />
             View Source
           </a>
@@ -785,11 +785,11 @@
         </div>
         
         <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap">
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap">
             <Github class="w-5 h-5 mr-2" />
             ⭐ Star on GitHub
           </a>
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm/fork" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-lg transition-all duration-200 whitespace-nowrap">
+          <a href="https://github.com/MicroPyramid/Django-CRM/fork" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-lg transition-all duration-200 whitespace-nowrap">
             <GitFork class="w-5 h-5 mr-2" />
             Fork & Customize
           </a>
@@ -801,7 +801,7 @@
           <div class="flex items-center mb-6">
             <Github class="h-10 w-10 text-gray-700 mr-4" />
             <div>
-              <h3 class="text-2xl font-bold text-gray-900">MicroPyramid/opensource-startup-crm</h3>
+              <h3 class="text-2xl font-bold text-gray-900">MicroPyramid/Django-CRM</h3>
               <p class="text-gray-700">Free Open Source CRM: SvelteKit + Prisma</p>
             </div>
           </div>
@@ -823,8 +823,8 @@
           
           <div class="bg-gray-900 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto">
             <div class="mb-2 whitespace-nowrap"># Clone and install BottleCRM</div>
-            <div class="text-gray-300 whitespace-nowrap">$ git clone https://github.com/MicroPyramid/opensource-startup-crm.git</div>
-            <div class="text-gray-300 whitespace-nowrap">$ cd opensource-startup-crm</div>
+            <div class="text-gray-300 whitespace-nowrap">$ git clone https://github.com/MicroPyramid/Django-CRM.git</div>
+            <div class="text-gray-300 whitespace-nowrap">$ cd Django-CRM</div>
             <div class="text-gray-300 whitespace-nowrap">$ pnpm install && pnpm run dev</div>
             <div class="mt-2 text-yellow-400 whitespace-nowrap"># 🎉 Your free CRM is ready!</div>
           </div>

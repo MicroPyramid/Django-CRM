@@ -265,7 +265,8 @@ class Profile(BaseModel):
             'email' : self.user.email,
             'id' :  self.user.id,
             'is_active' : self.user.is_active,
-            'profile_pic' : self.user.profile_pic
+            'profile_pic' : self.user.profile_pic,
+            'last_login' : self.user.last_login,
         }
 
 

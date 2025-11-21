@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
@@ -388,14 +389,19 @@ class AccountDetailView(APIView):
         leads = Lead.objects.filter(org=self.request.profile.org).exclude(
             Q(status="converted") | Q(status="closed")
         )
+        account_content_type = ContentType.objects.get_for_model(Account)
+        comments = Comment.objects.filter(
+            content_type=account_content_type,
+            object_id=self.account.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=account_content_type,
+            object_id=self.account.id
+        ).order_by("-id")
         context.update(
             {
-                "attachments": AttachmentsSerializer(
-                    self.account.account_attachment.all(), many=True
-                ).data,
-                "comments": CommentSerializer(
-                    self.account.accounts_comments.all(), many=True
-                ).data,
+                "attachments": AttachmentsSerializer(attachments, many=True).data,
+                "comments": CommentSerializer(comments, many=True).data,
                 "contacts": ContactSerializer(
                     self.account.contacts.all(), many=True
                 ).data,
@@ -481,11 +487,14 @@ class AccountDetailView(APIView):
             attachment.attachment = self.request.FILES.get("account_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(account__id=self.account_obj.id).order_by(
-            "-id"
-        )
+        account_content_type = ContentType.objects.get_for_model(Account)
+        comments = Comment.objects.filter(
+            content_type=account_content_type,
+            object_id=self.account_obj.id
+        ).order_by("-id")
         attachments = Attachments.objects.filter(
-            account__id=self.account_obj.id
+            content_type=account_content_type,
+            object_id=self.account_obj.id
         ).order_by("-id")
         context.update(
             {

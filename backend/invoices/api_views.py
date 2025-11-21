@@ -4,6 +4,7 @@ import pytz
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -462,8 +463,15 @@ class InvoiceDetailView(APIView):
         else:
             users_mention = []
 
-        attachments = Attachments.objects.filter(invoice=self.invoice).order_by("-id")
-        comments = Comment.objects.filter(invoice=self.invoice).order_by("-id")
+        invoice_content_type = ContentType.objects.get_for_model(Invoice)
+        attachments = Attachments.objects.filter(
+            content_type=invoice_content_type,
+            object_id=self.invoice.id
+        ).order_by("-id")
+        comments = Comment.objects.filter(
+            content_type=invoice_content_type,
+            object_id=self.invoice.id
+        ).order_by("-id")
         context.update(
             {
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
@@ -532,10 +540,15 @@ class InvoiceDetailView(APIView):
             attachment.attachment = self.request.FILES.get("invoice_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(invoice=self.invoice_obj).order_by("-id")
-        attachments = Attachments.objects.filter(invoice=self.invoice_obj).order_by(
-            "-id"
-        )
+        invoice_content_type = ContentType.objects.get_for_model(Invoice)
+        comments = Comment.objects.filter(
+            content_type=invoice_content_type,
+            object_id=self.invoice_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=invoice_content_type,
+            object_id=self.invoice_obj.id
+        ).order_by("-id")
         context.update(
             {
                 "invoice_obj": InvoiceSerailizer(self.invoice_obj).data,

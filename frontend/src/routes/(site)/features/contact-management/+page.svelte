@@ -152,7 +152,7 @@
             <UserPlus class="w-6 h-6 mr-3" />
             Start Managing Contacts
           </a>
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
             <Github class="w-6 h-6 mr-3" />
             View Source Code
           </a>
@@ -705,11 +705,11 @@
       <h3 class="text-2xl font-bold text-gray-900 mb-4">Want to influence our roadmap?</h3>
       <p class="text-gray-600 mb-6">Join our community and help us prioritize which features to build next. Your feedback shapes BottleCRM's future!</p>
       <div class="flex flex-col sm:flex-row sm:justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-        <a href="https://github.com/MicroPyramid/opensource-startup-crm/discussions" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold">
+        <a href="https://github.com/MicroPyramid/Django-CRM/discussions" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold">
           <MessageCircle class="w-5 h-5 mr-2" />
           Join Discussions
         </a>
-        <a href="https://github.com/MicroPyramid/opensource-startup-crm/issues" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold">
+        <a href="https://github.com/MicroPyramid/Django-CRM/issues" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold">
           <Github class="w-5 h-5 mr-2" />
           Request Features
         </a>
@@ -1145,7 +1145,7 @@
         <UserPlus class="w-6 h-6 mr-3" />
         Start Managing Contacts
       </a>
-      <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
+      <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
         <Github class="w-6 h-6 mr-3" />
         Download Source Code
       </a>

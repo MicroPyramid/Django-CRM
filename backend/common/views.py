@@ -542,6 +542,24 @@ class ProfileView(APIView):
         context["user_obj"] = ProfileSerializer(self.request.profile).data
         return Response(context, status=status.HTTP_200_OK)
 
+    @extend_schema(parameters=swagger_params.organization_params)
+    def patch(self, request, format=None):
+        profile = request.profile
+        data = request.data
+
+        # Update phone on Profile if provided
+        if "phone" in data:
+            profile.phone = data.get("phone")
+            profile.save()
+
+        # Note: name field is not available on User model
+        # If name updates are needed, the User model would need to be extended
+
+        return Response(
+            {"message": "Profile updated successfully", "user_obj": ProfileSerializer(profile).data},
+            status=status.HTTP_200_OK
+        )
+
 class DocumentListView(APIView, LimitOffsetPagination):
     #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -986,6 +1004,8 @@ class GoogleLoginView(APIView):
         description="Login through Google",  request=SocialLoginSerializer,
     )
     def post(self, request):
+        from django.utils import timezone
+
         payload = {'access_token': request.data.get("token")}  # validate the token
         r = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', params=payload)
         data = json.loads(r.text)
@@ -1003,6 +1023,11 @@ class GoogleLoginView(APIView):
             # provider random default password
             user.password = make_password(secrets.token_urlsafe(16))
             user.save()
+
+        # Update last_login timestamp
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
         token = RefreshToken.for_user(user)  # generate token without username & password
         response = {}
         response['username'] = user.email
@@ -1043,9 +1068,16 @@ class LoginView(APIView):
         }
     )
     def post(self, request):
+        from django.utils import timezone
+
         serializer_obj = serializer.LoginSerializer(data=request.data)
         if serializer_obj.is_valid():
             user = serializer_obj.validated_data['user']
+
+            # Update last_login timestamp
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+            print(f"Updated last_login for {user.email}: {user.last_login}")
 
             # Generate JWT tokens
             token = RefreshToken.for_user(user)

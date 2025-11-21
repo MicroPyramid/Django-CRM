@@ -225,6 +225,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "phone",
             "date_of_joining",
             "is_active",
+            "created_at",
         )
 
 

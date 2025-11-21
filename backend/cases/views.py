@@ -1,6 +1,7 @@
 import json
 
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -318,8 +319,15 @@ class CaseDetailView(APIView):
         else:
             users_mention = []
 
-        attachments = Attachments.objects.filter(case=self.cases).order_by("-id")
-        comments = Comment.objects.filter(case=self.cases).order_by("-id")
+        case_content_type = ContentType.objects.get_for_model(Case)
+        attachments = Attachments.objects.filter(
+            content_type=case_content_type,
+            object_id=self.cases.id
+        ).order_by("-id")
+        comments = Comment.objects.filter(
+            content_type=case_content_type,
+            object_id=self.cases.id
+        ).order_by("-id")
 
         context.update(
             {
@@ -377,8 +385,15 @@ class CaseDetailView(APIView):
             attachment.attachment = self.request.FILES.get("case_attachment")
             attachment.save()
 
-        attachments = Attachments.objects.filter(case=self.cases_obj).order_by("-id")
-        comments = Comment.objects.filter(case=self.cases_obj).order_by("-id")
+        case_content_type = ContentType.objects.get_for_model(Case)
+        attachments = Attachments.objects.filter(
+            content_type=case_content_type,
+            object_id=self.cases_obj.id
+        ).order_by("-id")
+        comments = Comment.objects.filter(
+            content_type=case_content_type,
+            object_id=self.cases_obj.id
+        ).order_by("-id")
 
         context.update(
             {

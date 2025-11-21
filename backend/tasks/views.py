@@ -1,6 +1,7 @@
 import json
 
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -158,8 +159,15 @@ class TaskDetailView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-        comments = Comment.objects.filter(task=self.task_obj).order_by("-id")
-        attachments = Attachments.objects.filter(task=self.task_obj).order_by("-id")
+        task_content_type = ContentType.objects.get_for_model(Task)
+        comments = Comment.objects.filter(
+            content_type=task_content_type,
+            object_id=self.task_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=task_content_type,
+            object_id=self.task_obj.id
+        ).order_by("-id")
 
         assigned_data = self.task_obj.assigned_to.values("id", "user__email")
 
@@ -258,10 +266,15 @@ class TaskDetailView(APIView):
             attachment.attachment = self.request.FILES.get("task_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(task__id=self.task_obj.id).order_by("-id")
-        attachments = Attachments.objects.filter(task__id=self.task_obj.id).order_by(
-            "-id"
-        )
+        task_content_type = ContentType.objects.get_for_model(Task)
+        comments = Comment.objects.filter(
+            content_type=task_content_type,
+            object_id=self.task_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=task_content_type,
+            object_id=self.task_obj.id
+        ).order_by("-id")
         context.update(
             {
                 "task_obj": TaskSerializer(self.task_obj).data,

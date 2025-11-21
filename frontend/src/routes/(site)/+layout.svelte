@@ -113,7 +113,7 @@
           <a href="/contact" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">Support</a>
           
           <!-- GitHub Star Button -->
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" 
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" 
              class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200"
              aria-label="Star BottleCRM on GitHub">
             <Github class="w-4 h-4 mr-1" />
@@ -242,7 +242,7 @@
           
           <!-- Social Links -->
           <div class="flex space-x-4">
-            <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" 
+            <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" 
                class="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors duration-200" aria-label="GitHub">
               <Github class="h-5 w-5" />
             </a>

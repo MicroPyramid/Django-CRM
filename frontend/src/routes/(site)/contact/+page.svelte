@@ -570,7 +570,7 @@
               <div>
                 <div class="font-semibold text-gray-900">GitHub Issues</div>
                 <div class="text-gray-600">Bug reports & feature requests</div>
-                <a href="https://github.com/MicroPyramid/opensource-startup-crm/issues" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 text-sm">Open an issue →</a>
+                <a href="https://github.com/MicroPyramid/Django-CRM/issues" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 text-sm">Open an issue →</a>
               </div>
             </div>
             
@@ -671,7 +671,7 @@
     </p>
     
     <div class="flex flex-col sm:flex-row sm:justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-      <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-blue-700 bg-white hover:bg-gray-100 shadow-2xl transition-all duration-200 hover:scale-105">
+      <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-blue-700 bg-white hover:bg-gray-100 shadow-2xl transition-all duration-200 hover:scale-105">
         <Download class="w-6 h-6 mr-3" />
         Try BottleCRM Free
       </a>

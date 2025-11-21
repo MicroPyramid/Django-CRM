@@ -913,7 +913,7 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-3">Get Started</h3>
         <p class="text-gray-600 mb-4">Download and try BottleCRM for free right now.</p>
-        <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" 
+        <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" 
            class="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold">
           Download Free
           <ExternalLink class="ml-2 w-4 h-4" />
@@ -926,7 +926,7 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-3">GitHub Support</h3>
         <p class="text-gray-600 mb-4">Report issues and get community help.</p>
-        <a href="https://github.com/MicroPyramid/opensource-startup-crm/issues" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/MicroPyramid/Django-CRM/issues" target="_blank" rel="noopener noreferrer"
            class="inline-flex items-center text-green-600 hover:text-green-700 font-semibold">
           Open Issue
           <ExternalLink class="ml-2 w-4 h-4" />
@@ -963,7 +963,7 @@
         <Zap class="w-6 h-6 mr-3" />
         Try Free Demo
       </a>
-      <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
+      <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white border-2 border-white hover:bg-white/10 transition-all duration-200">
         <Download class="w-6 h-6 mr-3" />
         Download Source
       </a>

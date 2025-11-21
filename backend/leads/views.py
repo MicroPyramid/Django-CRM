@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -222,14 +223,20 @@ class LeadListView(APIView, LimitOffsetPagination):
                 account_object.billing_state = lead_obj.state
                 account_object.billing_postcode = lead_obj.postcode
                 account_object.billing_country = lead_obj.country
-                comments = Comment.objects.filter(lead=self.lead_obj)
+                lead_content_type = ContentType.objects.get_for_model(Lead)
+                account_content_type = ContentType.objects.get_for_model(Account)
+                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
                 if comments.exists():
                     for comment in comments:
-                        comment.account_id = account_object.id
-                attachments = Attachments.objects.filter(lead=self.lead_obj)
+                        comment.content_type = account_content_type
+                        comment.object_id = account_object.id
+                        comment.save()
+                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
                 if attachments.exists():
                     for attachment in attachments:
-                        attachment.account_id = account_object.id
+                        attachment.content_type = account_content_type
+                        attachment.object_id = account_object.id
+                        attachment.save()
                 for tag in lead_obj.tags.all():
                     account_object.tags.add(tag)
 
@@ -283,8 +290,15 @@ class LeadDetailView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-        comments = Comment.objects.filter(lead=self.lead_obj).order_by("-id")
-        attachments = Attachments.objects.filter(lead=self.lead_obj).order_by("-id")
+        lead_content_type = ContentType.objects.get_for_model(Lead)
+        comments = Comment.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id
+        ).order_by("-id")
         assigned_data = []
         for each in self.lead_obj.assigned_to.all():
             assigned_dict = {}
@@ -400,10 +414,15 @@ class LeadDetailView(APIView):
                 attachment.attachment = self.request.FILES.get("lead_attachment")
                 attachment.save()
 
-        comments = Comment.objects.filter(lead__id=self.lead_obj.id).order_by("-id")
-        attachments = Attachments.objects.filter(lead__id=self.lead_obj.id).order_by(
-            "-id"
-        )
+        lead_content_type = ContentType.objects.get_for_model(Lead)
+        comments = Comment.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id
+        ).order_by("-id")
         context.update(
             {
                 "lead_obj": LeadSerializer(self.lead_obj).data,
@@ -503,14 +522,20 @@ class LeadDetailView(APIView):
                 account_object.billing_state = lead_obj.state
                 account_object.billing_postcode = lead_obj.postcode
                 account_object.billing_country = lead_obj.country
-                comments = Comment.objects.filter(lead=self.lead_obj)
+                lead_content_type = ContentType.objects.get_for_model(Lead)
+                account_content_type = ContentType.objects.get_for_model(Account)
+                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
                 if comments.exists():
                     for comment in comments:
-                        comment.account_id = account_object.id
-                attachments = Attachments.objects.filter(lead=self.lead_obj)
+                        comment.content_type = account_content_type
+                        comment.object_id = account_object.id
+                        comment.save()
+                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
                 if attachments.exists():
                     for attachment in attachments:
-                        attachment.account_id = account_object.id
+                        attachment.content_type = account_content_type
+                        attachment.object_id = account_object.id
+                        attachment.save()
                 for tag in lead_obj.tags.all():
                     account_object.tags.add(tag)
                 if params.get("assigned_to"):
@@ -522,9 +547,7 @@ class LeadDetailView(APIView):
                         lead_obj.id,
                     )
 
-                for comment in lead_obj.leads_comments.all():
-                    comment.account = account_object
-                    comment.save()
+                # Comments and attachments already migrated above
                 account_object.save()
                 return Response(
                     {
@@ -595,15 +618,19 @@ class LeadDetailView(APIView):
                 account_object.tags.add(tag)
 
             # Move comments to account
-            comments = Comment.objects.filter(lead=self.lead_obj)
+            lead_content_type = ContentType.objects.get_for_model(Lead)
+            account_content_type = ContentType.objects.get_for_model(Account)
+            comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
             for comment in comments:
-                comment.account = account_object
+                comment.content_type = account_content_type
+                comment.object_id = account_object.id
                 comment.save()
 
             # Move attachments to account
-            attachments = Attachments.objects.filter(lead=self.lead_obj)
+            attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
             for attachment in attachments:
-                attachment.account = account_object
+                attachment.content_type = account_content_type
+                attachment.object_id = account_object.id
                 attachment.save()
 
             # Copy assigned users

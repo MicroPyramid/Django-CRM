@@ -1,6 +1,7 @@
 import json
 
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -362,14 +363,19 @@ class OpportunityDetailView(APIView):
         else:
             users_mention = []
 
+        opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
+        comments = Comment.objects.filter(
+            content_type=opportunity_content_type,
+            object_id=self.opportunity.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=opportunity_content_type,
+            object_id=self.opportunity.id
+        ).order_by("-id")
         context.update(
             {
-                "comments": CommentSerializer(
-                    self.opportunity.opportunity_comments.all(), many=True
-                ).data,
-                "attachments": AttachmentsSerializer(
-                    self.opportunity.opportunity_attachment.all(), many=True
-                ).data,
+                "comments": CommentSerializer(comments, many=True).data,
+                "attachments": AttachmentsSerializer(attachments, many=True).data,
                 "contacts": ContactSerializer(
                     self.opportunity.contacts.all(), many=True
                 ).data,
@@ -431,11 +437,14 @@ class OpportunityDetailView(APIView):
                 attachment.attachment = self.request.FILES.get("opportunity_attachment")
                 attachment.save()
 
-        comments = Comment.objects.filter(opportunity=self.opportunity_obj).order_by(
-            "-id"
-        )
+        opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
+        comments = Comment.objects.filter(
+            content_type=opportunity_content_type,
+            object_id=self.opportunity_obj.id
+        ).order_by("-id")
         attachments = Attachments.objects.filter(
-            opportunity=self.opportunity_obj
+            content_type=opportunity_content_type,
+            object_id=self.opportunity_obj.id
         ).order_by("-id")
         context.update(
             {

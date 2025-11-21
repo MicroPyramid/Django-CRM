@@ -377,14 +377,14 @@
             proprietary CRM solutions.
           </p>
           <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-            <a href="https://github.com/MicroPyramid/opensource-startup-crm" 
+            <a href="https://github.com/MicroPyramid/Django-CRM" 
                target="_blank" 
                rel="noopener noreferrer"
                class="inline-flex items-center text-green-700 hover:text-green-800 font-medium">
               <FileText class="w-5 h-5 mr-2" />
               View Source Code
             </a>
-            <a href="https://github.com/MicroPyramid/opensource-startup-crm/blob/main/SECURITY.md" 
+            <a href="https://github.com/MicroPyramid/Django-CRM/blob/main/SECURITY.md" 
                target="_blank" 
                rel="noopener noreferrer"
                class="inline-flex items-center text-green-700 hover:text-green-800 font-medium">

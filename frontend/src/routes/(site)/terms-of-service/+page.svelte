@@ -226,7 +226,7 @@
               <p class="text-gray-300 text-sm mb-3">
                 Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
               </p>
-              <a href="https://github.com/MicroPyramid/opensource-startup-crm/blob/main/LICENSE" 
+              <a href="https://github.com/MicroPyramid/Django-CRM/blob/main/LICENSE" 
                  target="_blank" 
                  rel="noopener noreferrer"
                  class="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm">
@@ -445,7 +445,7 @@
               <div class="space-y-3">
                 <div class="flex items-center">
                   <ExternalLink class="w-5 h-5 text-blue-600 mr-3" />
-                  <a href="https://github.com/MicroPyramid/opensource-startup-crm" 
+                  <a href="https://github.com/MicroPyramid/Django-CRM" 
                      target="_blank" 
                      rel="noopener noreferrer"
                      class="text-blue-600 hover:text-blue-700">

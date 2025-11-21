@@ -37,11 +37,11 @@ export async function load({ locals, cookies }) {
 			user_id: profileData.user_id || userDetails.id,
 			email: userDetails.email || profileData.email || locals.user.email,
 			name: userDetails.name || profileData.name || userDetails.email,
-			profilePhoto: profileData.profile_photo || userDetails.profile_photo || null,
+			profilePhoto: profileData.profile_photo || userDetails.profile_photo || userDetails.profile_pic || null,
 			phone: profileData.phone || userDetails.phone || null,
 			isActive: profileData.is_active !== undefined ? profileData.is_active : true,
 			lastLogin: userDetails.last_login || null,
-			createdAt: profileData.created_on || userDetails.date_joined || null,
+			createdAt: profileData.created_at || profileData.created_on || userDetails.date_joined || null,
 			organizations: [] // Django might not return this in profile endpoint
 		};
 

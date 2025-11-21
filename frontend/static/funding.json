@@ -23,7 +23,7 @@
             "wellKnown": ""
         },
         "repositoryUrl": {
-            "url": "https://github.com/MicroPyramid/opensource-startup-crm",
+            "url": "https://github.com/MicroPyramid/Django-CRM",
             "wellKnown": ""
         },
         "licenses": ["spdx:MIT"],

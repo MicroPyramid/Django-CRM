@@ -224,7 +224,7 @@
         </ul>
         
         <div class="flex space-x-3">
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
             <Download class="w-4 h-4 mr-2" />
             DIY Guide
           </a>
@@ -283,7 +283,7 @@
         </ul>
         
         <div class="flex space-x-3">
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+          <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
             <Download class="w-4 h-4 mr-2" />
             DIY Guide
           </a>
@@ -504,7 +504,7 @@
             <span class="text-xl text-gray-500">/Forever</span>
           </div>
           
-          <a href="https://github.com/MicroPyramid/opensource-startup-crm" 
+          <a href="https://github.com/MicroPyramid/Django-CRM" 
              target="_blank" rel="noopener noreferrer"
              class="w-full inline-flex items-center justify-center px-6 py-3 text-lg font-semibold rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100 transition-all duration-200">
             Download Free
@@ -967,7 +967,7 @@
     </p>
     
     <div class="flex flex-col sm:flex-row sm:justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-      <a href="https://github.com/MicroPyramid/opensource-startup-crm" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-purple-700 bg-white hover:bg-gray-100 shadow-2xl transition-all duration-200 hover:scale-105">
+      <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-purple-700 bg-white hover:bg-gray-100 shadow-2xl transition-all duration-200 hover:scale-105">
         <Github class="w-6 h-6 mr-3" />
         Start DIY Customization
       </a>

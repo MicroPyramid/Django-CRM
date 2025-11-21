@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -277,14 +278,19 @@ class ContactDetailView(APIView):
             "country": contact_obj.country,
         }
         context["countries"] = COUNTRIES
+        contact_content_type = ContentType.objects.get_for_model(Contact)
+        comments = Comment.objects.filter(
+            content_type=contact_content_type,
+            object_id=contact_obj.id
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=contact_content_type,
+            object_id=contact_obj.id
+        ).order_by("-id")
         context.update(
             {
-                "comments": CommentSerializer(
-                    contact_obj.contact_comments.all(), many=True
-                ).data,
-                "attachments": AttachmentsSerializer(
-                    contact_obj.contact_attachment.all(), many=True
-                ).data,
+                "comments": CommentSerializer(comments, many=True).data,
+                "attachments": AttachmentsSerializer(attachments, many=True).data,
                 "assigned_data": assigned_data,
                 "tasks": TaskSerializer(
                     contact_obj.contacts_tasks.all(), many=True
@@ -360,11 +366,14 @@ class ContactDetailView(APIView):
             attachment.attachment = self.request.FILES.get("contact_attachment")
             attachment.save()
 
-        comments = Comment.objects.filter(contact__id=self.contact_obj.id).order_by(
-            "-id"
-        )
+        contact_content_type = ContentType.objects.get_for_model(Contact)
+        comments = Comment.objects.filter(
+            content_type=contact_content_type,
+            object_id=self.contact_obj.id
+        ).order_by("-id")
         attachments = Attachments.objects.filter(
-            contact__id=self.contact_obj.id
+            content_type=contact_content_type,
+            object_id=self.contact_obj.id
         ).order_by("-id")
         context.update(
             {

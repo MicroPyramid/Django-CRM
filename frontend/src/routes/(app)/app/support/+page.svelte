@@ -47,7 +47,7 @@
                     Join our open-source community for free support, discussions, and collaboration.
                 </p>
                 <a 
-                    href="https://github.com/MicroPyramid/opensource-startup-crm" 
+                    href="https://github.com/MicroPyramid/Django-CRM" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium"
@@ -91,7 +91,7 @@
                 requests and help shape the future of open-source CRM.
             </p>
             <a 
-                href="https://github.com/MicroPyramid/opensource-startup-crm/issues/new?template=feature_request.md" 
+                href="https://github.com/MicroPyramid/Django-CRM/issues/new?template=feature_request.md" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
@@ -114,7 +114,7 @@
                 make the platform more stable for everyone.
             </p>
             <a 
-                href="https://github.com/MicroPyramid/opensource-startup-crm/issues/new?template=bug_report.md" 
+                href="https://github.com/MicroPyramid/Django-CRM/issues/new?template=bug_report.md" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 bg-orange-600 dark:bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors"
