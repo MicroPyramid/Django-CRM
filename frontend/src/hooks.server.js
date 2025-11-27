@@ -1,13 +1,10 @@
 /**
  * SvelteKit Server Hooks with JWT Authentication
  *
- * This is the JWT-based version of hooks.server.js for Django API integration.
- * Once tested and working, rename this file to hooks.server.js to activate it.
- *
  * Authentication Flow:
  * 1. JWT tokens stored in cookies (httpOnly for security)
- * 2. Each request validates JWT with Django backend
- * 3. Organization context fetched via API using org cookie
+ * 2. Decode JWT locally to check org context (no API call needed)
+ * 3. Only call switch-org if token doesn't have correct org
  * 4. Routes protected based on authentication and org membership
  */
 
@@ -15,6 +12,37 @@ import { redirect } from '@sveltejs/kit';
 import axios from 'axios';
 
 const API_BASE_URL = process.env.DJANGO_API_URL ? `${process.env.DJANGO_API_URL}/api` : 'http://localhost:8000/api';
+
+/**
+ * Decode JWT payload without verification (for reading claims only)
+ * @param {string} token - JWT token
+ * @returns {Object|null} Decoded payload or null if invalid
+ */
+function decodeJwtPayload(token) {
+	try {
+		const parts = token.split('.');
+		if (parts.length !== 3) return null;
+
+		const payload = parts[1];
+		// Handle base64url encoding
+		const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+		const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
+		return JSON.parse(jsonPayload);
+	} catch (error) {
+		return null;
+	}
+}
+
+/**
+ * Check if JWT token has the specified org_id in its payload
+ * @param {string} token - JWT token
+ * @param {string} orgId - Organization UUID to check
+ * @returns {boolean} True if token has the org context
+ */
+function tokenHasOrgContext(token, orgId) {
+	const payload = decodeJwtPayload(token);
+	return payload && payload.org_id === orgId;
+}
 
 /**
  * Verify JWT token with Django backend
@@ -57,21 +85,44 @@ async function refreshAccessToken(refreshToken) {
 /**
  * Get profile for specific organization
  * @param {string} accessToken - JWT access token
- * @param {string} orgId - Organization UUID
  * @returns {Promise<Object|null>} Profile data or null if invalid
  */
-async function getProfile(accessToken, orgId) {
+async function getProfile(accessToken) {
 	try {
 		const response = await axios.get(`${API_BASE_URL}/auth/profile/`, {
 			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				org: orgId
+				Authorization: `Bearer ${accessToken}`
 			}
 		});
 
 		return response.data;
 	} catch (error) {
 		console.error('Profile fetch failed:', error);
+		return null;
+	}
+}
+
+/**
+ * Switch organization and get new tokens with org context
+ * @param {string} accessToken - Current JWT access token
+ * @param {string} orgId - Organization UUID to switch to
+ * @returns {Promise<Object|null>} New tokens and org data or null if failed
+ */
+async function switchOrg(accessToken, orgId) {
+	try {
+		const response = await axios.post(`${API_BASE_URL}/auth/switch-org/`,
+			{ org_id: orgId },
+			{
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					'Content-Type': 'application/json'
+				}
+			}
+		);
+
+		return response.data;
+	} catch (error) {
+		console.error('Org switch failed:', error);
 		return null;
 	}
 }
@@ -119,35 +170,68 @@ export async function handle({ event, resolve }) {
 	if (user) {
 		event.locals.user = user;
 
-		// Check if org cookie is set and get profile
+		// Check if org cookie is set
 		if (orgId) {
 			// Verify user has access to this organization
 			const userOrg = user.organizations?.find((org) => org.id === orgId);
 
 			if (userOrg) {
-				// Get full profile from Django
-				const profile = await getProfile(accessToken, orgId);
+				// OPTIMIZATION: Check if token already has correct org context
+				// This avoids unnecessary API calls on every request
+				if (tokenHasOrgContext(accessToken, orgId)) {
+					// Token already has org context, just get profile
+					const profile = await getProfile(accessToken);
 
-				if (profile) {
-					// Set org and profile in locals
-					event.locals.org = profile.org;
-					event.locals.profile = profile;
-
-					// Decode org_name from cookie if available
-					const orgName = event.cookies.get('org_name');
-					if (orgName) {
-						try {
-							event.locals.org_name = decodeURIComponent(orgName);
-						} catch (e) {
-							event.locals.org_name = orgName;
-						}
-					} else {
+					if (profile) {
+						event.locals.org = profile.org;
+						event.locals.profile = profile;
 						event.locals.org_name = profile.org.name;
+					} else {
+						// Profile fetch failed, clear org cookies
+						event.cookies.delete('org', { path: '/' });
+						event.cookies.delete('org_name', { path: '/' });
 					}
 				} else {
-					// Profile fetch failed, clear org cookies
-					event.cookies.delete('org', { path: '/' });
-					event.cookies.delete('org_name', { path: '/' });
+					// Token doesn't have org context, need to switch
+					const switchResult = await switchOrg(accessToken, orgId);
+
+					if (switchResult) {
+						// Update cookies with new tokens that have org context
+						event.cookies.set('jwt_access', switchResult.access_token, {
+							path: '/',
+							httpOnly: true,
+							sameSite: 'lax',
+							secure: process.env.NODE_ENV === 'production',
+							maxAge: 60 * 60 * 24 // 1 day
+						});
+						event.cookies.set('jwt_refresh', switchResult.refresh_token, {
+							path: '/',
+							httpOnly: true,
+							sameSite: 'lax',
+							secure: process.env.NODE_ENV === 'production',
+							maxAge: 60 * 60 * 24 * 365 // 1 year
+						});
+
+						// Update accessToken for profile fetch
+						accessToken = switchResult.access_token;
+
+						// Get profile using the new token
+						const profile = await getProfile(accessToken);
+
+						if (profile) {
+							event.locals.org = profile.org;
+							event.locals.profile = profile;
+							event.locals.org_name = switchResult.current_org?.name || profile.org.name;
+						} else {
+							// Profile fetch failed, clear org cookies
+							event.cookies.delete('org', { path: '/' });
+							event.cookies.delete('org_name', { path: '/' });
+						}
+					} else {
+						// Org switch failed, clear org cookies
+						event.cookies.delete('org', { path: '/' });
+						event.cookies.delete('org_name', { path: '/' });
+					}
 				}
 			} else {
 				// User doesn't have access to this organization, clear org cookies

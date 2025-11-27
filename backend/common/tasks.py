@@ -4,6 +4,7 @@ from celery import Celery
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
+from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.encoding import force_bytes
@@ -13,6 +14,25 @@ from common.models import Comment, Profile, Teams, User
 from common.token_generator import account_activation_token
 
 app = Celery("redis://")
+
+
+def set_rls_context(org_id):
+    """
+    Set RLS context for Celery tasks that query org-scoped tables.
+
+    Celery workers don't go through Django middleware, so RLS context
+    must be set explicitly before querying org-scoped data.
+
+    Args:
+        org_id: Organization UUID (string or UUID object)
+    """
+    if org_id:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT set_config('app.current_org', %s, false)",
+                [str(org_id)]
+            )
+
 
 
 @app.task
@@ -62,8 +82,12 @@ def send_email_to_new_user(user_id):
 def send_email_user_mentions(
     comment_id,
     called_from,
+    org_id=None,
 ):
     """Send Mail To Mentioned Users In The Comment"""
+    # Set RLS context for org-scoped queries
+    set_rls_context(org_id)
+
     comment = Comment.objects.filter(id=comment_id).first()
     if comment:
         comment_text = comment.comment
@@ -274,7 +298,10 @@ def send_email_to_reset_password(user_email):
 # =============================================================================
 
 @app.task
-def remove_users(removed_users_list, team_id):
+def remove_users(removed_users_list, team_id, org_id=None):
+    # Set RLS context for org-scoped queries
+    set_rls_context(org_id)
+
     removed_users_list = [i for i in removed_users_list if i.isdigit()]
     users_list = Profile.objects.filter(id__in=removed_users_list)
     if users_list.exists():
@@ -329,8 +356,11 @@ def remove_users(removed_users_list, team_id):
 
 
 @app.task
-def update_team_users(team_id):
+def update_team_users(team_id, org_id=None):
     """this function updates assigned_to field on all models when a team is updated"""
+    # Set RLS context for org-scoped queries
+    set_rls_context(org_id)
+
     team = Teams.objects.filter(id=team_id).first()
     if team:
         teams_members = team.users.all()

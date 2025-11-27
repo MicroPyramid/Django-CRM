@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
+from django.core.exceptions import ValidationError
 
 from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES, INDCHOICES
@@ -109,15 +110,41 @@ class AccountEmail(BaseModel):
     scheduled_later = models.BooleanField(default=False)
     from_email = models.EmailField()
     rendered_message_body = models.TextField(null=True)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="account_emails",
+    )
 
     class Meta:
         verbose_name = "Account Email"
         verbose_name_plural = "Account Emails"
         db_table = "account_email"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.message_subject}"
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure org follows the parent account; fallback to the first recipient's org.
+
+        This guards against missing org assignment, which would violate multi-tenant isolation.
+        """
+        if not self.org_id:
+            if self.from_account and self.from_account.org_id:
+                self.org_id = self.from_account.org_id
+            else:
+                # For unsaved m2m, recipients may not be available until after save
+                recipient = self.recipients.first() if self.pk else None
+                if recipient and recipient.org_id:
+                    self.org_id = recipient.org_id
+        if not self.org_id:
+            raise ValidationError("Organization is required for AccountEmail")
+        super().save(*args, **kwargs)
 
 class AccountEmailLog(BaseModel):
     """this model is used to track if the email is sent or not"""
@@ -129,12 +156,33 @@ class AccountEmailLog(BaseModel):
         Contact, related_name="contact_email_log", on_delete=models.SET_NULL, null=True
     )
     is_sent = models.BooleanField(default=False)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="account_email_logs",
+    )
 
     class Meta:
         verbose_name = "EmailLog"
         verbose_name_plural = "EmailLogs"
         db_table = "emailLogs"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.email.message_subject}"
+
+    def save(self, *args, **kwargs):
+        """
+        Align log org with parent email (preferred) or contact org.
+        """
+        if not self.org_id:
+            if self.email and self.email.org_id:
+                self.org_id = self.email.org_id
+            elif self.contact and self.contact.org_id:
+                self.org_id = self.contact.org_id
+        if not self.org_id:
+            raise ValidationError("Organization is required for AccountEmailLog")
+        super().save(*args, **kwargs)

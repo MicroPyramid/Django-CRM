@@ -104,6 +104,7 @@ class TestUserMentionsForAccountComments(AccountCreateTest, TestCase):
             (
                 self.comment.id,
                 "accounts",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -133,6 +134,7 @@ class TestUserMentionsForContactsComments(ContactObjectsCreation, TestCase):
             (
                 self.comment.id,
                 "contacts",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -162,6 +164,7 @@ class TestUserMentionsForLeadsComments(TestLeadModel, TestCase):
             (
                 self.comment.id,
                 "leads",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -191,6 +194,7 @@ class TestUserMentionsForOpportunityComments(OpportunityModel, TestCase):
             (
                 self.comment.id,
                 "opportunity",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -220,6 +224,7 @@ class TestUserMentionsForCasesComments(CaseCreation, TestCase):
             (
                 self.comment.id,
                 "cases",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -249,6 +254,7 @@ class TestUserMentionsForTasksComments(TaskCreateTest, TestCase):
             (
                 self.comment.id,
                 "tasks",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)
@@ -278,6 +284,7 @@ class TestUserMentionsForInvoiceComments(InvoiceCreateTest, TestCase):
             (
                 self.comment.id,
                 "invoices",
+                str(self.comment.org.id),
             ),
         )
         self.assertEqual("SUCCESS", task.state)

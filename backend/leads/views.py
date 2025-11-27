@@ -138,7 +138,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["companies"] = CompanySerializer(
             Company.objects.filter(org=self.request.profile.org), many=True
         ).data
-        context["tags"] = TagsSerializer(Tags.objects.all(), many=True).data
+        context["tags"] = TagsSerializer(Tags.objects.filter(org=self.request.profile.org), many=True).data
 
         users = Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
             "id", "user__email"
@@ -225,13 +225,13 @@ class LeadListView(APIView, LimitOffsetPagination):
                 account_object.billing_country = lead_obj.country
                 lead_content_type = ContentType.objects.get_for_model(Lead)
                 account_content_type = ContentType.objects.get_for_model(Account)
-                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
                 if comments.exists():
                     for comment in comments:
                         comment.content_type = account_content_type
                         comment.object_id = account_object.id
                         comment.save()
-                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
                 if attachments.exists():
                     for attachment in attachments:
                         attachment.content_type = account_content_type
@@ -270,7 +270,7 @@ class LeadDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return get_object_or_404(Lead, id=pk)
+        return get_object_or_404(Lead, id=pk, org=self.request.profile.org)
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -318,6 +318,17 @@ class LeadDetailView(APIView):
             users_mention = list(
                 self.lead_obj.assigned_to.all().values("user__email")
             )
+        lead_content_type = ContentType.objects.get_for_model(Lead)
+        comments = Comment.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id,
+            org=self.request.profile.org
+        ).order_by("-id")
+        attachments = Attachments.objects.filter(
+            content_type=lead_content_type,
+            object_id=self.lead_obj.id,
+            org=self.request.profile.org
+        ).order_by("-id")
         if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
             users = Profile.objects.filter(
                 is_active=True, org=self.request.profile.org
@@ -417,11 +428,13 @@ class LeadDetailView(APIView):
         lead_content_type = ContentType.objects.get_for_model(Lead)
         comments = Comment.objects.filter(
             content_type=lead_content_type,
-            object_id=self.lead_obj.id
+            object_id=self.lead_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=lead_content_type,
-            object_id=self.lead_obj.id
+            object_id=self.lead_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -524,13 +537,13 @@ class LeadDetailView(APIView):
                 account_object.billing_country = lead_obj.country
                 lead_content_type = ContentType.objects.get_for_model(Lead)
                 account_content_type = ContentType.objects.get_for_model(Account)
-                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+                comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
                 if comments.exists():
                     for comment in comments:
                         comment.content_type = account_content_type
                         comment.object_id = account_object.id
                         comment.save()
-                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+                attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
                 if attachments.exists():
                     for attachment in attachments:
                         attachment.content_type = account_content_type
@@ -620,14 +633,14 @@ class LeadDetailView(APIView):
             # Move comments to account
             lead_content_type = ContentType.objects.get_for_model(Lead)
             account_content_type = ContentType.objects.get_for_model(Account)
-            comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+            comments = Comment.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
             for comment in comments:
                 comment.content_type = account_content_type
                 comment.object_id = account_object.id
                 comment.save()
 
             # Move attachments to account
-            attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id)
+            attachments = Attachments.objects.filter(content_type=lead_content_type, object_id=self.lead_obj.id, org=request.profile.org)
             for attachment in attachments:
                 attachment.content_type = account_content_type
                 attachment.object_id = account_object.id
@@ -744,7 +757,7 @@ class LeadCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params,request=LeadCommentEditSwaggerSerializer)
     def put(self, request, pk, format=None):

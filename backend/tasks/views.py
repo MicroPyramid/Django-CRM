@@ -140,7 +140,7 @@ class TaskDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return Task.objects.get(pk=pk)
+        return Task.objects.get(pk=pk, org=self.request.profile.org)
 
     def get_context_data(self, **kwargs):
         context = {}
@@ -162,11 +162,13 @@ class TaskDetailView(APIView):
         task_content_type = ContentType.objects.get_for_model(Task)
         comments = Comment.objects.filter(
             content_type=task_content_type,
-            object_id=self.task_obj.id
+            object_id=self.task_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=task_content_type,
-            object_id=self.task_obj.id
+            object_id=self.task_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
 
         assigned_data = self.task_obj.assigned_to.values("id", "user__email")
@@ -269,11 +271,13 @@ class TaskDetailView(APIView):
         task_content_type = ContentType.objects.get_for_model(Task)
         comments = Comment.objects.filter(
             content_type=task_content_type,
-            object_id=self.task_obj.id
+            object_id=self.task_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=task_content_type,
-            object_id=self.task_obj.id
+            object_id=self.task_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -356,7 +360,7 @@ class TaskCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Tasks"], parameters=swagger_params.organization_params,request=TaskCommentEditSwaggerSerializer

@@ -21,6 +21,37 @@ from common.models import (
 )
 
 
+class OrgAwareRefreshToken(RefreshToken):
+    """
+    Custom RefreshToken that includes org_id in the token payload.
+
+    This ensures the org context is cryptographically signed and cannot be
+    forged by the client. The middleware should validate org_id from this
+    token instead of trusting the org header.
+    """
+
+    @classmethod
+    def for_user_and_org(cls, user, org):
+        """
+        Generate a refresh token for a user with org context.
+
+        Args:
+            user: User instance
+            org: Org instance or org_id UUID
+
+        Returns:
+            OrgAwareRefreshToken with org_id claim
+        """
+        token = cls.for_user(user)
+
+        # Add org_id to the token payload
+        if org:
+            org_id = str(org.id) if hasattr(org, 'id') else str(org)
+            token['org_id'] = org_id
+
+        return token
+
+
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org

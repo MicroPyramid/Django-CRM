@@ -32,11 +32,6 @@ export async function apiRequest(endpoint, options = {}, locals) {
 	const cookies = locals.cookies || locals;
 	// Support both naming conventions (jwt_access from login, access_token from legacy)
 	const accessToken = cookies.get?.('jwt_access') || cookies.get?.('access_token');
-	const orgId = locals.org?.id;
-
-	if (!orgId) {
-		throw new Error('Organization context is required for API requests');
-	}
 
 	// Build request headers
 	const requestHeaders = {
@@ -45,12 +40,10 @@ export async function apiRequest(endpoint, options = {}, locals) {
 	};
 
 	// Add authentication
+	// Note: Organization context is now embedded in JWT token, not sent as header
 	if (accessToken) {
 		requestHeaders['Authorization'] = `Bearer ${accessToken}`;
 	}
-
-	// Add organization context
-	requestHeaders['org'] = orgId;
 
 	// Build request options
 	const requestOptions = {

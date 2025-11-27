@@ -254,7 +254,7 @@ class InvoiceDetailView(APIView):
     model = Invoice
 
     def get_object(self, pk):
-        return self.model.objects.filter(id=pk).first()
+        return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
         tags=["Invoices"],
@@ -466,11 +466,13 @@ class InvoiceDetailView(APIView):
         invoice_content_type = ContentType.objects.get_for_model(Invoice)
         attachments = Attachments.objects.filter(
             content_type=invoice_content_type,
-            object_id=self.invoice.id
+            object_id=self.invoice.id,
+            org=self.request.profile.org
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=invoice_content_type,
-            object_id=self.invoice.id
+            object_id=self.invoice.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -543,11 +545,13 @@ class InvoiceDetailView(APIView):
         invoice_content_type = ContentType.objects.get_for_model(Invoice)
         comments = Comment.objects.filter(
             content_type=invoice_content_type,
-            object_id=self.invoice_obj.id
+            object_id=self.invoice_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=invoice_content_type,
-            object_id=self.invoice_obj.id
+            object_id=self.invoice_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -565,7 +569,7 @@ class InvoiceCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Invoices"],

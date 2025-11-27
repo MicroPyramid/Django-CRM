@@ -39,6 +39,9 @@ class Board(BaseModel):
         verbose_name_plural = 'Boards'
         db_table = 'board'
         ordering = ('-created_at',)
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return self.name
@@ -64,15 +67,28 @@ class BoardMember(BaseModel):
         related_name='board_memberships'
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name='board_members',
+    )
 
     class Meta:
         verbose_name = 'Board Member'
         verbose_name_plural = 'Board Members'
         db_table = 'board_member'
         unique_together = ('board', 'profile')
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.profile} - {self.board} ({self.role})"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.board_id:
+            self.org_id = self.board.org_id
+        super().save(*args, **kwargs)
 
 
 class BoardColumn(BaseModel):
@@ -87,6 +103,11 @@ class BoardColumn(BaseModel):
     order = models.PositiveIntegerField(default=0)
     color = models.CharField(max_length=7, default='#6B7280')  # Hex color
     limit = models.PositiveIntegerField(null=True, blank=True)  # WIP limit
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name='board_columns',
+    )
 
     class Meta:
         verbose_name = 'Board Column'
@@ -94,9 +115,17 @@ class BoardColumn(BaseModel):
         db_table = 'board_column'
         ordering = ('order',)
         unique_together = ('board', 'name')
+        indexes = [
+            models.Index(fields=['org', 'order']),
+        ]
 
     def __str__(self):
         return f"{self.board.name} - {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.board_id:
+            self.org_id = self.board.org_id
+        super().save(*args, **kwargs)
 
 
 class BoardTask(BaseModel):
@@ -152,15 +181,28 @@ class BoardTask(BaseModel):
         blank=True,
         related_name='board_tasks'
     )
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name='board_tasks',
+    )
 
     class Meta:
         verbose_name = 'Board Task'
         verbose_name_plural = 'Board Tasks'
         db_table = 'board_task'
         ordering = ('order',)
+        indexes = [
+            models.Index(fields=['org', 'order']),
+        ]
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.column_id:
+            self.org_id = self.column.board.org_id
+        super().save(*args, **kwargs)
 
     def mark_complete(self):
         """Mark task as completed"""

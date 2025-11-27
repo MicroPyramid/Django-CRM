@@ -10,6 +10,7 @@
  */
 
 import { env } from '$env/dynamic/private';
+import { redirect, fail } from '@sveltejs/kit';
 import axios from 'axios';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -56,3 +57,78 @@ export async function load({ cookies, locals }) {
 		return { orgs: [] };
 	}
 }
+
+/** @type {import('./$types').Actions} */
+export const actions = {
+	selectOrg: async ({ request, cookies }) => {
+		const formData = await request.formData();
+		const orgId = formData.get('org_id');
+		const orgName = formData.get('org_name');
+
+		if (!orgId) {
+			return fail(400, { error: 'Organization ID is required' });
+		}
+
+		const jwtAccess = cookies.get('jwt_access');
+		if (!jwtAccess) {
+			throw redirect(307, '/login');
+		}
+
+		const apiUrl = env.DJANGO_API_URL || 'http://localhost:8000';
+
+		try {
+			// Call switch-org endpoint to get new tokens with org context
+			const response = await axios.post(
+				`${apiUrl}/api/auth/switch-org/`,
+				{ org_id: orgId },
+				{
+					headers: {
+						Authorization: `Bearer ${jwtAccess}`,
+						'Content-Type': 'application/json'
+					}
+				}
+			);
+
+			const { access_token, refresh_token, current_org } = response.data;
+
+			// Update cookies with new tokens that have org context embedded
+			cookies.set('jwt_access', access_token, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'lax',
+				secure: process.env.NODE_ENV === 'production',
+				maxAge: 60 * 60 * 24 // 1 day
+			});
+
+			cookies.set('jwt_refresh', refresh_token, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'lax',
+				secure: process.env.NODE_ENV === 'production',
+				maxAge: 60 * 60 * 24 * 365 // 1 year
+			});
+
+			// Set org cookies for reference
+			cookies.set('org', orgId, {
+				path: '/',
+				sameSite: 'strict',
+				maxAge: 60 * 60 * 24 * 365
+			});
+
+			cookies.set('org_name', encodeURIComponent(current_org?.name || orgName), {
+				path: '/',
+				sameSite: 'strict',
+				maxAge: 60 * 60 * 24 * 365
+			});
+
+			// Redirect to app
+			throw redirect(303, '/app');
+		} catch (error) {
+			if (error.status === 303) {
+				throw error; // Re-throw redirect
+			}
+			console.error('Org switch failed:', error);
+			return fail(500, { error: 'Failed to switch organization' });
+		}
+	}
+};

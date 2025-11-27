@@ -134,7 +134,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
 
-        tags = Tags.objects.all()
+        tags = Tags.objects.filter(org=self.request.profile.org)
         tags = TagsSerailizer(tags, many=True).data
 
         context["tags"] = tags
@@ -224,7 +224,7 @@ class AccountDetailView(APIView):
     serializer_class = AccountReadSerializer
 
     def get_object(self, pk):
-        return get_object_or_404(Account, id=pk)
+        return get_object_or_404(Account, id=pk, org=self.request.profile.org)
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountWriteSerializer)
     def put(self, request, pk, format=None):
@@ -392,11 +392,13 @@ class AccountDetailView(APIView):
         account_content_type = ContentType.objects.get_for_model(Account)
         comments = Comment.objects.filter(
             content_type=account_content_type,
-            object_id=self.account.id
+            object_id=self.account.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=account_content_type,
-            object_id=self.account.id
+            object_id=self.account.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -450,7 +452,7 @@ class AccountDetailView(APIView):
     def post(self, request, pk, **kwargs):
         data = request.data
         context = {}
-        self.account_obj = Account.objects.get(pk=pk)
+        self.account_obj = Account.objects.get(pk=pk, org=request.profile.org)
         if self.account_obj.org != request.profile.org:
             return Response(
                 {
@@ -490,11 +492,13 @@ class AccountDetailView(APIView):
         account_content_type = ContentType.objects.get_for_model(Account)
         comments = Comment.objects.filter(
             content_type=account_content_type,
-            object_id=self.account_obj.id
+            object_id=self.account_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=account_content_type,
-            object_id=self.account_obj.id
+            object_id=self.account_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -513,7 +517,7 @@ class AccountCommentView(APIView):
     serializer_class = AccountCommentEditSwaggerSerializer
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountCommentEditSwaggerSerializer

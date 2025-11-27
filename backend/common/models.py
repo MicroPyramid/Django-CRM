@@ -82,8 +82,6 @@ class Address(BaseModel):
         "Org",
         on_delete=models.CASCADE,
         related_name="addresses",
-        null=True,
-        blank=True,
     )
 
     class Meta:
@@ -157,8 +155,6 @@ class Tags(BaseModel):
         "Org",
         on_delete=models.CASCADE,
         related_name="tags",
-        null=True,
-        blank=True,
     )
 
     class Meta:
@@ -315,6 +311,25 @@ class Comment(BaseModel):
     def commented_on_arrow(self):
         return arrow.get(self.commented_on).humanize()
 
+    def clean(self):
+        """
+        Validate that the comment's org matches the content object's org.
+
+        SECURITY: This prevents cross-org data references where a comment
+        in org_a could reference an object in org_b.
+        """
+        from django.core.exceptions import ValidationError
+
+        if self.content_object and hasattr(self.content_object, 'org'):
+            if self.content_object.org_id != self.org_id:
+                raise ValidationError({
+                    'org': 'Comment organization must match the referenced object\'s organization.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class CommentFiles(BaseModel):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
@@ -404,6 +419,25 @@ class Attachments(BaseModel):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_at).humanize()
+
+    def clean(self):
+        """
+        Validate that the attachment's org matches the content object's org.
+
+        SECURITY: This prevents cross-org data references where an attachment
+        in org_a could reference an object in org_b.
+        """
+        from django.core.exceptions import ValidationError
+
+        if self.content_object and hasattr(self.content_object, 'org'):
+            if self.content_object.org_id != self.org_id:
+                raise ValidationError({
+                    'org': 'Attachment organization must match the referenced object\'s organization.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 def document_path(self, filename):
@@ -733,3 +767,7 @@ class ContactFormSubmission(BaseModel):
         self.replied_by = user
         self.replied_at = timezone.now()
         self.save()
+
+
+# Import SecurityAuditLog so Django discovers it for migrations
+from common.audit_log import SecurityAuditLog

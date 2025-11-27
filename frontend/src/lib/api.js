@@ -152,7 +152,6 @@ async function refreshAccessToken() {
  * @param {string} options.method - HTTP method (GET, POST, PUT, DELETE, etc.)
  * @param {Object} options.body - Request body (will be JSON stringified)
  * @param {Object} options.headers - Additional headers
- * @param {boolean} options.requiresOrg - Whether this endpoint requires org header (default: true)
  * @param {boolean} options.requiresAuth - Whether this endpoint requires authentication (default: true)
  * @returns {Promise<Object>} Response data
  * @throws {Error} If request fails
@@ -162,7 +161,6 @@ export async function apiRequest(endpoint, options = {}) {
 		method = 'GET',
 		body = null,
 		headers = {},
-		requiresOrg = true,
 		requiresAuth = true
 	} = options;
 
@@ -175,18 +173,11 @@ export async function apiRequest(endpoint, options = {}) {
 	};
 
 	// Add authentication if required
+	// Note: Organization context is now embedded in JWT token, not sent as header
 	if (requiresAuth) {
 		const accessToken = getAccessToken();
 		if (accessToken) {
 			requestHeaders['Authorization'] = `Bearer ${accessToken}`;
-		}
-	}
-
-	// Add organization header if required
-	if (requiresOrg) {
-		const orgId = getOrgId();
-		if (orgId) {
-			requestHeaders['org'] = orgId;
 		}
 	}
 
@@ -236,20 +227,30 @@ export const auth = {
 	 * Login with email and password
 	 * @param {string} email - User email
 	 * @param {string} password - User password
-	 * @returns {Promise<Object>} User data with tokens
+	 * @param {string} [orgId] - Optional organization ID to login to
+	 * @returns {Promise<Object>} User data with tokens and current_org
 	 */
-	async login(email, password) {
+	async login(email, password, orgId = null) {
+		const body = { email, password };
+		if (orgId) {
+			body.org_id = orgId;
+		}
+
 		const data = await apiRequest('/auth/login/', {
 			method: 'POST',
-			body: { email, password },
-			requiresAuth: false,
-			requiresOrg: false
+			body,
+			requiresAuth: false
 		});
 
 		// Store tokens and user data
 		setInStorage(STORAGE_KEYS.ACCESS_TOKEN, data.access_token);
 		setInStorage(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
 		setInStorage(STORAGE_KEYS.USER, JSON.stringify(data.user));
+
+		// Store current org if provided
+		if (data.current_org) {
+			setInStorage(STORAGE_KEYS.ORG_ID, data.current_org.id);
+		}
 
 		return data;
 	},
@@ -265,9 +266,28 @@ export const auth = {
 		return await apiRequest('/auth/register/', {
 			method: 'POST',
 			body: { email, password, confirm_password: confirmPassword },
-			requiresAuth: false,
-			requiresOrg: false
+			requiresAuth: false
 		});
+	},
+
+	/**
+	 * Switch to a different organization
+	 * This issues new JWT tokens with the new org context
+	 * @param {string} orgId - Organization UUID to switch to
+	 * @returns {Promise<Object>} New tokens and org data
+	 */
+	async switchOrg(orgId) {
+		const data = await apiRequest('/auth/switch-org/', {
+			method: 'POST',
+			body: { org_id: orgId }
+		});
+
+		// Update tokens with new org context
+		setInStorage(STORAGE_KEYS.ACCESS_TOKEN, data.access_token);
+		setInStorage(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
+		setInStorage(STORAGE_KEYS.ORG_ID, data.current_org.id);
+
+		return data;
 	},
 
 	/**
@@ -275,9 +295,7 @@ export const auth = {
 	 * @returns {Promise<Object>} Current user with organizations
 	 */
 	async me() {
-		const data = await apiRequest('/auth/me/', {
-			requiresOrg: false
-		});
+		const data = await apiRequest('/auth/me/');
 
 		// Update stored user data
 		setInStorage(STORAGE_KEYS.USER, JSON.stringify(data));

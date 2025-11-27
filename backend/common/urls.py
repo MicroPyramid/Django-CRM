@@ -14,11 +14,12 @@ urlpatterns = [
     path("auth/register/", views.RegisterView.as_view(), name="register"),
     path(
         "auth/refresh-token/",
-        jwt_views.TokenRefreshView.as_view(),
+        views.OrgAwareTokenRefreshView.as_view(),
         name="token_refresh",
     ),
     path("auth/me/", views.MeView.as_view(), name="me"),
     path("auth/profile/", views.ProfileDetailView.as_view(), name="profile_detail"),
+    path("auth/switch-org/", views.OrgSwitchView.as_view(), name="switch_org"),
 
     # GoogleLoginView
     path("auth/google/", views.GoogleLoginView.as_view()),

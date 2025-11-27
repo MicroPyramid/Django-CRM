@@ -139,23 +139,125 @@ Every request operates within an organization context:
 
 ### Authentication
 
-JWT-based authentication with required headers:
+JWT-based authentication:
 
 ```
 Authorization: Bearer <token>
-org: <organization_uuid>
 ```
 
+- Organization ID is embedded in the JWT token (not sent as header)
 - Access token lifetime: 1 day
 - Refresh token lifetime: 365 days
 
 ### Middleware
 
-The `common.middleware.get_company.GetProfileAndOrg` middleware:
-- Extracts JWT token from `Authorization` header
-- Extracts org UUID from `org` header
-- Sets `request.profile` (current user's Profile)
-- Sets `request.profile.org` (current Organization)
+The middleware chain provides security:
+
+1. **`GetProfileAndOrg`** (`common.middleware.get_company`):
+   - Extracts org_id from JWT token claims (not headers - prevents spoofing)
+   - Validates user has active membership in the organization
+   - Sets `request.profile` and `request.org`
+
+2. **`RequireOrgContext`** (`common.middleware.rls_context`):
+   - Sets PostgreSQL session variable `app.current_org` for RLS
+   - Resets context after each request
+
+### Row-Level Security (RLS)
+
+PostgreSQL RLS provides database-level tenant isolation as defense-in-depth.
+
+#### How It Works
+
+1. **Middleware sets context**: `SET app.current_org = '<org_id>'`
+2. **RLS policies filter queries**: Only rows matching `org_id` are visible
+3. **Fail-safe design**: Empty context returns zero rows (NULLIF pattern)
+
+#### Protected Tables (24 total)
+
+| Category | Tables |
+|----------|--------|
+| Core Business | `lead`, `accounts`, `contacts`, `opportunity`, `case`, `task`, `invoice` |
+| Supporting | `comment`, `attachments`, `document`, `teams`, `activity`, `tags`, `address`, `solution` |
+| Boards | `board`, `board_column`, `board_task`, `board_member` |
+| Other | `apiSettings`, `account_email`, `emailLogs`, `invoice_history`, `security_audit_log` |
+
+#### Configuration
+
+RLS is configured in `common/rls/__init__.py`:
+
+```python
+from common.rls import RLS_CONFIG, get_enable_policy_sql
+
+# List of protected tables
+tables = RLS_CONFIG['tables']
+
+# Enable RLS on a table
+cursor.execute(get_enable_policy_sql('my_table'))
+```
+
+#### Management Commands
+
+```bash
+# Check RLS status on all tables
+python manage.py manage_rls --status
+
+# Verify database user is non-superuser (required for RLS)
+python manage.py manage_rls --verify-user
+
+# Test RLS isolation between organizations
+python manage.py manage_rls --test
+
+# Enable RLS on all configured tables
+python manage.py manage_rls --enable
+
+# Disable RLS (for debugging only)
+python manage.py manage_rls --disable
+```
+
+#### Critical: Database User Setup
+
+**PostgreSQL superusers bypass ALL RLS policies.** You must use a non-superuser:
+
+```sql
+-- Create application user
+CREATE USER crm_app WITH PASSWORD 'your_secure_password';
+
+-- Grant permissions
+GRANT CONNECT ON DATABASE bottlecrm TO crm_app;
+GRANT USAGE ON SCHEMA public TO crm_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO crm_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO crm_app;
+
+-- Future tables inherit permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO crm_app;
+```
+
+Update `.env`:
+```env
+DBUSER=crm_app
+DBPASSWORD=your_secure_password
+```
+
+#### Celery Tasks & RLS
+
+Background tasks don't go through middleware, so set RLS context manually:
+
+```python
+from common.tasks import set_rls_context
+
+@app.task
+def my_background_task(data_id, org_id):
+    set_rls_context(org_id)  # Required!
+    obj = MyModel.objects.get(id=data_id)
+    # ... process
+```
+
+#### Adding RLS to New Tables
+
+1. Add table name to `ORG_SCOPED_TABLES` in `common/rls/__init__.py`
+2. Create migration using `get_enable_policy_sql()`
+3. Ensure model has `org = models.ForeignKey(Org, ...)`
 
 ### BaseModel Pattern
 

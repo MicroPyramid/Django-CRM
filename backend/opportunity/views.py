@@ -90,7 +90,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["opportunities"] = opportunities
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
-        context["tags"] = TagsSerailizer(Tags.objects.filter(), many=True).data
+        context["tags"] = TagsSerailizer(Tags.objects.filter(org=self.request.profile.org), many=True).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
         context["currency"] = CURRENCY_CODES
@@ -186,7 +186,7 @@ class OpportunityDetailView(APIView):
     model = Opportunity
 
     def get_object(self, pk):
-        return self.model.objects.filter(id=pk).first()
+        return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
         tags=["Opportunities"],
@@ -366,11 +366,13 @@ class OpportunityDetailView(APIView):
         opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
         comments = Comment.objects.filter(
             content_type=opportunity_content_type,
-            object_id=self.opportunity.id
+            object_id=self.opportunity.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=opportunity_content_type,
-            object_id=self.opportunity.id
+            object_id=self.opportunity.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -401,7 +403,7 @@ class OpportunityDetailView(APIView):
     def post(self, request, pk, **kwargs):
         params = request.data
         context = {}
-        self.opportunity_obj = Opportunity.objects.get(pk=pk)
+        self.opportunity_obj = Opportunity.objects.get(pk=pk, org=request.profile.org)
         if self.opportunity_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
@@ -440,11 +442,13 @@ class OpportunityDetailView(APIView):
         opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
         comments = Comment.objects.filter(
             content_type=opportunity_content_type,
-            object_id=self.opportunity_obj.id
+            object_id=self.opportunity_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=opportunity_content_type,
-            object_id=self.opportunity_obj.id
+            object_id=self.opportunity_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -462,7 +466,7 @@ class OpportunityCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Opportunities"],

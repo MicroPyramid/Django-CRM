@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "crum.CurrentRequestUserMiddleware",
     # "common.external_auth.CustomDualAuthentication"
     "common.middleware.get_company.GetProfileAndOrg",
+    "common.middleware.rls_context.RequireOrgContext",  # RLS: Enforce org context + set PostgreSQL session variable
 ]
 
 ROOT_URLCONF = "crm.urls"
@@ -181,7 +182,11 @@ LOGGING = {
         "django.server": {
             "()": "django.utils.log.ServerFormatter",
             "format": "[%(server_time)s] %(message)s",
-        }
+        },
+        "security": {
+            "format": "%(asctime)s | %(levelname)s | %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
     },
     "handlers": {
         "console": {
@@ -208,6 +213,11 @@ LOGGING = {
             "class": "logging.FileHandler",
             "filename": "server.log",
         },
+        "security_audit": {
+            "class": "logging.FileHandler",
+            "filename": "security_audit.log",
+            "formatter": "security",
+        },
     },
     "loggers": {
         "django": {
@@ -220,6 +230,11 @@ LOGGING = {
         },
         "django.server": {
             "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security.audit": {
+            "handlers": ["security_audit", "console"],
             "level": "INFO",
             "propagate": False,
         },

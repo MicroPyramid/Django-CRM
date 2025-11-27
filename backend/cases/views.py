@@ -154,7 +154,7 @@ class CaseDetailView(APIView):
     model = Case
 
     def get_object(self, pk):
-        return self.model.objects.filter(id=pk).first()
+        return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
         tags=["Cases"], parameters=swagger_params.organization_params,request=CaseCreateSwaggerSerializer
@@ -322,11 +322,13 @@ class CaseDetailView(APIView):
         case_content_type = ContentType.objects.get_for_model(Case)
         attachments = Attachments.objects.filter(
             content_type=case_content_type,
-            object_id=self.cases.id
+            object_id=self.cases.id,
+            org=self.request.profile.org
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=case_content_type,
-            object_id=self.cases.id
+            object_id=self.cases.id,
+            org=self.request.profile.org
         ).order_by("-id")
 
         context.update(
@@ -350,7 +352,7 @@ class CaseDetailView(APIView):
     )
     def post(self, request, pk, **kwargs):
         params = request.data
-        self.cases_obj = Case.objects.get(pk=pk)
+        self.cases_obj = Case.objects.get(pk=pk, org=request.profile.org)
         if self.cases_obj.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
@@ -388,11 +390,13 @@ class CaseDetailView(APIView):
         case_content_type = ContentType.objects.get_for_model(Case)
         attachments = Attachments.objects.filter(
             content_type=case_content_type,
-            object_id=self.cases_obj.id
+            object_id=self.cases_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=case_content_type,
-            object_id=self.cases_obj.id
+            object_id=self.cases_obj.id,
+            org=request.profile.org
         ).order_by("-id")
 
         context.update(
@@ -411,7 +415,7 @@ class CaseCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Cases"], parameters=swagger_params.organization_params,request=CaseCommentEditSwaggerSerializer

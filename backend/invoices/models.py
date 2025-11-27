@@ -211,16 +211,29 @@ class InvoiceHistory(BaseModel):
     # details or description here stores the fields changed in the original invoice object
     details = models.TextField(_("Details"), null=True, blank=True)
     due_date = models.DateField(blank=True, null=True)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="invoice_histories",
+    )
 
     class Meta:
         verbose_name = "InvoiceHistory"
         verbose_name_plural = "InvoiceHistories"
         db_table = "invoice_history"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
 
     def __str__(self):
         """Unicode representation of Invoice."""
         return self.invoice_number
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.invoice_id:
+            self.org_id = self.invoice.org_id
+        super().save(*args, **kwargs)
 
     def formatted_total_amount(self):
         return self.currency + " " + str(self.total_amount)
@@ -280,12 +293,20 @@ class InvoiceLineItem(BaseModel):
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     order = models.PositiveIntegerField(default=0)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name='invoice_line_items',
+    )
 
     class Meta:
         verbose_name = "Invoice Line Item"
         verbose_name_plural = "Invoice Line Items"
         db_table = "invoice_line_item"
         ordering = ("order",)
+        indexes = [
+            models.Index(fields=['org', 'order']),
+        ]
 
     def __str__(self):
         return f"{self.invoice.invoice_number} - {self.description}"
@@ -293,6 +314,8 @@ class InvoiceLineItem(BaseModel):
     def save(self, *args, **kwargs):
         # Auto-calculate total
         self.total = self.quantity * self.unit_price
+        if not self.org_id and self.invoice_id:
+            self.org_id = self.invoice.org_id
         super().save(*args, **kwargs)
 
     @property

@@ -142,7 +142,7 @@ class ContactDetailView(APIView):
     model = Contact
 
     def get_object(self, pk):
-        return get_object_or_404(Contact, pk=pk)
+        return get_object_or_404(Contact, pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["contacts"], parameters=swagger_params.contact_create_post_params,request=CreateContactSerializer
@@ -281,11 +281,13 @@ class ContactDetailView(APIView):
         contact_content_type = ContentType.objects.get_for_model(Contact)
         comments = Comment.objects.filter(
             content_type=contact_content_type,
-            object_id=contact_obj.id
+            object_id=contact_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=contact_content_type,
-            object_id=contact_obj.id
+            object_id=contact_obj.id,
+            org=request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -369,11 +371,13 @@ class ContactDetailView(APIView):
         contact_content_type = ContentType.objects.get_for_model(Contact)
         comments = Comment.objects.filter(
             content_type=contact_content_type,
-            object_id=self.contact_obj.id
+            object_id=self.contact_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=contact_content_type,
-            object_id=self.contact_obj.id
+            object_id=self.contact_obj.id,
+            org=self.request.profile.org
         ).order_by("-id")
         context.update(
             {
@@ -391,7 +395,7 @@ class ContactCommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk)
+        return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["contacts"], parameters=swagger_params.organization_params,request=ContactCommentEditSwaggerSerializer

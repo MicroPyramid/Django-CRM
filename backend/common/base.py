@@ -75,3 +75,75 @@ class BaseModel(AuditModel):
 
     def __str__(self):
         return str(self.id)
+
+
+class OrgScopedQuerySet(models.QuerySet):
+    """QuerySet with automatic organization filtering support"""
+
+    def for_org(self, org):
+        """Filter queryset by organization"""
+        return self.filter(org=org)
+
+    def for_request(self, request):
+        """Filter queryset by organization from request"""
+        if hasattr(request, 'profile') and request.profile:
+            return self.filter(org=request.profile.org)
+        return self.none()
+
+
+class OrgScopedManager(models.Manager):
+    """Manager that uses OrgScopedQuerySet"""
+
+    def get_queryset(self):
+        return OrgScopedQuerySet(self.model, using=self._db)
+
+    def for_org(self, org):
+        return self.get_queryset().for_org(org)
+
+    def for_request(self, request):
+        return self.get_queryset().for_request(request)
+
+
+class BaseOrgModel(BaseModel):
+    """
+    Base model for all organization-scoped entities.
+
+    All tenant-owned models should inherit from this instead of BaseModel.
+    This ensures:
+    - Required org field (no null values)
+    - Per-org indexes for performance
+    - OrgScopedManager for easier filtering
+
+    RLS Protection:
+    ---------------
+    Models inheriting from BaseOrgModel are protected by PostgreSQL Row-Level
+    Security (RLS) policies. The database automatically filters rows by the
+    current organization context (app.current_org session variable).
+
+    RLS Configuration: See common/rls/__init__.py for policy definitions.
+    Management: Use `python manage.py manage_rls --status` to check status.
+
+    IMPORTANT: RLS is bypassed if the database user is a superuser.
+    """
+
+    org = models.ForeignKey(
+        'common.Org',
+        on_delete=models.CASCADE,
+        related_name="%(class)s_set",
+        help_text="Organization this record belongs to"
+    )
+
+    objects = OrgScopedManager()
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['org', '-created_at']),
+        ]
+
+    def save(self, *args, **kwargs):
+        # Validate org is set
+        if not self.org_id:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Organization (org) is required for this model")
+        super().save(*args, **kwargs)

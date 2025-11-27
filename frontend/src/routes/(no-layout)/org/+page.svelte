@@ -1,29 +1,13 @@
 <script>
     import '../../../app.css'
-    import { Building, Settings, LogOut, Plus } from '@lucide/svelte';
-    import { goto } from '$app/navigation';
-    import { browser } from '$app/environment';
-    
+    import { Building, LogOut, Plus } from '@lucide/svelte';
+    import { enhance } from '$app/forms';
+
     // Get the data from the server load function
     export let data;
     const { orgs } = data;
-    
-    // Function to handle organization selection
-    /**
-     * @param {Object} org - Organization object
-     * @param {string} org.id - Organization ID
-     * @param {string} org.name - Organization name
-     */
-    function selectOrg(org) {
-        if (browser) {
-            // Set both org id and org name in cookies
-            document.cookie = `org=${org.id}; path=/; SameSite=Strict`;
-            document.cookie = `org_name=${encodeURIComponent(org.name)}; path=/; SameSite=Strict`;
 
-            // Redirect to homepage
-            goto('/app');
-        }
-    }
+    let loading = false;
 </script>
 
 <div class="min-h-screen bg-gray-50 p-4">
@@ -48,34 +32,47 @@
         {#if orgs.length > 0}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {#each orgs as org}
-                    <button 
-                        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer group w-full text-left"
-                        onclick={() => selectOrg(org)}
-                        type="button"
-                        aria-label="Select {org.name} organization"
+                    <form
+                        method="POST"
+                        action="?/selectOrg"
+                        use:enhance={() => {
+                            loading = true;
+                            return async ({ update }) => {
+                                await update();
+                                loading = false;
+                            };
+                        }}
+                        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer group"
                     >
-                        <div class="p-6">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                        <Building class="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                            {org.name}
-                                        </h3>
-                                        <p class="text-sm text-gray-500 capitalize">{org.role?.toLowerCase() || 'Member'}</p>
+                        <input type="hidden" name="org_id" value={org.id} />
+                        <input type="hidden" name="org_name" value={org.name} />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            class="w-full text-left"
+                            aria-label="Select {org.name} organization"
+                        >
+                            <div class="p-6">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                            <Building class="w-6 h-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                {org.name}
+                                            </h3>
+                                            <p class="text-sm text-gray-500 capitalize">{org.role?.toLowerCase() || 'Member'}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                
+
+                                <div class="w-full py-2.5 px-4 bg-blue-600 group-hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-center">
+                                    {loading ? 'Switching...' : 'Select Organization'}
+                                </div>
                             </div>
-                            
-                            <div class="w-full py-2.5 px-4 bg-blue-600 group-hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
-                                Select Organization
-                            </div>
-                        </div>
-                    </button>
+                        </button>
+                    </form>
                 {/each}
             </div>
         {:else}
