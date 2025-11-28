@@ -159,7 +159,7 @@
 
 	const navigationItems = [
 		{
-			href: '/app',
+			href: '/',
 			label: 'Dashboard',
 			icon: LayoutDashboard,
 			type: 'link'
@@ -170,8 +170,8 @@
 			icon: Target,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/leads/open', label: 'Open Leads', icon: List },
-				{ href: '/app/leads/new', label: 'Create Lead', icon: Plus }
+				{ href: '/leads/open', label: 'Open Leads', icon: List },
+				{ href: '/leads/new', label: 'Create Lead', icon: Plus }
 			]
 		},
 		{
@@ -180,8 +180,8 @@
 			icon: Users,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/contacts', label: 'All Contacts', icon: List },
-				{ href: '/app/contacts/new', label: 'New Contact', icon: UserPlus }
+				{ href: '/contacts', label: 'All Contacts', icon: List },
+				{ href: '/contacts/new', label: 'New Contact', icon: UserPlus }
 			]
 		},
 		{
@@ -190,8 +190,8 @@
 			icon: Building,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/accounts', label: 'All Accounts', icon: List },
-				{ href: '/app/accounts/new', label: 'New Account', icon: Plus }
+				{ href: '/accounts', label: 'All Accounts', icon: List },
+				{ href: '/accounts/new', label: 'New Account', icon: Plus }
 			]
 		},
 		{
@@ -200,8 +200,8 @@
 			icon: Target,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/opportunities', label: 'All Opportunities', icon: List },
-				{ href: '/app/opportunities/new', label: 'New Opportunity', icon: Plus }
+				{ href: '/opportunities', label: 'All Opportunities', icon: List },
+				{ href: '/opportunities/new', label: 'New Opportunity', icon: Plus }
 			]
 		},
 		{
@@ -210,8 +210,8 @@
 			icon: Briefcase,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/cases', label: 'All Cases', icon: List },
-				{ href: '/app/cases/new', label: 'New Case', icon: Plus }
+				{ href: '/cases', label: 'All Cases', icon: List },
+				{ href: '/cases/new', label: 'New Case', icon: Plus }
 			]
 		},
 		{
@@ -220,12 +220,12 @@
 			icon: CheckSquare,
 			type: 'dropdown',
 			children: [
-				{ href: '/app/tasks/list', label: 'Task List', icon: List },
-				{ href: '/app/tasks/calendar', label: 'Calendar', icon: Calendar }
+				{ href: '/tasks/list', label: 'Task List', icon: List },
+				{ href: '/tasks/calendar', label: 'Calendar', icon: Calendar }
 			]
 		},
 		{
-			href: '/app/support',
+			href: '/support',
 			label: 'Support',
 			icon: HelpCircle,
 			type: 'link'
@@ -239,7 +239,7 @@
 	<div class="flex flex-col h-full bg-white dark:bg-gray-900">
 		<!-- Header section with logo and mobile close button -->
 		<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-			<a href="/app" class="flex items-center gap-3">
+			<a href="/" class="flex items-center gap-3">
 				<img src={imgLogo} class="h-8 w-auto" alt="BottleCRM Logo" />
 				<span class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
 					{org_name}
@@ -397,7 +397,7 @@
 				>
 					<button
 						type="button"
-						onclick={(e) => handleSettingsLinkClick(e, '/app/profile')}
+						onclick={(e) => handleSettingsLinkClick(e, '/profile')}
 						class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors w-full text-left"
 					>
 						<User class="w-4 h-4" />
@@ -405,7 +405,7 @@
 					</button>
 					<button
 						type="button"
-						onclick={(e) => handleSettingsLinkClick(e, '/app/users')}
+						onclick={(e) => handleSettingsLinkClick(e, '/users')}
 						class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors w-full text-left"
 					>
 						<Users class="w-4 h-4" />

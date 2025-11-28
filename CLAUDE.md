@@ -109,8 +109,6 @@ Team tasks: `remove_users`, `update_team_users`
 ### Structure
 
 - `src/routes/(app)/` - Main CRM (authenticated)
-- `src/routes/(admin)/` - Super admin panel
-- `src/routes/(site)/` - Public marketing site
 - `src/routes/(no-layout)/` - Auth pages
 - `src/lib/` - Components and utilities
 

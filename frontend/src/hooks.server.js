@@ -246,34 +246,34 @@ export async function handle({ event, resolve }) {
 	// Route protection
 	const pathname = event.url.pathname;
 
-	// Check if the route starts with /app
-	if (pathname.startsWith('/app')) {
+	// Define public routes (no auth required)
+	const PUBLIC_ROUTES = ['/login', '/logout', '/bounce'];
+
+	// Define semi-protected routes (auth required, but no org)
+	const AUTH_ONLY_ROUTES = ['/org'];
+
+	// Check if public route
+	const isPublicRoute = PUBLIC_ROUTES.some(
+		(route) => pathname === route || pathname.startsWith(route + '/')
+	);
+
+	// Check if auth-only route
+	const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(
+		(route) => pathname === route || pathname.startsWith(route + '/')
+	);
+
+	if (isAuthOnlyRoute) {
+		// Auth-only route - require user
 		if (!user) {
-			// User not authenticated
 			throw redirect(307, '/login');
 		}
-
-		// For /app routes, also ensure an organization is selected
+	} else if (!isPublicRoute) {
+		// Protected route - require user + org
+		if (!user) {
+			throw redirect(307, '/login');
+		}
 		if (!event.locals.org) {
-			// If user is authenticated but no org is selected, redirect to org selection page
 			throw redirect(307, '/org');
-		}
-	}
-	// Handle admin routes - only allow micropyramid.com domain users
-	else if (pathname.startsWith('/admin')) {
-		if (!user) {
-			throw redirect(307, '/login');
-		}
-
-		// Check if user's email domain is micropyramid.com
-		if (!user.email || !user.email.endsWith('@micropyramid.com')) {
-			throw redirect(307, '/app');
-		}
-	}
-	// Handle other protected routes
-	else if (pathname.startsWith('/org')) {
-		if (!user) {
-			throw redirect(307, '/login');
 		}
 	}
 

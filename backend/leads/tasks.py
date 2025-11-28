@@ -105,7 +105,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
     """
-    email_regex = "^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
+    email_regex = r"^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
     profile = Profile.objects.get(id=user_id)
     org = Org.objects.filter(id=company_id).first()
     for row in validated_rows:

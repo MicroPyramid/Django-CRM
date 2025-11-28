@@ -122,7 +122,7 @@ export const actions = {
 			});
 
 			// Redirect to app
-			throw redirect(303, '/app');
+			throw redirect(303, '/');
 		} catch (error) {
 			if (error.status === 303) {
 				throw error; // Re-throw redirect
