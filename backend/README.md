@@ -9,7 +9,6 @@ The backend for BottleCRM, a multi-tenant CRM platform built with Django REST Fr
 - **PostgreSQL** - Database (psycopg2-binary 2.9.11)
 - **Celery 5.5.3** - Async task queue
 - **Redis 4.6.0** - Message broker for Celery
-- **Wagtail 5.0.1** - CMS integration
 - **djangorestframework-simplejwt 5.2.2** - JWT authentication
 - **drf-spectacular 0.26.2** - OpenAPI/Swagger documentation
 - **django-ses 3.5.0** - AWS SES email backend
@@ -33,8 +32,6 @@ The backend for BottleCRM, a multi-tenant CRM platform built with Django REST Fr
 | `planner` | Planner events |
 | `boards` | Kanban board system |
 | `marketing` | Newsletter and contact forms |
-| `blog` | Blog system |
-| `cms` | Wagtail CMS integration |
 
 ## Prerequisites
 
@@ -306,8 +303,6 @@ backend/
 ├── planner/
 ├── boards/
 ├── marketing/
-├── blog/
-├── cms/
 ├── templates/
 └── static/
 ```
