@@ -41,12 +41,12 @@ class GetProfileAndOrg(object):
     def process_request(self, request):
         # Skip JWT validation for authentication endpoints that don't need org context
         auth_skip_paths = [
-            '/api/auth/login/',
-            '/api/auth/google/',
-            '/api/auth/register/',
-            '/api/auth/refresh-token/',
-            '/api/auth/me/',
-            '/api/auth/switch-org/',
+            "/api/auth/login/",
+            "/api/auth/google/",
+            "/api/auth/register/",
+            "/api/auth/refresh-token/",
+            "/api/auth/me/",
+            "/api/auth/switch-org/",
         ]
         if request.path in auth_skip_paths:
             return
@@ -61,7 +61,7 @@ class GetProfileAndOrg(object):
             return
 
         # Fall back to API key authentication
-        api_key = request.headers.get('Token')
+        api_key = request.headers.get("Token")
         if api_key:
             self._process_api_key_auth(request, api_key)
             return
@@ -80,10 +80,10 @@ class GetProfileAndOrg(object):
 
             # Validate and decode token
             access_token = AccessToken(token_value)
-            user_id = access_token['user_id']
+            user_id = access_token["user_id"]
 
             # Get org_id from JWT claim (SECURE - cryptographically signed)
-            org_id = access_token.get('org_id')
+            org_id = access_token.get("org_id")
 
             if not org_id:
                 # Token doesn't have org context - this is allowed for some endpoints
@@ -93,10 +93,8 @@ class GetProfileAndOrg(object):
 
             # Validate user membership in the org
             try:
-                profile = Profile.objects.select_related('org').get(
-                    user_id=user_id,
-                    org_id=org_id,
-                    is_active=True
+                profile = Profile.objects.select_related("org").get(
+                    user_id=user_id, org_id=org_id, is_active=True
                 )
                 request.profile = profile
                 request.org = profile.org
@@ -136,21 +134,19 @@ class GetProfileAndOrg(object):
 
             # Get an admin profile for this org
             profile = Profile.objects.filter(
-                org=organization,
-                role="ADMIN",
-                is_active=True
+                org=organization, role="ADMIN", is_active=True
             ).first()
 
             if not profile:
                 logger.error(f"No active admin profile found for org {organization.id}")
-                raise AuthenticationFailed('Invalid API Key configuration')
+                raise AuthenticationFailed("Invalid API Key configuration")
 
             request.profile = profile
             request.org = organization
-            request.META['org'] = str(organization.id)
+            request.META["org"] = str(organization.id)
 
             logger.debug(f"Set org context from API key: org={organization.id}")
 
         except Org.DoesNotExist:
             logger.warning(f"Invalid API key attempted: {api_key[:8]}...")
-            raise AuthenticationFailed('Invalid API Key')
+            raise AuthenticationFailed("Invalid API Key")

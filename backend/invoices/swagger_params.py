@@ -8,7 +8,9 @@ company_params_in_header = OpenApiParameter(
 organization_params = [company_params_in_header]
 
 invoice_list_get_params = organization_params + [
-    OpenApiParameter("invoice_title_or_number", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter(
+        "invoice_title_or_number", OpenApiTypes.STR, OpenApiParameter.QUERY
+    ),
     OpenApiParameter("created_by", OpenApiTypes.INT, OpenApiParameter.QUERY),
     OpenApiParameter("assigned_users", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -23,7 +25,9 @@ invoice_detail_post_params = organization_params + [
 invoice_delete_params = organization_params
 
 invoice_create_post_params = organization_params + [
-    OpenApiParameter("invoice_title", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+    OpenApiParameter(
+        "invoice_title", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True
+    ),
     OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("from_address_line", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("from_street", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -40,8 +44,12 @@ invoice_create_post_params = organization_params + [
     OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("email", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
     OpenApiParameter("phone", OpenApiTypes.STR, OpenApiParameter.QUERY),
-    OpenApiParameter("due_date", OpenApiTypes.DATE, OpenApiParameter.QUERY, examples=["2021-02-28"]),
-    OpenApiParameter("currency", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+    OpenApiParameter(
+        "due_date", OpenApiTypes.DATE, OpenApiParameter.QUERY, examples=["2021-02-28"]
+    ),
+    OpenApiParameter(
+        "currency", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True
+    ),
     OpenApiParameter("teams", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("assigned_to", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("accounts", OpenApiTypes.STR, OpenApiParameter.QUERY),

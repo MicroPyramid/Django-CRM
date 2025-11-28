@@ -26,14 +26,16 @@ def send_email(email_obj_id):
             ).exists():
                 html = email_obj.message_body
                 context_data = {
-                    "email": contact_obj.email
-                    if contact_obj.email
-                    else "",
-                    "name": contact_obj.first_name
-                    if contact_obj.first_name
-                    else "" + " " + contact_obj.last_name
-                    if contact_obj.last_name
-                    else "",
+                    "email": contact_obj.email if contact_obj.email else "",
+                    "name": (
+                        contact_obj.first_name
+                        if contact_obj.first_name
+                        else (
+                            "" + " " + contact_obj.last_name
+                            if contact_obj.last_name
+                            else ""
+                        )
+                    ),
                 }
                 try:
                     html_content = Template(html).render(Context(context_data))

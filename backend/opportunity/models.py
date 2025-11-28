@@ -15,6 +15,7 @@ class Opportunity(AssignableMixin, BaseModel):
     Opportunity model for CRM - Sales pipeline management
     Based on Twenty CRM and Salesforce patterns
     """
+
     # Core Opportunity Information
     name = models.CharField(_("Opportunity Name"), max_length=255)
     account = models.ForeignKey(
@@ -84,8 +85,8 @@ class Opportunity(AssignableMixin, BaseModel):
         db_table = "opportunity"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['stage']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["stage"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):

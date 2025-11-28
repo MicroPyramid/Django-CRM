@@ -1,12 +1,17 @@
 from rest_framework import serializers
 
-from common.serializer import (AttachmentsSerializer, OrganizationSerializer,
-                               ProfileSerializer, TeamsSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+)
 from contacts.models import Contact
 
 
 class ContactSerializer(serializers.ModelSerializer):
     """Serializer for reading Contact data"""
+
     teams = TeamsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     get_team_users = ProfileSerializer(read_only=True, many=True)
@@ -63,6 +68,7 @@ class ContactSerializer(serializers.ModelSerializer):
 
 class CreateContactSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating Contact data"""
+
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
@@ -81,9 +87,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
                         "Contact already exists with this email"
                     )
             else:
-                if Contact.objects.filter(
-                    email__iexact=email, org=self.org
-                ).exists():
+                if Contact.objects.filter(email__iexact=email, org=self.org).exists():
                     raise serializers.ValidationError(
                         "Contact already exists with this email"
                     )
@@ -118,6 +122,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
 class ContactDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
     contact_attachment = serializers.FileField()
+
 
 class ContactCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()

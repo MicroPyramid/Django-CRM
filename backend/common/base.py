@@ -2,6 +2,7 @@ import uuid
 
 # Third party imports
 from crum import get_current_user
+
 # Django imports
 from django.db import models
 
@@ -26,6 +27,7 @@ class AssignableMixin(models.Model):
     def get_team_users(self):
         """Get all users who are members of assigned teams."""
         from common.models import Profile
+
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         return Profile.objects.filter(id__in=team_user_ids)
 
@@ -33,6 +35,7 @@ class AssignableMixin(models.Model):
     def get_team_and_assigned_users(self):
         """Get all users from both teams and direct assignments."""
         from common.models import Profile
+
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = team_user_ids + assigned_user_ids
@@ -42,6 +45,7 @@ class AssignableMixin(models.Model):
     def get_assigned_users_not_in_teams(self):
         """Get users who are directly assigned but not part of any assigned team."""
         from common.models import Profile
+
         team_user_ids = list(self.teams.values_list("users__id", flat=True))
         assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
         user_ids = set(assigned_user_ids) - set(team_user_ids)
@@ -85,7 +89,7 @@ class OrgScopedQuerySet(models.QuerySet):
 
     def for_request(self, request):
         """Filter queryset by organization from request"""
-        if hasattr(request, 'profile') and request.profile:
+        if hasattr(request, "profile") and request.profile:
             return self.filter(org=request.profile.org)
         return self.none()
 
@@ -126,10 +130,10 @@ class BaseOrgModel(BaseModel):
     """
 
     org = models.ForeignKey(
-        'common.Org',
+        "common.Org",
         on_delete=models.CASCADE,
         related_name="%(class)s_set",
-        help_text="Organization this record belongs to"
+        help_text="Organization this record belongs to",
     )
 
     objects = OrgScopedManager()
@@ -137,12 +141,13 @@ class BaseOrgModel(BaseModel):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def save(self, *args, **kwargs):
         # Validate org is set
         if not self.org_id:
             from django.core.exceptions import ValidationError
+
             raise ValidationError("Organization (org) is required for this model")
         super().save(*args, **kwargs)

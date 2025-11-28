@@ -11,9 +11,9 @@ organization_params = [
 
 user_list_params = [
     organization_params_in_header,
-    OpenApiParameter("email",  OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("email", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter(
-        "role", OpenApiTypes.STR, OpenApiParameter.QUERY,enum=["ADMIN", "USER"]
+        "role", OpenApiTypes.STR, OpenApiParameter.QUERY, enum=["ADMIN", "USER"]
     ),
     OpenApiParameter(
         "status",
@@ -25,14 +25,14 @@ user_list_params = [
 
 document_get_params = [
     organization_params_in_header,
-    OpenApiParameter("title", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("title", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter(
         "status",
         OpenApiTypes.STR,
         OpenApiParameter.QUERY,
         enum=["Active", "In Active"],
     ),
-    OpenApiParameter("shared_to", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("shared_to", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]
 
 # Teams params (merged from teams app)

@@ -129,7 +129,9 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     # Look up company by name if provided in CSV
                     account_name = row.get("account_name", "").strip()[:255]
                     if account_name:
-                        company = Account.objects.filter(name__iexact=account_name, org=org).first()
+                        company = Account.objects.filter(
+                            name__iexact=account_name, org=org
+                        ).first()
                         if company:
                             lead.company = company
                     lead.created_from_site = False

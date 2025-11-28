@@ -13,6 +13,7 @@ class Contact(AssignableMixin, BaseModel):
     Contact model for CRM - Streamlined for modern sales workflow
     Based on Twenty CRM and Salesforce patterns
     """
+
     # Core Contact Information
     first_name = models.CharField(_("First name"), max_length=255)
     last_name = models.CharField(_("Last name"), max_length=255)
@@ -22,7 +23,9 @@ class Contact(AssignableMixin, BaseModel):
     # Professional Information
     organization = models.CharField(_("Company"), max_length=255, blank=True, null=True)
     title = models.CharField(_("Job Title"), max_length=255, blank=True, null=True)
-    department = models.CharField(_("Department"), max_length=255, blank=True, null=True)
+    department = models.CharField(
+        _("Department"), max_length=255, blank=True, null=True
+    )
 
     # Communication Preferences
     do_not_call = models.BooleanField(_("Do Not Call"), default=False)
@@ -33,7 +36,9 @@ class Contact(AssignableMixin, BaseModel):
     city = models.CharField(_("City"), max_length=255, blank=True, null=True)
     state = models.CharField(_("State"), max_length=255, blank=True, null=True)
     postcode = models.CharField(_("Postal Code"), max_length=64, blank=True, null=True)
-    country = models.CharField(_("Country"), max_length=3, choices=COUNTRIES, blank=True, null=True)
+    country = models.CharField(
+        _("Country"), max_length=3, choices=COUNTRIES, blank=True, null=True
+    )
 
     # Assignment
     assigned_to = models.ManyToManyField(Profile, related_name="contact_assigned_users")
@@ -55,8 +60,8 @@ class Contact(AssignableMixin, BaseModel):
         db_table = "contacts"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['organization']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["organization"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -65,7 +70,7 @@ class Contact(AssignableMixin, BaseModel):
     @property
     def created_on_arrow(self):
         return arrow.get(self.created_at).humanize()
-    
+
     @property
     def created_on(self):
         return self.created_at

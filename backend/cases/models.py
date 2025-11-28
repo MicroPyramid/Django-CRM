@@ -34,9 +34,7 @@ class Case(AssignableMixin, BaseModel):
     # )
     is_active = models.BooleanField(default=True)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="cases"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="cases")
 
     class Meta:
         verbose_name = "Case"
@@ -44,9 +42,9 @@ class Case(AssignableMixin, BaseModel):
         db_table = "case"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['priority']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["status"]),
+            models.Index(fields=["priority"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -64,23 +62,20 @@ class Solution(BaseModel):
     Solutions are reusable answers/guides that can be linked to cases.
     They form a knowledge base for common issues and their resolutions.
     """
+
     title = models.CharField(max_length=255)
     description = models.TextField()
 
     STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('reviewed', 'Reviewed'),
-        ('approved', 'Approved'),
+        ("draft", "Draft"),
+        ("reviewed", "Reviewed"),
+        ("approved", "Approved"),
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     is_published = models.BooleanField(default=False)
 
     # Organization relation
-    org = models.ForeignKey(
-        Org,
-        on_delete=models.CASCADE,
-        related_name="solutions"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="solutions")
 
     # Cases that use this solution
     cases = models.ManyToManyField(Case, related_name="solutions", blank=True)
@@ -91,9 +86,9 @@ class Solution(BaseModel):
         db_table = "solution"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['is_published']),
-            models.Index(fields=['org']),
+            models.Index(fields=["status"]),
+            models.Index(fields=["is_published"]),
+            models.Index(fields=["org"]),
         ]
 
     def __str__(self):
@@ -101,7 +96,7 @@ class Solution(BaseModel):
 
     def publish(self):
         """Publish the solution (must be approved first)"""
-        if self.status == 'approved':
+        if self.status == "approved":
             self.is_published = True
             self.save()
 

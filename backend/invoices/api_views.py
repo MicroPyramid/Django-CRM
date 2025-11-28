@@ -15,18 +15,30 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Teams, User
-#from common.external_auth import CustomDualAuthentication
-from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
-                               CommentSerializer, TeamsSerializer,
-                               UserSerializer)
+
+# from common.external_auth import CustomDualAuthentication
+from common.serializer import (
+    AttachmentsSerializer,
+    BillingAddressSerializer,
+    CommentSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from common.utils import COUNTRIES, CURRENCY_CODES
 from invoices import swagger_params
 from invoices.models import Invoice
-from invoices.serializer import (InvoiceCreateSerializer,
-                                 InvoiceHistorySerializer, InvoiceSerailizer,
-                                 InvoiceSwaggerSerailizer)
-from invoices.tasks import (create_invoice_history, send_email,
-                            send_invoice_email, send_invoice_email_cancel)
+from invoices.serializer import (
+    InvoiceCreateSerializer,
+    InvoiceHistorySerializer,
+    InvoiceSerailizer,
+    InvoiceSwaggerSerailizer,
+)
+from invoices.tasks import (
+    create_invoice_history,
+    send_email,
+    send_invoice_email,
+    send_invoice_email_cancel,
+)
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),
@@ -39,7 +51,7 @@ INVOICE_STATUS = (
 
 class InvoiceListView(APIView, LimitOffsetPagination):
 
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -65,9 +77,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             if params.get("created_by"):
                 queryset = queryset.filter(created_by=params.get("created_by"))
             if params.get("assigned_users"):
-                queryset = queryset.filter(
-                    assigned_to__in=params.get("assigned_users")
-                )
+                queryset = queryset.filter(assigned_to__in=params.get("assigned_users"))
             if params.get("status"):
                 queryset = queryset.filter(status=params.get("status"))
             if params.get("total_amount"):
@@ -236,7 +246,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
 
 class InvoiceDetailView(APIView):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Invoice
 
@@ -454,12 +464,12 @@ class InvoiceDetailView(APIView):
         attachments = Attachments.objects.filter(
             content_type=invoice_content_type,
             object_id=self.invoice.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=invoice_content_type,
             object_id=self.invoice.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -533,12 +543,12 @@ class InvoiceDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=invoice_content_type,
             object_id=self.invoice_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=invoice_content_type,
             object_id=self.invoice_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -552,7 +562,7 @@ class InvoiceDetailView(APIView):
 
 class InvoiceCommentView(APIView):
     model = Comment
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -615,7 +625,7 @@ class InvoiceCommentView(APIView):
 
 class InvoiceAttachmentView(APIView):
     model = Attachments
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(tags=["Invoices"], parameters=swagger_params.organization_params)

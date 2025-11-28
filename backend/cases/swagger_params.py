@@ -11,8 +11,8 @@ organization_params = [
 
 cases_list_get_params = [
     organization_params_in_header,
-    OpenApiParameter("name", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("status", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("priority", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("account", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("priority", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("account", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]

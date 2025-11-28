@@ -13,5 +13,7 @@ urlpatterns = [
     path("tasks/", include("tasks.urls", namespace="api_tasks")),
     path("cases/", include("cases.urls", namespace="api_cases")),
     path("invoices/", include("invoices.api_urls", namespace="api_invoices")),
-    path("boards/", include((board_urlpatterns, "api_boards"))),  # Kanban Boards (merged into tasks app)
+    path(
+        "boards/", include((board_urlpatterns, "api_boards"))
+    ),  # Kanban Boards (merged into tasks app)
 ]

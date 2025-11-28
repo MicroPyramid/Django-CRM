@@ -10,4 +10,3 @@ urlpatterns = [
     path("comment/<str:pk>/", views.ContactCommentView.as_view()),
     path("attachment/<str:pk>/", views.ContactAttachmentView.as_view()),
 ]
- 

@@ -11,7 +11,7 @@ organization_params = [
 
 task_list_get_params = [
     organization_params_in_header,
-    OpenApiParameter("title", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("status", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("priority", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("title", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("priority", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]

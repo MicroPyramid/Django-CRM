@@ -3,8 +3,7 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
-                                   extend_schema)
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import LimitOffsetPagination
@@ -14,20 +13,36 @@ from rest_framework.views import APIView
 
 from accounts import swagger_params
 from accounts.models import Account
-from accounts.serializer import (AccountCommentEditSwaggerSerializer,
-                                 AccountCreateSerializer,
-                                 AccountDetailEditSwaggerSerializer,
-                                 AccountReadSerializer, AccountSerializer,
-                                 AccountWriteSerializer, EmailSerializer,
-                                 EmailWriteSerializer, TagsSerailizer)
+from accounts.serializer import (
+    AccountCommentEditSwaggerSerializer,
+    AccountCreateSerializer,
+    AccountDetailEditSwaggerSerializer,
+    AccountReadSerializer,
+    AccountSerializer,
+    AccountWriteSerializer,
+    EmailSerializer,
+    EmailWriteSerializer,
+    TagsSerailizer,
+)
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-#from common.external_auth import CustomDualAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer, TeamsSerializer)
-from common.utils import (CASE_TYPE, COUNTRIES, CURRENCY_CODES, INDCHOICES,
-                          PRIORITY_CHOICE, STATUS_CHOICE)
+
+# from common.external_auth import CustomDualAuthentication
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+)
+from common.utils import (
+    CASE_TYPE,
+    COUNTRIES,
+    CURRENCY_CODES,
+    INDCHOICES,
+    PRIORITY_CHOICE,
+    STATUS_CHOICE,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from invoices.serializer import InvoiceSerailizer
@@ -39,17 +54,20 @@ from tasks.serializer import TaskSerializer
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = AccountReadSerializer
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
+            "-id"
+        )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -60,9 +78,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             if params.get("industry"):
                 queryset = queryset.filter(industry__icontains=params.get("industry"))
             if params.get("tags"):
-                queryset = queryset.filter(
-                    tags__in=params.get("tags")
-                ).distinct()
+                queryset = queryset.filter(tags__in=params.get("tags")).distinct()
 
         context = {}
 
@@ -73,7 +89,9 @@ class AccountsListView(APIView, LimitOffsetPagination):
             queryset_active.distinct(), self.request, view=self
         )
         if results_accounts_active:
-            offset = queryset_active.filter(id__gte=results_accounts_active[-1].id).count()
+            offset = queryset_active.filter(
+                id__gte=results_accounts_active[-1].id
+            ).count()
             if offset == queryset_active.count():
                 offset = None
         else:
@@ -120,9 +138,9 @@ class AccountsListView(APIView, LimitOffsetPagination):
         tags = TagsSerailizer(tags, many=True).data
 
         context["tags"] = tags
-        users = Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-            "id", "user__email"
-        )
+        users = Profile.objects.filter(
+            is_active=True, org=self.request.profile.org
+        ).values("id", "user__email")
         context["users"] = users
         leads = Lead.objects.filter(org=self.request.profile.org).exclude(
             Q(status="converted") | Q(status="closed")
@@ -137,7 +155,11 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountWriteSerializer)
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountWriteSerializer,
+    )
     def post(self, request, *args, **kwargs):
         data = request.data
         serializer = AccountCreateSerializer(
@@ -145,12 +167,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
         )
         # Save Account
         if serializer.is_valid():
-            account_object = serializer.save(
-                org=request.profile.org
-            )
+            account_object = serializer.save(org=request.profile.org)
             if data.get("contacts"):
                 contacts_list = json.loads(data.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 if contacts:
                     account_object.contacts.add(*contacts)
             if data.get("tags"):
@@ -201,14 +223,18 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 
 class AccountDetailView(APIView):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountReadSerializer
 
     def get_object(self, pk):
         return get_object_or_404(Account, id=pk, org=self.request.profile.org)
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountWriteSerializer)
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountWriteSerializer,
+    )
     def put(self, request, pk, format=None):
         data = request.data
         account_object = self.get_object(pk=pk)
@@ -245,7 +271,9 @@ class AccountDetailView(APIView):
             account_object.contacts.clear()
             if data.get("contacts"):
                 contacts_list = json.loads(data.get("contacts"))
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 if contacts:
                     account_object.contacts.add(*contacts)
 
@@ -357,9 +385,9 @@ class AccountDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-                    "user__email"
-                )
+                Profile.objects.filter(
+                    is_active=True, org=self.request.profile.org
+                ).values("user__email")
             )
         elif self.request.profile != self.account.created_by:
             if self.account.created_by:
@@ -375,12 +403,12 @@ class AccountDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=account_content_type,
             object_id=self.account.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=account_content_type,
             object_id=self.account.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -401,7 +429,7 @@ class AccountDetailView(APIView):
                 "cases": CaseSerializer(
                     self.account.accounts_cases.all(), many=True
                 ).data,
-               "teams" : TeamsSerializer(
+                "teams": TeamsSerializer(
                     Teams.objects.filter(org=self.request.profile.org), many=True
                 ).data,
                 "stages": STAGES,
@@ -422,14 +450,16 @@ class AccountDetailView(APIView):
                     self.account.sent_email.all(), many=True
                 ).data,
                 "users_mention": users_mention,
-               "leads" : LeadSerializer(leads, many=True).data,
-               "status" : ["open","close"]
+                "leads": LeadSerializer(leads, many=True).data,
+                "status": ["open", "close"],
             }
         )
         return Response(context)
 
     @extend_schema(
-        tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountDetailEditSwaggerSerializer
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountDetailEditSwaggerSerializer,
     )
     def post(self, request, pk, **kwargs):
         data = request.data
@@ -475,12 +505,12 @@ class AccountDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=account_content_type,
             object_id=self.account_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=account_content_type,
             object_id=self.account_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -494,7 +524,7 @@ class AccountDetailView(APIView):
 
 class AccountCommentView(APIView):
     model = Comment
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountCommentEditSwaggerSerializer
 
@@ -502,7 +532,9 @@ class AccountCommentView(APIView):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
-        tags=["Accounts"], parameters=swagger_params.organization_params,request=AccountCommentEditSwaggerSerializer
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountCommentEditSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         data = request.data
@@ -556,7 +588,7 @@ class AccountCommentView(APIView):
 
 class AccountAttachmentView(APIView):
     model = Attachments
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = AccountDetailEditSwaggerSerializer
 
@@ -583,12 +615,16 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Account
     serializer_class = EmailWriteSerializer
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params,request=EmailWriteSerializer)
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=EmailWriteSerializer,
+    )
     def post(self, request, pk, *args, **kwargs):
         data = request.data
         scheduled_later = data.get("scheduled_later")
@@ -612,7 +648,9 @@ class AccountCreateMailView(APIView):
             if data.get("recipients"):
                 contacts = json.loads(data.get("recipients"))
                 for contact in contacts:
-                    obj_contact = Contact.objects.filter(id=contact, org=request.profile.org)
+                    obj_contact = Contact.objects.filter(
+                        id=contact, org=request.profile.org
+                    )
                     if obj_contact.exists():
                         email_obj.recipients.add(contact)
                     else:

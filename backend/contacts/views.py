@@ -3,8 +3,7 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
-                                   extend_schema)
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -14,7 +13,8 @@ from rest_framework.views import APIView
 from common.models import Attachments, Comment, Profile, Teams
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import COUNTRIES
-#from common.external_auth import CustomDualAuthentication
+
+# from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params
 from contacts.models import Contact, Profile
 from contacts.serializer import *
@@ -23,13 +23,15 @@ from tasks.serializer import TaskSerializer
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Contact
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
+            "-id"
+        )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
@@ -72,22 +74,22 @@ class ContactsListView(APIView, LimitOffsetPagination):
         context["offset"] = offset
         context["contact_obj_list"] = contacts
         context["countries"] = COUNTRIES
-        users = Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-            "id", "user__email"
-        )
+        users = Profile.objects.filter(
+            is_active=True, org=self.request.profile.org
+        ).values("id", "user__email")
         context["users"] = users
 
         return context
 
-    @extend_schema(
-        tags=["contacts"], parameters=swagger_params.contact_list_get_params
-    )
+    @extend_schema(tags=["contacts"], parameters=swagger_params.contact_list_get_params)
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params,request=CreateContactSerializer
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=CreateContactSerializer,
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -110,7 +112,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         if params.get("assigned_to"):
             assinged_to_list = params.get("assigned_to")
-            profiles = Profile.objects.filter(id__in=assinged_to_list, org=request.profile.org)
+            profiles = Profile.objects.filter(
+                id__in=assinged_to_list, org=request.profile.org
+            )
             contact_obj.assigned_to.add(*profiles)
 
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
@@ -141,7 +145,9 @@ class ContactDetailView(APIView):
         return get_object_or_404(Contact, pk=pk, org=self.request.profile.org)
 
     @extend_schema(
-        tags=["contacts"], parameters=swagger_params.contact_create_post_params,request=CreateContactSerializer
+        tags=["contacts"],
+        parameters=swagger_params.contact_create_post_params,
+        request=CreateContactSerializer,
     )
     def put(self, request, pk, format=None):
         data = request.data
@@ -160,10 +166,7 @@ class ContactDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            self.request.profile.role != "ADMIN"
-            and not self.request.profile.is_admin
-        ):
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
                 (self.request.profile == contact_obj.created_by)
                 or (self.request.profile in contact_obj.assigned_to.all())
@@ -215,9 +218,7 @@ class ContactDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
     def get(self, request, pk, format=None):
         context = {}
         contact_obj = self.get_object(pk)
@@ -278,12 +279,12 @@ class ContactDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=contact_content_type,
             object_id=contact_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=contact_content_type,
             object_id=contact_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -298,9 +299,7 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
-    @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -329,7 +328,9 @@ class ContactDetailView(APIView):
         )
 
     @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params,request=ContactDetailEditSwaggerSerializer
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=ContactDetailEditSwaggerSerializer,
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -368,12 +369,12 @@ class ContactDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=contact_content_type,
             object_id=self.contact_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=contact_content_type,
             object_id=self.contact_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -394,7 +395,9 @@ class ContactCommentView(APIView):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params,request=ContactCommentEditSwaggerSerializer
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=ContactCommentEditSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -423,9 +426,7 @@ class ContactCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -452,9 +453,7 @@ class ContactAttachmentView(APIView):
     # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(
-        tags=["contacts"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

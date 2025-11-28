@@ -5,8 +5,7 @@ import time
 import uuid
 
 import arrow
-from django.contrib.auth.models import (AbstractBaseUser, AbstractUser,
-                                        PermissionsMixin)
+from django.contrib.auth.models import AbstractBaseUser, AbstractUser, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -16,14 +15,16 @@ from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import BaseModel
-from common.templatetags.common_tags import (is_document_file_audio,
-                                             is_document_file_code,
-                                             is_document_file_image,
-                                             is_document_file_pdf,
-                                             is_document_file_sheet,
-                                             is_document_file_text,
-                                             is_document_file_video,
-                                             is_document_file_zip)
+from common.templatetags.common_tags import (
+    is_document_file_audio,
+    is_document_file_code,
+    is_document_file_image,
+    is_document_file_pdf,
+    is_document_file_sheet,
+    is_document_file_text,
+    is_document_file_video,
+    is_document_file_zip,
+)
 from common.utils import COUNTRIES, ROLES
 
 from .manager import UserManager
@@ -39,17 +40,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=uuid.uuid4, unique=True, editable=False, db_index=True, primary_key=True
     )
     email = models.EmailField(_("email address"), blank=True, unique=True)
-    profile_pic = models.CharField(
-        max_length=1000, null=True, blank=True
-    )
+    profile_pic = models.CharField(max_length=1000, null=True, blank=True)
     activation_key = models.CharField(max_length=150, null=True, blank=True)
     key_expires = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(_('staff status'),default=False)
+    is_staff = models.BooleanField(_("staff status"), default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
-
 
     objects = UserManager()
 
@@ -66,6 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     #     """by default the expiration time is set to 2 hours"""
     #     self.key_expires = timezone.now() + datetime.timedelta(hours=2)
     #     super().save(*args, **kwargs)
+
 
 class Address(BaseModel):
     address_line = models.CharField(
@@ -124,14 +123,14 @@ class Address(BaseModel):
                 address += self.get_country_display()
         return address
 
+
 def generate_unique_key():
     return str(uuid.uuid4())
 
+
 class Org(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
-    api_key = models.TextField(
-        default=generate_unique_key, unique=True, editable=False
-    )
+    api_key = models.TextField(default=generate_unique_key, unique=True, editable=False)
     is_active = models.BooleanField(default=True)
     # address = models.TextField(blank=True, null=True)
     # user_limit = models.IntegerField(default=5)
@@ -149,6 +148,7 @@ class Org(BaseModel):
 
 class Tags(BaseModel):
     """Tags for categorizing CRM entities (Accounts, Leads, Opportunities)"""
+
     name = models.CharField(max_length=20)
     slug = models.CharField(max_length=20, blank=True)
     org = models.ForeignKey(
@@ -218,13 +218,9 @@ class Tags(BaseModel):
 #         super().save(*args, **kwargs)
 
 
-
-
 class Profile(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="profiles")
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="profiles"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="profiles")
     phone = PhoneNumberField(null=True, blank=True)
     alternate_phone = PhoneNumberField(null=True, blank=True)
     address = models.ForeignKey(
@@ -257,12 +253,12 @@ class Profile(BaseModel):
 
     @property
     def user_details(self):
-        return  {
-            'email' : self.user.email,
-            'id' :  self.user.id,
-            'is_active' : self.user.is_active,
-            'profile_pic' : self.user.profile_pic,
-            'last_login' : self.user.last_login,
+        return {
+            "email": self.user.email,
+            "id": self.user.id,
+            "is_active": self.user.is_active,
+            "profile_pic": self.user.profile_pic,
+            "last_login": self.user.last_login,
         }
 
 
@@ -271,14 +267,13 @@ class Comment(BaseModel):
     Generic comment model using ContentType framework.
     Can be attached to any model (Account, Lead, Contact, Opportunity, Case, Task, Invoice, Profile).
     """
+
     # Generic relation to any model
     content_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.CASCADE,
-        related_name="comments"
+        ContentType, on_delete=models.CASCADE, related_name="comments"
     )
     object_id = models.UUIDField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     comment = models.CharField(max_length=255)
     commented_on = models.DateTimeField(auto_now_add=True)
@@ -297,8 +292,8 @@ class Comment(BaseModel):
         db_table = "comment"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['content_type', 'object_id']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["content_type", "object_id"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -320,11 +315,13 @@ class Comment(BaseModel):
         """
         from django.core.exceptions import ValidationError
 
-        if self.content_object and hasattr(self.content_object, 'org'):
+        if self.content_object and hasattr(self.content_object, "org"):
             if self.content_object.org_id != self.org_id:
-                raise ValidationError({
-                    'org': 'Comment organization must match the referenced object\'s organization.'
-                })
+                raise ValidationError(
+                    {
+                        "org": "Comment organization must match the referenced object's organization."
+                    }
+                )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -358,14 +355,13 @@ class Attachments(BaseModel):
     Generic attachment model using ContentType framework.
     Can be attached to any model (Account, Lead, Contact, Opportunity, Case, Task, Invoice).
     """
+
     # Generic relation to any model
     content_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.CASCADE,
-        related_name="attachments"
+        ContentType, on_delete=models.CASCADE, related_name="attachments"
     )
     object_id = models.UUIDField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     file_name = models.CharField(max_length=60)
     attachment = models.FileField(max_length=1001, upload_to="attachments/%Y/%m/")
@@ -381,8 +377,8 @@ class Attachments(BaseModel):
         db_table = "attachments"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['content_type', 'object_id']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["content_type", "object_id"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -429,11 +425,13 @@ class Attachments(BaseModel):
         """
         from django.core.exceptions import ValidationError
 
-        if self.content_object and hasattr(self.content_object, 'org'):
+        if self.content_object and hasattr(self.content_object, "org"):
             if self.content_object.org_id != self.org_id:
-                raise ValidationError({
-                    'org': 'Attachment organization must match the referenced object\'s organization.'
-                })
+                raise ValidationError(
+                    {
+                        "org": "Attachment organization must match the referenced object's organization."
+                    }
+                )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -470,7 +468,7 @@ class Document(BaseModel):
 
     def __str__(self):
         return f"{self.title}"
- 
+
     def file_type(self):
         name_ext_list = self.document_file.url.split(".")
         if len(name_ext_list) > 1:
@@ -535,7 +533,6 @@ class APISettings(BaseModel):
         on_delete=models.CASCADE,
         related_name="api_settings",
     )
-    
 
     class Meta:
         verbose_name = "APISetting"
@@ -545,7 +542,6 @@ class APISettings(BaseModel):
 
     def __str__(self):
         return f"{self.title}"
-    
 
     def save(self, *args, **kwargs):
         if not self.apikey or self.apikey is None or self.apikey == "":
@@ -555,12 +551,17 @@ class APISettings(BaseModel):
 
 # Phase 3: JWT Token Tracking
 
+
 class SessionToken(BaseModel):
     """Track active JWT sessions for security"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='session_tokens')
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="session_tokens"
+    )
     token_jti = models.CharField(max_length=255, unique=True, db_index=True)  # JWT ID
-    refresh_token_jti = models.CharField(max_length=255, unique=True, db_index=True, null=True, blank=True)
+    refresh_token_jti = models.CharField(
+        max_length=255, unique=True, db_index=True, null=True, blank=True
+    )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, null=True)
     expires_at = models.DateTimeField()
@@ -572,11 +573,11 @@ class SessionToken(BaseModel):
         verbose_name = "Session Token"
         verbose_name_plural = "Session Tokens"
         db_table = "session_token"
-        ordering = ('-created_at',)
+        ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['user', 'is_active']),
-            models.Index(fields=['token_jti']),
-            models.Index(fields=['expires_at']),
+            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["token_jti"]),
+            models.Index(fields=["expires_at"]),
         ]
 
     def __str__(self):
@@ -585,6 +586,7 @@ class SessionToken(BaseModel):
     def revoke(self):
         """Revoke this session token"""
         from django.utils import timezone
+
         self.is_active = False
         self.revoked_at = timezone.now()
         self.save()
@@ -593,40 +595,43 @@ class SessionToken(BaseModel):
     def is_expired(self):
         """Check if token is expired"""
         from django.utils import timezone
+
         return timezone.now() > self.expires_at
 
     @classmethod
     def cleanup_expired(cls):
         """Remove expired tokens (call via cron/celery)"""
         from django.utils import timezone
+
         return cls.objects.filter(expires_at__lt=timezone.now()).delete()
 
 
 # Activity Tracking for Recent Activities Dashboard
 
+
 class Activity(BaseModel):
     """Track user activities across all CRM entities"""
 
     ACTION_CHOICES = (
-        ('CREATE', 'Created'),
-        ('UPDATE', 'Updated'),
-        ('DELETE', 'Deleted'),
-        ('VIEW', 'Viewed'),
-        ('COMMENT', 'Commented'),
-        ('ASSIGN', 'Assigned'),
+        ("CREATE", "Created"),
+        ("UPDATE", "Updated"),
+        ("DELETE", "Deleted"),
+        ("VIEW", "Viewed"),
+        ("COMMENT", "Commented"),
+        ("ASSIGN", "Assigned"),
     )
 
     ENTITY_TYPE_CHOICES = (
-        ('Account', 'Account'),
-        ('Lead', 'Lead'),
-        ('Contact', 'Contact'),
-        ('Opportunity', 'Opportunity'),
-        ('Case', 'Case'),
-        ('Task', 'Task'),
-        ('Invoice', 'Invoice'),
-        ('Event', 'Event'),
-        ('Document', 'Document'),
-        ('Team', 'Team'),
+        ("Account", "Account"),
+        ("Lead", "Lead"),
+        ("Contact", "Contact"),
+        ("Opportunity", "Opportunity"),
+        ("Case", "Case"),
+        ("Task", "Task"),
+        ("Invoice", "Invoice"),
+        ("Event", "Event"),
+        ("Document", "Document"),
+        ("Team", "Team"),
     )
 
     user = models.ForeignKey(
@@ -634,18 +639,14 @@ class Activity(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='activities'
+        related_name="activities",
     )
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     entity_type = models.CharField(max_length=50, choices=ENTITY_TYPE_CHOICES)
     entity_id = models.UUIDField()
-    entity_name = models.CharField(max_length=255, blank=True, default='')
-    description = models.TextField(blank=True, default='')
-    org = models.ForeignKey(
-        Org,
-        on_delete=models.CASCADE,
-        related_name='activities'
-    )
+    entity_name = models.CharField(max_length=255, blank=True, default="")
+    description = models.TextField(blank=True, default="")
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="activities")
 
     class Meta:
         verbose_name = "Activity"
@@ -653,8 +654,8 @@ class Activity(BaseModel):
         db_table = "activity"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['org', '-created_at']),
-            models.Index(fields=['entity_type', 'entity_id']),
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["entity_type", "entity_id"]),
         ]
 
     def __str__(self):
@@ -668,6 +669,7 @@ class Activity(BaseModel):
 # =============================================================================
 # Teams Model (merged from teams app)
 # =============================================================================
+
 
 class Teams(BaseModel):
     name = models.CharField(max_length=100)
@@ -698,25 +700,27 @@ class Teams(BaseModel):
 # Contact Form Submission (for public website)
 # =============================================================================
 
+
 class ContactFormSubmission(BaseModel):
     """
     Contact form submission from public website.
     Stores inquiries from potential customers via contact forms.
     Not org-scoped as these are platform-level submissions.
     """
+
     name = models.CharField(max_length=255)
     email = models.EmailField()
     message = models.TextField()
     reason = models.CharField(
         max_length=100,
         choices=[
-            ('general', 'General Inquiry'),
-            ('sales', 'Sales Question'),
-            ('support', 'Technical Support'),
-            ('partnership', 'Partnership Opportunity'),
-            ('other', 'Other'),
+            ("general", "General Inquiry"),
+            ("sales", "Sales Question"),
+            ("support", "Technical Support"),
+            ("partnership", "Partnership Opportunity"),
+            ("other", "Other"),
         ],
-        default='general'
+        default="general",
     )
 
     # Tracking fields
@@ -726,18 +730,18 @@ class ContactFormSubmission(BaseModel):
 
     # Status tracking
     STATUS_CHOICES = [
-        ('new', 'New'),
-        ('read', 'Read'),
-        ('replied', 'Replied'),
-        ('closed', 'Closed'),
+        ("new", "New"),
+        ("read", "Read"),
+        ("replied", "Replied"),
+        ("closed", "Closed"),
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
     replied_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='contact_replies'
+        related_name="contact_replies",
     )
     replied_at = models.DateTimeField(null=True, blank=True)
 
@@ -745,11 +749,11 @@ class ContactFormSubmission(BaseModel):
         verbose_name = "Contact Form Submission"
         verbose_name_plural = "Contact Form Submissions"
         db_table = "contact_form_submission"
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['status']),
-            models.Index(fields=['created_at']),
+            models.Index(fields=["email"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def __str__(self):
@@ -757,13 +761,13 @@ class ContactFormSubmission(BaseModel):
 
     def mark_as_read(self):
         """Mark submission as read"""
-        if self.status == 'new':
-            self.status = 'read'
+        if self.status == "new":
+            self.status = "read"
             self.save()
 
     def mark_as_replied(self, user):
         """Mark submission as replied"""
-        self.status = 'replied'
+        self.status = "replied"
         self.replied_by = user
         self.replied_at = timezone.now()
         self.save()

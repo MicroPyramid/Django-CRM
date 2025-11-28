@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
-from common.serializer import (ProfileSerializer, TeamsSerializer,
-                               UserSerializer)
+from common.serializer import ProfileSerializer, TeamsSerializer, UserSerializer
 from invoices.models import Invoice, InvoiceHistory
 
 
@@ -27,8 +26,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invoice
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'created_by', 'invoice_number')
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "invoice_number",
+        )
 
 
 class InvoiceListSerializer(serializers.ModelSerializer):
@@ -40,10 +45,20 @@ class InvoiceListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
-            'id', 'invoice_title', 'invoice_number', 'name', 'email',
-            'total_amount', 'amount_due', 'amount_paid', 'status',
-            'due_date', 'created_at', 'updated_at',
-            'assigned_to_count', 'accounts_count'
+            "id",
+            "invoice_title",
+            "invoice_number",
+            "name",
+            "email",
+            "total_amount",
+            "amount_due",
+            "amount_paid",
+            "status",
+            "due_date",
+            "created_at",
+            "updated_at",
+            "assigned_to_count",
+            "accounts_count",
         ]
 
     def get_assigned_to_count(self, obj):
@@ -60,5 +75,5 @@ class InvoiceHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvoiceHistory
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "updated_at")

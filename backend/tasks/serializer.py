@@ -1,14 +1,19 @@
 from rest_framework import serializers
 
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer, TeamsSerializer,
-                               UserSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from contacts.serializer import ContactSerializer
 from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 
 # =============================================================================
 # Kanban Board Serializers (merged from boards app)
 # =============================================================================
+
 
 class BoardMemberSerializer(serializers.ModelSerializer):
     """Serializer for board members"""
@@ -18,8 +23,8 @@ class BoardMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BoardMember
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'board')
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "updated_at", "board")
 
 
 class BoardTaskSerializer(serializers.ModelSerializer):
@@ -27,17 +32,15 @@ class BoardTaskSerializer(serializers.ModelSerializer):
 
     assigned_to = ProfileSerializer(many=True, read_only=True)
     assigned_to_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True,
-        required=False
+        child=serializers.UUIDField(), write_only=True, required=False
     )
     is_completed = serializers.BooleanField(read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = BoardTask
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'completed_at')
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "updated_at", "completed_at")
 
 
 class BoardColumnSerializer(serializers.ModelSerializer):
@@ -48,8 +51,8 @@ class BoardColumnSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BoardColumn
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'board')
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "updated_at", "board")
 
     def get_task_count(self, obj):
         return obj.tasks.count()
@@ -62,7 +65,7 @@ class BoardColumnListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BoardColumn
-        fields = ['id', 'name', 'order', 'color', 'limit', 'task_count']
+        fields = ["id", "name", "order", "color", "limit", "task_count"]
 
     def get_task_count(self, obj):
         return obj.tasks.count()
@@ -73,14 +76,22 @@ class BoardSerializer(serializers.ModelSerializer):
 
     owner = ProfileSerializer(read_only=True)
     columns = BoardColumnListSerializer(many=True, read_only=True)
-    members = BoardMemberSerializer(source='memberships', many=True, read_only=True)
+    members = BoardMemberSerializer(source="memberships", many=True, read_only=True)
     member_count = serializers.SerializerMethodField()
     task_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Board
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'owner', 'org')
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+            "owner",
+            "org",
+        )
 
     def get_member_count(self, obj):
         return obj.members.count()
@@ -99,8 +110,18 @@ class BoardListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Board
-        fields = ['id', 'name', 'description', 'owner', 'is_archived',
-                  'member_count', 'column_count', 'task_count', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "name",
+            "description",
+            "owner",
+            "is_archived",
+            "member_count",
+            "column_count",
+            "task_count",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_member_count(self, obj):
         return obj.members.count()
@@ -178,15 +199,18 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "created_at",
         )
 
+
 class TaskDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
     task_attachment = serializers.FileField()
 
+
 class TaskCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
 
-class TaskCreateSwaggerSerializer(serializers.ModelSerializer): 
-     class Meta:
+
+class TaskCreateSwaggerSerializer(serializers.ModelSerializer):
+    class Meta:
         model = Task
         fields = (
             "title",
@@ -196,6 +220,5 @@ class TaskCreateSwaggerSerializer(serializers.ModelSerializer):
             "account",
             "contacts",
             "teams",
-            "assigned_to"
+            "assigned_to",
         )
-

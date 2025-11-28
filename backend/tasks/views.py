@@ -3,8 +3,7 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
-                                   extend_schema)
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -14,31 +13,43 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile, Teams
-#from common.external_auth import CustomDualAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer, TeamsSerializer)
+
+# from common.external_auth import CustomDualAuthentication
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from tasks import swagger_params
 from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
-from tasks.serializer import (BoardColumnSerializer, BoardListSerializer,
-                              BoardMemberSerializer, BoardSerializer,
-                              BoardTaskSerializer,
-                              TaskCommentEditSwaggerSerializer,
-                              TaskCreateSerializer,
-                              TaskCreateSwaggerSerializer,
-                              TaskDetailEditSwaggerSerializer, TaskSerializer)
+from tasks.serializer import (
+    BoardColumnSerializer,
+    BoardListSerializer,
+    BoardMemberSerializer,
+    BoardSerializer,
+    BoardTaskSerializer,
+    TaskCommentEditSwaggerSerializer,
+    TaskCreateSerializer,
+    TaskCreateSwaggerSerializer,
+    TaskDetailEditSwaggerSerializer,
+    TaskSerializer,
+)
 from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
 
 
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
+            "-id"
+        )
         accounts = Account.objects.filter(org=self.request.profile.org)
         contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -47,10 +58,12 @@ class TaskListView(APIView, LimitOffsetPagination):
                 | Q(created_by=self.request.profile.user)
             )
             accounts = accounts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -84,15 +97,15 @@ class TaskListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.task_list_get_params
-    )
+    @extend_schema(tags=["Tasks"], parameters=swagger_params.task_list_get_params)
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params,request=TaskCreateSwaggerSerializer
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskCreateSwaggerSerializer,
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -105,7 +118,9 @@ class TaskListView(APIView, LimitOffsetPagination):
             )
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 task_obj.contacts.add(*contacts)
 
             if params.get("teams"):
@@ -132,7 +147,7 @@ class TaskListView(APIView, LimitOffsetPagination):
 
 class TaskDetailView(APIView):
     model = Task
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -159,36 +174,34 @@ class TaskDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=task_content_type,
             object_id=self.task_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=task_content_type,
             object_id=self.task_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
 
         assigned_data = self.task_obj.assigned_to.values("id", "user__email")
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-                    "user__email"
-                )
+                Profile.objects.filter(
+                    is_active=True, org=self.request.profile.org
+                ).values("user__email")
             )
         elif self.request.profile != self.task_obj.created_by:
             users_mention = [{"username": self.task_obj.created_by.user.email}]
         else:
-            users_mention = list(
-                self.task_obj.assigned_to.all().values("user__email")
-            )
+            users_mention = list(self.task_obj.assigned_to.all().values("user__email"))
         if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
             users = Profile.objects.filter(
                 is_active=True, org=self.request.profile.org
             ).order_by("user__email")
         else:
-            users = Profile.objects.filter(role="ADMIN", org=self.request.profile.org).order_by(
-                "user__email"
-            )
+            users = Profile.objects.filter(
+                role="ADMIN", org=self.request.profile.org
+            ).order_by("user__email")
 
         if self.request.profile == self.task_obj.created_by:
             user_assgn_list.append(self.request.profile.id)
@@ -221,16 +234,16 @@ class TaskDetailView(APIView):
         context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
         return context
 
-    @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def get(self, request, pk, **kwargs):
         self.task_obj = self.get_object(pk)
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params,request=TaskDetailEditSwaggerSerializer
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskDetailEditSwaggerSerializer,
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -268,12 +281,12 @@ class TaskDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=task_content_type,
             object_id=self.task_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=task_content_type,
             object_id=self.task_obj.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -285,7 +298,9 @@ class TaskDetailView(APIView):
         return Response(context)
 
     @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params,request=TaskCreateSwaggerSerializer
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskCreateSwaggerSerializer,
     )
     def put(self, request, pk, **kwargs):
         params = request.data
@@ -303,7 +318,9 @@ class TaskDetailView(APIView):
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 task_obj.contacts.add(*contacts)
 
             task_obj.teams.clear()
@@ -329,9 +346,7 @@ class TaskDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
@@ -352,14 +367,16 @@ class TaskDetailView(APIView):
 
 class TaskCommentView(APIView):
     model = Comment
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params,request=TaskCommentEditSwaggerSerializer
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskCommentEditSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -390,9 +407,7 @@ class TaskCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -416,12 +431,10 @@ class TaskCommentView(APIView):
 
 class TaskAttachmentView(APIView):
     model = Attachments
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(
-        tags=["Tasks"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
@@ -447,6 +460,7 @@ class TaskAttachmentView(APIView):
 # Kanban Board Views (merged from boards app)
 # =============================================================================
 
+
 class BoardListCreateView(APIView, LimitOffsetPagination):
     """List all boards or create a new board"""
 
@@ -455,11 +469,23 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
     @extend_schema(
         tags=["Boards"],
         parameters=[
-            OpenApiParameter(name="org", description="Organization ID", required=True, type=str),
-            OpenApiParameter(name="search", description="Search in board name", required=False, type=str),
-            OpenApiParameter(name="archived", description="Filter archived boards", required=False, type=bool),
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            ),
+            OpenApiParameter(
+                name="search",
+                description="Search in board name",
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="archived",
+                description="Filter archived boards",
+                required=False,
+                type=bool,
+            ),
         ],
-        responses={200: BoardListSerializer(many=True)}
+        responses={200: BoardListSerializer(many=True)},
     )
     def get(self, request):
         """List all boards for the user's organization"""
@@ -467,18 +493,21 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
         user_profile = request.profile
 
         # Get boards where user is owner or member
-        queryset = Board.objects.filter(
-            Q(org=org) &
-            (Q(owner=user_profile) | Q(members=user_profile))
-        ).distinct().order_by('-created_at')
+        queryset = (
+            Board.objects.filter(
+                Q(org=org) & (Q(owner=user_profile) | Q(members=user_profile))
+            )
+            .distinct()
+            .order_by("-created_at")
+        )
 
         # Filtering
-        archived = request.query_params.get('archived')
+        archived = request.query_params.get("archived")
         if archived is not None:
-            is_archived = archived.lower() in ['true', '1', 'yes']
+            is_archived = archived.lower() in ["true", "1", "yes"]
             queryset = queryset.filter(is_archived=is_archived)
 
-        search = request.query_params.get('search')
+        search = request.query_params.get("search")
         if search:
             queryset = queryset.filter(name__icontains=search)
 
@@ -486,18 +515,24 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
         results = self.paginate_queryset(queryset, request, view=self)
         serializer = BoardListSerializer(results, many=True)
 
-        return Response({
-            'count': self.count,
-            'next': self.get_next_link(),
-            'previous': self.get_previous_link(),
-            'results': serializer.data
-        })
+        return Response(
+            {
+                "count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": serializer.data,
+            }
+        )
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
         request=BoardSerializer,
-        responses={201: BoardSerializer}
+        responses={201: BoardSerializer},
     )
     def post(self, request):
         """Create a new board with default columns"""
@@ -508,38 +543,27 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
         serializer = BoardSerializer(data=data)
         if not serializer.is_valid():
             return Response(
-                {'error': True, 'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Create board
-        board = serializer.save(
-            org=org,
-            owner=user_profile,
-            created_by=request.user
-        )
+        board = serializer.save(org=org, owner=user_profile, created_by=request.user)
 
         # Add owner as member with owner role
-        BoardMember.objects.create(
-            board=board,
-            profile=user_profile,
-            role='owner'
-        )
+        BoardMember.objects.create(board=board, profile=user_profile, role="owner")
 
         # Create default columns if requested
-        if request.data.get('create_default_columns', True):
+        if request.data.get("create_default_columns", True):
             default_columns = [
-                {'name': 'To Do', 'order': 1, 'color': '#EF4444'},
-                {'name': 'In Progress', 'order': 2, 'color': '#F59E0B'},
-                {'name': 'Done', 'order': 3, 'color': '#10B981'},
+                {"name": "To Do", "order": 1, "color": "#EF4444"},
+                {"name": "In Progress", "order": 2, "color": "#F59E0B"},
+                {"name": "Done", "order": 3, "color": "#10B981"},
             ]
             for col_data in default_columns:
                 BoardColumn.objects.create(board=board, **col_data)
 
-        return Response(
-            BoardSerializer(board).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
 
 
 class BoardDetailView(APIView):
@@ -551,54 +575,66 @@ class BoardDetailView(APIView):
         """Get board if user has access"""
         board = get_object_or_404(Board, pk=pk, org=org)
         # Check if user is owner or member
-        if board.owner != user_profile and not board.members.filter(id=user_profile.id).exists():
+        if (
+            board.owner != user_profile
+            and not board.members.filter(id=user_profile.id).exists()
+        ):
             return None
         return board
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
-        responses={200: BoardSerializer}
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        responses={200: BoardSerializer},
     )
     def get(self, request, pk):
         """Get board details with columns and tasks"""
         board = self.get_object(pk, request.profile.org, request.profile)
         if not board:
             return Response(
-                {'error': 'Board not found or access denied'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Board not found or access denied"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         serializer = BoardSerializer(board)
         return Response(serializer.data)
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
         request=BoardSerializer,
-        responses={200: BoardSerializer}
+        responses={200: BoardSerializer},
     )
     def put(self, request, pk):
         """Update board"""
         board = self.get_object(pk, request.profile.org, request.profile)
         if not board:
             return Response(
-                {'error': 'Board not found or access denied'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Board not found or access denied"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         # Only owner or admin can update board
-        membership = BoardMember.objects.filter(board=board, profile=request.profile).first()
-        if not membership or membership.role not in ['owner', 'admin']:
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
+        if not membership or membership.role not in ["owner", "admin"]:
             return Response(
-                {'error': 'Permission denied'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         serializer = BoardSerializer(board, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(
-                {'error': True, 'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         board = serializer.save(updated_by=request.user)
@@ -606,23 +642,27 @@ class BoardDetailView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
-        responses={204: None}
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        responses={204: None},
     )
     def delete(self, request, pk):
         """Delete board (owner only)"""
         board = self.get_object(pk, request.profile.org, request.profile)
         if not board:
             return Response(
-                {'error': 'Board not found or access denied'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Board not found or access denied"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         # Only owner can delete
         if board.owner != request.profile:
             return Response(
-                {'error': 'Only board owner can delete the board'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Only board owner can delete the board"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         board.delete()
@@ -636,8 +676,12 @@ class BoardColumnListCreateView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
-        responses={200: BoardColumnSerializer(many=True)}
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        responses={200: BoardColumnSerializer(many=True)},
     )
     def get(self, request, board_pk):
         """List all columns for a board"""
@@ -645,10 +689,13 @@ class BoardColumnListCreateView(APIView):
         board = get_object_or_404(Board, pk=board_pk, org=org)
 
         # Check access
-        if board.owner != request.profile and not board.members.filter(id=request.profile.id).exists():
+        if (
+            board.owner != request.profile
+            and not board.members.filter(id=request.profile.id).exists()
+        ):
             return Response(
-                {'error': 'Board not found or access denied'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Board not found or access denied"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         columns = board.columns.all()
@@ -657,9 +704,13 @@ class BoardColumnListCreateView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
         request=BoardColumnSerializer,
-        responses={201: BoardColumnSerializer}
+        responses={201: BoardColumnSerializer},
     )
     def post(self, request, board_pk):
         """Create a new column"""
@@ -667,25 +718,25 @@ class BoardColumnListCreateView(APIView):
         board = get_object_or_404(Board, pk=board_pk, org=org)
 
         # Check permission
-        membership = BoardMember.objects.filter(board=board, profile=request.profile).first()
-        if not membership or membership.role not in ['owner', 'admin']:
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
+        if not membership or membership.role not in ["owner", "admin"]:
             return Response(
-                {'error': 'Permission denied'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         data = request.data.copy()
         serializer = BoardColumnSerializer(data=data)
         if not serializer.is_valid():
             return Response(
-                {'error': True, 'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         column = serializer.save(board=board, created_by=request.user)
         return Response(
-            BoardColumnSerializer(column).data,
-            status=status.HTTP_201_CREATED
+            BoardColumnSerializer(column).data, status=status.HTTP_201_CREATED
         )
 
 
@@ -696,8 +747,12 @@ class BoardTaskListCreateView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
-        responses={200: BoardTaskSerializer(many=True)}
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        responses={200: BoardTaskSerializer(many=True)},
     )
     def get(self, request, column_pk):
         """List all tasks for a column"""
@@ -706,10 +761,12 @@ class BoardTaskListCreateView(APIView):
 
         # Check access
         board = column.board
-        if board.owner != request.profile and not board.members.filter(id=request.profile.id).exists():
+        if (
+            board.owner != request.profile
+            and not board.members.filter(id=request.profile.id).exists()
+        ):
             return Response(
-                {'error': 'Access denied'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Access denied"}, status=status.HTTP_404_NOT_FOUND
             )
 
         tasks = column.tasks.all()
@@ -718,9 +775,13 @@ class BoardTaskListCreateView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
         request=BoardTaskSerializer,
-        responses={201: BoardTaskSerializer}
+        responses={201: BoardTaskSerializer},
     )
     def post(self, request, column_pk):
         """Create a new task"""
@@ -729,32 +790,30 @@ class BoardTaskListCreateView(APIView):
 
         # Check access
         board = column.board
-        membership = BoardMember.objects.filter(board=board, profile=request.profile).first()
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
         if not membership:
             return Response(
-                {'error': 'Access denied'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         data = request.data.copy()
         serializer = BoardTaskSerializer(data=data)
         if not serializer.is_valid():
             return Response(
-                {'error': True, 'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         task = serializer.save(column=column, created_by=request.user)
 
         # Handle assigned_to
-        if 'assigned_to_ids' in data:
-            profiles = Profile.objects.filter(id__in=data['assigned_to_ids'], org=org)
+        if "assigned_to_ids" in data:
+            profiles = Profile.objects.filter(id__in=data["assigned_to_ids"], org=org)
             task.assigned_to.set(profiles)
 
-        return Response(
-            BoardTaskSerializer(task).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(BoardTaskSerializer(task).data, status=status.HTTP_201_CREATED)
 
 
 class BoardTaskDetailView(APIView):
@@ -764,9 +823,13 @@ class BoardTaskDetailView(APIView):
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
         request=BoardTaskSerializer,
-        responses={200: BoardTaskSerializer}
+        responses={200: BoardTaskSerializer},
     )
     def put(self, request, pk):
         """Update task (including moving to different column)"""
@@ -775,34 +838,39 @@ class BoardTaskDetailView(APIView):
 
         # Check access
         board = task.column.board
-        membership = BoardMember.objects.filter(board=board, profile=request.profile).first()
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
         if not membership:
             return Response(
-                {'error': 'Access denied'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         data = request.data.copy()
         serializer = BoardTaskSerializer(task, data=data, partial=True)
         if not serializer.is_valid():
             return Response(
-                {'error': True, 'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         task = serializer.save(updated_by=request.user)
 
         # Handle assigned_to
-        if 'assigned_to_ids' in data:
-            profiles = Profile.objects.filter(id__in=data['assigned_to_ids'], org=org)
+        if "assigned_to_ids" in data:
+            profiles = Profile.objects.filter(id__in=data["assigned_to_ids"], org=org)
             task.assigned_to.set(profiles)
 
         return Response(BoardTaskSerializer(task).data)
 
     @extend_schema(
         tags=["Boards"],
-        parameters=[OpenApiParameter(name="org", description="Organization ID", required=True, type=str)],
-        responses={204: None}
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        responses={204: None},
     )
     def delete(self, request, pk):
         """Delete task"""
@@ -811,11 +879,12 @@ class BoardTaskDetailView(APIView):
 
         # Check permission
         board = task.column.board
-        membership = BoardMember.objects.filter(board=board, profile=request.profile).first()
-        if not membership or membership.role not in ['owner', 'admin', 'member']:
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
+        if not membership or membership.role not in ["owner", "admin", "member"]:
             return Response(
-                {'error': 'Permission denied'},
-                status=status.HTTP_403_FORBIDDEN
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
         task.delete()

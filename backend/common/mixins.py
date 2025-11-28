@@ -6,7 +6,6 @@ from common.models import models
 
 
 class TimeAuditModel(models.Model):
-
     """To path when the record was created and last modified"""
 
     created_at = models.DateTimeField(
@@ -20,7 +19,6 @@ class TimeAuditModel(models.Model):
 
 
 class UserAuditModel(models.Model):
-
     """To path when the record was created and last modified"""
 
     created_by = models.ForeignKey(
@@ -43,7 +41,6 @@ class UserAuditModel(models.Model):
 
 
 class AuditModel(TimeAuditModel, UserAuditModel):
-
     """To path when the record was created and last modified"""
 
     class Meta:
@@ -80,10 +77,10 @@ class OrgFilterMixin:
         Returns:
             QuerySet filtered by org, or empty queryset if no org context
         """
-        if not hasattr(self, 'model') or self.model is None:
+        if not hasattr(self, "model") or self.model is None:
             raise NotImplementedError("OrgFilterMixin requires 'model' attribute")
 
-        if not hasattr(self.request, 'profile') or self.request.profile is None:
+        if not hasattr(self.request, "profile") or self.request.profile is None:
             return self.model.objects.none()
 
         return self.model.objects.filter(org=self.request.profile.org)
@@ -107,7 +104,7 @@ class OrgFilterMixin:
             raise NotFound(f"{self.model.__name__} not found")
 
         # Verify org ownership
-        if hasattr(obj, 'org_id'):
+        if hasattr(obj, "org_id"):
             if obj.org_id != self.request.profile.org_id:
                 raise NotFound(f"{self.model.__name__} not found")
 
@@ -131,11 +128,11 @@ class OrgFilterMixin:
         # Non-admins see items they created or are assigned to
         filters = Q(created_by=self.request.profile.user)
 
-        if hasattr(self.model, 'assigned_to'):
+        if hasattr(self.model, "assigned_to"):
             filters |= Q(assigned_to=self.request.profile)
 
-        if hasattr(self.model, 'teams'):
-            user_team_ids = self.request.profile.user_teams.values_list('id', flat=True)
+        if hasattr(self.model, "teams"):
+            user_team_ids = self.request.profile.user_teams.values_list("id", flat=True)
             filters |= Q(teams__id__in=user_team_ids)
 
         return queryset.filter(filters).distinct()
@@ -168,8 +165,7 @@ class OrgCreateMixin:
             Created model instance
         """
         return serializer.save(
-            org=self.request.profile.org,
-            created_by=self.request.profile.user
+            org=self.request.profile.org, created_by=self.request.profile.user
         )
 
     def get_org_context(self):
@@ -180,9 +176,9 @@ class OrgCreateMixin:
             Dict with org and profile for serializer context
         """
         return {
-            'org': self.request.profile.org,
-            'profile': self.request.profile,
-            'user': self.request.profile.user
+            "org": self.request.profile.org,
+            "profile": self.request.profile,
+            "user": self.request.profile.user,
         }
 
 
@@ -211,7 +207,7 @@ class OrgUpdateMixin:
             PermissionDenied: If user cannot update this instance
         """
         # Verify org ownership
-        if hasattr(instance, 'org_id'):
+        if hasattr(instance, "org_id"):
             if instance.org_id != self.request.profile.org_id:
                 raise PermissionDenied("Cannot update object from another organization")
 
@@ -220,12 +216,12 @@ class OrgUpdateMixin:
             return
 
         # Check if user created the object
-        if hasattr(instance, 'created_by_id'):
+        if hasattr(instance, "created_by_id"):
             if instance.created_by_id == self.request.profile.user_id:
                 return
 
         # Check if user is assigned
-        if hasattr(instance, 'assigned_to'):
+        if hasattr(instance, "assigned_to"):
             if self.request.profile in instance.assigned_to.all():
                 return
 
@@ -257,7 +253,7 @@ class OrgDeleteMixin:
             PermissionDenied: If user cannot delete this instance
         """
         # Verify org ownership
-        if hasattr(instance, 'org_id'):
+        if hasattr(instance, "org_id"):
             if instance.org_id != self.request.profile.org_id:
                 raise PermissionDenied("Cannot delete object from another organization")
 
@@ -265,7 +261,7 @@ class OrgDeleteMixin:
         if self.request.profile.role == "ADMIN":
             return
 
-        if hasattr(instance, 'created_by_id'):
+        if hasattr(instance, "created_by_id"):
             if instance.created_by_id == self.request.profile.user_id:
                 return
 
@@ -308,6 +304,7 @@ class OrgViewMixin(OrgFilterMixin, OrgCreateMixin, OrgUpdateMixin, OrgDeleteMixi
                 instance.delete()
                 return Response(status=204)
     """
+
     pass
 
 
@@ -323,7 +320,7 @@ class ActivityTrackingMixin:
 
     entity_type = None  # Override in subclass
 
-    def track_activity(self, action, instance, description=''):
+    def track_activity(self, action, instance, description=""):
         """
         Create an activity record for the action.
 
@@ -337,12 +334,12 @@ class ActivityTrackingMixin:
         if not self.entity_type:
             return
 
-        entity_name = ''
-        if hasattr(instance, 'name'):
+        entity_name = ""
+        if hasattr(instance, "name"):
             entity_name = instance.name
-        elif hasattr(instance, 'title'):
+        elif hasattr(instance, "title"):
             entity_name = instance.title
-        elif hasattr(instance, 'first_name'):
+        elif hasattr(instance, "first_name"):
             entity_name = f"{instance.first_name} {getattr(instance, 'last_name', '')}"
 
         Activity.objects.create(
@@ -351,8 +348,8 @@ class ActivityTrackingMixin:
             entity_type=self.entity_type,
             entity_id=instance.id,
             entity_name=entity_name[:255],
-            description=description[:500] if description else '',
-            org=self.request.profile.org
+            description=description[:500] if description else "",
+            org=self.request.profile.org,
         )
 
 
@@ -387,7 +384,7 @@ class BulkOperationMixin:
 
         # Verify all objects belong to user's org
         for obj in queryset:
-            if hasattr(obj, 'org_id'):
+            if hasattr(obj, "org_id"):
                 if obj.org_id != self.request.profile.org_id:
                     raise PermissionDenied(
                         "One or more objects do not belong to your organization"

@@ -21,11 +21,11 @@ Usage:
 
 # PostgreSQL session variable for org context
 # Set via: SELECT set_config('app.current_org', '<org_id>', true)
-CONTEXT_VARIABLE = 'app.current_org'
+CONTEXT_VARIABLE = "app.current_org"
 
 # Policy names
-ISOLATION_POLICY = 'org_isolation'
-INSERT_POLICY = 'org_insert_check'
+ISOLATION_POLICY = "org_isolation"
+INSERT_POLICY = "org_insert_check"
 
 # All org-scoped tables that need RLS policies
 # Add new org-scoped tables here
@@ -33,49 +33,44 @@ INSERT_POLICY = 'org_insert_check'
 # Table names must match actual PostgreSQL table names (check via \dt)
 ORG_SCOPED_TABLES = [
     # Core business entities
-    'lead',
-    'accounts',      # Note: plural
-    'contacts',      # Note: plural
-    'opportunity',
-    'case',          # Note: singular
-    'task',
-    'invoice',
-
+    "lead",
+    "accounts",  # Note: plural
+    "contacts",  # Note: plural
+    "opportunity",
+    "case",  # Note: singular
+    "task",
+    "invoice",
     # Supporting entities
-    'comment',
-    'attachments',
-    'document',
-    'teams',
-    'activity',
-    'tags',
-    'address',
-    'solution',
-
+    "comment",
+    "attachments",
+    "document",
+    "teams",
+    "activity",
+    "tags",
+    "address",
+    "solution",
     # Boards (Kanban)
-    'board',
-    'board_column',
-    'board_task',
-    'board_member',
-
+    "board",
+    "board_column",
+    "board_task",
+    "board_member",
     # Settings
-    'apiSettings',   # Note: camelCase
-
+    "apiSettings",  # Note: camelCase
     # Email & Invoicing
-    'account_email',
-    'emailLogs',
-    'invoice_history',
-
+    "account_email",
+    "emailLogs",
+    "invoice_history",
     # Security & Audit
-    'security_audit_log',
+    "security_audit_log",
 ]
 
 # Centralized RLS configuration
 RLS_CONFIG = {
-    'context_variable': CONTEXT_VARIABLE,
-    'tables': ORG_SCOPED_TABLES,
-    'policies': {
-        'isolation': ISOLATION_POLICY,
-        'insert': INSERT_POLICY,
+    "context_variable": CONTEXT_VARIABLE,
+    "tables": ORG_SCOPED_TABLES,
+    "policies": {
+        "isolation": ISOLATION_POLICY,
+        "insert": INSERT_POLICY,
     },
 }
 

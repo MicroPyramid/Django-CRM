@@ -12,169 +12,537 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('accounts', '0001_initial'),
-        ('common', '0001_initial'),
-        ('contacts', '0001_initial'),
-        ('opportunity', '0001_initial'),
+        ("accounts", "0001_initial"),
+        ("common", "0001_initial"),
+        ("contacts", "0001_initial"),
+        ("opportunity", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Board',
+            name="Board",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created At')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Last Modified At')),
-                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('is_archived', models.BooleanField(default=False)),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
-                ('org', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='boards', to='common.org')),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='owned_boards', to='common.profile')),
-                ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By')),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Created At"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Last Modified At"
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("is_archived", models.BooleanField(default=False)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Created By",
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="boards",
+                        to="common.org",
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="owned_boards",
+                        to="common.profile",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Last Modified By",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Board',
-                'verbose_name_plural': 'Boards',
-                'db_table': 'board',
-                'ordering': ('-created_at',),
+                "verbose_name": "Board",
+                "verbose_name_plural": "Boards",
+                "db_table": "board",
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='BoardColumn',
+            name="BoardColumn",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created At')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Last Modified At')),
-                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('name', models.CharField(max_length=100)),
-                ('order', models.PositiveIntegerField(default=0)),
-                ('color', models.CharField(default='#6B7280', max_length=7)),
-                ('limit', models.PositiveIntegerField(blank=True, null=True)),
-                ('board', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='columns', to='tasks.board')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
-                ('org', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='board_columns', to='common.org')),
-                ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By')),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Created At"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Last Modified At"
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("order", models.PositiveIntegerField(default=0)),
+                ("color", models.CharField(default="#6B7280", max_length=7)),
+                ("limit", models.PositiveIntegerField(blank=True, null=True)),
+                (
+                    "board",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="columns",
+                        to="tasks.board",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Created By",
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="board_columns",
+                        to="common.org",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Last Modified By",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Board Column',
-                'verbose_name_plural': 'Board Columns',
-                'db_table': 'board_column',
-                'ordering': ('order',),
+                "verbose_name": "Board Column",
+                "verbose_name_plural": "Board Columns",
+                "db_table": "board_column",
+                "ordering": ("order",),
             },
         ),
         migrations.CreateModel(
-            name='BoardMember',
+            name="BoardMember",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created At')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Last Modified At')),
-                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('role', models.CharField(choices=[('owner', 'Owner'), ('admin', 'Admin'), ('member', 'Member')], default='member', max_length=20)),
-                ('board', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='tasks.board')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
-                ('org', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='board_members', to='common.org')),
-                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='board_memberships', to='common.profile')),
-                ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By')),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Created At"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Last Modified At"
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("owner", "Owner"),
+                            ("admin", "Admin"),
+                            ("member", "Member"),
+                        ],
+                        default="member",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "board",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="memberships",
+                        to="tasks.board",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Created By",
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="board_members",
+                        to="common.org",
+                    ),
+                ),
+                (
+                    "profile",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="board_memberships",
+                        to="common.profile",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Last Modified By",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Board Member',
-                'verbose_name_plural': 'Board Members',
-                'db_table': 'board_member',
+                "verbose_name": "Board Member",
+                "verbose_name_plural": "Board Members",
+                "db_table": "board_member",
             },
         ),
         migrations.AddField(
-            model_name='board',
-            name='members',
-            field=models.ManyToManyField(related_name='boards', through='tasks.BoardMember', to='common.profile'),
+            model_name="board",
+            name="members",
+            field=models.ManyToManyField(
+                related_name="boards", through="tasks.BoardMember", to="common.profile"
+            ),
         ),
         migrations.CreateModel(
-            name='BoardTask',
+            name="BoardTask",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created At')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Last Modified At')),
-                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('order', models.PositiveIntegerField(default=0)),
-                ('priority', models.CharField(choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('urgent', 'Urgent')], default='medium', max_length=10)),
-                ('due_date', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('account', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='board_tasks', to='accounts.account')),
-                ('assigned_to', models.ManyToManyField(blank=True, related_name='assigned_board_tasks', to='common.profile')),
-                ('column', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tasks', to='tasks.boardcolumn')),
-                ('contact', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='board_tasks', to='contacts.contact')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
-                ('opportunity', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='board_tasks', to='opportunity.opportunity')),
-                ('org', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='board_tasks', to='common.org')),
-                ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By')),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Created At"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Last Modified At"
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("order", models.PositiveIntegerField(default=0)),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            ("low", "Low"),
+                            ("medium", "Medium"),
+                            ("high", "High"),
+                            ("urgent", "Urgent"),
+                        ],
+                        default="medium",
+                        max_length=10,
+                    ),
+                ),
+                ("due_date", models.DateTimeField(blank=True, null=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "account",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="board_tasks",
+                        to="accounts.account",
+                    ),
+                ),
+                (
+                    "assigned_to",
+                    models.ManyToManyField(
+                        blank=True,
+                        related_name="assigned_board_tasks",
+                        to="common.profile",
+                    ),
+                ),
+                (
+                    "column",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="tasks",
+                        to="tasks.boardcolumn",
+                    ),
+                ),
+                (
+                    "contact",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="board_tasks",
+                        to="contacts.contact",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Created By",
+                    ),
+                ),
+                (
+                    "opportunity",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="board_tasks",
+                        to="opportunity.opportunity",
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="board_tasks",
+                        to="common.org",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Last Modified By",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Board Task',
-                'verbose_name_plural': 'Board Tasks',
-                'db_table': 'board_task',
-                'ordering': ('order',),
+                "verbose_name": "Board Task",
+                "verbose_name_plural": "Board Tasks",
+                "db_table": "board_task",
+                "ordering": ("order",),
             },
         ),
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created At')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Last Modified At')),
-                ('id', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('title', models.CharField(max_length=200, verbose_name='title')),
-                ('status', models.CharField(choices=[('New', 'New'), ('In Progress', 'In Progress'), ('Completed', 'Completed')], max_length=50, verbose_name='status')),
-                ('priority', models.CharField(choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], max_length=50, verbose_name='priority')),
-                ('due_date', models.DateField(blank=True, null=True)),
-                ('description', models.TextField(blank=True, null=True, verbose_name='Notes')),
-                ('account', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accounts_tasks', to='accounts.account')),
-                ('assigned_to', models.ManyToManyField(related_name='users_tasks', to='common.profile')),
-                ('contacts', models.ManyToManyField(related_name='contacts_tasks', to='contacts.contact')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
-                ('org', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tasks', to='common.org')),
-                ('teams', models.ManyToManyField(related_name='tasks_teams', to='common.teams')),
-                ('updated_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By')),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Created At"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Last Modified At"
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                ("title", models.CharField(max_length=200, verbose_name="title")),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("New", "New"),
+                            ("In Progress", "In Progress"),
+                            ("Completed", "Completed"),
+                        ],
+                        max_length=50,
+                        verbose_name="status",
+                    ),
+                ),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            ("Low", "Low"),
+                            ("Medium", "Medium"),
+                            ("High", "High"),
+                        ],
+                        max_length=50,
+                        verbose_name="priority",
+                    ),
+                ),
+                ("due_date", models.DateField(blank=True, null=True)),
+                (
+                    "description",
+                    models.TextField(blank=True, null=True, verbose_name="Notes"),
+                ),
+                (
+                    "account",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="accounts_tasks",
+                        to="accounts.account",
+                    ),
+                ),
+                (
+                    "assigned_to",
+                    models.ManyToManyField(
+                        related_name="users_tasks", to="common.profile"
+                    ),
+                ),
+                (
+                    "contacts",
+                    models.ManyToManyField(
+                        related_name="contacts_tasks", to="contacts.contact"
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Created By",
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="tasks",
+                        to="common.org",
+                    ),
+                ),
+                (
+                    "teams",
+                    models.ManyToManyField(
+                        related_name="tasks_teams", to="common.teams"
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Last Modified By",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Task',
-                'verbose_name_plural': 'Tasks',
-                'db_table': 'task',
-                'ordering': ('-due_date',),
+                "verbose_name": "Task",
+                "verbose_name_plural": "Tasks",
+                "db_table": "task",
+                "ordering": ("-due_date",),
             },
         ),
         migrations.AddIndex(
-            model_name='boardcolumn',
-            index=models.Index(fields=['org', 'order'], name='board_colum_org_id_c9ff44_idx'),
+            model_name="boardcolumn",
+            index=models.Index(
+                fields=["org", "order"], name="board_colum_org_id_c9ff44_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='boardcolumn',
-            unique_together={('board', 'name')},
+            name="boardcolumn",
+            unique_together={("board", "name")},
         ),
         migrations.AddIndex(
-            model_name='boardmember',
-            index=models.Index(fields=['org', '-created_at'], name='board_membe_org_id_16f9e3_idx'),
+            model_name="boardmember",
+            index=models.Index(
+                fields=["org", "-created_at"], name="board_membe_org_id_16f9e3_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='boardmember',
-            unique_together={('board', 'profile')},
+            name="boardmember",
+            unique_together={("board", "profile")},
         ),
         migrations.AddIndex(
-            model_name='board',
-            index=models.Index(fields=['org', '-created_at'], name='board_org_id_07a8d8_idx'),
+            model_name="board",
+            index=models.Index(
+                fields=["org", "-created_at"], name="board_org_id_07a8d8_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='boardtask',
-            index=models.Index(fields=['org', 'order'], name='board_task_org_id_6055e2_idx'),
+            model_name="boardtask",
+            index=models.Index(
+                fields=["org", "order"], name="board_task_org_id_6055e2_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='task',
-            index=models.Index(fields=['status'], name='task_status_e9a322_idx'),
+            model_name="task",
+            index=models.Index(fields=["status"], name="task_status_e9a322_idx"),
         ),
         migrations.AddIndex(
-            model_name='task',
-            index=models.Index(fields=['due_date'], name='task_due_dat_6ddd76_idx'),
+            model_name="task",
+            index=models.Index(fields=["due_date"], name="task_due_dat_6ddd76_idx"),
         ),
         migrations.AddIndex(
-            model_name='task',
-            index=models.Index(fields=['org', '-created_at'], name='task_org_id_74b184_idx'),
+            model_name="task",
+            index=models.Index(
+                fields=["org", "-created_at"], name="task_org_id_74b184_idx"
+            ),
         ),
     ]

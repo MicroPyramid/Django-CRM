@@ -58,7 +58,7 @@ class SetOrgContext:
         Args:
             request: Django request object with profile attached
         """
-        if not hasattr(request, 'org') or request.org is None:
+        if not hasattr(request, "org") or request.org is None:
             return
 
         org_id = str(request.org.id)
@@ -67,8 +67,7 @@ class SetOrgContext:
             with connection.cursor() as cursor:
                 # Set the session variable
                 cursor.execute(
-                    "SELECT set_config('app.current_org', %s, true)",
-                    [org_id]
+                    "SELECT set_config('app.current_org', %s, true)", [org_id]
                 )
                 logger.debug(f"Set RLS context: app.current_org = {org_id}")
 
@@ -82,9 +81,7 @@ class SetOrgContext:
         """
         try:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT set_config('app.current_org', '', true)"
-                )
+                cursor.execute("SELECT set_config('app.current_org', '', true)")
         except Exception:
             pass
 
@@ -107,15 +104,15 @@ class RequireOrgContext:
 
     # Paths that don't require org context
     EXEMPT_PATHS = [
-        '/api/auth/login/',
-        '/api/auth/register/',
-        '/api/auth/refresh-token/',
-        '/api/auth/me/',
-        '/api/auth/switch-org/',
-        '/api/auth/google/',
-        '/admin/',
-        '/swagger-ui/',
-        '/api/schema/',
+        "/api/auth/login/",
+        "/api/auth/register/",
+        "/api/auth/refresh-token/",
+        "/api/auth/me/",
+        "/api/auth/switch-org/",
+        "/api/auth/google/",
+        "/admin/",
+        "/swagger-ui/",
+        "/api/schema/",
     ]
 
     def __init__(self, get_response):
@@ -124,8 +121,9 @@ class RequireOrgContext:
     def __call__(self, request):
         # Check if path requires org context
         if not self._is_exempt(request.path):
-            if not hasattr(request, 'org') or request.org is None:
+            if not hasattr(request, "org") or request.org is None:
                 from rest_framework.exceptions import PermissionDenied
+
                 raise PermissionDenied(
                     "Organization context is required. Please login again."
                 )
@@ -146,7 +144,7 @@ class RequireOrgContext:
 
     def _set_org_context(self, request):
         """Set PostgreSQL session variable."""
-        if not hasattr(request, 'org') or request.org is None:
+        if not hasattr(request, "org") or request.org is None:
             return
 
         org_id = str(request.org.id)
@@ -154,8 +152,7 @@ class RequireOrgContext:
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT set_config('app.current_org', %s, true)",
-                    [org_id]
+                    "SELECT set_config('app.current_org', %s, true)", [org_id]
                 )
         except Exception as e:
             logger.warning(f"Failed to set RLS context: {e}")
@@ -164,9 +161,7 @@ class RequireOrgContext:
         """Reset PostgreSQL session variable."""
         try:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT set_config('app.current_org', '', true)"
-                )
+                cursor.execute("SELECT set_config('app.current_org', '', true)")
         except Exception:
             pass
 

@@ -2,8 +2,7 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
-                                   extend_schema)
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -13,9 +12,13 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerailizer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-#from common.external_auth import CustomDualAuthentication
-from common.serializer import (AttachmentsSerializer, CommentSerializer,
-                               ProfileSerializer)
+
+# from common.external_auth import CustomDualAuthentication
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    ProfileSerializer,
+)
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -27,24 +30,29 @@ from opportunity.tasks import send_email_to_assigned_user
 
 class OpportunityListView(APIView, LimitOffsetPagination):
 
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
+            "-id"
+        )
         accounts = Account.objects.filter(org=self.request.profile.org)
         contacts = Contact.objects.filter(org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
 
         if params:
@@ -59,9 +67,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                     lead_source__contains=params.get("lead_source")
                 )
             if params.get("tags"):
-                queryset = queryset.filter(
-                    tags__in=params.get("tags")
-                ).distinct()
+                queryset = queryset.filter(tags__in=params.get("tags")).distinct()
 
         context = {}
         results_opportunities = self.paginate_queryset(
@@ -86,7 +92,9 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["opportunities"] = opportunities
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
-        context["tags"] = TagsSerailizer(Tags.objects.filter(org=self.request.profile.org), many=True).data
+        context["tags"] = TagsSerailizer(
+            Tags.objects.filter(org=self.request.profile.org), many=True
+        ).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
         context["currency"] = CURRENCY_CODES
@@ -103,7 +111,8 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
     @extend_schema(
         tags=["Opportunities"],
-        parameters=swagger_params.organization_params,request=OpportunityCreateSwaggerSerializer
+        parameters=swagger_params.organization_params,
+        request=OpportunityCreateSwaggerSerializer,
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -117,7 +126,9 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 opportunity_obj.contacts.add(*contacts)
 
             if params.get("tags"):
@@ -177,7 +188,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
 
 class OpportunityDetailView(APIView):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Opportunity
 
@@ -186,7 +197,8 @@ class OpportunityDetailView(APIView):
 
     @extend_schema(
         tags=["Opportunities"],
-        parameters=swagger_params.organization_params,request=OpportunityCreateSwaggerSerializer
+        parameters=swagger_params.organization_params,
+        request=OpportunityCreateSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -224,7 +236,9 @@ class OpportunityDetailView(APIView):
             opportunity_object.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 opportunity_object.contacts.add(*contacts)
 
             opportunity_object.tags.clear()
@@ -345,15 +359,13 @@ class OpportunityDetailView(APIView):
 
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-                    "user__email"
-                )
+                Profile.objects.filter(
+                    is_active=True, org=self.request.profile.org
+                ).values("user__email")
             )
         elif self.request.profile != self.opportunity.created_by:
             if self.opportunity.created_by:
-                users_mention = [
-                    {"username": self.opportunity.created_by.user.email}
-                ]
+                users_mention = [{"username": self.opportunity.created_by.user.email}]
             else:
                 users_mention = []
         else:
@@ -363,12 +375,12 @@ class OpportunityDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=opportunity_content_type,
             object_id=self.opportunity.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=opportunity_content_type,
             object_id=self.opportunity.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -394,7 +406,8 @@ class OpportunityDetailView(APIView):
 
     @extend_schema(
         tags=["Opportunities"],
-        parameters=swagger_params.organization_params,request=OpportunityDetailEditSwaggerSerializer
+        parameters=swagger_params.organization_params,
+        request=OpportunityDetailEditSwaggerSerializer,
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -439,12 +452,12 @@ class OpportunityDetailView(APIView):
         comments = Comment.objects.filter(
             content_type=opportunity_content_type,
             object_id=self.opportunity_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         attachments = Attachments.objects.filter(
             content_type=opportunity_content_type,
             object_id=self.opportunity_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         context.update(
             {
@@ -458,7 +471,7 @@ class OpportunityDetailView(APIView):
 
 class OpportunityCommentView(APIView):
     model = Comment
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -466,7 +479,8 @@ class OpportunityCommentView(APIView):
 
     @extend_schema(
         tags=["Opportunities"],
-        parameters=swagger_params.organization_params,request=OpportunityCommentEditSwaggerSerializer
+        parameters=swagger_params.organization_params,
+        request=OpportunityCommentEditSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -522,7 +536,7 @@ class OpportunityCommentView(APIView):
 
 class OpportunityAttachmentView(APIView):
     model = Attachments
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(

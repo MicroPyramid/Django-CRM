@@ -10,116 +10,193 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('accounts', '0001_initial'),
-        ('common', '0001_initial'),
-        ('contacts', '0001_initial'),
+        ("accounts", "0001_initial"),
+        ("common", "0001_initial"),
+        ("contacts", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='account',
-            name='assigned_to',
-            field=models.ManyToManyField(related_name='account_assigned_users', to='common.profile'),
+            model_name="account",
+            name="assigned_to",
+            field=models.ManyToManyField(
+                related_name="account_assigned_users", to="common.profile"
+            ),
         ),
         migrations.AddField(
-            model_name='account',
-            name='contacts',
-            field=models.ManyToManyField(related_name='account_contacts', to='contacts.contact'),
+            model_name="account",
+            name="contacts",
+            field=models.ManyToManyField(
+                related_name="account_contacts", to="contacts.contact"
+            ),
         ),
         migrations.AddField(
-            model_name='account',
-            name='created_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By'),
+            model_name="account",
+            name="created_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Created By",
+            ),
         ),
         migrations.AddField(
-            model_name='account',
-            name='org',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='accounts', to='common.org'),
+            model_name="account",
+            name="org",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="accounts",
+                to="common.org",
+            ),
         ),
         migrations.AddField(
-            model_name='account',
-            name='tags',
-            field=models.ManyToManyField(blank=True, to='common.tags'),
+            model_name="account",
+            name="tags",
+            field=models.ManyToManyField(blank=True, to="common.tags"),
         ),
         migrations.AddField(
-            model_name='account',
-            name='teams',
-            field=models.ManyToManyField(related_name='account_teams', to='common.teams'),
+            model_name="account",
+            name="teams",
+            field=models.ManyToManyField(
+                related_name="account_teams", to="common.teams"
+            ),
         ),
         migrations.AddField(
-            model_name='account',
-            name='updated_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By'),
+            model_name="account",
+            name="updated_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Last Modified By",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemail',
-            name='created_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By'),
+            model_name="accountemail",
+            name="created_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Created By",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemail',
-            name='from_account',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sent_email', to='accounts.account'),
+            model_name="accountemail",
+            name="from_account",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="sent_email",
+                to="accounts.account",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemail',
-            name='org',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='account_emails', to='common.org'),
+            model_name="accountemail",
+            name="org",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="account_emails",
+                to="common.org",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemail',
-            name='recipients',
-            field=models.ManyToManyField(related_name='recieved_email', to='contacts.contact'),
+            model_name="accountemail",
+            name="recipients",
+            field=models.ManyToManyField(
+                related_name="recieved_email", to="contacts.contact"
+            ),
         ),
         migrations.AddField(
-            model_name='accountemail',
-            name='updated_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By'),
+            model_name="accountemail",
+            name="updated_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Last Modified By",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemaillog',
-            name='contact',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contact_email_log', to='contacts.contact'),
+            model_name="accountemaillog",
+            name="contact",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="contact_email_log",
+                to="contacts.contact",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemaillog',
-            name='created_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created_by', to=settings.AUTH_USER_MODEL, verbose_name='Created By'),
+            model_name="accountemaillog",
+            name="created_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Created By",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemaillog',
-            name='email',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='email_log', to='accounts.accountemail'),
+            model_name="accountemaillog",
+            name="email",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="email_log",
+                to="accounts.accountemail",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemaillog',
-            name='org',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='account_email_logs', to='common.org'),
+            model_name="accountemaillog",
+            name="org",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="account_email_logs",
+                to="common.org",
+            ),
         ),
         migrations.AddField(
-            model_name='accountemaillog',
-            name='updated_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated_by', to=settings.AUTH_USER_MODEL, verbose_name='Last Modified By'),
+            model_name="accountemaillog",
+            name="updated_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated_by",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Last Modified By",
+            ),
         ),
         migrations.AddIndex(
-            model_name='account',
-            index=models.Index(fields=['name'], name='accounts_name_94ecef_idx'),
+            model_name="account",
+            index=models.Index(fields=["name"], name="accounts_name_94ecef_idx"),
         ),
         migrations.AddIndex(
-            model_name='account',
-            index=models.Index(fields=['industry'], name='accounts_industr_6498ca_idx'),
+            model_name="account",
+            index=models.Index(fields=["industry"], name="accounts_industr_6498ca_idx"),
         ),
         migrations.AddIndex(
-            model_name='account',
-            index=models.Index(fields=['org', '-created_at'], name='accounts_org_id_6f0889_idx'),
+            model_name="account",
+            index=models.Index(
+                fields=["org", "-created_at"], name="accounts_org_id_6f0889_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='accountemail',
-            index=models.Index(fields=['org', '-created_at'], name='account_ema_org_id_3bbcd2_idx'),
+            model_name="accountemail",
+            index=models.Index(
+                fields=["org", "-created_at"], name="account_ema_org_id_3bbcd2_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='accountemaillog',
-            index=models.Index(fields=['org', '-created_at'], name='emailLogs_org_id_84814f_idx'),
+            model_name="accountemaillog",
+            index=models.Index(
+                fields=["org", "-created_at"], name="emailLogs_org_id_84814f_idx"
+            ),
         ),
     ]

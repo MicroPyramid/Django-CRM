@@ -150,7 +150,8 @@ class Invoice(BaseModel):
 
 class InvoiceHistory(BaseModel):
     """Model definition for InvoiceHistory.
-    This model is used to track/keep a record of the updates made to original invoice object."""
+    This model is used to track/keep a record of the updates made to original invoice object.
+    """
 
     INVOICE_STATUS = (
         ("Draft", "Draft"),
@@ -223,7 +224,7 @@ class InvoiceHistory(BaseModel):
         db_table = "invoice_history"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -251,6 +252,7 @@ class InvoiceHistory(BaseModel):
 
 # Phase 3: Enhanced Quotes with Line Items
 
+
 class Product(BaseModel):
     """Product Catalog for Line Items"""
 
@@ -260,7 +262,7 @@ class Product(BaseModel):
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     category = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name='products')
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="products")
 
     class Meta:
         verbose_name = "Product"
@@ -277,16 +279,14 @@ class InvoiceLineItem(BaseModel):
     """Line Item for Invoices"""
 
     invoice = models.ForeignKey(
-        Invoice,
-        on_delete=models.CASCADE,
-        related_name='line_items'
+        Invoice, on_delete=models.CASCADE, related_name="line_items"
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='invoice_line_items'
+        related_name="invoice_line_items",
     )
     description = models.CharField(max_length=500)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
@@ -296,7 +296,7 @@ class InvoiceLineItem(BaseModel):
     org = models.ForeignKey(
         Org,
         on_delete=models.CASCADE,
-        related_name='invoice_line_items',
+        related_name="invoice_line_items",
     )
 
     class Meta:
@@ -305,7 +305,7 @@ class InvoiceLineItem(BaseModel):
         db_table = "invoice_line_item"
         ordering = ("order",)
         indexes = [
-            models.Index(fields=['org', 'order']),
+            models.Index(fields=["org", "order"]),
         ]
 
     def __str__(self):

@@ -28,11 +28,11 @@ class HasOrgContext(permissions.BasePermission):
 
     def has_permission(self, request, view):
         # Must have profile set by middleware
-        if not hasattr(request, 'profile') or request.profile is None:
+        if not hasattr(request, "profile") or request.profile is None:
             return False
 
         # Must have org set
-        if not hasattr(request, 'org') or request.org is None:
+        if not hasattr(request, "org") or request.org is None:
             return False
 
         # Profile must be active
@@ -54,13 +54,10 @@ class IsOrgAdmin(permissions.BasePermission):
     message = "You must be an organization administrator to perform this action."
 
     def has_permission(self, request, view):
-        if not hasattr(request, 'profile') or request.profile is None:
+        if not hasattr(request, "profile") or request.profile is None:
             return False
 
-        return (
-            request.profile.role == "ADMIN" or
-            request.profile.is_organization_admin
-        )
+        return request.profile.role == "ADMIN" or request.profile.is_organization_admin
 
 
 class IsOrgMember(permissions.BasePermission):
@@ -73,10 +70,10 @@ class IsOrgMember(permissions.BasePermission):
     message = "You are not a member of this organization."
 
     def has_permission(self, request, view):
-        if not hasattr(request, 'profile') or request.profile is None:
+        if not hasattr(request, "profile") or request.profile is None:
             return False
 
-        if not hasattr(request, 'org') or request.org is None:
+        if not hasattr(request, "org") or request.org is None:
             return False
 
         # Verify profile org matches request org
@@ -95,7 +92,7 @@ class HasSalesAccess(permissions.BasePermission):
     message = "You do not have access to the sales module."
 
     def has_permission(self, request, view):
-        if not hasattr(request, 'profile') or request.profile is None:
+        if not hasattr(request, "profile") or request.profile is None:
             return False
 
         # Admins always have access
@@ -117,7 +114,7 @@ class HasMarketingAccess(permissions.BasePermission):
     message = "You do not have access to the marketing module."
 
     def has_permission(self, request, view):
-        if not hasattr(request, 'profile') or request.profile is None:
+        if not hasattr(request, "profile") or request.profile is None:
             return False
 
         # Admins always have access
@@ -147,7 +144,7 @@ class CanAccessObject(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Object must belong to same org
-        if hasattr(obj, 'org_id'):
+        if hasattr(obj, "org_id"):
             if obj.org_id != request.org.id:
                 return False
 
@@ -156,18 +153,18 @@ class CanAccessObject(permissions.BasePermission):
             return True
 
         # Check if user created the object
-        if hasattr(obj, 'created_by_id'):
+        if hasattr(obj, "created_by_id"):
             if obj.created_by_id == request.profile.user_id:
                 return True
 
         # Check if user is assigned to the object
-        if hasattr(obj, 'assigned_to'):
+        if hasattr(obj, "assigned_to"):
             if request.profile in obj.assigned_to.all():
                 return True
 
         # Check if user is in a team assigned to the object
-        if hasattr(obj, 'teams'):
-            user_team_ids = request.profile.user_teams.values_list('id', flat=True)
+        if hasattr(obj, "teams"):
+            user_team_ids = request.profile.user_teams.values_list("id", flat=True)
             if obj.teams.filter(id__in=user_team_ids).exists():
                 return True
 
@@ -189,7 +186,7 @@ class IsSuperAdmin(permissions.BasePermission):
             return False
 
         # Check for super admin email domain
-        return request.user.email.endswith('@micropyramid.com')
+        return request.user.email.endswith("@micropyramid.com")
 
 
 def get_org_filtered_queryset(model, request):
@@ -206,7 +203,7 @@ def get_org_filtered_queryset(model, request):
     Returns:
         QuerySet filtered by organization
     """
-    if not hasattr(request, 'profile') or request.profile is None:
+    if not hasattr(request, "profile") or request.profile is None:
         return model.objects.none()
 
     return model.objects.filter(org=request.profile.org)
@@ -229,10 +226,10 @@ def validate_org_ownership(obj, request):
     Raises:
         PermissionDenied: If object doesn't belong to user's org
     """
-    if not hasattr(request, 'profile') or request.profile is None:
+    if not hasattr(request, "profile") or request.profile is None:
         raise PermissionDenied("Organization context required")
 
-    if not hasattr(obj, 'org_id'):
+    if not hasattr(obj, "org_id"):
         return  # Object doesn't have org field
 
     if obj.org_id != request.profile.org_id:

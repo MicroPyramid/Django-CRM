@@ -15,5 +15,3 @@ account_get_params = [
     OpenApiParameter("city", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("tags", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]
-
-

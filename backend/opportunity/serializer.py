@@ -2,9 +2,13 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from common.models import Tags
-from common.serializer import (AttachmentsSerializer, OrganizationSerializer,
-                               ProfileSerializer, TeamsSerializer,
-                               UserSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
 
@@ -17,6 +21,7 @@ class TagsSerializer(serializers.ModelSerializer):
 
 class OpportunitySerializer(serializers.ModelSerializer):
     """Serializer for reading Opportunity data"""
+
     account = AccountSerializer()
     closed_by = ProfileSerializer()
     created_by = UserSerializer()
@@ -72,7 +77,10 @@ class OpportunitySerializer(serializers.ModelSerializer):
 
 class OpportunityCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating Opportunity data"""
-    probability = serializers.IntegerField(max_value=100, required=False, allow_null=True)
+
+    probability = serializers.IntegerField(
+        max_value=100, required=False, allow_null=True
+    )
     closed_on = serializers.DateField(required=False, allow_null=True)
 
     def __init__(self, *args, **kwargs):
@@ -117,9 +125,11 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "description",
         )
 
+
 class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField()
     opportunity_attachment = serializers.FileField()
+
     class Meta:
         model = Opportunity
         fields = (
@@ -137,12 +147,14 @@ class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "tags",
-            "opportunity_attachment"
+            "opportunity_attachment",
         )
+
 
 class OpportunityDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
     opportunity_attachment = serializers.FileField()
+
 
 class OpportunityCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()

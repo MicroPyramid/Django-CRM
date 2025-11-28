@@ -1,8 +1,12 @@
 from rest_framework import serializers
 
-from common.serializer import (BillingAddressSerializer,
-                               OrganizationSerializer, ProfileSerializer,
-                               TeamsSerializer, UserSerializer)
+from common.serializer import (
+    BillingAddressSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from invoices.models import Invoice, InvoiceHistory
 
 
@@ -124,12 +128,14 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "org",
         )
 
+
 class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
 
     from_address = BillingAddressSerializer()
     to_address = BillingAddressSerializer()
     assigned_to = ProfileSerializer(read_only=True, many=True)
     quality_hours = serializers.CharField()
+
     class Meta:
         model = Invoice
         fields = (
@@ -150,10 +156,8 @@ class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
             "assigned_to",
             "currency",
             "accounts",
-            "quality_hours"
+            "quality_hours",
         )
-
-
 
 
 # Phase 3: Product and Line Item Serializers
@@ -166,21 +170,35 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'org')
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+            "org",
+        )
 
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
     """Serializer for Invoice Line Items"""
 
-    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
     formatted_unit_price = serializers.CharField(read_only=True)
     formatted_total = serializers.CharField(read_only=True)
 
     class Meta:
         model = InvoiceLineItem
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'total')
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+            "total",
+        )
 
 
 class InvoiceWithLineItemsSerializer(serializers.ModelSerializer):
@@ -191,7 +209,9 @@ class InvoiceWithLineItemsSerializer(serializers.ModelSerializer):
     org = OrganizationSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
-    line_items_total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    line_items_total = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
     line_items_count = serializers.IntegerField(read_only=True)
 
     class Meta:

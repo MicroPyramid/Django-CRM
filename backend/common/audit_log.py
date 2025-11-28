@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from common.base import BaseModel
 
-logger = logging.getLogger('security.audit')
+logger = logging.getLogger("security.audit")
 
 
 class SecurityAuditLog(BaseModel):
@@ -35,45 +35,45 @@ class SecurityAuditLog(BaseModel):
     """
 
     EVENT_TYPES = (
-        ('LOGIN_SUCCESS', 'Login Success'),
-        ('LOGIN_FAILURE', 'Login Failure'),
-        ('LOGOUT', 'Logout'),
-        ('ORG_SWITCH', 'Organization Switch'),
-        ('TOKEN_REFRESH', 'Token Refresh'),
-        ('TOKEN_REVOKED', 'Token Revoked'),
-        ('PERMISSION_DENIED', 'Permission Denied'),
-        ('CROSS_ORG_ATTEMPT', 'Cross-Org Access Attempt'),
-        ('API_KEY_USED', 'API Key Used'),
-        ('API_KEY_INVALID', 'Invalid API Key'),
-        ('MEMBERSHIP_REVOKED', 'Membership Revoked'),
-        ('SUSPICIOUS_ACTIVITY', 'Suspicious Activity'),
+        ("LOGIN_SUCCESS", "Login Success"),
+        ("LOGIN_FAILURE", "Login Failure"),
+        ("LOGOUT", "Logout"),
+        ("ORG_SWITCH", "Organization Switch"),
+        ("TOKEN_REFRESH", "Token Refresh"),
+        ("TOKEN_REVOKED", "Token Revoked"),
+        ("PERMISSION_DENIED", "Permission Denied"),
+        ("CROSS_ORG_ATTEMPT", "Cross-Org Access Attempt"),
+        ("API_KEY_USED", "API Key Used"),
+        ("API_KEY_INVALID", "Invalid API Key"),
+        ("MEMBERSHIP_REVOKED", "Membership Revoked"),
+        ("SUSPICIOUS_ACTIVITY", "Suspicious Activity"),
     )
 
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, db_index=True)
     user = models.ForeignKey(
-        'common.User',
+        "common.User",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='security_audit_logs'
+        related_name="security_audit_logs",
     )
     org = models.ForeignKey(
-        'common.Org',
+        "common.Org",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='security_audit_logs'
+        related_name="security_audit_logs",
     )
 
     # Event details
-    description = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default="")
     metadata = models.JSONField(default=dict, blank=True)
 
     # Request information
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True, default='')
-    request_path = models.CharField(max_length=500, blank=True, default='')
-    request_method = models.CharField(max_length=10, blank=True, default='')
+    user_agent = models.TextField(blank=True, default="")
+    request_path = models.CharField(max_length=500, blank=True, default="")
+    request_method = models.CharField(max_length=10, blank=True, default="")
 
     # Outcome
     success = models.BooleanField(default=True)
@@ -84,11 +84,11 @@ class SecurityAuditLog(BaseModel):
         db_table = "security_audit_log"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['event_type', '-created_at']),
-            models.Index(fields=['user', '-created_at']),
-            models.Index(fields=['org', '-created_at']),
-            models.Index(fields=['ip_address']),
-            models.Index(fields=['success', '-created_at']),
+            models.Index(fields=["event_type", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["ip_address"]),
+            models.Index(fields=["success", "-created_at"]),
         ]
 
     def __str__(self):
@@ -108,21 +108,29 @@ class AuditLogger:
             return {}
 
         # Get IP address
-        ip = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip = request.META.get("HTTP_X_FORWARDED_FOR")
         if ip:
-            ip = ip.split(',')[0].strip()
+            ip = ip.split(",")[0].strip()
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = request.META.get("REMOTE_ADDR")
 
         return {
-            'ip_address': ip,
-            'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
-            'request_path': request.path[:500],
-            'request_method': request.method,
+            "ip_address": ip,
+            "user_agent": request.META.get("HTTP_USER_AGENT", "")[:500],
+            "request_path": request.path[:500],
+            "request_method": request.method,
         }
 
-    def _log(self, event_type, user=None, org=None, description='',
-             metadata=None, success=True, request=None):
+    def _log(
+        self,
+        event_type,
+        user=None,
+        org=None,
+        description="",
+        metadata=None,
+        success=True,
+        request=None,
+    ):
         """
         Internal method to create audit log entry.
         """
@@ -137,160 +145,161 @@ class AuditLogger:
                 description=description,
                 metadata=metadata or {},
                 success=success,
-                **request_info
+                **request_info,
             )
         except Exception as e:
             logger.error(f"Failed to create audit log: {e}")
 
         # Log to Python logger
         log_level = logging.INFO if success else logging.WARNING
-        user_email = user.email if user else 'anonymous'
-        org_name = org.name if org else 'none'
+        user_email = user.email if user else "anonymous"
+        org_name = org.name if org else "none"
 
         logger.log(
             log_level,
             f"{event_type} | user={user_email} | org={org_name} | "
-            f"ip={request_info.get('ip_address')} | {description}"
+            f"ip={request_info.get('ip_address')} | {description}",
         )
 
     def login_success(self, user, org, request=None):
         """Log successful login."""
         self._log(
-            'LOGIN_SUCCESS',
+            "LOGIN_SUCCESS",
             user=user,
             org=org,
             description=f"User logged in to {org.name if org else 'platform'}",
-            request=request
+            request=request,
         )
 
     def login_failure(self, email, reason, request=None):
         """Log failed login attempt."""
         from common.models import User
+
         user = User.objects.filter(email=email).first()
 
         self._log(
-            'LOGIN_FAILURE',
+            "LOGIN_FAILURE",
             user=user,
             description=f"Login failed for {email}: {reason}",
-            metadata={'email': email, 'reason': reason},
+            metadata={"email": email, "reason": reason},
             success=False,
-            request=request
+            request=request,
         )
 
     def logout(self, user, org, request=None):
         """Log user logout."""
         self._log(
-            'LOGOUT',
+            "LOGOUT",
             user=user,
             org=org,
             description=f"User logged out",
-            request=request
+            request=request,
         )
 
     def org_switch(self, user, from_org, to_org, request=None):
         """Log organization switch."""
         self._log(
-            'ORG_SWITCH',
+            "ORG_SWITCH",
             user=user,
             org=to_org,
             description=f"Switched from {from_org.name if from_org else 'none'} to {to_org.name}",
             metadata={
-                'from_org_id': str(from_org.id) if from_org else None,
-                'to_org_id': str(to_org.id)
+                "from_org_id": str(from_org.id) if from_org else None,
+                "to_org_id": str(to_org.id),
             },
-            request=request
+            request=request,
         )
 
     def token_refresh(self, user, org, request=None):
         """Log token refresh."""
         self._log(
-            'TOKEN_REFRESH',
+            "TOKEN_REFRESH",
             user=user,
             org=org,
             description="Token refreshed",
-            request=request
+            request=request,
         )
 
     def token_revoked(self, user, org, reason, request=None):
         """Log token revocation."""
         self._log(
-            'TOKEN_REVOKED',
+            "TOKEN_REVOKED",
             user=user,
             org=org,
             description=f"Token revoked: {reason}",
-            metadata={'reason': reason},
-            request=request
+            metadata={"reason": reason},
+            request=request,
         )
 
     def permission_denied(self, user, org, action, resource, request=None):
         """Log permission denial."""
         self._log(
-            'PERMISSION_DENIED',
+            "PERMISSION_DENIED",
             user=user,
             org=org,
             description=f"Permission denied for {action} on {resource}",
-            metadata={'action': action, 'resource': resource},
+            metadata={"action": action, "resource": resource},
             success=False,
-            request=request
+            request=request,
         )
 
     def cross_org_attempt(self, user, user_org, target_org, resource, request=None):
         """Log attempted cross-org data access."""
         self._log(
-            'CROSS_ORG_ATTEMPT',
+            "CROSS_ORG_ATTEMPT",
             user=user,
             org=user_org,
             description=f"Attempted to access {resource} in org {target_org.name if target_org else 'unknown'}",
             metadata={
-                'user_org_id': str(user_org.id) if user_org else None,
-                'target_org_id': str(target_org.id) if target_org else None,
-                'resource': resource
+                "user_org_id": str(user_org.id) if user_org else None,
+                "target_org_id": str(target_org.id) if target_org else None,
+                "resource": resource,
             },
             success=False,
-            request=request
+            request=request,
         )
 
     def api_key_used(self, org, endpoint, request=None):
         """Log API key usage."""
         self._log(
-            'API_KEY_USED',
+            "API_KEY_USED",
             org=org,
             description=f"API key used for {endpoint}",
-            metadata={'endpoint': endpoint},
-            request=request
+            metadata={"endpoint": endpoint},
+            request=request,
         )
 
     def api_key_invalid(self, api_key_prefix, request=None):
         """Log invalid API key attempt."""
         self._log(
-            'API_KEY_INVALID',
+            "API_KEY_INVALID",
             description=f"Invalid API key attempted: {api_key_prefix}...",
-            metadata={'api_key_prefix': api_key_prefix},
+            metadata={"api_key_prefix": api_key_prefix},
             success=False,
-            request=request
+            request=request,
         )
 
     def membership_revoked(self, user, org, revoked_by=None, request=None):
         """Log when user's org membership is revoked."""
         self._log(
-            'MEMBERSHIP_REVOKED',
+            "MEMBERSHIP_REVOKED",
             user=user,
             org=org,
             description=f"Membership revoked by {revoked_by.email if revoked_by else 'system'}",
-            metadata={'revoked_by': str(revoked_by.id) if revoked_by else None},
-            request=request
+            metadata={"revoked_by": str(revoked_by.id) if revoked_by else None},
+            request=request,
         )
 
     def suspicious_activity(self, user, org, activity_type, details, request=None):
         """Log suspicious activity for security review."""
         self._log(
-            'SUSPICIOUS_ACTIVITY',
+            "SUSPICIOUS_ACTIVITY",
             user=user,
             org=org,
             description=f"Suspicious activity: {activity_type}",
-            metadata={'activity_type': activity_type, 'details': details},
+            metadata={"activity_type": activity_type, "details": details},
             success=False,
-            request=request
+            request=request,
         )
 
 

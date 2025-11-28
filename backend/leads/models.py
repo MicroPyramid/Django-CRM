@@ -6,8 +6,13 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
-from common.utils import (COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS,
-                          return_complete_address)
+from common.utils import (
+    COUNTRIES,
+    INDCHOICES,
+    LEAD_SOURCE,
+    LEAD_STATUS,
+    return_complete_address,
+)
 from contacts.models import Contact
 
 
@@ -24,11 +29,13 @@ class Company(BaseModel):
     def __str__(self):
         return f"{self.name}"
 
+
 class Lead(AssignableMixin, BaseModel):
     """
     Lead model for CRM - Streamlined for modern sales workflow
     Based on Twenty CRM and Salesforce patterns
     """
+
     # Core Lead Information
     title = models.CharField(
         pgettext_lazy("Treatment Pronouns for the customer", "Title"), max_length=64
@@ -37,9 +44,13 @@ class Lead(AssignableMixin, BaseModel):
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
-    contact_title = models.CharField(_("Job Title"), max_length=255, blank=True, null=True)
+    contact_title = models.CharField(
+        _("Job Title"), max_length=255, blank=True, null=True
+    )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
-    linkedin_url = models.URLField(_("LinkedIn URL"), max_length=500, blank=True, null=True)
+    linkedin_url = models.URLField(
+        _("LinkedIn URL"), max_length=500, blank=True, null=True
+    )
 
     # Sales Pipeline
     status = models.CharField(
@@ -52,13 +63,18 @@ class Lead(AssignableMixin, BaseModel):
         _("Industry"), max_length=255, choices=INDCHOICES, blank=True, null=True
     )
     rating = models.CharField(
-        _("Rating"), max_length=10, blank=True, null=True,
-        choices=[("HOT", "Hot"), ("WARM", "Warm"), ("COLD", "Cold")]
+        _("Rating"),
+        max_length=10,
+        blank=True,
+        null=True,
+        choices=[("HOT", "Hot"), ("WARM", "Warm"), ("COLD", "Cold")],
     )
     opportunity_amount = models.DecimalField(
         _("Deal Value"), decimal_places=2, max_digits=12, blank=True, null=True
     )
-    probability = models.IntegerField(_("Win Probability %"), default=0, blank=True, null=True)
+    probability = models.IntegerField(
+        _("Win Probability %"), default=0, blank=True, null=True
+    )
     close_date = models.DateField(_("Expected Close Date"), default=None, null=True)
 
     # Address
@@ -66,7 +82,9 @@ class Lead(AssignableMixin, BaseModel):
     city = models.CharField(_("City"), max_length=255, blank=True, null=True)
     state = models.CharField(_("State"), max_length=255, blank=True, null=True)
     postcode = models.CharField(_("Postal Code"), max_length=64, blank=True, null=True)
-    country = models.CharField(_("Country"), max_length=3, choices=COUNTRIES, blank=True, null=True)
+    country = models.CharField(
+        _("Country"), max_length=3, choices=COUNTRIES, blank=True, null=True
+    )
 
     # Assignment
     assigned_to = models.ManyToManyField(Profile, related_name="lead_assigned_users")
@@ -82,9 +100,7 @@ class Lead(AssignableMixin, BaseModel):
     tags = models.ManyToManyField(Tags, blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="leads"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")
     company = models.ForeignKey(
         Company,
         on_delete=models.SET_NULL,
@@ -99,9 +115,9 @@ class Lead(AssignableMixin, BaseModel):
         db_table = "lead"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['source']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["status"]),
+            models.Index(fields=["source"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):

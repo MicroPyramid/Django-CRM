@@ -36,10 +36,7 @@ class OrgContext:
             # This will be used when Row-Level Security is enabled
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute(
-                        "SET app.current_org = %s",
-                        [self.org_id]
-                    )
+                    cursor.execute("SET app.current_org = %s", [self.org_id])
             except Exception as e:
                 # RLS might not be configured yet - this is expected
                 logger.debug(f"Could not set app.current_org: {e}")
@@ -88,7 +85,9 @@ def org_aware_task(func):
         try:
             org = Org.objects.get(id=org_id, is_active=True)
         except Org.DoesNotExist:
-            logger.error(f"Task {func.__name__} failed: Org {org_id} not found or inactive")
+            logger.error(
+                f"Task {func.__name__} failed: Org {org_id} not found or inactive"
+            )
             raise ValueError(f"Invalid org_id: {org_id}")
 
         # Execute with org context
@@ -112,7 +111,7 @@ def require_org_id(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        org_id = kwargs.get('org_id') or (args[0] if args else None)
+        org_id = kwargs.get("org_id") or (args[0] if args else None)
 
         if not org_id:
             raise ValueError(f"Task {func.__name__} requires org_id parameter")
@@ -123,6 +122,7 @@ def require_org_id(func):
 
 
 # Example org-aware tasks
+
 
 @shared_task
 @org_aware_task
@@ -136,8 +136,7 @@ def cleanup_expired_sessions(org_id):
     from common.models import SessionToken
 
     deleted_count, _ = SessionToken.objects.filter(
-        user__profiles__org_id=org_id,
-        is_active=False
+        user__profiles__org_id=org_id, is_active=False
     ).delete()
 
     logger.info(f"Cleaned up {deleted_count} expired sessions for org {org_id}")
@@ -161,29 +160,28 @@ def generate_org_activity_report(org_id, days=30):
 
     start_date = timezone.now() - timedelta(days=days)
 
-    activities = Activity.objects.filter(
-        org_id=org_id,
-        created_at__gte=start_date
-    )
+    activities = Activity.objects.filter(org_id=org_id, created_at__gte=start_date)
 
     report = {
-        'org_id': org_id,
-        'period_days': days,
-        'total_activities': activities.count(),
-        'by_action': {},
-        'by_entity': {}
+        "org_id": org_id,
+        "period_days": days,
+        "total_activities": activities.count(),
+        "by_action": {},
+        "by_entity": {},
     }
 
     for activity in activities:
         # Count by action
         action = activity.action
-        report['by_action'][action] = report['by_action'].get(action, 0) + 1
+        report["by_action"][action] = report["by_action"].get(action, 0) + 1
 
         # Count by entity type
         entity = activity.entity_type
-        report['by_entity'][entity] = report['by_entity'].get(entity, 0) + 1
+        report["by_entity"][entity] = report["by_entity"].get(entity, 0) + 1
 
-    logger.info(f"Generated activity report for org {org_id}: {report['total_activities']} activities")
+    logger.info(
+        f"Generated activity report for org {org_id}: {report['total_activities']} activities"
+    )
     return report
 
 
@@ -216,10 +214,10 @@ def send_email_with_org_context(org_id, user_id, template_name, subject, context
 
     # Add org context to email template
     email_context = {
-        'org_name': org.name,
-        'user_email': user.email,
-        'domain': settings.DOMAIN_NAME,
-        **context
+        "org_name": org.name,
+        "user_email": user.email,
+        "domain": settings.DOMAIN_NAME,
+        **context,
     }
 
     html_content = render_to_string(template_name, context=email_context)
@@ -237,6 +235,7 @@ def send_email_with_org_context(org_id, user_id, template_name, subject, context
 
 
 # Batch processing utilities
+
 
 @shared_task
 @org_aware_task
@@ -257,11 +256,11 @@ def batch_process_org_data(org_id, model_name, processor_func, batch_size=100):
     from django.apps import apps
 
     # Get model
-    app_label, model_class = model_name.rsplit('.', 1)
+    app_label, model_class = model_name.rsplit(".", 1)
     Model = apps.get_model(app_label, model_class)
 
     # Get processor function
-    module_path, func_name = processor_func.rsplit('.', 1)
+    module_path, func_name = processor_func.rsplit(".", 1)
     module = import_module(module_path)
     processor = getattr(module, func_name)
 
@@ -271,7 +270,7 @@ def batch_process_org_data(org_id, model_name, processor_func, batch_size=100):
     processed = 0
 
     for i in range(0, total, batch_size):
-        batch = queryset[i:i + batch_size]
+        batch = queryset[i : i + batch_size]
         for obj in batch:
             processor(obj)
             processed += 1

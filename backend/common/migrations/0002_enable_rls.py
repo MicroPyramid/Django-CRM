@@ -5,33 +5,40 @@
 
 from django.db import migrations
 
-from common.rls import (RLS_CONFIG, get_check_table_exists_sql,
-                        get_disable_policy_sql, get_enable_policy_sql)
+from common.rls import (
+    RLS_CONFIG,
+    get_check_table_exists_sql,
+    get_disable_policy_sql,
+    get_enable_policy_sql,
+)
 
 
 def check_column_exists(cursor, table, column):
     """Check if a column exists in a table."""
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT EXISTS (
             SELECT FROM information_schema.columns
             WHERE table_schema = 'public'
             AND table_name = %s
             AND column_name = %s
         )
-    """, [table, column])
+    """,
+        [table, column],
+    )
     return cursor.fetchone()[0]
 
 
 def enable_rls(apps, schema_editor):
     """Enable RLS on all org-scoped tables."""
-    if schema_editor.connection.vendor != 'postgresql':
+    if schema_editor.connection.vendor != "postgresql":
         print("RLS is only supported on PostgreSQL. Skipping.")
         return
 
-    isolation_policy = RLS_CONFIG['policies']['isolation']
+    isolation_policy = RLS_CONFIG["policies"]["isolation"]
 
     with schema_editor.connection.cursor() as cursor:
-        for table in RLS_CONFIG['tables']:
+        for table in RLS_CONFIG["tables"]:
             # Check if table exists
             cursor.execute(get_check_table_exists_sql(), [table])
             if not cursor.fetchone()[0]:
@@ -39,15 +46,18 @@ def enable_rls(apps, schema_editor):
                 continue
 
             # Check if org_id column exists
-            if not check_column_exists(cursor, table, 'org_id'):
+            if not check_column_exists(cursor, table, "org_id"):
                 print(f"  Skipping {table} (no org_id column)")
                 continue
 
             # Check if policy already exists
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT COUNT(*) FROM pg_policies
                 WHERE tablename = %s AND policyname = %s
-            """, [table, isolation_policy])
+            """,
+                [table, isolation_policy],
+            )
 
             if cursor.fetchone()[0] == 0:
                 cursor.execute(get_enable_policy_sql(table))
@@ -58,16 +68,16 @@ def enable_rls(apps, schema_editor):
 
 def disable_rls(apps, schema_editor):
     """Disable RLS on all org-scoped tables (rollback)."""
-    if schema_editor.connection.vendor != 'postgresql':
+    if schema_editor.connection.vendor != "postgresql":
         return
 
     with schema_editor.connection.cursor() as cursor:
-        for table in RLS_CONFIG['tables']:
+        for table in RLS_CONFIG["tables"]:
             cursor.execute(get_check_table_exists_sql(), [table])
             if not cursor.fetchone()[0]:
                 continue
 
-            if not check_column_exists(cursor, table, 'org_id'):
+            if not check_column_exists(cursor, table, "org_id"):
                 continue
 
             cursor.execute(get_disable_policy_sql(table))
@@ -94,14 +104,14 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('common', '0001_initial'),
-        ('accounts', '0002_initial'),
-        ('cases', '0002_initial'),
-        ('contacts', '0001_initial'),
-        ('invoices', '0001_initial'),
-        ('leads', '0001_initial'),
-        ('opportunity', '0001_initial'),
-        ('tasks', '0001_initial'),
+        ("common", "0001_initial"),
+        ("accounts", "0002_initial"),
+        ("cases", "0002_initial"),
+        ("contacts", "0001_initial"),
+        ("invoices", "0001_initial"),
+        ("leads", "0001_initial"),
+        ("opportunity", "0001_initial"),
+        ("tasks", "0001_initial"),
     ]
 
     operations = [

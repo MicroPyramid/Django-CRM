@@ -7,8 +7,18 @@ from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from common.models import (Activity, Address, APISettings, Attachments,
-                           Comment, Document, Org, Profile, Teams, User)
+from common.models import (
+    Activity,
+    Address,
+    APISettings,
+    Attachments,
+    Comment,
+    Document,
+    Org,
+    Profile,
+    Teams,
+    User,
+)
 
 
 class OrgAwareRefreshToken(RefreshToken):
@@ -36,8 +46,8 @@ class OrgAwareRefreshToken(RefreshToken):
 
         # Add org_id to the token payload
         if org:
-            org_id = str(org.id) if hasattr(org, 'id') else str(org)
-            token['org_id'] = org_id
+            org_id = str(org.id) if hasattr(org, "id") else str(org)
+            token["org_id"] = org_id
 
         return token
 
@@ -45,7 +55,7 @@ class OrgAwareRefreshToken(RefreshToken):
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
-        fields = ("id", "name","api_key")
+        fields = ("id", "name", "api_key")
 
 
 class SocialLoginSerializer(serializers.Serializer):
@@ -54,10 +64,8 @@ class SocialLoginSerializer(serializers.Serializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """Serializer for Comment model using ContentType"""
-    content_type = serializers.SlugRelatedField(
-        slug_field='model',
-        read_only=True
-    )
+
+    content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
 
     class Meta:
         model = Comment
@@ -74,6 +82,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class CommentCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating comments with ContentType"""
+
     content_type = serializers.CharField(write_only=True)
     object_id = serializers.UUIDField(write_only=True)
 
@@ -88,13 +97,15 @@ class CommentCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         from django.contrib.contenttypes.models import ContentType
 
-        content_type_str = validated_data.pop('content_type')
+        content_type_str = validated_data.pop("content_type")
         try:
             content_type = ContentType.objects.get(model=content_type_str.lower())
         except ContentType.DoesNotExist:
-            raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
+            raise serializers.ValidationError(
+                f"Invalid content type: {content_type_str}"
+            )
 
-        validated_data['content_type'] = content_type
+        validated_data["content_type"] = content_type
         return super().create(validated_data)
 
 
@@ -109,7 +120,6 @@ class LeadCommentSerializer(serializers.ModelSerializer):
         )
 
 
-
 class OrgProfileCreateSerializer(serializers.ModelSerializer):
     """
     It is for creating organization
@@ -120,9 +130,7 @@ class OrgProfileCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ["name"]
-        extra_kwargs = {
-            "name": {"required": True}
-        }
+        extra_kwargs = {"name": {"required": True}}
 
     def validate_name(self, name):
         if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", name)):
@@ -228,7 +236,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id","email","profile_pic"]
+        fields = ["id", "email", "profile_pic"]
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -252,11 +260,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class AttachmentsSerializer(serializers.ModelSerializer):
     """Serializer for Attachments model using ContentType"""
+
     file_path = serializers.SerializerMethodField()
-    content_type = serializers.SlugRelatedField(
-        slug_field='model',
-        read_only=True
-    )
+    content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
 
     def get_file_path(self, obj):
         if obj.attachment:
@@ -279,6 +285,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
 
 class AttachmentsCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating attachments with ContentType"""
+
     content_type = serializers.CharField(write_only=True)
     object_id = serializers.UUIDField(write_only=True)
 
@@ -294,13 +301,15 @@ class AttachmentsCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         from django.contrib.contenttypes.models import ContentType
 
-        content_type_str = validated_data.pop('content_type')
+        content_type_str = validated_data.pop("content_type")
         try:
             content_type = ContentType.objects.get(model=content_type_str.lower())
         except ContentType.DoesNotExist:
-            raise serializers.ValidationError(f"Invalid content type: {content_type_str}")
+            raise serializers.ValidationError(
+                f"Invalid content type: {content_type_str}"
+            )
 
-        validated_data['content_type'] = content_type
+        validated_data["content_type"] = content_type
         return super().create(validated_data)
 
 
@@ -410,6 +419,7 @@ class APISettingsListSerializer(serializers.ModelSerializer):
             "org",
         ]
 
+
 class APISettingsSwaggerSerializer(serializers.ModelSerializer):
     class Meta:
         model = APISettings
@@ -431,165 +441,183 @@ class DocumentCreateSwaggerSerializer(serializers.ModelSerializer):
             "shared_to",
         ]
 
+
 class DocumentEditSwaggerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = [
-            "title",
-            "document_file",
-            "teams",
-            "shared_to",
-            "status"
-        ]
+        fields = ["title", "document_file", "teams", "shared_to", "status"]
 
 
 class UserCreateSwaggerSerializer(serializers.Serializer):
     """
     It is swagger for creating or updating user
     """
+
     ROLE_CHOICES = ["ADMIN", "USER"]
 
-    email = serializers.CharField(max_length=1000,required=True)
-    role = serializers.ChoiceField(choices = ROLE_CHOICES,required=True)
+    email = serializers.CharField(max_length=1000, required=True)
+    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=True)
     phone = serializers.CharField(max_length=12)
     alternate_phone = serializers.CharField(max_length=12)
-    address_line = serializers.CharField(max_length=10000,required=True)
+    address_line = serializers.CharField(max_length=10000, required=True)
     street = serializers.CharField(max_length=1000)
     city = serializers.CharField(max_length=1000)
     state = serializers.CharField(max_length=1000)
     pincode = serializers.CharField(max_length=1000)
     country = serializers.CharField(max_length=1000)
 
+
 class UserUpdateStatusSwaggerSerializer(serializers.Serializer):
 
     STATUS_CHOICES = ["Active", "Inactive"]
 
-    status = serializers.ChoiceField(choices = STATUS_CHOICES,required=True)
+    status = serializers.ChoiceField(choices=STATUS_CHOICES, required=True)
 
 
 # JWT Authentication Serializers for SvelteKit Integration
 
+
 class LoginSerializer(serializers.Serializer):
     """Serializer for user login with email and password"""
+
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         if email and password:
             user = authenticate(username=email, password=password)
             if not user:
-                raise serializers.ValidationError('Invalid email or password')
+                raise serializers.ValidationError("Invalid email or password")
             if not user.is_active:
-                raise serializers.ValidationError('User account is disabled')
+                raise serializers.ValidationError("User account is disabled")
         else:
             raise serializers.ValidationError('Must include "email" and "password"')
 
-        attrs['user'] = user
+        attrs["user"] = user
         return attrs
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
+
     password = serializers.CharField(write_only=True, required=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'confirm_password']
+        fields = ["email", "password", "confirm_password"]
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['confirm_password']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"password": "Password fields didn't match."}
+            )
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('confirm_password')
+        validated_data.pop("confirm_password")
         user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            is_active=False  # User needs to activate account
+            email=validated_data["email"],
+            password=validated_data["password"],
+            is_active=False,  # User needs to activate account
         )
         return user
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """Detailed user serializer with profile and organizations"""
+
     organizations = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'profile_pic', 'is_active', 'organizations']
+        fields = ["id", "email", "profile_pic", "is_active", "organizations"]
 
     def get_organizations(self, obj):
         """Get all organizations the user belongs to"""
         profiles = Profile.objects.filter(user=obj, is_active=True)
-        return [{
-            'id': str(profile.org.id),
-            'name': profile.org.name,
-            'role': profile.role,
-            'is_organization_admin': profile.is_organization_admin,
-            'has_sales_access': profile.has_sales_access,
-            'has_marketing_access': profile.has_marketing_access,
-        } for profile in profiles]
+        return [
+            {
+                "id": str(profile.org.id),
+                "name": profile.org.name,
+                "role": profile.role,
+                "is_organization_admin": profile.is_organization_admin,
+                "has_sales_access": profile.has_sales_access,
+                "has_marketing_access": profile.has_marketing_access,
+            }
+            for profile in profiles
+        ]
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
     """Detailed profile serializer for authenticated user"""
+
     user = UserSerializer(read_only=True)
     org = OrganizationSerializer(read_only=True)
 
     class Meta:
         model = Profile
         fields = [
-            'id', 'user', 'org', 'role', 'is_organization_admin',
-            'has_sales_access', 'has_marketing_access',
-            'phone', 'date_of_joining', 'is_active'
+            "id",
+            "user",
+            "org",
+            "role",
+            "is_organization_admin",
+            "has_sales_access",
+            "has_marketing_access",
+            "phone",
+            "date_of_joining",
+            "is_active",
         ]
 
 
 # Activity Serializers for Dashboard Recent Activities
 
+
 class ActivityUserSerializer(serializers.Serializer):
     """Simplified user info for activity display"""
-    id = serializers.UUIDField(source='user.id')
-    email = serializers.EmailField(source='user.email')
+
+    id = serializers.UUIDField(source="user.id")
+    email = serializers.EmailField(source="user.email")
     name = serializers.SerializerMethodField()
-    profile_pic = serializers.CharField(source='user.profile_pic', allow_null=True)
+    profile_pic = serializers.CharField(source="user.profile_pic", allow_null=True)
 
     def get_name(self, obj):
         """Get display name from email"""
-        return obj.user.email.split('@')[0]
+        return obj.user.email.split("@")[0]
 
 
 class ActivitySerializer(serializers.ModelSerializer):
     """Serializer for recent activities"""
+
     user = ActivityUserSerializer(read_only=True)
-    action_display = serializers.CharField(source='get_action_display', read_only=True)
-    timestamp = serializers.DateTimeField(source='created_at', read_only=True)
-    humanized_time = serializers.CharField(source='created_on_arrow', read_only=True)
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
+    timestamp = serializers.DateTimeField(source="created_at", read_only=True)
+    humanized_time = serializers.CharField(source="created_on_arrow", read_only=True)
 
     class Meta:
         model = Activity
         fields = [
-            'id',
-            'user',
-            'action',
-            'action_display',
-            'entity_type',
-            'entity_id',
-            'entity_name',
-            'description',
-            'timestamp',
-            'humanized_time',
+            "id",
+            "user",
+            "action",
+            "action_display",
+            "entity_type",
+            "entity_id",
+            "entity_name",
+            "description",
+            "timestamp",
+            "humanized_time",
         ]
 
 
 # =============================================================================
 # Teams Serializers (merged from teams app)
 # =============================================================================
+
 
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
@@ -652,4 +680,3 @@ class TeamswaggerCreateSerializer(serializers.ModelSerializer):
             "description",
             "users",
         )
-

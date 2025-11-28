@@ -12,11 +12,11 @@ organization_params = [
 
 opportunity_list_get_params = [
     organization_params_in_header,
-    OpenApiParameter("name", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("account", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("stage", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("lead_source", OpenApiTypes.STR,OpenApiParameter.QUERY),
-    OpenApiParameter("tags", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("account", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("stage", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("lead_source", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("tags", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]
 
 opportunity_detail_get_params = [
@@ -26,10 +26,10 @@ opportunity_detail_get_params = [
         OpenApiParameter.QUERY,
         OpenApiTypes.BINARY,
     ),
-    OpenApiParameter("comment", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("comment", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]
 
 opportunity_comment_edit_params = [
     organization_params_in_header,
-    OpenApiParameter("comment", OpenApiTypes.STR,OpenApiParameter.QUERY),
+    OpenApiParameter("comment", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]

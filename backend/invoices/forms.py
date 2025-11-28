@@ -116,6 +116,8 @@ class InvoiceAddressForm(forms.ModelForm):
         self.fields["city"].widget.attrs.update({"placeholder": "City"})
         self.fields["state"].widget.attrs.update({"placeholder": "State"})
         self.fields["postcode"].widget.attrs.update({"placeholder": "Postcode"})
-        self.fields["country"].choices = [("", "--Country--"),] + list(
+        self.fields["country"].choices = [
+            ("", "--Country--"),
+        ] + list(
             self.fields["country"].choices
         )[1:]

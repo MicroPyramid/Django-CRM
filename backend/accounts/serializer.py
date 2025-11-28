@@ -2,9 +2,13 @@ from rest_framework import serializers
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Tags
-from common.serializer import (AttachmentsSerializer, OrganizationSerializer,
-                               ProfileSerializer, TeamsSerializer,
-                               UserSerializer)
+from common.serializer import (
+    AttachmentsSerializer,
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from contacts.serializer import ContactSerializer
 
 
@@ -16,6 +20,7 @@ class TagsSerailizer(serializers.ModelSerializer):
 
 class AccountSerializer(serializers.ModelSerializer):
     """Serializer for reading Account data"""
+
     created_by = UserSerializer()
     org = OrganizationSerializer()
     tags = TagsSerailizer(read_only=True, many=True)
@@ -121,21 +126,36 @@ class AccountReadSerializer(serializers.ModelSerializer):
         model = Account
         fields = ["name", "city", "tags"]
 
+
 class AccountWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
         fields = [
-            "name", "phone", "email", "website",
-            "industry", "number_of_employees", "annual_revenue",
-            "address_line", "city", "state", "postcode", "country",
-            "contacts", "teams", "assigned_to", "tags", "account_attachment",
-            "description"
+            "name",
+            "phone",
+            "email",
+            "website",
+            "industry",
+            "number_of_employees",
+            "annual_revenue",
+            "address_line",
+            "city",
+            "state",
+            "postcode",
+            "country",
+            "contacts",
+            "teams",
+            "assigned_to",
+            "tags",
+            "account_attachment",
+            "description",
         ]
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating Account data"""
+
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         kwargs.pop("account", None)  # Remove unused 'account' parameter passed by views
@@ -178,14 +198,25 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "description",
         )
 
+
 class AccountDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
     account_attachment = serializers.FileField()
 
+
 class AccountCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
+
 
 class EmailWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountEmail
-        fields = ("from_email", "recipients", "message_subject","scheduled_later","timezone","scheduled_date_time","message_body")
+        fields = (
+            "from_email",
+            "recipients",
+            "message_subject",
+            "scheduled_later",
+            "timezone",
+            "scheduled_date_time",
+            "message_body",
+        )

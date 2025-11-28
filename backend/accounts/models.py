@@ -16,6 +16,7 @@ class Account(AssignableMixin, BaseModel):
     Account model for CRM - Streamlined for modern sales workflow
     Based on Twenty CRM and Salesforce patterns
     """
+
     # Core Account Information
     name = models.CharField(_("Account Name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
@@ -69,9 +70,9 @@ class Account(AssignableMixin, BaseModel):
         db_table = "accounts"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['industry']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["industry"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -122,7 +123,7 @@ class AccountEmail(BaseModel):
         db_table = "account_email"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -146,6 +147,7 @@ class AccountEmail(BaseModel):
             raise ValidationError("Organization is required for AccountEmail")
         super().save(*args, **kwargs)
 
+
 class AccountEmailLog(BaseModel):
     """this model is used to track if the email is sent or not"""
 
@@ -168,7 +170,7 @@ class AccountEmailLog(BaseModel):
         db_table = "emailLogs"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):

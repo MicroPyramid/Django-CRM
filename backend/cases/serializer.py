@@ -2,8 +2,12 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from cases.models import Case
-from common.serializer import (OrganizationSerializer, ProfileSerializer,
-                               TeamsSerializer, UserSerializer)
+from common.serializer import (
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from contacts.serializer import ContactSerializer
 
 
@@ -74,6 +78,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "created_on_arrow",
         )
 
+
 class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Case
@@ -91,10 +96,11 @@ class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
             "description",
         )
 
+
 class CaseDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
     case_attachment = serializers.FileField()
 
+
 class CaseCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
-

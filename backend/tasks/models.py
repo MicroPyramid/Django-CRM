@@ -11,35 +11,28 @@ from contacts.models import Contact
 # Kanban Board Models (merged from boards app)
 # =============================================================================
 
+
 class Board(BaseModel):
     """Kanban Board"""
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     owner = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name='owned_boards'
+        Profile, on_delete=models.CASCADE, related_name="owned_boards"
     )
     members = models.ManyToManyField(
-        Profile,
-        through='BoardMember',
-        related_name='boards'
+        Profile, through="BoardMember", related_name="boards"
     )
-    org = models.ForeignKey(
-        Org,
-        on_delete=models.CASCADE,
-        related_name='boards'
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="boards")
     is_archived = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = 'Board'
-        verbose_name_plural = 'Boards'
-        db_table = 'board'
-        ordering = ('-created_at',)
+        verbose_name = "Board"
+        verbose_name_plural = "Boards"
+        db_table = "board"
+        ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -50,35 +43,31 @@ class BoardMember(BaseModel):
     """Board membership with roles"""
 
     ROLE_CHOICES = (
-        ('owner', 'Owner'),
-        ('admin', 'Admin'),
-        ('member', 'Member'),
+        ("owner", "Owner"),
+        ("admin", "Admin"),
+        ("member", "Member"),
     )
 
     board = models.ForeignKey(
-        Board,
-        on_delete=models.CASCADE,
-        related_name='memberships'
+        Board, on_delete=models.CASCADE, related_name="memberships"
     )
     profile = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name='board_memberships'
+        Profile, on_delete=models.CASCADE, related_name="board_memberships"
     )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
     org = models.ForeignKey(
         Org,
         on_delete=models.CASCADE,
-        related_name='board_members',
+        related_name="board_members",
     )
 
     class Meta:
-        verbose_name = 'Board Member'
-        verbose_name_plural = 'Board Members'
-        db_table = 'board_member'
-        unique_together = ('board', 'profile')
+        verbose_name = "Board Member"
+        verbose_name_plural = "Board Members"
+        db_table = "board_member"
+        unique_together = ("board", "profile")
         indexes = [
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
@@ -93,29 +82,25 @@ class BoardMember(BaseModel):
 class BoardColumn(BaseModel):
     """Column in a board (e.g., To Do, In Progress, Done)"""
 
-    board = models.ForeignKey(
-        Board,
-        on_delete=models.CASCADE,
-        related_name='columns'
-    )
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="columns")
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField(default=0)
-    color = models.CharField(max_length=7, default='#6B7280')  # Hex color
+    color = models.CharField(max_length=7, default="#6B7280")  # Hex color
     limit = models.PositiveIntegerField(null=True, blank=True)  # WIP limit
     org = models.ForeignKey(
         Org,
         on_delete=models.CASCADE,
-        related_name='board_columns',
+        related_name="board_columns",
     )
 
     class Meta:
-        verbose_name = 'Board Column'
-        verbose_name_plural = 'Board Columns'
-        db_table = 'board_column'
-        ordering = ('order',)
-        unique_together = ('board', 'name')
+        verbose_name = "Board Column"
+        verbose_name_plural = "Board Columns"
+        db_table = "board_column"
+        ordering = ("order",)
+        unique_together = ("board", "name")
         indexes = [
-            models.Index(fields=['org', 'order']),
+            models.Index(fields=["org", "order"]),
         ]
 
     def __str__(self):
@@ -131,29 +116,23 @@ class BoardTask(BaseModel):
     """Task/Card in a board column"""
 
     PRIORITY_CHOICES = (
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('urgent', 'Urgent'),
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("urgent", "Urgent"),
     )
 
     column = models.ForeignKey(
-        BoardColumn,
-        on_delete=models.CASCADE,
-        related_name='tasks'
+        BoardColumn, on_delete=models.CASCADE, related_name="tasks"
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
     priority = models.CharField(
-        max_length=10,
-        choices=PRIORITY_CHOICES,
-        default='medium'
+        max_length=10, choices=PRIORITY_CHOICES, default="medium"
     )
     assigned_to = models.ManyToManyField(
-        Profile,
-        related_name='assigned_board_tasks',
-        blank=True
+        Profile, related_name="assigned_board_tasks", blank=True
     )
     due_date = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -164,35 +143,35 @@ class BoardTask(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='board_tasks'
+        related_name="board_tasks",
     )
     contact = models.ForeignKey(
         Contact,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='board_tasks'
+        related_name="board_tasks",
     )
     opportunity = models.ForeignKey(
-        'opportunity.Opportunity',
+        "opportunity.Opportunity",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='board_tasks'
+        related_name="board_tasks",
     )
     org = models.ForeignKey(
         Org,
         on_delete=models.CASCADE,
-        related_name='board_tasks',
+        related_name="board_tasks",
     )
 
     class Meta:
-        verbose_name = 'Board Task'
-        verbose_name_plural = 'Board Tasks'
-        db_table = 'board_task'
-        ordering = ('order',)
+        verbose_name = "Board Task"
+        verbose_name_plural = "Board Tasks"
+        db_table = "board_task"
+        ordering = ("order",)
         indexes = [
-            models.Index(fields=['org', 'order']),
+            models.Index(fields=["org", "order"]),
         ]
 
     def __str__(self):
@@ -206,6 +185,7 @@ class BoardTask(BaseModel):
     def mark_complete(self):
         """Mark task as completed"""
         from django.utils import timezone
+
         self.completed_at = timezone.now()
         self.save()
 
@@ -221,6 +201,7 @@ class BoardTask(BaseModel):
     @property
     def is_overdue(self):
         from django.utils import timezone
+
         if self.due_date and not self.is_completed:
             return timezone.now() > self.due_date
         return False
@@ -266,9 +247,7 @@ class Task(AssignableMixin, BaseModel):
     #     on_delete=models.SET_NULL,
     # )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="tasks"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")
 
     class Meta:
         verbose_name = "Task"
@@ -276,9 +255,9 @@ class Task(AssignableMixin, BaseModel):
         db_table = "task"
         ordering = ("-due_date",)
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['due_date']),
-            models.Index(fields=['org', '-created_at']),
+            models.Index(fields=["status"]),
+            models.Index(fields=["due_date"]),
+            models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):

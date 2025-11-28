@@ -5,8 +5,11 @@ from django.contrib.auth import views
 from django.urls import include, path
 from django.urls import re_path as url
 from django.views.generic import TemplateView
-from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
-                                   SpectacularSwaggerView)
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from rest_framework import permissions
 
 app_name = "crm"

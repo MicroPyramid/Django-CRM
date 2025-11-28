@@ -29,15 +29,12 @@ def set_rls_context(org_id):
     if org_id:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT set_config('app.current_org', %s, false)",
-                [str(org_id)]
+                "SELECT set_config('app.current_org', %s, false)", [str(org_id)]
             )
-
 
 
 @app.task
 def send_email_to_new_user(user_id):
-
     """Send Mail To Users When their account is created"""
     user_obj = User.objects.filter(id=user_id).first()
 
@@ -296,6 +293,7 @@ def send_email_to_reset_password(user_email):
 # =============================================================================
 # Teams Celery Tasks (merged from teams app)
 # =============================================================================
+
 
 @app.task
 def remove_users(removed_users_list, team_id, org_id=None):

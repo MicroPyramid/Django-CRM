@@ -2,8 +2,7 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
-                                   extend_schema)
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -14,13 +13,17 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from cases import swagger_params
 from cases.models import Case
-from cases.serializer import (CaseCommentEditSwaggerSerializer,
-                              CaseCreateSerializer,
-                              CaseCreateSwaggerSerializer,
-                              CaseDetailEditSwaggerSerializer, CaseSerializer)
+from cases.serializer import (
+    CaseCommentEditSwaggerSerializer,
+    CaseCreateSerializer,
+    CaseCreateSwaggerSerializer,
+    CaseDetailEditSwaggerSerializer,
+    CaseSerializer,
+)
 from cases.tasks import send_email_to_assigned_user
 from common.models import Attachments, Comment, Profile, Teams
-#from common.external_auth import CustomDualAuthentication
+
+# from common.external_auth import CustomDualAuthentication
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
@@ -28,25 +31,30 @@ from contacts.serializer import ContactSerializer
 
 
 class CaseListView(APIView, LimitOffsetPagination):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by("-id")
+        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
+            "-id"
+        )
         accounts = Account.objects.filter(org=self.request.profile.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.profile.org).order_by("-id")
         profiles = Profile.objects.filter(is_active=True, org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             contacts = contacts.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
             profiles = profiles.filter(role="ADMIN")
 
@@ -85,15 +93,15 @@ class CaseListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @extend_schema(
-        tags=["Cases"], parameters=swagger_params.cases_list_get_params
-    )
+    @extend_schema(tags=["Cases"], parameters=swagger_params.cases_list_get_params)
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params,request=CaseCreateSwaggerSerializer
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseCreateSwaggerSerializer,
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -108,7 +116,9 @@ class CaseListView(APIView, LimitOffsetPagination):
 
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 if contacts:
                     cases_obj.contacts.add(*contacts)
 
@@ -140,7 +150,12 @@ class CaseListView(APIView, LimitOffsetPagination):
                 cases_obj.id,
             )
             return Response(
-                {"error": False, "message": "Case Created Successfully", "id": str(cases_obj.id), "cases_obj": CaseSerializer(cases_obj).data},
+                {
+                    "error": False,
+                    "message": "Case Created Successfully",
+                    "id": str(cases_obj.id),
+                    "cases_obj": CaseSerializer(cases_obj).data,
+                },
                 status=status.HTTP_200_OK,
             )
 
@@ -151,7 +166,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 
 class CaseDetailView(APIView):
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
     model = Case
 
@@ -159,7 +174,9 @@ class CaseDetailView(APIView):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params,request=CaseCreateSwaggerSerializer
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseCreateSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -198,7 +215,9 @@ class CaseDetailView(APIView):
             cases_object.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                contacts = Contact.objects.filter(id__in=contacts_list, org=request.profile.org)
+                contacts = Contact.objects.filter(
+                    id__in=contacts_list, org=request.profile.org
+                )
                 if contacts:
                     cases_object.contacts.add(*contacts)
 
@@ -243,9 +262,7 @@ class CaseDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -268,9 +285,7 @@ class CaseDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
     def get(self, request, pk, format=None):
         self.cases = self.get_object(pk=pk)
         if not self.cases:
@@ -309,9 +324,9 @@ class CaseDetailView(APIView):
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
-                Profile.objects.filter(is_active=True, org=self.request.profile.org).values(
-                    "user__email"
-                )
+                Profile.objects.filter(
+                    is_active=True, org=self.request.profile.org
+                ).values("user__email")
             )
         elif self.request.profile != self.cases.created_by:
             if self.cases.created_by:
@@ -325,12 +340,12 @@ class CaseDetailView(APIView):
         attachments = Attachments.objects.filter(
             content_type=case_content_type,
             object_id=self.cases.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=case_content_type,
             object_id=self.cases.id,
-            org=self.request.profile.org
+            org=self.request.profile.org,
         ).order_by("-id")
 
         context.update(
@@ -350,7 +365,9 @@ class CaseDetailView(APIView):
         return Response(context)
 
     @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params,request=CaseDetailEditSwaggerSerializer
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseDetailEditSwaggerSerializer,
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -393,12 +410,12 @@ class CaseDetailView(APIView):
         attachments = Attachments.objects.filter(
             content_type=case_content_type,
             object_id=self.cases_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
         comments = Comment.objects.filter(
             content_type=case_content_type,
             object_id=self.cases_obj.id,
-            org=request.profile.org
+            org=request.profile.org,
         ).order_by("-id")
 
         context.update(
@@ -413,14 +430,16 @@ class CaseDetailView(APIView):
 
 class CaseCommentView(APIView):
     model = Comment
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
     @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params,request=CaseCommentEditSwaggerSerializer
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseCommentEditSwaggerSerializer,
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -450,9 +469,7 @@ class CaseCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -476,12 +493,10 @@ class CaseCommentView(APIView):
 
 class CaseAttachmentView(APIView):
     model = Attachments
-    #authentication_classes = (CustomDualAuthentication,)
+    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(
-        tags=["Cases"], parameters=swagger_params.organization_params
-    )
+    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
