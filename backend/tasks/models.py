@@ -7,7 +7,6 @@ from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Teams
 from contacts.models import Contact
 
-
 # =============================================================================
 # Kanban Board Models (merged from boards app)
 # =============================================================================

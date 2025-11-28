@@ -1,8 +1,9 @@
 import json
 
-from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from django.db.models import Q
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -13,16 +14,17 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from cases import swagger_params
 from cases.models import Case
-from cases.serializer import CaseCreateSerializer, CaseSerializer,CaseCreateSwaggerSerializer,CaseDetailEditSwaggerSerializer,CaseCommentEditSwaggerSerializer
+from cases.serializer import (CaseCommentEditSwaggerSerializer,
+                              CaseCreateSerializer,
+                              CaseCreateSwaggerSerializer,
+                              CaseDetailEditSwaggerSerializer, CaseSerializer)
 from cases.tasks import send_email_to_assigned_user
-from common.models import Attachments, Comment, Profile
-
+from common.models import Attachments, Comment, Profile, Teams
 #from common.external_auth import CustomDualAuthentication
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from common.models import Teams
 
 
 class CaseListView(APIView, LimitOffsetPagination):

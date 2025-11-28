@@ -5,9 +5,9 @@ This module registers post_save and post_delete signals on all major CRM models
 to automatically create Activity records when entities are created, updated, or deleted.
 """
 
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 from crum import get_current_request
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 from common.models import Activity
 

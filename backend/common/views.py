@@ -4,14 +4,9 @@ from multiprocessing import context
 from re import template
 
 import requests
-from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from common.serializer import OrgAwareRefreshToken
-from rest_framework.utils import json
 from django.conf import settings
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import Q
@@ -25,41 +20,41 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 #from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.utils import json
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from cases.models import Case
 from cases.serializer import CaseSerializer
-from contacts.models import Contact
-
 ##from common.custom_auth import JSONWebTokenAuthentication
 from common import serializer, swagger_params
-from common.models import Activity, APISettings, Document, Org, Profile, Tags, Teams, User
+from common.models import (Activity, APISettings, Document, Org, Profile, Tags,
+                           Teams, User)
 from common.serializer import *
-from common.tasks import remove_users, update_team_users
+from common.serializer import OrgAwareRefreshToken
 # from common.serializer import (
 #     CreateUserSerializer,
 #     PasswordChangeSerializer,
 #     RegisterOrganizationSerializer,
 # )
-from common.tasks import (
-    resend_activation_link_to_user,
-    send_email_to_new_user,
-    send_email_to_reset_password,
-    send_email_user_delete,
-)
+from common.tasks import (remove_users, resend_activation_link_to_user,
+                          send_email_to_new_user, send_email_to_reset_password,
+                          send_email_user_delete, update_team_users)
 from common.token_generator import account_activation_token
-
 # from rest_framework_jwt.serializers import jwt_encode_handler
 from common.utils import COUNTRIES, ROLES, jwt_payload_handler
+from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from leads.models import Lead
 from leads.serializer import LeadSerializer
@@ -1070,6 +1065,7 @@ class LoginView(APIView):
     )
     def post(self, request):
         from django.utils import timezone
+
         from common.audit_log import audit_log
 
         serializer_obj = serializer.LoginSerializer(data=request.data)
@@ -1228,8 +1224,10 @@ class OrgAwareTokenRefreshView(APIView):
         }
     )
     def post(self, request):
-        from rest_framework_simplejwt.tokens import RefreshToken as BaseRefreshToken
         from rest_framework_simplejwt.exceptions import TokenError
+        from rest_framework_simplejwt.tokens import \
+            RefreshToken as BaseRefreshToken
+
         from common.audit_log import audit_log
 
         refresh_token = request.data.get('refresh')

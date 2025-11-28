@@ -1,12 +1,8 @@
 from rest_framework import serializers
 
-from common.serializer import (
-    BillingAddressSerializer,
-    OrganizationSerializer,
-    ProfileSerializer,
-    TeamsSerializer,
-    UserSerializer,
-)
+from common.serializer import (BillingAddressSerializer,
+                               OrganizationSerializer, ProfileSerializer,
+                               TeamsSerializer, UserSerializer)
 from invoices.models import Invoice, InvoiceHistory
 
 
@@ -162,7 +158,7 @@ class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
 
 # Phase 3: Product and Line Item Serializers
 
-from invoices.models import Product, InvoiceLineItem
+from invoices.models import InvoiceLineItem, Product
 
 
 class ProductSerializer(serializers.ModelSerializer):

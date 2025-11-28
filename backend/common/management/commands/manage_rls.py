@@ -13,11 +13,8 @@ RLS is enabled/disabled via Django migrations, not this command.
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-from common.rls import (
-    RLS_CONFIG,
-    get_check_rls_status_sql,
-    get_set_context_sql,
-)
+from common.rls import (RLS_CONFIG, get_check_rls_status_sql,
+                        get_set_context_sql)
 
 
 class Command(BaseCommand):

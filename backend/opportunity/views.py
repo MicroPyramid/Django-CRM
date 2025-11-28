@@ -1,8 +1,9 @@
 import json
 
-from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from django.db.models import Q
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -11,14 +12,10 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerailizer
-from common.models import Attachments, Comment, Profile, Tags
-
+from common.models import Attachments, Comment, Profile, Tags, Teams
 #from common.external_auth import CustomDualAuthentication
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    ProfileSerializer,
-)
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer)
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -26,7 +23,6 @@ from opportunity import swagger_params
 from opportunity.models import Opportunity
 from opportunity.serializer import *
 from opportunity.tasks import send_email_to_assigned_user
-from common.models import Teams
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):

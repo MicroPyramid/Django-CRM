@@ -2,19 +2,17 @@
 Solution (Knowledge Base) Views
 """
 
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from cases.models import Solution
-from cases.solution_serializers import (
-    SolutionSerializer,
-    SolutionCreateUpdateSerializer,
-    SolutionDetailSerializer,
-)
+from cases.solution_serializers import (SolutionCreateUpdateSerializer,
+                                        SolutionDetailSerializer,
+                                        SolutionSerializer)
 
 
 class SolutionListView(APIView, LimitOffsetPagination):

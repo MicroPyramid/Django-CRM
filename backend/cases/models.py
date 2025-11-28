@@ -4,11 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
-from common.models import Org, Profile
 from common.base import AssignableMixin, BaseModel
+from common.models import Org, Profile, Teams
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
-from common.models import Teams
 
 
 class Case(AssignableMixin, BaseModel):

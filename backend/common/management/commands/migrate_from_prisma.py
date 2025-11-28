@@ -17,24 +17,23 @@ from datetime import datetime
 from decimal import Decimal
 
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from psycopg2.extras import RealDictCursor
 
-# Import Django models
-from common.models import (
-    User, Org, Profile, Address, Tags, Comment, CommentFiles,
-    Attachments, Document, Teams, SessionToken, Activity, ContactFormSubmission
-)
 from accounts.models import Account
-from contacts.models import Contact
-from leads.models import Lead, Company
-from opportunity.models import Opportunity
 from cases.models import Case, Solution
-from tasks.models import Task, Board, BoardMember, BoardColumn, BoardTask
+# Import Django models
+from common.models import (Activity, Address, Attachments, Comment,
+                           CommentFiles, ContactFormSubmission, Document, Org,
+                           Profile, SessionToken, Tags, Teams, User)
+from contacts.models import Contact
 from invoices.models import Invoice, Product
+from leads.models import Company, Lead
+from opportunity.models import Opportunity
+from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 
 logger = logging.getLogger(__name__)
 

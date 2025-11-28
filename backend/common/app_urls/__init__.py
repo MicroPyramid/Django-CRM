@@ -1,4 +1,5 @@
 from django.urls import include, path
+
 from tasks.urls import board_urlpatterns
 
 app_name = "common_urls"

@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from tasks.models import Task, Board, BoardColumn, BoardTask, BoardMember
-
+from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 
 # Register Task model
 admin.site.register(Task)

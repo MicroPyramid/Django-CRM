@@ -3,30 +3,30 @@ import datetime
 import os
 import time
 import uuid
+
 import arrow
-from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import (AbstractBaseUser, AbstractUser,
+                                        PermissionsMixin)
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from .manager import UserManager
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
-from common.templatetags.common_tags import (
-    is_document_file_audio,
-    is_document_file_code,
-    is_document_file_image,
-    is_document_file_pdf,
-    is_document_file_sheet,
-    is_document_file_text,
-    is_document_file_video,
-    is_document_file_zip,
-)
-from common.utils import COUNTRIES, ROLES
 from common.base import BaseModel
+from common.templatetags.common_tags import (is_document_file_audio,
+                                             is_document_file_code,
+                                             is_document_file_image,
+                                             is_document_file_pdf,
+                                             is_document_file_sheet,
+                                             is_document_file_text,
+                                             is_document_file_video,
+                                             is_document_file_zip)
+from common.utils import COUNTRIES, ROLES
+
+from .manager import UserManager
 
 
 def img_url(self, filename):

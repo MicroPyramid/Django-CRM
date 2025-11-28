@@ -17,8 +17,10 @@ Usage:
 """
 
 import logging
-from django.utils import timezone
+
 from django.db import models
+from django.utils import timezone
+
 from common.base import BaseModel
 
 logger = logging.getLogger('security.audit')

@@ -1,7 +1,8 @@
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -9,42 +10,29 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Account
-from common.models import APISettings, Attachments, Comment, Profile, Tags
-
+from common.models import (APISettings, Attachments, Comment, Profile, Tags,
+                           Teams, User)
 #from common.external_auth import CustomDualAuthentication
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    LeadCommentSerializer,
-    ProfileSerializer,
-)
-from .forms import LeadListForm
-from .models import Company,Lead
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               LeadCommentSerializer, ProfileSerializer,
+                               TeamsSerializer)
 from common.utils import COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS
 from contacts.models import Contact
 from leads import swagger_params
 from leads.forms import LeadListForm
 from leads.models import Company, Lead
-from leads.serializer import (
-    CompanySerializer,
-    CompanySwaggerSerializer,
-    LeadCreateSerializer,
-    LeadSerializer,
-    TagsSerializer,
-    LeadCreateSwaggerSerializer,
-    LeadDetailEditSwaggerSerializer,
-    LeadCommentEditSwaggerSerializer,
-    CreateLeadFromSiteSwaggerSerializer,
-    LeadUploadSwaggerSerializer
-)
-from common.models import User
-from leads.tasks import (
-    create_lead_from_file,
-    send_email_to_assigned_user,
-    send_lead_assigned_emails,
-)
-from common.models import Teams
-from common.serializer import TeamsSerializer
+from leads.serializer import (CompanySerializer, CompanySwaggerSerializer,
+                              CreateLeadFromSiteSwaggerSerializer,
+                              LeadCommentEditSwaggerSerializer,
+                              LeadCreateSerializer,
+                              LeadCreateSwaggerSerializer,
+                              LeadDetailEditSwaggerSerializer, LeadSerializer,
+                              LeadUploadSwaggerSerializer, TagsSerializer)
+from leads.tasks import (create_lead_from_file, send_email_to_assigned_user,
+                         send_lead_assigned_emails)
+
+from .forms import LeadListForm
+from .models import Company, Lead
 
 
 class LeadListView(APIView, LimitOffsetPagination):

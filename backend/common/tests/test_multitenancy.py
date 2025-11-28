@@ -7,19 +7,19 @@ data between organizations and prevents cross-org data access.
 Run with: pytest common/tests/test_multitenancy.py -v
 """
 
-import pytest
-from django.test import TestCase, RequestFactory
-from django.core.exceptions import ValidationError, PermissionDenied
-from rest_framework.test import APIClient
-from rest_framework import status
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from common.models import (
-    User, Org, Profile, Comment, Attachments, Tags, Address, Teams
-)
-from common.serializer import OrgAwareRefreshToken
-from common.middleware.get_company import GetProfileAndOrg
+import pytest
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import RequestFactory, TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
 from accounts.models import Account
+from common.middleware.get_company import GetProfileAndOrg
+from common.models import (Address, Attachments, Comment, Org, Profile, Tags,
+                           Teams, User)
+from common.serializer import OrgAwareRefreshToken
 from leads.models import Lead
 
 
@@ -573,8 +573,9 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
         if self.is_superuser:
             self.skipTest("RLS is bypassed for superusers - use non-superuser for testing")
 
-        from django.db import connection
         import uuid
+
+        from django.db import connection
 
         with connection.cursor() as cursor:
             # Set context to org_a
@@ -604,6 +605,7 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
             self.skipTest("RLS is bypassed for superusers - use non-superuser for testing")
 
         from django.db import connection
+
         from common.tasks import set_rls_context
 
         # Simulate Celery task setting RLS context
@@ -621,6 +623,7 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
             self.skipTest("RLS requires PostgreSQL")
 
         from django.db import connection
+
         from common.rls import RLS_CONFIG
 
         with connection.cursor() as cursor:

@@ -20,6 +20,7 @@ Usage in settings.py:
 """
 
 import logging
+
 from django.db import connection
 
 logger = logging.getLogger(__name__)

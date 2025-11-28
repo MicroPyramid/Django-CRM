@@ -1,7 +1,6 @@
 from django.urls import path
 
-from cases import views
-from cases import solution_views
+from cases import solution_views, views
 
 app_name = "api_cases"
 

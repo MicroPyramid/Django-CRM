@@ -4,15 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
-from common.models import Org, Profile, Tags, Teams
 from common.base import AssignableMixin, BaseModel
-from common.utils import (
-    COUNTRIES,
-    INDCHOICES,
-    LEAD_SOURCE,
-    LEAD_STATUS,
-    return_complete_address,
-)
+from common.models import Org, Profile, Tags, Teams
+from common.utils import (COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS,
+                          return_complete_address)
 from contacts.models import Contact
 
 

@@ -3,7 +3,8 @@ Solution (Knowledge Base) Serializers
 """
 
 from rest_framework import serializers
-from cases.models import Solution, Case
+
+from cases.models import Case, Solution
 from common.serializer import OrganizationSerializer
 
 

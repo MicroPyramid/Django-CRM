@@ -1,7 +1,8 @@
 from django.urls import path
 
 from leads import views
-from .import views
+
+from . import views
 
 app_name = "api_leads"
 

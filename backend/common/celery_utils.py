@@ -7,6 +7,7 @@ respect organization context and data isolation.
 
 import logging
 from functools import wraps
+
 from celery import shared_task
 from django.db import connection
 
@@ -153,7 +154,9 @@ def generate_org_activity_report(org_id, days=30):
         generate_org_activity_report.delay(org_id=str(org.id), days=30)
     """
     from datetime import timedelta
+
     from django.utils import timezone
+
     from common.models import Activity
 
     start_date = timezone.now() - timedelta(days=days)
@@ -201,6 +204,7 @@ def send_email_with_org_context(org_id, user_id, template_name, subject, context
     from django.conf import settings
     from django.core.mail import EmailMessage
     from django.template.loader import render_to_string
+
     from common.models import Org, User
 
     try:
@@ -248,8 +252,9 @@ def batch_process_org_data(org_id, model_name, processor_func, batch_size=100):
             batch_size=100
         )
     """
-    from django.apps import apps
     from importlib import import_module
+
+    from django.apps import apps
 
     # Get model
     app_label, model_class = model_name.rsplit('.', 1)

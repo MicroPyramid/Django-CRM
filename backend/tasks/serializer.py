@@ -1,15 +1,10 @@
 from rest_framework import serializers
 
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    ProfileSerializer,
-    TeamsSerializer,
-    UserSerializer
-)
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer, TeamsSerializer,
+                               UserSerializer)
 from contacts.serializer import ContactSerializer
-from tasks.models import Task, Board, BoardColumn, BoardTask, BoardMember
-
+from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 
 # =============================================================================
 # Kanban Board Serializers (merged from boards app)

@@ -3,10 +3,9 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
-from common.models import Org, Profile, Tags
 from common.base import AssignableMixin, BaseModel
+from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES
-from common.models import Teams
 
 
 class Contact(AssignableMixin, BaseModel):

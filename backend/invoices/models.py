@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Account
-from common.models import Address, Org, Teams, User, Profile
 from common.base import BaseModel
+from common.models import Address, Org, Profile, Teams, User
 from common.utils import CURRENCY_CODES
 
 

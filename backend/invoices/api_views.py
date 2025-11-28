@@ -2,9 +2,9 @@ import json
 
 import pytz
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
-from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
@@ -14,32 +14,19 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.models import Attachments, Comment, User
-
+from common.models import Attachments, Comment, Teams, User
 #from common.external_auth import CustomDualAuthentication
-from common.serializer import (
-    AttachmentsSerializer,
-    BillingAddressSerializer,
-    CommentSerializer,
-    UserSerializer,
-)
+from common.serializer import (AttachmentsSerializer, BillingAddressSerializer,
+                               CommentSerializer, TeamsSerializer,
+                               UserSerializer)
 from common.utils import COUNTRIES, CURRENCY_CODES
 from invoices import swagger_params
 from invoices.models import Invoice
-from invoices.serializer import (
-    InvoiceCreateSerializer,
-    InvoiceHistorySerializer,
-    InvoiceSerailizer,
-    InvoiceSwaggerSerailizer,
-)
-from invoices.tasks import (
-    create_invoice_history,
-    send_email,
-    send_invoice_email,
-    send_invoice_email_cancel,
-)
-from common.models import Teams
-from common.serializer import TeamsSerializer
+from invoices.serializer import (InvoiceCreateSerializer,
+                                 InvoiceHistorySerializer, InvoiceSerailizer,
+                                 InvoiceSwaggerSerailizer)
+from invoices.tasks import (create_invoice_history, send_email,
+                            send_invoice_email, send_invoice_email_cancel)
 
 INVOICE_STATUS = (
     ("Draft", "Draft"),

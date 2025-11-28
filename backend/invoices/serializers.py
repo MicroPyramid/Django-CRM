@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from invoices.models import Invoice, InvoiceHistory
-from common.serializer import ProfileSerializer, UserSerializer, TeamsSerializer
+
 from accounts.serializer import AccountSerializer
+from common.serializer import (ProfileSerializer, TeamsSerializer,
+                               UserSerializer)
+from invoices.models import Invoice, InvoiceHistory
 
 
 class InvoiceSerializer(serializers.ModelSerializer):

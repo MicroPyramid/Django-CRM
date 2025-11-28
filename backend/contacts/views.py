@@ -1,29 +1,25 @@
 import json
 
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment, Profile
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-)
+from common.models import Attachments, Comment, Profile, Teams
+from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import COUNTRIES
-
 #from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params
 from contacts.models import Contact, Profile
 from contacts.serializer import *
 from contacts.tasks import send_email_to_assigned_user
 from tasks.serializer import TaskSerializer
-from common.models import Teams
 
 
 class ContactsListView(APIView, LimitOffsetPagination):

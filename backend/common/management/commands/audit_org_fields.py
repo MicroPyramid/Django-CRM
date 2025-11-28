@@ -10,9 +10,9 @@ Usage:
     python manage.py audit_org_fields --verbose   # Show detailed output
 """
 
+from django.apps import apps
 from django.core.management.base import BaseCommand
 from django.db import connection
-from django.apps import apps
 
 
 class Command(BaseCommand):
@@ -170,7 +170,7 @@ class Command(BaseCommand):
 
     def _fix_null_orgs(self, issues):
         """Attempt to fix NULL org values by inferring from related objects."""
-        from common.models import Address, Tags, Profile
+        from common.models import Address, Profile, Tags
 
         for app_label, model_name, null_count, total_count in issues:
             model = apps.get_model(app_label, model_name)

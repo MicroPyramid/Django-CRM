@@ -4,12 +4,9 @@
 # RLS Configuration: See common/rls/__init__.py for centralized policy definitions
 
 from django.db import migrations
-from common.rls import (
-    RLS_CONFIG,
-    get_enable_policy_sql,
-    get_disable_policy_sql,
-    get_check_table_exists_sql,
-)
+
+from common.rls import (RLS_CONFIG, get_check_table_exists_sql,
+                        get_disable_policy_sql, get_enable_policy_sql)
 
 
 def check_column_exists(cursor, table, column):

@@ -2,14 +2,9 @@ from rest_framework import serializers
 
 from accounts.models import Account
 from common.models import Tags
-from common.serializer import (
-    AttachmentsSerializer,
-    LeadCommentSerializer,
-    OrganizationSerializer,
-    ProfileSerializer,
-    TeamsSerializer,
-    UserSerializer,
-)
+from common.serializer import (AttachmentsSerializer, LeadCommentSerializer,
+                               OrganizationSerializer, ProfileSerializer,
+                               TeamsSerializer, UserSerializer)
 from contacts.serializer import ContactSerializer
 from leads.models import Company, Lead
 

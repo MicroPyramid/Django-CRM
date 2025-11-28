@@ -1,8 +1,10 @@
 import json
 
-from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -11,28 +13,22 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.models import Attachments, Comment, Profile
-
+from common.models import Attachments, Comment, Profile, Teams
 #from common.external_auth import CustomDualAuthentication
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    ProfileSerializer,
-)
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer, TeamsSerializer)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from tasks import swagger_params
-from tasks.models import Task, Board, BoardColumn, BoardTask, BoardMember
-from tasks.serializer import (
-    TaskSerializer, TaskCreateSerializer, TaskDetailEditSwaggerSerializer,
-    TaskCommentEditSwaggerSerializer, TaskCreateSwaggerSerializer,
-    BoardSerializer, BoardListSerializer, BoardColumnSerializer,
-    BoardTaskSerializer, BoardMemberSerializer
-)
+from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
+from tasks.serializer import (BoardColumnSerializer, BoardListSerializer,
+                              BoardMemberSerializer, BoardSerializer,
+                              BoardTaskSerializer,
+                              TaskCommentEditSwaggerSerializer,
+                              TaskCreateSerializer,
+                              TaskCreateSwaggerSerializer,
+                              TaskDetailEditSwaggerSerializer, TaskSerializer)
 from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
-from common.models import Teams
-from common.serializer import TeamsSerializer
-from django.shortcuts import get_object_or_404
 
 
 class TaskListView(APIView, LimitOffsetPagination):

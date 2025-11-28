@@ -7,18 +7,8 @@ from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from common.models import (
-    Activity,
-    Address,
-    APISettings,
-    Attachments,
-    Comment,
-    Document,
-    Org,
-    Profile,
-    Teams,
-    User,
-)
+from common.models import (Activity, Address, APISettings, Attachments,
+                           Comment, Document, Org, Profile, Teams, User)
 
 
 class OrgAwareRefreshToken(RefreshToken):

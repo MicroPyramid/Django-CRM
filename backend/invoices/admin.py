@@ -1,5 +1,6 @@
 from django.contrib import admin
-from invoices.models import Invoice, InvoiceHistory, Product, InvoiceLineItem
+
+from invoices.models import Invoice, InvoiceHistory, InvoiceLineItem, Product
 
 
 class InvoiceLineItemInline(admin.TabularInline):

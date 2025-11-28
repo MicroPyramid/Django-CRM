@@ -4,9 +4,9 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
-from common.models import Org, Profile, Tags, Teams
 from common.base import AssignableMixin, BaseModel
-from common.utils import CURRENCY_CODES, SOURCES, STAGES, OPPORTUNITY_TYPES
+from common.models import Org, Profile, Tags, Teams
+from common.utils import CURRENCY_CODES, OPPORTUNITY_TYPES, SOURCES, STAGES
 from contacts.models import Contact
 
 

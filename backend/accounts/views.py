@@ -1,59 +1,41 @@
 import json
 
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.contrib.contenttypes.models import ContentType
-
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   extend_schema)
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
 
 from accounts import swagger_params
 from accounts.models import Account
-from common.models import Tags
-from accounts.serializer import (
-    AccountCreateSerializer,
-    AccountSerializer,
-    EmailSerializer,
-    TagsSerailizer,
-    AccountReadSerializer,
-    AccountWriteSerializer,
-    AccountDetailEditSwaggerSerializer,
-    AccountCommentEditSwaggerSerializer,
-    EmailWriteSerializer
-)
-from common.serializer import TeamsSerializer
+from accounts.serializer import (AccountCommentEditSwaggerSerializer,
+                                 AccountCreateSerializer,
+                                 AccountDetailEditSwaggerSerializer,
+                                 AccountReadSerializer, AccountSerializer,
+                                 AccountWriteSerializer, EmailSerializer,
+                                 EmailWriteSerializer, TagsSerailizer)
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
-from common.models import Attachments, Comment, Profile
-from leads.models import Lead
-from leads.serializer import LeadSerializer
-
+from common.models import Attachments, Comment, Profile, Tags, Teams
 #from common.external_auth import CustomDualAuthentication
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    ProfileSerializer,
-)
-from common.utils import (
-    CASE_TYPE,
-    COUNTRIES,
-    CURRENCY_CODES,
-    INDCHOICES,
-    PRIORITY_CHOICE,
-    STATUS_CHOICE,
-)
+from common.serializer import (AttachmentsSerializer, CommentSerializer,
+                               ProfileSerializer, TeamsSerializer)
+from common.utils import (CASE_TYPE, COUNTRIES, CURRENCY_CODES, INDCHOICES,
+                          PRIORITY_CHOICE, STATUS_CHOICE)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from invoices.serializer import InvoiceSerailizer
+from leads.models import Lead
+from leads.serializer import LeadSerializer
 from opportunity.models import SOURCES, STAGES, Opportunity
 from opportunity.serializer import OpportunitySerializer
 from tasks.serializer import TaskSerializer
-from common.models import Teams
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
