@@ -12,7 +12,7 @@ import { redirect } from '@sveltejs/kit';
 import axios from 'axios';
 import { env } from '$env/dynamic/public';
 
-const API_BASE_URL = env.PUBLIC_DJANGO_API_URL;
+const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
  * Decode JWT payload without verification (for reading claims only)
@@ -130,9 +130,9 @@ async function switchOrg(accessToken, orgId) {
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	// Get tokens from cookies (support both naming conventions)
-	let accessToken = event.cookies.get('access_token') || event.cookies.get('jwt_access');
-	const refreshToken = event.cookies.get('refresh_token') || event.cookies.get('jwt_refresh');
+	// Get tokens from cookies
+	let accessToken = event.cookies.get('jwt_access');
+	const refreshToken = event.cookies.get('jwt_refresh');
 	const orgId = event.cookies.get('org');
 
 	let user = null;
@@ -156,13 +156,10 @@ export async function handle({ event, resolve }) {
 				accessToken = newAccessToken;
 				user = await verifyToken(newAccessToken);
 			} else {
-				// Refresh failed, clear cookies (both naming conventions)
-				event.cookies.delete('access_token', { path: '/' });
+				// Refresh failed, clear cookies
 				event.cookies.delete('jwt_access', { path: '/' });
-				event.cookies.delete('refresh_token', { path: '/' });
 				event.cookies.delete('jwt_refresh', { path: '/' });
 				event.cookies.delete('org', { path: '/' });
-				event.cookies.delete('org_name', { path: '/' });
 			}
 		}
 	}
@@ -188,9 +185,8 @@ export async function handle({ event, resolve }) {
 						event.locals.profile = profile;
 						event.locals.org_name = profile.org.name;
 					} else {
-						// Profile fetch failed, clear org cookies
+						// Profile fetch failed, clear org cookie
 						event.cookies.delete('org', { path: '/' });
-						event.cookies.delete('org_name', { path: '/' });
 					}
 				} else {
 					// Token doesn't have org context, need to switch
@@ -224,20 +220,17 @@ export async function handle({ event, resolve }) {
 							event.locals.profile = profile;
 							event.locals.org_name = switchResult.current_org?.name || profile.org.name;
 						} else {
-							// Profile fetch failed, clear org cookies
+							// Profile fetch failed, clear org cookie
 							event.cookies.delete('org', { path: '/' });
-							event.cookies.delete('org_name', { path: '/' });
 						}
 					} else {
-						// Org switch failed, clear org cookies
+						// Org switch failed, clear org cookie
 						event.cookies.delete('org', { path: '/' });
-						event.cookies.delete('org_name', { path: '/' });
 					}
 				}
 			} else {
-				// User doesn't have access to this organization, clear org cookies
+				// User doesn't have access to this organization, clear org cookie
 				event.cookies.delete('org', { path: '/' });
-				event.cookies.delete('org_name', { path: '/' });
 				// Don't throw error here, just redirect
 				throw redirect(307, '/org');
 			}

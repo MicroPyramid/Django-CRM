@@ -10,6 +10,7 @@
  */
 
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import axios from 'axios';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -53,7 +54,7 @@ export const actions = {
 				};
 			}
 
-			const apiUrl = env.PUBLIC_DJANGO_API_URL;
+			const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
 
 			// Create organization and profile via Django API
 			// Django's OrgProfileCreateView creates both org and profile
@@ -75,13 +76,6 @@ export const actions = {
 
 			// Set org cookie for the newly created org
 			await cookies.set('org', newOrg.id, {
-				path: '/',
-				httpOnly: true,
-				sameSite: 'strict',
-				secure: env.NODE_ENV === 'production'
-			});
-
-			await cookies.set('org_name', newOrg.name, {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'strict',

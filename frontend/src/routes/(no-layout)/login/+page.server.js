@@ -13,6 +13,7 @@
 import axios from 'axios';
 import { redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { generateCodeVerifier, generateCodeChallenge, generateState } from '$lib/utils/pkce.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -103,7 +104,8 @@ async function handleOAuthCallback(code, returnedState, cookies) {
 	try {
 		// Exchange code for tokens via Django backend
 		// The backend handles the actual token exchange with Google using the client secret
-		const apiUrl = env.PUBLIC_DJANGO_API_URL;
+		const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
+		console.log('Using API URL:', apiUrl);
 		const response = await axios.post(
 			`${apiUrl}/api/auth/google/callback/`,
 			{
@@ -122,22 +124,21 @@ async function handleOAuthCallback(code, returnedState, cookies) {
 		// Store JWT tokens in secure httpOnly cookies
 		cookies.set('jwt_access', access_token, getCookieOptions(60 * 60 * 24)); // 1 day
 		cookies.set('jwt_refresh', refresh_token, getCookieOptions(60 * 60 * 24 * 365)); // 1 year
-
-		// Store user email for convenience (also httpOnly for consistency)
-		if (user?.email) {
-			cookies.set('user_email', user.email, getCookieOptions(60 * 60 * 24 * 7)); // 7 days
-		}
 	} catch (error) {
-		const errorMessage = error.response?.data?.error || error.message;
-		console.error('OAuth token exchange failed:', errorMessage);
+		console.error('OAuth token exchange failed - Full error:', error);
+		console.error('Response data:', error.response?.data);
+		console.error('Response status:', error.response?.status);
+		const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
 		// Provide user-friendly error messages
 		let userError = 'auth_failed';
-		if (errorMessage.includes('code_verifier')) {
+		const errStr = String(errorMessage);
+		if (errStr.includes('code_verifier')) {
 			userError = 'pkce_failed';
-		} else if (errorMessage.includes('expired')) {
+		} else if (errStr.includes('expired')) {
 			userError = 'code_expired';
 		}
+		console.error('Final error message:', errorMessage);
 
 		throw redirect(307, `/login?error=${userError}`);
 	}

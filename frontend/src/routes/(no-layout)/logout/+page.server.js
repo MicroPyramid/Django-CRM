@@ -14,7 +14,10 @@ import { redirect } from '@sveltejs/kit';
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals, cookies }) {
 	// Clear all authentication-related cookies
-	const cookiesToClear = ['jwt_access', 'jwt_refresh', 'user_email', 'org', 'org_name', 'session'];
+	const cookiesToClear = [
+		'jwt_access', 'jwt_refresh', 'org',
+		'oauth_state', 'oauth_code_verifier'
+	];
 
 	for (const cookieName of cookiesToClear) {
 		if (cookies.get(cookieName)) {

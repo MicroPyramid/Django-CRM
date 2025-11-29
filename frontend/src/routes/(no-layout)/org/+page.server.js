@@ -9,7 +9,7 @@
  *   mv +page.server.api.js +page.server.js
  */
 
-import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { redirect, fail } from '@sveltejs/kit';
 import axios from 'axios';
 
@@ -27,7 +27,7 @@ export async function load({ cookies, locals }) {
 			return { orgs: [] };
 		}
 
-		const apiUrl = env.PUBLIC_DJANGO_API_URL;
+		const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
 
 		// Fetch current user with organization memberships
 		// The /api/auth/me/ endpoint returns user data with organizations array
@@ -74,7 +74,7 @@ export const actions = {
 			throw redirect(307, '/login');
 		}
 
-		const apiUrl = env.PUBLIC_DJANGO_API_URL;
+		const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
 
 		try {
 			// Call switch-org endpoint to get new tokens with org context
@@ -108,14 +108,8 @@ export const actions = {
 				maxAge: 60 * 60 * 24 * 365 // 1 year
 			});
 
-			// Set org cookies for reference
+			// Set org cookie for reference
 			cookies.set('org', orgId, {
-				path: '/',
-				sameSite: 'strict',
-				maxAge: 60 * 60 * 24 * 365
-			});
-
-			cookies.set('org_name', encodeURIComponent(current_org?.name || orgName), {
 				path: '/',
 				sameSite: 'strict',
 				maxAge: 60 * 60 * 24 * 365

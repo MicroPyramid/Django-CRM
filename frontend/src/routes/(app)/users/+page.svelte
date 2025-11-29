@@ -1,5 +1,5 @@
 <script>
-	import '../../../../app.css';
+	import '../../../app.css';
 	import { 
 		Building2, 
 		Globe, 
