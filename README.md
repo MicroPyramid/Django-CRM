@@ -1,175 +1,237 @@
-# Django-CRM
+# BottleCRM
 
-============
+A modern, open-source CRM platform built with Django REST Framework and SvelteKit.
 
-Django CRM is opensource CRM developed on django framework. It has all
-the basic features of CRM to start with. We welcome code contributions
-and feature requests via github.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10+-green.svg)
+![Django](https://img.shields.io/badge/django-5.x-green.svg)
+![SvelteKit](https://img.shields.io/badge/sveltekit-2.x-orange.svg)
+![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
 
-## Project Status and Future Direction
+## Overview
 
-### Background
+BottleCRM is a full-featured Customer Relationship Management system designed for startups and small businesses. It combines a powerful Django REST API backend with a modern SvelteKit frontend, featuring multi-tenant architecture with PostgreSQL Row-Level Security (RLS) for enterprise-grade data isolation.
 
-9 years ago, I launched this project with a mission to provide startups with a free, open-source, and customizable CRM solution, addressing the high subscription costs of commercial alternatives. Initially developed as a Django full-stack application, the project evolved significantly with the support of a dedicated team. However, maintaining the team and covering salaries depleted resources, and I was unable to renew the domain. Recognizing the need for a modernized user experience, I explored updating the frontend with React but ultimately faced financial and team constraints.
+**Try it free**: [bottlecrm.io](https://bottlecrm.io/)
 
-### Moving Forward
+## Features
 
-To align with the project’s vision and address these challenges, I’ve shifted development to a new repository using **SvelteKit** and **Prisma** for a robust, fast, and feature-rich framework. A Minimum Viable Product (MVP) was released last week at [MicroPyramid/Django-CRM](https://github.com/MicroPyramid/Django-CRM).
+### Core CRM Modules
+- **Leads** - Track and manage sales leads through your pipeline
+- **Accounts** - Manage company/organization records
+- **Contacts** - Store and organize contact information
+- **Opportunities** - Track deals and sales opportunities
+- **Cases** - Customer support case management
+- **Tasks** - Task management with calendar and Kanban board views
+- **Invoices** - Create and manage invoices
 
-#### Key Updates:
+### Platform Features
+- **Multi-Tenant Architecture** - PostgreSQL RLS for secure data isolation between organizations
+- **JWT Authentication** - Secure token-based authentication
+- **Team Management** - Organize users into teams with role-based access
+- **Activity Tracking** - Comprehensive audit logs and activity history
+- **Comments & Attachments** - Collaborate with comments and file attachments on any record
+- **Tags** - Flexible tagging system for organizing records
+- **Email Integration** - AWS SES integration for transactional emails
+- **Background Tasks** - Celery + Redis for async task processing
 
--   **Current Repository:** No further updates will be made to this repository.
-    
--   **New Repository:** Development will continue in the new SvelteKit-based repository.
-    
--   **Mobile App:** Enhancements to the Flutter-based mobile app [MicroPyramid/flutter-crm](https://github.com/MicroPyramid/flutter-crm) will depend on increased user engagement or support from a paying client.
-    
+## Tech Stack
 
-### Future Vision
+### Backend
+- **Django 5.x** with Django REST Framework
+- **PostgreSQL** with Row-Level Security (RLS)
+- **Redis** for caching and Celery broker
+- **Celery** for background task processing
+- **JWT** for authentication
+- **AWS S3** for file storage
+- **AWS SES** for email delivery
 
-This project is far from dead, it’s evolving. I’m committed to its growth and open to discussions about its direction, contributions, or potential collaborations. Feel free to reach out with ideas or feedback.
+### Frontend
+- **SvelteKit 2.x** with Svelte 5 (runes)
+- **TailwindCSS 4** for styling
+- **shadcn-svelte** UI components
+- **Zod** for schema validation
+- **Axios** for API communication
+- **Lucide** icons
 
-Thank you for your support and understanding.
+## Quick Start
 
-## Runcode 
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ with pnpm
+- PostgreSQL 14+
+- Redis
 
- Runcode is online developer workspace. It is cloud based simple, secure and ready to code workspaces, assuring high performance & fully configurable coding environment. With runcode you can run django-crm(API) with one-click.
+### Backend Setup
 
+```bash
+# Clone the repository
+git clone https://github.com/MicroPyramid/Django-CRM.git
+cd Django-CRM
 
-- Open below link to create django-crm workspace on [RunCode](https://runcode.io/ "RunCode"). It will create django-crm API
+# Create and activate virtual environment
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-    [![RunCode](https://runcode-app-public.s3.amazonaws.com/images/dark_btn.png)](https://runcode.io)
-
-- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to create new workspace with runcode.
-
-## Docs
-
-Please [Click Here](http://django-crm.readthedocs.io "Click Here") for latest documentation.
-
-## Project Modules
-This project contains the following modules:
-- Contacts
-- Companies
-- Leads
-- Accounts
-- Invoices (todo)
-- Cases (todo)
-- Opportunity (todo)
-
-## Try for free [here](https://bottlecrm.io/)
-
-## Installation Guide
-
-We recommend ubuntu 20.04. These instructions are verified for ubuntu 20.04.
-
-#### To install system requirements
-
-```
-sudo apt update && sudo apt upgrade -y
-
-sudo apt install python-is-python3 xvfb libfontconfig wkhtmltopdf python3-dev python3-pip build-essential libssl-dev libffi-dev python3-venv redis-server redis-tools virtualenv -y
-```
-
-#### Install dependencies
-
-##### Optional (based on personal choice)
-
-```
-sudo apt update && sudo apt upgrade -y && sudo apt install zsh python3-virtualenv
-
-sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-pip install virtualenvwrapper
-
-echo "source /home/ubuntu/.local/bin/virtualenvwrapper.sh" >> ~/.zshrc
-```
-
-If you want to install postgres, follow https://www.postgresql.org/download/
-#### To modify postgresql root password
-
-```
-sudo -u postgres psql
-ALTER USER postgres WITH PASSWORD 'root';
-```
-
-#### Create and activate a virtual environment.
-if you installed and configured virtualenv wrapper then use the following
-``` 
-mkvirtualenv <env_name>
-workon <env_name>
-```
-or else
-```
-virtualenv venv
-source venv/bin/activate
-```
-Install the project's dependency after activating env
-
-```
+# Install dependencies
 pip install -r requirements.txt
+
+# Set up environment variables (see env.md for details)
+cp .env.example .env
+# Edit .env with your database and other settings
+
+# Run migrations
+python manage.py migrate
+
+# Create a superuser
+python manage.py createsuperuser
+
+# Start the development server
+python manage.py runserver
 ```
 
-### Env variables
+### Frontend Setup
 
-* Then refer to `env.md` for environment variables and keep those in the `.env` file in the current folder as your project is in.
+```bash
+# In a new terminal, from the project root
+cd frontend
 
+# Install dependencies
+pnpm install
 
-### Docker / docker-compose
-in order to use docker, please run the next commands after cloning repo:
+# Start the development server
+pnpm run dev
 ```
-docker build -t djcrm:1 -f docker/dockerfile .
+
+### Start Celery Worker
+
+```bash
+# In a new terminal
+cd backend
+source venv/bin/activate
+celery -A crm worker --loglevel=INFO
+```
+
+### Access the Application
+- **Frontend**: http://localhost:5173
+- **API Documentation**: http://localhost:8000/swagger-ui/
+- **Admin Panel**: http://localhost:8000/admin/
+
+## Docker Setup
+
+```bash
+# Build and run with Docker Compose
+docker build -t bottlecrm:latest -f docker/dockerfile .
 docker-compose -f docker/docker-compose.yml up
 ```
 
-**Note**: you must have docker/docker-compose installed on your host. 
-### next steps
-
+## Project Structure
 
 ```
-python manage.py migrate
-python manage.py runserver
+Django-CRM/
+├── backend/                 # Django REST API
+│   ├── accounts/           # Accounts module
+│   ├── cases/              # Cases module
+│   ├── common/             # Shared models, utilities, RLS
+│   ├── contacts/           # Contacts module
+│   ├── invoices/           # Invoices module
+│   ├── leads/              # Leads module
+│   ├── opportunity/        # Opportunities module
+│   ├── tasks/              # Tasks module
+│   └── crm/                # Django project settings
+├── frontend/               # SvelteKit frontend
+│   ├── src/
+│   │   ├── lib/           # Components, stores, utilities
+│   │   └── routes/        # SvelteKit routes
+│   │       ├── (app)/     # Authenticated app routes
+│   │       └── (no-layout)/ # Auth pages (login, etc.)
+│   └── static/            # Static assets
+└── docker/                 # Docker configuration
 ```
-- Then open http://localhost:8000/swagger-ui/ in your browser to explore API.
 
-- After running API, Go to Frontend UI [React CRM](https://github.com/MicroPyramid/react-crm "React CRM") project to configure Fronted UI to interact with API.
+## Multi-Tenancy & Security
 
+BottleCRM uses PostgreSQL Row-Level Security (RLS) to ensure complete data isolation between organizations. Every database query is automatically filtered by organization context, providing enterprise-grade security.
 
-## Start celery worker in another terminal window
+```bash
+# Check RLS status
+python manage.py manage_rls --status
 
-celery -A crm worker --loglevel=INFO
+# Verify RLS user configuration
+python manage.py manage_rls --verify-user
 
-### Useful tools and packages
-
-```
-pipdeptree # to see pip dependency tree
-black # to format code to meet python coding standards
-pip-check -H  # to see upgradable packages
-isort # to sort imports in python
+# Test data isolation
+python manage.py manage_rls --test
 ```
 
-### Community
+## Development
 
-**Note: This repository is no longer actively maintained.** For the latest development and community support, please visit our new SvelteKit-based CRM project:
+### Backend Commands
 
--   **New Project**: [MicroPyramid/Django-CRM](https://github.com/MicroPyramid/Django-CRM)
--   Follow [@micropyramid](<https://twitter.com/micropyramid>) on Twitter
--   For questions about the legacy Django CRM, check [past issues](<https://github.com/MicroPyramid/Django-CRM/issues>)
--   For new feature requests and active development, visit the [new repository](https://github.com/MicroPyramid/Django-CRM)
--   For commercial support [Contact us](https://micropyramid.com/contact-us/)
+```bash
+# Run tests
+cd backend && pytest
 
-## Credits
+# Format code
+black . && isort .
 
-### Contributors
+# Check dependencies
+pipdeptree
+pip-check -H
+```
 
-This project exists thanks to all the people who contributed during its active development!
+### Frontend Commands
 
-![image](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
+```bash
+cd frontend
 
-### Legacy Project Notice
+# Type checking
+pnpm run check
 
-This Django CRM repository is now in maintenance mode. While we welcome your feedback and appreciate past contributions, active development has moved to our new SvelteKit-based CRM solution at [MicroPyramid/Django-CRM](https://github.com/MicroPyramid/Django-CRM).
+# Linting
+pnpm run lint
 
-For commercial support [Contact us](https://micropyramid.com/contact-us/)
+# Formatting
+pnpm run format
+```
 
-# Trigger deploy
+## API Documentation
+
+The API follows RESTful conventions:
+
+```
+GET/POST       /api/<module>/                 # List/Create
+GET/PUT/DELETE /api/<module>/<pk>/            # Detail/Update/Delete
+GET/POST       /api/<module>/comment/<pk>/    # Comments
+GET/POST       /api/<module>/attachment/<pk>/ # Attachments
+```
+
+Interactive API documentation is available at `/swagger-ui/` when running the backend.
+
+## Contributing
+
+We welcome contributions! Please see our contributing guidelines for details.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Community
+
+- **Issues**: [GitHub Issues](https://github.com/MicroPyramid/Django-CRM/issues)
+- **Twitter**: [@micropyramid](https://twitter.com/micropyramid)
+- **Commercial Support**: [Contact us](https://micropyramid.com/contact-us/)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributors
+
+This project exists thanks to all the people who contributed.
+
+![Contributors](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
 

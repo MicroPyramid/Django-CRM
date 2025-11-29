@@ -110,6 +110,7 @@ class RequireOrgContext:
         "/api/auth/me/",
         "/api/auth/switch-org/",
         "/api/auth/google/",
+        "/api/org/",
         "/admin/",
         "/swagger-ui/",
         "/api/schema/",
