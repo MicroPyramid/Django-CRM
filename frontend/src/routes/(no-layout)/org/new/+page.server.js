@@ -53,7 +53,7 @@ export const actions = {
 				};
 			}
 
-			const apiUrl = env.DJANGO_API_URL || 'http://localhost:8000';
+			const apiUrl = env.PUBLIC_DJANGO_API_URL;
 
 			// Create organization and profile via Django API
 			// Django's OrgProfileCreateView creates both org and profile

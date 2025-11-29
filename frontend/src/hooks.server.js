@@ -10,8 +10,9 @@
 
 import { redirect } from '@sveltejs/kit';
 import axios from 'axios';
+import { env } from '$env/dynamic/public';
 
-const API_BASE_URL = process.env.DJANGO_API_URL ? `${process.env.DJANGO_API_URL}/api` : 'http://localhost:8000/api';
+const API_BASE_URL = env.PUBLIC_DJANGO_API_URL;
 
 /**
  * Decode JWT payload without verification (for reading claims only)

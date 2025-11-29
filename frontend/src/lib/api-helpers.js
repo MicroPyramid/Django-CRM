@@ -5,7 +5,9 @@
  * Used by SvelteKit server files during migration from Prisma to API.
  */
 
-const API_BASE_URL = process.env.DJANGO_API_URL ? `${process.env.DJANGO_API_URL}/api` : 'http://localhost:8000/api';
+import { env } from '$env/dynamic/public';
+
+const API_BASE_URL = env.PUBLIC_DJANGO_API_URL;
 
 /**
  * Make authenticated API request to Django backend

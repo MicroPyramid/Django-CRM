@@ -1023,55 +1023,106 @@ class DomainDetailView(APIView):
         )
 
 
-class GoogleLoginView(APIView):
+class GoogleOAuthCallbackView(APIView):
     """
-    Check for authentication with google
-    post:
-        Returns token of logged In user
+    Handle Google OAuth authorization code exchange with PKCE.
     """
 
-    @extend_schema(
-        description="Login through Google",
-        request=SocialLoginSerializer,
-    )
+    permission_classes = []
+    authentication_classes = []
+
     def post(self, request):
+        import base64
+
+        from django.conf import settings as django_settings
         from django.utils import timezone
 
-        payload = {"access_token": request.data.get("token")}  # validate the token
-        r = requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo", params=payload
-        )
-        data = json.loads(r.text)
-        print(data)
-        if "error" in data:
-            content = {
-                "message": "wrong google token / this google token is already expired."
-            }
-            return Response(content)
-        # create user if not exist
-        try:
-            user = User.objects.get(email=data["email"])
-        except User.DoesNotExist:
-            user = User()
-            user.email = data["email"]
-            user.profile_pic = data["picture"]
-            # provider random default password
-            user.password = make_password(secrets.token_urlsafe(16))
-            user.save()
+        code = request.data.get("code")
+        code_verifier = request.data.get("code_verifier")
+        redirect_uri = request.data.get("redirect_uri")
 
-        # Update last_login timestamp
+        if not all([code, code_verifier, redirect_uri]):
+            return Response(
+                {"error": "Missing required parameters"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Exchange code for tokens with Google
+        try:
+            token_response = requests.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": django_settings.GOOGLE_CLIENT_ID,
+                    "client_secret": django_settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                    "code_verifier": code_verifier,
+                },
+                timeout=30,
+            )
+        except requests.RequestException:
+            return Response(
+                {"error": "Failed to communicate with Google"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if token_response.status_code != 200:
+            error_data = token_response.json() if token_response.content else {}
+            return Response(
+                {"error": error_data.get("error_description", "Token exchange failed")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token_data = token_response.json()
+        id_token = token_data.get("id_token")
+        if not id_token:
+            return Response(
+                {"error": "No ID token received"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Decode ID token payload (no verification needed - we just got it from Google over HTTPS)
+        try:
+            payload_part = id_token.split(".")[1]
+            # Add padding if needed
+            payload_part += "=" * (4 - len(payload_part) % 4)
+            payload = json.loads(base64.urlsafe_b64decode(payload_part))
+            email = payload.get("email")
+            picture = payload.get("picture", "")
+        except (IndexError, ValueError, json.JSONDecodeError):
+            return Response(
+                {"error": "Invalid ID token format"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not email:
+            return Response(
+                {"error": "No email in token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get or create user
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = User.objects.create(
+                email=email,
+                profile_pic=picture,
+                password=make_password(secrets.token_urlsafe(32)),
+            )
+
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        token = RefreshToken.for_user(
-            user
-        )  # generate token without username & password
-        response = {}
-        response["username"] = user.email
-        response["access_token"] = str(token.access_token)
-        response["refresh_token"] = str(token)
-        response["user_id"] = user.id
-        return Response(response)
+        # Generate JWT tokens
+        token = RefreshToken.for_user(user)
+
+        return Response({
+            "access_token": str(token.access_token),
+            "refresh_token": str(token),
+            "user": {"id": str(user.id), "email": user.email},
+        })
 
 
 # JWT Authentication Views for SvelteKit Integration

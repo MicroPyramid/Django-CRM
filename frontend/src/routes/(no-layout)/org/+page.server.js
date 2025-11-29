@@ -27,7 +27,7 @@ export async function load({ cookies, locals }) {
 			return { orgs: [] };
 		}
 
-		const apiUrl = env.DJANGO_API_URL || 'http://localhost:8000';
+		const apiUrl = env.PUBLIC_DJANGO_API_URL;
 
 		// Fetch current user with organization memberships
 		// The /api/auth/me/ endpoint returns user data with organizations array
@@ -74,7 +74,7 @@ export const actions = {
 			throw redirect(307, '/login');
 		}
 
-		const apiUrl = env.DJANGO_API_URL || 'http://localhost:8000';
+		const apiUrl = env.PUBLIC_DJANGO_API_URL;
 
 		try {
 			// Call switch-org endpoint to get new tokens with org context

@@ -19,8 +19,8 @@ urlpatterns = [
     path("auth/me/", views.MeView.as_view(), name="me"),
     path("auth/profile/", views.ProfileDetailView.as_view(), name="profile_detail"),
     path("auth/switch-org/", views.OrgSwitchView.as_view(), name="switch_org"),
-    # GoogleLoginView
-    path("auth/google/", views.GoogleLoginView.as_view()),
+    # Google OAuth callback with PKCE (secure implementation)
+    path("auth/google/callback/", views.GoogleOAuthCallbackView.as_view()),
     # Organization and profile management
     path("org/", views.OrgProfileCreateView.as_view()),
     path("org/<str:pk>/", views.OrgUpdateView.as_view()),
