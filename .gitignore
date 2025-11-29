@@ -1,28 +1,59 @@
+# Python
 *.pyc
 *~
 *.swo
 *.swp
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
 db.sqlite3
-media
-media-images
-cache
-.idea
+*.log
+media/
+media-images/
+cache/
 static/CACHE
-.sass-cache/
-main.css
-main.css.map
-ref.css
-ref.css.map
-.coverage
-crm/dev_settings\.py
-env
-.env
-docs/build
+staticfiles/
 celerybeat-schedule
 local_settings.py
-media
-.sass-cache
+.env
 server.log
-.vscode
-staticfiles
-.venv
+dump.rdb
+
+# Virtual Environment
+env/
+venv/
+.venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Documentation
+docs/build/
+
+# Node.js / Frontend
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/package-lock.json
+frontend/pnpm-lock.yaml
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

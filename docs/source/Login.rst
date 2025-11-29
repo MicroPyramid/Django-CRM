@@ -1,5 +1,0 @@
-Login
-*****
-
-
-|  **Fig** Login Page
