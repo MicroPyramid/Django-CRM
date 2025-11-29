@@ -121,6 +121,15 @@ class RequireOrgContext:
     def __call__(self, request):
         # Check if path requires org context
         if not self._is_exempt(request.path):
+            # Skip check for URLs that don't resolve (let Django return 404)
+            from django.urls import resolve
+            from django.urls.exceptions import Resolver404
+
+            try:
+                resolve(request.path)
+            except Resolver404:
+                return self.get_response(request)
+
             if not hasattr(request, "org") or request.org is None:
                 from rest_framework.exceptions import PermissionDenied
 

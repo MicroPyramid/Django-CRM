@@ -16,3 +16,6 @@ django-crum==0.7.9
 Redis==5.2.1
 django-phonenumber-field==8.0.0
 arrow==1.3.0
+phonenumbers==9.0.19
+pytz==2025.2
+requests==2.32.5
