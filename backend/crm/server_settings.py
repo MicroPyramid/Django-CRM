@@ -32,7 +32,9 @@ AWS_S3_SECURE_URLS = True
 
 EMAIL_BACKEND = "django_ses.SESBackend"
 
-SESSION_COOKIE_DOMAIN = ".bottlecrm.com"
+SESSION_COOKIE_DOMAIN = ".bottlecrm.io"
+SESSION_COOKIE_SECURE = True      # Only send session cookie over HTTPS
+CSRF_COOKIE_SECURE = True         # Only send CSRF cookie over HTTPS
 
 sentry_sdk.init(
     dsn=os.environ["SENTRY_DSN"],
