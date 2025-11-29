@@ -3,7 +3,7 @@ celery==5.5.3
 python-dotenv==1.0.0
 django-cors-headers==4.6.0
 djangorestframework==3.16.0
-djangorestframework-simplejwt==5.5.0
+djangorestframework-simplejwt==5.5.1
 drf-spectacular==0.28.0
 django-ses==4.3.1
 psycopg2-binary==2.9.11
