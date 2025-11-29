@@ -79,27 +79,29 @@ export async function load({ url, locals, cookies }) {
 			updatedAt: contact.updated_at,
 
 			// Owner info - Django returns assigned_to array
-			owner: contact.assigned_to && contact.assigned_to.length > 0
-				? {
-						id: contact.assigned_to[0].id,
-						name: contact.assigned_to[0].user_details?.email || 'Unknown',
-						email: contact.assigned_to[0].user_details?.email
-					}
-				: contact.created_by
+			owner:
+				contact.assigned_to && contact.assigned_to.length > 0
 					? {
-							id: contact.created_by.id,
-							name: contact.created_by.email,
-							email: contact.created_by.email
+							id: contact.assigned_to[0].id,
+							name: contact.assigned_to[0].user_details?.email || 'Unknown',
+							email: contact.assigned_to[0].user_details?.email
 						}
-					: null,
+					: contact.created_by
+						? {
+								id: contact.created_by.id,
+								name: contact.created_by.email,
+								email: contact.created_by.email
+							}
+						: null,
 
 			// Related accounts
-			relatedAccounts: contact.accounts?.map((account) => ({
-				account: {
-					id: account.id,
-					name: account.name
-				}
-			})) || [],
+			relatedAccounts:
+				contact.accounts?.map((account) => ({
+					account: {
+						id: account.id,
+						name: account.name
+					}
+				})) || [],
 
 			// Counts - Django may not provide _count, use 0 as default
 			_count: {

@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { X, Calendar, User, Building, FileText, Flag, Clock } from '@lucide/svelte';
 
-	/** @type {{ data: import('./$types').PageData, form?: import('./$types').ActionData }} */
+	/** @type {{ data: import('./$types').PageData, form?: any }} */
 	let { data, form } = $props();
 
 	// Get accountId from URL parameters
@@ -102,8 +102,8 @@
 				</div>
 			{/if}
 
-			<form 
-				method="POST" 
+			<form
+				method="POST"
 				use:enhance={() => {
 					isSubmitting = true;
 					return async ({ update }) => {
@@ -117,7 +117,7 @@
 				{#if urlAccountId}
 					<input type="hidden" name="accountId" value={urlAccountId} />
 				{/if}
-				
+
 				<div class="space-y-5">
 					<!-- Task Details Section -->
 					<div>
@@ -311,7 +311,7 @@
 					<button
 						type="button"
 						disabled={isSubmitting}
-						class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-gray-400 dark:focus:ring-offset-gray-800"
+						class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-gray-400 dark:focus:ring-offset-gray-800"
 						onclick={handleCancel}
 					>
 						Cancel
@@ -319,12 +319,23 @@
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400 dark:focus:ring-offset-gray-800"
+						class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400 dark:focus:ring-offset-gray-800"
 					>
 						{#if isSubmitting}
-							<svg class="inline-block w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none">
-								<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
-								<path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+							<svg class="mr-2 inline-block h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+								<circle
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+									class="opacity-25"
+								/>
+								<path
+									fill="currentColor"
+									class="opacity-75"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								/>
 							</svg>
 							Creating Task...
 						{:else}

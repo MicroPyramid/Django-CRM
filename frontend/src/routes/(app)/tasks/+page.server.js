@@ -25,7 +25,7 @@ export async function load({ locals, cookies }) {
 		const data = await apiRequest('/boards/', {}, { cookies, org });
 
 		// Transform Django response to match Prisma format
-		const boards = (data.results || []).map(board => ({
+		const boards = (data.results || []).map((board) => ({
 			id: board.id,
 			name: board.name,
 			createdAt: new Date(board.created_at),
@@ -39,7 +39,6 @@ export async function load({ locals, cookies }) {
 		}));
 
 		return { boards };
-
 	} catch (err) {
 		console.error('Error loading boards:', err);
 
@@ -76,13 +75,16 @@ export const actions = {
 				// default columns are created automatically in Django backend
 			};
 
-			await apiRequest('/boards/', {
-				method: 'POST',
-				body: boardData
-			}, { cookies, org });
+			await apiRequest(
+				'/boards/',
+				{
+					method: 'POST',
+					body: boardData
+				},
+				{ cookies, org }
+			);
 
 			return { success: true };
-
 		} catch (err) {
 			console.error('Error creating board:', err);
 

@@ -23,11 +23,7 @@ export async function load({ params, locals, cookies }) {
 
 	try {
 		// Fetch case details from Django
-		const response = await apiRequest(
-			`/cases/${caseId}/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/cases/${caseId}/`, {}, { cookies, org });
 
 		if (!response.cases_obj) {
 			throw error(404, 'Case not found');
@@ -48,28 +44,33 @@ export async function load({ params, locals, cookies }) {
 			updatedAt: caseData.updated_at,
 
 			// Owner
-			owner: caseData.assigned_to && caseData.assigned_to.length > 0
-				? {
-					id: caseData.assigned_to[0].id,
-					name: caseData.assigned_to[0].user_details?.email || caseData.assigned_to[0].email
-				}
-				: null,
+			owner:
+				caseData.assigned_to && caseData.assigned_to.length > 0
+					? {
+							id: caseData.assigned_to[0].id,
+							name: caseData.assigned_to[0].user_details?.email || caseData.assigned_to[0].email
+						}
+					: null,
 
 			// Account
-			account: caseData.account ? {
-				id: caseData.account.id,
-				name: caseData.account.name
-			} : null,
+			account: caseData.account
+				? {
+						id: caseData.account.id,
+						name: caseData.account.name
+					}
+				: null,
 
 			// Comments
-			comments: (response.comments || []).map(comment => ({
+			comments: (response.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
 				createdAt: comment.created_at,
-				author: comment.commented_by ? {
-					id: comment.commented_by.id,
-					name: comment.commented_by.user_details?.email || comment.commented_by.email
-				} : null
+				author: comment.commented_by
+					? {
+							id: comment.commented_by.id,
+							name: comment.commented_by.user_details?.email || comment.commented_by.email
+						}
+					: null
 			}))
 		};
 

@@ -49,11 +49,7 @@ export async function load({ locals, url, cookies }) {
 		if (tagsFilter) queryParams.append('tags', tagsFilter);
 
 		// Make API request
-		const response = await apiRequest(
-			`/accounts/?${queryParams.toString()}`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/accounts/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Django returns complex structure with active_accounts and closed_accounts
 		// We need to extract based on status filter
@@ -82,14 +78,12 @@ export async function load({ locals, url, cookies }) {
 			const contactCount = account.contacts?.length || 0;
 			const taskCount = account.tasks?.length || 0;
 
-			const openOpportunities = account.opportunities?.filter(
-				(opp) => !['CLOSED_WON', 'CLOSED_LOST'].includes(opp.stage)
-			).length || 0;
+			const openOpportunities =
+				account.opportunities?.filter((opp) => !['CLOSED_WON', 'CLOSED_LOST'].includes(opp.stage))
+					.length || 0;
 
-			const totalOpportunityValue = account.opportunities?.reduce(
-				(sum, opp) => sum + (parseFloat(opp.amount) || 0),
-				0
-			) || 0;
+			const totalOpportunityValue =
+				account.opportunities?.reduce((sum, opp) => sum + (parseFloat(opp.amount) || 0), 0) || 0;
 
 			return {
 				id: account.id,
@@ -112,21 +106,22 @@ export async function load({ locals, url, cookies }) {
 				billingCountry: account.billing_country,
 
 				// Owner - Django returns assigned_to array
-				owner: account.assigned_to && account.assigned_to.length > 0
-					? {
-							id: account.assigned_to[0].id,
-							name: account.assigned_to[0].user_details?.email || 'Unknown',
-							email: account.assigned_to[0].user_details?.email,
-							profilePhoto: account.assigned_to[0].user_details?.profile_pic
-						}
-					: account.created_by
+				owner:
+					account.assigned_to && account.assigned_to.length > 0
 						? {
-								id: account.created_by.id,
-								name: account.created_by.email,
-								email: account.created_by.email,
-								profilePhoto: account.created_by.profile_pic
+								id: account.assigned_to[0].id,
+								name: account.assigned_to[0].user_details?.email || 'Unknown',
+								email: account.assigned_to[0].user_details?.email,
+								profilePhoto: account.assigned_to[0].user_details?.profile_pic
 							}
-						: null,
+						: account.created_by
+							? {
+									id: account.created_by.id,
+									name: account.created_by.email,
+									email: account.created_by.email,
+									profilePhoto: account.created_by.profile_pic
+								}
+							: null,
 
 				// Aggregated data
 				opportunityCount,
@@ -136,10 +131,11 @@ export async function load({ locals, url, cookies }) {
 				totalOpportunityValue,
 
 				// Top contacts for display
-				topContacts: account.contacts?.slice(0, 3).map((contact) => ({
-					id: contact.id,
-					name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
-				})) || [],
+				topContacts:
+					account.contacts?.slice(0, 3).map((contact) => ({
+						id: contact.id,
+						name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+					})) || [],
 
 				// Tags
 				tags: account.tags || []

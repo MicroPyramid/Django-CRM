@@ -31,11 +31,7 @@ export async function load({ locals, cookies }) {
 		});
 
 		// Fetch tasks from Django API
-		const response = await apiRequest(
-			`/tasks/?${queryParams.toString()}`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Handle Django response structure
 		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -60,23 +56,26 @@ export async function load({ locals, cookies }) {
 			updatedAt: task.updated_at,
 
 			// Owner (first assigned user)
-			owner: task.assigned_to && task.assigned_to.length > 0
-				? {
-					id: task.assigned_to[0].id,
-					name: task.assigned_to[0].user_details?.email || task.assigned_to[0].email
-				}
-				: task.created_by
+			owner:
+				task.assigned_to && task.assigned_to.length > 0
 					? {
-						id: task.created_by.id,
-						name: task.created_by.email
-					}
-					: null,
+							id: task.assigned_to[0].id,
+							name: task.assigned_to[0].user_details?.email || task.assigned_to[0].email
+						}
+					: task.created_by
+						? {
+								id: task.created_by.id,
+								name: task.created_by.email
+							}
+						: null,
 
 			// Account
-			account: task.account ? {
-				id: task.account.id,
-				name: task.account.name
-			} : null
+			account: task.account
+				? {
+						id: task.account.id,
+						name: task.account.name
+					}
+				: null
 		}));
 
 		return {

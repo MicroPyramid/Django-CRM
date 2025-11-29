@@ -62,8 +62,8 @@ export async function load({ cookies, locals }) {
 export const actions = {
 	selectOrg: async ({ request, cookies }) => {
 		const formData = await request.formData();
-		const orgId = formData.get('org_id');
-		const orgName = formData.get('org_name');
+		const orgId = formData.get('org_id')?.toString();
+		const orgName = formData.get('org_name')?.toString();
 
 		if (!orgId) {
 			return fail(400, { error: 'Organization ID is required' });

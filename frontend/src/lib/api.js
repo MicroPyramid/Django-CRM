@@ -12,7 +12,9 @@ import { goto } from '$app/navigation';
 
 // API Base URL from environment variables
 // Note: VITE_ prefix is required for client-side env vars
-const API_BASE_URL = env.PUBLIC_DJANGO_API_URL ? `${env.PUBLIC_DJANGO_API_URL}/api` : 'http://localhost:8000/api';
+const API_BASE_URL = env.PUBLIC_DJANGO_API_URL
+	? `${env.PUBLIC_DJANGO_API_URL}/api`
+	: 'http://localhost:8000/api';
 
 /**
  * Storage keys for tokens and org
@@ -148,25 +150,17 @@ async function refreshAccessToken() {
  * Make an authenticated API request
  *
  * @param {string} endpoint - API endpoint (e.g., '/accounts/', '/leads/123/')
- * @param {Object} options - Fetch options
- * @param {string} options.method - HTTP method (GET, POST, PUT, DELETE, etc.)
- * @param {Object} options.body - Request body (will be JSON stringified)
- * @param {Object} options.headers - Additional headers
- * @param {boolean} options.requiresAuth - Whether this endpoint requires authentication (default: true)
- * @returns {Promise<Object>} Response data
+ * @param {{ method?: string, body?: Record<string, unknown> | null, headers?: Record<string, string>, requiresAuth?: boolean }} [options] - Fetch options
+ * @returns {Promise<any>} Response data
  * @throws {Error} If request fails
  */
 export async function apiRequest(endpoint, options = {}) {
-	const {
-		method = 'GET',
-		body = null,
-		headers = {},
-		requiresAuth = true
-	} = options;
+	const { method = 'GET', body = null, headers = {}, requiresAuth = true } = options;
 
 	const url = `${API_BASE_URL}${endpoint}`;
 
 	// Build headers
+	/** @type {Record<string, string>} */
 	const requestHeaders = {
 		'Content-Type': 'application/json',
 		...headers
@@ -182,6 +176,7 @@ export async function apiRequest(endpoint, options = {}) {
 	}
 
 	// Build fetch options
+	/** @type {RequestInit} */
 	const fetchOptions = {
 		method,
 		headers: requestHeaders
@@ -208,7 +203,9 @@ export async function apiRequest(endpoint, options = {}) {
 		// Handle response
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+			throw new Error(
+				errorData.detail || errorData.error || `HTTP ${response.status}: ${response.statusText}`
+			);
 		}
 
 		// Return JSON response
@@ -228,14 +225,16 @@ export const auth = {
 	 * @param {string} email - User email
 	 * @param {string} password - User password
 	 * @param {string} [orgId] - Optional organization ID to login to
-	 * @returns {Promise<Object>} User data with tokens and current_org
+	 * @returns {Promise<any>} User data with tokens and current_org
 	 */
-	async login(email, password, orgId = null) {
+	async login(email, password, orgId = undefined) {
+		/** @type {Record<string, string>} */
 		const body = { email, password };
 		if (orgId) {
 			body.org_id = orgId;
 		}
 
+		/** @type {any} */
 		const data = await apiRequest('/auth/login/', {
 			method: 'POST',
 			body,
@@ -274,9 +273,10 @@ export const auth = {
 	 * Switch to a different organization
 	 * This issues new JWT tokens with the new org context
 	 * @param {string} orgId - Organization UUID to switch to
-	 * @returns {Promise<Object>} New tokens and org data
+	 * @returns {Promise<any>} New tokens and org data
 	 */
 	async switchOrg(orgId) {
+		/** @type {any} */
 		const data = await apiRequest('/auth/switch-org/', {
 			method: 'POST',
 			body: { org_id: orgId }
@@ -335,8 +335,8 @@ function createCrudApi(entityPath) {
 	return {
 		/**
 		 * List entities with pagination and filters
-		 * @param {Object} params - Query parameters
-		 * @returns {Promise<Object>} Paginated list of entities
+		 * @param {Record<string, string>} [params] - Query parameters
+		 * @returns {Promise<any>} Paginated list of entities
 		 */
 		async list(params = {}) {
 			const queryString = new URLSearchParams(params).toString();
@@ -347,7 +347,7 @@ function createCrudApi(entityPath) {
 		/**
 		 * Get a single entity by ID
 		 * @param {string} id - Entity UUID
-		 * @returns {Promise<Object>} Entity data
+		 * @returns {Promise<any>} Entity data
 		 */
 		async get(id) {
 			return await apiRequest(`/${entityPath}/${id}/`);
@@ -355,8 +355,8 @@ function createCrudApi(entityPath) {
 
 		/**
 		 * Create a new entity
-		 * @param {Object} data - Entity data
-		 * @returns {Promise<Object>} Created entity
+		 * @param {Record<string, unknown>} data - Entity data
+		 * @returns {Promise<any>} Created entity
 		 */
 		async create(data) {
 			return await apiRequest(`/${entityPath}/`, {
@@ -368,8 +368,8 @@ function createCrudApi(entityPath) {
 		/**
 		 * Update an entity
 		 * @param {string} id - Entity UUID
-		 * @param {Object} data - Updated entity data
-		 * @returns {Promise<Object>} Updated entity
+		 * @param {Record<string, unknown>} data - Updated entity data
+		 * @returns {Promise<any>} Updated entity
 		 */
 		async update(id, data) {
 			return await apiRequest(`/${entityPath}/${id}/`, {
@@ -381,8 +381,8 @@ function createCrudApi(entityPath) {
 		/**
 		 * Partially update an entity
 		 * @param {string} id - Entity UUID
-		 * @param {Object} data - Partial entity data
-		 * @returns {Promise<Object>} Updated entity
+		 * @param {Record<string, unknown>} data - Partial entity data
+		 * @returns {Promise<any>} Updated entity
 		 */
 		async patch(id, data) {
 			return await apiRequest(`/${entityPath}/${id}/`, {
@@ -394,7 +394,7 @@ function createCrudApi(entityPath) {
 		/**
 		 * Delete an entity
 		 * @param {string} id - Entity UUID
-		 * @returns {Promise<void>}
+		 * @returns {Promise<any>}
 		 */
 		async delete(id) {
 			return await apiRequest(`/${entityPath}/${id}/`, {
@@ -405,7 +405,7 @@ function createCrudApi(entityPath) {
 		/**
 		 * Get comments for an entity
 		 * @param {string} id - Entity UUID
-		 * @returns {Promise<Array>} List of comments
+		 * @returns {Promise<any>} List of comments
 		 */
 		async getComments(id) {
 			return await apiRequest(`/${entityPath}/comment/${id}/`);
@@ -415,7 +415,7 @@ function createCrudApi(entityPath) {
 		 * Add comment to an entity
 		 * @param {string} id - Entity UUID
 		 * @param {string} comment - Comment text
-		 * @returns {Promise<Object>} Created comment
+		 * @returns {Promise<any>} Created comment
 		 */
 		async addComment(id, comment) {
 			return await apiRequest(`/${entityPath}/comment/${id}/`, {
@@ -427,7 +427,7 @@ function createCrudApi(entityPath) {
 		/**
 		 * Get attachments for an entity
 		 * @param {string} id - Entity UUID
-		 * @returns {Promise<Array>} List of attachments
+		 * @returns {Promise<any>} List of attachments
 		 */
 		async getAttachments(id) {
 			return await apiRequest(`/${entityPath}/attachment/${id}/`);

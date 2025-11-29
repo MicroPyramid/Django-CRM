@@ -25,20 +25,18 @@ export async function load({ params, url, locals, cookies }) {
 
 		// If ?commentsOnly=1, return just comments as JSON (for live updates)
 		if (url.searchParams.get('commentsOnly') === '1') {
-			const response = await apiRequest(
-				`/accounts/${accountId}/`,
-				{},
-				{ cookies, org }
-			);
+			const response = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org });
 
-			const comments = (response.comments || []).map(comment => ({
+			const comments = (response.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
 				createdAt: comment.created_at,
-				author: comment.commented_by ? {
-					id: comment.commented_by.id,
-					name: comment.commented_by.user_details?.email || comment.commented_by.email
-				} : null
+				author: comment.commented_by
+					? {
+							id: comment.commented_by.id,
+							name: comment.commented_by.user_details?.email || comment.commented_by.email
+						}
+					: null
 			}));
 
 			return new Response(JSON.stringify({ comments }), {
@@ -47,11 +45,7 @@ export async function load({ params, url, locals, cookies }) {
 		}
 
 		// Fetch full account details from Django
-		const response = await apiRequest(
-			`/accounts/${accountId}/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org });
 
 		if (!response.account_obj) {
 			throw error(404, 'Account not found');
@@ -84,7 +78,7 @@ export async function load({ params, url, locals, cookies }) {
 		};
 
 		// Transform contacts
-		const contacts = (response.contacts || []).map(contact => ({
+		const contacts = (response.contacts || []).map((contact) => ({
 			id: contact.id,
 			firstName: contact.first_name,
 			lastName: contact.last_name,
@@ -96,7 +90,7 @@ export async function load({ params, url, locals, cookies }) {
 		}));
 
 		// Transform opportunities
-		const opportunities = (response.opportunity_list || []).map(opp => ({
+		const opportunities = (response.opportunity_list || []).map((opp) => ({
 			id: opp.id,
 			name: opp.name,
 			amount: opp.amount ? Number(opp.amount) : null,
@@ -106,18 +100,20 @@ export async function load({ params, url, locals, cookies }) {
 		}));
 
 		// Transform comments
-		const comments = (response.comments || []).map(comment => ({
+		const comments = (response.comments || []).map((comment) => ({
 			id: comment.id,
 			body: comment.comment,
 			createdAt: comment.created_at,
-			author: comment.commented_by ? {
-				id: comment.commented_by.id,
-				name: comment.commented_by.user_details?.email || comment.commented_by.email
-			} : null
+			author: comment.commented_by
+				? {
+						id: comment.commented_by.id,
+						name: comment.commented_by.user_details?.email || comment.commented_by.email
+					}
+				: null
 		}));
 
 		// Transform quotes/invoices
-		const quotes = (response.invoices || []).map(invoice => ({
+		const quotes = (response.invoices || []).map((invoice) => ({
 			id: invoice.id,
 			name: invoice.invoice_title || invoice.name,
 			total: invoice.total_amount ? Number(invoice.total_amount) : null,
@@ -125,20 +121,23 @@ export async function load({ params, url, locals, cookies }) {
 		}));
 
 		// Transform tasks
-		const tasks = (response.tasks || []).map(task => ({
+		const tasks = (response.tasks || []).map((task) => ({
 			id: task.id,
 			title: task.title,
 			status: task.status,
 			priority: task.priority,
 			dueDate: task.due_date,
-			owner: task.assigned_to && task.assigned_to.length > 0 ? {
-				id: task.assigned_to[0].id,
-				name: task.assigned_to[0].user_details?.email || task.assigned_to[0].email
-			} : null
+			owner:
+				task.assigned_to && task.assigned_to.length > 0
+					? {
+							id: task.assigned_to[0].id,
+							name: task.assigned_to[0].user_details?.email || task.assigned_to[0].email
+						}
+					: null
 		}));
 
 		// Transform cases
-		const cases = (response.cases || []).map(caseItem => ({
+		const cases = (response.cases || []).map((caseItem) => ({
 			id: caseItem.id,
 			subject: caseItem.name,
 			status: caseItem.status,
@@ -147,7 +146,7 @@ export async function load({ params, url, locals, cookies }) {
 		}));
 
 		// Transform users
-		const users = (response.users || []).map(user => ({
+		const users = (response.users || []).map((user) => ({
 			id: user.id,
 			name: user.user_details?.email || user.email,
 			email: user.user_details?.email || user.email
@@ -170,8 +169,12 @@ export async function load({ params, url, locals, cookies }) {
 	} catch (err) {
 		console.error('Error loading account data:', err);
 		const errorMessage = err instanceof Error ? err.message : 'Error loading account data';
-		const statusCode = err && typeof err === 'object' && 'status' in err ?
-			(typeof err.status === 'number' ? err.status : 500) : 500;
+		const statusCode =
+			err && typeof err === 'object' && 'status' in err
+				? typeof err.status === 'number'
+					? err.status
+					: 500
+				: 500;
 		throw error(statusCode, errorMessage);
 	}
 }
@@ -187,7 +190,10 @@ export const actions = {
 			const closureReason = formData.get('closureReason')?.toString();
 
 			if (!closureReason) {
-				return fail(400, { success: false, message: 'Please provide a reason for closing this account' });
+				return fail(400, {
+					success: false,
+					message: 'Please provide a reason for closing this account'
+				});
 			}
 
 			// Close account via API (Django may not have dedicated endpoint, use PATCH)

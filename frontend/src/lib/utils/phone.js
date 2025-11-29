@@ -7,80 +7,81 @@ import { isValidPhoneNumber, parsePhoneNumber, isPossiblePhoneNumber } from 'lib
  * @returns {{ isValid: boolean, formatted?: string, error?: string }}
  */
 export function validatePhoneNumber(phoneNumber, defaultCountry) {
-    if (!phoneNumber || phoneNumber.trim() === '') {
-        return { isValid: true }; // Allow empty phone numbers
-    }
+	if (!phoneNumber || phoneNumber.trim() === '') {
+		return { isValid: true }; // Allow empty phone numbers
+	}
 
-    const trimmed = phoneNumber.trim();
+	const trimmed = phoneNumber.trim();
 
-    try {
-        // If the number starts with +, validate as international
-        if (trimmed.startsWith('+')) {
-            const isValid = isValidPhoneNumber(trimmed);
-            if (!isValid) {
-                return {
-                    isValid: false,
-                    error: 'Please enter a valid phone number with country code'
-                };
-            }
-            const parsed = parsePhoneNumber(trimmed);
-            return {
-                isValid: true,
-                formatted: parsed.formatInternational()
-            };
-        }
+	try {
+		// If the number starts with +, validate as international
+		if (trimmed.startsWith('+')) {
+			const isValid = isValidPhoneNumber(trimmed);
+			if (!isValid) {
+				return {
+					isValid: false,
+					error: 'Please enter a valid phone number with country code'
+				};
+			}
+			const parsed = parsePhoneNumber(trimmed);
+			return {
+				isValid: true,
+				formatted: parsed.formatInternational()
+			};
+		}
 
-        // For numbers without country code, try with default country if provided
-        if (defaultCountry) {
-            // @ts-ignore - defaultCountry is a valid CountryCode
-            const isValid = isValidPhoneNumber(trimmed, defaultCountry);
-            if (isValid) {
-                // @ts-ignore
-                const parsed = parsePhoneNumber(trimmed, defaultCountry);
-                return {
-                    isValid: true,
-                    formatted: parsed.formatInternational()
-                };
-            }
-        }
+		// For numbers without country code, try with default country if provided
+		if (defaultCountry) {
+			// @ts-ignore - defaultCountry is a valid CountryCode
+			const isValid = isValidPhoneNumber(trimmed, defaultCountry);
+			if (isValid) {
+				// @ts-ignore
+				const parsed = parsePhoneNumber(trimmed, defaultCountry);
+				return {
+					isValid: true,
+					formatted: parsed.formatInternational()
+				};
+			}
+		}
 
-        // Try common countries for numbers without + prefix
-        const commonCountries = ['IN', 'US', 'GB', 'AU', 'CA', 'DE', 'FR'];
-        for (const country of commonCountries) {
-            try {
-                // @ts-ignore
-                if (isValidPhoneNumber(trimmed, country)) {
-                    // @ts-ignore
-                    const parsed = parsePhoneNumber(trimmed, country);
-                    return {
-                        isValid: true,
-                        formatted: parsed.formatInternational()
-                    };
-                }
-            } catch {
-                continue;
-            }
-        }
+		// Try common countries for numbers without + prefix
+		const commonCountries = ['IN', 'US', 'GB', 'AU', 'CA', 'DE', 'FR'];
+		for (const country of commonCountries) {
+			try {
+				// @ts-ignore
+				if (isValidPhoneNumber(trimmed, country)) {
+					// @ts-ignore
+					const parsed = parsePhoneNumber(trimmed, country);
+					return {
+						isValid: true,
+						formatted: parsed.formatInternational()
+					};
+				}
+			} catch {
+				continue;
+			}
+		}
 
-        // If nothing worked, check if it's at least a possible phone number
-        // (has right length, starts with valid digits, etc.)
-        if (isPossiblePhoneNumber(trimmed, 'IN') || isPossiblePhoneNumber(trimmed, 'US')) {
-            return {
-                isValid: true,
-                formatted: trimmed
-            };
-        }
+		// If nothing worked, check if it's at least a possible phone number
+		// (has right length, starts with valid digits, etc.)
+		if (isPossiblePhoneNumber(trimmed, 'IN') || isPossiblePhoneNumber(trimmed, 'US')) {
+			return {
+				isValid: true,
+				formatted: trimmed
+			};
+		}
 
-        return {
-            isValid: false,
-            error: 'Please enter a valid phone number (include country code like +91 for India or +1 for US)'
-        };
-    } catch (error) {
-        return {
-            isValid: false,
-            error: 'Please enter a valid phone number'
-        };
-    }
+		return {
+			isValid: false,
+			error:
+				'Please enter a valid phone number (include country code like +91 for India or +1 for US)'
+		};
+	} catch (error) {
+		return {
+			isValid: false,
+			error: 'Please enter a valid phone number'
+		};
+	}
 }
 
 /**
@@ -90,15 +91,15 @@ export function validatePhoneNumber(phoneNumber, defaultCountry) {
  * @returns {string} Formatted phone number or original if invalid
  */
 export function formatPhoneNumber(phoneNumber, defaultCountry = 'US') {
-    if (!phoneNumber) return '';
-    
-    try {
-        // @ts-ignore - defaultCountry is a valid CountryCode
-        const parsed = parsePhoneNumber(phoneNumber, { defaultCountry });
-        return parsed.formatInternational();
-    } catch {
-        return phoneNumber; // Return original if parsing fails
-    }
+	if (!phoneNumber) return '';
+
+	try {
+		// @ts-ignore - defaultCountry is a valid CountryCode
+		const parsed = parsePhoneNumber(phoneNumber, { defaultCountry });
+		return parsed.formatInternational();
+	} catch {
+		return phoneNumber; // Return original if parsing fails
+	}
 }
 
 /**
@@ -108,46 +109,46 @@ export function formatPhoneNumber(phoneNumber, defaultCountry = 'US') {
  * @returns {string} E.164 formatted phone number or original if invalid
  */
 export function formatPhoneForStorage(phoneNumber, defaultCountry) {
-    if (!phoneNumber) return '';
+	if (!phoneNumber) return '';
 
-    const trimmed = phoneNumber.trim();
+	const trimmed = phoneNumber.trim();
 
-    try {
-        // If starts with +, parse as international
-        if (trimmed.startsWith('+')) {
-            const parsed = parsePhoneNumber(trimmed);
-            return parsed.format('E.164');
-        }
+	try {
+		// If starts with +, parse as international
+		if (trimmed.startsWith('+')) {
+			const parsed = parsePhoneNumber(trimmed);
+			return parsed.format('E.164');
+		}
 
-        // Try with default country first
-        if (defaultCountry) {
-            try {
-                // @ts-ignore
-                const parsed = parsePhoneNumber(trimmed, defaultCountry);
-                if (parsed.isValid()) {
-                    return parsed.format('E.164');
-                }
-            } catch {
-                // Continue to try other countries
-            }
-        }
+		// Try with default country first
+		if (defaultCountry) {
+			try {
+				// @ts-ignore
+				const parsed = parsePhoneNumber(trimmed, defaultCountry);
+				if (parsed.isValid()) {
+					return parsed.format('E.164');
+				}
+			} catch {
+				// Continue to try other countries
+			}
+		}
 
-        // Try common countries
-        const commonCountries = ['IN', 'US', 'GB', 'AU', 'CA', 'DE', 'FR'];
-        for (const country of commonCountries) {
-            try {
-                // @ts-ignore
-                const parsed = parsePhoneNumber(trimmed, country);
-                if (parsed.isValid()) {
-                    return parsed.format('E.164');
-                }
-            } catch {
-                continue;
-            }
-        }
+		// Try common countries
+		const commonCountries = ['IN', 'US', 'GB', 'AU', 'CA', 'DE', 'FR'];
+		for (const country of commonCountries) {
+			try {
+				// @ts-ignore
+				const parsed = parsePhoneNumber(trimmed, country);
+				if (parsed.isValid()) {
+					return parsed.format('E.164');
+				}
+			} catch {
+				continue;
+			}
+		}
 
-        return phoneNumber; // Return original if parsing fails
-    } catch {
-        return phoneNumber; // Return original if parsing fails
-    }
+		return phoneNumber; // Return original if parsing fails
+	} catch {
+		return phoneNumber; // Return original if parsing fails
+	}
 }

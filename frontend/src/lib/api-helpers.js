@@ -10,32 +10,35 @@ import { env } from '$env/dynamic/public';
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
+ * @typedef {import('@sveltejs/kit').Cookies} Cookies
+ */
+
+/**
  * Make authenticated API request to Django backend
  *
  * This helper is designed for SvelteKit server-side use, where cookies
  * are managed by hooks and locals contains the user and org context.
  *
  * @param {string} endpoint - API endpoint (e.g., '/accounts/', '/leads/123/')
- * @param {Object} options - Fetch options
- * @param {string} [options.method='GET'] - HTTP method
- * @param {Object} [options.body] - Request body (will be JSON stringified)
- * @param {Object} [options.headers={}] - Additional headers
- * @param {Object} locals - SvelteKit locals object
- * @param {Object} locals.org - Organization object with id
- * @param {Function} locals.cookies - SvelteKit cookies object (from load function)
- * @returns {Promise<Object>} Response data
+ * @param {{ method?: string, body?: Record<string, unknown>, headers?: Record<string, string> }} options - Fetch options
+ * @param {{ cookies?: Cookies, org?: { id: string } } | Cookies} locals - SvelteKit locals object or cookies directly
+ * @returns {Promise<any>} Response data
  * @throws {Error} If request fails
  */
 export async function apiRequest(endpoint, options = {}, locals) {
-	const { method = 'GET', body, headers = {}, ...fetchOptions } = options;
+	const { method = 'GET', body, headers = {} } = options;
 
 	// Get access token from cookies (server-side)
 	// In server load functions, cookies is passed directly
-	const cookies = locals.cookies || locals;
+	/** @type {Cookies | undefined} */
+	const cookies = /** @type {Cookies | undefined} */ (
+		/** @type {{ cookies?: Cookies }} */ (locals).cookies || locals
+	);
 	// Support both naming conventions (jwt_access from login, access_token from legacy)
-	const accessToken = cookies.get?.('jwt_access') || cookies.get?.('access_token');
+	const accessToken = cookies?.get?.('jwt_access') || cookies?.get?.('access_token');
 
 	// Build request headers
+	/** @type {Record<string, string>} */
 	const requestHeaders = {
 		'Content-Type': 'application/json',
 		...headers
@@ -48,10 +51,10 @@ export async function apiRequest(endpoint, options = {}, locals) {
 	}
 
 	// Build request options
+	/** @type {RequestInit} */
 	const requestOptions = {
 		method,
-		headers: requestHeaders,
-		...fetchOptions
+		headers: requestHeaders
 	};
 
 	// Add body for non-GET requests
@@ -124,14 +127,15 @@ export async function apiRequest(endpoint, options = {}, locals) {
 /**
  * Transform Django field names to camelCase for SvelteKit
  *
- * @param {Object} obj - Django object with snake_case fields
- * @returns {Object} Object with camelCase fields
+ * @param {any} obj - Django object with snake_case fields
+ * @returns {any} Object with camelCase fields
  */
 export function transformFromDjango(obj) {
 	if (!obj) return obj;
 	if (Array.isArray(obj)) return obj.map(transformFromDjango);
 	if (typeof obj !== 'object') return obj;
 
+	/** @type {Record<string, unknown>} */
 	const transformed = {};
 	for (const [key, value] of Object.entries(obj)) {
 		const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -143,14 +147,15 @@ export function transformFromDjango(obj) {
 /**
  * Transform camelCase field names to Django snake_case
  *
- * @param {Object} obj - SvelteKit object with camelCase fields
- * @returns {Object} Object with snake_case fields
+ * @param {any} obj - SvelteKit object with camelCase fields
+ * @returns {any} Object with snake_case fields
  */
 export function transformToDjango(obj) {
 	if (!obj) return obj;
 	if (Array.isArray(obj)) return obj.map(transformToDjango);
 	if (typeof obj !== 'object') return obj;
 
+	/** @type {Record<string, unknown>} */
 	const transformed = {};
 	for (const [key, value] of Object.entries(obj)) {
 		const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
@@ -197,13 +202,9 @@ export function buildQueryParams(filters = {}) {
 /**
  * Extract pagination info from Django response
  *
- * @param {Object} response - Django paginated response
- * @param {number} response.count - Total count
- * @param {string|null} response.next - Next page URL
- * @param {string|null} response.previous - Previous page URL
- * @param {Array} response.results - Results array
- * @param {number} limit - Items per page
- * @returns {Object} Pagination info compatible with SvelteKit
+ * @param {{ count?: number, next?: string | null, previous?: string | null, results?: unknown[] }} response - Django paginated response
+ * @param {number} [limit=10] - Items per page
+ * @returns {{ page: number, limit: number, total: number, totalPages: number, hasNext: boolean, hasPrevious: boolean }} Pagination info compatible with SvelteKit
  */
 export function extractPagination(response, limit = 10) {
 	const total = response.count || 0;

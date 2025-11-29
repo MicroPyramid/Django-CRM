@@ -70,28 +70,33 @@ export async function load({ url, locals, cookies }) {
 			updatedAt: caseItem.updated_at,
 
 			// Owner (first assigned user)
-			owner: caseItem.assigned_to && caseItem.assigned_to.length > 0
-				? {
-					id: caseItem.assigned_to[0].id,
-					name: caseItem.assigned_to[0].user_details?.email || caseItem.assigned_to[0].email
-				}
-				: null,
+			owner:
+				caseItem.assigned_to && caseItem.assigned_to.length > 0
+					? {
+							id: caseItem.assigned_to[0].id,
+							name: caseItem.assigned_to[0].user_details?.email || caseItem.assigned_to[0].email
+						}
+					: null,
 
 			// Account
-			account: caseItem.account ? {
-				id: caseItem.account.id,
-				name: caseItem.account.name
-			} : null,
+			account: caseItem.account
+				? {
+						id: caseItem.account.id,
+						name: caseItem.account.name
+					}
+				: null,
 
 			// Comments (Django might not return by default)
 			comments: (caseItem.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
 				createdAt: comment.created_at,
-				author: comment.commented_by ? {
-					id: comment.commented_by.id,
-					name: comment.commented_by.user_details?.email || comment.commented_by.email
-				} : null
+				author: comment.commented_by
+					? {
+							id: comment.commented_by.id,
+							name: comment.commented_by.user_details?.email || comment.commented_by.email
+						}
+					: null
 			}))
 		}));
 
@@ -229,11 +234,7 @@ export const actions = {
 			}
 
 			// Delete via API
-			await apiRequest(
-				`/cases/${caseId}/`,
-				{ method: 'DELETE' },
-				{ cookies, org: locals.org }
-			);
+			await apiRequest(`/cases/${caseId}/`, { method: 'DELETE' }, { cookies, org: locals.org });
 
 			throw redirect(303, '/cases');
 		} catch (err) {

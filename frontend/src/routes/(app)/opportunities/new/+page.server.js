@@ -216,8 +216,7 @@ export const actions = {
 			console.error('Error creating opportunity:', err);
 			return fail(500, {
 				error:
-					'Failed to create opportunity: ' +
-					(err instanceof Error ? err.message : 'Unknown error')
+					'Failed to create opportunity: ' + (err instanceof Error ? err.message : 'Unknown error')
 			});
 		}
 	}

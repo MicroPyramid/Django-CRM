@@ -15,9 +15,17 @@ import { env } from '$env/dynamic/public';
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
+ * @typedef {{ org_id?: string, user_id?: string, exp?: number, iat?: number }} JWTPayload
+ * @typedef {{ id: string, name: string }} OrgInfo
+ * @typedef {{ org: OrgInfo, role?: string }} ProfileInfo
+ * @typedef {{ organizations?: Array<{ id: string, name: string }> }} UserInfo
+ * @typedef {{ access_token: string, refresh_token: string, current_org?: OrgInfo }} SwitchOrgResult
+ */
+
+/**
  * Decode JWT payload without verification (for reading claims only)
  * @param {string} token - JWT token
- * @returns {Object|null} Decoded payload or null if invalid
+ * @returns {JWTPayload|null} Decoded payload or null if invalid
  */
 function decodeJwtPayload(token) {
 	try {
@@ -28,7 +36,7 @@ function decodeJwtPayload(token) {
 		// Handle base64url encoding
 		const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
 		const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-		return JSON.parse(jsonPayload);
+		return /** @type {JWTPayload} */ (JSON.parse(jsonPayload));
 	} catch (error) {
 		return null;
 	}
@@ -42,13 +50,13 @@ function decodeJwtPayload(token) {
  */
 function tokenHasOrgContext(token, orgId) {
 	const payload = decodeJwtPayload(token);
-	return payload && payload.org_id === orgId;
+	return Boolean(payload && payload.org_id === orgId);
 }
 
 /**
  * Verify JWT token with Django backend
  * @param {string} accessToken - JWT access token
- * @returns {Promise<Object|null>} User data or null if invalid
+ * @returns {Promise<UserInfo|null>} User data or null if invalid
  */
 async function verifyToken(accessToken) {
 	try {
@@ -86,7 +94,7 @@ async function refreshAccessToken(refreshToken) {
 /**
  * Get profile for specific organization
  * @param {string} accessToken - JWT access token
- * @returns {Promise<Object|null>} Profile data or null if invalid
+ * @returns {Promise<ProfileInfo|null>} Profile data or null if invalid
  */
 async function getProfile(accessToken) {
 	try {
@@ -107,11 +115,12 @@ async function getProfile(accessToken) {
  * Switch organization and get new tokens with org context
  * @param {string} accessToken - Current JWT access token
  * @param {string} orgId - Organization UUID to switch to
- * @returns {Promise<Object|null>} New tokens and org data or null if failed
+ * @returns {Promise<SwitchOrgResult|null>} New tokens and org data or null if failed
  */
 async function switchOrg(accessToken, orgId) {
 	try {
-		const response = await axios.post(`${API_BASE_URL}/auth/switch-org/`,
+		const response = await axios.post(
+			`${API_BASE_URL}/auth/switch-org/`,
 			{ org_id: orgId },
 			{
 				headers: {
@@ -131,10 +140,12 @@ async function switchOrg(accessToken, orgId) {
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
 	// Get tokens from cookies
+	/** @type {string | undefined} */
 	let accessToken = event.cookies.get('jwt_access');
 	const refreshToken = event.cookies.get('jwt_refresh');
 	const orgId = event.cookies.get('org');
 
+	/** @type {UserInfo | null} */
 	let user = null;
 
 	// Try to authenticate user
@@ -174,15 +185,17 @@ export async function handle({ event, resolve }) {
 			const userOrg = user.organizations?.find((org) => org.id === orgId);
 
 			if (userOrg) {
+				// accessToken must be defined here since we're inside if (user) block
+				const token = /** @type {string} */ (accessToken);
 				// OPTIMIZATION: Check if token already has correct org context
 				// This avoids unnecessary API calls on every request
-				if (tokenHasOrgContext(accessToken, orgId)) {
+				if (tokenHasOrgContext(token, orgId)) {
 					// Token already has org context, just get profile
-					const profile = await getProfile(accessToken);
+					const profile = await getProfile(token);
 
 					if (profile) {
 						event.locals.org = profile.org;
-						event.locals.profile = profile;
+						/** @type {any} */ (event.locals).profile = profile;
 						event.locals.org_name = profile.org.name;
 					} else {
 						// Profile fetch failed, clear org cookie
@@ -190,7 +203,7 @@ export async function handle({ event, resolve }) {
 					}
 				} else {
 					// Token doesn't have org context, need to switch
-					const switchResult = await switchOrg(accessToken, orgId);
+					const switchResult = await switchOrg(token, orgId);
 
 					if (switchResult) {
 						// Update cookies with new tokens that have org context
@@ -217,7 +230,7 @@ export async function handle({ event, resolve }) {
 
 						if (profile) {
 							event.locals.org = profile.org;
-							event.locals.profile = profile;
+							/** @type {any} */ (event.locals).profile = profile;
 							event.locals.org_name = switchResult.current_org?.name || profile.org.name;
 						} else {
 							// Profile fetch failed, clear org cookie

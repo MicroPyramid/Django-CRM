@@ -21,11 +21,7 @@ export async function load({ params, locals, cookies }) {
 	}
 
 	try {
-		const response = await apiRequest(
-			`/accounts/${params.accountId}/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/accounts/${params.accountId}/`, {}, { cookies, org });
 
 		if (!response.account_obj) {
 			throw error(404, 'Account not found');

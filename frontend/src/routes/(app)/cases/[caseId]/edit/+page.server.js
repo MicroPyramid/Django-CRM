@@ -50,7 +50,9 @@ export async function load({ params, locals, cookies }) {
 			owner: caseData.assigned_to_details?.[0]
 				? {
 						id: caseData.assigned_to_details[0].id,
-						name: caseData.assigned_to_details[0].user_details?.email || caseData.assigned_to_details[0].email
+						name:
+							caseData.assigned_to_details[0].user_details?.email ||
+							caseData.assigned_to_details[0].email
 					}
 				: null,
 			account: caseData.account

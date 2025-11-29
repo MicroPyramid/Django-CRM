@@ -49,28 +49,31 @@ export async function load({ params, locals, cookies }) {
 			updatedAt: oppData.updated_at,
 
 			// Account
-			account: oppData.account ? {
-				id: oppData.account.id,
-				name: oppData.account.name,
-				email: oppData.account.email,
-				phone: oppData.account.phone,
-				industry: oppData.account.industry
-			} : null,
+			account: oppData.account
+				? {
+						id: oppData.account.id,
+						name: oppData.account.name,
+						email: oppData.account.email,
+						phone: oppData.account.phone,
+						industry: oppData.account.industry
+					}
+				: null,
 
 			// Owner
-			owner: oppData.assigned_to && oppData.assigned_to.length > 0
-				? {
-					id: oppData.assigned_to[0].id,
-					name: oppData.assigned_to[0].user_details?.email || oppData.assigned_to[0].email,
-					email: oppData.assigned_to[0].user_details?.email || oppData.assigned_to[0].email
-				}
-				: oppData.created_by
+			owner:
+				oppData.assigned_to && oppData.assigned_to.length > 0
 					? {
-						id: oppData.created_by.id,
-						name: oppData.created_by.email,
-						email: oppData.created_by.email
-					}
-					: null
+							id: oppData.assigned_to[0].id,
+							name: oppData.assigned_to[0].user_details?.email || oppData.assigned_to[0].email,
+							email: oppData.assigned_to[0].user_details?.email || oppData.assigned_to[0].email
+						}
+					: oppData.created_by
+						? {
+								id: oppData.created_by.id,
+								name: oppData.created_by.email,
+								email: oppData.created_by.email
+							}
+						: null
 		};
 
 		// Account data (for compatibility)

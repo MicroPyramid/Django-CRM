@@ -35,11 +35,7 @@ export async function load({ locals, cookies }) {
 
 	try {
 		// Fetch opportunities from Django API
-		const response = await apiRequest(
-			'/opportunities/',
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest('/opportunities/', {}, { cookies, org });
 
 		// Handle Django response structure
 		let opportunities = [];
@@ -66,26 +62,29 @@ export async function load({ locals, cookies }) {
 			updatedAt: opp.updated_at,
 
 			// Account information
-			account: opp.account ? {
-				id: opp.account.id,
-				name: opp.account.name,
-				type: opp.account.type || opp.account.account_type
-			} : null,
+			account: opp.account
+				? {
+						id: opp.account.id,
+						name: opp.account.name,
+						type: opp.account.type || opp.account.account_type
+					}
+				: null,
 
 			// Owner information (assigned_to in Django)
-			owner: opp.assigned_to && opp.assigned_to.length > 0
-				? {
-					id: opp.assigned_to[0].id,
-					name: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email,
-					email: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email
-				}
-				: opp.created_by
+			owner:
+				opp.assigned_to && opp.assigned_to.length > 0
 					? {
-						id: opp.created_by.id,
-						name: opp.created_by.email,
-						email: opp.created_by.email
-					}
-					: null,
+							id: opp.assigned_to[0].id,
+							name: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email,
+							email: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email
+						}
+					: opp.created_by
+						? {
+								id: opp.created_by.id,
+								name: opp.created_by.email,
+								email: opp.created_by.email
+							}
+						: null,
 
 			// Contacts
 			contacts: (opp.contacts || []).map((contact) => ({
@@ -107,10 +106,10 @@ export async function load({ locals, cookies }) {
 			total: transformedOpportunities.length,
 			totalValue: transformedOpportunities.reduce((sum, opp) => sum + (opp.amount || 0), 0),
 			wonValue: transformedOpportunities
-				.filter(opp => opp.stage === 'CLOSED WON')
+				.filter((opp) => opp.stage === 'CLOSED WON')
 				.reduce((sum, opp) => sum + (opp.amount || 0), 0),
 			pipeline: transformedOpportunities
-				.filter(opp => !['CLOSED WON', 'CLOSED LOST'].includes(opp.stage))
+				.filter((opp) => !['CLOSED WON', 'CLOSED LOST'].includes(opp.stage))
 				.reduce((sum, opp) => sum + (opp.amount || 0), 0)
 		};
 
@@ -138,11 +137,7 @@ export const actions = {
 			}
 
 			// Delete via API
-			await apiRequest(
-				`/opportunities/${opportunityId}/`,
-				{ method: 'DELETE' },
-				{ cookies, org }
-			);
+			await apiRequest(`/opportunities/${opportunityId}/`, { method: 'DELETE' }, { cookies, org });
 
 			return { success: true, message: 'Opportunity deleted successfully' };
 		} catch (err) {

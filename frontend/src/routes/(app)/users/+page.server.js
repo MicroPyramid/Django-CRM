@@ -37,8 +37,8 @@ async function apiRequest(endpoint, options = {}, context) {
 		...options,
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${accessToken}`,
-			'org': org.id,
+			Authorization: `Bearer ${accessToken}`,
+			org: org.id,
 			...options.headers
 		}
 	});
@@ -66,11 +66,11 @@ export async function load({ locals, cookies }) {
 
 		// Check if current user is admin
 		// Django returns user_details with id and email
-		const currentUserProfile = activeUsers.find(p =>
-			p.user_details?.id === user.id ||
-			p.user_details?.email === user.email
+		const currentUserProfile = activeUsers.find(
+			(p) => p.user_details?.id === user.id || p.user_details?.email === user.email
 		);
-		const isAdmin = currentUserProfile?.role === 'ADMIN' || currentUserProfile?.is_organization_admin;
+		const isAdmin =
+			currentUserProfile?.role === 'ADMIN' || currentUserProfile?.is_organization_admin;
 
 		if (!isAdmin) {
 			return {
@@ -82,7 +82,7 @@ export async function load({ locals, cookies }) {
 
 		// Combine active and inactive users, transform to match Prisma format
 		const allUsers = [
-			...activeUsers.map(profile => ({
+			...activeUsers.map((profile) => ({
 				userId: profile.user_details?.id || profile.id,
 				organizationId: org.id,
 				role: profile.role,
@@ -94,7 +94,7 @@ export async function load({ locals, cookies }) {
 				isActive: true,
 				profile
 			})),
-			...inactiveUsers.map(profile => ({
+			...inactiveUsers.map((profile) => ({
 				userId: profile.user_details?.id || profile.id,
 				organizationId: org.id,
 				role: profile.role,
@@ -147,13 +147,16 @@ export const actions = {
 			}
 
 			// Update organization via Django API
-			await apiRequest(`/org/${org.id}/`, {
-				method: 'PUT',
-				body: JSON.stringify({ name })
-			}, { cookies, org });
+			await apiRequest(
+				`/org/${org.id}/`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({ name })
+				},
+				{ cookies, org }
+			);
 
 			return { success: true };
-
 		} catch (err) {
 			console.error('Error updating organization:', err);
 			return fail(500, { error: err.message || 'Failed to update organization' });
@@ -182,20 +185,26 @@ export const actions = {
 				role,
 				// Django requires these fields for user creation
 				username: email.split('@')[0],
-				password: Math.random().toString(36).slice(-12), // Random password
+				password: Math.random().toString(36).slice(-12) // Random password
 			};
 
-			await apiRequest('/users/', {
-				method: 'POST',
-				body: JSON.stringify(userData)
-			}, { cookies, org });
+			await apiRequest(
+				'/users/',
+				{
+					method: 'POST',
+					body: JSON.stringify(userData)
+				},
+				{ cookies, org }
+			);
 
 			return { success: true };
-
 		} catch (err) {
 			console.error('Error adding user:', err);
 			// Check for specific error messages
-			if (err.message.includes('already exists') || err.message.includes('already in organization')) {
+			if (
+				err.message.includes('already exists') ||
+				err.message.includes('already in organization')
+			) {
 				return fail(400, { error: 'User already in organization' });
 			}
 			if (err.message.includes('not found')) {
@@ -228,13 +237,16 @@ export const actions = {
 
 			// Update user role via Django API
 			// Django endpoint: PUT /api/user/{id}/
-			await apiRequest(`/user/${user_id}/`, {
-				method: 'PUT',
-				body: JSON.stringify({ role })
-			}, { cookies, org });
+			await apiRequest(
+				`/user/${user_id}/`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({ role })
+				},
+				{ cookies, org }
+			);
 
 			return { success: true };
-
 		} catch (err) {
 			console.error('Error editing role:', err);
 			if (err.message.includes('at least one admin')) {
@@ -266,13 +278,16 @@ export const actions = {
 
 			// Remove user via Django API (soft delete - set is_active=False)
 			// Django endpoint: PUT /api/user/{id}/status/
-			await apiRequest(`/user/${user_id}/status/`, {
-				method: 'POST',
-				body: JSON.stringify({ is_active: false })
-			}, { cookies, org });
+			await apiRequest(
+				`/user/${user_id}/status/`,
+				{
+					method: 'POST',
+					body: JSON.stringify({ is_active: false })
+				},
+				{ cookies, org }
+			);
 
 			return { success: true };
-
 		} catch (err) {
 			console.error('Error removing user:', err);
 			if (err.message.includes('at least one admin')) {

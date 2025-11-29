@@ -169,7 +169,8 @@ export const actions = {
 		} catch (err) {
 			console.error('Error updating contact:', err);
 			return fail(500, {
-				error: 'Failed to update contact: ' + (err instanceof Error ? err.message : 'Unknown error'),
+				error:
+					'Failed to update contact: ' + (err instanceof Error ? err.message : 'Unknown error'),
 				values: {
 					firstName,
 					lastName,

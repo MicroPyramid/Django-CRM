@@ -24,11 +24,7 @@ export async function load({ params, locals, cookies }) {
 
 	try {
 		// Fetch task details from Django
-		const response = await apiRequest(
-			`/tasks/${task_id}/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/tasks/${task_id}/`, {}, { cookies, org });
 
 		if (!response.task_obj) {
 			return fail(404, { message: 'Task not found or you do not have permission to view it.' });
@@ -47,35 +43,40 @@ export async function load({ params, locals, cookies }) {
 			updatedAt: taskData.updated_at,
 
 			// Owner
-			owner: taskData.assigned_to && taskData.assigned_to.length > 0
-				? {
-					id: taskData.assigned_to[0].id,
-					name: taskData.assigned_to[0].user_details?.email || taskData.assigned_to[0].email,
-					profilePhoto: taskData.assigned_to[0].profile_photo || null
-				}
-				: null,
+			owner:
+				taskData.assigned_to && taskData.assigned_to.length > 0
+					? {
+							id: taskData.assigned_to[0].id,
+							name: taskData.assigned_to[0].user_details?.email || taskData.assigned_to[0].email,
+							profilePhoto: taskData.assigned_to[0].profile_photo || null
+						}
+					: null,
 
 			// Account
-			account: taskData.account ? {
-				id: taskData.account.id,
-				name: taskData.account.name
-			} : null,
+			account: taskData.account
+				? {
+						id: taskData.account.id,
+						name: taskData.account.name
+					}
+				: null,
 
 			// Comments
-			comments: (response.comments || []).map(comment => ({
+			comments: (response.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
 				createdAt: comment.created_at,
-				author: comment.commented_by ? {
-					id: comment.commented_by.id,
-					name: comment.commented_by.user_details?.email || comment.commented_by.email,
-					profilePhoto: comment.commented_by.profile_photo || null
-				} : null
+				author: comment.commented_by
+					? {
+							id: comment.commented_by.id,
+							name: comment.commented_by.user_details?.email || comment.commented_by.email,
+							profilePhoto: comment.commented_by.profile_photo || null
+						}
+					: null
 			}))
 		};
 
 		// Transform users list
-		const users = (response.users || []).map(user => ({
+		const users = (response.users || []).map((user) => ({
 			id: user.id,
 			name: user.user_details?.email || user.email,
 			profilePhoto: user.profile_photo || null
@@ -89,17 +90,19 @@ export async function load({ params, locals, cookies }) {
 			accounts = response.accounts;
 		}
 
-		const transformedAccounts = accounts.map(account => ({
+		const transformedAccounts = accounts.map((account) => ({
 			id: account.id,
 			name: account.name
 		}));
 
 		// Logged in user info
-		const loggedInUser = user ? {
-			id: user.id,
-			name: user.name,
-			profilePhoto: user.profilePhoto || null
-		} : null;
+		const loggedInUser = user
+			? {
+					id: user.id,
+					name: user.name,
+					profilePhoto: user.profilePhoto || null
+				}
+			: null;
 
 		return {
 			task,

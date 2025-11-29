@@ -26,11 +26,7 @@
 		Check
 	} from '@lucide/svelte';
 
-	let { 
-		drawerHidden = $bindable(false),
-		user = {},
-		org_name = 'BottleCRM'
-	} = $props();
+	let { drawerHidden = $bindable(false), user = {}, org_name = 'BottleCRM' } = $props();
 
 	/** @type {'light' | 'system' | 'dark'} */
 	let theme = $state('system');
@@ -112,10 +108,10 @@
 	const handleSettingsLinkClick = (/** @type {any} */ event, /** @type {any} */ href) => {
 		event.preventDefault();
 		event.stopPropagation();
-		
+
 		// Close the dropdown
 		userDropdownOpen = false;
-		
+
 		// Navigate to the intended URL
 		window.location.href = href;
 	};
@@ -234,24 +230,26 @@
 </script>
 
 <aside
-	class={`fixed inset-0 z-30 flex-none h-full w-64 lg:h-auto border-e border-gray-200 dark:border-gray-600 lg:overflow-y-visible lg:block ${drawerHidden ? 'hidden' : ''}`}
+	class={`fixed inset-0 z-30 h-full w-64 flex-none border-e border-gray-200 lg:block lg:h-auto lg:overflow-y-visible dark:border-gray-600 ${drawerHidden ? 'hidden' : ''}`}
 >
-	<div class="flex flex-col h-full bg-white dark:bg-gray-900">
+	<div class="flex h-full flex-col bg-white dark:bg-gray-900">
 		<!-- Header section with logo and mobile close button -->
-		<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+		<div
+			class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700"
+		>
 			<a href="/" class="flex items-center gap-3">
 				<img src={imgLogo} class="h-8 w-auto" alt="BottleCRM Logo" />
-				<span class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+				<span class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
 					{org_name}
 				</span>
 			</a>
-			
+
 			<!-- Mobile close button -->
 			<button
 				onclick={closeDrawer}
-				class="p-2 text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-gray-600 transition-colors"
+				class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 focus:ring-2 focus:ring-gray-200 focus:outline-none lg:hidden dark:text-gray-400 dark:hover:bg-gray-800 dark:focus:ring-gray-600"
 			>
-				<X class="w-5 h-5" />
+				<X class="h-5 w-5" />
 			</button>
 		</div>
 
@@ -262,41 +260,43 @@
 					{#if item.type === 'link'}
 						<a
 							href={item.href}
-							class={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-								mainSidebarUrl === item.href 
-									? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-400' 
+							class={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+								mainSidebarUrl === item.href
+									? 'border-r-2 border-blue-700 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-400'
 									: 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
 							}`}
 						>
-							<item.icon class="w-5 h-5" />
+							<item.icon class="h-5 w-5" />
 							<span>{item.label}</span>
 						</a>
 					{:else if item.type === 'dropdown'}
 						<div class="space-y-1">
 							<button
 								type="button"
-								class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+								class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
 								onclick={() => toggleDropdown(item.key)}
 							>
 								<div class="flex items-center gap-3">
-									<item.icon class="w-5 h-5" />
+									<item.icon class="h-5 w-5" />
 									<span>{item.label}</span>
 								</div>
-								<ChevronDown class={`w-4 h-4 transition-transform duration-200 ${item.key && openDropdowns[item.key] ? 'rotate-180' : ''}`} />
+								<ChevronDown
+									class={`h-4 w-4 transition-transform duration-200 ${item.key && openDropdowns[item.key] ? 'rotate-180' : ''}`}
+								/>
 							</button>
-							
+
 							{#if item.key && openDropdowns[item.key] && item.children}
-								<div class="ml-8 space-y-1 border-l-2 border-gray-100 dark:border-gray-700 pl-4">
+								<div class="ml-8 space-y-1 border-l-2 border-gray-100 pl-4 dark:border-gray-700">
 									{#each item.children as child}
 										<a
 											href={child.href}
-											class={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
-												mainSidebarUrl === child.href 
-													? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-900/20 dark:text-blue-400' 
+											class={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
+												mainSidebarUrl === child.href
+													? 'bg-blue-50 font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
 													: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300'
 											}`}
 										>
-											<child.icon class="w-4 h-4" />
+											<child.icon class="h-4 w-4" />
 											<span>{child.label}</span>
 										</a>
 									{/each}
@@ -309,68 +309,70 @@
 		</div>
 
 		<!-- settings section -->
-		<div class="p-4 border-t border-gray-200 dark:border-gray-700" bind:this={dropdownRef}>
-			<div class="flex items-center gap-3 mb-3">
-				<img class="w-10 h-10 rounded-lg object-cover" src={user.profilePhoto} alt="User avatar" />
-				<div class="flex-1 min-w-0">
-					<div class="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</div>
-					<div class="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
+		<div class="border-t border-gray-200 p-4 dark:border-gray-700" bind:this={dropdownRef}>
+			<div class="mb-3 flex items-center gap-3">
+				<img class="h-10 w-10 rounded-lg object-cover" src={user.profilePhoto} alt="User avatar" />
+				<div class="min-w-0 flex-1">
+					<div class="truncate text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
+					<div class="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
 				</div>
 			</div>
-			
+
 			<!-- Quick actions -->
 			<div class="flex items-center justify-between">
 				<div class="relative" bind:this={themeDropdownRef}>
 					<button
 						onclick={toggleThemeDropdown}
-						class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+						class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
 						title="Theme"
 					>
 						{#if theme === 'dark'}
-							<Moon class="w-4 h-4" />
+							<Moon class="h-4 w-4" />
 						{:else if theme === 'light'}
-							<Sun class="w-4 h-4" />
+							<Sun class="h-4 w-4" />
 						{:else}
-							<Monitor class="w-4 h-4" />
+							<Monitor class="h-4 w-4" />
 						{/if}
 					</button>
 
 					{#if themeDropdownOpen}
-						<div class="absolute bottom-full left-0 mb-2 w-36 p-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
+						<div
+							class="absolute bottom-full left-0 mb-2 w-36 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
 							<button
 								onclick={() => setTheme('light')}
-								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+								class="flex w-full items-center justify-between rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 							>
 								<span class="flex items-center gap-2">
-									<Sun class="w-4 h-4" />
+									<Sun class="h-4 w-4" />
 									Light
 								</span>
 								{#if theme === 'light'}
-									<Check class="w-4 h-4 text-blue-500" />
+									<Check class="h-4 w-4 text-blue-500" />
 								{/if}
 							</button>
 							<button
 								onclick={() => setTheme('system')}
-								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+								class="flex w-full items-center justify-between rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 							>
 								<span class="flex items-center gap-2">
-									<Monitor class="w-4 h-4" />
+									<Monitor class="h-4 w-4" />
 									System
 								</span>
 								{#if theme === 'system'}
-									<Check class="w-4 h-4 text-blue-500" />
+									<Check class="h-4 w-4 text-blue-500" />
 								{/if}
 							</button>
 							<button
 								onclick={() => setTheme('dark')}
-								class="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+								class="flex w-full items-center justify-between rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 							>
 								<span class="flex items-center gap-2">
-									<Moon class="w-4 h-4" />
+									<Moon class="h-4 w-4" />
 									Dark
 								</span>
 								{#if theme === 'dark'}
-									<Check class="w-4 h-4 text-blue-500" />
+									<Check class="h-4 w-4 text-blue-500" />
 								{/if}
 							</button>
 						</div>
@@ -379,53 +381,55 @@
 
 				<button
 					onclick={toggleUserDropdown}
-					class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
 					title="User menu"
 				>
-					<Settings class="w-4 h-4" />
+					<Settings class="h-4 w-4" />
 				</button>
 			</div>
 
 			<!-- settings dropdown menu -->
 			{#if userDropdownOpen}
-				<div 
-					class="mt-3 p-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+				<div
+					class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800"
 					onclick={handleDropdownClick}
-					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDropdownClick(e); }}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') handleDropdownClick(e);
+					}}
 					tabindex="0"
 					role="menu"
 				>
 					<button
 						type="button"
 						onclick={(e) => handleSettingsLinkClick(e, '/profile')}
-						class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors w-full text-left"
+						class="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700"
 					>
-						<User class="w-4 h-4" />
+						<User class="h-4 w-4" />
 						Profile
 					</button>
 					<button
 						type="button"
 						onclick={(e) => handleSettingsLinkClick(e, '/users')}
-						class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors w-full text-left"
+						class="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700"
 					>
-						<Users class="w-4 h-4" />
+						<Users class="h-4 w-4" />
 						Users
 					</button>
 					<button
 						type="button"
 						onclick={(e) => handleSettingsLinkClick(e, '/org')}
-						class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors w-full text-left"
+						class="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700"
 					>
-						<Building class="w-4 h-4" />
+						<Building class="h-4 w-4" />
 						Organizations
 					</button>
 					<hr class="my-1 border-gray-200 dark:border-gray-600" />
 					<button
 						type="button"
 						onclick={(e) => handleSettingsLinkClick(e, '/logout')}
-						class="flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded transition-colors w-full text-left"
+						class="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
 					>
-						<LogOut class="w-4 h-4" />
+						<LogOut class="h-4 w-4" />
 						Sign out
 					</button>
 				</div>
@@ -436,7 +440,7 @@
 
 <div
 	hidden={drawerHidden}
-	class="fixed inset-0 z-20 bg-gray-900/50 dark:bg-gray-900/60 lg:hidden"
+	class="fixed inset-0 z-20 bg-gray-900/50 lg:hidden dark:bg-gray-900/60"
 	onclick={closeDrawer}
 	onkeydown={closeDrawer}
 	role="presentation"

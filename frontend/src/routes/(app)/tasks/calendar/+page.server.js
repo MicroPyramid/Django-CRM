@@ -31,11 +31,7 @@ export async function load({ locals, cookies }) {
 		});
 
 		// Fetch tasks from Django API
-		const response = await apiRequest(
-			`/tasks/?${queryParams.toString()}`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Handle Django response structure
 		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -49,7 +45,7 @@ export async function load({ locals, cookies }) {
 		}
 
 		// Filter tasks with due dates only (Django might return all tasks)
-		const tasksWithDueDates = allTasks.filter(task => task.due_date !== null);
+		const tasksWithDueDates = allTasks.filter((task) => task.due_date !== null);
 
 		// Transform Django tasks to Prisma structure
 		const transformedTasks = tasksWithDueDates.map((task) => ({

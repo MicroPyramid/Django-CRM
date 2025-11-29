@@ -159,18 +159,19 @@ export const actions = {
 			const title = formData.get('title')?.toString();
 			const description = formData.get('description')?.toString();
 			const columnId = formData.get('columnId')?.toString();
-			const order = formData.get('order');
+			const order = formData.get('order')?.toString();
 			const priority = formData.get('priority')?.toString();
 
 			if (!taskId) {
 				return fail(400, { error: 'Task ID is required' });
 			}
 
+			/** @type {Record<string, unknown>} */
 			const updateData = {};
 			if (title) updateData.title = title;
 			if (description !== undefined) updateData.description = description;
 			if (columnId) updateData.column = columnId;
-			if (order !== null) updateData.order = parseInt(order);
+			if (order) updateData.order = parseInt(order);
 			if (priority) updateData.priority = priority;
 
 			await apiRequest(

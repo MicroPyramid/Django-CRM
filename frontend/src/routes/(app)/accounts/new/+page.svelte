@@ -170,7 +170,7 @@
 <div class="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
 	<!-- Toast notification -->
 	{#if showToast}
-		<div class="fixed right-4 top-4 z-50" in:fade>
+		<div class="fixed top-4 right-4 z-50" in:fade>
 			<div
 				class="flex items-center rounded-lg p-4 shadow-lg {toastType === 'success'
 					? 'border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
@@ -194,7 +194,7 @@
 				</div>
 				<button
 					onclick={() => (showToast = false)}
-					class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 {toastType === 'success'
+					class="-mx-1.5 -my-1.5 ml-auto rounded-lg p-1.5 {toastType === 'success'
 						? 'text-green-500 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-800/30'
 						: 'text-red-500 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-800/30'}"
 				>
@@ -212,9 +212,7 @@
 			<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
 				<div class="flex items-center justify-between">
 					<div>
-						<h1
-							class="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white"
-						>
+						<h1 class="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
 							<Building class="h-6 w-6 text-blue-600 dark:text-blue-400" />
 							Create New Account
 						</h1>
@@ -276,9 +274,7 @@
 				class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
 				<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-					<h2
-						class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white"
-					>
+					<h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
 						<Briefcase class="h-5 w-5 text-blue-600 dark:text-blue-400" />
 						Account Information
 					</h2>
@@ -388,9 +384,7 @@
 				class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
 				<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-					<h2
-						class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white"
-					>
+					<h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
 						<DollarSign class="h-5 w-5 text-green-600 dark:text-green-400" />
 						Business Information
 					</h2>
@@ -484,9 +478,7 @@
 				class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
 				<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-					<h2
-						class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white"
-					>
+					<h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
 						<Users class="h-5 w-5 text-purple-600 dark:text-purple-400" />
 						Assignment
 					</h2>
@@ -555,9 +547,7 @@
 				class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
 				<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-					<h2
-						class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white"
-					>
+					<h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
 						<MapPin class="h-5 w-5 text-orange-600 dark:text-orange-400" />
 						Address
 					</h2>
@@ -586,8 +576,7 @@
 						<div>
 							<label
 								for="city"
-								class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-								>City</label
+								class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">City</label
 							>
 							<input
 								id="city"
@@ -603,8 +592,7 @@
 						<div>
 							<label
 								for="state"
-								class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-								>State</label
+								class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">State</label
 							>
 							<input
 								id="state"
@@ -662,9 +650,7 @@
 				class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
 				<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-					<h2
-						class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white"
-					>
+					<h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
 						<FileText class="h-5 w-5 text-gray-600 dark:text-gray-400" />
 						Notes
 					</h2>
@@ -677,7 +663,7 @@
 						oninput={handleChange}
 						placeholder="Additional notes about this account..."
 						rows="4"
-						class="w-full resize-vertical rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+						class="resize-vertical w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
 					></textarea>
 				</div>
 			</div>

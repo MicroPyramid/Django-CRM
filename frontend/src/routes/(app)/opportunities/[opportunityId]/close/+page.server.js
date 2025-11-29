@@ -136,7 +136,8 @@ export const actions = {
 
 			console.error('Error closing opportunity:', err);
 			return fail(500, {
-				error: 'Failed to close opportunity: ' + (err instanceof Error ? err.message : 'Unknown error'),
+				error:
+					'Failed to close opportunity: ' + (err instanceof Error ? err.message : 'Unknown error'),
 				values: { status, closeDate, closeReason }
 			});
 		}

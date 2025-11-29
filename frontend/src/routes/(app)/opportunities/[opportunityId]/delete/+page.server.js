@@ -49,8 +49,12 @@ export async function load({ params, locals, cookies }) {
 			owner: oppData.assigned_to_details?.[0]
 				? {
 						id: oppData.assigned_to_details[0].id,
-						name: oppData.assigned_to_details[0].user_details?.email || oppData.assigned_to_details[0].email,
-						email: oppData.assigned_to_details[0].user_details?.email || oppData.assigned_to_details[0].email
+						name:
+							oppData.assigned_to_details[0].user_details?.email ||
+							oppData.assigned_to_details[0].email,
+						email:
+							oppData.assigned_to_details[0].user_details?.email ||
+							oppData.assigned_to_details[0].email
 					}
 				: null
 		};
@@ -87,7 +91,8 @@ export const actions = {
 		} catch (err) {
 			console.error('Error deleting opportunity:', err);
 			return fail(500, {
-				message: 'Failed to delete opportunity: ' + (err instanceof Error ? err.message : 'Unknown error')
+				message:
+					'Failed to delete opportunity: ' + (err instanceof Error ? err.message : 'Unknown error')
 			});
 		}
 	}

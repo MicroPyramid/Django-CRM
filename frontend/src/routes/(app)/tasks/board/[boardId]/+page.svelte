@@ -114,6 +114,8 @@
 			<div
 				class="kanban-column"
 				class:drag-over={dragOverColumn === column.id}
+				role="region"
+				aria-label="{column.name} column"
 				on:dragover={(e) => handleDragOver(e, column.id)}
 				on:dragleave={handleDragLeave}
 				on:drop={(e) => handleDrop(e, column.id)}
@@ -129,6 +131,8 @@
 							class="task-card"
 							class:completed={task.isCompleted}
 							class:overdue={task.isOverdue}
+							role="listitem"
+							aria-label="Task: {task.title}"
 							draggable="true"
 							on:dragstart={(e) => handleDragStart(e, task, column.id)}
 							on:dragend={handleDragEnd}
@@ -186,7 +190,6 @@
 								bind:value={newTaskTitle}
 								placeholder="Task title"
 								required
-								autofocus
 							/>
 							<textarea
 								name="description"
@@ -239,7 +242,6 @@
 						bind:value={newColumnName}
 						placeholder="Column name"
 						required
-						autofocus
 					/>
 					<input type="color" name="color" bind:value={newColumnColor} />
 					<div class="form-actions">
@@ -355,7 +357,9 @@
 		margin-bottom: 0.5rem;
 		box-shadow: 0 1px 3px rgba(9, 30, 66, 0.13);
 		cursor: grab;
-		transition: box-shadow 0.15s, transform 0.1s;
+		transition:
+			box-shadow 0.15s,
+			transform 0.1s;
 	}
 
 	.task-card:hover {
@@ -388,6 +392,7 @@
 		margin-bottom: 0.5rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
@@ -454,7 +459,9 @@
 		cursor: pointer;
 		text-align: left;
 		border-radius: 4px;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 	}
 
 	.add-task-btn:hover,

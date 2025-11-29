@@ -53,14 +53,11 @@ export async function load({ params, locals, cookies }) {
 			accounts: transformedAccounts
 		};
 	} catch (err) {
-		if (err.message.includes('404') || err.message.includes('not found')) {
+		if (err.message?.includes('404') || err.message?.includes('not found')) {
 			throw error(404, 'Invoice not found');
 		}
 		console.error('Failed to load invoice:', err);
-		throw error(500, {
-			message: 'Failed to load invoice. Please try again.',
-			details: err.message
-		});
+		throw error(500, `Failed to load invoice: ${err.message}`);
 	}
 }
 

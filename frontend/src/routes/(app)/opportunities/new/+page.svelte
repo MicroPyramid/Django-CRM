@@ -78,19 +78,19 @@
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
 	<!-- Header -->
-	<div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-		<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-			<div class="flex items-center justify-between h-16">
+	<div class="border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+		<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center space-x-4">
 					<button
 						onclick={() => history.back()}
-						class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+						class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
 					>
-						<ArrowLeft class="w-5 h-5" />
+						<ArrowLeft class="h-5 w-5" />
 					</button>
 					<div class="flex items-center space-x-3">
-						<div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-							<Target class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+						<div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900">
+							<Target class="h-6 w-6 text-purple-600 dark:text-purple-400" />
 						</div>
 						<div>
 							<h1 class="text-xl font-semibold text-gray-900 dark:text-white">New Opportunity</h1>
@@ -103,10 +103,10 @@
 	</div>
 
 	<!-- Form -->
-	<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
 		{#if form?.error}
 			<div
-				class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+				class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
 			>
 				<p class="text-red-600 dark:text-red-400">{form.error}</p>
 			</div>
@@ -114,7 +114,7 @@
 
 		{#if form?.status === 'success'}
 			<div
-				class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+				class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"
 			>
 				<p class="text-green-600 dark:text-green-400">{form.message}</p>
 			</div>
@@ -141,19 +141,19 @@
 		>
 			<!-- Section 1: Opportunity Information -->
 			<div
-				class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+				class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
-				<h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center">
-					<Target class="w-5 h-5 mr-2 text-purple-500" />
+				<h2 class="mb-6 flex items-center text-lg font-medium text-gray-900 dark:text-white">
+					<Target class="mr-2 h-5 w-5 text-purple-500" />
 					Opportunity Information
 				</h2>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					<!-- Name -->
 					<div class="md:col-span-2">
 						<label
 							for="name"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Opportunity Name *
 						</label>
@@ -163,7 +163,7 @@
 							name="name"
 							bind:value={formData.name}
 							required
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 							placeholder="Enter opportunity name"
 						/>
 					</div>
@@ -172,7 +172,7 @@
 					<div>
 						<label
 							for="account"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Account
 						</label>
@@ -181,7 +181,7 @@
 							name="account"
 							bind:value={formData.account}
 							disabled={!!data.data.preSelectedAccountId}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							<option value="">Select an account</option>
 							{#each data.data.accounts as account}
@@ -199,7 +199,7 @@
 					<div>
 						<label
 							for="stage"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Stage *
 						</label>
@@ -208,7 +208,7 @@
 							name="stage"
 							bind:value={formData.stage}
 							required
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							{#each data.data.stages as stage}
 								<option value={stage.value}>{stage.label}</option>
@@ -220,7 +220,7 @@
 					<div>
 						<label
 							for="opportunity_type"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Type
 						</label>
@@ -228,7 +228,7 @@
 							id="opportunity_type"
 							name="opportunity_type"
 							bind:value={formData.opportunity_type}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							<option value="">Select type</option>
 							{#each data.data.opportunityTypes as type}
@@ -241,7 +241,7 @@
 					<div>
 						<label
 							for="lead_source"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Lead Source
 						</label>
@@ -249,7 +249,7 @@
 							id="lead_source"
 							name="lead_source"
 							bind:value={formData.lead_source}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							<option value="">Select source</option>
 							{#each data.data.leadSources as source}
@@ -262,19 +262,19 @@
 
 			<!-- Section 2: Financial Information -->
 			<div
-				class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+				class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
-				<h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center">
-					<DollarSign class="w-5 h-5 mr-2 text-green-500" />
+				<h2 class="mb-6 flex items-center text-lg font-medium text-gray-900 dark:text-white">
+					<DollarSign class="mr-2 h-5 w-5 text-green-500" />
 					Financial Information
 				</h2>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 					<!-- Amount -->
 					<div>
 						<label
 							for="amount"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Amount
 						</label>
@@ -285,7 +285,7 @@
 							bind:value={formData.amount}
 							min="0"
 							step="0.01"
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-400"
 							placeholder="0.00"
 						/>
 					</div>
@@ -294,7 +294,7 @@
 					<div>
 						<label
 							for="currency"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Currency
 						</label>
@@ -302,7 +302,7 @@
 							id="currency"
 							name="currency"
 							bind:value={formData.currency}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-400"
 						>
 							<option value="USD">USD - US Dollar</option>
 							<option value="EUR">EUR - Euro</option>
@@ -318,7 +318,7 @@
 					<div>
 						<label
 							for="probability"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Probability (%)
 						</label>
@@ -329,7 +329,7 @@
 							bind:value={formData.probability}
 							min="0"
 							max="100"
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-400"
 							placeholder="0"
 						/>
 					</div>
@@ -338,7 +338,7 @@
 					<div>
 						<label
 							for="closed_on"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Expected Close Date
 						</label>
@@ -347,42 +347,40 @@
 							id="closed_on"
 							name="closed_on"
 							bind:value={formData.closed_on}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-400"
 						/>
 					</div>
 
 					<!-- Expected Revenue (calculated) -->
 					<div class="md:col-span-2">
-						<div class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						<div class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 							Expected Revenue
 						</div>
 						<div
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-600 dark:text-white"
 						>
 							${calculateExpectedRevenue()}
 						</div>
-						<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-							Amount × Probability / 100
-						</p>
+						<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Amount × Probability / 100</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- Section 3: Assignment -->
 			<div
-				class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+				class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
-				<h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center">
-					<Users class="w-5 h-5 mr-2 text-purple-500" />
+				<h2 class="mb-6 flex items-center text-lg font-medium text-gray-900 dark:text-white">
+					<Users class="mr-2 h-5 w-5 text-purple-500" />
 					Assignment
 				</h2>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					<!-- Assigned To -->
 					<div>
 						<label
 							for="assigned_to"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Assign to Users
 						</label>
@@ -392,7 +390,7 @@
 							multiple
 							size="4"
 							onchange={(e) => handleMultiSelect(e, 'assigned_to')}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							{#each data.data.users as user (user.id)}
 								<option value={user.id} selected={formData.assigned_to.includes(user.id)}>
@@ -409,7 +407,7 @@
 					<div>
 						<label
 							for="teams"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Assign to Teams
 						</label>
@@ -419,7 +417,7 @@
 							multiple
 							size="4"
 							onchange={(e) => handleMultiSelect(e, 'teams')}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-purple-400"
 						>
 							{#each data.data.teams as team (team.id)}
 								<option value={team.id} selected={formData.teams.includes(team.id)}>
@@ -437,17 +435,17 @@
 			<!-- Section 4: Related Contacts -->
 			{#if data.data.contacts.length > 0}
 				<div
-					class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+					class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 				>
-					<h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center">
-						<Link2 class="w-5 h-5 mr-2 text-blue-500" />
+					<h2 class="mb-6 flex items-center text-lg font-medium text-gray-900 dark:text-white">
+						<Link2 class="mr-2 h-5 w-5 text-blue-500" />
 						Related Contacts
 					</h2>
 
 					<div>
 						<label
 							for="contacts"
-							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 						>
 							Associate Contacts
 						</label>
@@ -457,11 +455,13 @@
 							multiple
 							size="5"
 							onchange={(e) => handleMultiSelect(e, 'contacts')}
-							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-400"
 						>
 							{#each data.data.contacts as contact (contact.id)}
 								<option value={contact.id} selected={formData.contacts.includes(contact.id)}>
-									{contact.firstName} {contact.lastName} {contact.email ? `(${contact.email})` : ''}
+									{contact.firstName}
+									{contact.lastName}
+									{contact.email ? `(${contact.email})` : ''}
 								</option>
 							{/each}
 						</select>
@@ -474,17 +474,17 @@
 
 			<!-- Section 5: Notes -->
 			<div
-				class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+				class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 			>
-				<h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6 flex items-center">
-					<FileText class="w-5 h-5 mr-2 text-gray-500" />
+				<h2 class="mb-6 flex items-center text-lg font-medium text-gray-900 dark:text-white">
+					<FileText class="mr-2 h-5 w-5 text-gray-500" />
 					Notes
 				</h2>
 
 				<div>
 					<label
 						for="description"
-						class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+						class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 					>
 						Description
 					</label>
@@ -493,7 +493,7 @@
 						name="description"
 						bind:value={formData.description}
 						rows="4"
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+						class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-gray-400"
 						placeholder="Additional details about this opportunity..."
 					></textarea>
 				</div>
@@ -504,22 +504,22 @@
 				<button
 					type="button"
 					onclick={() => history.back()}
-					class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-colors"
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-purple-400"
 				>
 					Cancel
 				</button>
 				<button
 					type="submit"
 					disabled={isSubmitting}
-					class="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+					class="flex items-center rounded-lg border border-transparent bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{#if isSubmitting}
 						<div
-							class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+							class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
 						></div>
 						Creating...
 					{:else}
-						<Plus class="w-4 h-4 mr-2" />
+						<Plus class="mr-2 h-4 w-4" />
 						Create Opportunity
 					{/if}
 				</button>

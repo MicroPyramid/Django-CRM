@@ -63,7 +63,7 @@ export async function load({ locals, cookies }) {
 			0
 		);
 
-			// Fetch tasks and activities separately
+		// Fetch tasks and activities separately
 		let upcomingTasks = [];
 		let recentActivities = [];
 
@@ -76,8 +76,7 @@ export async function load({ locals, cookies }) {
 			// Filter for user's pending tasks with due dates
 			upcomingTasks = allTasks
 				.filter((task) => {
-					const isAssignedToUser =
-						task.assigned_to && task.assigned_to.some((id) => id === userId);
+					const isAssignedToUser = task.assigned_to && task.assigned_to.some((id) => id === userId);
 					const isNotCompleted = task.status !== 'Completed';
 					const hasDueDate = task.due_date;
 					return isAssignedToUser && isNotCompleted && hasDueDate;
@@ -85,7 +84,7 @@ export async function load({ locals, cookies }) {
 				.sort((a, b) => {
 					const dateA = new Date(a.due_date);
 					const dateB = new Date(b.due_date);
-					return dateA - dateB;
+					return dateA.getTime() - dateB.getTime();
 				})
 				.slice(0, 5)
 				.map((task) => ({
@@ -114,7 +113,9 @@ export async function load({ locals, cookies }) {
 				entityType: activity.entity_type,
 				entityId: activity.entity_id,
 				entityName: activity.entity_name,
-				description: activity.description || `${activity.action_display} ${activity.entity_type}: ${activity.entity_name}`,
+				description:
+					activity.description ||
+					`${activity.action_display} ${activity.entity_type}: ${activity.entity_name}`,
 				timestamp: activity.timestamp,
 				humanizedTime: activity.humanized_time
 			}));

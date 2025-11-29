@@ -60,7 +60,9 @@ export async function load({ params, locals, cookies }) {
 		const owner = oppData.assigned_to_details?.[0]
 			? {
 					id: oppData.assigned_to_details[0].id,
-					name: oppData.assigned_to_details[0].user_details?.email || oppData.assigned_to_details[0].email
+					name:
+						oppData.assigned_to_details[0].user_details?.email ||
+						oppData.assigned_to_details[0].email
 				}
 			: null;
 

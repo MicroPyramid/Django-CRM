@@ -16,28 +16,33 @@ BottleCRM is a free, open-source Customer Relationship Management solution desig
 ## 🚀 Core Features
 
 ### Sales & Lead Management
+
 - **Lead Management**: Track and nurture leads from initial contact to conversion
 - **Account Management**: Maintain detailed records of customer accounts and organizations
 - **Contact Management**: Store and organize all your customer contact information
 - **Opportunity Management**: Track deals through your sales pipeline with customizable stages
 
 ### Customer Support
+
 - **Case Management**: Handle customer support cases and track resolution
 - **Solution Knowledge Base**: Maintain searchable solutions for common issues
 - **Multi-Channel Support**: Handle cases from various origins (email, web, phone)
 
 ### Productivity & Collaboration
+
 - **Task Management**: Never miss a follow-up with built-in task tracking
 - **Event Management**: Schedule and manage meetings and activities
 - **Board Management**: Trello-like kanban boards for project tracking
 - **Comment System**: Collaborate with team members on records
 
 ### Sales Tools
+
 - **Quote Management**: Generate professional quotes with line items
 - **Product Catalog**: Maintain product inventory with pricing
 - **Sales Pipeline**: Visual opportunity tracking with probability scoring
 
 ### Administrative Features
+
 - **User Management**: Add team members with appropriate role assignments
 - **Organization Management**: Multi-tenant structure with data isolation
 - **Audit Logging**: Complete activity tracking for compliance
@@ -70,23 +75,27 @@ BottleCRM is a free, open-source Customer Relationship Management solution desig
 ### Installation
 
 1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/micropyramid/svelte-crm.git
 cd svelte-crm
 ```
 
 2. **Set up Node.js version:**
+
 ```bash
 nvm use 22.13.0
 ```
 
 3. **Install dependencies:**
+
 ```bash
 pnpm install
 ```
 
 4. **Configure environment variables:**
-Create a `.env` file based on the following template:
+   Create a `.env` file based on the following template:
+
 ```env
 # Database Configuration
 DATABASE_URL="postgresql://postgres:password@localhost:5432/bottlecrm?schema=public"
@@ -103,6 +112,7 @@ GOOGLE_LOGIN_DOMAIN="http://localhost:5173"
 ```
 
 5. **Set up the database:**
+
 ```bash
 # Generate Prisma client
 npx prisma generate
@@ -115,6 +125,7 @@ npx prisma studio
 ```
 
 6. **Start the development server:**
+
 ```bash
 pnpm run dev
 ```
@@ -156,16 +167,19 @@ pnpm run preview
 ## 🏗️ Architecture & Security
 
 ### Multi-Tenant Design
+
 - **Organization Isolation**: Complete data separation between organizations
 - **Role-Based Access**: Users can have different roles across organizations
 - **Session Management**: Secure cookie-based authentication with organization context
 
 ### User Roles
+
 - **User**: Standard access to organization data
 - **Admin**: Organization-level administrative privileges
 - **Super Admin**: Platform-wide access (requires @micropyramid.com email)
 
 ### Data Security
+
 - All database queries are organization-scoped
 - Strict permission validation on all routes
 - Audit logging for compliance and tracking
@@ -199,6 +213,7 @@ We love to hear from our users! Please share your feedback, report bugs, or sugg
 We welcome contributions of all kinds! See our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started.
 
 ### Development Guidelines
+
 - Follow existing code patterns and conventions
 - Ensure all forms have proper accessibility (labels associated with controls)
 - Never use `$app` imports from SvelteKit (see packaging best practices)
@@ -211,4 +226,4 @@ BottleCRM is open source software [licensed as MIT](LICENSE).
 
 ---
 
-*Built with ❤️ for small businesses everywhere. We believe quality CRM software should be accessible to everyone.*
+_Built with ❤️ for small businesses everywhere. We believe quality CRM software should be accessible to everyone._

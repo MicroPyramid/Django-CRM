@@ -27,11 +27,7 @@ export async function load({ cookies, locals }) {
 		// Django leads endpoint - no status filter needed
 		// Django LeadListView already separates leads into open_leads and close_leads
 		// Valid Django status values: assigned, in process, converted, recycled, closed
-		const response = await apiRequest(
-			`/leads/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/leads/`, {}, { cookies, org });
 
 		// Handle Django response format
 		// Django returns: { open_leads: { leads_count, open_leads: [...] }, close_leads: {...}, ... }
@@ -67,17 +63,21 @@ export async function load({ cookies, locals }) {
 			updatedAt: lead.updated_at || lead.created_at,
 
 			// Owner info - Django returns assigned_to array with ProfileSerializer
-			owner: lead.assigned_to && lead.assigned_to.length > 0
-				? {
-						name: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email || 'Unknown',
-						email: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email
-					}
-				: lead.created_by
+			owner:
+				lead.assigned_to && lead.assigned_to.length > 0
 					? {
-							name: lead.created_by.email,
-							email: lead.created_by.email
+							name:
+								lead.assigned_to[0].user?.email ||
+								lead.assigned_to[0].user_details?.email ||
+								'Unknown',
+							email: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email
 						}
-					: null
+					: lead.created_by
+						? {
+								name: lead.created_by.email,
+								email: lead.created_by.email
+							}
+						: null
 		}));
 
 		return {

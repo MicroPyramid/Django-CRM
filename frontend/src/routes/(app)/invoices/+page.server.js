@@ -27,19 +27,14 @@ export async function load({ locals, cookies }) {
 		const response = await apiRequest('/invoices/', {}, { cookies, org: locals.org });
 
 		// Transform Django Invoice to match SvelteKit Quote structure
-		const invoices = (response.results || []).map((invoice) =>
-			transformInvoiceToQuote(invoice)
-		);
+		const invoices = (response.results || []).map((invoice) => transformInvoiceToQuote(invoice));
 
 		return {
 			invoices
 		};
 	} catch (err) {
 		console.error('Failed to load invoices:', err);
-		throw error(500, {
-			message: 'Failed to load invoices. Please try again.',
-			details: err.message
-		});
+		throw error(500, `Failed to load invoices: ${err.message}`);
 	}
 }
 

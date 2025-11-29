@@ -24,14 +24,14 @@ export async function load({ locals, cookies }) {
 
 		// Extract active users
 		const activeUsersList = usersResponse.active_users?.active_users || [];
-		const users = activeUsersList.map(profile => ({
+		const users = activeUsersList.map((profile) => ({
 			id: profile.id,
 			name: profile.user_details?.email?.split('@')[0] || 'Unknown',
 			email: profile.user_details?.email || ''
 		}));
 
 		// Extract teams
-		const teams = (teamsResponse.teams || teamsResponse.results || []).map(team => ({
+		const teams = (teamsResponse.teams || teamsResponse.results || []).map((team) => ({
 			id: team.id,
 			name: team.name
 		}));
@@ -108,8 +108,8 @@ export const actions = {
 			country: formData.get('country')?.toString() || null,
 
 			// Assignment
-			assigned_to: formData.getAll('assigned_to').map(id => id.toString()),
-			teams: formData.getAll('teams').map(id => id.toString()),
+			assigned_to: formData.getAll('assigned_to').map((id) => id.toString()),
+			teams: formData.getAll('teams').map((id) => id.toString()),
 
 			// Notes
 			description: formData.get('description')?.toString().trim() || null

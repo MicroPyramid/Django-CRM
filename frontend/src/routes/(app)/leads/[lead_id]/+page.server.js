@@ -25,11 +25,7 @@ export async function load({ params, locals, cookies }) {
 
 	try {
 		// Fetch lead details from Django
-		const response = await apiRequest(
-			`/leads/${lead_id}/`,
-			{},
-			{ cookies, org }
-		);
+		const response = await apiRequest(`/leads/${lead_id}/`, {}, { cookies, org });
 
 		if (!response.lead_obj) {
 			throw error(404, 'Lead not found');
@@ -51,6 +47,7 @@ export async function load({ params, locals, cookies }) {
 			description: leadData.description,
 			leadSource: leadData.source,
 			status: leadData.status,
+			rating: leadData.rating || null,
 			isConverted: leadData.is_converted || leadData.status === 'converted',
 			convertedAt: leadData.converted_at || null,
 			convertedContactId: leadData.converted_contact_id || null,
@@ -62,31 +59,34 @@ export async function load({ params, locals, cookies }) {
 			ownerId: leadData.created_by?.id || null,
 
 			// Owner info
-			owner: leadData.assigned_to && leadData.assigned_to.length > 0
-				? {
-					id: leadData.assigned_to[0].id,
-					name: leadData.assigned_to[0].user_details?.email || leadData.assigned_to[0].email,
-					email: leadData.assigned_to[0].user_details?.email || leadData.assigned_to[0].email
-				}
-				: leadData.created_by
+			owner:
+				leadData.assigned_to && leadData.assigned_to.length > 0
 					? {
-						id: leadData.created_by.id,
-						name: leadData.created_by.email,
-						email: leadData.created_by.email
-					}
-					: null,
+							id: leadData.assigned_to[0].id,
+							name: leadData.assigned_to[0].user_details?.email || leadData.assigned_to[0].email,
+							email: leadData.assigned_to[0].user_details?.email || leadData.assigned_to[0].email
+						}
+					: leadData.created_by
+						? {
+								id: leadData.created_by.id,
+								name: leadData.created_by.email,
+								email: leadData.created_by.email
+							}
+						: null,
 
 			// Contact info (if converted)
-			contact: leadData.contact ? {
-				id: leadData.contact.id,
-				firstName: leadData.contact.first_name,
-				lastName: leadData.contact.last_name,
-				email: leadData.contact.email
-			} : null
+			contact: leadData.contact
+				? {
+						id: leadData.contact.id,
+						firstName: leadData.contact.first_name,
+						lastName: leadData.contact.last_name,
+						email: leadData.contact.email
+					}
+				: null
 		};
 
 		// Transform tasks
-		const tasks = (response.tasks || leadData.tasks || []).map(task => ({
+		const tasks = (response.tasks || leadData.tasks || []).map((task) => ({
 			id: task.id,
 			title: task.title,
 			status: task.status,
@@ -96,7 +96,7 @@ export async function load({ params, locals, cookies }) {
 		}));
 
 		// Transform events (Django may return these separately)
-		const events = (response.events || leadData.events || []).map(event => ({
+		const events = (response.events || leadData.events || []).map((event) => ({
 			id: event.id,
 			name: event.name,
 			startDate: event.start_date,
@@ -106,15 +106,17 @@ export async function load({ params, locals, cookies }) {
 		}));
 
 		// Transform comments
-		const comments = (response.comments || []).map(comment => ({
+		const comments = (response.comments || []).map((comment) => ({
 			id: comment.id,
 			body: comment.comment,
 			createdAt: comment.created_at,
-			author: comment.commented_by ? {
-				id: comment.commented_by.id,
-				name: comment.commented_by.user_details?.email || comment.commented_by.email,
-				email: comment.commented_by.user_details?.email || comment.commented_by.email
-			} : null
+			author: comment.commented_by
+				? {
+						id: comment.commented_by.id,
+						name: comment.commented_by.user_details?.email || comment.commented_by.email,
+						email: comment.commented_by.user_details?.email || comment.commented_by.email
+					}
+				: null
 		}));
 
 		return {
@@ -202,21 +204,19 @@ export const actions = {
 			);
 
 			// Fetch updated comments
-			const response = await apiRequest(
-				`/leads/${lead_id}/`,
-				{},
-				{ cookies, org }
-			);
+			const response = await apiRequest(`/leads/${lead_id}/`, {}, { cookies, org });
 
-			const comments = (response.comments || []).map(comment => ({
+			const comments = (response.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
 				createdAt: comment.created_at,
-				author: comment.commented_by ? {
-					id: comment.commented_by.id,
-					name: comment.commented_by.user_details?.email || comment.commented_by.email,
-					email: comment.commented_by.user_details?.email || comment.commented_by.email
-				} : null
+				author: comment.commented_by
+					? {
+							id: comment.commented_by.id,
+							name: comment.commented_by.user_details?.email || comment.commented_by.email,
+							email: comment.commented_by.user_details?.email || comment.commented_by.email
+						}
+					: null
 			}));
 
 			return {
