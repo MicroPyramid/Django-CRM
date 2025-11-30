@@ -17,8 +17,6 @@
 		Calendar,
 		List,
 		Flag,
-		MoreHorizontal,
-		Eye,
 		Circle,
 		CheckCircle2,
 		AlertCircle,
@@ -30,7 +28,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
@@ -1028,37 +1025,6 @@
 			{:else}
 				<span class="text-muted-foreground">-</span>
 			{/if}
-		</Table.Cell>
-		<Table.Cell onclick={(e) => e.stopPropagation()}>
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					<Button variant="ghost" size="icon" class="h-8 w-8">
-						<MoreHorizontal class="h-4 w-4" />
-					</Button>
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end">
-					<DropdownMenu.Item onclick={() => drawer.openDetail(task)}>
-						<Eye class="mr-2 h-4 w-4" />
-						View / Edit
-					</DropdownMenu.Item>
-					{#if !isCompleted}
-						<DropdownMenu.Item onclick={() => handleComplete(task.id)}>
-							<CheckCircle2 class="mr-2 h-4 w-4" />
-							Mark Complete
-						</DropdownMenu.Item>
-					{/if}
-					<DropdownMenu.Separator />
-					<DropdownMenu.Item
-						class="text-destructive"
-						onclick={() => {
-							drawer.selected = task;
-							handleDelete();
-						}}
-					>
-						Delete
-					</DropdownMenu.Item>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
 		</Table.Cell>
 	</Table.Row>
 {/snippet}

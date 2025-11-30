@@ -16,7 +16,6 @@
 		Users,
 		Target,
 		Calendar,
-		MoreHorizontal,
 		DollarSign,
 		MapPin
 	} from '@lucide/svelte';
@@ -26,7 +25,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
@@ -171,6 +169,8 @@
 	/** @type {HTMLFormElement} */
 	let updateForm;
 	/** @type {HTMLFormElement} */
+	let deleteForm;
+	/** @type {HTMLFormElement} */
 	let deactivateForm;
 	/** @type {HTMLFormElement} */
 	let activateForm;
@@ -230,6 +230,18 @@
 		} else {
 			createForm.requestSubmit();
 		}
+	}
+
+	/**
+	 * Handle account delete
+	 */
+	async function handleDelete() {
+		if (!selectedAccount) return;
+		if (!confirm(`Are you sure you want to delete "${selectedAccount.name}"?`)) return;
+
+		formState.accountId = selectedAccount.id;
+		await tick();
+		deleteForm.requestSubmit();
 	}
 
 	/**
@@ -484,7 +496,6 @@
 										{/if}
 									</div>
 								</Table.Head>
-								<Table.Head class="w-[80px]">Actions</Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -571,39 +582,6 @@
 											<Calendar class="h-3.5 w-3.5" />
 											<span>{formatRelativeDate(account.createdAt)}</span>
 										</div>
-									</Table.Cell>
-									<Table.Cell onclick={(e) => e.stopPropagation()}>
-										<DropdownMenu.Root>
-											<DropdownMenu.Trigger>
-												<Button variant="ghost" size="icon" class="h-8 w-8" disabled={false}>
-													<MoreHorizontal class="h-4 w-4" />
-												</Button>
-											</DropdownMenu.Trigger>
-											<DropdownMenu.Content align="end">
-												<DropdownMenu.Item onclick={() => openAccount(account)}>
-													View Details
-												</DropdownMenu.Item>
-												<DropdownMenu.Item
-													onclick={() => openAccount(account)}
-													disabled={!account.isActive}
-												>
-													Edit
-												</DropdownMenu.Item>
-												<DropdownMenu.Separator />
-												<DropdownMenu.Item
-													onclick={() => goto(`/contacts?action=create&accountId=${account.id}`)}
-												>
-													<Users class="mr-2 h-4 w-4" />
-													Add Contact
-												</DropdownMenu.Item>
-												<DropdownMenu.Item
-													onclick={() => goto(`/opportunities/new?accountId=${account.id}`)}
-												>
-													<Target class="mr-2 h-4 w-4" />
-													Add Opportunity
-												</DropdownMenu.Item>
-											</DropdownMenu.Content>
-										</DropdownMenu.Root>
 									</Table.Cell>
 								</Table.Row>
 							{/each}
@@ -696,6 +674,7 @@
 	mode={drawerMode}
 	loading={drawerLoading}
 	onSave={handleFormSubmit}
+	onDelete={handleDelete}
 	onClose={handleClose}
 	onReopen={handleReopen}
 	onAddContact={handleAddContact}
@@ -747,6 +726,16 @@
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
 	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+</form>
+
+<form
+	method="POST"
+	action="?/delete"
+	bind:this={deleteForm}
+	use:enhance={createEnhanceHandler('Account deleted successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
 </form>
 
 <form

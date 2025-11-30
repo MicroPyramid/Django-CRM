@@ -14,7 +14,8 @@
 		AlertTriangle,
 		Lock,
 		Unlock,
-		Loader2
+		Loader2,
+		Trash2
 	} from '@lucide/svelte';
 	import SideDrawer from '$lib/components/layout/SideDrawer.svelte';
 	import { EditableField } from '$lib/components/ui/editable-field/index.js';
@@ -94,6 +95,7 @@
 	 *   mode?: 'view' | 'create',
 	 *   loading?: boolean,
 	 *   onSave?: (data: any) => Promise<void>,
+	 *   onDelete?: () => void,
 	 *   onClose?: () => void,
 	 *   onReopen?: () => void,
 	 *   onAddContact?: () => void,
@@ -108,6 +110,7 @@
 		mode = 'view',
 		loading = false,
 		onSave,
+		onDelete,
 		onClose,
 		onReopen,
 		onAddContact,
@@ -661,35 +664,44 @@
 
 	{#snippet footer()}
 		<div class="flex w-full items-center justify-between">
-			<!-- Left side: Close/Reopen buttons -->
+			<!-- Left side: Delete and Close/Reopen buttons -->
 			{#if !isCreateMode && account}
-				{#if isClosed}
-					{#if onReopen}
+				<div class="flex gap-2">
+					{#if onDelete}
 						<Button
-							variant="outline"
-							class="text-green-600 hover:text-green-700"
-							onclick={onReopen}
+							variant="ghost"
+							class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+							onclick={onDelete}
 							disabled={isSubmitting}
 						>
-							<Unlock class="mr-2 h-4 w-4" />
-							Reopen Account
+							<Trash2 class="mr-2 h-4 w-4" />
+							Delete
 						</Button>
-					{:else}
-						<div></div>
 					{/if}
-				{:else if onClose}
-					<Button
-						variant="ghost"
-						class="text-destructive hover:text-destructive"
-						onclick={onClose}
-						disabled={isSubmitting}
-					>
-						<Lock class="mr-2 h-4 w-4" />
-						Close Account
-					</Button>
-				{:else}
-					<div></div>
-				{/if}
+					{#if isClosed}
+						{#if onReopen}
+							<Button
+								variant="outline"
+								class="text-green-600 hover:text-green-700"
+								onclick={onReopen}
+								disabled={isSubmitting}
+							>
+								<Unlock class="mr-2 h-4 w-4" />
+								Reopen Account
+							</Button>
+						{/if}
+					{:else if onClose}
+						<Button
+							variant="ghost"
+							class="text-destructive hover:text-destructive"
+							onclick={onClose}
+							disabled={isSubmitting}
+						>
+							<Lock class="mr-2 h-4 w-4" />
+							Close Account
+						</Button>
+					{/if}
+				</div>
 			{:else}
 				<div></div>
 			{/if}

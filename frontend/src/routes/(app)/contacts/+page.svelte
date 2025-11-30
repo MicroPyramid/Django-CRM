@@ -15,8 +15,6 @@
 		Building2,
 		User,
 		Calendar,
-		Eye,
-		MoreHorizontal,
 		Briefcase
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
@@ -25,7 +23,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
@@ -370,7 +367,6 @@
 										{/if}
 									</div>
 								</Table.Head>
-								<Table.Head class="w-[80px]">Actions</Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -448,31 +444,6 @@
 											<Calendar class="h-3.5 w-3.5" />
 											<span>{formatRelativeDate(contact.createdAt)}</span>
 										</div>
-									</Table.Cell>
-									<Table.Cell onclick={(e) => e.stopPropagation()}>
-										<DropdownMenu.Root>
-											<DropdownMenu.Trigger>
-												<Button variant="ghost" size="icon" class="h-8 w-8" disabled={false}>
-													<MoreHorizontal class="h-4 w-4" />
-												</Button>
-											</DropdownMenu.Trigger>
-											<DropdownMenu.Content align="end">
-												<DropdownMenu.Item onclick={() => openContact(contact)}>
-													<Eye class="mr-2 h-4 w-4" />
-													View Details
-												</DropdownMenu.Item>
-												<DropdownMenu.Separator />
-												<DropdownMenu.Item
-													class="text-destructive"
-													onclick={() => {
-														selectedContact = contact;
-														handleDelete();
-													}}
-												>
-													Delete
-												</DropdownMenu.Item>
-											</DropdownMenu.Content>
-										</DropdownMenu.Root>
 									</Table.Cell>
 								</Table.Row>
 							{/each}

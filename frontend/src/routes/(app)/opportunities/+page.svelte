@@ -11,8 +11,6 @@
 		User,
 		Calendar,
 		DollarSign,
-		MoreHorizontal,
-		Eye,
 		List,
 		LayoutGrid,
 		Target,
@@ -27,7 +25,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { cn } from '$lib/utils.js';
@@ -560,7 +557,6 @@
 									<Table.Head>Probability</Table.Head>
 									<Table.Head>Close Date</Table.Head>
 									<Table.Head>Owner</Table.Head>
-									<Table.Head class="w-[80px]">Actions</Table.Head>
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
@@ -640,23 +636,6 @@
 											{:else}
 												<span class="text-muted-foreground">-</span>
 											{/if}
-										</Table.Cell>
-										<Table.Cell onclick={(e) => e.stopPropagation()}>
-											<DropdownMenu.Root>
-												<DropdownMenu.Trigger>
-													<Button variant="ghost" size="icon" class="h-8 w-8" disabled={false}>
-														<MoreHorizontal class="h-4 w-4" />
-													</Button>
-												</DropdownMenu.Trigger>
-												<DropdownMenu.Content align="end">
-													<DropdownMenu.Item onclick={() => openOpportunityDetail(opportunity)}>
-														<Eye class="mr-2 h-4 w-4" />
-														View Details
-													</DropdownMenu.Item>
-													<DropdownMenu.Separator />
-													<DropdownMenu.Item class="text-destructive">Delete</DropdownMenu.Item>
-												</DropdownMenu.Content>
-											</DropdownMenu.Root>
 										</Table.Cell>
 									</Table.Row>
 								{/each}

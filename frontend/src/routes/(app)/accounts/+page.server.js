@@ -361,5 +361,29 @@ export const actions = {
 			console.error('Error activating account:', err);
 			return fail(500, { error: 'Failed to activate account' });
 		}
+	},
+
+	delete: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'DELETE'
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting account:', err);
+			return fail(500, { error: 'Failed to delete account' });
+		}
 	}
 };
