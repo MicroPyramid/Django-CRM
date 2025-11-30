@@ -1,5 +1,4 @@
 <script>
-	import '../../../app.css';
 	import {
 		Building2,
 		Globe,
@@ -7,24 +6,63 @@
 		User,
 		Shield,
 		Edit,
-		LogOut,
 		Plus,
 		Check,
 		X,
-		Trash2
+		Trash2,
+		AlertCircle
 	} from '@lucide/svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import { getInitials, formatDate } from '$lib/utils/formatting.js';
 
-	/** @type {{ organization: any, users: any[], user: { id: string } }} */
-	export let data;
-	/** @type {any} */
-	let org = data.organization;
-	let editing = false;
-	/** @type {{ name: string, domain: string, description: string }} */
-	let formOrg = {
-		name: org?.name || '',
-		domain: org?.domain || '',
-		description: org?.description || ''
-	};
+	/** @type {{ data: import('./$types').PageData }} */
+	let { data } = $props();
+
+	let org = $derived(data.organization);
+	let editing = $state(false);
+	let formOrg = $state({
+		name: data.organization?.name || '',
+		domain: data.organization?.domain || '',
+		description: data.organization?.description || ''
+	});
+
+	// Get logged-in user id from data
+	let loggedInUserId = $derived(data.user?.id);
+
+	// Transform users data
+	let users = $derived(
+		Array.isArray(data.users)
+			? data.users.map((u) => ({
+					id: u.user.id,
+					name: u.user.name || u.user.email,
+					email: u.user.email,
+					role: u.role,
+					joined: u.profile?.created_at
+						? typeof u.profile.created_at === 'string'
+							? u.profile.created_at.slice(0, 10)
+							: new Date(u.profile.created_at).toISOString().slice(0, 10)
+						: '',
+					avatar: u.profile?.profile_photo || '',
+					isSelf: loggedInUserId === u.user.id,
+					isActive: u.isActive
+				}))
+			: []
+	);
+
+	// State for editing roles
+	/** @type {string | null} */
+	let editingRoleId = $state(null);
+	/** @type {string | null} */
+	let userToRemove = $state(null);
 
 	function startEdit() {
 		formOrg = {
@@ -38,431 +76,338 @@
 	function cancelEdit() {
 		editing = false;
 	}
-
-	// Get logged-in user id from data (must be provided by server load)
-	let loggedInUserId = data.user?.id;
-	/** @type {Array<{id: string, name: string, email: string, role: string, joined: string, avatar: string, isSelf: boolean, editingRole: boolean}>} */
-	let users = Array.isArray(data.users)
-		? data.users.map((u) => ({
-				id: u.user.id,
-				name: u.user.name || u.user.email,
-				email: u.user.email,
-				role: u.role,
-				joined: u.joinedAt
-					? typeof u.joinedAt === 'string'
-						? u.joinedAt.slice(0, 10)
-						: new Date(u.joinedAt).toISOString().slice(0, 10)
-					: '',
-				avatar: u.user.profilePhoto || '',
-				isSelf: loggedInUserId === u.user.id,
-				editingRole: false
-			}))
-		: [];
-
-	// Map roles to icons (only ADMIN and USER exist in schema)
-	/** @type {Record<string, any>} */
-	const roleIcons = {
-		ADMIN: Shield,
-		USER: User
-	};
-
-	/** @type {Record<string, string>} */
-	const roleColors = {
-		ADMIN:
-			'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
-		USER: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
-	};
 </script>
 
-<div class="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
-	<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-		<!-- Header with Logout -->
-		<div class="mb-8 flex items-center justify-between">
-			<div>
-				<h1 class="text-3xl font-bold text-gray-900 dark:text-white">Organization Settings</h1>
-				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-					Manage your organization and team members
-				</p>
-			</div>
-			<a
-				href="/logout"
-				class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors hover:bg-gray-50 hover:text-red-600 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-gray-700 dark:hover:text-red-400"
-			>
-				<LogOut class="h-4 w-4" />
-				Logout
-			</a>
-		</div>
+<svelte:head>
+	<title>Organization Settings - BottleCRM</title>
+</svelte:head>
 
-		<!-- Organization Details Card -->
-		<div
-			class="mb-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-		>
-			<div class="px-6 py-5">
-				<div class="flex items-start justify-between">
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
-						>
-							<Building2 class="h-6 w-6 text-blue-600 dark:text-blue-400" />
-						</div>
-						<div>
-							<h2 class="text-xl font-semibold text-gray-900 dark:text-white">{org.name}</h2>
+<PageHeader title="Organization Settings" subtitle="Manage your organization and team members" />
+
+<div class="flex-1 space-y-6 p-4 md:p-6">
+	<!-- Error Message -->
+	{#if data.error}
+		<Card.Root class="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+			<Card.Content class="flex items-center gap-3 p-4">
+				<div
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-800"
+				>
+					<AlertCircle class="h-4 w-4 text-red-600 dark:text-red-300" />
+				</div>
+				<p class="text-sm font-medium text-red-800 dark:text-red-200">
+					{data.error.name}
+				</p>
+			</Card.Content>
+		</Card.Root>
+	{:else}
+		<div class="mx-auto max-w-4xl space-y-6">
+			<!-- Organization Details Card -->
+			<Card.Root>
+				<Card.Header class="">
+					<div class="flex items-start justify-between">
+						<div class="flex items-center gap-3">
 							<div
-								class="mt-1 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400"
+								class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
 							>
-								{#if org.domain}
+								<Building2 class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+							</div>
+							<div>
+								<Card.Title class="text-xl">{org.name}</Card.Title>
+								<div class="text-muted-foreground mt-1 flex flex-wrap items-center gap-4 text-sm">
+									{#if org.domain}
+										<span class="flex items-center gap-1">
+											<Globe class="h-4 w-4" />
+											{org.domain}
+										</span>
+									{/if}
 									<span class="flex items-center gap-1">
-										<Globe class="h-4 w-4" />
-										{org.domain}
+										<Users class="h-4 w-4" />
+										{users.length} member{users.length !== 1 ? 's' : ''}
 									</span>
-								{/if}
-								<span class="flex items-center gap-1">
-									<Users class="h-4 w-4" />
-									{users.length} member{users.length !== 1 ? 's' : ''}
-								</span>
+								</div>
 							</div>
 						</div>
+						{#if !editing}
+							<Button variant="ghost" size="icon" onclick={startEdit}>
+								<Edit class="h-4 w-4" />
+							</Button>
+						{/if}
 					</div>
-					{#if !editing}
-						<button
-							type="button"
-							class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-							onclick={startEdit}
-							aria-label="Edit organization"
-						>
-							<Edit class="h-5 w-5" />
-						</button>
-					{/if}
-				</div>
+				</Card.Header>
 
 				{#if org.description && !editing}
-					<p class="mt-4 text-gray-600 dark:text-gray-300">{org.description}</p>
+					<Card.Content>
+						<p class="text-muted-foreground">{org.description}</p>
+					</Card.Content>
 				{/if}
 
 				{#if editing}
-					<form method="POST" action="?/update" class="mt-6 space-y-6">
-						<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-							<div>
-								<label
-									for="org-name"
-									class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-								>
-									Organization Name <span class="text-red-500">*</span>
-								</label>
-								<div class="relative">
-									<input
-										id="org-name"
-										name="name"
-										type="text"
-										bind:value={formOrg.name}
-										required
-										class="block w-full rounded-xl border-0 bg-white py-3 pr-4 pl-11 text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset placeholder:text-gray-400 hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
-										placeholder="Enter organization name"
-									/>
-									<Building2
-										class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-									/>
+					<Card.Content>
+						<form method="POST" action="?/update" class="space-y-6">
+							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+								<div>
+									<Label for="org-name" class="">Organization Name *</Label>
+									<div class="relative mt-1.5">
+										<Building2
+											class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+										/>
+										<Input
+											id="org-name"
+											name="name"
+											type="text"
+											bind:value={formOrg.name}
+											required
+											class="pl-10"
+											placeholder="Enter organization name"
+										/>
+									</div>
+								</div>
+
+								<div>
+									<Label for="org-domain" class="">Domain</Label>
+									<div class="relative mt-1.5">
+										<Globe
+											class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+										/>
+										<Input
+											id="org-domain"
+											name="domain"
+											type="text"
+											bind:value={formOrg.domain}
+											placeholder="yourcompany.com"
+											class="pl-10"
+										/>
+									</div>
 								</div>
 							</div>
 
 							<div>
-								<label
-									for="org-domain"
-									class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-								>
-									Domain
-								</label>
-								<div class="relative">
-									<input
-										id="org-domain"
-										name="domain"
-										type="text"
-										bind:value={formOrg.domain}
-										placeholder="yourcompany.com"
-										class="block w-full rounded-xl border-0 bg-white py-3 pr-4 pl-11 text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset placeholder:text-gray-400 hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
-									/>
-									<Globe
-										class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-									/>
-								</div>
+								<Label for="org-description" class="">Description</Label>
+								<textarea
+									id="org-description"
+									name="description"
+									rows="3"
+									bind:value={formOrg.description}
+									class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring mt-1.5 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+									placeholder="Describe your organization..."
+								></textarea>
 							</div>
-						</div>
 
-						<div>
-							<label
-								for="org-description"
-								class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-							>
-								Description
-							</label>
-							<textarea
-								id="org-description"
-								name="description"
-								rows="4"
-								bind:value={formOrg.description}
-								class="block w-full resize-none rounded-xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset placeholder:text-gray-400 hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
-								placeholder="Describe your organization..."
-							></textarea>
-						</div>
+							<Separator />
 
-						<div class="flex justify-end gap-3 pt-2">
-							<button
-								type="button"
-								class="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-								onclick={cancelEdit}
-							>
-								<X class="h-4 w-4" />
-								Cancel
-							</button>
-							<button
-								type="submit"
-								class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus-visible:outline-blue-500"
-							>
-								<Check class="h-4 w-4" />
-								Save Changes
-							</button>
-						</div>
-					</form>
+							<div class="flex justify-end gap-3">
+								<Button type="button" variant="outline" onclick={cancelEdit}>
+									<X class="mr-2 h-4 w-4" />
+									Cancel
+								</Button>
+								<Button type="submit">
+									<Check class="mr-2 h-4 w-4" />
+									Save Changes
+								</Button>
+							</div>
+						</form>
+					</Card.Content>
 				{/if}
-			</div>
-		</div>
+			</Card.Root>
 
-		<!-- Users Management Card -->
-		<div
-			class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
-		>
-			<div class="px-6 py-5">
-				<div class="flex items-center justify-between">
+			<!-- Team Members Card -->
+			<Card.Root>
+				<Card.Header class="">
 					<div class="flex items-center gap-3">
 						<div
 							class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30"
 						>
 							<Users class="h-5 w-5 text-green-600 dark:text-green-400" />
 						</div>
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h3>
+						<div>
+							<Card.Title class="">Team Members</Card.Title>
+							<Card.Description class="">Manage users in your organization</Card.Description>
+						</div>
 					</div>
-				</div>
-
-				<!-- Add User Form -->
-				<div
-					class="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-600/50 dark:bg-gray-700/50"
-				>
-					<h4
-						class="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white"
-					>
-						<Plus class="h-4 w-4" />
-						Add New Member
-					</h4>
-					<form
-						method="POST"
-						action="?/add_user"
-						class="flex flex-col gap-4 sm:flex-row sm:items-end"
-					>
-						<div class="flex-1">
-							<label
-								for="add-user-email"
-								class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-							>
-								Email Address <span class="text-red-500">*</span>
-							</label>
-							<input
-								id="add-user-email"
-								name="email"
-								type="email"
-								required
-								class="block w-full rounded-xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset placeholder:text-gray-400 hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
-								placeholder="user@example.com"
-							/>
-						</div>
-						<div class="sm:w-40">
-							<label
-								for="add-user-role"
-								class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-							>
-								Role
-							</label>
-							<select
-								id="add-user-role"
-								name="role"
-								class="block w-full rounded-xl border-0 bg-white px-4 py-3 text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
-							>
-								<option value="USER">User</option>
-								<option value="ADMIN">Admin</option>
-							</select>
-						</div>
-						<button
-							type="submit"
-							class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus-visible:outline-blue-500"
-						>
+				</Card.Header>
+				<Card.Content class="space-y-6">
+					<!-- Add User Form -->
+					<div class="bg-muted/30 rounded-lg border p-4">
+						<div class="mb-3 flex items-center gap-2 text-sm font-medium">
 							<Plus class="h-4 w-4" />
-							Add Member
-						</button>
-					</form>
-				</div>
+							Add New Member
+						</div>
+						<form
+							method="POST"
+							action="?/add_user"
+							class="flex flex-col gap-4 sm:flex-row sm:items-end"
+						>
+							<div class="flex-1">
+								<Label for="add-user-email" class="">Email Address *</Label>
+								<Input
+									id="add-user-email"
+									name="email"
+									type="email"
+									required
+									placeholder="user@example.com"
+									class="mt-1.5"
+								/>
+							</div>
+							<div class="sm:w-40">
+								<Label for="add-user-role" class="">Role</Label>
+								<select
+									id="add-user-role"
+									name="role"
+									class="border-input bg-background ring-offset-background focus-visible:ring-ring mt-1.5 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+								>
+									<option value="USER">User</option>
+									<option value="ADMIN">Admin</option>
+								</select>
+							</div>
+							<Button type="submit">
+								<Plus class="mr-2 h-4 w-4" />
+								Add Member
+							</Button>
+						</form>
+					</div>
 
-				<!-- Users Table -->
-				<div class="mt-8 overflow-hidden">
-					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-							<thead class="bg-gray-50 dark:bg-gray-700/50">
-								<tr>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-									>
-										Member
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-									>
-										Role
-									</th>
-									<th
-										class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-									>
-										Joined
-									</th>
-									<th class="relative px-6 py-3">
-										<span class="sr-only">Actions</span>
-									</th>
-								</tr>
-							</thead>
-							<tbody
-								class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
-							>
-								{#each users as user, i}
-									<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-										<td class="px-6 py-4 whitespace-nowrap">
-											<div class="flex items-center">
-												{#if user.avatar}
-													<img
-														src={user.avatar}
-														alt={user.name}
-														class="h-10 w-10 rounded-full object-cover"
-													/>
-												{:else}
-													<div
-														class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-600"
+					<!-- Users Table -->
+					<div class="rounded-lg border">
+						<Table.Root>
+							<Table.Header>
+								<Table.Row>
+									<Table.Head class="w-[300px]">Member</Table.Head>
+									<Table.Head>Role</Table.Head>
+									<Table.Head>Joined</Table.Head>
+									<Table.Head class="w-[80px]">Actions</Table.Head>
+								</Table.Row>
+							</Table.Header>
+							<Table.Body>
+								{#each users as user (user.id)}
+									<Table.Row>
+										<Table.Cell>
+											<div class="flex items-center gap-3">
+												<Avatar.Root class="h-9 w-9">
+													{#if user.avatar}
+														<Avatar.Image src={user.avatar} alt={user.name} class="" />
+													{/if}
+													<Avatar.Fallback
+														class="bg-gradient-to-br from-blue-500 to-purple-600 text-sm text-white"
 													>
-														<User class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-													</div>
-												{/if}
-												<div class="ml-4">
-													<div class="text-sm font-medium text-gray-900 dark:text-white">
-														{user.name}
+														{getInitials(user.name)}
+													</Avatar.Fallback>
+												</Avatar.Root>
+												<div>
+													<div class="flex items-center gap-2">
+														<span class="text-foreground font-medium">{user.name}</span>
 														{#if user.isSelf}
-															<span
-																class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+															<Badge variant="secondary" class="text-xs">You</Badge>
+														{/if}
+														{#if !user.isActive}
+															<Badge variant="outline" class="text-muted-foreground text-xs"
+																>Inactive</Badge
 															>
-																You
-															</span>
 														{/if}
 													</div>
-													<div class="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+													<span class="text-muted-foreground text-sm">{user.email}</span>
 												</div>
 											</div>
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap">
-											{#if user.isSelf}
-												<span
-													class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium {roleColors[
-														user.role
-													]}"
+										</Table.Cell>
+										<Table.Cell>
+											{#if user.isSelf || editingRoleId !== user.id}
+												<Badge
+													variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+													class="cursor-default"
 												>
-													{#snippet roleIcon(/** @type {string} */ role)}
-														{@const RoleIcon = roleIcons[role] || User}
-														<RoleIcon class="h-3.5 w-3.5" />
-													{/snippet}
-													{@render roleIcon(user.role)}
+													{#if user.role === 'ADMIN'}
+														<Shield class="mr-1 h-3 w-3" />
+													{:else}
+														<User class="mr-1 h-3 w-3" />
+													{/if}
 													{user.role}
-												</span>
-											{:else if user.editingRole}
+												</Badge>
+												{#if !user.isSelf}
+													<Button
+														variant="ghost"
+														size="sm"
+														class="ml-2 h-6 px-2 text-xs"
+														onclick={() => (editingRoleId = user.id)}
+													>
+														<Edit class="h-3 w-3" />
+													</Button>
+												{/if}
+											{:else}
 												<form method="POST" action="?/edit_role" class="flex items-center gap-2">
 													<input type="hidden" name="user_id" value={user.id} />
-													<label for="role-select-{user.id}" class="sr-only">User Role</label>
 													<select
-														id="role-select-{user.id}"
 														name="role"
-														class="rounded-lg border-0 bg-white px-3 py-2 text-xs text-gray-900 shadow-sm ring-1 ring-gray-300 transition-all duration-200 ring-inset hover:ring-gray-400 focus:ring-2 focus:ring-blue-600 focus:ring-inset dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:hover:ring-gray-500 dark:focus:ring-blue-500"
+														class="border-input bg-background h-8 rounded-md border px-2 text-sm"
 													>
 														<option value="USER" selected={user.role === 'USER'}>User</option>
 														<option value="ADMIN" selected={user.role === 'ADMIN'}>Admin</option>
 													</select>
-													<button
-														type="submit"
-														class="rounded-lg bg-green-600 p-2 text-white shadow-sm transition-all duration-200 hover:bg-green-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 dark:bg-green-600 dark:hover:bg-green-700 dark:focus-visible:outline-green-500"
-														title="Save"
-													>
+													<Button type="submit" size="icon" class="h-7 w-7" variant="default">
 														<Check class="h-3.5 w-3.5" />
-													</button>
-													<button
+													</Button>
+													<Button
 														type="button"
-														class="rounded-lg bg-gray-600 p-2 text-white shadow-sm transition-all duration-200 hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus-visible:outline-gray-500"
-														onclick={() => {
-															users[i].editingRole = false;
-														}}
-														title="Cancel"
+														size="icon"
+														class="h-7 w-7"
+														variant="outline"
+														onclick={() => (editingRoleId = null)}
 													>
 														<X class="h-3.5 w-3.5" />
-													</button>
+													</Button>
 												</form>
-											{:else}
-												<button
-													type="button"
-													class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 {roleColors[
-														user.role
-													]} hover:bg-opacity-80 dark:hover:bg-opacity-80 hover:shadow-sm"
-													onclick={() => {
-														users[i].editingRole = true;
-													}}
-													title="Click to edit role"
-												>
-													{#snippet roleIcon(/** @type {string} */ role)}
-														{@const RoleIcon = roleIcons[role] || User}
-														<RoleIcon class="h-3.5 w-3.5" />
-													{/snippet}
-													{@render roleIcon(user.role)}
-													{user.role}
-													<Edit class="h-3 w-3" />
-												</button>
 											{/if}
-										</td>
-										<td
-											class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
-										>
-											{user.joined}
-										</td>
-										<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+										</Table.Cell>
+										<Table.Cell>
+											<span class="text-muted-foreground text-sm">{formatDate(user.joined)}</span>
+										</Table.Cell>
+										<Table.Cell>
 											{#if user.isSelf}
-												<span class="cursor-not-allowed text-gray-300 dark:text-gray-600">—</span>
+												<span class="text-muted-foreground">-</span>
 											{:else}
-												<form
-													method="POST"
-													action="?/remove_user"
-													class="inline"
-													onsubmit={(e) => {
-														if (!confirm('Remove this user from the organization?')) {
-															e.preventDefault();
-														}
-													}}
-												>
-													<input type="hidden" name="user_id" value={user.id} />
-													<button
-														type="submit"
-														class="rounded-lg p-2 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-														title="Remove user"
-													>
-														<Trash2 class="h-4 w-4" />
-													</button>
-												</form>
+												<AlertDialog.Root>
+													<AlertDialog.Trigger>
+														<Button
+															variant="ghost"
+															size="icon"
+															class="text-destructive hover:bg-destructive/10 h-8 w-8"
+														>
+															<Trash2 class="h-4 w-4" />
+														</Button>
+													</AlertDialog.Trigger>
+													<AlertDialog.Content>
+														<AlertDialog.Header class="">
+															<AlertDialog.Title class="">Remove Team Member</AlertDialog.Title>
+															<AlertDialog.Description class="">
+																Are you sure you want to remove <strong>{user.name}</strong> from the
+																organization? This action cannot be undone.
+															</AlertDialog.Description>
+														</AlertDialog.Header>
+														<AlertDialog.Footer class="">
+															<AlertDialog.Cancel class="">Cancel</AlertDialog.Cancel>
+															<form method="POST" action="?/remove_user" class="inline">
+																<input type="hidden" name="user_id" value={user.id} />
+																<Button type="submit" variant="destructive">Remove</Button>
+															</form>
+														</AlertDialog.Footer>
+													</AlertDialog.Content>
+												</AlertDialog.Root>
 											{/if}
-										</td>
-									</tr>
+										</Table.Cell>
+									</Table.Row>
 								{/each}
-							</tbody>
-						</table>
+
+								{#if users.length === 0}
+									<Table.Row>
+										<Table.Cell colspan={4} class="py-8 text-center">
+											<Users class="text-muted-foreground/50 mx-auto h-8 w-8" />
+											<p class="text-muted-foreground mt-2 text-sm">No team members found</p>
+										</Table.Cell>
+									</Table.Row>
+								{/if}
+							</Table.Body>
+						</Table.Root>
 					</div>
-				</div>
-			</div>
+				</Card.Content>
+			</Card.Root>
 		</div>
-	</div>
+	{/if}
 </div>

@@ -40,12 +40,15 @@ export async function load({ url, locals, cookies }) {
 		if (account) queryParams.append('account', account);
 		// Django doesn't have direct owner name filter, we'd need to filter by assigned_to ID
 
-		// Fetch cases, users, and accounts in parallel
-		const [casesResponse, usersResponse, accountsResponse] = await Promise.all([
-			apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
-			apiRequest('/users/', {}, { cookies, org }),
-			apiRequest('/accounts/', {}, { cookies, org })
-		]);
+		// Fetch cases, users, accounts, contacts, and teams in parallel
+		const [casesResponse, usersResponse, accountsResponse, contactsResponse, teamsResponse] =
+			await Promise.all([
+				apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
+				apiRequest('/users/', {}, { cookies, org }),
+				apiRequest('/accounts/', {}, { cookies, org }),
+				apiRequest('/contacts/', {}, { cookies, org }),
+				apiRequest('/teams/', {}, { cookies, org })
+			]);
 
 		// Extract cases from response
 		let cases = [];
@@ -57,7 +60,7 @@ export async function load({ url, locals, cookies }) {
 			cases = casesResponse.results;
 		}
 
-		// Transform Django cases to Prisma structure
+		// Transform Django cases to frontend structure
 		const transformedCases = cases.map((caseItem) => ({
 			id: caseItem.id,
 			subject: caseItem.name,
@@ -68,13 +71,38 @@ export async function load({ url, locals, cookies }) {
 			closedOn: caseItem.closed_on,
 			createdAt: caseItem.created_at,
 			updatedAt: caseItem.updated_at,
+			isActive: caseItem.is_active,
 
-			// Owner (first assigned user)
+			// Created by
+			createdBy: caseItem.created_by
+				? {
+						id: caseItem.created_by.id,
+						name:
+							caseItem.created_by.first_name && caseItem.created_by.last_name
+								? `${caseItem.created_by.first_name} ${caseItem.created_by.last_name}`
+								: caseItem.created_by.email
+					}
+				: null,
+
+			// Assigned to (multiple profiles)
+			assignedTo: (caseItem.assigned_to || []).map((profile) => ({
+				id: profile.id,
+				name:
+					profile.user_details?.first_name && profile.user_details?.last_name
+						? `${profile.user_details.first_name} ${profile.user_details.last_name}`
+						: profile.user_details?.email || profile.email
+			})),
+
+			// Owner (first assigned user for backwards compatibility)
 			owner:
 				caseItem.assigned_to && caseItem.assigned_to.length > 0
 					? {
 							id: caseItem.assigned_to[0].id,
-							name: caseItem.assigned_to[0].user_details?.email || caseItem.assigned_to[0].email
+							name:
+								caseItem.assigned_to[0].user_details?.first_name &&
+								caseItem.assigned_to[0].user_details?.last_name
+									? `${caseItem.assigned_to[0].user_details.first_name} ${caseItem.assigned_to[0].user_details.last_name}`
+									: caseItem.assigned_to[0].user_details?.email || caseItem.assigned_to[0].email
 						}
 					: null,
 
@@ -86,7 +114,23 @@ export async function load({ url, locals, cookies }) {
 					}
 				: null,
 
-			// Comments (Django might not return by default)
+			// Contacts (M2M)
+			contacts: (caseItem.contacts || []).map((contact) => ({
+				id: contact.id,
+				name:
+					contact.first_name && contact.last_name
+						? `${contact.first_name} ${contact.last_name}`
+						: contact.email,
+				email: contact.email
+			})),
+
+			// Teams (M2M)
+			teams: (caseItem.teams || []).map((team) => ({
+				id: team.id,
+				name: team.name
+			})),
+
+			// Comments (from detail endpoint)
 			comments: (caseItem.comments || []).map((comment) => ({
 				id: comment.id,
 				body: comment.comment,
@@ -105,7 +149,10 @@ export async function load({ url, locals, cookies }) {
 		const activeUsersList = usersResponse.active_users?.active_users || [];
 		const allUsers = activeUsersList.map((user) => ({
 			id: user.id,
-			name: user.user_details?.email || user.email
+			name:
+				user.user_details?.first_name && user.user_details?.last_name
+					? `${user.user_details.first_name} ${user.user_details.last_name}`
+					: user.user_details?.email || user.email
 		}));
 
 		// Transform accounts list
@@ -123,14 +170,52 @@ export async function load({ url, locals, cookies }) {
 			name: account.name
 		}));
 
-		// Status options from Django
-		const statusOptions = ['New', 'Assigned', 'In Progress', 'Closed'];
+		// Transform contacts list
+		let allContacts = [];
+		if (contactsResponse.contact_obj_list) {
+			allContacts = contactsResponse.contact_obj_list;
+		} else if (contactsResponse.results) {
+			allContacts = contactsResponse.results;
+		} else if (Array.isArray(contactsResponse)) {
+			allContacts = contactsResponse;
+		}
+
+		const transformedContacts = allContacts.map((contact) => ({
+			id: contact.id,
+			name:
+				contact.first_name && contact.last_name
+					? `${contact.first_name} ${contact.last_name}`
+					: contact.email,
+			email: contact.email
+		}));
+
+		// Transform teams list
+		let allTeams = [];
+		if (teamsResponse.teams) {
+			allTeams = teamsResponse.teams;
+		} else if (teamsResponse.results) {
+			allTeams = teamsResponse.results;
+		} else if (Array.isArray(teamsResponse)) {
+			allTeams = teamsResponse;
+		}
+
+		const transformedTeams = allTeams.map((team) => ({
+			id: team.id,
+			name: team.name
+		}));
+
+		// Status options from Django (matching backend CASE_TYPE choices)
+		const statusOptions = ['New', 'Assigned', 'Pending', 'Closed', 'Rejected', 'Duplicate'];
+		const caseTypeOptions = ['Question', 'Incident', 'Problem'];
 
 		return {
 			cases: transformedCases,
 			allUsers,
 			allAccounts: transformedAccounts,
-			statusOptions
+			allContacts: transformedContacts,
+			allTeams: transformedTeams,
+			statusOptions,
+			caseTypeOptions
 		};
 	} catch (err) {
 		console.error('Error loading cases from API:', err);
@@ -149,20 +234,41 @@ export const actions = {
 			const dueDateValue = form.get('dueDate');
 			const closedOn = dueDateValue ? dueDateValue.toString() : null;
 			const priority = form.get('priority')?.toString() || 'Normal';
-			const ownerId = form.get('assignedId')?.toString();
+			const caseType = form.get('caseType')?.toString() || '';
+			const assignedToJson = form.get('assignedTo')?.toString();
+			const contactsJson = form.get('contacts')?.toString();
+			const teamsJson = form.get('teams')?.toString();
 
-			if (!name || !accountId || !ownerId) {
-				return fail(400, { error: 'Missing required fields.' });
+			// Parse JSON arrays
+			let assignedTo = [];
+			let contacts = [];
+			let teams = [];
+
+			try {
+				assignedTo = assignedToJson ? JSON.parse(assignedToJson) : [];
+				contacts = contactsJson ? JSON.parse(contactsJson) : [];
+				teams = teamsJson ? JSON.parse(teamsJson) : [];
+			} catch {
+				// Fallback for single ID format
+				const ownerId = form.get('assignedId')?.toString();
+				if (ownerId) assignedTo = [ownerId];
+			}
+
+			if (!name) {
+				return fail(400, { error: 'Case name is required.' });
 			}
 
 			// Create case via API
 			const caseData = {
 				name,
 				description,
-				account: accountId,
+				account: accountId || null,
 				closed_on: closedOn,
 				priority,
-				assigned_to: [ownerId],
+				case_type: caseType,
+				assigned_to: assignedTo,
+				contacts,
+				teams,
 				status: 'New'
 			};
 
@@ -175,7 +281,7 @@ export const actions = {
 				{ cookies, org: locals.org }
 			);
 
-			throw redirect(303, `/cases/${newCase.id}`);
+			return { success: true, case: newCase };
 		} catch (err) {
 			console.error('Error creating case:', err);
 			return fail(500, { error: 'Failed to create case' });
@@ -191,21 +297,44 @@ export const actions = {
 			const dueDateValue = form.get('dueDate');
 			const closedOn = dueDateValue ? dueDateValue.toString() : null;
 			const priority = form.get('priority')?.toString() || 'Normal';
-			const ownerId = form.get('assignedId')?.toString();
+			const status = form.get('status')?.toString() || 'New';
+			const caseType = form.get('caseType')?.toString() || '';
 			const caseId = form.get('caseId')?.toString();
+			const assignedToJson = form.get('assignedTo')?.toString();
+			const contactsJson = form.get('contacts')?.toString();
+			const teamsJson = form.get('teams')?.toString();
 
-			if (!name || !accountId || !ownerId || !caseId) {
-				return fail(400, { error: 'Missing required fields.' });
+			// Parse JSON arrays
+			let assignedTo = [];
+			let contacts = [];
+			let teams = [];
+
+			try {
+				assignedTo = assignedToJson ? JSON.parse(assignedToJson) : [];
+				contacts = contactsJson ? JSON.parse(contactsJson) : [];
+				teams = teamsJson ? JSON.parse(teamsJson) : [];
+			} catch {
+				// Fallback for single ID format
+				const ownerId = form.get('assignedId')?.toString();
+				if (ownerId) assignedTo = [ownerId];
+			}
+
+			if (!name || !caseId) {
+				return fail(400, { error: 'Case name and ID are required.' });
 			}
 
 			// Update case via API
 			const caseData = {
 				name,
 				description,
-				account: accountId,
+				account: accountId || null,
 				closed_on: closedOn,
 				priority,
-				assigned_to: [ownerId]
+				status,
+				case_type: caseType,
+				assigned_to: assignedTo,
+				contacts,
+				teams
 			};
 
 			await apiRequest(
@@ -217,10 +346,60 @@ export const actions = {
 				{ cookies, org: locals.org }
 			);
 
-			throw redirect(303, `/cases/${caseId}`);
+			return { success: true };
 		} catch (err) {
 			console.error('Error updating case:', err);
 			return fail(500, { error: 'Failed to update case' });
+		}
+	},
+
+	close: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const caseId = form.get('caseId')?.toString();
+
+			if (!caseId) {
+				return fail(400, { error: 'Case ID is required.' });
+			}
+
+			await apiRequest(
+				`/cases/${caseId}/`,
+				{
+					method: 'PATCH',
+					body: { status: 'Closed' }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error closing case:', err);
+			return fail(500, { error: 'Failed to close case' });
+		}
+	},
+
+	reopen: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const caseId = form.get('caseId')?.toString();
+
+			if (!caseId) {
+				return fail(400, { error: 'Case ID is required.' });
+			}
+
+			await apiRequest(
+				`/cases/${caseId}/`,
+				{
+					method: 'PATCH',
+					body: { status: 'In Progress' }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error reopening case:', err);
+			return fail(500, { error: 'Failed to reopen case' });
 		}
 	},
 
@@ -236,7 +415,7 @@ export const actions = {
 			// Delete via API
 			await apiRequest(`/cases/${caseId}/`, { method: 'DELETE' }, { cookies, org: locals.org });
 
-			throw redirect(303, '/cases');
+			return { success: true };
 		} catch (err) {
 			console.error('Error deleting case:', err);
 			return fail(500, { error: 'Failed to delete case' });

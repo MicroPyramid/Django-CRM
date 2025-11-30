@@ -1,0 +1,63 @@
+<script module>
+	import { tv } from 'tailwind-variants';
+	export const sheetVariants = tv({
+		base: 'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
+		variants: {
+			side: {
+				top: 'data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b',
+				bottom:
+					'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
+				left: 'data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 start-0 h-full w-3/4 border-e sm:max-w-sm',
+				right:
+					'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 end-0 h-full w-3/4 border-s sm:max-w-sm'
+			}
+		},
+		defaultVariants: {
+			side: 'right'
+		}
+	});
+</script>
+
+<script>
+	import { Dialog as SheetPrimitive } from 'bits-ui';
+	import XIcon from '@lucide/svelte/icons/x';
+	import SheetOverlay from './sheet-overlay.svelte';
+	import { cn } from '$lib/utils.js';
+
+	/**
+	 * @type {{
+	 *   ref?: HTMLElement | null,
+	 *   class?: string,
+	 *   side?: 'top' | 'bottom' | 'left' | 'right',
+	 *   portalProps?: Record<string, any>,
+	 *   children?: import('svelte').Snippet,
+	 *   [key: string]: any
+	 * }}
+	 */
+	let {
+		ref = $bindable(null),
+		class: className,
+		side = 'right',
+		portalProps = {},
+		children,
+		...restProps
+	} = $props();
+</script>
+
+<SheetPrimitive.Portal {...portalProps}>
+	<SheetOverlay />
+	<SheetPrimitive.Content
+		bind:ref
+		data-slot="sheet-content"
+		class={cn(sheetVariants({ side }), className)}
+		{...restProps}
+	>
+		{@render children?.()}
+		<SheetPrimitive.Close
+			class="ring-offset-background focus-visible:ring-ring absolute end-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none"
+		>
+			<XIcon class="size-4" />
+			<span class="sr-only">Close</span>
+		</SheetPrimitive.Close>
+	</SheetPrimitive.Content>
+</SheetPrimitive.Portal>

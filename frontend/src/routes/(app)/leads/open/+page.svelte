@@ -1,6 +1,8 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
-	import { formatDistanceToNow } from 'date-fns';
+	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { tick } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		Search,
 		Filter,
@@ -12,259 +14,277 @@
 		Building2,
 		User,
 		Calendar,
-		Star,
-		TrendingUp,
-		AlertCircle,
-		CheckCircle2,
-		Clock,
-		XCircle,
-		Eye
+		Eye,
+		MoreHorizontal
 	} from '@lucide/svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { LeadDetailDrawer, LeadFormDrawer } from '$lib/components/leads';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { cn } from '$lib/utils.js';
+	import { formatRelativeDate, getNameInitials } from '$lib/utils/formatting.js';
+	import { getLeadStatusClass, getRatingConfig } from '$lib/utils/ui-helpers.js';
+	import {
+		LEAD_STATUSES as statuses,
+		LEAD_SOURCES as sources,
+		LEAD_RATINGS as ratings
+	} from '$lib/constants/filters.js';
+	import { useDrawerState, useListFilters } from '$lib/hooks';
 
-	// Get leads from the data prop passed from the server
-	export let data;
-	const { leads } = data;
+	/** @type {{ data: any }} */
+	let { data } = $props();
 
-	// State management
-	let searchQuery = '';
-	let statusFilter = 'ALL';
-	let sourceFilter = 'ALL';
-	let ratingFilter = 'ALL';
-	let sortBy = 'createdAt';
-	let sortOrder = 'desc';
-	let isLoading = false;
-	let showFilters = false;
+	// Computed values
+	const leads = $derived(data.leads || []);
 
-	// Available statuses for filtering
-	const statuses = [
-		{ value: 'ALL', label: 'All Statuses' },
-		{ value: 'NEW', label: 'New' },
-		{ value: 'PENDING', label: 'Pending' },
-		{ value: 'CONTACTED', label: 'Contacted' },
-		{ value: 'QUALIFIED', label: 'Qualified' },
-		{ value: 'UNQUALIFIED', label: 'Unqualified' },
-		{ value: 'CONVERTED', label: 'Converted' }
-	];
+	// Drawer state (no URL sync for leads)
+	const drawer = useDrawerState();
 
-	// Lead sources for filtering
-	const sources = [
-		{ value: 'ALL', label: 'All Sources' },
-		{ value: 'WEB', label: 'Website' },
-		{ value: 'PHONE_INQUIRY', label: 'Phone Inquiry' },
-		{ value: 'PARTNER_REFERRAL', label: 'Partner Referral' },
-		{ value: 'COLD_CALL', label: 'Cold Call' },
-		{ value: 'TRADE_SHOW', label: 'Trade Show' },
-		{ value: 'EMPLOYEE_REFERRAL', label: 'Employee Referral' },
-		{ value: 'ADVERTISEMENT', label: 'Advertisement' },
-		{ value: 'OTHER', label: 'Other' }
-	];
+	// Filter/search/sort state
+	const list = useListFilters({
+		searchFields: ['firstName', 'lastName', 'company', 'email'],
+		filters: [
+			{
+				key: 'statusFilter',
+				defaultValue: 'ALL',
+				match: (item, value) => value === 'ALL' || item.status === value
+			},
+			{
+				key: 'sourceFilter',
+				defaultValue: 'ALL',
+				match: (item, value) => value === 'ALL' || item.leadSource === value
+			},
+			{
+				key: 'ratingFilter',
+				defaultValue: 'ALL',
+				match: (item, value) => value === 'ALL' || item.rating === value
+			}
+		],
+		defaultSortColumn: 'createdAt',
+		defaultSortDirection: 'desc'
+	});
 
-	// Rating options
-	const ratings = [
-		{ value: 'ALL', label: 'All Ratings' },
-		{ value: 'Hot', label: 'Hot' },
-		{ value: 'Warm', label: 'Warm' },
-		{ value: 'Cold', label: 'Cold' }
-	];
+	// Filtered and sorted leads
+	const filteredLeads = $derived(list.filterAndSort(leads));
+	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
-	// Sort options
-	const sortOptions = [
-		{ value: 'createdAt', label: 'Created Date' },
-		{ value: 'firstName', label: 'First Name' },
-		{ value: 'lastName', label: 'Last Name' },
-		{ value: 'company', label: 'Company' },
-		{ value: 'rating', label: 'Rating' }
-	];
+	// Form references for server actions
+	/** @type {HTMLFormElement} */
+	let createForm;
+	/** @type {HTMLFormElement} */
+	let updateForm;
+	/** @type {HTMLFormElement} */
+	let deleteForm;
+	/** @type {HTMLFormElement} */
+	let convertForm;
 
-	// Function to get the full name of a lead
+	// Form data state
+	let formState = $state({
+		leadId: '',
+		// Core Information
+		firstName: '',
+		lastName: '',
+		email: '',
+		phone: '',
+		company: '',
+		title: '',
+		contactTitle: '',
+		website: '',
+		linkedinUrl: '',
+		// Sales Pipeline
+		status: '',
+		source: '',
+		industry: '',
+		rating: '',
+		opportunityAmount: '',
+		probability: '',
+		closeDate: '',
+		// Address
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		// Activity
+		lastContacted: '',
+		nextFollowUp: '',
+		description: '',
+		ownerId: ''
+	});
+
 	/**
+	 * Get full name
 	 * @param {any} lead
 	 */
 	function getFullName(lead) {
 		return `${lead.firstName} ${lead.lastName}`.trim();
 	}
 
-	// Function to map lead status to colors and icons
 	/**
-	 * @param {string} status
+	 * Get initials for lead
+	 * @param {any} lead
 	 */
-	function getStatusConfig(status) {
-		switch (status) {
-			case 'NEW':
-				return { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Star };
-			case 'PENDING':
-				return { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock };
-			case 'CONTACTED':
-				return { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2 };
-			case 'QUALIFIED':
-				return { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: TrendingUp };
-			case 'UNQUALIFIED':
-				return { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle };
-			case 'CONVERTED':
-				return { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: CheckCircle2 };
-			default:
-				return { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: AlertCircle };
-		}
+	function getLeadInitials(lead) {
+		return getNameInitials(lead.firstName, lead.lastName);
 	}
 
-	// Function to get rating config
 	/**
-	 * @param {string} rating
+	 * Handle form submit from drawer
+	 * @param {any} formData
 	 */
-	function getRatingConfig(rating) {
-		switch (rating) {
-			case 'Hot':
-				return { color: 'text-red-600', dots: 3 };
-			case 'Warm':
-				return { color: 'text-orange-500', dots: 2 };
-			case 'Cold':
-				return { color: 'text-blue-500', dots: 1 };
-			default:
-				return { color: 'text-gray-400', dots: 0 };
-		}
-	}
+	async function handleFormSubmit(formData) {
+		// Populate form state
+		// Core Information
+		formState.firstName = formData.first_name || '';
+		formState.lastName = formData.last_name || '';
+		formState.email = formData.email || '';
+		formState.phone = formData.phone || '';
+		formState.company = formData.company || '';
+		formState.title = formData.title || '';
+		formState.contactTitle = formData.contact_title || '';
+		formState.website = formData.website || '';
+		formState.linkedinUrl = formData.linkedin_url || '';
+		// Sales Pipeline
+		formState.status = formData.status || '';
+		formState.source = formData.source || '';
+		formState.industry = formData.industry || '';
+		formState.rating = formData.rating || '';
+		formState.opportunityAmount = formData.opportunity_amount || '';
+		formState.probability = formData.probability || '';
+		formState.closeDate = formData.close_date || '';
+		// Address
+		formState.addressLine = formData.address_line || '';
+		formState.city = formData.city || '';
+		formState.state = formData.state || '';
+		formState.postcode = formData.postcode || '';
+		formState.country = formData.country || '';
+		// Activity
+		formState.lastContacted = formData.last_contacted || '';
+		formState.nextFollowUp = formData.next_follow_up || '';
+		formState.description = formData.description || '';
 
-	// Replace fixed date formatting with relative time
-	/**
-	 * @param {string | Date | null | undefined} dateString
-	 */
-	function formatDate(dateString) {
-		if (!dateString) return '-';
-		return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-	}
+		await tick();
 
-	// Computed filtered and sorted leads
-	$: filteredLeads = leads
-		.filter((lead) => {
-			const matchesSearch =
-				searchQuery === '' ||
-				getFullName(lead).toLowerCase().includes(searchQuery.toLowerCase()) ||
-				(lead.company && lead.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
-				(lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase()));
-
-			const matchesStatus = statusFilter === 'ALL' || lead.status === statusFilter;
-			const matchesSource = sourceFilter === 'ALL' || lead.leadSource === sourceFilter;
-			const matchesRating = ratingFilter === 'ALL' || lead.rating === ratingFilter;
-
-			return matchesSearch && matchesStatus && matchesSource && matchesRating;
-		})
-		.sort((a, b) => {
-			const getFieldValue = (/** @type {any} */ obj, /** @type {string} */ field) => {
-				return obj[field];
-			};
-
-			const aValue = getFieldValue(a, sortBy);
-			const bValue = getFieldValue(b, sortBy);
-
-			if (sortOrder === 'asc') {
-				return aValue > bValue ? 1 : -1;
-			} else {
-				return aValue < bValue ? 1 : -1;
-			}
-		});
-
-	// Function to toggle sort order
-	/**
-	 * @param {string} field
-	 */
-	function toggleSort(field) {
-		if (sortBy === field) {
-			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		if (drawer.mode === 'edit' && drawer.selected) {
+			formState.leadId = drawer.selected.id;
+			// Use existing owner when editing (form doesn't have owner selection)
+			formState.ownerId = drawer.selected.owner?.id || '';
+			await tick();
+			updateForm.requestSubmit();
 		} else {
-			sortBy = field;
-			sortOrder = 'desc';
+			// For new leads, ownerId would need to come from somewhere (e.g., current user)
+			formState.ownerId = '';
+			createForm.requestSubmit();
 		}
 	}
 
-	// Clear all filters
-	function clearFilters() {
-		searchQuery = '';
-		statusFilter = 'ALL';
-		sourceFilter = 'ALL';
-		ratingFilter = 'ALL';
-		sortBy = 'createdAt';
-		sortOrder = 'desc';
+	/**
+	 * Handle lead delete
+	 */
+	async function handleDelete() {
+		if (!drawer.selected) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(drawer.selected)}?`)) return;
+
+		formState.leadId = drawer.selected.id;
+		await tick();
+		deleteForm.requestSubmit();
+	}
+
+	/**
+	 * Handle lead convert
+	 */
+	async function handleConvert() {
+		if (!drawer.selected) return;
+
+		formState.leadId = drawer.selected.id;
+		await tick();
+		convertForm.requestSubmit();
+	}
+
+	/**
+	 * Create enhance handler for form actions
+	 * @param {string} successMessage
+	 * @param {boolean} closeDetailDrawer
+	 */
+	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+		return () => {
+			return async ({ result }) => {
+				if (result.type === 'success') {
+					toast.success(successMessage);
+					if (closeDetailDrawer) {
+						drawer.closeDetail();
+					} else {
+						drawer.closeForm();
+					}
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Operation failed');
+				} else if (result.type === 'error') {
+					toast.error('An unexpected error occurred');
+				}
+			};
+		};
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<!-- Header -->
-	<header class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-		<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-			<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-				<div class="flex items-center gap-3">
-					<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
-						<User class="h-6 w-6 text-blue-600 dark:text-blue-400" />
-					</div>
-					<div>
-						<h1 class="text-2xl font-bold text-gray-900 md:text-3xl dark:text-gray-100">
-							Open Leads
-						</h1>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-							{filteredLeads.length} of {leads.length} leads
-						</p>
-					</div>
-				</div>
-				<a
-					href="/leads/new"
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
-				>
-					<Plus class="h-4 w-4" />
-					New Lead
-				</a>
-			</div>
-		</div>
-	</header>
+<svelte:head>
+	<title>Leads - BottleCRM</title>
+</svelte:head>
 
-	<!-- Filters and Search -->
-	<div class="mx-auto max-w-full px-4 py-6 sm:px-6 lg:px-8">
-		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-		>
-			<!-- Search and Filter Toggle -->
-			<div class="mb-4 flex flex-col gap-4 sm:flex-row">
+<PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
+	{#snippet actions()}
+		<Button onclick={drawer.openCreate} disabled={false}>
+			<Plus class="mr-2 h-4 w-4" />
+			New Lead
+		</Button>
+	{/snippet}
+</PageHeader>
+
+<div class="flex-1 space-y-4 p-4 md:p-6">
+	<!-- Search and Filters -->
+	<Card.Root>
+		<Card.Content class="p-4">
+			<div class="flex flex-col gap-4 sm:flex-row">
 				<div class="relative flex-1">
-					<label for="lead-search" class="sr-only">Search leads</label>
-					<Search
-						class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400 dark:text-gray-500"
-					/>
-					<input
-						id="lead-search"
+					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+					<Input
 						type="text"
 						placeholder="Search by name, company, or email..."
-						bind:value={searchQuery}
-						class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-gray-900 placeholder-gray-500 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+						bind:value={list.searchQuery}
+						class="pl-9"
 					/>
 				</div>
-				<button
-					onclick={() => (showFilters = !showFilters)}
-					class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
+				<Button
+					variant="outline"
+					onclick={() => (list.showFilters = !list.showFilters)}
+					class="shrink-0"
+					disabled={false}
 				>
-					<Filter class="h-4 w-4" />
+					<Filter class="mr-2 h-4 w-4" />
 					Filters
-					{#if showFilters}
-						<ChevronUp class="h-4 w-4" />
-					{:else}
-						<ChevronDown class="h-4 w-4" />
+					{#if activeFiltersCount > 0}
+						<Badge variant="secondary" class="ml-2">{activeFiltersCount}</Badge>
 					{/if}
-				</button>
+					{#if list.showFilters}
+						<ChevronUp class="ml-2 h-4 w-4" />
+					{:else}
+						<ChevronDown class="ml-2 h-4 w-4" />
+					{/if}
+				</Button>
 			</div>
 
-			<!-- Advanced Filters -->
-			{#if showFilters}
-				<div
-					class="grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-4 dark:bg-gray-700"
-					transition:fade
-				>
+			{#if list.showFilters}
+				<div class="bg-muted/50 mt-4 grid grid-cols-1 gap-4 rounded-lg p-4 sm:grid-cols-4">
 					<div>
-						<label
-							for="status-filter"
-							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label
-						>
+						<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
 						<select
 							id="status-filter"
-							bind:value={statusFilter}
-							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+							bind:value={list.filters.statusFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
 						>
 							{#each statuses as status}
 								<option value={status.value}>{status.label}</option>
@@ -272,14 +292,11 @@
 						</select>
 					</div>
 					<div>
-						<label
-							for="source-filter"
-							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Source</label
-						>
+						<label for="source-filter" class="mb-1.5 block text-sm font-medium">Source</label>
 						<select
 							id="source-filter"
-							bind:value={sourceFilter}
-							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+							bind:value={list.filters.sourceFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
 						>
 							{#each sources as source}
 								<option value={source.value}>{source.label}</option>
@@ -287,14 +304,11 @@
 						</select>
 					</div>
 					<div>
-						<label
-							for="rating-filter"
-							class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Rating</label
-						>
+						<label for="rating-filter" class="mb-1.5 block text-sm font-medium">Rating</label>
 						<select
 							id="rating-filter"
-							bind:value={ratingFilter}
-							class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+							bind:value={list.filters.ratingFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
 						>
 							{#each ratings as rating}
 								<option value={rating.value}>{rating.label}</option>
@@ -302,383 +316,372 @@
 						</select>
 					</div>
 					<div class="flex items-end">
-						<button
-							onclick={clearFilters}
-							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-						>
+						<Button variant="ghost" onclick={list.clearFilters} class="w-full" disabled={false}>
 							Clear Filters
-						</button>
+						</Button>
 					</div>
 				</div>
 			{/if}
-		</div>
-	</div>
+		</Card.Content>
+	</Card.Root>
 
-	<!-- Main Content -->
-	<main class="mx-auto max-w-full px-4 pb-8 sm:px-6 lg:px-8">
-		{#if isLoading}
-			<div class="flex items-center justify-center py-20" transition:fade>
-				<div
-					class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600 dark:border-blue-400"
-				></div>
-			</div>
-		{:else if filteredLeads.length === 0}
-			<div
-				class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800"
-				transition:fade
-			>
-				<div class="mb-4 text-6xl text-gray-400 dark:text-gray-500">📭</div>
-				<h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-				<p class="mb-6 text-gray-500 dark:text-gray-400">
-					Try adjusting your search criteria or create a new lead.
-				</p>
-				<a
-					href="/leads/new"
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
-				>
-					<Plus class="h-4 w-4" />
-					Create New Lead
-				</a>
-			</div>
-		{:else}
-			<div
-				class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
-				in:fade={{ duration: 300 }}
-			>
-				<!-- Desktop Table View -->
-				<div class="hidden xl:block">
-					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-							<thead class="bg-gray-50 dark:bg-gray-700">
-								<tr>
-									<th
-										class="w-48 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Lead</th
-									>
-									<th
-										class="w-40 cursor-pointer px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600"
-										onclick={() => toggleSort('company')}
-									>
-										<div class="flex items-center gap-1">
-											Company
-											{#if sortBy === 'company'}
-												{#if sortOrder === 'asc'}
-													<ChevronUp class="h-4 w-4" />
-												{:else}
-													<ChevronDown class="h-4 w-4" />
-												{/if}
-											{/if}
-										</div>
-									</th>
-									<th
-										class="w-48 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Contact</th
-									>
-									<th
-										class="w-32 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Source</th
-									>
-									<th
-										class="w-24 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Rating</th
-									>
-									<th
-										class="w-32 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Status</th
-									>
-									<th
-										class="w-32 cursor-pointer px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600"
-										onclick={() => toggleSort('createdAt')}
-									>
-										<div class="flex items-center gap-1">
-											Created
-											{#if sortBy === 'createdAt'}
-												{#if sortOrder === 'asc'}
-													<ChevronUp class="h-4 w-4" />
-												{:else}
-													<ChevronDown class="h-4 w-4" />
-												{/if}
-											{/if}
-										</div>
-									</th>
-									<th
-										class="w-32 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Owner</th
-									>
-									<th
-										class="w-24 px-4 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-										>Actions</th
-									>
-								</tr>
-							</thead>
-							<tbody
-								class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
-							>
-								{#each filteredLeads as lead, i}
-									{@const statusConfig = getStatusConfig(lead.status)}
-									{@const ratingConfig = getRatingConfig(lead.rating || '')}
-									<tr
-										class="transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-700"
-										in:fly={{ y: 20, duration: 300, delay: i * 50 }}
-									>
-										<td class="px-4 py-4">
-											<div class="flex items-center gap-3">
-												<div
-													class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white dark:from-blue-600 dark:to-blue-700"
-												>
-													{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-												</div>
-												<div class="min-w-0">
-													<a
-														href="/leads/{lead.id}"
-														class="block truncate font-medium text-gray-900 transition-colors hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
-													>
-														{getFullName(lead)}
-													</a>
-													{#if lead.title}
-														<p class="truncate text-sm text-gray-500 dark:text-gray-400">
-															{lead.title}
-														</p>
-													{/if}
-												</div>
-											</div>
-										</td>
-										<td class="px-4 py-4">
-											{#if lead.company}
-												<div class="flex min-w-0 items-center gap-2">
-													<Building2
-														class="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500"
-													/>
-													<span class="truncate text-gray-900 dark:text-gray-100"
-														>{lead.company}</span
-													>
-												</div>
+	<!-- Leads Table -->
+	<Card.Root>
+		<Card.Content class="p-0">
+			{#if filteredLeads.length === 0}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No leads found</h3>
+					<p class="text-muted-foreground mt-1 text-sm">
+						Try adjusting your search criteria or create a new lead.
+					</p>
+					<Button onclick={drawer.openCreate} class="mt-4" disabled={false}>
+						<Plus class="mr-2 h-4 w-4" />
+						Create New Lead
+					</Button>
+				</div>
+			{:else}
+				<!-- Desktop Table -->
+				<div class="hidden md:block">
+					<Table.Root>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head class="w-[250px]">Lead</Table.Head>
+								<Table.Head>Company</Table.Head>
+								<Table.Head>Contact</Table.Head>
+								<Table.Head>Rating</Table.Head>
+								<Table.Head>Status</Table.Head>
+								<Table.Head
+									class="hover:bg-muted/50 cursor-pointer"
+									onclick={() => list.toggleSort('createdAt')}
+								>
+									<div class="flex items-center gap-1">
+										Created
+										{#if list.sortColumn === 'createdAt'}
+											{#if list.sortDirection === 'asc'}
+												<ChevronUp class="h-4 w-4" />
 											{:else}
-												<span class="text-gray-400 dark:text-gray-500">-</span>
+												<ChevronDown class="h-4 w-4" />
 											{/if}
-										</td>
-										<td class="px-4 py-4">
-											<div class="space-y-1">
-												{#if lead.email}
-													<a
-														href="mailto:{lead.email}"
-														class="flex min-w-0 items-center gap-2 text-sm text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-													>
-														<Mail class="h-4 w-4 flex-shrink-0" />
-														<span class="truncate">{lead.email}</span>
-													</a>
-												{/if}
-												{#if lead.phone}
-													<a
-														href="tel:{lead.phone}"
-														class="flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-													>
-														<Phone class="h-4 w-4 flex-shrink-0" />
-														<span class="whitespace-nowrap">{lead.phone}</span>
-													</a>
-												{/if}
-												{#if !lead.email && !lead.phone}
-													<span class="text-gray-400 dark:text-gray-500">-</span>
-												{/if}
-											</div>
-										</td>
-										<td class="px-4 py-4">
-											{#if lead.leadSource}
-												<span
-													class="block truncate text-sm text-gray-600 capitalize dark:text-gray-300"
-												>
-													{lead.leadSource.replace('_', ' ').toLowerCase()}
-												</span>
-											{:else}
-												<span class="text-gray-400 dark:text-gray-500">-</span>
-											{/if}
-										</td>
-										<td class="px-4 py-4">
-											{#if lead.rating}
-												<div class="flex items-center gap-1">
-													{#each Array(ratingConfig.dots) as _, i}
-														<div
-															class="h-2 w-2 rounded-full {ratingConfig.color.replace(
-																'text-',
-																'bg-'
-															)} flex-shrink-0"
-														></div>
-													{/each}
-													<span
-														class="text-sm {ratingConfig.color} ml-1 font-medium whitespace-nowrap"
-														>{lead.rating}</span
-													>
-												</div>
-											{:else}
-												<span class="text-gray-400 dark:text-gray-500">-</span>
-											{/if}
-										</td>
-										<td class="px-4 py-4">
-											<div class="flex items-center gap-2">
-												{#snippet statusIcon(/** @type {any} */ config)}
-													{@const StatusIcon = config.icon}
-													<StatusIcon class="h-4 w-4 {config.color.split(' ')[1]} flex-shrink-0" />
-												{/snippet}
-												{@render statusIcon(statusConfig)}
-												<span
-													class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium {statusConfig.color} whitespace-nowrap"
-												>
-													{lead.status}
-												</span>
-											</div>
-										</td>
-										<td class="px-4 py-4">
-											<div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-												<Calendar class="h-4 w-4 flex-shrink-0" />
-												<span class="whitespace-nowrap">{formatDate(lead.createdAt)}</span>
-											</div>
-										</td>
-										<td class="px-4 py-4">
-											{#if lead.owner?.name}
-												<div class="flex min-w-0 items-center gap-2">
-													<div
-														class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700 dark:bg-gray-600 dark:text-gray-200"
-													>
-														{lead.owner.name.charAt(0)}
-													</div>
-													<span class="truncate text-sm text-gray-600 dark:text-gray-300"
-														>{lead.owner.name}</span
-													>
-												</div>
-											{:else}
-												<span class="text-gray-400 dark:text-gray-500">-</span>
-											{/if}
-										</td>
-										<td class="px-4 py-4">
-											<a
-												href="/leads/{lead.id}"
-												class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+										{/if}
+									</div>
+								</Table.Head>
+								<Table.Head class="w-[80px]">Actions</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each filteredLeads as lead (lead.id)}
+								{@const ratingConfig = getRatingConfig(lead.rating)}
+								<Table.Row
+									class="hover:bg-muted/50 cursor-pointer"
+									onclick={() => drawer.openDetail(lead)}
+								>
+									<Table.Cell>
+										<div class="flex items-center gap-3">
+											<div
+												class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
 											>
-												<Eye class="h-4 w-4" />
-												View
-											</a>
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
+												{getLeadInitials(lead)}
+											</div>
+											<div class="min-w-0">
+												<p class="text-foreground truncate font-medium">
+													{getFullName(lead)}
+												</p>
+												{#if lead.title}
+													<p class="text-muted-foreground truncate text-sm">
+														{lead.title}
+													</p>
+												{/if}
+											</div>
+										</div>
+									</Table.Cell>
+									<Table.Cell>
+										{#if lead.company}
+											<div class="flex items-center gap-1.5 text-sm">
+												<Building2 class="text-muted-foreground h-4 w-4" />
+												<span class="truncate">{typeof lead.company === 'object' ? lead.company.name : lead.company}</span>
+											</div>
+										{:else}
+											<span class="text-muted-foreground">-</span>
+										{/if}
+									</Table.Cell>
+									<Table.Cell>
+										<div class="space-y-1">
+											{#if lead.email}
+												<div class="flex items-center gap-1.5 text-sm">
+													<Mail class="text-muted-foreground h-3.5 w-3.5" />
+													<span class="max-w-[150px] truncate">{lead.email}</span>
+												</div>
+											{/if}
+											{#if lead.phone}
+												<div class="flex items-center gap-1.5 text-sm">
+													<Phone class="text-muted-foreground h-3.5 w-3.5" />
+													<span>{lead.phone}</span>
+												</div>
+											{/if}
+											{#if !lead.email && !lead.phone}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</div>
+									</Table.Cell>
+									<Table.Cell>
+										{#if lead.rating}
+											<div class="flex items-center gap-1.5">
+												{#each { length: ratingConfig.dots } as _}
+													<div class={cn('h-2 w-2 rounded-full', ratingConfig.bgColor)}></div>
+												{/each}
+												<span class={cn('text-sm font-medium', ratingConfig.color)}>
+													{lead.rating}
+												</span>
+											</div>
+										{:else}
+											<span class="text-muted-foreground">-</span>
+										{/if}
+									</Table.Cell>
+									<Table.Cell>
+										<span
+											class={cn(
+												'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+												getLeadStatusClass(lead.status)
+											)}
+										>
+											{lead.status}
+										</span>
+									</Table.Cell>
+									<Table.Cell>
+										<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+											<Calendar class="h-3.5 w-3.5" />
+											<span>{formatRelativeDate(lead.createdAt)}</span>
+										</div>
+									</Table.Cell>
+									<Table.Cell onclick={(e) => e.stopPropagation()}>
+										<DropdownMenu.Root>
+											<DropdownMenu.Trigger>
+												<Button variant="ghost" size="icon" class="h-8 w-8" disabled={false}>
+													<MoreHorizontal class="h-4 w-4" />
+												</Button>
+											</DropdownMenu.Trigger>
+											<DropdownMenu.Content align="end">
+												<DropdownMenu.Item onclick={() => drawer.openDetail(lead)}>
+													<Eye class="mr-2 h-4 w-4" />
+													View Details
+												</DropdownMenu.Item>
+												<DropdownMenu.Item
+													onclick={() => {
+														drawer.selected = lead;
+														drawer.openEdit();
+													}}
+												>
+													Edit
+												</DropdownMenu.Item>
+												<DropdownMenu.Separator />
+												<DropdownMenu.Item class="text-destructive">Delete</DropdownMenu.Item>
+											</DropdownMenu.Content>
+										</DropdownMenu.Root>
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
 				</div>
 
 				<!-- Mobile Card View -->
-				<div class="divide-y divide-gray-200 xl:hidden dark:divide-gray-700">
-					{#each filteredLeads as lead, i}
-						{@const statusConfig = getStatusConfig(lead.status)}
-						{@const ratingConfig = getRatingConfig(lead.rating || '')}
-						<div
-							class="bg-white p-6 transition-colors duration-150 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
-							in:fly={{ y: 20, duration: 300, delay: i * 50 }}
+				<div class="divide-y md:hidden">
+					{#each filteredLeads as lead (lead.id)}
+						{@const ratingConfig = getRatingConfig(lead.rating)}
+						<button
+							type="button"
+							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
+							onclick={() => drawer.openDetail(lead)}
 						>
-							<!-- Header -->
-							<div class="mb-4 flex items-start justify-between">
-								<div class="flex items-center gap-3">
-									<div
-										class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 font-medium text-white dark:from-blue-600 dark:to-blue-700"
-									>
-										{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-									</div>
+							<div
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+							>
+								{getLeadInitials(lead)}
+							</div>
+							<div class="min-w-0 flex-1">
+								<div class="flex items-start justify-between gap-2">
 									<div>
-										<a
-											href="/leads/{lead.id}"
-											class="text-lg font-medium text-gray-900 transition-colors hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
-										>
-											{getFullName(lead)}
-										</a>
-										{#if lead.title}
-											<p class="text-sm text-gray-500 dark:text-gray-400">{lead.title}</p>
+										<p class="text-foreground font-medium">{getFullName(lead)}</p>
+										{#if lead.company}
+											<p class="text-muted-foreground text-sm">{typeof lead.company === 'object' ? lead.company.name : lead.company}</p>
 										{/if}
 									</div>
-								</div>
-								<div class="flex items-center gap-2">
-									{#snippet statusIcon(/** @type {any} */ config)}
-										{@const StatusIcon = config.icon}
-										<StatusIcon class="h-4 w-4 {config.color.split(' ')[1]}" />
-									{/snippet}
-									{@render statusIcon(statusConfig)}
 									<span
-										class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium {statusConfig.color}"
+										class={cn(
+											'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
+											getLeadStatusClass(lead.status)
+										)}
 									>
 										{lead.status}
 									</span>
 								</div>
-							</div>
-
-							<!-- Details Grid -->
-							<div class="grid grid-cols-1 gap-3">
-								{#if lead.company}
-									<div class="flex items-center gap-2">
-										<Building2 class="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" />
-										<span class="text-gray-700 dark:text-gray-200">{lead.company}</span>
-									</div>
-								{/if}
-
-								{#if lead.email}
-									<a
-										href="mailto:{lead.email}"
-										class="flex items-center gap-2 text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-									>
-										<Mail class="h-4 w-4 flex-shrink-0" />
-										<span class="truncate">{lead.email}</span>
-									</a>
-								{/if}
-
-								{#if lead.phone}
-									<a
-										href="tel:{lead.phone}"
-										class="flex items-center gap-2 text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-									>
-										<Phone class="h-4 w-4 flex-shrink-0" />
-										<span>{lead.phone}</span>
-									</a>
-								{/if}
-
-								<div class="flex items-center justify-between text-sm">
-									<div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-										<Calendar class="h-4 w-4" />
-										{formatDate(lead.createdAt)}
-									</div>
-
+								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
 									{#if lead.rating}
 										<div class="flex items-center gap-1">
-											{#each Array(ratingConfig.dots) as _, i}
-												<div
-													class="h-2 w-2 rounded-full {ratingConfig.color.replace('text-', 'bg-')}"
-												></div>
+											{#each { length: ratingConfig.dots } as _}
+												<div class={cn('h-1.5 w-1.5 rounded-full', ratingConfig.bgColor)}></div>
 											{/each}
-											<span class="text-sm {ratingConfig.color} ml-1 font-medium"
-												>{lead.rating}</span
-											>
+											<span class={ratingConfig.color}>{lead.rating}</span>
 										</div>
 									{/if}
-								</div>
-
-								{#if lead.owner?.name}
-									<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-										<User class="h-4 w-4" />
-										<span>Owned by {lead.owner.name}</span>
+									<div class="flex items-center gap-1">
+										<Calendar class="h-3.5 w-3.5" />
+										<span>{formatRelativeDate(lead.createdAt)}</span>
 									</div>
-								{/if}
+								</div>
 							</div>
-
-							<!-- Action Button -->
-							<div class="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
-								<a
-									href="/leads/{lead.id}"
-									class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
-								>
-									<Eye class="h-4 w-4" />
-									View Details
-								</a>
-							</div>
-						</div>
+						</button>
 					{/each}
 				</div>
-			</div>
-		{/if}
-	</main>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 </div>
+
+<!-- Lead Detail Drawer -->
+<LeadDetailDrawer
+	bind:open={drawer.detailOpen}
+	lead={drawer.selected}
+	loading={drawer.loading}
+	onEdit={drawer.openEdit}
+	onConvert={handleConvert}
+	onDelete={handleDelete}
+/>
+
+<!-- Lead Form Drawer -->
+<LeadFormDrawer
+	bind:open={drawer.formOpen}
+	mode={drawer.mode}
+	initialData={drawer.selected
+		? {
+				// Core Information
+				title: drawer.selected.title || '',
+				first_name: drawer.selected.firstName || '',
+				last_name: drawer.selected.lastName || '',
+				email: drawer.selected.email || '',
+				phone: drawer.selected.phone || '',
+				company: typeof drawer.selected.company === 'object' ? drawer.selected.company?.name : drawer.selected.company || '',
+				contact_title: drawer.selected.contactTitle || '',
+				website: drawer.selected.website || '',
+				linkedin_url: drawer.selected.linkedinUrl || '',
+				// Sales Pipeline
+				status: drawer.selected.status?.toLowerCase().replace('_', ' ') || 'assigned',
+				source: drawer.selected.leadSource || '',
+				industry: drawer.selected.industry || '',
+				rating: drawer.selected.rating || '',
+				opportunity_amount: drawer.selected.opportunityAmount || '',
+				probability: drawer.selected.probability || '',
+				close_date: drawer.selected.closeDate || '',
+				// Address
+				address_line: drawer.selected.addressLine || '',
+				city: drawer.selected.city || '',
+				state: drawer.selected.state || '',
+				postcode: drawer.selected.postcode || '',
+				country: drawer.selected.country || '',
+				// Activity
+				last_contacted: drawer.selected.lastContacted || '',
+				next_follow_up: drawer.selected.nextFollowUp || '',
+				description: drawer.selected.description || ''
+			}
+		: null}
+	onSubmit={handleFormSubmit}
+/>
+
+<!-- Hidden forms for server actions -->
+<form
+	method="POST"
+	action="?/create"
+	bind:this={createForm}
+	use:enhance={createEnhanceHandler('Lead created successfully')}
+	class="hidden"
+>
+	<!-- Core Information -->
+	<input type="hidden" name="firstName" value={formState.firstName} />
+	<input type="hidden" name="lastName" value={formState.lastName} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="company" value={formState.company} />
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="contactTitle" value={formState.contactTitle} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="linkedinUrl" value={formState.linkedinUrl} />
+	<!-- Sales Pipeline -->
+	<input type="hidden" name="status" value={formState.status} />
+	<input type="hidden" name="source" value={formState.source} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="rating" value={formState.rating} />
+	<input type="hidden" name="opportunityAmount" value={formState.opportunityAmount} />
+	<input type="hidden" name="probability" value={formState.probability} />
+	<input type="hidden" name="closeDate" value={formState.closeDate} />
+	<!-- Address -->
+	<input type="hidden" name="addressLine" value={formState.addressLine} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<!-- Activity -->
+	<input type="hidden" name="lastContacted" value={formState.lastContacted} />
+	<input type="hidden" name="nextFollowUp" value={formState.nextFollowUp} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="ownerId" value={formState.ownerId} />
+</form>
+
+<form
+	method="POST"
+	action="?/update"
+	bind:this={updateForm}
+	use:enhance={createEnhanceHandler('Lead updated successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="leadId" value={formState.leadId} />
+	<!-- Core Information -->
+	<input type="hidden" name="firstName" value={formState.firstName} />
+	<input type="hidden" name="lastName" value={formState.lastName} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="company" value={formState.company} />
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="contactTitle" value={formState.contactTitle} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="linkedinUrl" value={formState.linkedinUrl} />
+	<!-- Sales Pipeline -->
+	<input type="hidden" name="status" value={formState.status} />
+	<input type="hidden" name="source" value={formState.source} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="rating" value={formState.rating} />
+	<input type="hidden" name="opportunityAmount" value={formState.opportunityAmount} />
+	<input type="hidden" name="probability" value={formState.probability} />
+	<input type="hidden" name="closeDate" value={formState.closeDate} />
+	<!-- Address -->
+	<input type="hidden" name="addressLine" value={formState.addressLine} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<!-- Activity -->
+	<input type="hidden" name="lastContacted" value={formState.lastContacted} />
+	<input type="hidden" name="nextFollowUp" value={formState.nextFollowUp} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="ownerId" value={formState.ownerId} />
+</form>
+
+<form
+	method="POST"
+	action="?/delete"
+	bind:this={deleteForm}
+	use:enhance={createEnhanceHandler('Lead deleted successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="leadId" value={formState.leadId} />
+</form>
+
+<form
+	method="POST"
+	action="?/convert"
+	bind:this={convertForm}
+	use:enhance={createEnhanceHandler('Lead converted successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="leadId" value={formState.leadId} />
+</form>

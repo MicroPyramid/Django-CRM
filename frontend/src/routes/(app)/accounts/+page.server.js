@@ -10,7 +10,7 @@
  * Django endpoint: GET /api/accounts/
  */
 
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -97,13 +97,16 @@ export async function load({ locals, url, cookies }) {
 				createdAt: account.created_at,
 				updatedAt: account.updated_at || account.created_at,
 
-				// Address fields (Django uses separate fields)
-				billingAddressLine: account.billing_address_line,
-				billingStreet: account.billing_street,
-				billingCity: account.billing_city,
-				billingState: account.billing_state,
-				billingPostcode: account.billing_postcode,
-				billingCountry: account.billing_country,
+				// Address fields (matching API field names)
+				addressLine: account.address_line,
+				city: account.city,
+				state: account.state,
+				postcode: account.postcode,
+				country: account.country,
+
+				// Business fields
+				annualRevenue: account.annual_revenue ? parseFloat(account.annual_revenue) : null,
+				numberOfEmployees: account.number_of_employees,
 
 				// Owner - Django returns assigned_to array
 				owner:
@@ -138,7 +141,10 @@ export async function load({ locals, url, cookies }) {
 					})) || [],
 
 				// Tags
-				tags: account.tags || []
+				tags: account.tags || [],
+
+				// Teams
+				teams: account.teams || []
 			};
 		});
 
@@ -156,3 +162,163 @@ export async function load({ locals, url, cookies }) {
 		throw error(500, `Failed to fetch accounts: ${err.message}`);
 	}
 }
+
+/** @type {import('./$types').Actions} */
+export const actions = {
+	create: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const name = form.get('name')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || null;
+			const phone = form.get('phone')?.toString().trim() || null;
+			const website = form.get('website')?.toString().trim() || null;
+			const industry = form.get('industry')?.toString().trim() || null;
+			const description = form.get('description')?.toString().trim() || null;
+			const address_line = form.get('address_line')?.toString().trim() || null;
+			const city = form.get('city')?.toString().trim() || null;
+			const state = form.get('state')?.toString().trim() || null;
+			const postcode = form.get('postcode')?.toString().trim() || null;
+			const country = form.get('country')?.toString().trim() || null;
+			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
+
+			if (!name) {
+				return fail(400, { error: 'Account name is required.' });
+			}
+
+			const accountData = {
+				name,
+				email,
+				phone,
+				website,
+				industry,
+				description,
+				address_line,
+				city,
+				state,
+				postcode,
+				country,
+				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null
+			};
+
+			await apiRequest(
+				'/accounts/',
+				{
+					method: 'POST',
+					body: accountData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error creating account:', err);
+			return fail(500, { error: 'Failed to create account' });
+		}
+	},
+
+	update: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+			const name = form.get('name')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || null;
+			const phone = form.get('phone')?.toString().trim() || null;
+			const website = form.get('website')?.toString().trim() || null;
+			const industry = form.get('industry')?.toString().trim() || null;
+			const description = form.get('description')?.toString().trim() || null;
+			const address_line = form.get('address_line')?.toString().trim() || null;
+			const city = form.get('city')?.toString().trim() || null;
+			const state = form.get('state')?.toString().trim() || null;
+			const postcode = form.get('postcode')?.toString().trim() || null;
+			const country = form.get('country')?.toString().trim() || null;
+			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
+
+			if (!accountId || !name) {
+				return fail(400, { error: 'Account ID and name are required.' });
+			}
+
+			const accountData = {
+				name,
+				email,
+				phone,
+				website,
+				industry,
+				description,
+				address_line,
+				city,
+				state,
+				postcode,
+				country,
+				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null
+			};
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PUT',
+					body: accountData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating account:', err);
+			return fail(500, { error: 'Failed to update account' });
+		}
+	},
+
+	deactivate: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PATCH',
+					body: { is_active: false, status: 'close' }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error deactivating account:', err);
+			return fail(500, { error: 'Failed to deactivate account' });
+		}
+	},
+
+	activate: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PATCH',
+					body: { is_active: true, status: 'open' }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error activating account:', err);
+			return fail(500, { error: 'Failed to activate account' });
+		}
+	}
+};

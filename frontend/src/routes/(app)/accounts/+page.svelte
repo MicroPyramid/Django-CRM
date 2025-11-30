@@ -1,549 +1,722 @@
 <script>
+	import { enhance } from '$app/forms';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { tick } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		Search,
+		Filter,
 		Plus,
-		Eye,
-		Edit,
-		Phone,
-		MapPin,
-		Calendar,
-		Users,
-		TrendingUp,
-		Building2,
-		Globe,
-		DollarSign,
-		ChevronUp,
 		ChevronDown,
-		Filter
+		ChevronUp,
+		Phone,
+		Globe,
+		Building2,
+		Users,
+		Target,
+		Calendar,
+		MoreHorizontal,
+		DollarSign,
+		MapPin
 	} from '@lucide/svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { AccountDetailDrawer, AccountFormDrawer } from '$lib/components/accounts';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
+	import { useDrawerState, useListFilters } from '$lib/hooks';
 
-	export let data;
+	/** @type {{ data: import('./$types').PageData }} */
+	let { data } = $props();
 
-	let { accounts, pagination } = data;
-	let sortField = $page.url.searchParams.get('sort') || 'name';
-	let sortOrder = $page.url.searchParams.get('order') || 'asc';
-	let isLoading = false;
-	let statusFilter = $page.url.searchParams.get('status') || 'all';
-	let searchQuery = $page.url.searchParams.get('q') || '';
-	/** @type {NodeJS.Timeout | undefined} */
-	let searchTimeout;
+	// Computed values from data
+	const accounts = $derived(data.accounts || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
-	/**
-	 * @param {string} value
-	 */
-	function debounceSearch(value) {
-		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => {
-			// eslint-disable-next-line svelte/prefer-svelte-reactivity
-			const params = new URLSearchParams($page.url.searchParams);
-			if (value.trim()) {
-				params.set('q', value.trim());
-			} else {
-				params.delete('q');
+	// Drawer state with URL sync
+	const drawer = useDrawerState({
+		page: $page,
+		syncUrl: true
+	});
+
+	// Initialize URL sync when accounts change
+	$effect(() => {
+		drawer.initUrlSync(accounts);
+	});
+
+	// Get unique industries from accounts for filter
+	const industries = $derived.by(() => {
+		const uniqueIndustries = [...new Set(accounts.map((a) => a.industry).filter(Boolean))];
+		return uniqueIndustries.sort();
+	});
+
+	// Filter/search/sort state
+	const list = useListFilters({
+		searchFields: ['name', 'industry', 'website', 'phone'],
+		filters: [
+			{
+				key: 'statusFilter',
+				defaultValue: 'ALL',
+				match: (item, value) =>
+					value === 'ALL' ||
+					(value === 'active' && item.isActive !== false) ||
+					(value === 'closed' && item.isActive === false)
+			},
+			{
+				key: 'industryFilter',
+				defaultValue: 'ALL',
+				match: (item, value) => value === 'ALL' || item.industry === value
 			}
-			params.set('page', '1');
-			goto(`?${params.toString()}`, { keepFocus: true });
-		}, 300);
-	}
+		],
+		defaultSortColumn: 'createdAt',
+		defaultSortDirection: 'desc'
+	});
 
-	function updateQueryParams() {
-		isLoading = true;
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('sort', sortField);
-		params.set('order', sortOrder);
-		params.set('status', statusFilter);
-		params.set('page', '1');
+	// Filtered and sorted accounts
+	const filteredAccounts = $derived(list.filterAndSort(accounts));
+	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
-		goto(`?${params.toString()}`, { keepFocus: true });
+	// Stats
+	const stats = $derived.by(() => ({
+		total: accounts.length,
+		active: accounts.filter((a) => a.isActive !== false).length,
+		totalContacts: accounts.reduce((sum, a) => sum + (a.contactCount || 0), 0),
+		totalOpportunities: accounts.reduce((sum, a) => sum + (a.opportunityCount || 0), 0)
+	}));
+
+	// Form references for server actions
+	/** @type {HTMLFormElement} */
+	let createForm;
+	/** @type {HTMLFormElement} */
+	let updateForm;
+	/** @type {HTMLFormElement} */
+	let deactivateForm;
+	/** @type {HTMLFormElement} */
+	let activateForm;
+
+	// Form data state - aligned with API fields
+	let formState = $state({
+		accountId: '',
+		name: '',
+		email: '',
+		phone: '',
+		website: '',
+		industry: '',
+		description: '',
+		address_line: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		annual_revenue: '',
+		number_of_employees: ''
+	});
+
+	/**
+	 * Get initials for avatar
+	 * @param {any} account
+	 */
+	function getAccountInitials(account) {
+		return getInitials(account.name, 1);
 	}
 
 	/**
-	 * @param {number} newPage
+	 * Handle form submit from drawer
+	 * @param {any} formData
 	 */
-	function changePage(newPage) {
-		if (newPage < 1 || newPage > pagination.totalPages) return;
+	async function handleFormSubmit(formData) {
+		// Populate form state with all API fields
+		formState.name = formData.name || '';
+		formState.email = formData.email || '';
+		formState.phone = formData.phone || '';
+		formState.website = formData.website || '';
+		formState.industry = formData.industry || '';
+		formState.description = formData.description || '';
+		formState.address_line = formData.address_line || '';
+		formState.city = formData.city || '';
+		formState.state = formData.state || '';
+		formState.postcode = formData.postcode || '';
+		formState.country = formData.country || '';
+		formState.annual_revenue = formData.annual_revenue || '';
+		formState.number_of_employees = formData.number_of_employees || '';
 
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('page', newPage.toString());
-		goto(`?${params.toString()}`, { keepFocus: true });
-	}
+		await tick();
 
-	/**
-	 * @param {string} field
-	 */
-	function toggleSort(field) {
-		if (sortField === field) {
-			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		if (drawer.mode === 'edit' && drawer.selected) {
+			formState.accountId = drawer.selected.id;
+			await tick();
+			updateForm.requestSubmit();
 		} else {
-			sortField = field;
-			sortOrder = 'asc';
+			createForm.requestSubmit();
 		}
-		updateQueryParams();
 	}
 
 	/**
-	 * @param {number | null | undefined} amount
+	 * Handle account close (deactivate)
 	 */
-	function formatCurrency(amount) {
-		if (!amount) return '-';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
+	async function handleClose() {
+		if (!drawer.selected) return;
+
+		formState.accountId = drawer.selected.id;
+		await tick();
+		deactivateForm.requestSubmit();
 	}
 
 	/**
-	 * @param {string | Date | null | undefined} date
+	 * Handle account reopen (activate)
 	 */
-	function formatDate(date) {
-		if (!date) return '-';
-		return new Intl.DateTimeFormat('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		}).format(new Date(date));
+	async function handleReopen() {
+		if (!drawer.selected) return;
+
+		formState.accountId = drawer.selected.id;
+		await tick();
+		activateForm.requestSubmit();
 	}
 
-	// Update data when it changes from the server
-	$: {
-		accounts = data.accounts;
-		pagination = data.pagination;
-		isLoading = false;
+	/**
+	 * Create enhance handler for form actions
+	 * @param {string} successMessage
+	 * @param {boolean} closeDetailDrawer
+	 */
+	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+		return () => {
+			return async ({ result }) => {
+				if (result.type === 'success') {
+					toast.success(successMessage);
+					if (closeDetailDrawer) {
+						drawer.closeDetail();
+					} else {
+						drawer.closeForm();
+					}
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Operation failed');
+				} else if (result.type === 'error') {
+					toast.error('An unexpected error occurred');
+				}
+			};
+		};
+	}
+
+	/**
+	 * Navigate to add contact
+	 */
+	function handleAddContact() {
+		if (drawer.selected) {
+			goto(`/contacts?action=create&accountId=${drawer.selected.id}`);
+		}
+	}
+
+	/**
+	 * Navigate to add opportunity
+	 */
+	function handleAddOpportunity() {
+		if (drawer.selected) {
+			goto(`/opportunities/new?accountId=${drawer.selected.id}`);
+		}
 	}
 </script>
 
-<div class="min-h-screen bg-white p-6 dark:bg-gray-900">
-	<!-- Header Section -->
-	<div class="mb-8">
-		<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-			<div>
-				<h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Accounts</h1>
-				<p class="text-gray-600 dark:text-gray-400">
-					Manage all your customer accounts and business relationships
-				</p>
-			</div>
+<svelte:head>
+	<title>Accounts - BottleCRM</title>
+</svelte:head>
 
-			<!-- Action Bar -->
-			<div class="flex flex-col gap-3 sm:flex-row">
-				<!-- Search -->
-				<div class="relative">
-					<label for="accounts-search" class="sr-only">Search accounts</label>
-					<Search
-						class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400"
-					/>
-					<input
-						type="text"
-						id="accounts-search"
-						placeholder="Search accounts..."
-						class="min-w-[250px] rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-sm text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-						bind:value={searchQuery}
-						oninput={(e) => debounceSearch(/** @type {HTMLInputElement} */ (e.target).value)}
-					/>
-				</div>
+<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
+	{#snippet actions()}
+		<Button onclick={drawer.openCreate} disabled={false}>
+			<Plus class="mr-2 h-4 w-4" />
+			New Account
+		</Button>
+	{/snippet}
+</PageHeader>
 
-				<!-- Status Filter -->
-				<div class="relative">
-					<label for="accounts-status-filter" class="sr-only">Filter accounts by status</label>
-					<Filter
-						class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400"
-					/>
-					<select
-						id="accounts-status-filter"
-						class="min-w-[120px] appearance-none rounded-lg border border-gray-300 bg-white py-2.5 pr-8 pl-10 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-						bind:value={statusFilter}
-						onchange={updateQueryParams}
-					>
-						<option value="all">All Status</option>
-						<option value="open">Open</option>
-						<option value="closed">Closed</option>
-					</select>
-				</div>
-
-				<!-- New Account Button -->
-				<a
-					href="/accounts/new"
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
-				>
-					<Plus class="h-4 w-4" />
-					New Account
-				</a>
-			</div>
-		</div>
-	</div>
-
+<div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Stats Cards -->
-	<div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-		<div
-			class="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4 dark:border-blue-800 dark:from-blue-900/20 dark:to-blue-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-blue-600 p-2">
-					<Building2 class="h-5 w-5 text-white" />
+	<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+		<Card.Root>
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
+					>
+						<Building2 class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+					</div>
+					<div>
+						<p class="text-muted-foreground text-sm">Total Accounts</p>
+						<p class="text-2xl font-bold">{stats.total}</p>
+					</div>
 				</div>
-				<div>
-					<p class="text-sm font-medium text-blue-600 dark:text-blue-400">Total Accounts</p>
-					<p class="text-2xl font-bold text-blue-900 dark:text-blue-100">{pagination.total}</p>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30"
+					>
+						<Target class="h-5 w-5 text-green-600 dark:text-green-400" />
+					</div>
+					<div>
+						<p class="text-muted-foreground text-sm">Active</p>
+						<p class="text-2xl font-bold">{stats.active}</p>
+					</div>
 				</div>
-			</div>
-		</div>
-
-		<div
-			class="rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-green-100 p-4 dark:border-green-800 dark:from-green-900/20 dark:to-green-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-green-600 p-2">
-					<TrendingUp class="h-5 w-5 text-white" />
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30"
+					>
+						<Users class="h-5 w-5 text-orange-600 dark:text-orange-400" />
+					</div>
+					<div>
+						<p class="text-muted-foreground text-sm">Contacts</p>
+						<p class="text-2xl font-bold">{stats.totalContacts}</p>
+					</div>
 				</div>
-				<div>
-					<p class="text-sm font-medium text-green-600 dark:text-green-400">Active</p>
-					<p class="text-2xl font-bold text-green-900 dark:text-green-100">
-						{accounts.filter((a) => a.isActive).length}
-					</p>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Content class="p-4">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30"
+					>
+						<DollarSign class="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					</div>
+					<div>
+						<p class="text-muted-foreground text-sm">Opportunities</p>
+						<p class="text-2xl font-bold">{stats.totalOpportunities}</p>
+					</div>
 				</div>
-			</div>
-		</div>
-
-		<div
-			class="rounded-lg border border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100 p-4 dark:border-orange-800 dark:from-orange-900/20 dark:to-orange-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-orange-600 p-2">
-					<Users class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-orange-600 dark:text-orange-400">Total Contacts</p>
-					<p class="text-2xl font-bold text-orange-900 dark:text-orange-100">
-						{accounts.reduce((sum, a) => sum + (a.contactCount || 0), 0)}
-					</p>
-				</div>
-			</div>
-		</div>
-
-		<div
-			class="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 p-4 dark:border-purple-800 dark:from-purple-900/20 dark:to-purple-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-purple-600 p-2">
-					<DollarSign class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-purple-600 dark:text-purple-400">Opportunities</p>
-					<p class="text-2xl font-bold text-purple-900 dark:text-purple-100">
-						{accounts.reduce((sum, a) => sum + (a.opportunityCount || 0), 0)}
-					</p>
-				</div>
-			</div>
-		</div>
+			</Card.Content>
+		</Card.Root>
 	</div>
+
+	<!-- Search and Filters -->
+	<Card.Root>
+		<Card.Content class="p-4">
+			<div class="flex flex-col gap-4 sm:flex-row">
+				<div class="relative flex-1">
+					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+					<Input
+						type="text"
+						placeholder="Search by name, industry, website, or phone..."
+						bind:value={list.searchQuery}
+						class="pl-9"
+					/>
+				</div>
+				<Button
+					variant="outline"
+					onclick={() => (list.showFilters = !list.showFilters)}
+					class="shrink-0"
+					disabled={false}
+				>
+					<Filter class="mr-2 h-4 w-4" />
+					Filters
+					{#if activeFiltersCount > 0}
+						<Badge variant="secondary" class="ml-2">{activeFiltersCount}</Badge>
+					{/if}
+					{#if list.showFilters}
+						<ChevronUp class="ml-2 h-4 w-4" />
+					{:else}
+						<ChevronDown class="ml-2 h-4 w-4" />
+					{/if}
+				</Button>
+			</div>
+
+			{#if list.showFilters}
+				<div class="bg-muted/50 mt-4 grid grid-cols-1 gap-4 rounded-lg p-4 sm:grid-cols-4">
+					<div>
+						<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
+						<select
+							id="status-filter"
+							bind:value={list.filters.statusFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+						>
+							<option value="ALL">All Status</option>
+							<option value="active">Active</option>
+							<option value="closed">Closed</option>
+						</select>
+					</div>
+					<div>
+						<label for="industry-filter" class="mb-1.5 block text-sm font-medium">Industry</label>
+						<select
+							id="industry-filter"
+							bind:value={list.filters.industryFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+						>
+							<option value="ALL">All Industries</option>
+							{#each industries as industry}
+								<option value={industry}>{industry}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="flex items-end sm:col-start-4">
+						<Button variant="ghost" onclick={list.clearFilters} class="w-full" disabled={false}>
+							Clear Filters
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 
 	<!-- Accounts Table -->
-	<div
-		class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
-	>
-		<div class="overflow-x-auto">
-			<table class="w-full">
-				<thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700">
-					<tr>
-						<th
-							scope="col"
-							class="cursor-pointer px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600"
-							onclick={() => toggleSort('name')}
-						>
-							<div class="flex items-center gap-2">
-								<Building2 class="h-4 w-4" />
-								Account Name
-								{#if sortField === 'name'}
-									{#if sortOrder === 'asc'}
-										<ChevronUp class="h-4 w-4" />
-									{:else}
-										<ChevronDown class="h-4 w-4" />
-									{/if}
-								{/if}
-							</div>
-						</th>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:table-cell dark:text-gray-400"
-							>Industry</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase md:table-cell dark:text-gray-400"
-							>Type</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase lg:table-cell dark:text-gray-400"
-							>Contact Info</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase xl:table-cell dark:text-gray-400"
-							>Revenue</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase md:table-cell dark:text-gray-400"
-							>Relations</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase lg:table-cell dark:text-gray-400"
-							>Created</th
-						>
-						<th
-							scope="col"
-							class="px-6 py-4 text-right text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>Actions</th
-						>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-					{#if isLoading}
-						<tr>
-							<td colspan="8" class="px-6 py-16 text-center">
-								<div class="flex flex-col items-center gap-4">
-									<div
-										class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
-									></div>
-									<p class="text-gray-500 dark:text-gray-400">Loading accounts...</p>
-								</div>
-							</td>
-						</tr>
-					{:else if accounts.length === 0}
-						<tr>
-							<td colspan="8" class="px-6 py-16 text-center">
-								<div class="flex flex-col items-center gap-4">
-									<Building2 class="h-12 w-12 text-gray-400" />
-									<div>
-										<p class="text-lg font-medium text-gray-500 dark:text-gray-400">
-											No accounts found
-										</p>
-										<p class="mt-1 text-sm text-gray-400 dark:text-gray-500">
-											Get started by creating your first account
-										</p>
+	<Card.Root>
+		<Card.Content class="p-0">
+			{#if filteredAccounts.length === 0}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+					<p class="text-muted-foreground mt-1 text-sm">
+						Try adjusting your search criteria or create a new account.
+					</p>
+					<Button onclick={drawer.openCreate} class="mt-4" disabled={false}>
+						<Plus class="mr-2 h-4 w-4" />
+						Create New Account
+					</Button>
+				</div>
+			{:else}
+				<!-- Desktop Table -->
+				<div class="hidden md:block">
+					<Table.Root>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head class="w-[250px]">Account</Table.Head>
+								<Table.Head>Industry</Table.Head>
+								<Table.Head>Contact Info</Table.Head>
+								<Table.Head>Revenue</Table.Head>
+								<Table.Head>Relations</Table.Head>
+								<Table.Head
+									class="hover:bg-muted/50 cursor-pointer"
+									onclick={() => list.toggleSort('createdAt')}
+								>
+									<div class="flex items-center gap-1">
+										Created
+										{#if list.sortColumn === 'createdAt'}
+											{#if list.sortDirection === 'asc'}
+												<ChevronUp class="h-4 w-4" />
+											{:else}
+												<ChevronDown class="h-4 w-4" />
+											{/if}
+										{/if}
 									</div>
-									<a
-										href="/accounts/new"
-										class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-									>
-										<Plus class="h-4 w-4" />
-										Create Account
-									</a>
-								</div>
-							</td>
-						</tr>
-					{:else}
-						{#each accounts as account (account.id)}
-							<tr
-								class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 {account.closedAt
-									? 'opacity-60'
-									: ''}"
-							>
-								<td class="px-6 py-4">
-									<div class="flex items-center gap-3">
-										<div class="flex-shrink-0">
+								</Table.Head>
+								<Table.Head class="w-[80px]">Actions</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each filteredAccounts as account (account.id)}
+								<Table.Row
+									class="hover:bg-muted/50 cursor-pointer {account.closedAt ? 'opacity-60' : ''}"
+									onclick={() => drawer.openDetail(account)}
+								>
+									<Table.Cell>
+										<div class="flex items-center gap-3">
 											<div
-												class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 font-semibold text-white"
+												class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
 											>
-												{account.name?.[0]?.toUpperCase() || 'A'}
+												{getAccountInitials(account)}
 											</div>
-										</div>
-										<div class="min-w-0 flex-1">
-											<a href="/accounts/{account.id}" class="group block">
-												<p
-													class="text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400"
-												>
-													{account.name}
-												</p>
-												{#if account.isActive}
-													<span
-														class="mt-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:text-green-400"
-													>
-														Active
-													</span>
-												{:else}
-													<div class="mt-1">
-														<span
-															class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/20 dark:text-red-400"
+											<div class="min-w-0">
+												<p class="text-foreground truncate font-medium">{account.name}</p>
+												<div class="mt-0.5 flex items-center gap-1.5">
+													{#if account.isActive !== false}
+														<Badge
+															variant="default"
+															class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600 hover:bg-green-500/20"
 														>
-															Closed
-														</span>
-														{#if account.closedAt}
-															<p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-																{formatDate(account.closedAt)}
-															</p>
-														{/if}
-													</div>
-												{/if}
-											</a>
+															Active
+														</Badge>
+													{:else}
+														<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
+													{/if}
+												</div>
+											</div>
 										</div>
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 sm:table-cell">
-									<span class="text-sm text-gray-600 dark:text-gray-300"
-										>{account.industry || '-'}</span
-									>
-								</td>
-								<td class="hidden px-6 py-4 md:table-cell">
-									<span
-										class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-									>
-										{account.type || 'Customer'}
-									</span>
-								</td>
-								<td class="hidden px-6 py-4 lg:table-cell">
-									<div class="space-y-1">
-										{#if account.website}
-											<div class="flex items-center gap-1 text-sm">
-												<Globe class="h-3 w-3 text-gray-400" />
-												<a
-													href={account.website.startsWith('http')
-														? account.website
-														: `https://${account.website}`}
-													target="_blank"
-													rel="noopener noreferrer"
-													class="max-w-[150px] truncate text-blue-600 hover:underline dark:text-blue-400"
+									</Table.Cell>
+									<Table.Cell>
+										<span class="text-foreground text-sm">{account.industry || '-'}</span>
+									</Table.Cell>
+									<Table.Cell>
+										<div class="space-y-1">
+											{#if account.website}
+												<div class="flex items-center gap-1.5 text-sm">
+													<Globe class="text-muted-foreground h-3.5 w-3.5" />
+													<span class="max-w-[140px] truncate">
+														{account.website.replace(/^https?:\/\//, '')}
+													</span>
+												</div>
+											{/if}
+											{#if account.phone}
+												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+													<Phone class="h-3.5 w-3.5" />
+													<span>{account.phone}</span>
+												</div>
+											{/if}
+											{#if account.city || account.state}
+												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+													<MapPin class="h-3.5 w-3.5" />
+													<span class="truncate">
+														{[account.city, account.state].filter(Boolean).join(', ')}
+													</span>
+												</div>
+											{/if}
+											{#if !account.website && !account.phone && !account.city}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</div>
+									</Table.Cell>
+									<Table.Cell>
+										<span class="text-foreground text-sm font-medium">
+											{formatCurrency(account.annualRevenue, 'USD', true)}
+										</span>
+									</Table.Cell>
+									<Table.Cell>
+										<div class="flex items-center gap-3">
+											<div class="flex items-center gap-1">
+												<Users class="text-muted-foreground h-4 w-4" />
+												<span class="text-sm font-medium">{account.contactCount || 0}</span>
+											</div>
+											<div class="flex items-center gap-1">
+												<Target class="text-muted-foreground h-4 w-4" />
+												<span class="text-sm font-medium">{account.opportunityCount || 0}</span>
+											</div>
+										</div>
+									</Table.Cell>
+									<Table.Cell>
+										<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+											<Calendar class="h-3.5 w-3.5" />
+											<span>{formatRelativeDate(account.createdAt)}</span>
+										</div>
+									</Table.Cell>
+									<Table.Cell onclick={(e) => e.stopPropagation()}>
+										<DropdownMenu.Root>
+											<DropdownMenu.Trigger>
+												<Button variant="ghost" size="icon" class="h-8 w-8" disabled={false}>
+													<MoreHorizontal class="h-4 w-4" />
+												</Button>
+											</DropdownMenu.Trigger>
+											<DropdownMenu.Content align="end">
+												<DropdownMenu.Item onclick={() => drawer.openDetail(account)}>
+													View Details
+												</DropdownMenu.Item>
+												<DropdownMenu.Item
+													onclick={() => {
+														drawer.selected = account;
+														drawer.openEdit();
+													}}
+													disabled={!!account.closedAt}
 												>
-													{account.website.replace(/^https?:\/\//, '')}
-												</a>
-											</div>
-										{/if}
-										{#if account.phone}
-											<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-												<Phone class="h-3 w-3 text-gray-400" />
-												<span class="truncate">{account.phone}</span>
-											</div>
-										{/if}
-										{#if account.city || account.state}
-											<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-												<MapPin class="h-3 w-3 text-gray-400" />
-												<span class="truncate"
-													>{[account.city, account.state].filter(Boolean).join(', ')}</span
+													Edit
+												</DropdownMenu.Item>
+												<DropdownMenu.Separator />
+												<DropdownMenu.Item
+													onclick={() => goto(`/contacts?action=create&accountId=${account.id}`)}
 												>
-											</div>
-										{/if}
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 xl:table-cell">
-									<div class="text-sm">
-										{#if account.annualRevenue}
-											<span class="font-medium text-gray-900 dark:text-white"
-												>{formatCurrency(account.annualRevenue)}</span
-											>
-											<p class="text-xs text-gray-500">Annual Revenue</p>
-										{:else}
-											<span class="text-gray-400">-</span>
-										{/if}
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 md:table-cell">
-									<div class="flex items-center gap-4">
-										<div class="flex items-center gap-1">
-											<Users class="h-4 w-4 text-gray-400" />
-											<span class="text-sm font-medium text-gray-900 dark:text-white"
-												>{account.contactCount || 0}</span
-											>
+													<Users class="mr-2 h-4 w-4" />
+													Add Contact
+												</DropdownMenu.Item>
+												<DropdownMenu.Item
+													onclick={() => goto(`/opportunities/new?accountId=${account.id}`)}
+												>
+													<Target class="mr-2 h-4 w-4" />
+													Add Opportunity
+												</DropdownMenu.Item>
+											</DropdownMenu.Content>
+										</DropdownMenu.Root>
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
+
+				<!-- Mobile Card View -->
+				<div class="divide-y md:hidden">
+					{#each filteredAccounts as account (account.id)}
+						<button
+							type="button"
+							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left {account.closedAt
+								? 'opacity-60'
+								: ''}"
+							onclick={() => drawer.openDetail(account)}
+						>
+							<div
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+							>
+								{getAccountInitials(account)}
+							</div>
+							<div class="min-w-0 flex-1">
+								<div class="flex items-start justify-between gap-2">
+									<div>
+										<p class="text-foreground font-medium">{account.name}</p>
+										<div class="mt-0.5 flex items-center gap-1.5">
+											{#if account.isActive !== false}
+												<Badge
+													variant="default"
+													class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600"
+												>
+													Active
+												</Badge>
+											{:else}
+												<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
+											{/if}
 										</div>
-										<div class="flex items-center gap-1">
-											<TrendingUp class="h-4 w-4 text-gray-400" />
-											<span class="text-sm font-medium text-gray-900 dark:text-white"
-												>{account.opportunityCount || 0}</span
-											>
-										</div>
 									</div>
-								</td>
-								<td class="hidden px-6 py-4 lg:table-cell">
-									<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-										<Calendar class="h-3 w-3 text-gray-400" />
-										<span>{formatDate(account.createdAt)}</span>
+								</div>
+								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
+									{#if account.industry}
+										<span>{account.industry}</span>
+									{/if}
+									<div class="flex items-center gap-1">
+										<Users class="h-3.5 w-3.5" />
+										<span>{account.contactCount || 0}</span>
 									</div>
-								</td>
-								<td class="px-6 py-4 text-right">
-									<div class="flex items-center justify-end gap-2">
-										<a
-											href="/accounts/{account.id}"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-											title="View Account"
-										>
-											<Eye class="h-4 w-4" />
-										</a>
-										<a
-											href="/opportunities/new?accountId={account.id}"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-green-600 dark:hover:bg-gray-700 dark:hover:text-green-400"
-											title="Add Opportunity"
-										>
-											<Plus class="h-4 w-4" />
-										</a>
-										<a
-											href="/accounts/{account.id}/edit"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-700 dark:hover:text-yellow-400"
-											title="Edit Account"
-										>
-											<Edit class="h-4 w-4" />
-										</a>
+									<div class="flex items-center gap-1">
+										<Target class="h-3.5 w-3.5" />
+										<span>{account.opportunityCount || 0}</span>
 									</div>
-								</td>
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
-		</div>
-	</div>
+									<div class="flex items-center gap-1">
+										<Calendar class="h-3.5 w-3.5" />
+										<span>{formatRelativeDate(account.createdAt)}</span>
+									</div>
+								</div>
+							</div>
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 
 	<!-- Pagination -->
 	{#if pagination.totalPages > 1}
-		<div class="flex flex-col items-center justify-between gap-4 pt-6 sm:flex-row">
-			<div class="text-sm text-gray-700 dark:text-gray-300">
-				Showing <span class="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to
-				<span class="font-medium"
-					>{Math.min(pagination.page * pagination.limit, pagination.total)}</span
-				>
-				of
-				<span class="font-medium">{pagination.total}</span> accounts
-			</div>
+		<div class="flex items-center justify-between">
+			<p class="text-muted-foreground text-sm">
+				Showing {filteredAccounts.length} of {pagination.total} accounts
+			</p>
 			<div class="flex items-center gap-2">
-				<button
-					onclick={() => changePage(1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === 1}
-				>
-					First
-				</button>
-				<button
-					onclick={() => changePage(pagination.page - 1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === 1}
-				>
-					Previous
-				</button>
-				<span
-					class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-gray-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-white"
-				>
-					{pagination.page} of {pagination.totalPages}
+				<Button variant="outline" size="sm" disabled={pagination.page === 1}>Previous</Button>
+				<span class="text-sm">
+					Page {pagination.page} of {pagination.totalPages}
 				</span>
-				<button
-					onclick={() => changePage(pagination.page + 1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === pagination.totalPages}
-				>
+				<Button variant="outline" size="sm" disabled={pagination.page === pagination.totalPages}>
 					Next
-				</button>
-				<button
-					onclick={() => changePage(pagination.totalPages)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === pagination.totalPages}
-				>
-					Last
-				</button>
+				</Button>
 			</div>
 		</div>
 	{/if}
 </div>
+
+<!-- Account Detail Drawer -->
+<AccountDetailDrawer
+	bind:open={drawer.detailOpen}
+	onOpenChange={drawer.handleDetailChange}
+	account={drawer.selected}
+	loading={drawer.loading}
+	onEdit={drawer.openEdit}
+	onClose={handleClose}
+	onReopen={handleReopen}
+	onAddContact={handleAddContact}
+	onAddOpportunity={handleAddOpportunity}
+/>
+
+<!-- Account Form Drawer -->
+<AccountFormDrawer
+	bind:open={drawer.formOpen}
+	onOpenChange={drawer.handleFormChange}
+	mode={drawer.mode}
+	initialData={drawer.selected
+		? {
+				name: drawer.selected.name,
+				industry: drawer.selected.industry,
+				website: drawer.selected.website,
+				phone: drawer.selected.phone,
+				email: drawer.selected.email,
+				address_line: drawer.selected.addressLine,
+				city: drawer.selected.city,
+				state: drawer.selected.state,
+				postcode: drawer.selected.postcode,
+				country: drawer.selected.country,
+				annual_revenue: drawer.selected.annualRevenue?.toString() || '',
+				number_of_employees: drawer.selected.numberOfEmployees?.toString() || '',
+				description: drawer.selected.description
+			}
+		: null}
+	onSubmit={handleFormSubmit}
+/>
+
+<!-- Hidden forms for server actions -->
+<form
+	method="POST"
+	action="?/create"
+	bind:this={createForm}
+	use:enhance={createEnhanceHandler('Account created successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="name" value={formState.name} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="address_line" value={formState.address_line} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+</form>
+
+<form
+	method="POST"
+	action="?/update"
+	bind:this={updateForm}
+	use:enhance={createEnhanceHandler('Account updated successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+	<input type="hidden" name="name" value={formState.name} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="address_line" value={formState.address_line} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+</form>
+
+<form
+	method="POST"
+	action="?/deactivate"
+	bind:this={deactivateForm}
+	use:enhance={createEnhanceHandler('Account deactivated successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+</form>
+
+<form
+	method="POST"
+	action="?/activate"
+	bind:this={activateForm}
+	use:enhance={createEnhanceHandler('Account activated successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+</form>

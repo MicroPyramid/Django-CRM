@@ -67,7 +67,7 @@ export async function load({ url, cookies }) {
 	}
 
 	// Generate OAuth parameters and return login URL
-	return generateOAuthUrl(cookies);
+	return await generateOAuthUrl(cookies);
 }
 
 /**
@@ -150,12 +150,12 @@ async function handleOAuthCallback(code, returnedState, cookies) {
 /**
  * Generate Google OAuth URL with PKCE parameters
  * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies
- * @returns {object} Object containing the Google OAuth URL
+ * @returns {Promise<object>} Object containing the Google OAuth URL
  */
-function generateOAuthUrl(cookies) {
+async function generateOAuthUrl(cookies) {
 	// Generate PKCE parameters
 	const codeVerifier = generateCodeVerifier();
-	const codeChallenge = generateCodeChallenge(codeVerifier);
+	const codeChallenge = await generateCodeChallenge(codeVerifier);
 
 	// Generate cryptographically random state for CSRF protection
 	const state = generateState();

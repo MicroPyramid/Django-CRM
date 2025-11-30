@@ -143,7 +143,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if params.get("stage"):
                 stage = params.get("stage")
-                if stage in ["CLOSED WON", "CLOSED LOST"]:
+                if stage in ["CLOSED_WON", "CLOSED_LOST"]:
                     opportunity_obj.closed_by = self.request.profile
 
             if params.get("teams"):
@@ -254,7 +254,7 @@ class OpportunityDetailView(APIView):
 
             if params.get("stage"):
                 stage = params.get("stage")
-                if stage in ["CLOSED WON", "CLOSED LOST"]:
+                if stage in ["CLOSED_WON", "CLOSED_LOST"]:
                     opportunity_object.closed_by = self.request.profile
 
             opportunity_object.teams.clear()

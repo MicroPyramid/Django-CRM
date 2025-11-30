@@ -1,51 +1,48 @@
 /**
  * PKCE (Proof Key for Code Exchange) utilities for OAuth 2.0
- *
- * PKCE adds security to the authorization code flow by:
- * 1. Generating a random code_verifier
- * 2. Creating a code_challenge from the verifier (SHA256)
- * 3. Sending challenge with authorization request
- * 4. Sending verifier with token exchange request
- *
- * This prevents authorization code interception attacks.
+ * @module lib/utils/pkce
  */
 
-import crypto from 'crypto';
-
 /**
- * Generate a cryptographically random code verifier
- * RFC 7636: 43-128 characters from [A-Z] / [a-z] / [0-9] / "-" / "." / "_" / "~"
- * @returns {string} Base64URL encoded random string (43 chars from 32 bytes)
+ * Generate a random code verifier for PKCE
+ * @returns {string} Random code verifier string
  */
 export function generateCodeVerifier() {
-	const buffer = crypto.randomBytes(32);
-	return base64URLEncode(buffer);
+	const array = new Uint8Array(32);
+	crypto.getRandomValues(array);
+	return base64URLEncode(array);
 }
 
 /**
- * Generate code challenge from verifier using SHA256
+ * Generate a code challenge from a verifier using SHA-256
  * @param {string} verifier - The code verifier
- * @returns {string} Base64URL encoded SHA256 hash
+ * @returns {Promise<string>} Code challenge
  */
-export function generateCodeChallenge(verifier) {
-	const hash = crypto.createHash('sha256').update(verifier).digest();
-	return base64URLEncode(hash);
+export async function generateCodeChallenge(verifier) {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(verifier);
+	const digest = await crypto.subtle.digest('SHA-256', data);
+	return base64URLEncode(new Uint8Array(digest));
 }
 
 /**
- * Generate a cryptographically random state parameter for CSRF protection
- * @returns {string} Base64URL encoded random string (32 bytes)
+ * Generate a random state string for CSRF protection
+ * @returns {string} Random state string
  */
 export function generateState() {
-	const buffer = crypto.randomBytes(32);
-	return base64URLEncode(buffer);
+	const array = new Uint8Array(16);
+	crypto.getRandomValues(array);
+	return base64URLEncode(array);
 }
 
 /**
- * Base64URL encode a buffer per RFC 4648 Section 5
- * @param {Buffer} buffer - Buffer to encode
- * @returns {string} Base64URL encoded string (no padding)
+ * Base64 URL encode a byte array
+ * @param {Uint8Array} buffer - Byte array to encode
+ * @returns {string} Base64 URL encoded string
  */
 function base64URLEncode(buffer) {
-	return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+	return btoa(String.fromCharCode(...buffer))
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/, '');
 }

@@ -65,16 +65,30 @@ export async function load({ url, locals, cookies }) {
 			totalCount = contacts.length;
 		}
 
-		// Transform Django contacts to match Prisma structure
+		// Transform Django contacts to match frontend structure
 		const transformedContacts = contacts.map((contact) => ({
 			id: contact.id,
+			// Core fields
 			firstName: contact.first_name,
 			lastName: contact.last_name,
 			email: contact.email,
 			phone: contact.phone,
+			// Professional info
+			organization: contact.organization,
 			title: contact.title,
 			department: contact.department,
+			// Communication preferences
+			doNotCall: contact.do_not_call || false,
+			linkedInUrl: contact.linked_in_url,
+			// Address fields
+			addressLine: contact.address_line,
+			city: contact.city,
+			state: contact.state,
+			postcode: contact.postcode,
+			country: contact.country,
+			// Notes
 			description: contact.description,
+			// Timestamps
 			createdAt: contact.created_at,
 			updatedAt: contact.updated_at,
 
@@ -93,6 +107,20 @@ export async function load({ url, locals, cookies }) {
 								email: contact.created_by.email
 							}
 						: null,
+
+			// Teams
+			teams:
+				contact.teams?.map((team) => ({
+					id: team.id,
+					name: team.name
+				})) || [],
+
+			// Tags
+			tags:
+				contact.tags?.map((tag) => ({
+					id: tag.id,
+					name: tag.name
+				})) || [],
 
 			// Related accounts
 			relatedAccounts:
@@ -139,6 +167,137 @@ export async function load({ url, locals, cookies }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+	create: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			// Core fields
+			const firstName = form.get('firstName')?.toString().trim();
+			const lastName = form.get('lastName')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || '';
+			const phone = form.get('phone')?.toString().trim() || '';
+			// Professional info
+			const organization = form.get('organization')?.toString().trim() || '';
+			const title = form.get('title')?.toString().trim() || '';
+			const department = form.get('department')?.toString().trim() || '';
+			// Communication preferences
+			const doNotCall = form.get('doNotCall') === 'true';
+			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+			// Address fields
+			const addressLine = form.get('addressLine')?.toString().trim() || '';
+			const city = form.get('city')?.toString().trim() || '';
+			const state = form.get('state')?.toString().trim() || '';
+			const postcode = form.get('postcode')?.toString().trim() || '';
+			const country = form.get('country')?.toString().trim() || '';
+			// Notes
+			const description = form.get('description')?.toString().trim() || '';
+			// Assignment
+			const ownerId = form.get('ownerId')?.toString();
+
+			if (!firstName || !lastName) {
+				return fail(400, { error: 'First name and last name are required.' });
+			}
+
+			const contactData = {
+				first_name: firstName,
+				last_name: lastName,
+				email: email || null,
+				phone: phone || null,
+				organization: organization || null,
+				title: title || null,
+				department: department || null,
+				do_not_call: doNotCall,
+				linked_in_url: linkedInUrl || null,
+				address_line: addressLine || null,
+				city: city || null,
+				state: state || null,
+				postcode: postcode || null,
+				country: country || null,
+				description: description || null,
+				assigned_to: ownerId ? [ownerId] : []
+			};
+
+			await apiRequest(
+				'/contacts/',
+				{
+					method: 'POST',
+					body: contactData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error creating contact:', err);
+			return fail(500, { error: 'Failed to create contact' });
+		}
+	},
+
+	update: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const contactId = form.get('contactId')?.toString();
+			// Core fields
+			const firstName = form.get('firstName')?.toString().trim();
+			const lastName = form.get('lastName')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || '';
+			const phone = form.get('phone')?.toString().trim() || '';
+			// Professional info
+			const organization = form.get('organization')?.toString().trim() || '';
+			const title = form.get('title')?.toString().trim() || '';
+			const department = form.get('department')?.toString().trim() || '';
+			// Communication preferences
+			const doNotCall = form.get('doNotCall') === 'true';
+			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+			// Address fields
+			const addressLine = form.get('addressLine')?.toString().trim() || '';
+			const city = form.get('city')?.toString().trim() || '';
+			const state = form.get('state')?.toString().trim() || '';
+			const postcode = form.get('postcode')?.toString().trim() || '';
+			const country = form.get('country')?.toString().trim() || '';
+			// Notes
+			const description = form.get('description')?.toString().trim() || '';
+			// Assignment
+			const ownerId = form.get('ownerId')?.toString();
+
+			if (!contactId || !firstName || !lastName) {
+				return fail(400, { error: 'Contact ID, first name, and last name are required.' });
+			}
+
+			const contactData = {
+				first_name: firstName,
+				last_name: lastName,
+				email: email || null,
+				phone: phone || null,
+				organization: organization || null,
+				title: title || null,
+				department: department || null,
+				do_not_call: doNotCall,
+				linked_in_url: linkedInUrl || null,
+				address_line: addressLine || null,
+				city: city || null,
+				state: state || null,
+				postcode: postcode || null,
+				country: country || null,
+				description: description || null,
+				assigned_to: ownerId ? [ownerId] : []
+			};
+
+			await apiRequest(
+				`/contacts/${contactId}/`,
+				{
+					method: 'PUT',
+					body: contactData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating contact:', err);
+			return fail(500, { error: 'Failed to update contact' });
+		}
+	},
+
 	delete: async ({ request, locals, cookies }) => {
 		try {
 			const data = await request.formData();
