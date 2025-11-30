@@ -2,8 +2,6 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import {
-		Search,
-		Filter,
 		Plus,
 		ChevronDown,
 		ChevronUp,
@@ -19,14 +17,12 @@
 		Percent,
 		Briefcase
 	} from '@lucide/svelte';
-	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { KanbanBoard, OpportunityDrawer } from '$lib/components/opportunities';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { OPPORTUNITY_STAGES as stages, OPPORTUNITY_TYPES } from '$lib/constants/filters.js';
@@ -357,6 +353,43 @@
 				</Tabs.List>
 			</Tabs.Root>
 
+			<!-- Mobile View Toggle -->
+			<div class="flex gap-1 sm:hidden">
+				<Button
+					variant={viewMode === 'list' ? 'default' : 'outline'}
+					size="icon"
+					onclick={() => (viewMode = 'list')}
+					disabled={false}
+				>
+					<List class="h-4 w-4" />
+				</Button>
+				<Button
+					variant={viewMode === 'kanban' ? 'default' : 'outline'}
+					size="icon"
+					onclick={() => (viewMode = 'kanban')}
+					disabled={false}
+				>
+					<LayoutGrid class="h-4 w-4" />
+				</Button>
+			</div>
+
+			<FilterPopover activeCount={activeFiltersCount} onClear={clearFilters}>
+				{#snippet children()}
+					<div>
+						<label for="stage-filter" class="mb-1.5 block text-sm font-medium">Stage</label>
+						<select
+							id="stage-filter"
+							bind:value={stageFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{#each stages as stage}
+								<option value={stage.value}>{stage.label}</option>
+							{/each}
+						</select>
+					</div>
+				{/snippet}
+			</FilterPopover>
+
 			<Button onclick={() => openCreateForm()} disabled={false}>
 				<Plus class="mr-2 h-4 w-4" />
 				New Deal
@@ -429,78 +462,6 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
-
-	<!-- Search and Filters -->
-	<Card.Root>
-		<Card.Content class="p-4">
-			<div class="flex flex-col gap-4 sm:flex-row">
-				<div class="relative flex-1">
-					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-					<Input type="text" placeholder="Search deals..." bind:value={searchQuery} class="pl-9" />
-				</div>
-				<Button
-					variant="outline"
-					onclick={() => (showFilters = !showFilters)}
-					class="shrink-0"
-					disabled={false}
-				>
-					<Filter class="mr-2 h-4 w-4" />
-					Filters
-					{#if activeFiltersCount > 0}
-						<Badge variant="secondary" class="ml-2">{activeFiltersCount}</Badge>
-					{/if}
-					{#if showFilters}
-						<ChevronUp class="ml-2 h-4 w-4" />
-					{:else}
-						<ChevronDown class="ml-2 h-4 w-4" />
-					{/if}
-				</Button>
-
-				<!-- Mobile View Toggle -->
-				<div class="flex gap-1 sm:hidden">
-					<Button
-						variant={viewMode === 'list' ? 'default' : 'outline'}
-						size="icon"
-						onclick={() => (viewMode = 'list')}
-						disabled={false}
-					>
-						<List class="h-4 w-4" />
-					</Button>
-					<Button
-						variant={viewMode === 'kanban' ? 'default' : 'outline'}
-						size="icon"
-						onclick={() => (viewMode = 'kanban')}
-						disabled={false}
-					>
-						<LayoutGrid class="h-4 w-4" />
-					</Button>
-				</div>
-			</div>
-
-			{#if showFilters}
-				<div class="bg-muted/50 mt-4 grid grid-cols-1 gap-4 rounded-lg p-4 sm:grid-cols-3">
-					<div>
-						<label for="stage-filter" class="mb-1.5 block text-sm font-medium">Stage</label>
-						<select
-							id="stage-filter"
-							bind:value={stageFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							{#each stages as stage}
-								<option value={stage.value}>{stage.label}</option>
-							{/each}
-						</select>
-					</div>
-					<div></div>
-					<div class="flex items-end">
-						<Button variant="ghost" onclick={clearFilters} class="w-full" disabled={false}>
-							Clear Filters
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
 
 	<!-- Content View -->
 	{#if viewMode === 'kanban'}

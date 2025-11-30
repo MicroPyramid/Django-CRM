@@ -4,8 +4,6 @@
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
-		Search,
-		Filter,
 		Plus,
 		ChevronDown,
 		ChevronUp,
@@ -19,13 +17,11 @@
 		RotateCcw,
 		Tag
 	} from '@lucide/svelte';
-	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { CaseDrawer } from '$lib/components/cases';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
@@ -231,48 +227,9 @@
 
 <PageHeader title="Cases" subtitle="{filteredCases.length} of {cases.length} cases">
 	{#snippet actions()}
-		<Button onclick={drawer.openCreate} disabled={false}>
-			<Plus class="mr-2 h-4 w-4" />
-			New Case
-		</Button>
-	{/snippet}
-</PageHeader>
-
-<div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Search and Filters -->
-	<Card.Root>
-		<Card.Content class="p-4">
-			<div class="flex flex-col gap-4 sm:flex-row">
-				<div class="relative flex-1">
-					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-					<Input
-						type="text"
-						placeholder="Search by subject, description, or account..."
-						bind:value={list.searchQuery}
-						class="pl-9"
-					/>
-				</div>
-				<Button
-					variant="outline"
-					onclick={() => (list.showFilters = !list.showFilters)}
-					class="shrink-0"
-					disabled={false}
-				>
-					<Filter class="mr-2 h-4 w-4" />
-					Filters
-					{#if activeFiltersCount > 0}
-						<Badge variant="secondary" class="ml-2">{activeFiltersCount}</Badge>
-					{/if}
-					{#if list.showFilters}
-						<ChevronUp class="ml-2 h-4 w-4" />
-					{:else}
-						<ChevronDown class="ml-2 h-4 w-4" />
-					{/if}
-				</Button>
-			</div>
-
-			{#if list.showFilters}
-				<div class="bg-muted/50 mt-4 grid grid-cols-1 gap-4 rounded-lg p-4 sm:grid-cols-4">
+		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
+			{#snippet children()}
+				<div class="space-y-3">
 					<div>
 						<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
 						<select
@@ -309,16 +266,17 @@
 							{/each}
 						</select>
 					</div>
-					<div class="flex items-end">
-						<Button variant="ghost" onclick={list.clearFilters} class="w-full" disabled={false}>
-							Clear Filters
-						</Button>
-					</div>
 				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
+			{/snippet}
+		</FilterPopover>
+		<Button onclick={drawer.openCreate} disabled={false}>
+			<Plus class="mr-2 h-4 w-4" />
+			New Case
+		</Button>
+	{/snippet}
+</PageHeader>
 
+<div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Cases Table -->
 	<Card.Root>
 		<Card.Content class="p-0">

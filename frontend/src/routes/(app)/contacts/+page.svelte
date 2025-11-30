@@ -5,8 +5,6 @@
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
-		Search,
-		Filter,
 		Plus,
 		ChevronDown,
 		ChevronUp,
@@ -17,13 +15,11 @@
 		Calendar,
 		Briefcase
 	} from '@lucide/svelte';
-	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { ContactDrawer } from '$lib/components/contacts';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
@@ -261,6 +257,23 @@
 
 <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
 	{#snippet actions()}
+		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
+			{#snippet children()}
+				<div>
+					<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
+					<select
+						id="owner-filter"
+						bind:value={list.filters.ownerFilter}
+						class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="ALL">All Owners</option>
+						{#each owners as owner}
+							<option value={owner.id}>{owner.name || owner.email}</option>
+						{/each}
+					</select>
+				</div>
+			{/snippet}
+		</FilterPopover>
 		<Button class="" onclick={openCreate} disabled={false}>
 			<Plus class="mr-2 h-4 w-4" />
 			New Contact
@@ -269,63 +282,6 @@
 </PageHeader>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Search and Filters -->
-	<Card.Root>
-		<Card.Content class="p-4">
-			<div class="flex flex-col gap-4 sm:flex-row">
-				<div class="relative flex-1">
-					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-					<Input
-						type="text"
-						placeholder="Search by name, email, phone, title, or company..."
-						bind:value={list.searchQuery}
-						class="pl-9"
-					/>
-				</div>
-				<Button
-					variant="outline"
-					onclick={() => (list.showFilters = !list.showFilters)}
-					class="shrink-0"
-					disabled={false}
-				>
-					<Filter class="mr-2 h-4 w-4" />
-					Filters
-					{#if activeFiltersCount > 0}
-						<Badge variant="secondary" class="ml-2">{activeFiltersCount}</Badge>
-					{/if}
-					{#if list.showFilters}
-						<ChevronUp class="ml-2 h-4 w-4" />
-					{:else}
-						<ChevronDown class="ml-2 h-4 w-4" />
-					{/if}
-				</Button>
-			</div>
-
-			{#if list.showFilters}
-				<div class="bg-muted/50 mt-4 grid grid-cols-1 gap-4 rounded-lg p-4 sm:grid-cols-4">
-					<div>
-						<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
-						<select
-							id="owner-filter"
-							bind:value={list.filters.ownerFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="ALL">All Owners</option>
-							{#each owners as owner}
-								<option value={owner.id}>{owner.name || owner.email}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="flex items-end sm:col-start-4">
-						<Button variant="ghost" onclick={list.clearFilters} class="w-full" disabled={false}>
-							Clear Filters
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
-
 	<!-- Contacts Table -->
 	<Card.Root>
 		<Card.Content class="p-0">
