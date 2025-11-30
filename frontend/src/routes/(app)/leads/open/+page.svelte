@@ -17,8 +17,10 @@
 		Eye,
 		MoreHorizontal
 	} from '@lucide/svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import { LeadDetailDrawer, LeadFormDrawer } from '$lib/components/leads';
+	import { LeadDrawer } from '$lib/components/leads';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -33,7 +35,7 @@
 		LEAD_SOURCES as sources,
 		LEAD_RATINGS as ratings
 	} from '$lib/constants/filters.js';
-	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { useListFilters } from '$lib/hooks';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -41,8 +43,90 @@
 	// Computed values
 	const leads = $derived(data.leads || []);
 
-	// Drawer state (no URL sync for leads)
-	const drawer = useDrawerState();
+	// Drawer state (simplified - single drawer, matching contacts page pattern)
+	let drawerOpen = $state(false);
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {any} */
+	let selectedLead = $state(null);
+	let drawerLoading = $state(false);
+
+	// URL sync
+	$effect(() => {
+		const viewId = $page.url.searchParams.get('view');
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create') {
+			selectedLead = null;
+			drawerMode = 'create';
+			drawerOpen = true;
+		} else if (viewId && leads.length > 0) {
+			const lead = leads.find((l) => l.id === viewId);
+			if (lead) {
+				selectedLead = lead;
+				drawerMode = 'view';
+				drawerOpen = true;
+			}
+		}
+	});
+
+	/**
+	 * Update URL
+	 * @param {string | null} viewId
+	 * @param {string | null} action
+	 */
+	function updateUrl(viewId, action) {
+		const url = new URL($page.url);
+		if (viewId) {
+			url.searchParams.set('view', viewId);
+			url.searchParams.delete('action');
+		} else if (action) {
+			url.searchParams.set('action', action);
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.delete('view');
+			url.searchParams.delete('action');
+		}
+		goto(url.toString(), { replaceState: true, noScroll: true });
+	}
+
+	/**
+	 * Open drawer for viewing/editing a lead
+	 * @param {any} lead
+	 */
+	function openLead(lead) {
+		selectedLead = lead;
+		drawerMode = 'view';
+		drawerOpen = true;
+		updateUrl(lead.id, null);
+	}
+
+	/**
+	 * Open drawer for creating a new lead
+	 */
+	function openCreate() {
+		selectedLead = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+		updateUrl(null, 'create');
+	}
+
+	/**
+	 * Close drawer
+	 */
+	function closeDrawer() {
+		drawerOpen = false;
+		updateUrl(null, null);
+	}
+
+	/**
+	 * Handle drawer open change
+	 * @param {boolean} open
+	 */
+	function handleDrawerChange(open) {
+		drawerOpen = open;
+		if (!open) updateUrl(null, null);
+	}
 
 	// Filter/search/sort state
 	const list = useListFilters({
@@ -169,14 +253,15 @@
 
 		await tick();
 
-		if (drawer.mode === 'edit' && drawer.selected) {
-			formState.leadId = drawer.selected.id;
+		if (drawerMode === 'view' && selectedLead) {
+			// Edit mode
+			formState.leadId = selectedLead.id;
 			// Use existing owner when editing (form doesn't have owner selection)
-			formState.ownerId = drawer.selected.owner?.id || '';
+			formState.ownerId = selectedLead.owner?.id || '';
 			await tick();
 			updateForm.requestSubmit();
 		} else {
-			// For new leads, ownerId would need to come from somewhere (e.g., current user)
+			// Create mode
 			formState.ownerId = '';
 			createForm.requestSubmit();
 		}
@@ -186,10 +271,10 @@
 	 * Handle lead delete
 	 */
 	async function handleDelete() {
-		if (!drawer.selected) return;
-		if (!confirm(`Are you sure you want to delete ${getFullName(drawer.selected)}?`)) return;
+		if (!selectedLead) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(selectedLead)}?`)) return;
 
-		formState.leadId = drawer.selected.id;
+		formState.leadId = selectedLead.id;
 		await tick();
 		deleteForm.requestSubmit();
 	}
@@ -198,9 +283,9 @@
 	 * Handle lead convert
 	 */
 	async function handleConvert() {
-		if (!drawer.selected) return;
+		if (!selectedLead) return;
 
-		formState.leadId = drawer.selected.id;
+		formState.leadId = selectedLead.id;
 		await tick();
 		convertForm.requestSubmit();
 	}
@@ -208,18 +293,13 @@
 	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
-	 * @param {boolean} closeDetailDrawer
 	 */
-	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+	function createEnhanceHandler(successMessage) {
 		return () => {
 			return async ({ result }) => {
 				if (result.type === 'success') {
 					toast.success(successMessage);
-					if (closeDetailDrawer) {
-						drawer.closeDetail();
-					} else {
-						drawer.closeForm();
-					}
+					closeDrawer();
 					await invalidateAll();
 				} else if (result.type === 'failure') {
 					toast.error(result.data?.error || 'Operation failed');
@@ -237,7 +317,7 @@
 
 <PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
 	{#snippet actions()}
-		<Button onclick={drawer.openCreate} disabled={false}>
+		<Button onclick={openCreate} disabled={false}>
 			<Plus class="mr-2 h-4 w-4" />
 			New Lead
 		</Button>
@@ -335,7 +415,7 @@
 					<p class="text-muted-foreground mt-1 text-sm">
 						Try adjusting your search criteria or create a new lead.
 					</p>
-					<Button onclick={drawer.openCreate} class="mt-4" disabled={false}>
+					<Button onclick={openCreate} class="mt-4" disabled={false}>
 						<Plus class="mr-2 h-4 w-4" />
 						Create New Lead
 					</Button>
@@ -374,7 +454,7 @@
 								{@const ratingConfig = getRatingConfig(lead.rating)}
 								<Table.Row
 									class="hover:bg-muted/50 cursor-pointer"
-									onclick={() => drawer.openDetail(lead)}
+									onclick={() => openLead(lead)}
 								>
 									<Table.Cell>
 										<div class="flex items-center gap-3">
@@ -462,17 +542,9 @@
 												</Button>
 											</DropdownMenu.Trigger>
 											<DropdownMenu.Content align="end">
-												<DropdownMenu.Item onclick={() => drawer.openDetail(lead)}>
+												<DropdownMenu.Item onclick={() => openLead(lead)}>
 													<Eye class="mr-2 h-4 w-4" />
-													View Details
-												</DropdownMenu.Item>
-												<DropdownMenu.Item
-													onclick={() => {
-														drawer.selected = lead;
-														drawer.openEdit();
-													}}
-												>
-													Edit
+													View / Edit
 												</DropdownMenu.Item>
 												<DropdownMenu.Separator />
 												<DropdownMenu.Item class="text-destructive">Delete</DropdownMenu.Item>
@@ -492,7 +564,7 @@
 						<button
 							type="button"
 							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
-							onclick={() => drawer.openDetail(lead)}
+							onclick={() => openLead(lead)}
 						>
 							<div
 								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
@@ -539,53 +611,17 @@
 	</Card.Root>
 </div>
 
-<!-- Lead Detail Drawer -->
-<LeadDetailDrawer
-	bind:open={drawer.detailOpen}
-	lead={drawer.selected}
-	loading={drawer.loading}
-	onEdit={drawer.openEdit}
+<!-- Lead Drawer (unified view/create/edit) -->
+<LeadDrawer
+	bind:open={drawerOpen}
+	onOpenChange={handleDrawerChange}
+	lead={selectedLead}
+	mode={drawerMode}
+	loading={drawerLoading}
+	onSave={handleFormSubmit}
 	onConvert={handleConvert}
 	onDelete={handleDelete}
-/>
-
-<!-- Lead Form Drawer -->
-<LeadFormDrawer
-	bind:open={drawer.formOpen}
-	mode={drawer.mode}
-	initialData={drawer.selected
-		? {
-				// Core Information
-				title: drawer.selected.title || '',
-				first_name: drawer.selected.firstName || '',
-				last_name: drawer.selected.lastName || '',
-				email: drawer.selected.email || '',
-				phone: drawer.selected.phone || '',
-				company: typeof drawer.selected.company === 'object' ? drawer.selected.company?.name : drawer.selected.company || '',
-				contact_title: drawer.selected.contactTitle || '',
-				website: drawer.selected.website || '',
-				linkedin_url: drawer.selected.linkedinUrl || '',
-				// Sales Pipeline
-				status: drawer.selected.status?.toLowerCase().replace('_', ' ') || 'assigned',
-				source: drawer.selected.leadSource || '',
-				industry: drawer.selected.industry || '',
-				rating: drawer.selected.rating || '',
-				opportunity_amount: drawer.selected.opportunityAmount || '',
-				probability: drawer.selected.probability || '',
-				close_date: drawer.selected.closeDate || '',
-				// Address
-				address_line: drawer.selected.addressLine || '',
-				city: drawer.selected.city || '',
-				state: drawer.selected.state || '',
-				postcode: drawer.selected.postcode || '',
-				country: drawer.selected.country || '',
-				// Activity
-				last_contacted: drawer.selected.lastContacted || '',
-				next_follow_up: drawer.selected.nextFollowUp || '',
-				description: drawer.selected.description || ''
-			}
-		: null}
-	onSubmit={handleFormSubmit}
+	onCancel={closeDrawer}
 />
 
 <!-- Hidden forms for server actions -->
@@ -670,7 +706,7 @@
 	method="POST"
 	action="?/delete"
 	bind:this={deleteForm}
-	use:enhance={createEnhanceHandler('Lead deleted successfully', true)}
+	use:enhance={createEnhanceHandler('Lead deleted successfully')}
 	class="hidden"
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />
@@ -680,7 +716,7 @@
 	method="POST"
 	action="?/convert"
 	bind:this={convertForm}
-	use:enhance={createEnhanceHandler('Lead converted successfully', true)}
+	use:enhance={createEnhanceHandler('Lead converted successfully')}
 	class="hidden"
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />

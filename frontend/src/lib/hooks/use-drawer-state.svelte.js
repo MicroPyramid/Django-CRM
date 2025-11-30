@@ -49,6 +49,7 @@ export function useDrawerState(options = {}) {
 	 */
 	function openDetail(item) {
 		selected = item;
+		mode = 'edit'; // Set to edit mode (view with inline editing)
 		detailOpen = true;
 		updateUrl(item?.id, null);
 	}
@@ -59,6 +60,7 @@ export function useDrawerState(options = {}) {
 	function openCreate() {
 		selected = null;
 		mode = 'create';
+		detailOpen = true;
 		formOpen = true;
 		updateUrl(null, 'create');
 	}
@@ -84,6 +86,15 @@ export function useDrawerState(options = {}) {
 	 * Close form drawer
 	 */
 	function closeForm() {
+		formOpen = false;
+		updateUrl(null, null);
+	}
+
+	/**
+	 * Close all drawers
+	 */
+	function closeAll() {
+		detailOpen = false;
 		formOpen = false;
 		updateUrl(null, null);
 	}
@@ -119,6 +130,7 @@ export function useDrawerState(options = {}) {
 		if (action === 'create') {
 			selected = null;
 			mode = 'create';
+			detailOpen = true;
 			formOpen = true;
 		} else if (viewId) {
 			const item = items.find((i) => i.id === viewId);
@@ -168,6 +180,7 @@ export function useDrawerState(options = {}) {
 		openEdit,
 		closeDetail,
 		closeForm,
+		closeAll,
 		handleDetailChange,
 		handleFormChange,
 		initUrlSync

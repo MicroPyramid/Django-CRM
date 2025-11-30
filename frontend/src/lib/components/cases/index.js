@@ -1,2 +1,1 @@
-export { default as CaseDetailDrawer } from './CaseDetailDrawer.svelte';
-export { default as CaseFormDrawer } from './CaseFormDrawer.svelte';
+export { default as CaseDrawer } from './CaseDrawer.svelte';

@@ -25,7 +25,7 @@
 		Clock
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import { TaskDetailDrawer, TaskFormDrawer } from '$lib/components/tasks';
+	import { TaskDrawer } from '$lib/components/tasks';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -208,19 +208,19 @@
 	}
 
 	/**
-	 * Handle form submit from drawer
-	 * @param {any} formData
+	 * Handle save from drawer
+	 * @param {any} data
 	 */
-	async function handleFormSubmit(formData) {
-		formState.subject = formData.subject || '';
-		formState.description = formData.description || '';
-		formState.status = formData.status || 'New';
-		formState.priority = formData.priority || 'Medium';
-		formState.dueDate = formData.dueDate || '';
-		formState.accountId = formData.accountId || '';
-		formState.assignedTo = formData.assignedTo || [];
-		formState.contacts = formData.contacts || [];
-		formState.teams = formData.teams || [];
+	async function handleSave(data) {
+		formState.subject = data.subject || '';
+		formState.description = data.description || '';
+		formState.status = data.status || 'New';
+		formState.priority = data.priority || 'Medium';
+		formState.dueDate = data.dueDate || '';
+		formState.accountId = data.accountId || '';
+		formState.assignedTo = data.assignedTo || [];
+		formState.contacts = data.contacts || [];
+		formState.teams = data.teams || [];
 
 		await tick();
 
@@ -1039,15 +1039,7 @@
 				<DropdownMenu.Content align="end">
 					<DropdownMenu.Item onclick={() => drawer.openDetail(task)}>
 						<Eye class="mr-2 h-4 w-4" />
-						View Details
-					</DropdownMenu.Item>
-					<DropdownMenu.Item
-						onclick={() => {
-							drawer.selected = task;
-							drawer.openEdit();
-						}}
-					>
-						Edit
+						View / Edit
 					</DropdownMenu.Item>
 					{#if !isCompleted}
 						<DropdownMenu.Item onclick={() => handleComplete(task.id)}>
@@ -1155,36 +1147,18 @@
 	</div>
 {/snippet}
 
-<!-- Task Detail Drawer -->
-<TaskDetailDrawer
+<!-- Task Drawer (unified view/edit) -->
+<TaskDrawer
 	bind:open={drawer.detailOpen}
 	task={drawer.selected}
+	mode={drawer.mode === 'create' ? 'create' : 'view'}
 	loading={drawer.loading}
-	onEdit={drawer.openEdit}
+	options={formOptions}
+	onSave={handleSave}
 	onComplete={() => drawer.selected && handleComplete(drawer.selected.id)}
 	onReopen={handleReopen}
 	onDelete={handleDelete}
-/>
-
-<!-- Task Form Drawer -->
-<TaskFormDrawer
-	bind:open={drawer.formOpen}
-	mode={drawer.mode}
-	initialData={drawer.selected
-		? {
-				subject: drawer.selected.subject,
-				description: drawer.selected.description || '',
-				status: drawer.selected.status || 'New',
-				priority: drawer.selected.priority || 'Medium',
-				dueDate: drawer.selected.dueDate ? drawer.selected.dueDate.split('T')[0] : '',
-				assignedTo: (drawer.selected.assignedTo || []).map((/** @type {any} */ u) => u.id),
-				contacts: (drawer.selected.contacts || []).map((/** @type {any} */ c) => c.id),
-				teams: (drawer.selected.teams || []).map((/** @type {any} */ t) => t.id),
-				accountId: drawer.selected.account?.id || ''
-			}
-		: null}
-	options={formOptions}
-	onSubmit={handleFormSubmit}
+	onCancel={drawer.closeDetail}
 />
 
 <!-- Hidden forms for server actions -->

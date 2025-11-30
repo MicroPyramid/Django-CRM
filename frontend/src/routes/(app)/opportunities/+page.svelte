@@ -22,11 +22,7 @@
 		Briefcase
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import {
-		KanbanBoard,
-		OpportunityDetailDrawer,
-		OpportunityFormDrawer
-	} from '$lib/components/opportunities';
+	import { KanbanBoard, OpportunityDrawer } from '$lib/components/opportunities';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -57,11 +53,10 @@
 	let viewMode = $state(/** @type {'list' | 'kanban'} */ ('list'));
 
 	// Drawer state
-	let detailDrawerOpen = $state(false);
-	let formDrawerOpen = $state(false);
+	let drawerOpen = $state(false);
+	let drawerMode = $state(/** @type {'view' | 'create'} */ ('view'));
 	/** @type {any} */
 	let selectedOpportunity = $state(null);
-	let formMode = $state(/** @type {'create' | 'edit'} */ ('create'));
 	let initialStage = $state('PROSPECTING');
 	let isLoading = $state(false);
 
@@ -167,7 +162,8 @@
 	 */
 	function openOpportunityDetail(opportunity) {
 		selectedOpportunity = opportunity;
-		detailDrawerOpen = true;
+		drawerMode = 'view';
+		drawerOpen = true;
 	}
 
 	/**
@@ -176,18 +172,9 @@
 	 */
 	function openCreateForm(stage) {
 		selectedOpportunity = null;
-		formMode = 'create';
+		drawerMode = 'create';
 		initialStage = stage || 'PROSPECTING';
-		formDrawerOpen = true;
-	}
-
-	/**
-	 * Open edit form
-	 */
-	function openEditForm() {
-		formMode = 'edit';
-		detailDrawerOpen = false;
-		formDrawerOpen = true;
+		drawerOpen = true;
 	}
 
 	/**
@@ -204,13 +191,14 @@
 	}
 
 	/**
-	 * Handle form submit
+	 * Handle save from drawer
 	 * @param {any} formData
 	 */
-	async function handleFormSubmit(formData) {
+	async function handleSave(formData) {
 		isLoading = true;
 		try {
-			const action = formMode === 'create' ? '?/create' : '?/update';
+			const isCreate = drawerMode === 'create';
+			const action = isCreate ? '?/create' : '?/update';
 			const form = new FormData();
 
 			// Map form data to FormData with all fields
@@ -227,7 +215,7 @@
 			form.append('contacts', JSON.stringify(formData.contacts || []));
 			form.append('tags', JSON.stringify(formData.tags || []));
 
-			if (formMode === 'edit' && selectedOpportunity?.id) {
+			if (!isCreate && selectedOpportunity?.id) {
 				form.append('opportunityId', selectedOpportunity.id);
 			}
 
@@ -235,8 +223,8 @@
 			const result = await response.json();
 
 			if (result.type === 'success' || result.data?.success) {
-				toast.success(formMode === 'create' ? 'Opportunity created' : 'Opportunity updated');
-				formDrawerOpen = false;
+				toast.success(isCreate ? 'Opportunity created' : 'Opportunity updated');
+				drawerOpen = false;
 				await invalidateAll();
 			} else {
 				toast.error(result.data?.message || 'Failed to save opportunity');
@@ -264,7 +252,7 @@
 
 			if (result.type === 'success' || result.data?.success) {
 				toast.success('Opportunity deleted');
-				detailDrawerOpen = false;
+				drawerOpen = false;
 				await invalidateAll();
 			} else {
 				toast.error(result.data?.message || 'Failed to delete opportunity');
@@ -289,7 +277,7 @@
 
 			if (result.type === 'success' || result.data?.success) {
 				toast.success('Opportunity marked as won!');
-				detailDrawerOpen = false;
+				drawerOpen = false;
 				await invalidateAll();
 			} else {
 				toast.error(result.data?.message || 'Failed to update status');
@@ -314,7 +302,7 @@
 
 			if (result.type === 'success' || result.data?.success) {
 				toast.success('Opportunity marked as lost');
-				detailDrawerOpen = false;
+				drawerOpen = false;
 				await invalidateAll();
 			} else {
 				toast.error(result.data?.message || 'Failed to update status');
@@ -665,14 +653,6 @@
 														<Eye class="mr-2 h-4 w-4" />
 														View Details
 													</DropdownMenu.Item>
-													<DropdownMenu.Item
-														onclick={() => {
-															selectedOpportunity = opportunity;
-															openEditForm();
-														}}
-													>
-														Edit
-													</DropdownMenu.Item>
 													<DropdownMenu.Separator />
 													<DropdownMenu.Item class="text-destructive">Delete</DropdownMenu.Item>
 												</DropdownMenu.Content>
@@ -731,38 +711,17 @@
 	{/if}
 </div>
 
-<!-- Opportunity Detail Drawer -->
-<OpportunityDetailDrawer
-	bind:open={detailDrawerOpen}
+<!-- Unified Opportunity Drawer -->
+<OpportunityDrawer
+	bind:open={drawerOpen}
 	opportunity={selectedOpportunity}
+	mode={drawerMode}
+	options={formOptions}
+	{initialStage}
 	loading={isLoading}
-	onEdit={openEditForm}
+	onSave={handleSave}
+	onDelete={handleDelete}
 	onMarkWon={handleMarkWon}
 	onMarkLost={handleMarkLost}
-	onDelete={handleDelete}
-/>
-
-<!-- Opportunity Form Drawer -->
-<OpportunityFormDrawer
-	bind:open={formDrawerOpen}
-	mode={formMode}
-	{initialStage}
-	options={formOptions}
-	initialData={selectedOpportunity
-		? {
-				name: selectedOpportunity.name,
-				amount: selectedOpportunity.amount?.toString() || '',
-				stage: selectedOpportunity.stage,
-				opportunity_type: selectedOpportunity.opportunityType || '',
-				currency: selectedOpportunity.currency || 'USD',
-				probability: selectedOpportunity.probability?.toString() || '',
-				lead_source: selectedOpportunity.leadSource || '',
-				closed_on: selectedOpportunity.closedOn?.split('T')[0] || '',
-				account_id: selectedOpportunity.account?.id || '',
-				contacts: (selectedOpportunity.contacts || []).map((c) => c.id),
-				tags: (selectedOpportunity.tags || []).map((t) => t.name),
-				description: selectedOpportunity.description || ''
-			}
-		: null}
-	onSubmit={handleFormSubmit}
+	onCancel={() => (drawerOpen = false)}
 />

@@ -20,7 +20,7 @@
 		Briefcase
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import { ContactDetailDrawer, ContactFormDrawer } from '$lib/components/contacts';
+	import { ContactDrawer } from '$lib/components/contacts';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -28,7 +28,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
-	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { useListFilters } from '$lib/hooks';
+	import { goto } from '$app/navigation';
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -37,16 +38,90 @@
 	const contacts = $derived(data.contacts || []);
 	const owners = $derived(data.owners || []);
 
-	// Drawer state with URL sync
-	const drawer = useDrawerState({
-		page: $page,
-		syncUrl: true
+	// Drawer state (simplified - single drawer)
+	let drawerOpen = $state(false);
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {any} */
+	let selectedContact = $state(null);
+	let drawerLoading = $state(false);
+
+	// URL sync
+	$effect(() => {
+		const viewId = $page.url.searchParams.get('view');
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create') {
+			selectedContact = null;
+			drawerMode = 'create';
+			drawerOpen = true;
+		} else if (viewId && contacts.length > 0) {
+			const contact = contacts.find((c) => c.id === viewId);
+			if (contact) {
+				selectedContact = contact;
+				drawerMode = 'view';
+				drawerOpen = true;
+			}
+		}
 	});
 
-	// Initialize URL sync when contacts change
-	$effect(() => {
-		drawer.initUrlSync(contacts);
-	});
+	/**
+	 * Update URL
+	 * @param {string | null} viewId
+	 * @param {string | null} action
+	 */
+	function updateUrl(viewId, action) {
+		const url = new URL($page.url);
+		if (viewId) {
+			url.searchParams.set('view', viewId);
+			url.searchParams.delete('action');
+		} else if (action) {
+			url.searchParams.set('action', action);
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.delete('view');
+			url.searchParams.delete('action');
+		}
+		goto(url.toString(), { replaceState: true, noScroll: true });
+	}
+
+	/**
+	 * Open drawer for viewing/editing a contact
+	 * @param {any} contact
+	 */
+	function openContact(contact) {
+		selectedContact = contact;
+		drawerMode = 'view';
+		drawerOpen = true;
+		updateUrl(contact.id, null);
+	}
+
+	/**
+	 * Open drawer for creating a new contact
+	 */
+	function openCreate() {
+		selectedContact = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+		updateUrl(null, 'create');
+	}
+
+	/**
+	 * Close drawer
+	 */
+	function closeDrawer() {
+		drawerOpen = false;
+		updateUrl(null, null);
+	}
+
+	/**
+	 * Handle drawer open change
+	 * @param {boolean} open
+	 */
+	function handleDrawerChange(open) {
+		drawerOpen = open;
+		if (!open) updateUrl(null, null);
+	}
 
 	// Filter/search/sort state
 	const list = useListFilters({
@@ -77,27 +152,21 @@
 	// Form data state
 	let formState = $state({
 		contactId: '',
-		// Core fields
 		firstName: '',
 		lastName: '',
 		email: '',
 		phone: '',
-		// Professional info
 		organization: '',
 		title: '',
 		department: '',
-		// Communication preferences
 		doNotCall: false,
 		linkedInUrl: '',
-		// Address fields
 		addressLine: '',
 		city: '',
 		state: '',
 		postcode: '',
 		country: '',
-		// Notes
 		description: '',
-		// Assignment
 		ownerId: ''
 	});
 
@@ -122,36 +191,33 @@
 	 * @param {any} formData
 	 */
 	async function handleFormSubmit(formData) {
-		// Populate form state - Core fields
+		// Populate form state
 		formState.firstName = formData.first_name || '';
 		formState.lastName = formData.last_name || '';
 		formState.email = formData.email || '';
 		formState.phone = formData.phone || '';
-		// Professional info
 		formState.organization = formData.organization || '';
 		formState.title = formData.title || '';
 		formState.department = formData.department || '';
-		// Communication preferences
 		formState.doNotCall = formData.do_not_call || false;
 		formState.linkedInUrl = formData.linked_in_url || '';
-		// Address fields
 		formState.addressLine = formData.address_line || '';
 		formState.city = formData.city || '';
 		formState.state = formData.state || '';
 		formState.postcode = formData.postcode || '';
 		formState.country = formData.country || '';
-		// Notes
 		formState.description = formData.description || '';
-		// Assignment
 		formState.ownerId = formData.owner_id || '';
 
 		await tick();
 
-		if (drawer.mode === 'edit' && drawer.selected) {
-			formState.contactId = drawer.selected.id;
+		if (drawerMode === 'view' && selectedContact) {
+			// Edit mode
+			formState.contactId = selectedContact.id;
 			await tick();
 			updateForm.requestSubmit();
 		} else {
+			// Create mode
 			createForm.requestSubmit();
 		}
 	}
@@ -160,10 +226,10 @@
 	 * Handle contact delete
 	 */
 	async function handleDelete() {
-		if (!drawer.selected) return;
-		if (!confirm(`Are you sure you want to delete ${getFullName(drawer.selected)}?`)) return;
+		if (!selectedContact) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(selectedContact)}?`)) return;
 
-		formState.contactId = drawer.selected.id;
+		formState.contactId = selectedContact.id;
 		await tick();
 		deleteForm.requestSubmit();
 	}
@@ -171,17 +237,15 @@
 	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
-	 * @param {boolean} closeDetailDrawer
+	 * @param {boolean} closeOnSuccess
 	 */
-	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+	function createEnhanceHandler(successMessage, closeOnSuccess = true) {
 		return () => {
 			return async ({ result }) => {
 				if (result.type === 'success') {
 					toast.success(successMessage);
-					if (closeDetailDrawer) {
-						drawer.closeDetail();
-					} else {
-						drawer.closeForm();
+					if (closeOnSuccess) {
+						closeDrawer();
 					}
 					await invalidateAll();
 				} else if (result.type === 'failure') {
@@ -200,7 +264,7 @@
 
 <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
 	{#snippet actions()}
-		<Button class="" onclick={drawer.openCreate} disabled={false}>
+		<Button class="" onclick={openCreate} disabled={false}>
 			<Plus class="mr-2 h-4 w-4" />
 			New Contact
 		</Button>
@@ -275,7 +339,7 @@
 					<p class="text-muted-foreground mt-1 text-sm">
 						Try adjusting your search criteria or create a new contact.
 					</p>
-					<Button onclick={drawer.openCreate} class="mt-4" disabled={false}>
+					<Button onclick={openCreate} class="mt-4" disabled={false}>
 						<Plus class="mr-2 h-4 w-4" />
 						Create New Contact
 					</Button>
@@ -313,7 +377,7 @@
 							{#each filteredContacts as contact (contact.id)}
 								<Table.Row
 									class="hover:bg-muted/50 cursor-pointer"
-									onclick={() => drawer.openDetail(contact)}
+									onclick={() => openContact(contact)}
 								>
 									<Table.Cell>
 										<div class="flex items-center gap-3">
@@ -393,20 +457,20 @@
 												</Button>
 											</DropdownMenu.Trigger>
 											<DropdownMenu.Content align="end">
-												<DropdownMenu.Item onclick={() => drawer.openDetail(contact)}>
+												<DropdownMenu.Item onclick={() => openContact(contact)}>
 													<Eye class="mr-2 h-4 w-4" />
 													View Details
 												</DropdownMenu.Item>
+												<DropdownMenu.Separator />
 												<DropdownMenu.Item
+													class="text-destructive"
 													onclick={() => {
-														drawer.selected = contact;
-														drawer.openEdit();
+														selectedContact = contact;
+														handleDelete();
 													}}
 												>
-													Edit
+													Delete
 												</DropdownMenu.Item>
-												<DropdownMenu.Separator />
-												<DropdownMenu.Item class="text-destructive">Delete</DropdownMenu.Item>
 											</DropdownMenu.Content>
 										</DropdownMenu.Root>
 									</Table.Cell>
@@ -422,7 +486,7 @@
 						<button
 							type="button"
 							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
-							onclick={() => drawer.openDetail(contact)}
+							onclick={() => openContact(contact)}
 						>
 							<div
 								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-medium text-white"
@@ -465,41 +529,16 @@
 	</Card.Root>
 </div>
 
-<!-- Contact Detail Drawer -->
-<ContactDetailDrawer
-	bind:open={drawer.detailOpen}
-	onOpenChange={drawer.handleDetailChange}
-	contact={drawer.selected}
-	loading={drawer.loading}
-	onEdit={drawer.openEdit}
+<!-- Unified Contact Drawer -->
+<ContactDrawer
+	bind:open={drawerOpen}
+	onOpenChange={handleDrawerChange}
+	contact={selectedContact}
+	mode={drawerMode}
+	loading={drawerLoading}
+	onSave={handleFormSubmit}
 	onDelete={handleDelete}
-/>
-
-<!-- Contact Form Drawer -->
-<ContactFormDrawer
-	bind:open={drawer.formOpen}
-	onOpenChange={drawer.handleFormChange}
-	mode={drawer.mode}
-	initialData={drawer.selected
-		? {
-				first_name: drawer.selected.firstName,
-				last_name: drawer.selected.lastName,
-				email: drawer.selected.email,
-				phone: drawer.selected.phone,
-				organization: drawer.selected.organization,
-				title: drawer.selected.title,
-				department: drawer.selected.department,
-				do_not_call: drawer.selected.doNotCall,
-				linked_in_url: drawer.selected.linkedInUrl,
-				address_line: drawer.selected.addressLine,
-				city: drawer.selected.city,
-				state: drawer.selected.state,
-				postcode: drawer.selected.postcode,
-				country: drawer.selected.country,
-				description: drawer.selected.description
-			}
-		: null}
-	onSubmit={handleFormSubmit}
+	onCancel={closeDrawer}
 />
 
 <!-- Hidden forms for server actions -->
@@ -510,27 +549,21 @@
 	use:enhance={createEnhanceHandler('Contact created successfully')}
 	class="hidden"
 >
-	<!-- Core fields -->
 	<input type="hidden" name="firstName" value={formState.firstName} />
 	<input type="hidden" name="lastName" value={formState.lastName} />
 	<input type="hidden" name="email" value={formState.email} />
 	<input type="hidden" name="phone" value={formState.phone} />
-	<!-- Professional info -->
 	<input type="hidden" name="organization" value={formState.organization} />
 	<input type="hidden" name="title" value={formState.title} />
 	<input type="hidden" name="department" value={formState.department} />
-	<!-- Communication preferences -->
 	<input type="hidden" name="doNotCall" value={formState.doNotCall} />
 	<input type="hidden" name="linkedInUrl" value={formState.linkedInUrl} />
-	<!-- Address fields -->
 	<input type="hidden" name="addressLine" value={formState.addressLine} />
 	<input type="hidden" name="city" value={formState.city} />
 	<input type="hidden" name="state" value={formState.state} />
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
-	<!-- Notes -->
 	<input type="hidden" name="description" value={formState.description} />
-	<!-- Assignment -->
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
 </form>
 
@@ -542,27 +575,21 @@
 	class="hidden"
 >
 	<input type="hidden" name="contactId" value={formState.contactId} />
-	<!-- Core fields -->
 	<input type="hidden" name="firstName" value={formState.firstName} />
 	<input type="hidden" name="lastName" value={formState.lastName} />
 	<input type="hidden" name="email" value={formState.email} />
 	<input type="hidden" name="phone" value={formState.phone} />
-	<!-- Professional info -->
 	<input type="hidden" name="organization" value={formState.organization} />
 	<input type="hidden" name="title" value={formState.title} />
 	<input type="hidden" name="department" value={formState.department} />
-	<!-- Communication preferences -->
 	<input type="hidden" name="doNotCall" value={formState.doNotCall} />
 	<input type="hidden" name="linkedInUrl" value={formState.linkedInUrl} />
-	<!-- Address fields -->
 	<input type="hidden" name="addressLine" value={formState.addressLine} />
 	<input type="hidden" name="city" value={formState.city} />
 	<input type="hidden" name="state" value={formState.state} />
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
-	<!-- Notes -->
 	<input type="hidden" name="description" value={formState.description} />
-	<!-- Assignment -->
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
 </form>
 
@@ -570,7 +597,7 @@
 	method="POST"
 	action="?/delete"
 	bind:this={deleteForm}
-	use:enhance={createEnhanceHandler('Contact deleted successfully', true)}
+	use:enhance={createEnhanceHandler('Contact deleted successfully')}
 	class="hidden"
 >
 	<input type="hidden" name="contactId" value={formState.contactId} />

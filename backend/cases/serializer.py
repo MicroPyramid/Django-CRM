@@ -43,6 +43,7 @@ class CaseSerializer(serializers.ModelSerializer):
 
 class CaseCreateSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField
+    org = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)

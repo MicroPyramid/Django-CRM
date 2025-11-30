@@ -21,7 +21,7 @@
 		MapPin
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import { AccountDetailDrawer, AccountFormDrawer } from '$lib/components/accounts';
+	import { AccountDrawer } from '$lib/components/accounts';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -29,7 +29,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
-	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { useListFilters } from '$lib/hooks';
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -38,16 +38,92 @@
 	const accounts = $derived(data.accounts || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
-	// Drawer state with URL sync
-	const drawer = useDrawerState({
-		page: $page,
-		syncUrl: true
+	// Drawer state - simplified for unified drawer
+	let drawerOpen = $state(false);
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {any} */
+	let selectedAccount = $state(null);
+	let drawerLoading = $state(false);
+
+	// URL sync for drawer state
+	$effect(() => {
+		const viewId = $page.url.searchParams.get('view');
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create') {
+			selectedAccount = null;
+			drawerMode = 'create';
+			drawerOpen = true;
+		} else if (viewId && accounts.length > 0) {
+			const account = accounts.find((a) => a.id === viewId);
+			if (account) {
+				selectedAccount = account;
+				drawerMode = 'view';
+				drawerOpen = true;
+			}
+		}
 	});
 
-	// Initialize URL sync when accounts change
-	$effect(() => {
-		drawer.initUrlSync(accounts);
-	});
+	/**
+	 * Update URL with drawer state
+	 * @param {string | null} viewId
+	 * @param {string | null} action
+	 */
+	function updateUrl(viewId, action) {
+		const url = new URL($page.url);
+		if (viewId) {
+			url.searchParams.set('view', viewId);
+			url.searchParams.delete('action');
+		} else if (action) {
+			url.searchParams.set('action', action);
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.delete('view');
+			url.searchParams.delete('action');
+		}
+		goto(url.toString(), { replaceState: true, keepFocus: true });
+	}
+
+	/**
+	 * Open account detail drawer
+	 * @param {any} account
+	 */
+	function openAccount(account) {
+		selectedAccount = account;
+		drawerMode = 'view';
+		drawerOpen = true;
+		updateUrl(account.id, null);
+	}
+
+	/**
+	 * Open create drawer
+	 */
+	function openCreate() {
+		selectedAccount = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+		updateUrl(null, 'create');
+	}
+
+	/**
+	 * Close drawer
+	 */
+	function closeDrawer() {
+		drawerOpen = false;
+		updateUrl(null, null);
+	}
+
+	/**
+	 * Handle drawer open change
+	 * @param {boolean} open
+	 */
+	function handleDrawerChange(open) {
+		drawerOpen = open;
+		if (!open) {
+			updateUrl(null, null);
+		}
+	}
 
 	// Get unique industries from accounts for filter
 	const industries = $derived.by(() => {
@@ -147,8 +223,8 @@
 
 		await tick();
 
-		if (drawer.mode === 'edit' && drawer.selected) {
-			formState.accountId = drawer.selected.id;
+		if (drawerMode === 'view' && selectedAccount) {
+			formState.accountId = selectedAccount.id;
 			await tick();
 			updateForm.requestSubmit();
 		} else {
@@ -160,9 +236,9 @@
 	 * Handle account close (deactivate)
 	 */
 	async function handleClose() {
-		if (!drawer.selected) return;
+		if (!selectedAccount) return;
 
-		formState.accountId = drawer.selected.id;
+		formState.accountId = selectedAccount.id;
 		await tick();
 		deactivateForm.requestSubmit();
 	}
@@ -171,9 +247,9 @@
 	 * Handle account reopen (activate)
 	 */
 	async function handleReopen() {
-		if (!drawer.selected) return;
+		if (!selectedAccount) return;
 
-		formState.accountId = drawer.selected.id;
+		formState.accountId = selectedAccount.id;
 		await tick();
 		activateForm.requestSubmit();
 	}
@@ -181,17 +257,15 @@
 	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
-	 * @param {boolean} closeDetailDrawer
+	 * @param {boolean} shouldCloseDrawer
 	 */
-	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+	function createEnhanceHandler(successMessage, shouldCloseDrawer = false) {
 		return () => {
 			return async ({ result }) => {
 				if (result.type === 'success') {
 					toast.success(successMessage);
-					if (closeDetailDrawer) {
-						drawer.closeDetail();
-					} else {
-						drawer.closeForm();
+					if (shouldCloseDrawer) {
+						closeDrawer();
 					}
 					await invalidateAll();
 				} else if (result.type === 'failure') {
@@ -207,8 +281,8 @@
 	 * Navigate to add contact
 	 */
 	function handleAddContact() {
-		if (drawer.selected) {
-			goto(`/contacts?action=create&accountId=${drawer.selected.id}`);
+		if (selectedAccount) {
+			goto(`/contacts?action=create&accountId=${selectedAccount.id}`);
 		}
 	}
 
@@ -216,8 +290,8 @@
 	 * Navigate to add opportunity
 	 */
 	function handleAddOpportunity() {
-		if (drawer.selected) {
-			goto(`/opportunities/new?accountId=${drawer.selected.id}`);
+		if (selectedAccount) {
+			goto(`/opportunities/new?accountId=${selectedAccount.id}`);
 		}
 	}
 </script>
@@ -228,7 +302,7 @@
 
 <PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
 	{#snippet actions()}
-		<Button onclick={drawer.openCreate} disabled={false}>
+		<Button onclick={openCreate} disabled={false}>
 			<Plus class="mr-2 h-4 w-4" />
 			New Account
 		</Button>
@@ -379,7 +453,7 @@
 					<p class="text-muted-foreground mt-1 text-sm">
 						Try adjusting your search criteria or create a new account.
 					</p>
-					<Button onclick={drawer.openCreate} class="mt-4" disabled={false}>
+					<Button onclick={openCreate} class="mt-4" disabled={false}>
 						<Plus class="mr-2 h-4 w-4" />
 						Create New Account
 					</Button>
@@ -416,8 +490,8 @@
 						<Table.Body>
 							{#each filteredAccounts as account (account.id)}
 								<Table.Row
-									class="hover:bg-muted/50 cursor-pointer {account.closedAt ? 'opacity-60' : ''}"
-									onclick={() => drawer.openDetail(account)}
+									class="hover:bg-muted/50 cursor-pointer {!account.isActive ? 'opacity-60' : ''}"
+									onclick={() => openAccount(account)}
 								>
 									<Table.Cell>
 										<div class="flex items-center gap-3">
@@ -506,15 +580,12 @@
 												</Button>
 											</DropdownMenu.Trigger>
 											<DropdownMenu.Content align="end">
-												<DropdownMenu.Item onclick={() => drawer.openDetail(account)}>
+												<DropdownMenu.Item onclick={() => openAccount(account)}>
 													View Details
 												</DropdownMenu.Item>
 												<DropdownMenu.Item
-													onclick={() => {
-														drawer.selected = account;
-														drawer.openEdit();
-													}}
-													disabled={!!account.closedAt}
+													onclick={() => openAccount(account)}
+													disabled={!account.isActive}
 												>
 													Edit
 												</DropdownMenu.Item>
@@ -545,10 +616,10 @@
 					{#each filteredAccounts as account (account.id)}
 						<button
 							type="button"
-							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left {account.closedAt
+							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left {!account.isActive
 								? 'opacity-60'
 								: ''}"
-							onclick={() => drawer.openDetail(account)}
+							onclick={() => openAccount(account)}
 						>
 							<div
 								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
@@ -617,42 +688,19 @@
 	{/if}
 </div>
 
-<!-- Account Detail Drawer -->
-<AccountDetailDrawer
-	bind:open={drawer.detailOpen}
-	onOpenChange={drawer.handleDetailChange}
-	account={drawer.selected}
-	loading={drawer.loading}
-	onEdit={drawer.openEdit}
+<!-- Account Drawer (unified) -->
+<AccountDrawer
+	bind:open={drawerOpen}
+	onOpenChange={handleDrawerChange}
+	account={selectedAccount}
+	mode={drawerMode}
+	loading={drawerLoading}
+	onSave={handleFormSubmit}
 	onClose={handleClose}
 	onReopen={handleReopen}
 	onAddContact={handleAddContact}
 	onAddOpportunity={handleAddOpportunity}
-/>
-
-<!-- Account Form Drawer -->
-<AccountFormDrawer
-	bind:open={drawer.formOpen}
-	onOpenChange={drawer.handleFormChange}
-	mode={drawer.mode}
-	initialData={drawer.selected
-		? {
-				name: drawer.selected.name,
-				industry: drawer.selected.industry,
-				website: drawer.selected.website,
-				phone: drawer.selected.phone,
-				email: drawer.selected.email,
-				address_line: drawer.selected.addressLine,
-				city: drawer.selected.city,
-				state: drawer.selected.state,
-				postcode: drawer.selected.postcode,
-				country: drawer.selected.country,
-				annual_revenue: drawer.selected.annualRevenue?.toString() || '',
-				number_of_employees: drawer.selected.numberOfEmployees?.toString() || '',
-				description: drawer.selected.description
-			}
-		: null}
-	onSubmit={handleFormSubmit}
+	onCancel={closeDrawer}
 />
 
 <!-- Hidden forms for server actions -->
@@ -660,7 +708,7 @@
 	method="POST"
 	action="?/create"
 	bind:this={createForm}
-	use:enhance={createEnhanceHandler('Account created successfully')}
+	use:enhance={createEnhanceHandler('Account created successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="name" value={formState.name} />
@@ -682,7 +730,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Account updated successfully')}
+	use:enhance={createEnhanceHandler('Account updated successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="accountId" value={formState.accountId} />
@@ -705,7 +753,7 @@
 	method="POST"
 	action="?/deactivate"
 	bind:this={deactivateForm}
-	use:enhance={createEnhanceHandler('Account deactivated successfully', true)}
+	use:enhance={createEnhanceHandler('Account closed successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="accountId" value={formState.accountId} />
@@ -715,7 +763,7 @@
 	method="POST"
 	action="?/activate"
 	bind:this={activateForm}
-	use:enhance={createEnhanceHandler('Account activated successfully')}
+	use:enhance={createEnhanceHandler('Account reopened successfully')}
 	class="hidden"
 >
 	<input type="hidden" name="accountId" value={formState.accountId} />

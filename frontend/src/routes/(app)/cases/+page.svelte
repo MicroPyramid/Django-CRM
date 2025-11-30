@@ -22,7 +22,7 @@
 		Tag
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import { CaseDetailDrawer, CaseFormDrawer } from '$lib/components/cases';
+	import { CaseDrawer } from '$lib/components/cases';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -129,21 +129,21 @@
 	}
 
 	/**
-	 * Handle form submit from drawer
-	 * @param {any} formData
+	 * Handle save from drawer (receives API-formatted data)
+	 * @param {any} apiData
 	 */
-	async function handleFormSubmit(formData) {
-		// Populate form state
-		formState.title = formData.title || '';
-		formState.description = formData.description || '';
-		formState.accountId = formData.accountId || '';
-		formState.assignedTo = formData.assignedTo || [];
-		formState.contacts = formData.contacts || [];
-		formState.teams = formData.teams || [];
-		formState.priority = formData.priority || 'Normal';
-		formState.caseType = formData.caseType || '';
-		formState.status = formData.status || drawer.selected?.status || 'New';
-		formState.dueDate = formData.dueDate || '';
+	async function handleSave(apiData) {
+		// Convert API format to form state
+		formState.title = apiData.name || '';
+		formState.description = apiData.description || '';
+		formState.accountId = apiData.account || '';
+		formState.assignedTo = apiData.assigned_to || [];
+		formState.contacts = apiData.contacts || [];
+		formState.teams = apiData.teams || [];
+		formState.priority = apiData.priority || 'Normal';
+		formState.caseType = apiData.case_type || '';
+		formState.status = apiData.status || drawer.selected?.status || 'New';
+		formState.dueDate = apiData.closed_on || '';
 
 		await tick();
 
@@ -559,37 +559,18 @@
 	</Card.Root>
 </div>
 
-<!-- Case Detail Drawer -->
-<CaseDetailDrawer
+<!-- Case Drawer (unified view/create/edit) -->
+<CaseDrawer
 	bind:open={drawer.detailOpen}
 	caseItem={drawer.selected}
+	mode={drawer.mode === 'create' ? 'create' : 'view'}
 	loading={drawer.loading}
-	onEdit={drawer.openEdit}
+	options={formOptions}
+	onSave={handleSave}
+	onDelete={handleDelete}
 	onClose={handleClose}
 	onReopen={handleReopen}
-	onDelete={handleDelete}
-/>
-
-<!-- Case Form Drawer -->
-<CaseFormDrawer
-	bind:open={drawer.formOpen}
-	mode={drawer.mode}
-	initialData={drawer.selected
-		? {
-				title: drawer.selected.subject,
-				description: drawer.selected.description || '',
-				accountId: drawer.selected.account?.id || '',
-				assignedTo: (drawer.selected.assignedTo || []).map((/** @type {any} */ a) => a.id),
-				contacts: (drawer.selected.contacts || []).map((/** @type {any} */ c) => c.id),
-				teams: (drawer.selected.teams || []).map((/** @type {any} */ t) => t.id),
-				priority: drawer.selected.priority || 'Normal',
-				caseType: drawer.selected.caseType || '',
-				dueDate: drawer.selected.closedOn ? drawer.selected.closedOn.split('T')[0] : '',
-				status: drawer.selected.status || 'New'
-			}
-		: null}
-	options={formOptions}
-	onSubmit={handleFormSubmit}
+	onCancel={() => drawer.closeAll()}
 />
 
 <!-- Hidden forms for server actions -->

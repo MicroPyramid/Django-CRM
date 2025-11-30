@@ -1,2 +1,1 @@
-export { default as TaskDetailDrawer } from './TaskDetailDrawer.svelte';
-export { default as TaskFormDrawer } from './TaskFormDrawer.svelte';
+export { default as TaskDrawer } from './TaskDrawer.svelte';

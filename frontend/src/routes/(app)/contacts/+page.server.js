@@ -294,7 +294,9 @@ export const actions = {
 			return { success: true };
 		} catch (err) {
 			console.error('Error updating contact:', err);
-			return fail(500, { error: 'Failed to update contact' });
+			// Extract the actual error message from the API response
+			const errorMessage = err.message || 'Failed to update contact';
+			return fail(400, { error: errorMessage });
 		}
 	},
 

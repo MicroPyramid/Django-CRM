@@ -1,2 +1,1 @@
-export { default as AccountDetailDrawer } from './AccountDetailDrawer.svelte';
-export { default as AccountFormDrawer } from './AccountFormDrawer.svelte';
+export { default as AccountDrawer } from './AccountDrawer.svelte';

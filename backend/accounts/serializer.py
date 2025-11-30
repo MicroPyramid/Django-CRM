@@ -196,6 +196,8 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "country",
             # Notes
             "description",
+            # Status
+            "is_active",
         )
 
 

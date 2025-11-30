@@ -58,13 +58,18 @@ export async function load({ locals, url, cookies }) {
 
 		if (response.active_accounts && response.closed_accounts) {
 			// Django endpoint returns separate lists
-			if (status === 'open' || !status) {
-				accounts = response.active_accounts.open_accounts || [];
-				total = accounts.length; // Django doesn't provide count in this format
+			const activeAccounts = response.active_accounts.open_accounts || [];
+			const closedAccounts = response.closed_accounts.close_accounts || [];
+
+			if (status === 'open') {
+				accounts = activeAccounts;
 			} else if (status === 'closed') {
-				accounts = response.closed_accounts.close_accounts || [];
-				total = accounts.length;
+				accounts = closedAccounts;
+			} else {
+				// No filter - show all accounts (both active and closed)
+				accounts = [...activeAccounts, ...closedAccounts];
 			}
+			total = accounts.length;
 		} else if (response.results) {
 			// Standard Django pagination response
 			accounts = response.results;
@@ -93,7 +98,7 @@ export async function load({ locals, url, cookies }) {
 				website: account.website,
 				industry: account.industry,
 				description: account.description,
-				isActive: account.status === 'open' || account.is_active === true,
+				isActive: account.is_active === true,
 				createdAt: account.created_at,
 				updatedAt: account.updated_at || account.created_at,
 
@@ -281,11 +286,29 @@ export const actions = {
 				return fail(400, { error: 'Account ID is required.' });
 			}
 
+			// First fetch the current account data
+			const account = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org: locals.org });
+			const accountData = account.account_obj;
+
+			// Update with is_active set to false using PUT (PATCH not supported)
 			await apiRequest(
 				`/accounts/${accountId}/`,
 				{
-					method: 'PATCH',
-					body: { is_active: false, status: 'close' }
+					method: 'PUT',
+					body: {
+						name: accountData.name,
+						email: accountData.email || '',
+						phone: accountData.phone || '',
+						website: accountData.website || '',
+						industry: accountData.industry || '',
+						description: accountData.description || '',
+						address_line: accountData.address_line || '',
+						city: accountData.city || '',
+						state: accountData.state || '',
+						postcode: accountData.postcode || '',
+						country: accountData.country || '',
+						is_active: false
+					}
 				},
 				{ cookies, org: locals.org }
 			);
@@ -306,11 +329,29 @@ export const actions = {
 				return fail(400, { error: 'Account ID is required.' });
 			}
 
+			// First fetch the current account data
+			const account = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org: locals.org });
+			const accountData = account.account_obj;
+
+			// Update with is_active set to true using PUT (PATCH not supported)
 			await apiRequest(
 				`/accounts/${accountId}/`,
 				{
-					method: 'PATCH',
-					body: { is_active: true, status: 'open' }
+					method: 'PUT',
+					body: {
+						name: accountData.name,
+						email: accountData.email || '',
+						phone: accountData.phone || '',
+						website: accountData.website || '',
+						industry: accountData.industry || '',
+						description: accountData.description || '',
+						address_line: accountData.address_line || '',
+						city: accountData.city || '',
+						state: accountData.state || '',
+						postcode: accountData.postcode || '',
+						country: accountData.country || '',
+						is_active: true
+					}
 				},
 				{ cookies, org: locals.org }
 			);
