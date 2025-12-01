@@ -12,26 +12,49 @@
 		Building2,
 		User,
 		Calendar,
-		GripVertical
+		GripVertical,
+		Expand,
+		X,
+		Eye,
+		Check,
+		Trash2,
+		Star,
+		Globe,
+		Linkedin,
+		MapPin,
+		Briefcase
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { LeadDrawer, RowActions } from '$lib/components/leads';
+	import { LeadDrawer } from '$lib/components/leads';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
-	import { InlineEditableCell } from '$lib/components/ui/inline-editable-cell/index.js';
-	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { cn } from '$lib/utils.js';
-	import { formatRelativeDate, getNameInitials } from '$lib/utils/formatting.js';
-	import { getLeadStatusClass, getRatingConfig } from '$lib/utils/ui-helpers.js';
-	import {
+	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
+		import {
 		LEAD_STATUSES as statuses,
 		LEAD_SOURCES as sources,
 		LEAD_RATINGS as ratings
 	} from '$lib/constants/filters.js';
 	import { useListFilters } from '$lib/hooks';
+	import {
+		leadStatusOptions,
+		leadRatingOptions,
+		getOptionStyle,
+		getOptionLabel,
+		getOptionBgColor
+	} from '$lib/utils/table-helpers.js';
+	import {
+		createDragState,
+		calculateDropPosition,
+		reorderItems,
+		handleDragStart as dndDragStart,
+		dragHandleClasses,
+		expandButtonClasses,
+		dropIndicatorClasses,
+		draggedRowClasses
+	} from '$lib/utils/drag-drop.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
@@ -120,6 +143,35 @@
 	let selectedLead = $state(null);
 	let drawerLoading = $state(false);
 
+	// Sheet state (Notion-style row detail panel)
+	let sheetOpen = $state(false);
+	/** @type {string | null} */
+	let selectedRowId = $state(null);
+
+	// Drag-and-drop state
+	/** @type {string | null} */
+	let draggedRowId = $state(null);
+	/** @type {string | null} */
+	let dragOverRowId = $state(null);
+	/** @type {'before' | 'after' | null} */
+	let dropPosition = $state(null);
+
+	// Inline editing state
+	/** @type {{ rowId: string, columnKey: string } | null} */
+	let editingCell = $state(null);
+	let editValue = $state('');
+
+	// Dirty tracking for batch save
+	/** @type {Map<string, Record<string, any>>} */
+	let pendingChanges = $state(new Map());
+	let saving = $state(false);
+
+	// Derived: check if there are unsaved changes
+	const hasUnsavedChanges = $derived(pendingChanges.size > 0);
+
+	// Get selected row data for Sheet
+	const selectedRow = $derived(leads.find((/** @type {any} */ l) => l.id === selectedRowId));
+
 	// URL sync
 	$effect(() => {
 		const viewId = $page.url.searchParams.get('view');
@@ -195,6 +247,250 @@
 	function handleDrawerChange(open) {
 		drawerOpen = open;
 		if (!open) updateUrl(null, null);
+	}
+
+	// ============================================
+	// Sheet (Notion-style row detail panel) functions
+	// ============================================
+
+	/**
+	 * Open row sheet
+	 * @param {string} rowId
+	 */
+	function openRowSheet(rowId) {
+		selectedRowId = rowId;
+		sheetOpen = true;
+	}
+
+	/**
+	 * Close row sheet
+	 */
+	function closeRowSheet() {
+		sheetOpen = false;
+		selectedRowId = null;
+	}
+
+	/**
+	 * Update a field in the selected row (for Sheet edits)
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	function updateSelectedRowField(field, value) {
+		if (!selectedRowId) return;
+		trackChange(selectedRowId, field, value);
+	}
+
+	// ============================================
+	// Drag-and-drop functions
+	// ============================================
+
+	/**
+	 * Handle drag start
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleDragStart(e, rowId) {
+		draggedRowId = rowId;
+		dndDragStart(e, rowId);
+	}
+
+	/**
+	 * Handle drag over a row
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleRowDragOver(e, rowId) {
+		e.preventDefault();
+		if (draggedRowId === rowId) return;
+		dragOverRowId = rowId;
+		dropPosition = calculateDropPosition(e);
+	}
+
+	/**
+	 * Handle drag leave
+	 */
+	function handleRowDragLeave() {
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	/**
+	 * Handle row drop
+	 * @param {DragEvent} e
+	 * @param {string} targetRowId
+	 */
+	function handleRowDrop(e, targetRowId) {
+		e.preventDefault();
+		// Note: For now, drag-and-drop just reorders visually
+		// In a real app, you'd persist this order
+		resetDragState();
+	}
+
+	/**
+	 * Handle drag end
+	 */
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	/**
+	 * Reset drag state
+	 */
+	function resetDragState() {
+		draggedRowId = null;
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	// ============================================
+	// Inline editing functions
+	// ============================================
+
+	/**
+	 * Start editing a cell
+	 * @param {string} rowId
+	 * @param {string} columnKey
+	 */
+	async function startEditing(rowId, columnKey) {
+		const row = leads.find((/** @type {any} */ l) => l.id === rowId);
+		if (!row) return;
+
+		// Get the current value (check pending changes first)
+		const pending = pendingChanges.get(rowId);
+		let currentValue = pending?.[columnKey] ?? row[columnKey];
+
+		// Handle special cases
+		if (columnKey === 'company') {
+			currentValue = typeof row.company === 'object' ? row.company?.name || '' : row.company || '';
+		}
+
+		editingCell = { rowId, columnKey };
+		editValue = currentValue?.toString() ?? '';
+
+		await tick();
+		const input = document.querySelector(`[data-edit-input="${rowId}-${columnKey}"]`);
+		if (input) {
+			// @ts-ignore
+			input.focus();
+			// @ts-ignore
+			if (input.select) input.select();
+		}
+	}
+
+	/**
+	 * Stop editing and optionally save
+	 * @param {boolean} save
+	 */
+	function stopEditing(save = true) {
+		if (!editingCell) return;
+
+		if (save) {
+			const { rowId, columnKey } = editingCell;
+			trackChange(rowId, columnKey, editValue);
+		}
+
+		editingCell = null;
+		editValue = '';
+	}
+
+	/**
+	 * Handle keyboard events in edit mode
+	 * @param {KeyboardEvent} e
+	 */
+	function handleEditKeydown(e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			stopEditing(true);
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			stopEditing(false);
+		}
+	}
+
+	/**
+	 * Update a select value inline
+	 * @param {string} rowId
+	 * @param {string} columnKey
+	 * @param {string} value
+	 */
+	function updateSelectValue(rowId, columnKey, value) {
+		trackChange(rowId, columnKey, value);
+	}
+
+	// ============================================
+	// Dirty tracking and batch save
+	// ============================================
+
+	/**
+	 * Track a change to a field
+	 * @param {string} rowId
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	function trackChange(rowId, field, value) {
+		const existing = pendingChanges.get(rowId) || {};
+		pendingChanges.set(rowId, { ...existing, [field]: value });
+		pendingChanges = new Map(pendingChanges); // Trigger reactivity
+	}
+
+	/**
+	 * Get the display value for a field (pending change or original)
+	 * @param {any} lead
+	 * @param {string} field
+	 */
+	function getDisplayValue(lead, field) {
+		const pending = pendingChanges.get(lead.id);
+		if (pending && field in pending) {
+			return pending[field];
+		}
+		return lead[field];
+	}
+
+	/**
+	 * Save all pending changes
+	 */
+	async function saveAllChanges() {
+		if (pendingChanges.size === 0) return;
+
+		saving = true;
+
+		try {
+			// Process each changed row
+			for (const [rowId, changes] of pendingChanges) {
+				const lead = leads.find((/** @type {any} */ l) => l.id === rowId);
+				if (!lead) continue;
+
+				// Build form state with all lead data + changes
+				const currentState = leadToFormState(lead);
+				Object.assign(currentState, changes);
+
+				// Copy to form state
+				Object.assign(formState, currentState);
+
+				await tick();
+				updateForm.requestSubmit();
+
+				// Wait a bit between requests to avoid overwhelming the server
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+
+			pendingChanges.clear();
+			pendingChanges = new Map(); // Trigger reactivity
+			toast.success('Changes saved successfully');
+		} catch (error) {
+			toast.error('Failed to save some changes');
+		} finally {
+			saving = false;
+		}
+	}
+
+	/**
+	 * Discard all pending changes
+	 */
+	function discardChanges() {
+		if (!confirm('Discard all unsaved changes?')) return;
+		pendingChanges.clear();
+		pendingChanges = new Map();
 	}
 
 	// Filter/search/sort state
@@ -543,355 +839,636 @@
 	<title>Leads - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
-	{#snippet actions()}
-		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
-		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-			{#snippet children()}
-				<div class="space-y-3">
-					<div>
-						<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
-						<select
-							id="status-filter"
-							bind:value={list.filters.statusFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							{#each statuses as status}
-								<option value={status.value}>{status.label}</option>
-							{/each}
-						</select>
-					</div>
-					<div>
-						<label for="source-filter" class="mb-1.5 block text-sm font-medium">Source</label>
-						<select
-							id="source-filter"
-							bind:value={list.filters.sourceFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							{#each sources as source}
-								<option value={source.value}>{source.label}</option>
-							{/each}
-						</select>
-					</div>
-					<div>
-						<label for="rating-filter" class="mb-1.5 block text-sm font-medium">Rating</label>
-						<select
-							id="rating-filter"
-							bind:value={list.filters.ratingFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							{#each ratings as rating}
-								<option value={rating.value}>{rating.label}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
-			{/snippet}
-		</FilterPopover>
-		<Button onclick={openCreate} disabled={false}>
-			<Plus class="mr-2 h-4 w-4" />
-			New Lead
-		</Button>
-	{/snippet}
-</PageHeader>
-
-<div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Leads Table -->
-	<Card.Root class="border-0 shadow-sm">
-		<Card.Content class="p-0">
-			{#if filteredLeads.length === 0}
-				<div class="flex flex-col items-center justify-center py-16 text-center">
-					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
-					<h3 class="text-foreground text-lg font-medium">No leads found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new lead.
-					</p>
-					<Button onclick={openCreate} class="mt-4" disabled={false}>
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Lead
+<div class="min-h-screen bg-white">
+	<!-- Notion-style Header -->
+	<div class="border-b border-gray-200 px-6 py-4">
+		<div class="flex items-center justify-between">
+			<div>
+				<h1 class="text-2xl font-semibold text-gray-900">Leads</h1>
+				<p class="text-sm text-gray-500 mt-1">{filteredLeads.length} leads</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<!-- Save Changes Button (shown when dirty) -->
+				{#if hasUnsavedChanges}
+					<Button variant="outline" size="sm" onclick={discardChanges} disabled={saving}>
+						Discard
 					</Button>
-				</div>
+					<Button size="sm" onclick={saveAllChanges} disabled={saving}>
+						{saving ? 'Saving...' : 'Save Changes'}
+					</Button>
+				{/if}
+
+				<!-- Column Visibility (Notion-style) -->
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger asChild>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Eye class="h-4 w-4" />
+								Columns
+								{#if columnConfig.filter((c) => c.visible).length < columnConfig.length}
+									<span class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+										{columnConfig.filter((c) => c.visible).length}/{columnConfig.length}
+									</span>
+								{/if}
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each columnConfig as column (column.key)}
+							<DropdownMenu.CheckboxItem
+								class=""
+								checked={column.visible}
+								disabled={!column.canHide}
+								onCheckedChange={() => {
+									if (column.canHide) {
+										columnConfig = columnConfig.map((c) =>
+											c.key === column.key ? { ...c, visible: !c.visible } : c
+										);
+									}
+								}}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<Button size="sm" class="gap-2" onclick={openCreate}>
+					<Plus class="h-4 w-4" />
+					New
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Table -->
+	{#if filteredLeads.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<User class="text-gray-300 mb-4 h-12 w-12" />
+			<h3 class="text-gray-900 text-lg font-medium">No leads found</h3>
+			<p class="text-gray-500 mt-1 text-sm">
+				Create your first lead to get started.
+			</p>
+			<Button onclick={openCreate} class="mt-4" size="sm">
+				<Plus class="mr-2 h-4 w-4" />
+				New Lead
+			</Button>
+		</div>
 			{:else}
-				<!-- Desktop Table - Notion-like styling -->
-				<div class="hidden md:block">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+				<!-- Desktop Table - Notion-style native HTML table -->
+				<div class="hidden md:block overflow-x-auto">
+					<table class="w-full border-collapse">
+						<!-- Header -->
+						<thead>
+							<tr class="border-b border-gray-100/60">
 								<!-- Drag handle column -->
-								<Table.Head class="w-8 py-2.5 px-0"></Table.Head>
+								<th class="w-8 px-1"></th>
+								<!-- Expand button column -->
+								<th class="w-8 px-1"></th>
 								{#if isColumnVisible('lead')}
-									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Lead</Table.Head>
+									<th class="w-[250px] px-4 py-3 text-left text-[13px] font-normal text-gray-400">Name</th>
 								{/if}
 								{#if isColumnVisible('company')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Company</Table.Head>
+									<th class="w-40 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Company</th>
 								{/if}
 								{#if isColumnVisible('email')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Email</Table.Head>
+									<th class="w-52 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Email</th>
 								{/if}
 								{#if isColumnVisible('phone')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Phone</Table.Head>
+									<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Phone</th>
 								{/if}
 								{#if isColumnVisible('rating')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Rating</Table.Head>
+									<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Rating</th>
 								{/if}
 								{#if isColumnVisible('status')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Status</Table.Head>
+									<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Status</th>
 								{/if}
 								{#if isColumnVisible('created')}
-									<Table.Head
-										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
-										onclick={() => list.toggleSort('createdAt')}
-									>
-										<div class="flex items-center gap-1">
-											Created
-											{#if list.sortColumn === 'createdAt'}
-												{#if list.sortDirection === 'asc'}
-													<ChevronUp class="h-3.5 w-3.5" />
-												{:else}
-													<ChevronDown class="h-3.5 w-3.5" />
-												{/if}
-											{/if}
-										</div>
-									</Table.Head>
+									<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">
+										Created
+									</th>
 								{/if}
-								<!-- Extra space for row actions -->
-								<Table.Head class="w-[120px]"></Table.Head>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
+							</tr>
+						</thead>
+
+						<!-- Body -->
+						<tbody>
 							{#each filteredLeads as lead, rowIndex (lead.id)}
-								{@const ratingConfig = getRatingConfig(lead.rating)}
-								<Table.Row
-									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
-									onclick={() => openLead(lead)}
+								{@const displayRating = getDisplayValue(lead, 'rating') || lead.rating}
+								{@const displayStatus = getDisplayValue(lead, 'status') || lead.status}
+								{@const displayCompany = getDisplayValue(lead, 'company') ?? (typeof lead.company === 'object' ? lead.company?.name : lead.company)}
+								{@const displayEmail = getDisplayValue(lead, 'email') || lead.email}
+								{@const displayPhone = getDisplayValue(lead, 'phone') || lead.phone}
+
+								<!-- Drop indicator line (before row) -->
+								{#if dragOverRowId === lead.id && dropPosition === 'before'}
+									<tr class="h-0">
+										<td colspan="10" class="p-0">
+											<div class={dropIndicatorClasses}></div>
+										</td>
+									</tr>
+								{/if}
+
+								<tr
+									class={cn(
+										'group hover:bg-gray-50/30 transition-all duration-100 ease-out',
+										draggedRowId === lead.id && draggedRowClasses,
+										pendingChanges.has(lead.id) && 'bg-amber-50/30'
+									)}
+									ondragover={(e) => handleRowDragOver(e, lead.id)}
+									ondragleave={handleRowDragLeave}
+									ondrop={(e) => handleRowDrop(e, lead.id)}
 								>
 									<!-- Drag Handle -->
-									<Table.Cell class="w-8 py-2 px-0">
+									<td class="w-8 px-1 py-3">
 										<div
-											class="flex items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-70 transition-opacity duration-150 cursor-grab active:cursor-grabbing"
-											onmousedown={(e) => e.stopPropagation()}
-											onclick={(e) => e.stopPropagation()}
+											draggable="true"
+											ondragstart={(e) => handleDragStart(e, lead.id)}
+											ondragend={handleDragEnd}
+											class={dragHandleClasses}
+											role="button"
+											tabindex="0"
+											aria-label="Drag to reorder"
 										>
-											<GripVertical class="h-4 w-4 text-muted-foreground" />
+											<GripVertical class="h-4 w-4 text-gray-400" />
 										</div>
-									</Table.Cell>
+									</td>
+
+									<!-- Expand button -->
+									<td class="w-8 px-1 py-3">
+										<button
+											type="button"
+											onclick={() => openRowSheet(lead.id)}
+											class={expandButtonClasses}
+										>
+											<Expand class="h-3.5 w-3.5 text-gray-500" />
+										</button>
+									</td>
+
 									{#if isColumnVisible('lead')}
-										<Table.Cell class="py-2 px-4">
-											<div class="flex items-center gap-3">
-												<div
-													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+										<td class="px-4 py-3 w-48">
+											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'name'}
+												<input
+													type="text"
+													bind:value={editValue}
+													onkeydown={handleEditKeydown}
+													onblur={() => stopEditing(true)}
+													data-edit-input="{lead.id}-name"
+													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+												/>
+											{:else}
+												<button
+													type="button"
+													onclick={() => openRowSheet(lead.id)}
+													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
 												>
-													{getLeadInitials(lead)}
-												</div>
-												<div class="min-w-0">
-													<p class="text-foreground truncate font-medium">
-														{getFullName(lead)}
-													</p>
-													{#if lead.title}
-														<p class="text-muted-foreground truncate text-sm">
-															{lead.title}
-														</p>
-													{/if}
-												</div>
-											</div>
-										</Table.Cell>
+													{getFullName(lead) || 'Empty'}
+												</button>
+											{/if}
+										</td>
 									{/if}
+
 									{#if isColumnVisible('company')}
-										<Table.Cell class="py-2 px-4">
-											<InlineEditableCell
-												bind:this={cellRefs[`${lead.id}-company`]}
-												value={typeof lead.company === 'object' ? lead.company?.name || '' : lead.company || ''}
-												type="text"
-												placeholder="Add company"
-												onchange={(val) => handleQuickEdit(lead, 'company', val)}
-												onnext={() => handleCellNext(lead.id, 'company')}
-												onprev={() => handleCellPrev(lead.id, 'company')}
-												ondown={() => handleCellDown(rowIndex, 'company')}
-											>
-												{#if lead.company}
-													<div class="flex items-center gap-1.5 text-sm">
-														<Building2 class="text-muted-foreground h-4 w-4 shrink-0" />
-														<span class="truncate">{typeof lead.company === 'object' ? lead.company.name : lead.company}</span>
-													</div>
-												{:else}
-													<span class="text-muted-foreground text-sm italic">Add company</span>
-												{/if}
-											</InlineEditableCell>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('email')}
-										<Table.Cell class="py-2 px-4">
-											<InlineEditableCell
-												bind:this={cellRefs[`${lead.id}-email`]}
-												value={lead.email || ''}
-												type="email"
-												placeholder="Add email"
-												onchange={(val) => handleQuickEdit(lead, 'email', val)}
-												onnext={() => handleCellNext(lead.id, 'email')}
-												onprev={() => handleCellPrev(lead.id, 'email')}
-												ondown={() => handleCellDown(rowIndex, 'email')}
-											>
-												{#if lead.email}
-													<div class="flex items-center gap-1.5 text-sm">
-														<Mail class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-														<span class="max-w-[180px] truncate">{lead.email}</span>
-													</div>
-												{:else}
-													<span class="text-muted-foreground text-sm italic">Add email</span>
-												{/if}
-											</InlineEditableCell>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('phone')}
-										<Table.Cell class="py-2 px-4">
-											<InlineEditableCell
-												bind:this={cellRefs[`${lead.id}-phone`]}
-												value={lead.phone || ''}
-												type="phone"
-												placeholder="Add phone"
-												onchange={(val) => handleQuickEdit(lead, 'phone', val)}
-												onnext={() => handleCellNext(lead.id, 'phone')}
-												onprev={() => handleCellPrev(lead.id, 'phone')}
-												ondown={() => handleCellDown(rowIndex, 'phone')}
-											>
-												{#if lead.phone}
-													<div class="flex items-center gap-1.5 text-sm">
-														<Phone class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-														<span>{lead.phone}</span>
-													</div>
-												{:else}
-													<span class="text-muted-foreground text-sm italic">Add phone</span>
-												{/if}
-											</InlineEditableCell>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('rating')}
-										<Table.Cell class="py-2 px-4">
-											<InlineEditableCell
-												bind:this={cellRefs[`${lead.id}-rating`]}
-												value={lead.rating || ''}
-												type="select"
-												options={ratingOptions}
-												placeholder="Set rating"
-												onchange={(val) => handleQuickEdit(lead, 'rating', val)}
-												onnext={() => handleCellNext(lead.id, 'rating')}
-												onprev={() => handleCellPrev(lead.id, 'rating')}
-												ondown={() => handleCellDown(rowIndex, 'rating')}
-											>
-												{#if lead.rating}
-													<div class="flex items-center gap-1.5">
-														{#each { length: ratingConfig.dots } as _}
-															<div class={cn('h-2 w-2 rounded-full', ratingConfig.bgColor)}></div>
-														{/each}
-														<span class={cn('text-sm font-medium', ratingConfig.color)}>
-															{lead.rating}
-														</span>
-													</div>
-												{:else}
-													<span class="text-muted-foreground text-sm italic">Set rating</span>
-												{/if}
-											</InlineEditableCell>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('status')}
-										<Table.Cell class="py-2 px-4">
-											<InlineEditableCell
-												bind:this={cellRefs[`${lead.id}-status`]}
-												value={lead.status?.toLowerCase().replace('_', ' ') || ''}
-												type="select"
-												options={statusOptions}
-												placeholder="Set status"
-												onchange={(val) => handleQuickEdit(lead, 'status', val)}
-												onnext={() => handleCellNext(lead.id, 'status')}
-												onprev={() => handleCellPrev(lead.id, 'status')}
-												ondown={() => handleCellDown(rowIndex, 'status')}
-											>
-												<span
-													class={cn(
-														'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-														getLeadStatusClass(lead.status)
-													)}
+										<td class="px-4 py-3 w-40">
+											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'company'}
+												<input
+													type="text"
+													bind:value={editValue}
+													onkeydown={handleEditKeydown}
+													onblur={() => stopEditing(true)}
+													data-edit-input="{lead.id}-company"
+													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+												/>
+											{:else}
+												<button
+													type="button"
+													onclick={() => startEditing(lead.id, 'company')}
+													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
 												>
-													{lead.status || 'Set status'}
-												</span>
-											</InlineEditableCell>
-										</Table.Cell>
+													{displayCompany || ''}
+												</button>
+											{/if}
+										</td>
 									{/if}
+
+									{#if isColumnVisible('email')}
+										<td class="px-4 py-3 w-52">
+											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'email'}
+												<input
+													type="email"
+													bind:value={editValue}
+													onkeydown={handleEditKeydown}
+													onblur={() => stopEditing(true)}
+													data-edit-input="{lead.id}-email"
+													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+												/>
+											{:else}
+												<button
+													type="button"
+													onclick={() => startEditing(lead.id, 'email')}
+													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+												>
+													{displayEmail || ''}
+												</button>
+											{/if}
+										</td>
+									{/if}
+
+									{#if isColumnVisible('phone')}
+										<td class="px-4 py-3 w-36">
+											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'phone'}
+												<input
+													type="tel"
+													bind:value={editValue}
+													onkeydown={handleEditKeydown}
+													onblur={() => stopEditing(true)}
+													data-edit-input="{lead.id}-phone"
+													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+												/>
+											{:else}
+												<button
+													type="button"
+													onclick={() => startEditing(lead.id, 'phone')}
+													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+												>
+													{displayPhone || ''}
+												</button>
+											{/if}
+										</td>
+									{/if}
+
+									{#if isColumnVisible('rating')}
+										<td class="px-4 py-3 w-28">
+											<DropdownMenu.Root>
+												<DropdownMenu.Trigger asChild>
+													{#snippet child({ props })}
+														<button
+															{...props}
+															type="button"
+															class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {getOptionStyle(displayRating, leadRatingOptions)} hover:opacity-80 transition-opacity"
+														>
+															{getOptionLabel(displayRating, leadRatingOptions) || ''}
+															<ChevronDown class="h-3 w-3 opacity-60" />
+														</button>
+													{/snippet}
+												</DropdownMenu.Trigger>
+												<DropdownMenu.Content align="start" class="w-36">
+													{#each leadRatingOptions as option (option.value)}
+														<DropdownMenu.Item
+															onclick={() => updateSelectValue(lead.id, 'rating', option.value)}
+															class="flex items-center gap-2"
+														>
+															<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+															{option.label}
+															{#if displayRating === option.value}
+																<Check class="h-4 w-4 ml-auto" />
+															{/if}
+														</DropdownMenu.Item>
+													{/each}
+												</DropdownMenu.Content>
+											</DropdownMenu.Root>
+										</td>
+									{/if}
+
+									{#if isColumnVisible('status')}
+										<td class="px-4 py-3 w-28">
+											<DropdownMenu.Root>
+												<DropdownMenu.Trigger asChild>
+													{#snippet child({ props })}
+														<button
+															{...props}
+															type="button"
+															class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {getOptionStyle(displayStatus, leadStatusOptions)} hover:opacity-80 transition-opacity"
+														>
+															{getOptionLabel(displayStatus, leadStatusOptions) || ''}
+															<ChevronDown class="h-3 w-3 opacity-60" />
+														</button>
+													{/snippet}
+												</DropdownMenu.Trigger>
+												<DropdownMenu.Content align="start" class="w-36">
+													{#each leadStatusOptions as option (option.value)}
+														<DropdownMenu.Item
+															onclick={() => updateSelectValue(lead.id, 'status', option.value)}
+															class="flex items-center gap-2"
+														>
+															<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+															{option.label}
+															{#if displayStatus === option.value}
+																<Check class="h-4 w-4 ml-auto" />
+															{/if}
+														</DropdownMenu.Item>
+													{/each}
+												</DropdownMenu.Content>
+											</DropdownMenu.Root>
+										</td>
+									{/if}
+
 									{#if isColumnVisible('created')}
-										<Table.Cell class="py-2 px-4">
-											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-												<Calendar class="h-3.5 w-3.5" />
-												<span>{formatRelativeDate(lead.createdAt)}</span>
-											</div>
-										</Table.Cell>
+										<td class="px-4 py-3 w-36">
+											<button
+												type="button"
+												class="text-sm text-gray-900 px-2 py-1.5 -mx-2 -my-1.5 rounded hover:bg-gray-100/50 transition-colors duration-75"
+											>
+												{formatDate(lead.createdAt)}
+											</button>
+										</td>
 									{/if}
-									<!-- Row Actions -->
-									<Table.Cell class="py-2 px-4">
-										<RowActions
-											onEdit={() => openLead(lead)}
-											onDelete={() => handleRowDelete(lead)}
-											onDuplicate={() => handleDuplicate(lead)}
-										/>
-									</Table.Cell>
-								</Table.Row>
+								</tr>
+
+								<!-- Drop indicator line (after row) -->
+								{#if dragOverRowId === lead.id && dropPosition === 'after'}
+									<tr class="h-0">
+										<td colspan="10" class="p-0">
+											<div class={dropIndicatorClasses}></div>
+										</td>
+									</tr>
+								{/if}
 							{/each}
-						</Table.Body>
-					</Table.Root>
+						</tbody>
+					</table>
+
+					<!-- New row button (Notion-style) -->
+					<div class="px-4 py-2 border-t border-gray-100/60">
+						<button
+							type="button"
+							onclick={openCreate}
+							class="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
+						>
+							<Plus class="h-4 w-4" />
+							New
+						</button>
+					</div>
 				</div>
 
 				<!-- Mobile Card View -->
 				<div class="divide-y md:hidden">
 					{#each filteredLeads as lead (lead.id)}
-						{@const ratingConfig = getRatingConfig(lead.rating)}
 						<button
 							type="button"
-							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
-							onclick={() => openLead(lead)}
+							class="hover:bg-gray-50/30 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
+							onclick={() => openRowSheet(lead.id)}
 						>
-							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
-							>
-								{getLeadInitials(lead)}
-							</div>
 							<div class="min-w-0 flex-1">
 								<div class="flex items-start justify-between gap-2">
 									<div>
-										<p class="text-foreground font-medium">{getFullName(lead)}</p>
+										<p class="text-gray-900 font-medium text-sm">{getFullName(lead)}</p>
 										{#if lead.company}
-											<p class="text-muted-foreground text-sm">{typeof lead.company === 'object' ? lead.company.name : lead.company}</p>
+											<p class="text-gray-500 text-sm">{typeof lead.company === 'object' ? lead.company.name : lead.company}</p>
 										{/if}
 									</div>
-									<span
-										class={cn(
-											'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
-											getLeadStatusClass(lead.status)
-										)}
-									>
-										{lead.status}
+									<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {getOptionStyle(lead.status, leadStatusOptions)}">
+										{getOptionLabel(lead.status, leadStatusOptions)}
 									</span>
 								</div>
-								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
+								<div class="text-gray-500 mt-2 flex flex-wrap items-center gap-3 text-xs">
 									{#if lead.rating}
-										<div class="flex items-center gap-1">
-											{#each { length: ratingConfig.dots } as _}
-												<div class={cn('h-1.5 w-1.5 rounded-full', ratingConfig.bgColor)}></div>
-											{/each}
-											<span class={ratingConfig.color}>{lead.rating}</span>
-										</div>
+										<span class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}">
+											{getOptionLabel(lead.rating, leadRatingOptions)}
+										</span>
 									{/if}
-									<div class="flex items-center gap-1">
-										<Calendar class="h-3.5 w-3.5" />
-										<span>{formatRelativeDate(lead.createdAt)}</span>
-									</div>
+									<span>{formatRelativeDate(lead.createdAt)}</span>
 								</div>
 							</div>
 						</button>
 					{/each}
+
+					<!-- Mobile new row button -->
+					<button
+						type="button"
+						onclick={openCreate}
+						class="flex items-center gap-2 px-4 py-3 w-full text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+					>
+						<Plus class="h-4 w-4" />
+						New
+					</button>
 				</div>
 			{/if}
-		</Card.Content>
-	</Card.Root>
 </div>
+
+<!-- Row Detail Sheet (Notion-style) -->
+<Sheet.Root bind:open={sheetOpen} onOpenChange={(open) => !open && closeRowSheet()}>
+	<Sheet.Content side="right" class="w-[440px] sm:max-w-[440px] p-0 overflow-hidden">
+		{#if selectedRow}
+			{@const displayFirstName = getDisplayValue(selectedRow, 'firstName') || selectedRow.firstName}
+			{@const displayLastName = getDisplayValue(selectedRow, 'lastName') || selectedRow.lastName}
+			{@const displayEmail = getDisplayValue(selectedRow, 'email') || selectedRow.email}
+			{@const displayPhone = getDisplayValue(selectedRow, 'phone') || selectedRow.phone}
+			{@const displayCompany = getDisplayValue(selectedRow, 'company') ?? (typeof selectedRow.company === 'object' ? selectedRow.company?.name : selectedRow.company)}
+			{@const displayStatus = getDisplayValue(selectedRow, 'status') || selectedRow.status}
+			{@const displayRating = getDisplayValue(selectedRow, 'rating') || selectedRow.rating}
+			{@const displayWebsite = getDisplayValue(selectedRow, 'website') || selectedRow.website}
+			<div class="h-full flex flex-col">
+				<!-- Header with close button -->
+				<div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+					<span class="text-sm text-gray-500">Lead</span>
+					<button onclick={closeRowSheet} class="p-1 rounded hover:bg-gray-100 transition-colors duration-75">
+						<X class="h-4 w-4 text-gray-400" />
+					</button>
+				</div>
+
+				<!-- Scrollable content -->
+				<div class="flex-1 overflow-y-auto">
+					<!-- Title section -->
+					<div class="px-6 pt-6 pb-4">
+						<div class="flex items-center gap-3 mb-4">
+							<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-lg font-medium text-white">
+								{getLeadInitials(selectedRow)}
+							</div>
+							<div>
+								<input
+									type="text"
+									value="{displayFirstName} {displayLastName}"
+									readonly
+									placeholder="Untitled"
+									class="w-full text-xl font-semibold bg-transparent border-0 outline-none focus:ring-0 placeholder:text-gray-300 cursor-default"
+								/>
+							</div>
+						</div>
+					</div>
+
+					<!-- Properties section -->
+					<div class="px-4 pb-6 space-y-1">
+						<!-- Email property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Mail class="h-4 w-4 text-gray-400" />
+								Email
+							</div>
+							<div class="flex-1 min-w-0">
+								<input
+									type="email"
+									value={displayEmail || ''}
+									oninput={(e) => updateSelectedRowField('email', /** @type {HTMLInputElement} */ (e.target).value)}
+									placeholder="Add email"
+									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+								/>
+							</div>
+						</div>
+
+						<!-- Phone property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Phone class="h-4 w-4 text-gray-400" />
+								Phone
+							</div>
+							<div class="flex-1 min-w-0">
+								<input
+									type="tel"
+									value={displayPhone || ''}
+									oninput={(e) => updateSelectedRowField('phone', /** @type {HTMLInputElement} */ (e.target).value)}
+									placeholder="Add phone"
+									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+								/>
+							</div>
+						</div>
+
+						<!-- Company property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Building2 class="h-4 w-4 text-gray-400" />
+								Company
+							</div>
+							<div class="flex-1 min-w-0">
+								<input
+									type="text"
+									value={displayCompany || ''}
+									oninput={(e) => updateSelectedRowField('company', /** @type {HTMLInputElement} */ (e.target).value)}
+									placeholder="Add company"
+									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+								/>
+							</div>
+						</div>
+
+						<!-- Website property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Globe class="h-4 w-4 text-gray-400" />
+								Website
+							</div>
+							<div class="flex-1 min-w-0">
+								<input
+									type="url"
+									value={displayWebsite || ''}
+									oninput={(e) => updateSelectedRowField('website', /** @type {HTMLInputElement} */ (e.target).value)}
+									placeholder="Add website"
+									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+								/>
+							</div>
+						</div>
+
+						<!-- Status property (select) -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Briefcase class="h-4 w-4 text-gray-400" />
+								Status
+							</div>
+							<div class="flex-1">
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger asChild>
+										{#snippet child({ props })}
+											<button
+												{...props}
+												type="button"
+												class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-sm {getOptionStyle(displayStatus, leadStatusOptions)} hover:opacity-90 transition-opacity"
+											>
+												<span class="w-2 h-2 rounded-full {getOptionBgColor(displayStatus, leadStatusOptions)}"></span>
+												{getOptionLabel(displayStatus, leadStatusOptions) || 'Set status'}
+											</button>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content align="start" class="w-36">
+										{#each leadStatusOptions as option (option.value)}
+											<DropdownMenu.Item
+												onclick={() => updateSelectedRowField('status', option.value)}
+												class="flex items-center gap-2"
+											>
+												<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+												{option.label}
+												{#if displayStatus === option.value}
+													<Check class="h-4 w-4 ml-auto" />
+												{/if}
+											</DropdownMenu.Item>
+										{/each}
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							</div>
+						</div>
+
+						<!-- Rating property (select) -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Star class="h-4 w-4 text-gray-400" />
+								Rating
+							</div>
+							<div class="flex-1">
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger asChild>
+										{#snippet child({ props })}
+											<button
+												{...props}
+												type="button"
+												class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-sm {getOptionStyle(displayRating, leadRatingOptions)} hover:opacity-90 transition-opacity"
+											>
+												<span class="w-2 h-2 rounded-full {getOptionBgColor(displayRating, leadRatingOptions)}"></span>
+												{getOptionLabel(displayRating, leadRatingOptions) || 'Set rating'}
+											</button>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content align="start" class="w-36">
+										{#each leadRatingOptions as option (option.value)}
+											<DropdownMenu.Item
+												onclick={() => updateSelectedRowField('rating', option.value)}
+												class="flex items-center gap-2"
+											>
+												<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+												{option.label}
+												{#if displayRating === option.value}
+													<Check class="h-4 w-4 ml-auto" />
+												{/if}
+											</DropdownMenu.Item>
+										{/each}
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							</div>
+						</div>
+
+						<!-- Created date -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Calendar class="h-4 w-4 text-gray-400" />
+								Created
+							</div>
+							<div class="flex-1 min-w-0">
+								<span class="px-2 py-1 text-sm text-gray-700">
+									{formatDate(selectedRow.createdAt)}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Footer with actions -->
+				<div class="px-4 py-3 border-t border-gray-100 mt-auto flex items-center justify-between">
+					<button
+						onclick={() => {
+							closeRowSheet();
+							handleRowDelete(selectedRow);
+						}}
+						class="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors duration-75"
+					>
+						<Trash2 class="h-4 w-4" />
+						Delete
+					</button>
+					<Button size="sm" onclick={() => { closeRowSheet(); openLead(selectedRow); }}>
+						Open Full View
+					</Button>
+				</div>
+			</div>
+		{/if}
+	</Sheet.Content>
+</Sheet.Root>
 
 <!-- Lead Drawer (unified view/create/edit) -->
 <LeadDrawer

@@ -15,70 +15,52 @@
 		Target,
 		Calendar,
 		DollarSign,
-		MapPin
+		MapPin,
+		GripVertical,
+		Expand,
+		Eye
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { AccountDrawer } from '$lib/components/accounts';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
-	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+	import { reorderItems } from '$lib/utils/drag-drop.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'accounts-column-config';
 
-	/**
-	 * @typedef {Object} ColumnConfig
-	 * @property {string} key
-	 * @property {string} label
-	 * @property {boolean} visible
-	 * @property {boolean} [canHide]
-	 */
-
-	/** @type {ColumnConfig[]} */
-	const defaultColumns = [
-		{ key: 'account', label: 'Account', visible: true, canHide: false },
-		{ key: 'industry', label: 'Industry', visible: true, canHide: true },
-		{ key: 'contact', label: 'Contact Info', visible: true, canHide: true },
-		{ key: 'revenue', label: 'Revenue', visible: true, canHide: true },
-		{ key: 'relations', label: 'Relations', visible: true, canHide: true },
-		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	// Column definitions
+	const columns = [
+		{ key: 'account', label: 'Account', type: 'text', width: 'w-60', canHide: false },
+		{ key: 'industry', label: 'Industry', type: 'text', width: 'w-40', canHide: true },
+		{ key: 'contact', label: 'Contact Info', type: 'custom', width: 'w-48', canHide: true },
+		{ key: 'revenue', label: 'Revenue', type: 'number', width: 'w-32', canHide: true },
+		{ key: 'relations', label: 'Relations', type: 'custom', width: 'w-28', canHide: true },
+		{ key: 'created', label: 'Created', type: 'date', width: 'w-36', canHide: true }
 	];
 
-	/**
-	 * Load column config from localStorage
-	 * @returns {typeof defaultColumns}
-	 */
-	function loadColumnConfig() {
-		if (typeof window === 'undefined') return defaultColumns;
-		try {
-			const saved = localStorage.getItem(STORAGE_KEY);
-			if (saved) {
-				const parsed = JSON.parse(saved);
-				return defaultColumns.map((def) => {
-					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
-					return savedCol ? { ...def, visible: savedCol.visible } : def;
-				});
-			}
-		} catch (e) {
-			console.error('Failed to load column config:', e);
-		}
-		return defaultColumns;
-	}
+	// Column visibility state - simple array of visible keys
+	let visibleColumns = $state(columns.map((c) => c.key));
 
-	let columnConfig = $state(defaultColumns);
-
+	// Load column visibility from localStorage
 	onMount(() => {
-		columnConfig = loadColumnConfig();
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
 	});
 
-	// Save to localStorage when column config changes
+	// Save column visibility when changed
 	$effect(() => {
-		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
 		}
 	});
 
@@ -87,16 +69,43 @@
 	 * @param {string} key
 	 */
 	function isColumnVisible(key) {
-		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+		return visibleColumns.includes(key);
 	}
 
 	/**
-	 * Handle column config change
-	 * @param {ColumnConfig[]} newConfig
+	 * Toggle column visibility
+	 * @param {string} key
 	 */
-	function handleColumnChange(newConfig) {
-		columnConfig = newConfig;
+	function toggleColumn(key) {
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
+
+	// Drag-and-drop state
+	/** @type {string | null} */
+	let draggedRowId = $state(null);
+	/** @type {string | null} */
+	let dragOverRowId = $state(null);
+	/** @type {'before' | 'after' | null} */
+	let dropPosition = $state(null);
+
+	// Inline editing state
+	/** @type {{ rowId: string, columnKey: string } | null} */
+	let editingCell = $state(null);
+	let editValue = $state('');
+
+	// Local accounts state for drag-drop reordering
+	let localAccounts = $state(/** @type {any[]} */ ([]));
+
+	// Sync local accounts with data
+	$effect(() => {
+		if (data.accounts) {
+			localAccounts = [...data.accounts];
+		}
+	});
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -220,9 +229,13 @@
 		defaultSortDirection: 'desc'
 	});
 
-	// Filtered and sorted accounts
-	const filteredAccounts = $derived(list.filterAndSort(accounts));
+	// Filtered and sorted accounts - use localAccounts for drag-drop support
+	const filteredAccounts = $derived(list.filterAndSort(localAccounts));
 	const activeFiltersCount = $derived(list.getActiveFilterCount());
+
+	// Visible column count for the toggle button
+	const visibleColumnCount = $derived(visibleColumns.length);
+	const totalColumnCount = $derived(columns.length);
 
 	// Stats
 	const stats = $derived.by(() => ({
@@ -268,6 +281,161 @@
 	 */
 	function getAccountInitials(account) {
 		return getInitials(account.name, 1);
+	}
+
+	// ===== Drag-and-drop handlers =====
+	/**
+	 * Handle drag start
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleDragStart(e, rowId) {
+		draggedRowId = rowId;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', rowId);
+		}
+	}
+
+	/**
+	 * Handle drag over row
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleRowDragOver(e, rowId) {
+		e.preventDefault();
+		if (draggedRowId === rowId) return;
+
+		dragOverRowId = rowId;
+
+		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		dropPosition = e.clientY < midpoint ? 'before' : 'after';
+	}
+
+	function handleRowDragLeave() {
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	/**
+	 * Handle row drop
+	 * @param {DragEvent} e
+	 * @param {string} targetRowId
+	 */
+	function handleRowDrop(e, targetRowId) {
+		e.preventDefault();
+		if (!draggedRowId || draggedRowId === targetRowId || !dropPosition) {
+			resetDragState();
+			return;
+		}
+
+		localAccounts = reorderItems(
+			localAccounts,
+			draggedRowId,
+			targetRowId,
+			dropPosition,
+			(/** @type {any} */ item) => item.id
+		);
+
+		resetDragState();
+	}
+
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	function resetDragState() {
+		draggedRowId = null;
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	// ===== Inline editing handlers =====
+	/**
+	 * Start editing a cell
+	 * @param {string} rowId
+	 * @param {string} columnKey
+	 */
+	async function startEditing(rowId, columnKey) {
+		const account = localAccounts.find((a) => a.id === rowId);
+		if (!account) return;
+
+		// Map column key to account field
+		let value = '';
+		if (columnKey === 'name') value = account.name || '';
+		else if (columnKey === 'industry') value = account.industry || '';
+
+		editingCell = { rowId, columnKey };
+		editValue = value;
+		await tick();
+
+		const input = document.querySelector(`[data-edit-input="${rowId}-${columnKey}"]`);
+		if (input) {
+			// @ts-ignore
+			input.focus();
+			// @ts-ignore
+			if (input.select) input.select();
+		}
+	}
+
+	/**
+	 * Commit the current edit
+	 * @param {boolean} save
+	 */
+	async function stopEditing(save = true) {
+		if (!editingCell) return;
+
+		if (save) {
+			const { rowId, columnKey } = editingCell;
+			const account = localAccounts.find((a) => a.id === rowId);
+			if (account) {
+				// Update local state
+				let fieldName = columnKey;
+				if (columnKey === 'name') fieldName = 'name';
+				else if (columnKey === 'industry') fieldName = 'industry';
+
+				// Update locally and trigger server update
+				const updatedAccount = { ...account, [fieldName]: editValue };
+				localAccounts = localAccounts.map((a) => (a.id === rowId ? updatedAccount : a));
+
+				// Submit update to server
+				formState.accountId = rowId;
+				formState.name = updatedAccount.name || '';
+				formState.email = updatedAccount.email || '';
+				formState.phone = updatedAccount.phone || '';
+				formState.website = updatedAccount.website || '';
+				formState.industry = updatedAccount.industry || '';
+				formState.description = updatedAccount.description || '';
+				formState.address_line = updatedAccount.addressLine || '';
+				formState.city = updatedAccount.city || '';
+				formState.state = updatedAccount.state || '';
+				formState.postcode = updatedAccount.postcode || '';
+				formState.country = updatedAccount.country || '';
+				formState.annual_revenue = updatedAccount.annualRevenue?.toString() || '';
+				formState.number_of_employees = updatedAccount.numberOfEmployees?.toString() || '';
+
+				await tick();
+				updateForm.requestSubmit();
+			}
+		}
+
+		editingCell = null;
+		editValue = '';
+	}
+
+	/**
+	 * Handle keyboard events during editing
+	 * @param {KeyboardEvent} e
+	 */
+	function handleEditKeydown(e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			stopEditing(true);
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			stopEditing(false);
+		}
 	}
 
 	/**
@@ -381,9 +549,39 @@
 	<title>Accounts - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
+<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {localAccounts.length} accounts">
 	{#snippet actions()}
-		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
+		<!-- Column Visibility Dropdown -->
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger asChild>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="sm" class="gap-2">
+						<Eye class="h-4 w-4" />
+						Columns
+						{#if visibleColumnCount < totalColumnCount}
+							<span class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+								{visibleColumnCount}/{totalColumnCount}
+							</span>
+						{/if}
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-48">
+				<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+				<DropdownMenu.Separator />
+				{#each columns as column (column.key)}
+					{#if column.canHide}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={isColumnVisible(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/if}
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 			{#snippet children()}
 				<div class="space-y-3">
@@ -503,29 +701,34 @@
 					</Button>
 				</div>
 			{:else}
-				<!-- Desktop Table -->
-				<div class="hidden md:block">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+				<!-- Desktop Table (Notion-style) -->
+				<div class="hidden md:block overflow-x-auto">
+					<table class="w-full border-collapse">
+						<!-- Header -->
+						<thead>
+							<tr class="border-b border-gray-100/60">
+								<!-- Drag handle column -->
+								<th class="w-8 px-1"></th>
+								<!-- Expand button column -->
+								<th class="w-8 px-1"></th>
 								{#if isColumnVisible('account')}
-									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Account</Table.Head>
+									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-60">Account</th>
 								{/if}
 								{#if isColumnVisible('industry')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Industry</Table.Head>
+									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-40">Industry</th>
 								{/if}
 								{#if isColumnVisible('contact')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Contact Info</Table.Head>
+									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-48">Contact Info</th>
 								{/if}
 								{#if isColumnVisible('revenue')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Revenue</Table.Head>
+									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-32">Revenue</th>
 								{/if}
 								{#if isColumnVisible('relations')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Relations</Table.Head>
+									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-28">Relations</th>
 								{/if}
 								{#if isColumnVisible('created')}
-									<Table.Head
-										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+									<th
+										class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-36 cursor-pointer hover:bg-gray-50 rounded transition-colors"
 										onclick={() => list.toggleSort('createdAt')}
 									>
 										<div class="flex items-center gap-1">
@@ -538,111 +741,198 @@
 												{/if}
 											{/if}
 										</div>
-									</Table.Head>
+									</th>
 								{/if}
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
+							</tr>
+						</thead>
+
+						<!-- Body -->
+						<tbody>
 							{#each filteredAccounts as account (account.id)}
-								<Table.Row
-									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out {!account.isActive ? 'opacity-60' : ''}"
-									onclick={() => openAccount(account)}
+								<!-- Drop indicator line (before row) -->
+								{#if dragOverRowId === account.id && dropPosition === 'before'}
+									<tr class="h-0">
+										<td colspan={visibleColumnCount + 2} class="p-0">
+											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
+										</td>
+									</tr>
+								{/if}
+
+								<tr
+									class="group hover:bg-gray-50/30 transition-all duration-100 ease-out {draggedRowId === account.id ? 'opacity-40 bg-gray-100' : ''} {!account.isActive ? 'opacity-60' : ''}"
+									ondragover={(e) => handleRowDragOver(e, account.id)}
+									ondragleave={handleRowDragLeave}
+									ondrop={(e) => handleRowDrop(e, account.id)}
 								>
+									<!-- Drag Handle -->
+									<td class="w-8 px-1 py-3">
+										<div
+											draggable="true"
+											ondragstart={(e) => handleDragStart(e, account.id)}
+											ondragend={handleDragEnd}
+											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 transition-all cursor-grab active:cursor-grabbing"
+											role="button"
+											tabindex="0"
+											aria-label="Drag to reorder"
+										>
+											<GripVertical class="h-4 w-4 text-gray-400" />
+										</div>
+									</td>
+
+									<!-- Expand button -->
+									<td class="w-8 px-1 py-3">
+										<button
+											type="button"
+											onclick={() => openAccount(account)}
+											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all duration-75"
+										>
+											<Expand class="h-3.5 w-3.5 text-gray-500" />
+										</button>
+									</td>
+
 									{#if isColumnVisible('account')}
-										<Table.Cell class="py-2 px-4">
+										<td class="px-4 py-3 w-60">
 											<div class="flex items-center gap-3">
 												<div
 													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
 												>
 													{getAccountInitials(account)}
 												</div>
-												<div class="min-w-0">
-													<p class="text-foreground truncate font-medium">{account.name}</p>
-													<div class="mt-0.5 flex items-center gap-1.5">
+												<div class="min-w-0 flex-1">
+													<!-- Editable name -->
+													{#if editingCell?.rowId === account.id && editingCell?.columnKey === 'name'}
+														<input
+															type="text"
+															bind:value={editValue}
+															onkeydown={handleEditKeydown}
+															onblur={() => stopEditing(true)}
+															data-edit-input="{account.id}-name"
+															class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+														/>
+													{:else}
+														<button
+															type="button"
+															onclick={(e) => { e.stopPropagation(); startEditing(account.id, 'name'); }}
+															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+														>
+															{account.name || 'Untitled'}
+														</button>
+													{/if}
+													<div class="mt-1 flex items-center gap-1.5">
 														{#if account.isActive !== false}
-															<Badge
-																variant="default"
-																class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600 hover:bg-green-500/20"
-															>
+															<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
 																Active
-															</Badge>
+															</span>
 														{:else}
-															<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
+															<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+																Closed
+															</span>
 														{/if}
 													</div>
 												</div>
 											</div>
-										</Table.Cell>
+										</td>
 									{/if}
 									{#if isColumnVisible('industry')}
-										<Table.Cell class="py-2 px-4">
-											<span class="text-foreground text-sm">{account.industry || '-'}</span>
-										</Table.Cell>
+										<td class="px-4 py-3 w-40">
+											<!-- Editable industry -->
+											{#if editingCell?.rowId === account.id && editingCell?.columnKey === 'industry'}
+												<input
+													type="text"
+													bind:value={editValue}
+													onkeydown={handleEditKeydown}
+													onblur={() => stopEditing(true)}
+													data-edit-input="{account.id}-industry"
+													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
+												/>
+											{:else}
+												<button
+													type="button"
+													onclick={(e) => { e.stopPropagation(); startEditing(account.id, 'industry'); }}
+													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+												>
+													{#if account.industry}
+														{account.industry}
+													{:else}
+														<span class="text-gray-400">Empty</span>
+													{/if}
+												</button>
+											{/if}
+										</td>
 									{/if}
 									{#if isColumnVisible('contact')}
-										<Table.Cell class="py-2 px-4">
+										<td class="px-4 py-3 w-48">
 											<div class="space-y-1">
 												{#if account.website}
-													<div class="flex items-center gap-1.5 text-sm">
-														<Globe class="text-muted-foreground h-3.5 w-3.5" />
+													<div class="flex items-center gap-1.5 text-sm text-gray-700">
+														<Globe class="h-3.5 w-3.5 text-gray-400" />
 														<span class="max-w-[140px] truncate">
 															{account.website.replace(/^https?:\/\//, '')}
 														</span>
 													</div>
 												{/if}
 												{#if account.phone}
-													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-														<Phone class="h-3.5 w-3.5" />
+													<div class="flex items-center gap-1.5 text-sm text-gray-500">
+														<Phone class="h-3.5 w-3.5 text-gray-400" />
 														<span>{account.phone}</span>
 													</div>
 												{/if}
 												{#if account.city || account.state}
-													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-														<MapPin class="h-3.5 w-3.5" />
+													<div class="flex items-center gap-1.5 text-sm text-gray-500">
+														<MapPin class="h-3.5 w-3.5 text-gray-400" />
 														<span class="truncate">
 															{[account.city, account.state].filter(Boolean).join(', ')}
 														</span>
 													</div>
 												{/if}
 												{#if !account.website && !account.phone && !account.city}
-													<span class="text-muted-foreground">-</span>
+													<span class="text-gray-400 text-sm">-</span>
 												{/if}
 											</div>
-										</Table.Cell>
+										</td>
 									{/if}
 									{#if isColumnVisible('revenue')}
-										<Table.Cell class="py-2 px-4">
-											<span class="text-foreground text-sm font-medium">
+										<td class="px-4 py-3 w-32">
+											<span class="text-sm font-medium text-gray-900">
 												{formatCurrency(account.annualRevenue, 'USD', true)}
 											</span>
-										</Table.Cell>
+										</td>
 									{/if}
 									{#if isColumnVisible('relations')}
-										<Table.Cell class="py-2 px-4">
+										<td class="px-4 py-3 w-28">
 											<div class="flex items-center gap-3">
 												<div class="flex items-center gap-1">
-													<Users class="text-muted-foreground h-4 w-4" />
-													<span class="text-sm font-medium">{account.contactCount || 0}</span>
+													<Users class="h-4 w-4 text-gray-400" />
+													<span class="text-sm font-medium text-gray-700">{account.contactCount || 0}</span>
 												</div>
 												<div class="flex items-center gap-1">
-													<Target class="text-muted-foreground h-4 w-4" />
-													<span class="text-sm font-medium">{account.opportunityCount || 0}</span>
+													<Target class="h-4 w-4 text-gray-400" />
+													<span class="text-sm font-medium text-gray-700">{account.opportunityCount || 0}</span>
 												</div>
 											</div>
-										</Table.Cell>
+										</td>
 									{/if}
 									{#if isColumnVisible('created')}
-										<Table.Cell class="py-2 px-4">
-											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-												<Calendar class="h-3.5 w-3.5" />
+										<td class="px-4 py-3 w-36">
+											<div class="flex items-center gap-1.5 text-sm text-gray-500">
+												<Calendar class="h-3.5 w-3.5 text-gray-400" />
 												<span>{formatRelativeDate(account.createdAt)}</span>
 											</div>
-										</Table.Cell>
+										</td>
 									{/if}
-								</Table.Row>
+								</tr>
+
+								<!-- Drop indicator line (after row) -->
+								{#if dragOverRowId === account.id && dropPosition === 'after'}
+									<tr class="h-0">
+										<td colspan={visibleColumnCount + 2} class="p-0">
+											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
+										</td>
+									</tr>
+								{/if}
 							{/each}
-						</Table.Body>
-					</Table.Root>
+						</tbody>
+					</table>
 				</div>
 
 				<!-- Mobile Card View -->
@@ -650,7 +940,7 @@
 					{#each filteredAccounts as account (account.id)}
 						<button
 							type="button"
-							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left {!account.isActive
+							class="hover:bg-gray-50 flex w-full items-start gap-4 p-4 text-left transition-colors {!account.isActive
 								? 'opacity-60'
 								: ''}"
 							onclick={() => openAccount(account)}
@@ -663,35 +953,34 @@
 							<div class="min-w-0 flex-1">
 								<div class="flex items-start justify-between gap-2">
 									<div>
-										<p class="text-foreground font-medium">{account.name}</p>
-										<div class="mt-0.5 flex items-center gap-1.5">
+										<p class="font-medium text-gray-900">{account.name}</p>
+										<div class="mt-1 flex items-center gap-1.5">
 											{#if account.isActive !== false}
-												<Badge
-													variant="default"
-													class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600"
-												>
+												<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
 													Active
-												</Badge>
+												</span>
 											{:else}
-												<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
+												<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+													Closed
+												</span>
 											{/if}
 										</div>
 									</div>
 								</div>
-								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
+								<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
 									{#if account.industry}
 										<span>{account.industry}</span>
 									{/if}
 									<div class="flex items-center gap-1">
-										<Users class="h-3.5 w-3.5" />
+										<Users class="h-3.5 w-3.5 text-gray-400" />
 										<span>{account.contactCount || 0}</span>
 									</div>
 									<div class="flex items-center gap-1">
-										<Target class="h-3.5 w-3.5" />
+										<Target class="h-3.5 w-3.5 text-gray-400" />
 										<span>{account.opportunityCount || 0}</span>
 									</div>
 									<div class="flex items-center gap-1">
-										<Calendar class="h-3.5 w-3.5" />
+										<Calendar class="h-3.5 w-3.5 text-gray-400" />
 										<span>{formatRelativeDate(account.createdAt)}</span>
 									</div>
 								</div>

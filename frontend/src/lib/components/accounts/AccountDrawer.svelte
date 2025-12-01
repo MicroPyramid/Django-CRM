@@ -391,59 +391,77 @@
 					</div>
 				{/if}
 
-				<!-- Contact Information Section -->
+				<!-- Contact Information Section (Notion-style property rows) -->
 				<div class="mb-6">
-					<p class="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
+					<p class="text-gray-500 mb-3 text-xs font-medium tracking-wider uppercase">
 						Contact Information
 					</p>
-					<div class="space-y-2">
-						<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
-							<Globe class="text-muted-foreground h-4 w-4 shrink-0" />
-							<EditableField
-								value={formData.website}
-								type="url"
-								placeholder="https://example.com"
-								emptyText="Add website"
-								disabled={isClosed && !isCreateMode}
-								validate={(v) => {
-									if (v && !/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(v)) {
-										return 'Invalid website URL';
-									}
-									return null;
-								}}
-								onchange={(v) => updateField('website', v)}
-								class="flex-1"
-							/>
+					<div class="space-y-0">
+						<!-- Website property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Globe class="h-4 w-4 text-gray-400" />
+								Website
+							</div>
+							<div class="flex-1 min-w-0">
+								<EditableField
+									value={formData.website}
+									type="url"
+									placeholder="https://example.com"
+									emptyText="Add website"
+									disabled={isClosed && !isCreateMode}
+									validate={(v) => {
+										if (v && !/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(v)) {
+											return 'Invalid website URL';
+										}
+										return null;
+									}}
+									onchange={(v) => updateField('website', v)}
+									class="flex-1"
+								/>
+							</div>
 						</div>
-						<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
-							<Phone class="text-muted-foreground h-4 w-4 shrink-0" />
-							<EditableField
-								value={formData.phone}
-								type="phone"
-								placeholder="+1 (555) 000-0000"
-								emptyText="Add phone"
-								disabled={isClosed && !isCreateMode}
-								onchange={(v) => updateField('phone', v)}
-								class="flex-1"
-							/>
+						<!-- Phone property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Phone class="h-4 w-4 text-gray-400" />
+								Phone
+							</div>
+							<div class="flex-1 min-w-0">
+								<EditableField
+									value={formData.phone}
+									type="phone"
+									placeholder="+1 (555) 000-0000"
+									emptyText="Add phone"
+									disabled={isClosed && !isCreateMode}
+									onchange={(v) => updateField('phone', v)}
+									class="flex-1"
+								/>
+							</div>
 						</div>
-						<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
-							<Mail class="text-muted-foreground h-4 w-4 shrink-0" />
-							<EditableField
-								value={formData.email}
-								type="email"
-								placeholder="contact@company.com"
-								emptyText="Add email"
-								disabled={isClosed && !isCreateMode}
-								validate={(v) => {
-									if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
-										return 'Invalid email';
-									}
-									return null;
-								}}
-								onchange={(v) => updateField('email', v)}
-								class="flex-1"
-							/>
+						<!-- Email property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Mail class="h-4 w-4 text-gray-400" />
+								Email
+							</div>
+							<div class="flex-1 min-w-0">
+								<EditableField
+									value={formData.email}
+									type="email"
+									placeholder="contact@company.com"
+									emptyText="Add email"
+									disabled={isClosed && !isCreateMode}
+									validate={(v) => {
+										if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+											return 'Invalid email';
+										}
+										return null;
+									}}
+									onchange={(v) => updateField('email', v)}
+									class="flex-1"
+								/>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -481,37 +499,49 @@
 					</div>
 				{/if}
 
-				<!-- Business Details Section -->
+				<!-- Business Details Section (Notion-style property rows) -->
 				<div class="mb-6">
-					<p class="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
+					<p class="text-gray-500 mb-3 text-xs font-medium tracking-wider uppercase">
 						Business Details
 					</p>
-					<div class="space-y-2">
-						<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
-							<DollarSign class="text-muted-foreground h-4 w-4 shrink-0" />
-							<EditableField
-								value={formData.annualRevenue?.toString() || ''}
-								type="number"
-								placeholder="1000000"
-								emptyText="Add annual revenue"
-								displayValue={formatCurrency(formData.annualRevenue)}
-								disabled={isClosed && !isCreateMode}
-								onchange={(v) => updateField('annualRevenue', v)}
-								class="flex-1"
-							/>
+					<div class="space-y-0">
+						<!-- Annual Revenue property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<DollarSign class="h-4 w-4 text-gray-400" />
+								Revenue
+							</div>
+							<div class="flex-1 min-w-0">
+								<EditableField
+									value={formData.annualRevenue?.toString() || ''}
+									type="number"
+									placeholder="1000000"
+									emptyText="Add annual revenue"
+									displayValue={formatCurrency(formData.annualRevenue)}
+									disabled={isClosed && !isCreateMode}
+									onchange={(v) => updateField('annualRevenue', v)}
+									class="flex-1"
+								/>
+							</div>
 						</div>
-						<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
-							<Users class="text-muted-foreground h-4 w-4 shrink-0" />
-							<EditableField
-								value={formData.numberOfEmployees?.toString() || ''}
-								type="number"
-								placeholder="100"
-								emptyText="Add employee count"
-								displayValue={formatNumber(formData.numberOfEmployees)}
-								disabled={isClosed && !isCreateMode}
-								onchange={(v) => updateField('numberOfEmployees', v)}
-								class="flex-1"
-							/>
+						<!-- Employees property -->
+						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
+							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+								<Users class="h-4 w-4 text-gray-400" />
+								Employees
+							</div>
+							<div class="flex-1 min-w-0">
+								<EditableField
+									value={formData.numberOfEmployees?.toString() || ''}
+									type="number"
+									placeholder="100"
+									emptyText="Add employee count"
+									displayValue={formatNumber(formData.numberOfEmployees)}
+									disabled={isClosed && !isCreateMode}
+									onchange={(v) => updateField('numberOfEmployees', v)}
+									class="flex-1"
+								/>
+							</div>
 						</div>
 					</div>
 				</div>
