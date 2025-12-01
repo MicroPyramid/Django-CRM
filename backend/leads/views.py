@@ -856,6 +856,40 @@ class LeadCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    @extend_schema(
+        tags=["Leads"],
+        parameters=swagger_params.organization_params,
+        request=LeadCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.user.is_superuser
+            or request.profile == obj.commented_by
+        ):
+            serializer = LeadCommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -1049,6 +1083,31 @@ class CompanyDetail(APIView):
     def put(self, request, pk, format=None):
         company = self.get_object(pk)
         serializer = CompanySerializer(company, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "error": False,
+                    "data": serializer.data,
+                    "message": "Updated Successfully",
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "message": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @extend_schema(
+        tags=["Company"],
+        description="Partial Company Update",
+        parameters=swagger_params.organization_params,
+        request=CompanySerializer,
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a company."""
+        company = self.get_object(pk)
+        serializer = CompanySerializer(company, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(

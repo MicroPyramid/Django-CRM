@@ -468,6 +468,52 @@ class OpportunityDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        request=OpportunityCreateSwaggerSerializer,
+        description="Partial Opportunity Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to an opportunity."""
+        params = request.data
+        opportunity_object = self.get_object(pk=pk)
+        if opportunity_object.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+            if not (
+                (self.request.profile == opportunity_object.created_by)
+                or (self.request.profile in opportunity_object.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        serializer = OpportunityCreateSerializer(
+            opportunity_object,
+            data=params,
+            request_obj=request,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            opportunity_object = serializer.save()
+            return Response(
+                {"error": False, "message": "Opportunity Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class OpportunityCommentView(APIView):
     model = Comment
@@ -502,6 +548,40 @@ class OpportunityCommentView(APIView):
                     {"error": True, "errors": serializer.errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to perform this action.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        request=OpportunityCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.user.is_superuser
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,

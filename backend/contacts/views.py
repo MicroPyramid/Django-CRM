@@ -385,6 +385,49 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=CreateContactSerializer,
+        description="Partial Contact Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a contact."""
+        data = request.data
+        contact_obj = self.get_object(pk=pk)
+        if contact_obj.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile == contact_obj.created_by)
+                or (self.request.profile in contact_obj.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        contact_serializer = CreateContactSerializer(
+            data=data, instance=contact_obj, request_obj=request, partial=True
+        )
+        if not contact_serializer.is_valid():
+            return Response(
+                {"error": True, "errors": contact_serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact_obj = contact_serializer.save()
+        return Response(
+            {"error": False, "message": "Contact Updated Successfully"},
+            status=status.HTTP_200_OK,
+        )
+
 
 class ContactCommentView(APIView):
     model = Comment
@@ -412,6 +455,40 @@ class ContactCommentView(APIView):
                 serializer.save()
                 return Response(
                     {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to edit this Comment",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=ContactCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
                     status=status.HTTP_200_OK,
                 )
             return Response(

@@ -346,6 +346,46 @@ class TaskDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    @extend_schema(
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskCreateSwaggerSerializer,
+        description="Partial Task Update",
+    )
+    def patch(self, request, pk, **kwargs):
+        """Handle partial updates to a task."""
+        params = request.data
+        self.task_obj = self.get_object(pk)
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile == self.task_obj.created_by)
+                or (self.request.profile in self.task_obj.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You don't have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        serializer = TaskCreateSerializer(
+            data=params,
+            instance=self.task_obj,
+            request_obj=request,
+            partial=True,
+        )
+        if serializer.is_valid():
+            task_obj = serializer.save()
+            return Response(
+                {"error": False, "message": "Task updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -399,6 +439,40 @@ class TaskCommentView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        request=TaskCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,
@@ -614,6 +688,45 @@ class BoardDetailView(APIView):
     )
     def put(self, request, pk):
         """Update board"""
+        board = self.get_object(pk, request.profile.org, request.profile)
+        if not board:
+            return Response(
+                {"error": "Board not found or access denied"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Only owner or admin can update board
+        membership = BoardMember.objects.filter(
+            board=board, profile=request.profile
+        ).first()
+        if not membership or membership.role not in ["owner", "admin"]:
+            return Response(
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = BoardSerializer(board, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        board = serializer.save(updated_by=request.user)
+        return Response(BoardSerializer(board).data)
+
+    @extend_schema(
+        tags=["Boards"],
+        parameters=[
+            OpenApiParameter(
+                name="org", description="Organization ID", required=True, type=str
+            )
+        ],
+        request=BoardSerializer,
+        responses={200: BoardSerializer},
+        description="Partial Board Update",
+    )
+    def patch(self, request, pk):
+        """Handle partial updates to a board."""
         board = self.get_object(pk, request.profile.org, request.profile)
         if not board:
             return Response(

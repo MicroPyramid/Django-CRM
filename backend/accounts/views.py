@@ -521,6 +521,53 @@ class AccountDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountWriteSerializer,
+        description="Partial Account Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to an account."""
+        data = request.data
+        account_object = self.get_object(pk=pk)
+        if account_object.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile == account_object.created_by)
+                or (self.request.profile in account_object.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        serializer = AccountCreateSerializer(
+            account_object,
+            data=data,
+            request_obj=request,
+            account=True,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            account_object = serializer.save()
+            return Response(
+                {"error": False, "message": "Account Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class AccountCommentView(APIView):
     model = Comment
@@ -556,6 +603,40 @@ class AccountCommentView(APIView):
                     {"error": True, "errors": serializer.errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to edit this Comment",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        data = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,

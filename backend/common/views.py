@@ -331,6 +331,60 @@ class UserDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    @extend_schema(
+        tags=["users"],
+        parameters=swagger_params.organization_params,
+        request=UserCreateSwaggerSerializer,
+        description="Partial User Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a user."""
+        params = request.data
+        profile = self.get_object(pk)
+        if (
+            self.request.profile.role != "ADMIN"
+            and not self.request.user.is_superuser
+            and self.request.profile.id != profile.id
+        ):
+            return Response(
+                {"error": True, "errors": "Permission Denied"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if profile.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = CreateUserSerializer(
+            data=params, instance=profile.user, org=request.profile.org, partial=True
+        )
+        profile_serializer = CreateProfileSerializer(
+            data=params, instance=profile, partial=True
+        )
+        data = {}
+        if not serializer.is_valid():
+            data["contact_errors"] = serializer.errors
+        if not profile_serializer.is_valid():
+            data["profile_errors"] = profile_serializer.errors
+        if data:
+            data["error"] = True
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.is_valid():
+            user = serializer.save()
+        if profile_serializer.is_valid():
+            profile = profile_serializer.save()
+            return Response(
+                {"error": False, "message": "User Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     @extend_schema(tags=["users"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -508,6 +562,64 @@ class OrgUpdateView(APIView):
             )
 
         # Update fields
+        data = request.data
+        if "name" in data:
+            org.name = data["name"]
+
+        org.save()
+
+        return Response(
+            {
+                "error": False,
+                "message": "Organization updated successfully",
+                "org": OrganizationSerializer(org).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        description="Partial update organization details",
+        request=OrganizationSerializer,
+        responses={200: OrganizationSerializer},
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to an organization."""
+        # Check if user has admin access to this organization
+        if not request.profile:
+            return Response(
+                {"error": True, "errors": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Verify the organization matches the current context
+        if str(request.profile.org.id) != str(pk):
+            return Response(
+                {"error": True, "errors": "Cannot update a different organization"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Check if user is admin
+        if (
+            request.profile.role != "ADMIN"
+            and not request.profile.is_organization_admin
+        ):
+            return Response(
+                {
+                    "error": True,
+                    "errors": "Only organization admins can update organization details",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            org = Org.objects.get(id=pk)
+        except Org.DoesNotExist:
+            return Response(
+                {"error": True, "errors": "Organization not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Partial update fields
         data = request.data
         if "name" in data:
             org.name = data["name"]
@@ -867,6 +979,54 @@ class DocumentDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    @extend_schema(
+        tags=["documents"],
+        parameters=swagger_params.organization_params,
+        request=DocumentEditSwaggerSerializer,
+        description="Partial Document Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a document."""
+        self.object = self.get_object(pk)
+        params = request.data
+        if not self.object:
+            return Response(
+                {"error": True, "errors": "Document does not exist"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.object.org != self.request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+            if not (
+                (self.request.profile == self.object.created_by)
+                or (self.request.profile in self.object.shared_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        serializer = DocumentCreateSerializer(
+            data=params, instance=self.object, request_obj=request, partial=True
+        )
+        if serializer.is_valid():
+            doc = serializer.save(
+                org=request.profile.org,
+            )
+            return Response(
+                {"error": False, "message": "Document Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class UserStatusView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -970,6 +1130,9 @@ class DomainDetailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    def get_object(self, pk):
+        return get_object_or_404(APISettings, pk=pk, org=self.request.profile.org)
+
     @extend_schema(tags=["Settings"], parameters=swagger_params.organization_params)
     def get(self, request, pk, format=None):
         api_setting = self.get_object(pk)
@@ -1005,6 +1168,28 @@ class DomainDetailView(APIView):
                 api_setting.lead_assigned_to.add(*assign_to_list)
             return Response(
                 {"error": False, "message": "API setting Updated sucessfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @extend_schema(
+        tags=["Settings"],
+        parameters=swagger_params.organization_params,
+        request=APISettingsSwaggerSerializer,
+        description="Partial API Settings Update",
+    )
+    def patch(self, request, pk, **kwargs):
+        """Handle partial updates to API settings."""
+        api_setting = self.get_object(pk)
+        params = request.data
+        serializer = APISettingsSerializer(data=params, instance=api_setting, partial=True)
+        if serializer.is_valid():
+            api_setting = serializer.save()
+            return Response(
+                {"error": False, "message": "API setting Updated successfully"},
                 status=status.HTTP_200_OK,
             )
         return Response(
@@ -1728,6 +1913,38 @@ class TeamsDetailView(APIView):
                 if user not in latest_users:
                     removed_users.append(user)
             remove_users.delay(removed_users, pk, str(request.profile.org.id))
+            return Response(
+                {"error": False, "message": "Team Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @extend_schema(
+        tags=["Teams"],
+        request=TeamswaggerCreateSerializer,
+        parameters=swagger_params.organization_params,
+        description="Partial Team Update",
+    )
+    def patch(self, request, pk, *args, **kwargs):
+        """Handle partial updates to a team."""
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You don't have permission to perform this action.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        params = request.data
+        self.team = self.get_object(pk)
+        serializer = TeamCreateSerializer(
+            data=params, instance=self.team, request_obj=request, partial=True
+        )
+        if serializer.is_valid():
+            team_obj = serializer.save()
             return Response(
                 {"error": False, "message": "Team Updated Successfully"},
                 status=status.HTTP_200_OK,
