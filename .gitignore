@@ -57,3 +57,5 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+.playwright-mcp

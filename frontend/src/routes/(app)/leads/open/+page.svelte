@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -11,15 +11,18 @@
 		Mail,
 		Building2,
 		User,
-		Calendar
+		Calendar,
+		GripVertical
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { LeadDrawer } from '$lib/components/leads';
+	import { LeadDrawer, RowActions } from '$lib/components/leads';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
+	import { InlineEditableCell } from '$lib/components/ui/inline-editable-cell/index.js';
+	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, getNameInitials } from '$lib/utils/formatting.js';
 	import { getLeadStatusClass, getRatingConfig } from '$lib/utils/ui-helpers.js';
@@ -29,6 +32,79 @@
 		LEAD_RATINGS as ratings
 	} from '$lib/constants/filters.js';
 	import { useListFilters } from '$lib/hooks';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'leads-column-config';
+
+	/**
+	 * @typedef {Object} ColumnConfig
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {boolean} visible
+	 * @property {boolean} [canHide]
+	 */
+
+	/** @type {ColumnConfig[]} */
+	const defaultColumns = [
+		{ key: 'lead', label: 'Lead', visible: true, canHide: false },
+		{ key: 'company', label: 'Company', visible: true, canHide: true },
+		{ key: 'email', label: 'Email', visible: true, canHide: true },
+		{ key: 'phone', label: 'Phone', visible: false, canHide: true },
+		{ key: 'rating', label: 'Rating', visible: true, canHide: true },
+		{ key: 'status', label: 'Status', visible: true, canHide: true },
+		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	];
+
+	/**
+	 * Load column config from localStorage
+	 * @returns {typeof defaultColumns}
+	 */
+	function loadColumnConfig() {
+		if (typeof window === 'undefined') return defaultColumns;
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				// Merge with defaults to handle new columns
+				return defaultColumns.map((def) => {
+					const saved = parsed.find((p) => p.key === def.key);
+					return saved ? { ...def, visible: saved.visible } : def;
+				});
+			}
+		} catch (e) {
+			console.error('Failed to load column config:', e);
+		}
+		return defaultColumns;
+	}
+
+	let columnConfig = $state(defaultColumns);
+
+	onMount(() => {
+		columnConfig = loadColumnConfig();
+	});
+
+	// Save to localStorage when column config changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		}
+	});
+
+	/**
+	 * Check if a column is visible
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+	}
+
+	/**
+	 * Handle column config change
+	 * @param {ColumnConfig[]} newConfig
+	 */
+	function handleColumnChange(newConfig) {
+		columnConfig = newConfig;
+	}
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -158,6 +234,88 @@
 	let deleteForm;
 	/** @type {HTMLFormElement} */
 	let convertForm;
+	/** @type {HTMLFormElement} */
+	let duplicateForm;
+
+	// Cell navigation for inline editing
+	const editableColumns = ['company', 'email', 'phone', 'rating', 'status'];
+
+	/** @type {Record<string, any>} */
+	let cellRefs = {};
+
+	/**
+	 * Register a cell reference for navigation
+	 * @param {string} rowId
+	 * @param {string} column
+	 * @param {any} ref
+	 */
+	function registerCell(rowId, column, ref) {
+		cellRefs[`${rowId}-${column}`] = ref;
+	}
+
+	/**
+	 * Focus a specific cell
+	 * @param {string} rowId
+	 * @param {string} column
+	 */
+	function focusCell(rowId, column) {
+		const ref = cellRefs[`${rowId}-${column}`];
+		ref?.startEditing();
+	}
+
+	/**
+	 * Move to next cell (Tab)
+	 * @param {string} rowId
+	 * @param {string} currentColumn
+	 */
+	function handleCellNext(rowId, currentColumn) {
+		const visibleColumns = editableColumns.filter(col => isColumnVisible(col));
+		const idx = visibleColumns.indexOf(currentColumn);
+		if (idx < visibleColumns.length - 1) {
+			focusCell(rowId, visibleColumns[idx + 1]);
+		}
+	}
+
+	/**
+	 * Move to previous cell (Shift+Tab)
+	 * @param {string} rowId
+	 * @param {string} currentColumn
+	 */
+	function handleCellPrev(rowId, currentColumn) {
+		const visibleColumns = editableColumns.filter(col => isColumnVisible(col));
+		const idx = visibleColumns.indexOf(currentColumn);
+		if (idx > 0) {
+			focusCell(rowId, visibleColumns[idx - 1]);
+		}
+	}
+
+	/**
+	 * Move to cell below (Enter)
+	 * @param {number} currentRowIndex
+	 * @param {string} column
+	 */
+	function handleCellDown(currentRowIndex, column) {
+		if (currentRowIndex < filteredLeads.length - 1) {
+			const nextRow = filteredLeads[currentRowIndex + 1];
+			focusCell(nextRow.id, column);
+		}
+	}
+
+	// Rating options for quick edit
+	const ratingOptions = [
+		{ value: 'HOT', label: 'Hot' },
+		{ value: 'WARM', label: 'Warm' },
+		{ value: 'COLD', label: 'Cold' }
+	];
+
+	// Status options for quick edit
+	const statusOptions = [
+		{ value: 'assigned', label: 'Assigned' },
+		{ value: 'in process', label: 'In Process' },
+		{ value: 'converted', label: 'Converted' },
+		{ value: 'recycled', label: 'Recycled' },
+		{ value: 'closed', label: 'Closed' }
+	];
 
 	// Form data state
 	let formState = $state({
@@ -284,6 +442,83 @@
 	}
 
 	/**
+	 * Handle lead duplicate
+	 * @param {any} lead
+	 */
+	async function handleDuplicate(lead) {
+		formState.leadId = lead.id;
+		await tick();
+		duplicateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle lead delete from row action
+	 * @param {any} lead
+	 */
+	async function handleRowDelete(lead) {
+		if (!confirm(`Are you sure you want to delete ${getFullName(lead)}?`)) return;
+
+		formState.leadId = lead.id;
+		await tick();
+		deleteForm.requestSubmit();
+	}
+
+	/**
+	 * Convert lead to form state for quick edit
+	 * @param {any} lead
+	 */
+	function leadToFormState(lead) {
+		return {
+			leadId: lead.id,
+			firstName: lead.firstName || '',
+			lastName: lead.lastName || '',
+			email: lead.email || '',
+			phone: lead.phone || '',
+			company: typeof lead.company === 'object' ? lead.company?.id || '' : lead.company || '',
+			title: lead.title || '',
+			contactTitle: lead.contactTitle || '',
+			website: lead.website || '',
+			linkedinUrl: lead.linkedinUrl || '',
+			status: lead.status?.toLowerCase().replace('_', ' ') || '',
+			source: lead.leadSource || '',
+			industry: lead.industry || '',
+			rating: lead.rating || '',
+			opportunityAmount: lead.opportunityAmount || '',
+			probability: lead.probability || '',
+			closeDate: lead.closeDate || '',
+			addressLine: lead.addressLine || '',
+			city: lead.city || '',
+			state: lead.state || '',
+			postcode: lead.postcode || '',
+			country: lead.country || '',
+			lastContacted: lead.lastContacted || '',
+			nextFollowUp: lead.nextFollowUp || '',
+			description: lead.description || '',
+			ownerId: lead.owner?.id || ''
+		};
+	}
+
+	/**
+	 * Handle quick edit from cell
+	 * @param {any} lead
+	 * @param {string} field
+	 * @param {string} value
+	 */
+	async function handleQuickEdit(lead, field, value) {
+		// Populate form state with current lead data
+		const currentState = leadToFormState(lead);
+
+		// Update the specific field
+		currentState[field] = value;
+
+		// Copy to form state
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
 	 */
@@ -310,6 +545,7 @@
 
 <PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
 	{#snippet actions()}
+		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
 		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 			{#snippet children()}
 				<div class="space-y-3">
@@ -361,7 +597,7 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Leads Table -->
-	<Card.Root>
+	<Card.Root class="border-0 shadow-sm">
 		<Card.Content class="p-0">
 			{#if filteredLeads.length === 0}
 				<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -376,117 +612,226 @@
 					</Button>
 				</div>
 			{:else}
-				<!-- Desktop Table -->
+				<!-- Desktop Table - Notion-like styling -->
 				<div class="hidden md:block">
 					<Table.Root>
 						<Table.Header>
-							<Table.Row>
-								<Table.Head class="w-[250px]">Lead</Table.Head>
-								<Table.Head>Company</Table.Head>
-								<Table.Head>Contact</Table.Head>
-								<Table.Head>Rating</Table.Head>
-								<Table.Head>Status</Table.Head>
-								<Table.Head
-									class="hover:bg-muted/50 cursor-pointer"
-									onclick={() => list.toggleSort('createdAt')}
-								>
-									<div class="flex items-center gap-1">
-										Created
-										{#if list.sortColumn === 'createdAt'}
-											{#if list.sortDirection === 'asc'}
-												<ChevronUp class="h-4 w-4" />
-											{:else}
-												<ChevronDown class="h-4 w-4" />
+							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+								<!-- Drag handle column -->
+								<Table.Head class="w-8 py-2.5 px-0"></Table.Head>
+								{#if isColumnVisible('lead')}
+									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Lead</Table.Head>
+								{/if}
+								{#if isColumnVisible('company')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Company</Table.Head>
+								{/if}
+								{#if isColumnVisible('email')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Email</Table.Head>
+								{/if}
+								{#if isColumnVisible('phone')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Phone</Table.Head>
+								{/if}
+								{#if isColumnVisible('rating')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Rating</Table.Head>
+								{/if}
+								{#if isColumnVisible('status')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Status</Table.Head>
+								{/if}
+								{#if isColumnVisible('created')}
+									<Table.Head
+										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+										onclick={() => list.toggleSort('createdAt')}
+									>
+										<div class="flex items-center gap-1">
+											Created
+											{#if list.sortColumn === 'createdAt'}
+												{#if list.sortDirection === 'asc'}
+													<ChevronUp class="h-3.5 w-3.5" />
+												{:else}
+													<ChevronDown class="h-3.5 w-3.5" />
+												{/if}
 											{/if}
-										{/if}
-									</div>
-								</Table.Head>
+										</div>
+									</Table.Head>
+								{/if}
+								<!-- Extra space for row actions -->
+								<Table.Head class="w-[120px]"></Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each filteredLeads as lead (lead.id)}
+							{#each filteredLeads as lead, rowIndex (lead.id)}
 								{@const ratingConfig = getRatingConfig(lead.rating)}
 								<Table.Row
-									class="hover:bg-muted/50 cursor-pointer"
+									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
 									onclick={() => openLead(lead)}
 								>
-									<Table.Cell>
-										<div class="flex items-center gap-3">
-											<div
-												class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
-											>
-												{getLeadInitials(lead)}
-											</div>
-											<div class="min-w-0">
-												<p class="text-foreground truncate font-medium">
-													{getFullName(lead)}
-												</p>
-												{#if lead.title}
-													<p class="text-muted-foreground truncate text-sm">
-														{lead.title}
-													</p>
-												{/if}
-											</div>
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										{#if lead.company}
-											<div class="flex items-center gap-1.5 text-sm">
-												<Building2 class="text-muted-foreground h-4 w-4" />
-												<span class="truncate">{typeof lead.company === 'object' ? lead.company.name : lead.company}</span>
-											</div>
-										{:else}
-											<span class="text-muted-foreground">-</span>
-										{/if}
-									</Table.Cell>
-									<Table.Cell>
-										<div class="space-y-1">
-											{#if lead.email}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Mail class="text-muted-foreground h-3.5 w-3.5" />
-													<span class="max-w-[150px] truncate">{lead.email}</span>
-												</div>
-											{/if}
-											{#if lead.phone}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Phone class="text-muted-foreground h-3.5 w-3.5" />
-													<span>{lead.phone}</span>
-												</div>
-											{/if}
-											{#if !lead.email && !lead.phone}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										{#if lead.rating}
-											<div class="flex items-center gap-1.5">
-												{#each { length: ratingConfig.dots } as _}
-													<div class={cn('h-2 w-2 rounded-full', ratingConfig.bgColor)}></div>
-												{/each}
-												<span class={cn('text-sm font-medium', ratingConfig.color)}>
-													{lead.rating}
-												</span>
-											</div>
-										{:else}
-											<span class="text-muted-foreground">-</span>
-										{/if}
-									</Table.Cell>
-									<Table.Cell>
-										<span
-											class={cn(
-												'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-												getLeadStatusClass(lead.status)
-											)}
+									<!-- Drag Handle -->
+									<Table.Cell class="w-8 py-2 px-0">
+										<div
+											class="flex items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-70 transition-opacity duration-150 cursor-grab active:cursor-grabbing"
+											onmousedown={(e) => e.stopPropagation()}
+											onclick={(e) => e.stopPropagation()}
 										>
-											{lead.status}
-										</span>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-											<Calendar class="h-3.5 w-3.5" />
-											<span>{formatRelativeDate(lead.createdAt)}</span>
+											<GripVertical class="h-4 w-4 text-muted-foreground" />
 										</div>
+									</Table.Cell>
+									{#if isColumnVisible('lead')}
+										<Table.Cell class="py-2 px-4">
+											<div class="flex items-center gap-3">
+												<div
+													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+												>
+													{getLeadInitials(lead)}
+												</div>
+												<div class="min-w-0">
+													<p class="text-foreground truncate font-medium">
+														{getFullName(lead)}
+													</p>
+													{#if lead.title}
+														<p class="text-muted-foreground truncate text-sm">
+															{lead.title}
+														</p>
+													{/if}
+												</div>
+											</div>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('company')}
+										<Table.Cell class="py-2 px-4">
+											<InlineEditableCell
+												bind:this={cellRefs[`${lead.id}-company`]}
+												value={typeof lead.company === 'object' ? lead.company?.name || '' : lead.company || ''}
+												type="text"
+												placeholder="Add company"
+												onchange={(val) => handleQuickEdit(lead, 'company', val)}
+												onnext={() => handleCellNext(lead.id, 'company')}
+												onprev={() => handleCellPrev(lead.id, 'company')}
+												ondown={() => handleCellDown(rowIndex, 'company')}
+											>
+												{#if lead.company}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Building2 class="text-muted-foreground h-4 w-4 shrink-0" />
+														<span class="truncate">{typeof lead.company === 'object' ? lead.company.name : lead.company}</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground text-sm italic">Add company</span>
+												{/if}
+											</InlineEditableCell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('email')}
+										<Table.Cell class="py-2 px-4">
+											<InlineEditableCell
+												bind:this={cellRefs[`${lead.id}-email`]}
+												value={lead.email || ''}
+												type="email"
+												placeholder="Add email"
+												onchange={(val) => handleQuickEdit(lead, 'email', val)}
+												onnext={() => handleCellNext(lead.id, 'email')}
+												onprev={() => handleCellPrev(lead.id, 'email')}
+												ondown={() => handleCellDown(rowIndex, 'email')}
+											>
+												{#if lead.email}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Mail class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+														<span class="max-w-[180px] truncate">{lead.email}</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground text-sm italic">Add email</span>
+												{/if}
+											</InlineEditableCell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('phone')}
+										<Table.Cell class="py-2 px-4">
+											<InlineEditableCell
+												bind:this={cellRefs[`${lead.id}-phone`]}
+												value={lead.phone || ''}
+												type="phone"
+												placeholder="Add phone"
+												onchange={(val) => handleQuickEdit(lead, 'phone', val)}
+												onnext={() => handleCellNext(lead.id, 'phone')}
+												onprev={() => handleCellPrev(lead.id, 'phone')}
+												ondown={() => handleCellDown(rowIndex, 'phone')}
+											>
+												{#if lead.phone}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Phone class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+														<span>{lead.phone}</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground text-sm italic">Add phone</span>
+												{/if}
+											</InlineEditableCell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('rating')}
+										<Table.Cell class="py-2 px-4">
+											<InlineEditableCell
+												bind:this={cellRefs[`${lead.id}-rating`]}
+												value={lead.rating || ''}
+												type="select"
+												options={ratingOptions}
+												placeholder="Set rating"
+												onchange={(val) => handleQuickEdit(lead, 'rating', val)}
+												onnext={() => handleCellNext(lead.id, 'rating')}
+												onprev={() => handleCellPrev(lead.id, 'rating')}
+												ondown={() => handleCellDown(rowIndex, 'rating')}
+											>
+												{#if lead.rating}
+													<div class="flex items-center gap-1.5">
+														{#each { length: ratingConfig.dots } as _}
+															<div class={cn('h-2 w-2 rounded-full', ratingConfig.bgColor)}></div>
+														{/each}
+														<span class={cn('text-sm font-medium', ratingConfig.color)}>
+															{lead.rating}
+														</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground text-sm italic">Set rating</span>
+												{/if}
+											</InlineEditableCell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('status')}
+										<Table.Cell class="py-2 px-4">
+											<InlineEditableCell
+												bind:this={cellRefs[`${lead.id}-status`]}
+												value={lead.status?.toLowerCase().replace('_', ' ') || ''}
+												type="select"
+												options={statusOptions}
+												placeholder="Set status"
+												onchange={(val) => handleQuickEdit(lead, 'status', val)}
+												onnext={() => handleCellNext(lead.id, 'status')}
+												onprev={() => handleCellPrev(lead.id, 'status')}
+												ondown={() => handleCellDown(rowIndex, 'status')}
+											>
+												<span
+													class={cn(
+														'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+														getLeadStatusClass(lead.status)
+													)}
+												>
+													{lead.status || 'Set status'}
+												</span>
+											</InlineEditableCell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('created')}
+										<Table.Cell class="py-2 px-4">
+											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+												<Calendar class="h-3.5 w-3.5" />
+												<span>{formatRelativeDate(lead.createdAt)}</span>
+											</div>
+										</Table.Cell>
+									{/if}
+									<!-- Row Actions -->
+									<Table.Cell class="py-2 px-4">
+										<RowActions
+											onEdit={() => openLead(lead)}
+											onDelete={() => handleRowDelete(lead)}
+											onDuplicate={() => handleDuplicate(lead)}
+										/>
 									</Table.Cell>
 								</Table.Row>
 							{/each}
@@ -654,6 +999,16 @@
 	action="?/convert"
 	bind:this={convertForm}
 	use:enhance={createEnhanceHandler('Lead converted successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="leadId" value={formState.leadId} />
+</form>
+
+<form
+	method="POST"
+	action="?/duplicate"
+	bind:this={duplicateForm}
+	use:enhance={createEnhanceHandler('Lead duplicated successfully')}
 	class="hidden"
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />

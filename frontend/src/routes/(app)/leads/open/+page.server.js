@@ -364,5 +364,65 @@ export const actions = {
 			console.error('Error converting lead:', err);
 			return fail(500, { error: 'Failed to convert lead' });
 		}
+	},
+
+	duplicate: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const leadId = form.get('leadId')?.toString();
+
+			if (!leadId) {
+				return fail(400, { error: 'Lead ID is required.' });
+			}
+
+			// Fetch the original lead
+			const originalLead = await apiRequest(
+				`/leads/${leadId}/`,
+				{ method: 'GET' },
+				{ cookies, org: locals.org }
+			);
+
+			// Create a copy with modified title
+			const leadData = {
+				title: `${originalLead.title || 'Lead'} (Copy)`,
+				description: originalLead.description || '',
+				status: 'assigned',
+				org: locals.org.id
+			};
+
+			// Copy optional fields if they exist
+			if (originalLead.first_name) leadData.first_name = originalLead.first_name;
+			if (originalLead.last_name) leadData.last_name = originalLead.last_name;
+			if (originalLead.email) leadData.email = originalLead.email;
+			if (originalLead.phone) leadData.phone = originalLead.phone;
+			if (originalLead.contact_title) leadData.contact_title = originalLead.contact_title;
+			if (originalLead.website) leadData.website = originalLead.website;
+			if (originalLead.linkedin_url) leadData.linkedin_url = originalLead.linkedin_url;
+			if (originalLead.industry) leadData.industry = originalLead.industry;
+			if (originalLead.company) leadData.company = originalLead.company;
+			if (originalLead.source) leadData.source = originalLead.source;
+			if (originalLead.rating) leadData.rating = originalLead.rating;
+			if (originalLead.opportunity_amount) leadData.opportunity_amount = originalLead.opportunity_amount;
+			if (originalLead.probability) leadData.probability = originalLead.probability;
+			if (originalLead.address_line) leadData.address_line = originalLead.address_line;
+			if (originalLead.city) leadData.city = originalLead.city;
+			if (originalLead.state) leadData.state = originalLead.state;
+			if (originalLead.postcode) leadData.postcode = originalLead.postcode;
+			if (originalLead.country) leadData.country = originalLead.country;
+
+			await apiRequest(
+				'/leads/',
+				{
+					method: 'POST',
+					body: leadData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error duplicating lead:', err);
+			return fail(500, { error: 'Failed to duplicate lead' });
+		}
 	}
 };
