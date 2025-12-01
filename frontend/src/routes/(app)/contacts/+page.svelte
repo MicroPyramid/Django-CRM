@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -23,6 +23,79 @@
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
+	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'contacts-column-config';
+
+	/**
+	 * @typedef {Object} ColumnConfig
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {boolean} visible
+	 * @property {boolean} [canHide]
+	 */
+
+	/** @type {ColumnConfig[]} */
+	const defaultColumns = [
+		{ key: 'contact', label: 'Contact', visible: true, canHide: false },
+		{ key: 'title', label: 'Title & Department', visible: true, canHide: true },
+		{ key: 'email', label: 'Email', visible: true, canHide: true },
+		{ key: 'phone', label: 'Phone', visible: true, canHide: true },
+		{ key: 'company', label: 'Company', visible: true, canHide: true },
+		{ key: 'owner', label: 'Owner', visible: true, canHide: true },
+		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	];
+
+	/**
+	 * Load column config from localStorage
+	 * @returns {typeof defaultColumns}
+	 */
+	function loadColumnConfig() {
+		if (typeof window === 'undefined') return defaultColumns;
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				return defaultColumns.map((def) => {
+					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
+					return savedCol ? { ...def, visible: savedCol.visible } : def;
+				});
+			}
+		} catch (e) {
+			console.error('Failed to load column config:', e);
+		}
+		return defaultColumns;
+	}
+
+	let columnConfig = $state(defaultColumns);
+
+	onMount(() => {
+		columnConfig = loadColumnConfig();
+	});
+
+	// Save to localStorage when column config changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		}
+	});
+
+	/**
+	 * Check if a column is visible
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+	}
+
+	/**
+	 * Handle column config change
+	 * @param {ColumnConfig[]} newConfig
+	 */
+	function handleColumnChange(newConfig) {
+		columnConfig = newConfig;
+	}
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -257,6 +330,7 @@
 
 <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
 	{#snippet actions()}
+		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
 		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 			{#snippet children()}
 				<div>
@@ -283,7 +357,7 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Contacts Table -->
-	<Card.Root>
+	<Card.Root class="border-0 shadow-sm">
 		<Card.Content class="p-0">
 			{#if filteredContacts.length === 0}
 				<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -302,105 +376,135 @@
 				<div class="hidden md:block">
 					<Table.Root>
 						<Table.Header>
-							<Table.Row>
-								<Table.Head class="w-[250px]">Contact</Table.Head>
-								<Table.Head>Title & Department</Table.Head>
-								<Table.Head>Contact Info</Table.Head>
-								<Table.Head>Company</Table.Head>
-								<Table.Head>Owner</Table.Head>
-								<Table.Head
-									class="hover:bg-muted/50 cursor-pointer"
-									onclick={() => list.toggleSort('createdAt')}
-								>
-									<div class="flex items-center gap-1">
-										Created
-										{#if list.sortColumn === 'createdAt'}
-											{#if list.sortDirection === 'asc'}
-												<ChevronUp class="h-4 w-4" />
-											{:else}
-												<ChevronDown class="h-4 w-4" />
+							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+								{#if isColumnVisible('contact')}
+									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Contact</Table.Head>
+								{/if}
+								{#if isColumnVisible('title')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Title & Department</Table.Head>
+								{/if}
+								{#if isColumnVisible('email')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Email</Table.Head>
+								{/if}
+								{#if isColumnVisible('phone')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Phone</Table.Head>
+								{/if}
+								{#if isColumnVisible('company')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Company</Table.Head>
+								{/if}
+								{#if isColumnVisible('owner')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Owner</Table.Head>
+								{/if}
+								{#if isColumnVisible('created')}
+									<Table.Head
+										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+										onclick={() => list.toggleSort('createdAt')}
+									>
+										<div class="flex items-center gap-1">
+											Created
+											{#if list.sortColumn === 'createdAt'}
+												{#if list.sortDirection === 'asc'}
+													<ChevronUp class="h-3.5 w-3.5" />
+												{:else}
+													<ChevronDown class="h-3.5 w-3.5" />
+												{/if}
 											{/if}
-										{/if}
-									</div>
-								</Table.Head>
+										</div>
+									</Table.Head>
+								{/if}
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each filteredContacts as contact (contact.id)}
 								<Table.Row
-									class="hover:bg-muted/50 cursor-pointer"
+									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
 									onclick={() => openContact(contact)}
 								>
-									<Table.Cell>
-										<div class="flex items-center gap-3">
-											<div
-												class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-medium text-white"
-											>
-												{getContactInitials(contact)}
-											</div>
-											<div class="min-w-0">
-												<p class="text-foreground truncate font-medium">
-													{getFullName(contact)}
-												</p>
-											</div>
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="space-y-1">
-											{#if contact.title}
-												<p class="text-foreground text-sm">{contact.title}</p>
-											{/if}
-											{#if contact.department}
-												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-													<Briefcase class="h-3.5 w-3.5" />
-													<span>{contact.department}</span>
+									{#if isColumnVisible('contact')}
+										<Table.Cell class="py-2 px-4">
+											<div class="flex items-center gap-3">
+												<div
+													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-medium text-white"
+												>
+													{getContactInitials(contact)}
 												</div>
-											{/if}
-											{#if !contact.title && !contact.department}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="space-y-1">
+												<div class="min-w-0">
+													<p class="text-foreground truncate font-medium">
+														{getFullName(contact)}
+													</p>
+												</div>
+											</div>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('title')}
+										<Table.Cell class="py-2 px-4">
+											<div class="space-y-1">
+												{#if contact.title}
+													<p class="text-foreground text-sm">{contact.title}</p>
+												{/if}
+												{#if contact.department}
+													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+														<Briefcase class="h-3.5 w-3.5" />
+														<span>{contact.department}</span>
+													</div>
+												{/if}
+												{#if !contact.title && !contact.department}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</div>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('email')}
+										<Table.Cell class="py-2 px-4">
 											{#if contact.email}
 												<div class="flex items-center gap-1.5 text-sm">
 													<Mail class="text-muted-foreground h-3.5 w-3.5" />
-													<span class="max-w-[150px] truncate">{contact.email}</span>
+													<span class="max-w-[200px] truncate">{contact.email}</span>
 												</div>
+											{:else}
+												<span class="text-muted-foreground">-</span>
 											{/if}
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('phone')}
+										<Table.Cell class="py-2 px-4">
 											{#if contact.phone}
 												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
 													<Phone class="h-3.5 w-3.5" />
 													<span>{formatPhone(contact.phone)}</span>
 												</div>
-											{/if}
-											{#if !contact.email && !contact.phone}
+											{:else}
 												<span class="text-muted-foreground">-</span>
 											{/if}
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										{#if contact.organization}
-											<div class="flex items-center gap-1.5 text-sm">
-												<Building2 class="text-muted-foreground h-4 w-4" />
-												<span class="truncate">{contact.organization}</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('company')}
+										<Table.Cell class="py-2 px-4">
+											{#if contact.organization}
+												<div class="flex items-center gap-1.5 text-sm">
+													<Building2 class="text-muted-foreground h-4 w-4" />
+													<span class="truncate">{contact.organization}</span>
+												</div>
+											{:else}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('owner')}
+										<Table.Cell class="py-2 px-4">
+											<span class="text-foreground text-sm">
+												{contact.owner?.name || contact.owner?.email || '-'}
+											</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('created')}
+										<Table.Cell class="py-2 px-4">
+											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+												<Calendar class="h-3.5 w-3.5" />
+												<span>{formatRelativeDate(contact.createdAt)}</span>
 											</div>
-										{:else}
-											<span class="text-muted-foreground">-</span>
-										{/if}
-									</Table.Cell>
-									<Table.Cell>
-										<span class="text-foreground text-sm">
-											{contact.owner?.name || contact.owner?.email || '-'}
-										</span>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-											<Calendar class="h-3.5 w-3.5" />
-											<span>{formatRelativeDate(contact.createdAt)}</span>
-										</div>
-									</Table.Cell>
+										</Table.Cell>
+									{/if}
 								</Table.Row>
 							{/each}
 						</Table.Body>

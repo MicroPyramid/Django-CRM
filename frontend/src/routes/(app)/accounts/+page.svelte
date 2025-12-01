@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -25,6 +25,78 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
+	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'accounts-column-config';
+
+	/**
+	 * @typedef {Object} ColumnConfig
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {boolean} visible
+	 * @property {boolean} [canHide]
+	 */
+
+	/** @type {ColumnConfig[]} */
+	const defaultColumns = [
+		{ key: 'account', label: 'Account', visible: true, canHide: false },
+		{ key: 'industry', label: 'Industry', visible: true, canHide: true },
+		{ key: 'contact', label: 'Contact Info', visible: true, canHide: true },
+		{ key: 'revenue', label: 'Revenue', visible: true, canHide: true },
+		{ key: 'relations', label: 'Relations', visible: true, canHide: true },
+		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	];
+
+	/**
+	 * Load column config from localStorage
+	 * @returns {typeof defaultColumns}
+	 */
+	function loadColumnConfig() {
+		if (typeof window === 'undefined') return defaultColumns;
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				return defaultColumns.map((def) => {
+					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
+					return savedCol ? { ...def, visible: savedCol.visible } : def;
+				});
+			}
+		} catch (e) {
+			console.error('Failed to load column config:', e);
+		}
+		return defaultColumns;
+	}
+
+	let columnConfig = $state(defaultColumns);
+
+	onMount(() => {
+		columnConfig = loadColumnConfig();
+	});
+
+	// Save to localStorage when column config changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		}
+	});
+
+	/**
+	 * Check if a column is visible
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+	}
+
+	/**
+	 * Handle column config change
+	 * @param {ColumnConfig[]} newConfig
+	 */
+	function handleColumnChange(newConfig) {
+		columnConfig = newConfig;
+	}
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -311,6 +383,7 @@
 
 <PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
 	{#snippet actions()}
+		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
 		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 			{#snippet children()}
 				<div class="space-y-3">
@@ -415,7 +488,7 @@
 	</div>
 
 	<!-- Accounts Table -->
-	<Card.Root>
+	<Card.Root class="border-0 shadow-sm">
 		<Card.Content class="p-0">
 			{#if filteredAccounts.length === 0}
 				<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -434,114 +507,138 @@
 				<div class="hidden md:block">
 					<Table.Root>
 						<Table.Header>
-							<Table.Row>
-								<Table.Head class="w-[250px]">Account</Table.Head>
-								<Table.Head>Industry</Table.Head>
-								<Table.Head>Contact Info</Table.Head>
-								<Table.Head>Revenue</Table.Head>
-								<Table.Head>Relations</Table.Head>
-								<Table.Head
-									class="hover:bg-muted/50 cursor-pointer"
-									onclick={() => list.toggleSort('createdAt')}
-								>
-									<div class="flex items-center gap-1">
-										Created
-										{#if list.sortColumn === 'createdAt'}
-											{#if list.sortDirection === 'asc'}
-												<ChevronUp class="h-4 w-4" />
-											{:else}
-												<ChevronDown class="h-4 w-4" />
+							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+								{#if isColumnVisible('account')}
+									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Account</Table.Head>
+								{/if}
+								{#if isColumnVisible('industry')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Industry</Table.Head>
+								{/if}
+								{#if isColumnVisible('contact')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Contact Info</Table.Head>
+								{/if}
+								{#if isColumnVisible('revenue')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Revenue</Table.Head>
+								{/if}
+								{#if isColumnVisible('relations')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Relations</Table.Head>
+								{/if}
+								{#if isColumnVisible('created')}
+									<Table.Head
+										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+										onclick={() => list.toggleSort('createdAt')}
+									>
+										<div class="flex items-center gap-1">
+											Created
+											{#if list.sortColumn === 'createdAt'}
+												{#if list.sortDirection === 'asc'}
+													<ChevronUp class="h-3.5 w-3.5" />
+												{:else}
+													<ChevronDown class="h-3.5 w-3.5" />
+												{/if}
 											{/if}
-										{/if}
-									</div>
-								</Table.Head>
+										</div>
+									</Table.Head>
+								{/if}
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
 							{#each filteredAccounts as account (account.id)}
 								<Table.Row
-									class="hover:bg-muted/50 cursor-pointer {!account.isActive ? 'opacity-60' : ''}"
+									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out {!account.isActive ? 'opacity-60' : ''}"
 									onclick={() => openAccount(account)}
 								>
-									<Table.Cell>
-										<div class="flex items-center gap-3">
-											<div
-												class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
-											>
-												{getAccountInitials(account)}
-											</div>
-											<div class="min-w-0">
-												<p class="text-foreground truncate font-medium">{account.name}</p>
-												<div class="mt-0.5 flex items-center gap-1.5">
-													{#if account.isActive !== false}
-														<Badge
-															variant="default"
-															class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600 hover:bg-green-500/20"
-														>
-															Active
-														</Badge>
-													{:else}
-														<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
-													{/if}
+									{#if isColumnVisible('account')}
+										<Table.Cell class="py-2 px-4">
+											<div class="flex items-center gap-3">
+												<div
+													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+												>
+													{getAccountInitials(account)}
+												</div>
+												<div class="min-w-0">
+													<p class="text-foreground truncate font-medium">{account.name}</p>
+													<div class="mt-0.5 flex items-center gap-1.5">
+														{#if account.isActive !== false}
+															<Badge
+																variant="default"
+																class="bg-green-500/10 px-1.5 py-0 text-xs text-green-600 hover:bg-green-500/20"
+															>
+																Active
+															</Badge>
+														{:else}
+															<Badge variant="secondary" class="px-1.5 py-0 text-xs">Closed</Badge>
+														{/if}
+													</div>
 												</div>
 											</div>
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										<span class="text-foreground text-sm">{account.industry || '-'}</span>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="space-y-1">
-											{#if account.website}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Globe class="text-muted-foreground h-3.5 w-3.5" />
-													<span class="max-w-[140px] truncate">
-														{account.website.replace(/^https?:\/\//, '')}
-													</span>
-												</div>
-											{/if}
-											{#if account.phone}
-												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-													<Phone class="h-3.5 w-3.5" />
-													<span>{account.phone}</span>
-												</div>
-											{/if}
-											{#if account.city || account.state}
-												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-													<MapPin class="h-3.5 w-3.5" />
-													<span class="truncate">
-														{[account.city, account.state].filter(Boolean).join(', ')}
-													</span>
-												</div>
-											{/if}
-											{#if !account.website && !account.phone && !account.city}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										<span class="text-foreground text-sm font-medium">
-											{formatCurrency(account.annualRevenue, 'USD', true)}
-										</span>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="flex items-center gap-3">
-											<div class="flex items-center gap-1">
-												<Users class="text-muted-foreground h-4 w-4" />
-												<span class="text-sm font-medium">{account.contactCount || 0}</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('industry')}
+										<Table.Cell class="py-2 px-4">
+											<span class="text-foreground text-sm">{account.industry || '-'}</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('contact')}
+										<Table.Cell class="py-2 px-4">
+											<div class="space-y-1">
+												{#if account.website}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Globe class="text-muted-foreground h-3.5 w-3.5" />
+														<span class="max-w-[140px] truncate">
+															{account.website.replace(/^https?:\/\//, '')}
+														</span>
+													</div>
+												{/if}
+												{#if account.phone}
+													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+														<Phone class="h-3.5 w-3.5" />
+														<span>{account.phone}</span>
+													</div>
+												{/if}
+												{#if account.city || account.state}
+													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+														<MapPin class="h-3.5 w-3.5" />
+														<span class="truncate">
+															{[account.city, account.state].filter(Boolean).join(', ')}
+														</span>
+													</div>
+												{/if}
+												{#if !account.website && !account.phone && !account.city}
+													<span class="text-muted-foreground">-</span>
+												{/if}
 											</div>
-											<div class="flex items-center gap-1">
-												<Target class="text-muted-foreground h-4 w-4" />
-												<span class="text-sm font-medium">{account.opportunityCount || 0}</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('revenue')}
+										<Table.Cell class="py-2 px-4">
+											<span class="text-foreground text-sm font-medium">
+												{formatCurrency(account.annualRevenue, 'USD', true)}
+											</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('relations')}
+										<Table.Cell class="py-2 px-4">
+											<div class="flex items-center gap-3">
+												<div class="flex items-center gap-1">
+													<Users class="text-muted-foreground h-4 w-4" />
+													<span class="text-sm font-medium">{account.contactCount || 0}</span>
+												</div>
+												<div class="flex items-center gap-1">
+													<Target class="text-muted-foreground h-4 w-4" />
+													<span class="text-sm font-medium">{account.opportunityCount || 0}</span>
+												</div>
 											</div>
-										</div>
-									</Table.Cell>
-									<Table.Cell>
-										<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-											<Calendar class="h-3.5 w-3.5" />
-											<span>{formatRelativeDate(account.createdAt)}</span>
-										</div>
-									</Table.Cell>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('created')}
+										<Table.Cell class="py-2 px-4">
+											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+												<Calendar class="h-3.5 w-3.5" />
+												<span>{formatRelativeDate(account.createdAt)}</span>
+											</div>
+										</Table.Cell>
+									{/if}
 								</Table.Row>
 							{/each}
 						</Table.Body>

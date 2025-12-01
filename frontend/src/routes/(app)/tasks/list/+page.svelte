@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -18,7 +18,8 @@
 		Circle,
 		CheckCircle2,
 		AlertCircle,
-		Clock
+		Clock,
+		RotateCcw
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { TaskDrawer } from '$lib/components/tasks';
@@ -31,14 +32,81 @@
 	import { getPriorityClass, getTaskStatusClass, formatStatusDisplay } from '$lib/utils/ui-helpers.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
 	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'tasks-column-config';
+
+	/**
+	 * @typedef {Object} ColumnConfig
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {boolean} visible
+	 * @property {boolean} [canHide]
+	 */
+
+	/** @type {ColumnConfig[]} */
+	const defaultColumns = [
+		{ key: 'task', label: 'Task', visible: true, canHide: false },
+		{ key: 'account', label: 'Account', visible: true, canHide: true },
+		{ key: 'assignedTo', label: 'Assigned To', visible: true, canHide: true },
+		{ key: 'priority', label: 'Priority', visible: true, canHide: true },
+		{ key: 'status', label: 'Status', visible: true, canHide: true },
+		{ key: 'dueDate', label: 'Due Date', visible: true, canHide: true }
+	];
+
+	/**
+	 * Load column config from localStorage
+	 * @returns {typeof defaultColumns}
+	 */
+	function loadColumnConfig() {
+		if (typeof window === 'undefined') return defaultColumns;
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				return defaultColumns.map((def) => {
+					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
+					return savedCol ? { ...def, visible: savedCol.visible } : def;
+				});
+			}
+		} catch (e) {
+			console.error('Failed to load column config:', e);
+		}
+		return defaultColumns;
+	}
+
+	let columnConfig = $state(defaultColumns);
+
+	onMount(() => {
+		columnConfig = loadColumnConfig();
+	});
+
+	// Save to localStorage when column config changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		}
+	});
+
+	/**
+	 * Check if a column is visible
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+	}
+
+	/**
+	 * Handle column config change
+	 * @param {ColumnConfig[]} newConfig
+	 */
+	function handleColumnChange(newConfig) {
+		columnConfig = newConfig;
+	}
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
-
-	// View mode state (list or calendar)
-	/** @type {'list' | 'calendar'} */
-	let viewMode = $state('list');
-	let showCompleted = $state(false);
 
 	// Computed values
 	const tasks = $derived(data.tasks || []);
@@ -73,69 +141,19 @@
 	const filteredTasks = $derived(list.filterAndSort(tasks));
 	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
-	// Group tasks by date category
-	const groupedTasks = $derived.by(() => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const todayStr = today.toISOString().split('T')[0];
+	// View mode state (list or calendar)
+	/** @type {'list' | 'calendar'} */
+	let viewMode = $state('list');
 
-		/** @type {{ overdue: any[], today: any[], upcoming: any[], noDueDate: any[], completed: any[] }} */
-		const groups = {
-			overdue: [],
-			today: [],
-			upcoming: [],
-			noDueDate: [],
-			completed: []
-		};
-
-		for (const task of filteredTasks) {
-			if (task.status === 'Completed') {
-				groups.completed.push(task);
-				continue;
-			}
-
-			if (!task.dueDate) {
-				groups.noDueDate.push(task);
-				continue;
-			}
-
-			const dueDate = new Date(task.dueDate);
-			dueDate.setHours(0, 0, 0, 0);
-			const dueDateStr = dueDate.toISOString().split('T')[0];
-
-			if (dueDateStr < todayStr) {
-				groups.overdue.push(task);
-			} else if (dueDateStr === todayStr) {
-				groups.today.push(task);
-			} else {
-				groups.upcoming.push(task);
-			}
-		}
-
-		// Sort each group by due date
-		const sortByDueDate = (/** @type {any} */ a, /** @type {any} */ b) => {
-			if (!a.dueDate && !b.dueDate) return 0;
-			if (!a.dueDate) return 1;
-			if (!b.dueDate) return -1;
-			return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-		};
-
-		groups.overdue.sort(sortByDueDate);
-		groups.today.sort(sortByDueDate);
-		groups.upcoming.sort(sortByDueDate);
-		groups.completed.sort(
-			(a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-		);
-
-		return groups;
-	});
-
-	const incompleteTasks = $derived(
-		groupedTasks.overdue.length +
-			groupedTasks.today.length +
-			groupedTasks.upcoming.length +
-			groupedTasks.noDueDate.length
-	);
+	/**
+	 * Get status icon for task
+	 * @param {string} status
+	 */
+	function getStatusIcon(status) {
+		if (status === 'Completed') return CheckCircle2;
+		if (status === 'In Progress') return RotateCcw;
+		return AlertCircle;
+	}
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -162,44 +180,6 @@
 		contacts: /** @type {string[]} */ ([]),
 		teams: /** @type {string[]} */ ([])
 	});
-
-	/**
-	 * Format date for display
-	 * @param {string | null | undefined} dateString
-	 */
-	function formatDueDate(dateString) {
-		if (!dateString) return '';
-		const date = new Date(dateString);
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-
-		const dateOnly = new Date(dateString);
-		dateOnly.setHours(0, 0, 0, 0);
-
-		if (dateOnly.getTime() === today.getTime()) return 'Today';
-		if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
-
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric'
-		});
-	}
-
-	/**
-	 * Check if task is overdue
-	 * @param {string | undefined} dueDate
-	 * @param {string} status
-	 */
-	function isOverdue(dueDate, status) {
-		if (!dueDate || status === 'Completed') return false;
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const due = new Date(dueDate);
-		due.setHours(0, 0, 0, 0);
-		return due < today;
-	}
 
 	/**
 	 * Handle save from drawer
@@ -411,7 +391,7 @@
 	<title>Tasks - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Tasks" subtitle="{incompleteTasks} incomplete task{incompleteTasks !== 1 ? 's' : ''}">
+<PageHeader title="Tasks" subtitle="{filteredTasks.length} of {tasks.length} tasks">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
 			<!-- View Toggle -->
@@ -435,6 +415,9 @@
 					Calendar
 				</Button>
 			</div>
+			{#if viewMode === 'list'}
+				<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
+			{/if}
 			<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 				{#snippet children()}
 					<div class="space-y-3">
@@ -475,8 +458,8 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	{#if viewMode === 'list'}
-		<!-- Task Table View -->
-		<Card.Root>
+		<!-- Tasks Table -->
+		<Card.Root class="border-0 shadow-sm">
 			<Card.Content class="p-0">
 				{#if filteredTasks.length === 0}
 					<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -491,198 +474,226 @@
 						</Button>
 					</div>
 				{:else}
-					<!-- Desktop Table -->
-					<div class="hidden md:block">
-						<!-- Overdue Section -->
-						{#if groupedTasks.overdue.length > 0}
-							<div class="border-b border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/10">
-								<div class="flex items-center gap-2 px-4 py-2">
-									<AlertCircle class="h-4 w-4 text-red-500" />
-									<span class="text-sm font-semibold text-red-600 dark:text-red-400">Overdue</span>
-									<Badge variant="destructive" class="ml-1">{groupedTasks.overdue.length}</Badge>
-								</div>
-							</div>
-							<Table.Root>
-								<Table.Body>
-									{#each groupedTasks.overdue as task (task.id)}
-										{@render taskTableRow(task, true)}
-									{/each}
-								</Table.Body>
-							</Table.Root>
-						{/if}
-
-						<!-- Today Section -->
-						{#if groupedTasks.today.length > 0}
-							<div class="border-b border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/10">
-								<div class="flex items-center gap-2 px-4 py-2">
-									<Clock class="h-4 w-4 text-blue-500" />
-									<span class="text-sm font-semibold text-blue-600 dark:text-blue-400">Today</span>
-									<Badge class="ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{groupedTasks.today.length}</Badge>
-								</div>
-							</div>
-							<Table.Root>
-								<Table.Body>
-									{#each groupedTasks.today as task (task.id)}
-										{@render taskTableRow(task, false)}
-									{/each}
-								</Table.Body>
-							</Table.Root>
-						{/if}
-
-						<!-- Upcoming Section -->
-						{#if groupedTasks.upcoming.length > 0}
-							<div class="border-b bg-muted/30">
-								<div class="flex items-center gap-2 px-4 py-2">
-									<Calendar class="text-muted-foreground h-4 w-4" />
-									<span class="text-muted-foreground text-sm font-semibold">Upcoming</span>
-									<Badge variant="secondary" class="ml-1">{groupedTasks.upcoming.length}</Badge>
-								</div>
-							</div>
-							<Table.Root>
-								<Table.Body>
-									{#each groupedTasks.upcoming as task (task.id)}
-										{@render taskTableRow(task, false)}
-									{/each}
-								</Table.Body>
-							</Table.Root>
-						{/if}
-
-						<!-- No Due Date Section -->
-						{#if groupedTasks.noDueDate.length > 0}
-							<div class="border-b bg-muted/30">
-								<div class="flex items-center gap-2 px-4 py-2">
-									<Circle class="text-muted-foreground h-4 w-4" />
-									<span class="text-muted-foreground text-sm font-semibold">No Due Date</span>
-									<Badge variant="secondary" class="ml-1">{groupedTasks.noDueDate.length}</Badge>
-								</div>
-							</div>
-							<Table.Root>
-								<Table.Body>
-									{#each groupedTasks.noDueDate as task (task.id)}
-										{@render taskTableRow(task, false)}
-									{/each}
-								</Table.Body>
-							</Table.Root>
-						{/if}
-
-						<!-- Completed Section (Collapsible) -->
-						{#if groupedTasks.completed.length > 0}
-							<div class="border-b bg-green-50/50 dark:bg-green-900/10">
-								<button
-									type="button"
-									class="flex w-full items-center gap-2 px-4 py-2"
-									onclick={() => (showCompleted = !showCompleted)}
+				<!-- Desktop Table -->
+				<div class="hidden md:block">
+					<Table.Root>
+						<Table.Header>
+							<Table.Row class="border-b border-border/40 hover:bg-transparent">
+								{#if isColumnVisible('task')}
+									<Table.Head class="w-[300px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Task</Table.Head>
+								{/if}
+								{#if isColumnVisible('account')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Account</Table.Head>
+								{/if}
+								{#if isColumnVisible('assignedTo')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Assigned To</Table.Head>
+								{/if}
+								{#if isColumnVisible('priority')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Priority</Table.Head>
+								{/if}
+								{#if isColumnVisible('status')}
+									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Status</Table.Head>
+								{/if}
+								{#if isColumnVisible('dueDate')}
+									<Table.Head
+										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+										onclick={() => list.toggleSort('dueDate')}
+									>
+										<div class="flex items-center gap-1">
+											Due Date
+											{#if list.sortColumn === 'dueDate'}
+												{#if list.sortDirection === 'asc'}
+													<ChevronUp class="h-3.5 w-3.5" />
+												{:else}
+													<ChevronDown class="h-3.5 w-3.5" />
+												{/if}
+											{/if}
+										</div>
+									</Table.Head>
+								{/if}
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each filteredTasks as task (task.id)}
+								{@const StatusIcon = getStatusIcon(task.status)}
+								{@const isOverdue = task.dueDate && task.status !== 'Completed' && new Date(task.dueDate) < new Date()}
+								<Table.Row
+									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
+									onclick={() => drawer.openDetail(task)}
 								>
-									<CheckCircle2 class="h-4 w-4 text-green-500" />
-									<span class="text-sm font-semibold text-green-600 dark:text-green-400">Completed</span>
-									<Badge class="ml-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{groupedTasks.completed.length}</Badge>
-									<div class="ml-auto">
-										{#if showCompleted}
-											<ChevronUp class="text-muted-foreground h-4 w-4" />
-										{:else}
-											<ChevronDown class="text-muted-foreground h-4 w-4" />
+									{#if isColumnVisible('task')}
+										<Table.Cell class="py-2 px-4">
+											<div class="flex items-center gap-3">
+												<div
+													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600"
+												>
+													<CheckSquare class="h-4 w-4 text-white" />
+												</div>
+												<div class="min-w-0">
+													<p class={cn('text-foreground truncate font-medium', task.status === 'Completed' && 'line-through text-muted-foreground')}>
+														{task.subject}
+													</p>
+													{#if task.description}
+														<p class="text-muted-foreground line-clamp-1 text-sm">
+															{task.description}
+														</p>
+													{/if}
+												</div>
+											</div>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('account')}
+										<Table.Cell class="py-2 px-4">
+											{#if task.account}
+												<div class="flex items-center gap-1.5 text-sm">
+													<Building2 class="text-muted-foreground h-4 w-4" />
+													<span class="truncate">{task.account.name}</span>
+												</div>
+											{:else}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('assignedTo')}
+										<Table.Cell class="py-2 px-4">
+											{#if task.assignedTo && task.assignedTo.length > 0}
+												<div class="flex items-center gap-1.5 text-sm">
+													<User class="text-muted-foreground h-4 w-4" />
+													<span class="truncate">
+														{task.assignedTo.length === 1
+															? task.assignedTo[0].name
+															: `${task.assignedTo.length} users`}
+													</span>
+												</div>
+											{:else}
+												<span class="text-muted-foreground">Unassigned</span>
+											{/if}
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('priority')}
+										<Table.Cell class="py-2 px-4">
+											{#if task.priority}
+												<span
+													class={cn(
+														'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+														getPriorityClass(task.priority)
+													)}
+												>
+													<Flag class="h-3 w-3" />
+													{task.priority}
+												</span>
+											{:else}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('status')}
+										<Table.Cell class="py-2 px-4">
+											<span
+												class={cn(
+													'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+													getTaskStatusClass(task.status)
+												)}
+											>
+												<StatusIcon class="h-3 w-3" />
+												{formatStatusDisplay(task.status)}
+											</span>
+										</Table.Cell>
+									{/if}
+									{#if isColumnVisible('dueDate')}
+										<Table.Cell class="py-2 px-4">
+											{#if task.dueDate}
+												<div class={cn(
+													'text-muted-foreground flex items-center gap-1.5 text-sm',
+													isOverdue && 'font-medium text-red-600 dark:text-red-400'
+												)}>
+													<Calendar class="h-3.5 w-3.5" />
+													<span>{formatRelativeDate(task.dueDate)}</span>
+												</div>
+											{:else}
+												<span class="text-muted-foreground">-</span>
+											{/if}
+										</Table.Cell>
+									{/if}
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
+
+				<!-- Mobile Card View -->
+				<div class="divide-y md:hidden">
+					{#each filteredTasks as task (task.id)}
+						{@const StatusIcon = getStatusIcon(task.status)}
+						{@const isOverdue = task.dueDate && task.status !== 'Completed' && new Date(task.dueDate) < new Date()}
+						<button
+							type="button"
+							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
+							onclick={() => drawer.openDetail(task)}
+						>
+							<div
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600"
+							>
+								<CheckSquare class="h-5 w-5 text-white" />
+							</div>
+							<div class="min-w-0 flex-1">
+								<div class="flex items-start justify-between gap-2">
+									<div>
+										<p class={cn('text-foreground font-medium', task.status === 'Completed' && 'line-through text-muted-foreground')}>
+											{task.subject}
+										</p>
+										{#if task.account}
+											<p class="text-muted-foreground text-sm">{task.account.name}</p>
 										{/if}
 									</div>
-								</button>
-							</div>
-							{#if showCompleted}
-								<Table.Root>
-									<Table.Body>
-										{#each groupedTasks.completed as task (task.id)}
-											{@render taskTableRow(task, false, true)}
-										{/each}
-									</Table.Body>
-								</Table.Root>
-							{/if}
-						{/if}
-					</div>
-
-					<!-- Mobile Card View -->
-					<div class="divide-y md:hidden">
-						<!-- Overdue Section -->
-						{#if groupedTasks.overdue.length > 0}
-							<div class="border-b border-red-200 bg-red-50/50 px-4 py-2 dark:border-red-900/30 dark:bg-red-900/10">
-								<div class="flex items-center gap-2">
-									<AlertCircle class="h-4 w-4 text-red-500" />
-									<span class="text-sm font-semibold text-red-600 dark:text-red-400">Overdue</span>
-									<Badge variant="destructive" class="ml-1">{groupedTasks.overdue.length}</Badge>
+									<span
+										class={cn(
+											'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
+											getTaskStatusClass(task.status)
+										)}
+									>
+										{formatStatusDisplay(task.status)}
+									</span>
 								</div>
-							</div>
-							{#each groupedTasks.overdue as task (task.id)}
-								{@render taskMobileCard(task, true)}
-							{/each}
-						{/if}
-
-						<!-- Today Section -->
-						{#if groupedTasks.today.length > 0}
-							<div class="border-b border-blue-200 bg-blue-50/50 px-4 py-2 dark:border-blue-900/30 dark:bg-blue-900/10">
-								<div class="flex items-center gap-2">
-									<Clock class="h-4 w-4 text-blue-500" />
-									<span class="text-sm font-semibold text-blue-600 dark:text-blue-400">Today</span>
-									<Badge class="ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{groupedTasks.today.length}</Badge>
-								</div>
-							</div>
-							{#each groupedTasks.today as task (task.id)}
-								{@render taskMobileCard(task, false)}
-							{/each}
-						{/if}
-
-						<!-- Upcoming Section -->
-						{#if groupedTasks.upcoming.length > 0}
-							<div class="bg-muted/30 px-4 py-2">
-								<div class="flex items-center gap-2">
-									<Calendar class="text-muted-foreground h-4 w-4" />
-									<span class="text-muted-foreground text-sm font-semibold">Upcoming</span>
-									<Badge variant="secondary" class="ml-1">{groupedTasks.upcoming.length}</Badge>
-								</div>
-							</div>
-							{#each groupedTasks.upcoming as task (task.id)}
-								{@render taskMobileCard(task, false)}
-							{/each}
-						{/if}
-
-						<!-- No Due Date Section -->
-						{#if groupedTasks.noDueDate.length > 0}
-							<div class="bg-muted/30 px-4 py-2">
-								<div class="flex items-center gap-2">
-									<Circle class="text-muted-foreground h-4 w-4" />
-									<span class="text-muted-foreground text-sm font-semibold">No Due Date</span>
-									<Badge variant="secondary" class="ml-1">{groupedTasks.noDueDate.length}</Badge>
-								</div>
-							</div>
-							{#each groupedTasks.noDueDate as task (task.id)}
-								{@render taskMobileCard(task, false)}
-							{/each}
-						{/if}
-
-						<!-- Completed Section -->
-						{#if groupedTasks.completed.length > 0}
-							<button
-								type="button"
-								class="flex w-full items-center gap-2 bg-green-50/50 px-4 py-2 dark:bg-green-900/10"
-								onclick={() => (showCompleted = !showCompleted)}
-							>
-								<CheckCircle2 class="h-4 w-4 text-green-500" />
-								<span class="text-sm font-semibold text-green-600 dark:text-green-400">Completed</span>
-								<Badge class="ml-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{groupedTasks.completed.length}</Badge>
-								<div class="ml-auto">
-									{#if showCompleted}
-										<ChevronUp class="text-muted-foreground h-4 w-4" />
-									{:else}
-										<ChevronDown class="text-muted-foreground h-4 w-4" />
+								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
+									{#if task.priority}
+										<span
+											class={cn(
+												'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+												getPriorityClass(task.priority)
+											)}
+										>
+											<Flag class="h-3 w-3" />
+											{task.priority}
+										</span>
+									{/if}
+									{#if task.dueDate}
+										<div class={cn(
+											'flex items-center gap-1',
+											isOverdue && 'font-medium text-red-600 dark:text-red-400'
+										)}>
+											<Calendar class="h-3.5 w-3.5" />
+											<span>{formatRelativeDate(task.dueDate)}</span>
+										</div>
+									{/if}
+									{#if task.assignedTo && task.assignedTo.length > 0}
+										<div class="flex items-center gap-1">
+											<User class="h-3.5 w-3.5" />
+											<span>
+												{task.assignedTo.length === 1
+													? task.assignedTo[0].name
+													: `${task.assignedTo.length} users`}
+											</span>
+										</div>
 									{/if}
 								</div>
-							</button>
-							{#if showCompleted}
-								{#each groupedTasks.completed as task (task.id)}
-									{@render taskMobileCard(task, false, true)}
-								{/each}
-							{/if}
-						{/if}
-					</div>
-				{/if}
-			</Card.Content>
-		</Card.Root>
+							</div>
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 	{:else}
 		<!-- Calendar View -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -876,202 +887,6 @@
 		</div>
 	{/if}
 </div>
-
-<!-- Task Table Row Snippet -->
-{#snippet taskTableRow(task, isOverdueTask = false, isCompleted = false)}
-	<Table.Row
-		class="hover:bg-muted/50 cursor-pointer"
-		onclick={() => drawer.openDetail(task)}
-	>
-		<Table.Cell class="w-12 pr-0" onclick={(e) => e.stopPropagation()}>
-			<button
-				type="button"
-				class={cn(
-					'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-					isCompleted
-						? 'border-green-500 bg-green-500 text-white'
-						: 'hover:border-primary border-gray-300 dark:border-gray-600'
-				)}
-				onclick={(e) => {
-					e.stopPropagation();
-					if (!isCompleted) {
-						handleComplete(task.id, e);
-					}
-				}}
-				aria-label={isCompleted ? 'Task completed' : 'Mark as complete'}
-			>
-				{#if isCompleted}
-					<CheckCircle2 class="h-3.5 w-3.5" />
-				{/if}
-			</button>
-		</Table.Cell>
-		<Table.Cell class="max-w-[300px]">
-			<div class="flex items-center gap-3">
-				<div
-					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600"
-				>
-					<CheckSquare class="h-4 w-4 text-white" />
-				</div>
-				<div class="min-w-0">
-					<p class={cn('text-foreground truncate font-medium', isCompleted && 'line-through text-muted-foreground')}>
-						{task.subject}
-					</p>
-					{#if task.description}
-						<p class="text-muted-foreground line-clamp-1 text-sm">
-							{task.description}
-						</p>
-					{/if}
-				</div>
-			</div>
-		</Table.Cell>
-		<Table.Cell>
-			{#if task.account}
-				<div class="flex items-center gap-1.5 text-sm">
-					<Building2 class="text-muted-foreground h-4 w-4" />
-					<span class="truncate">{task.account.name}</span>
-				</div>
-			{:else}
-				<span class="text-muted-foreground">-</span>
-			{/if}
-		</Table.Cell>
-		<Table.Cell>
-			{#if task.assignedTo && task.assignedTo.length > 0}
-				<div class="flex items-center gap-1.5 text-sm">
-					<User class="text-muted-foreground h-4 w-4" />
-					<span class="truncate">
-						{task.assignedTo.length === 1
-							? task.assignedTo[0].name
-							: `${task.assignedTo.length} users`}
-					</span>
-				</div>
-			{:else}
-				<span class="text-muted-foreground">Unassigned</span>
-			{/if}
-		</Table.Cell>
-		<Table.Cell>
-			{#if task.priority}
-				<span
-					class={cn(
-						'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-						getPriorityClass(task.priority)
-					)}
-				>
-					<Flag class="h-3 w-3" />
-					{task.priority}
-				</span>
-			{:else}
-				<span class="text-muted-foreground">-</span>
-			{/if}
-		</Table.Cell>
-		<Table.Cell>
-			<span
-				class={cn(
-					'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-					getTaskStatusClass(task.status)
-				)}
-			>
-				{formatStatusDisplay(task.status)}
-			</span>
-		</Table.Cell>
-		<Table.Cell>
-			{#if task.dueDate}
-				<div class={cn(
-					'flex items-center gap-1.5 text-sm',
-					isOverdueTask && !isCompleted && 'font-medium text-red-600 dark:text-red-400'
-				)}>
-					<Calendar class="h-3.5 w-3.5" />
-					<span>{formatDueDate(task.dueDate)}</span>
-				</div>
-			{:else}
-				<span class="text-muted-foreground">-</span>
-			{/if}
-		</Table.Cell>
-	</Table.Row>
-{/snippet}
-
-<!-- Task Mobile Card Snippet -->
-{#snippet taskMobileCard(task, isOverdueTask = false, isCompleted = false)}
-	<div
-		class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left cursor-pointer"
-		role="button"
-		tabindex="0"
-		onclick={() => drawer.openDetail(task)}
-		onkeydown={(e) => e.key === 'Enter' && drawer.openDetail(task)}
-	>
-		<button
-			type="button"
-			class={cn(
-				'mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-				isCompleted
-					? 'border-green-500 bg-green-500 text-white'
-					: 'hover:border-primary border-gray-300 dark:border-gray-600'
-			)}
-			onclick={(e) => {
-				e.stopPropagation();
-				if (!isCompleted) {
-					handleComplete(task.id, e);
-				}
-			}}
-			aria-label={isCompleted ? 'Task completed' : 'Mark as complete'}
-		>
-			{#if isCompleted}
-				<CheckCircle2 class="h-3.5 w-3.5" />
-			{/if}
-		</button>
-		<div class="min-w-0 flex-1">
-			<div class="flex items-start justify-between gap-2">
-				<div>
-					<p class={cn('text-foreground font-medium', isCompleted && 'line-through text-muted-foreground')}>
-						{task.subject}
-					</p>
-					{#if task.account}
-						<p class="text-muted-foreground text-sm">{task.account.name}</p>
-					{/if}
-				</div>
-				<span
-					class={cn(
-						'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
-						getTaskStatusClass(task.status)
-					)}
-				>
-					{formatStatusDisplay(task.status)}
-				</span>
-			</div>
-			<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
-				{#if task.priority}
-					<span
-						class={cn(
-							'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-							getPriorityClass(task.priority)
-						)}
-					>
-						<Flag class="h-3 w-3" />
-						{task.priority}
-					</span>
-				{/if}
-				{#if task.dueDate}
-					<div class={cn(
-						'flex items-center gap-1',
-						isOverdueTask && !isCompleted && 'font-medium text-red-600 dark:text-red-400'
-					)}>
-						<Calendar class="h-3.5 w-3.5" />
-						<span>{formatDueDate(task.dueDate)}</span>
-					</div>
-				{/if}
-				{#if task.assignedTo && task.assignedTo.length > 0}
-					<div class="flex items-center gap-1">
-						<User class="h-3.5 w-3.5" />
-						<span>
-							{task.assignedTo.length === 1
-								? task.assignedTo[0].name
-								: `${task.assignedTo.length} users`}
-						</span>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-{/snippet}
 
 <!-- Task Drawer (unified view/edit) -->
 <TaskDrawer

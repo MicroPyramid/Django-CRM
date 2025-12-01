@@ -1,5 +1,6 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -26,6 +27,80 @@
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { OPPORTUNITY_STAGES as stages, OPPORTUNITY_TYPES } from '$lib/constants/filters.js';
+	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'opportunities-column-config';
+
+	/**
+	 * @typedef {Object} ColumnConfig
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {boolean} visible
+	 * @property {boolean} [canHide]
+	 */
+
+	/** @type {ColumnConfig[]} */
+	const defaultColumns = [
+		{ key: 'opportunity', label: 'Opportunity', visible: true, canHide: false },
+		{ key: 'account', label: 'Account', visible: true, canHide: true },
+		{ key: 'type', label: 'Type', visible: true, canHide: true },
+		{ key: 'stage', label: 'Stage', visible: true, canHide: true },
+		{ key: 'amount', label: 'Amount', visible: true, canHide: true },
+		{ key: 'probability', label: 'Probability', visible: true, canHide: true },
+		{ key: 'closeDate', label: 'Close Date', visible: true, canHide: true },
+		{ key: 'owner', label: 'Owner', visible: true, canHide: true }
+	];
+
+	/**
+	 * Load column config from localStorage
+	 * @returns {typeof defaultColumns}
+	 */
+	function loadColumnConfig() {
+		if (typeof window === 'undefined') return defaultColumns;
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				return defaultColumns.map((def) => {
+					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
+					return savedCol ? { ...def, visible: savedCol.visible } : def;
+				});
+			}
+		} catch (e) {
+			console.error('Failed to load column config:', e);
+		}
+		return defaultColumns;
+	}
+
+	let columnConfig = $state(defaultColumns);
+
+	onMount(() => {
+		columnConfig = loadColumnConfig();
+	});
+
+	// Save to localStorage when column config changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		}
+	});
+
+	/**
+	 * Check if a column is visible
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+	}
+
+	/**
+	 * Handle column config change
+	 * @param {ColumnConfig[]} newConfig
+	 */
+	function handleColumnChange(newConfig) {
+		columnConfig = newConfig;
+	}
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -373,6 +448,10 @@
 				</Button>
 			</div>
 
+			{#if viewMode === 'list'}
+				<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
+			{/if}
+
 			<FilterPopover activeCount={activeFiltersCount} onClear={clearFilters}>
 				{#snippet children()}
 					<div>
@@ -476,7 +555,7 @@
 		</div>
 	{:else}
 		<!-- List View -->
-		<Card.Root>
+		<Card.Root class="border-0 shadow-sm">
 			<Card.Content class="p-0">
 				{#if filteredOpportunities.length === 0}
 					<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -495,109 +574,141 @@
 					<div class="hidden md:block">
 						<Table.Root>
 							<Table.Header>
-								<Table.Row>
-									<Table.Head class="w-[200px]">Opportunity</Table.Head>
-									<Table.Head>Account</Table.Head>
-									<Table.Head>Type</Table.Head>
-									<Table.Head>Stage</Table.Head>
-									<Table.Head
-										class="hover:bg-muted/50 cursor-pointer"
-										onclick={() => toggleSort('amount')}
-									>
-										<div class="flex items-center gap-1">
-											Amount
-											{#if sortBy === 'amount'}
-												{#if sortOrder === 'asc'}
-													<ChevronUp class="h-4 w-4" />
-												{:else}
-													<ChevronDown class="h-4 w-4" />
+								<Table.Row class="border-b border-border/40 hover:bg-transparent">
+									{#if isColumnVisible('opportunity')}
+										<Table.Head class="w-[200px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Opportunity</Table.Head>
+									{/if}
+									{#if isColumnVisible('account')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Account</Table.Head>
+									{/if}
+									{#if isColumnVisible('type')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Type</Table.Head>
+									{/if}
+									{#if isColumnVisible('stage')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Stage</Table.Head>
+									{/if}
+									{#if isColumnVisible('amount')}
+										<Table.Head
+											class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
+											onclick={() => toggleSort('amount')}
+										>
+											<div class="flex items-center gap-1">
+												Amount
+												{#if sortBy === 'amount'}
+													{#if sortOrder === 'asc'}
+														<ChevronUp class="h-3.5 w-3.5" />
+													{:else}
+														<ChevronDown class="h-3.5 w-3.5" />
+													{/if}
 												{/if}
-											{/if}
-										</div>
-									</Table.Head>
-									<Table.Head>Probability</Table.Head>
-									<Table.Head>Close Date</Table.Head>
-									<Table.Head>Owner</Table.Head>
+											</div>
+										</Table.Head>
+									{/if}
+									{#if isColumnVisible('probability')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Probability</Table.Head>
+									{/if}
+									{#if isColumnVisible('closeDate')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Close Date</Table.Head>
+									{/if}
+									{#if isColumnVisible('owner')}
+										<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Owner</Table.Head>
+									{/if}
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
 								{#each filteredOpportunities as opportunity (opportunity.id)}
 									{@const config = getStageConfig(opportunity.stage)}
 									<Table.Row
-										class="hover:bg-muted/50 cursor-pointer"
+										class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
 										onclick={() => openOpportunityDetail(opportunity)}
 									>
-										<Table.Cell>
-											<div class="min-w-0">
-												<p class="text-foreground truncate font-medium">
-													{opportunity.name}
-												</p>
-											</div>
-										</Table.Cell>
-										<Table.Cell>
-											{#if opportunity.account?.name}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Building2 class="text-muted-foreground h-4 w-4" />
-													<span class="truncate">{opportunity.account.name}</span>
+										{#if isColumnVisible('opportunity')}
+											<Table.Cell class="py-2 px-4">
+												<div class="min-w-0">
+													<p class="text-foreground truncate font-medium">
+														{opportunity.name}
+													</p>
 												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-										<Table.Cell>
-											{#if getTypeLabel(opportunity.opportunityType)}
-												<span class="text-sm">{getTypeLabel(opportunity.opportunityType)}</span>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-										<Table.Cell>
-											<span
-												class={cn(
-													'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-													config.color
-												)}
-											>
-												{config.label}
-											</span>
-										</Table.Cell>
-										<Table.Cell>
-											<span class="font-medium text-[var(--accent-primary)]">
-												{formatCurrency(opportunity.amount)}
-											</span>
-										</Table.Cell>
-										<Table.Cell>
-											{#if opportunity.probability != null}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Percent class="text-muted-foreground h-3.5 w-3.5" />
-													<span>{opportunity.probability}%</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-										<Table.Cell>
-											{#if opportunity.closedOn}
-												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-													<Calendar class="h-3.5 w-3.5" />
-													<span>{formatRelativeDate(opportunity.closedOn)}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-										<Table.Cell>
-											{#if opportunity.owner}
-												<div
-													class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-xs font-medium text-white"
-													title={opportunity.owner.name}
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('account')}
+											<Table.Cell class="py-2 px-4">
+												{#if opportunity.account?.name}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Building2 class="text-muted-foreground h-4 w-4" />
+														<span class="truncate">{opportunity.account.name}</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('type')}
+											<Table.Cell class="py-2 px-4">
+												{#if getTypeLabel(opportunity.opportunityType)}
+													<span class="text-sm">{getTypeLabel(opportunity.opportunityType)}</span>
+												{:else}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('stage')}
+											<Table.Cell class="py-2 px-4">
+												<span
+													class={cn(
+														'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+														config.color
+													)}
 												>
-													{getInitials(opportunity.owner.name)}
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
+													{config.label}
+												</span>
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('amount')}
+											<Table.Cell class="py-2 px-4">
+												<span class="font-medium text-[var(--accent-primary)]">
+													{formatCurrency(opportunity.amount)}
+												</span>
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('probability')}
+											<Table.Cell class="py-2 px-4">
+												{#if opportunity.probability != null}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Percent class="text-muted-foreground h-3.5 w-3.5" />
+														<span>{opportunity.probability}%</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('closeDate')}
+											<Table.Cell class="py-2 px-4">
+												{#if opportunity.closedOn}
+													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+														<Calendar class="h-3.5 w-3.5" />
+														<span>{formatRelativeDate(opportunity.closedOn)}</span>
+													</div>
+												{:else}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</Table.Cell>
+										{/if}
+										{#if isColumnVisible('owner')}
+											<Table.Cell class="py-2 px-4">
+												{#if opportunity.owner}
+													<div
+														class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-xs font-medium text-white"
+														title={opportunity.owner.name}
+													>
+														{getInitials(opportunity.owner.name)}
+													</div>
+												{:else}
+													<span class="text-muted-foreground">-</span>
+												{/if}
+											</Table.Cell>
+										{/if}
 									</Table.Row>
 								{/each}
 							</Table.Body>
