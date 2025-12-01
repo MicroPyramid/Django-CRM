@@ -285,7 +285,7 @@ export const actions = {
 			await apiRequest(
 				`/contacts/${contactId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: contactData
 				},
 				{ cookies, org: locals.org }

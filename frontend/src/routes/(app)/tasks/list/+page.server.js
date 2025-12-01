@@ -266,7 +266,7 @@ export const actions = {
 			await apiRequest(
 				`/tasks/${taskId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: djangoData
 				},
 				{ cookies, org }
@@ -290,25 +290,12 @@ export const actions = {
 				return { success: false, error: 'Task ID is required' };
 			}
 
-			// First fetch the task to get current data
-			const taskData = await apiRequest(`/tasks/${taskId}/`, { method: 'GET' }, { cookies, org });
-			const task = taskData.task_obj;
-
-			// Update with PUT, changing only status to Completed
+			// Update with PATCH, changing only status to Completed
 			await apiRequest(
 				`/tasks/${taskId}/`,
 				{
-					method: 'PUT',
-					body: {
-						title: task.title,
-						status: 'Completed',
-						priority: task.priority,
-						due_date: task.due_date,
-						account: task.account?.id || null,
-						assigned_to: (task.assigned_to || []).map((/** @type {any} */ u) => u.id),
-						contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
-						teams: (task.teams || []).map((/** @type {any} */ t) => t.id)
-					}
+					method: 'PATCH',
+					body: { status: 'Completed' }
 				},
 				{ cookies, org }
 			);
@@ -331,25 +318,12 @@ export const actions = {
 				return { success: false, error: 'Task ID is required' };
 			}
 
-			// First fetch the task to get current data
-			const taskData = await apiRequest(`/tasks/${taskId}/`, { method: 'GET' }, { cookies, org });
-			const task = taskData.task_obj;
-
-			// Update with PUT, changing only status to New
+			// Update with PATCH, changing only status to New
 			await apiRequest(
 				`/tasks/${taskId}/`,
 				{
-					method: 'PUT',
-					body: {
-						title: task.title,
-						status: 'New',
-						priority: task.priority,
-						due_date: task.due_date,
-						account: task.account?.id || null,
-						assigned_to: (task.assigned_to || []).map((/** @type {any} */ u) => u.id),
-						contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
-						teams: (task.teams || []).map((/** @type {any} */ t) => t.id)
-					}
+					method: 'PATCH',
+					body: { status: 'New' }
 				},
 				{ cookies, org }
 			);

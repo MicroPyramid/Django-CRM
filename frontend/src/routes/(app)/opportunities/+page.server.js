@@ -263,7 +263,7 @@ export const actions = {
 			// Update via API
 			await apiRequest(
 				`/opportunities/${opportunityId}/`,
-				{ method: 'PUT', body: opportunityData },
+				{ method: 'PATCH', body: opportunityData },
 				{ cookies, org }
 			);
 
@@ -285,27 +285,10 @@ export const actions = {
 				return fail(400, { message: 'Missing required data' });
 			}
 
-			// First, fetch the current opportunity to get all required fields
-			const currentOpp = await apiRequest(`/opportunities/${opportunityId}/`, {}, { cookies, org });
-
-			const oppData = currentOpp.opportunity_obj || currentOpp;
-
-			// Build update data preserving existing fields
-			const updateData = {
-				name: oppData.name,
-				amount: oppData.amount,
-				probability: oppData.probability,
-				stage: newStage,
-				lead_source: oppData.lead_source,
-				closed_on: oppData.closed_on,
-				description: oppData.description,
-				account: oppData.account?.id || null
-			};
-
-			// Update via API
+			// Update via API with PATCH (partial update)
 			await apiRequest(
 				`/opportunities/${opportunityId}/`,
-				{ method: 'PUT', body: updateData },
+				{ method: 'PATCH', body: { stage: newStage } },
 				{ cookies, org }
 			);
 

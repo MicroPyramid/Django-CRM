@@ -310,7 +310,7 @@ export const actions = {
 			await apiRequest(
 				`/leads/${leadId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: leadData
 				},
 				{ cookies, org: locals.org }

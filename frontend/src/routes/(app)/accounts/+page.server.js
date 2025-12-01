@@ -264,7 +264,7 @@ export const actions = {
 			await apiRequest(
 				`/accounts/${accountId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: accountData
 				},
 				{ cookies, org: locals.org }
@@ -286,29 +286,11 @@ export const actions = {
 				return fail(400, { error: 'Account ID is required.' });
 			}
 
-			// First fetch the current account data
-			const account = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org: locals.org });
-			const accountData = account.account_obj;
-
-			// Update with is_active set to false using PUT (PATCH not supported)
 			await apiRequest(
 				`/accounts/${accountId}/`,
 				{
-					method: 'PUT',
-					body: {
-						name: accountData.name,
-						email: accountData.email || '',
-						phone: accountData.phone || '',
-						website: accountData.website || '',
-						industry: accountData.industry || '',
-						description: accountData.description || '',
-						address_line: accountData.address_line || '',
-						city: accountData.city || '',
-						state: accountData.state || '',
-						postcode: accountData.postcode || '',
-						country: accountData.country || '',
-						is_active: false
-					}
+					method: 'PATCH',
+					body: { is_active: false }
 				},
 				{ cookies, org: locals.org }
 			);
@@ -329,29 +311,11 @@ export const actions = {
 				return fail(400, { error: 'Account ID is required.' });
 			}
 
-			// First fetch the current account data
-			const account = await apiRequest(`/accounts/${accountId}/`, {}, { cookies, org: locals.org });
-			const accountData = account.account_obj;
-
-			// Update with is_active set to true using PUT (PATCH not supported)
 			await apiRequest(
 				`/accounts/${accountId}/`,
 				{
-					method: 'PUT',
-					body: {
-						name: accountData.name,
-						email: accountData.email || '',
-						phone: accountData.phone || '',
-						website: accountData.website || '',
-						industry: accountData.industry || '',
-						description: accountData.description || '',
-						address_line: accountData.address_line || '',
-						city: accountData.city || '',
-						state: accountData.state || '',
-						postcode: accountData.postcode || '',
-						country: accountData.country || '',
-						is_active: true
-					}
+					method: 'PATCH',
+					body: { is_active: true }
 				},
 				{ cookies, org: locals.org }
 			);

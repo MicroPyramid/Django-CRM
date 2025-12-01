@@ -340,7 +340,7 @@ export const actions = {
 			await apiRequest(
 				`/cases/${caseId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: caseData
 				},
 				{ cookies, org: locals.org }
