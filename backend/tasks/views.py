@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
@@ -43,7 +45,7 @@ from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -191,7 +193,7 @@ class TaskListView(APIView, LimitOffsetPagination):
 class TaskDetailView(APIView):
     model = Task
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return Task.objects.get(pk=pk, org=self.request.profile.org)
@@ -575,7 +577,7 @@ class TaskDetailView(APIView):
 class TaskCommentView(APIView):
     model = Comment
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -673,7 +675,7 @@ class TaskCommentView(APIView):
 class TaskAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
@@ -701,7 +703,7 @@ class TaskAttachmentView(APIView):
 class BoardListCreateView(APIView, LimitOffsetPagination):
     """List all boards or create a new board"""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Boards"],
@@ -806,7 +808,7 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
 class BoardDetailView(APIView):
     """Retrieve, update or delete a board"""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk, org, user_profile):
         """Get board if user has access"""
@@ -948,7 +950,7 @@ class BoardDetailView(APIView):
 class BoardColumnListCreateView(APIView):
     """List or create columns for a board"""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Boards"],
@@ -1019,7 +1021,7 @@ class BoardColumnListCreateView(APIView):
 class BoardTaskListCreateView(APIView):
     """List or create tasks for a column"""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Boards"],
@@ -1095,7 +1097,7 @@ class BoardTaskListCreateView(APIView):
 class BoardTaskDetailView(APIView):
     """Retrieve, update or delete a task"""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Boards"],

@@ -7,6 +7,8 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
@@ -31,7 +33,7 @@ from opportunity.tasks import send_email_to_assigned_user
 class OpportunityListView(APIView, LimitOffsetPagination):
 
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
 
     def get_context_data(self, **kwargs):
@@ -190,7 +192,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
 class OpportunityDetailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
 
     def get_object(self, pk):
@@ -567,7 +569,7 @@ class OpportunityDetailView(APIView):
 class OpportunityCommentView(APIView):
     model = Comment
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -666,7 +668,7 @@ class OpportunityCommentView(APIView):
 class OpportunityAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Opportunities"], parameters=swagger_params.organization_params

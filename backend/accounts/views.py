@@ -9,6 +9,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts import swagger_params
@@ -56,7 +58,7 @@ from tasks.serializer import TaskSerializer
 
 class AccountsListView(APIView, LimitOffsetPagination):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
     serializer_class = AccountReadSerializer
 
@@ -214,7 +216,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 class AccountDetailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountReadSerializer
 
     def get_object(self, pk):
@@ -611,7 +613,7 @@ class AccountDetailView(APIView):
 class AccountCommentView(APIView):
     model = Comment
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountCommentEditSwaggerSerializer
 
     def get_object(self, pk):
@@ -709,7 +711,7 @@ class AccountCommentView(APIView):
 class AccountAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountDetailEditSwaggerSerializer
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
@@ -736,7 +738,7 @@ class AccountAttachmentView(APIView):
 
 class AccountCreateMailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
     serializer_class = EmailWriteSerializer
 

@@ -42,6 +42,7 @@ ORG_SCOPED_TABLES = [
     "invoice",
     # Supporting entities
     "comment",
+    "commentFiles",  # Security fix: Added for RLS protection
     "attachments",
     "document",
     "teams",

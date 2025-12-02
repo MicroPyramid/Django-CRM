@@ -7,6 +7,8 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
@@ -32,7 +34,7 @@ from contacts.serializer import ContactSerializer
 
 class CaseListView(APIView, LimitOffsetPagination):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Case
 
     def get_context_data(self, **kwargs):
@@ -180,7 +182,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 class CaseDetailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Case
 
     def get_object(self, pk):
@@ -549,7 +551,7 @@ class CaseDetailView(APIView):
 class CaseCommentView(APIView):
     model = Comment
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -646,7 +648,7 @@ class CaseCommentView(APIView):
 class CaseAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):

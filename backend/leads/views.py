@@ -5,6 +5,8 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schem
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
+
+from common.permissions import HasOrgContext
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,7 +48,7 @@ from .models import Lead
 
 class LeadListView(APIView, LimitOffsetPagination):
     model = Lead
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -239,7 +241,7 @@ class LeadListView(APIView, LimitOffsetPagination):
 class LeadDetailView(APIView):
     model = Lead
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return get_object_or_404(Lead, id=pk, org=self.request.profile.org)
@@ -663,7 +665,7 @@ class LeadDetailView(APIView):
 class LeadUploadView(APIView):
     model = Lead
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Leads"],
@@ -693,7 +695,7 @@ class LeadUploadView(APIView):
 class LeadCommentView(APIView):
     model = Comment
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -790,7 +792,7 @@ class LeadCommentView(APIView):
 class LeadAttachmentView(APIView):
     model = Attachments
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):

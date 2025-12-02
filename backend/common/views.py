@@ -28,6 +28,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.utils import json
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -231,8 +233,8 @@ class UserDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        profile = get_object_or_404(Profile, pk=pk)
-        return profile
+        # Security fix: Filter by org to prevent cross-org enumeration
+        return get_object_or_404(Profile, pk=pk, org=self.request.profile.org)
 
     @extend_schema(tags=["users"], parameters=swagger_params.organization_params)
     def get(self, request, pk, format=None):
@@ -246,23 +248,24 @@ class UserDetailView(APIView):
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if profile_obj.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # Org check now handled by get_object_or_404 in get_object()
         assigned_data = Profile.objects.filter(
             org=request.profile.org, is_active=True
         ).values("id", "user__email")
         context = {}
         context["profile_obj"] = ProfileSerializer(profile_obj).data
-        opportunity_list = Opportunity.objects.filter(assigned_to=profile_obj)
+        # Security fix: Add org filter to prevent cross-org data leakage
+        opportunity_list = Opportunity.objects.filter(
+            assigned_to=profile_obj, org=request.profile.org
+        )
         context["opportunity_list"] = OpportunitySerializer(
             opportunity_list, many=True
         ).data
-        contacts = Contact.objects.filter(assigned_to=profile_obj)
+        contacts = Contact.objects.filter(
+            assigned_to=profile_obj, org=request.profile.org
+        )
         context["contacts"] = ContactSerializer(contacts, many=True).data
-        cases = Case.objects.filter(assigned_to=profile_obj)
+        cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
         context["cases"] = CaseSerializer(cases, many=True).data
         context["assigned_data"] = assigned_data
         comments = profile_obj.user_comments.all()
@@ -701,7 +704,7 @@ class ProfileView(APIView):
 
 class DocumentListView(APIView, LimitOffsetPagination):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Document
 
     def get_context_data(self, **kwargs):
@@ -840,24 +843,16 @@ class DocumentListView(APIView, LimitOffsetPagination):
 
 class DocumentDetailView(APIView):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return Document.objects.filter(id=pk).first()
+        # Security fix: Filter by org to prevent cross-org enumeration
+        return get_object_or_404(Document, id=pk, org=self.request.profile.org)
 
     @extend_schema(tags=["documents"], parameters=swagger_params.organization_params)
     def get(self, request, pk, format=None):
+        # get_object_or_404 now handles org filtering - returns 404 if not found/wrong org
         self.object = self.get_object(pk)
-        if not self.object:
-            return Response(
-                {"error": True, "errors": "Document does not exist"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.object.org != self.request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             if not (
                 (self.request.profile == self.object.created_by)

@@ -280,9 +280,22 @@ class Comment(BaseModel):
 
 
 class CommentFiles(BaseModel):
+    """
+    File attachments for comments.
+    Security: org field added for RLS protection and org-level isolation.
+    """
+
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     comment_file = models.FileField(
         "File", upload_to="CommentFiles", null=True, blank=True
+    )
+    # Security fix: Add org field for RLS protection
+    org = models.ForeignKey(
+        "Org",
+        on_delete=models.CASCADE,
+        related_name="comment_files",
+        null=True,  # Temporarily nullable for migration
+        blank=True,
     )
 
     class Meta:
@@ -299,6 +312,12 @@ class CommentFiles(BaseModel):
             return self.comment_file.path.split("/")[-1]
 
         return None
+
+    def save(self, *args, **kwargs):
+        # Auto-populate org from parent comment if not set
+        if not self.org_id and self.comment_id:
+            self.org_id = self.comment.org_id
+        super().save(*args, **kwargs)
 
 
 class Attachments(BaseModel):
@@ -468,12 +487,14 @@ class Document(BaseModel):
 
 
 def generate_key():
-    return binascii.hexlify(os.urandom(8)).decode()
+    # Security: Increased from 8 bytes (64 bits) to 32 bytes (256 bits)
+    return binascii.hexlify(os.urandom(32)).decode()
 
 
 class APISettings(BaseModel):
     title = models.TextField()
-    apikey = models.CharField(max_length=16, blank=True)
+    # Security: Increased max_length to accommodate 32-byte keys (64 hex chars)
+    apikey = models.CharField(max_length=64, blank=True)
     website = models.URLField(max_length=255, null=True)
     lead_assigned_to = models.ManyToManyField(
         Profile, related_name="lead_assignee_users"

@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from common.models import Attachments, Comment, Profile, Tags, Teams
@@ -24,7 +26,7 @@ from tasks.serializer import TaskSerializer
 
 class ContactsListView(APIView, LimitOffsetPagination):
     # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
     def get_context_data(self, **kwargs):
@@ -149,7 +151,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
 class ContactDetailView(APIView):
     # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
     def get_object(self, pk):
@@ -492,7 +494,7 @@ class ContactDetailView(APIView):
 class ContactCommentView(APIView):
     model = Comment
     # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -588,7 +590,7 @@ class ContactCommentView(APIView):
 class ContactAttachmentView(APIView):
     model = Attachments
     # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
