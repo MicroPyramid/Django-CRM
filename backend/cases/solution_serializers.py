@@ -2,6 +2,7 @@
 Solution (Knowledge Base) Serializers
 """
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from cases.models import Case, Solution
@@ -38,6 +39,7 @@ class SolutionSerializer(serializers.ModelSerializer):
             "updated_by",
         ]
 
+    @extend_schema_field(int)
     def get_case_count(self, obj):
         """Get number of cases using this solution"""
         return obj.cases.count()
@@ -87,6 +89,7 @@ class SolutionDetailSerializer(serializers.ModelSerializer):
             "updated_by",
         ]
 
+    @extend_schema_field(list)
     def get_linked_cases(self, obj):
         """Get cases that use this solution"""
         from cases.serializer import CaseSerializer

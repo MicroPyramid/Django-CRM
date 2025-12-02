@@ -1,22 +1,17 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
 
 
 class OpportunitySerializer(serializers.ModelSerializer):
@@ -33,6 +28,11 @@ class OpportunitySerializer(serializers.ModelSerializer):
     get_team_users = ProfileSerializer(read_only=True, many=True)
     get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
     get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
+    created_on_arrow = serializers.SerializerMethodField()
+
+    @extend_schema_field(str)
+    def get_created_on_arrow(self, obj):
+        return obj.created_on_arrow
 
     class Meta:
         model = Opportunity

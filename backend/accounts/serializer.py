@@ -1,21 +1,16 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -32,9 +27,15 @@ class AccountSerializer(serializers.ModelSerializer):
     get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
     get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
     country = serializers.SerializerMethodField()
+    created_on_arrow = serializers.SerializerMethodField()
 
+    @extend_schema_field(str)
     def get_country(self, obj):
         return obj.get_country_display() if obj.country else None
+
+    @extend_schema_field(str)
+    def get_created_on_arrow(self, obj):
+        return obj.created_on_arrow
 
     class Meta:
         model = Account

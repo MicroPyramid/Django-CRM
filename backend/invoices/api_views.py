@@ -5,8 +5,8 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -129,7 +129,27 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(
         tags=["Invoices"],
+        operation_id="invoices_list",
         parameters=swagger_params.invoice_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="InvoiceListResponse",
+                fields={
+                    "invoices_count": serializers.IntegerField(),
+                    "next": serializers.CharField(allow_null=True),
+                    "previous": serializers.CharField(allow_null=True),
+                    "page_number": serializers.IntegerField(),
+                    "per_page": serializers.IntegerField(),
+                    "invoices": InvoiceSerailizer(many=True),
+                    "users": UserSerializer(many=True),
+                    "accounts_list": AccountSerializer(many=True),
+                    "status": serializers.ListField(),
+                    "currency": serializers.ListField(),
+                    "countries": serializers.ListField(),
+                    "search": serializers.BooleanField(),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
@@ -137,8 +157,18 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(
         tags=["Invoices"],
+        operation_id="invoices_create",
         parameters=swagger_params.invoice_create_post_params,
         request=InvoiceSwaggerSerailizer,
+        responses={
+            200: inline_serializer(
+                name="InvoiceCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -251,8 +281,18 @@ class InvoiceDetailView(APIView):
 
     @extend_schema(
         tags=["Invoices"],
+        operation_id="invoices_update",
         parameters=swagger_params.invoice_create_post_params,
         request=InvoiceSwaggerSerailizer,
+        responses={
+            200: inline_serializer(
+                name="InvoiceUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -384,7 +424,20 @@ class InvoiceDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Invoices"], parameters=swagger_params.invoice_delete_params)
+    @extend_schema(
+        tags=["Invoices"],
+        operation_id="invoices_destroy",
+        parameters=swagger_params.invoice_delete_params,
+        responses={
+            200: inline_serializer(
+                name="InvoiceDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.company != request.company:
@@ -409,7 +462,29 @@ class InvoiceDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["Invoices"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Invoices"],
+        operation_id="invoices_retrieve",
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="InvoiceDetailResponse",
+                fields={
+                    "invoice_obj": InvoiceSerailizer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                    "invoice_history": InvoiceHistorySerializer(many=True),
+                    "accounts": AccountSerializer(many=True),
+                    "users": UserSerializer(many=True),
+                    "comment_permission": serializers.BooleanField(),
+                    "users_mention": serializers.ListField(),
+                    "status": serializers.ListField(),
+                    "currency": serializers.ListField(),
+                    "countries": serializers.ListField(),
+                },
+            )
+        },
+    )
     def get(self, request, pk, format=None):
         self.invoice = self.get_object(pk=pk)
         if self.invoice.company != request.company:
@@ -495,8 +570,19 @@ class InvoiceDetailView(APIView):
 
     @extend_schema(
         tags=["Invoices"],
+        operation_id="invoices_comment",
         parameters=swagger_params.invoice_detail_post_params,
         request=CommentSerializer,
+        responses={
+            200: inline_serializer(
+                name="InvoiceCommentAttachmentResponse",
+                fields={
+                    "invoice_obj": InvoiceSerailizer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -567,6 +653,15 @@ class InvoiceCommentView(APIView):
         tags=["Invoices"],
         parameters=swagger_params.invoice_comment_edit_params,
         request=CommentSerializer,
+        responses={
+            200: inline_serializer(
+                name="InvoiceCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -596,7 +691,19 @@ class InvoiceCommentView(APIView):
                 }
             )
 
-    @extend_schema(tags=["Invoices"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Invoices"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="InvoiceCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -622,7 +729,19 @@ class InvoiceAttachmentView(APIView):
     model = Attachments
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(tags=["Invoices"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Invoices"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="InvoiceAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
@@ -16,6 +17,7 @@ from common.models import (
     Document,
     Org,
     Profile,
+    Tags,
     Teams,
     User,
 )
@@ -56,6 +58,12 @@ class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ("id", "name", "api_key")
+
+
+class TagsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tags
+        fields = ("id", "name", "slug")
 
 
 class SocialLoginSerializer(serializers.Serializer):
@@ -166,6 +174,7 @@ class ShowOrganizationListSerializer(serializers.ModelSerializer):
 class BillingAddressSerializer(serializers.ModelSerializer):
     country = serializers.SerializerMethodField()
 
+    @extend_schema_field(str)
     def get_country(self, obj):
         return obj.get_country_display()
 
@@ -241,6 +250,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     # address = BillingAddressSerializer()
+    user_details = serializers.SerializerMethodField()
+
+    @extend_schema_field(dict)
+    def get_user_details(self, obj):
+        return obj.user_details
 
     class Meta:
         model = Profile
@@ -264,6 +278,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
     file_path = serializers.SerializerMethodField()
     content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
 
+    @extend_schema_field(str)
     def get_file_path(self, obj):
         if obj.attachment:
             return obj.attachment.url
@@ -319,6 +334,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
     org = OrganizationSerializer()
 
+    @extend_schema_field(list)
     def get_teams(self, obj):
         return obj.teams.all().values()
 
@@ -403,6 +419,7 @@ class APISettingsListSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     org = OrganizationSerializer()
 
+    @extend_schema_field(list)
     def get_tags(self, obj):
         return obj.tags.all().values()
 
@@ -536,6 +553,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "profile_pic", "is_active", "organizations"]
 
+    @extend_schema_field(list)
     def get_organizations(self, obj):
         """Get all organizations the user belongs to"""
         profiles = Profile.objects.filter(user=obj, is_active=True)
@@ -585,6 +603,7 @@ class ActivityUserSerializer(serializers.Serializer):
     name = serializers.SerializerMethodField()
     profile_pic = serializers.CharField(source="user.profile_pic", allow_null=True)
 
+    @extend_schema_field(str)
     def get_name(self, obj):
         """Get display name from email"""
         return obj.user.email.split("@")[0]
@@ -617,6 +636,11 @@ class ActivitySerializer(serializers.ModelSerializer):
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer()
+    created_on_arrow = serializers.SerializerMethodField()
+
+    @extend_schema_field(str)
+    def get_created_on_arrow(self, obj):
+        return obj.created_on_arrow
 
     class Meta:
         model = Teams

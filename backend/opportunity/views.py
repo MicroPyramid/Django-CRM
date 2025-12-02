@@ -2,8 +2,8 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -101,17 +101,46 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         return context
 
     @extend_schema(
+        operation_id="opportunities_list",
         tags=["Opportunities"],
         parameters=swagger_params.opportunity_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="OpportunityListResponse",
+                fields={
+                    "opportunities_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "per_page": serializers.IntegerField(),
+                    "page_number": serializers.IntegerField(),
+                    "opportunities": OpportunitySerializer(many=True),
+                    "accounts_list": AccountSerializer(many=True),
+                    "contacts_list": ContactSerializer(many=True),
+                    "tags": TagsSerializer(many=True),
+                    "stage": serializers.ListField(),
+                    "lead_source": serializers.ListField(),
+                    "currency": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
+        operation_id="opportunities_create",
         tags=["Opportunities"],
         parameters=swagger_params.organization_params,
         request=OpportunityCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="OpportunityCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -195,9 +224,19 @@ class OpportunityDetailView(APIView):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
+        operation_id="opportunities_update",
         tags=["Opportunities"],
         parameters=swagger_params.organization_params,
         request=OpportunityCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="OpportunityUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -299,7 +338,18 @@ class OpportunityDetailView(APIView):
         )
 
     @extend_schema(
-        tags=["Opportunities"], parameters=swagger_params.organization_params
+        operation_id="opportunities_destroy",
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OpportunityDetailDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -324,7 +374,26 @@ class OpportunityDetailView(APIView):
         )
 
     @extend_schema(
-        tags=["Opportunities"], parameters=swagger_params.organization_params
+        operation_id="opportunities_retrieve",
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OpportunityDetailResponse",
+                fields={
+                    "opportunity_obj": OpportunitySerializer(),
+                    "comments": CommentSerializer(many=True),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "contacts": ContactSerializer(many=True),
+                    "users": ProfileSerializer(many=True),
+                    "stage": serializers.ListField(),
+                    "lead_source": serializers.ListField(),
+                    "currency": serializers.ListField(),
+                    "comment_permission": serializers.BooleanField(),
+                    "users_mention": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, pk, format=None):
         self.opportunity = self.get_object(pk=pk)
@@ -405,9 +474,20 @@ class OpportunityDetailView(APIView):
         return Response(context)
 
     @extend_schema(
+        operation_id="opportunities_comment",
         tags=["Opportunities"],
         parameters=swagger_params.organization_params,
         request=OpportunityDetailEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="OpportunityCommentAttachmentResponse",
+                fields={
+                    "opportunity_obj": OpportunitySerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -474,6 +554,15 @@ class OpportunityDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=OpportunityCreateSwaggerSerializer,
         description="Partial Opportunity Update",
+        responses={
+            200: inline_serializer(
+                name="OpportunityPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to an opportunity."""
@@ -573,6 +662,15 @@ class OpportunityCommentView(APIView):
         tags=["Opportunities"],
         parameters=swagger_params.organization_params,
         request=OpportunityCommentEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="OpportunityCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -607,6 +705,15 @@ class OpportunityCommentView(APIView):
         parameters=swagger_params.organization_params,
         request=OpportunityCommentEditSwaggerSerializer,
         description="Partial Comment Update",
+        responses={
+            200: inline_serializer(
+                name="OpportunityCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a comment."""
@@ -637,7 +744,17 @@ class OpportunityCommentView(APIView):
         )
 
     @extend_schema(
-        tags=["Opportunities"], parameters=swagger_params.organization_params
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OpportunityCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -665,7 +782,17 @@ class OpportunityAttachmentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
-        tags=["Opportunities"], parameters=swagger_params.organization_params
+        tags=["Opportunities"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OpportunityAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

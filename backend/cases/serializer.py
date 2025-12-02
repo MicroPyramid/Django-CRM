@@ -1,21 +1,16 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from cases.models import Case
-from common.models import Tags
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
 
 
 class CaseSerializer(serializers.ModelSerializer):
@@ -26,6 +21,11 @@ class CaseSerializer(serializers.ModelSerializer):
     teams = TeamsSerializer(read_only=True, many=True)
     tags = TagsSerializer(read_only=True, many=True)
     org = OrganizationSerializer()
+    created_on_arrow = serializers.SerializerMethodField()
+
+    @extend_schema_field(str)
+    def get_created_on_arrow(self, obj):
+        return obj.created_on_arrow
 
     class Meta:
         model = Case
@@ -100,7 +100,6 @@ class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
             "teams",
             "assigned_to",
             "account",
-            "case_attachment",
             "contacts",
             "tags",
             "description",

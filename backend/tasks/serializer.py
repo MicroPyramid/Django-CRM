@@ -1,21 +1,16 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
 
 
 class BoardMemberSerializer(serializers.ModelSerializer):
@@ -57,6 +52,7 @@ class BoardColumnSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at", "board")
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return obj.tasks.count()
 
@@ -70,6 +66,7 @@ class BoardColumnListSerializer(serializers.ModelSerializer):
         model = BoardColumn
         fields = ["id", "name", "order", "color", "limit", "task_count"]
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return obj.tasks.count()
 
@@ -96,9 +93,11 @@ class BoardSerializer(serializers.ModelSerializer):
             "org",
         )
 
+    @extend_schema_field(int)
     def get_member_count(self, obj):
         return obj.members.count()
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return BoardTask.objects.filter(column__board=obj).count()
 
@@ -126,12 +125,15 @@ class BoardListSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(int)
     def get_member_count(self, obj):
         return obj.members.count()
 
+    @extend_schema_field(int)
     def get_column_count(self, obj):
         return obj.columns.count()
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return BoardTask.objects.filter(column__board=obj).count()
 

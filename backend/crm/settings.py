@@ -52,7 +52,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "crum.CurrentRequestUserMiddleware",
-    # "common.external_auth.CustomDualAuthentication"
     "common.middleware.get_company.GetProfileAndOrg",
     "common.middleware.rls_context.RequireOrgContext",  # RLS: Enforce org context + set PostgreSQL session variable
 ]
@@ -230,7 +229,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "common.external_auth.CustomDualAuthentication",
+        "common.external_auth.APIKeyAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
         # "rest_framework.authentication.BasicAuthentication",
     ),
@@ -247,6 +246,23 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "PREPROCESSING_HOOKS": ["common.custom_openapi.preprocessing_filter_spec"],
+    "ENUM_NAME_OVERRIDES": {
+        # Role enums
+        "ProfileRoleEnum": "common.utils.ROLES",
+        "BoardMemberRoleEnum": "tasks.models.BoardMember.ROLE_CHOICES",
+        # Priority enums
+        "TaskPriorityEnum": "tasks.models.Task.PRIORITY_CHOICES",
+        "CasePriorityEnum": "common.utils.PRIORITY_CHOICE",
+        "BoardTaskPriorityEnum": "tasks.models.BoardTask.PRIORITY_CHOICES",
+        # Status enums
+        "TaskStatusEnum": "tasks.models.Task.STATUS_CHOICES",
+        "CaseStatusEnum": "common.utils.STATUS_CHOICE",
+        "SolutionStatusEnum": "cases.models.Solution.STATUS_CHOICES",
+        "DocumentStatusEnum": "common.models.Document.DOCUMENT_STATUS_CHOICE",
+        "InvoiceStatusEnum": "invoices.models.Invoice.INVOICE_STATUS",
+        "ContactFormStatusEnum": "common.models.ContactFormSubmission.STATUS_CHOICES",
+        "LeadStatusEnum": "common.utils.LEAD_STATUS",
+    },
 }
 
 # JWT_SETTINGS = {

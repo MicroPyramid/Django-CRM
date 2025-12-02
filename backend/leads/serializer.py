@@ -1,23 +1,18 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import Account
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 from leads.models import Lead
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -34,6 +29,7 @@ class LeadSerializer(serializers.ModelSerializer):
     converted_opportunity = serializers.PrimaryKeyRelatedField(read_only=True)
     conversion_date = serializers.DateTimeField(read_only=True)
 
+    @extend_schema_field(str)
     def get_country(self, obj):
         return obj.get_country_display()
 
@@ -188,7 +184,6 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
             "description",
             # System
             "company_name",
-            "lead_attachment",
         ]
 
 

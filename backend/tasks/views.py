@@ -3,8 +3,8 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -96,15 +96,43 @@ class TaskListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @extend_schema(tags=["Tasks"], parameters=swagger_params.task_list_get_params)
+    @extend_schema(
+        tags=["Tasks"],
+        operation_id="tasks_list",
+        parameters=swagger_params.task_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="TaskListResponse",
+                fields={
+                    "tasks_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "tasks": TaskSerializer(many=True),
+                    "status": serializers.ListField(),
+                    "priority": serializers.ListField(),
+                    "accounts_list": AccountSerializer(many=True),
+                    "contacts_list": ContactSerializer(many=True),
+                },
+            )
+        },
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
         tags=["Tasks"],
+        operation_id="tasks_create",
         parameters=swagger_params.organization_params,
         request=TaskCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="TaskCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -275,7 +303,26 @@ class TaskDetailView(APIView):
         context["teams"] = TeamsSerializer(Teams.objects.filter(org=request.profile.org), many=True).data
         return context
 
-    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Tasks"],
+        operation_id="tasks_retrieve",
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="TaskDetailResponse",
+                fields={
+                    "task_obj": TaskSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                    "users_mention": serializers.ListField(),
+                    "assigned_data": serializers.DictField(),
+                    "users": ProfileSerializer(many=True),
+                    "users_excluding_team": ProfileSerializer(many=True),
+                    "teams": TeamsSerializer(many=True),
+                },
+            )
+        },
+    )
     def get(self, request, pk, **kwargs):
         self.task_obj = self.get_object(pk)
         context = self.get_context_data(**kwargs)
@@ -283,8 +330,19 @@ class TaskDetailView(APIView):
 
     @extend_schema(
         tags=["Tasks"],
+        operation_id="tasks_comment_attachment",
         parameters=swagger_params.organization_params,
         request=TaskDetailEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="TaskCommentAttachmentResponse",
+                fields={
+                    "task_obj": TaskSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -341,8 +399,18 @@ class TaskDetailView(APIView):
 
     @extend_schema(
         tags=["Tasks"],
+        operation_id="tasks_update",
         parameters=swagger_params.organization_params,
         request=TaskCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="TaskUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, **kwargs):
         params = request.data
@@ -439,6 +507,15 @@ class TaskDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=TaskCreateSwaggerSerializer,
         description="Partial Task Update",
+        responses={
+            200: inline_serializer(
+                name="TaskPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, **kwargs):
         """Handle partial updates to a task."""
@@ -551,7 +628,20 @@ class TaskDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Tasks"],
+        operation_id="tasks_destroy",
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="TaskDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
@@ -581,6 +671,15 @@ class TaskCommentView(APIView):
         tags=["Tasks"],
         parameters=swagger_params.organization_params,
         request=TaskCommentEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="TaskCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -616,6 +715,15 @@ class TaskCommentView(APIView):
         parameters=swagger_params.organization_params,
         request=TaskCommentEditSwaggerSerializer,
         description="Partial Comment Update",
+        responses={
+            200: inline_serializer(
+                name="TaskCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a comment."""
@@ -645,7 +753,19 @@ class TaskCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="TaskCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -671,7 +791,19 @@ class TaskAttachmentView(APIView):
     model = Attachments
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Tasks"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="TaskAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

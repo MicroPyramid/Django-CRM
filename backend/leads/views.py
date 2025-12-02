@@ -1,8 +1,8 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 
@@ -144,16 +144,51 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["industries"] = INDCHOICES
         return context
 
-    @extend_schema(tags=["Leads"], parameters=swagger_params.lead_list_get_params)
+    @extend_schema(
+        tags=["Leads"],
+        operation_id="leads_list",
+        parameters=swagger_params.lead_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="LeadListResponse",
+                fields={
+                    "per_page": serializers.IntegerField(),
+                    "page_number": serializers.IntegerField(),
+                    "open_leads": serializers.DictField(),
+                    "close_leads": serializers.DictField(),
+                    "contacts": serializers.ListField(),
+                    "status": serializers.ListField(),
+                    "source": serializers.ListField(),
+                    "tags": TagsSerializer(many=True),
+                    "users": serializers.ListField(),
+                    "countries": serializers.ListField(),
+                    "industries": serializers.ListField(),
+                },
+            )
+        },
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
         tags=["Leads"],
+        operation_id="leads_create",
         description="Leads Create",
         parameters=swagger_params.organization_params,
         request=LeadCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="LeadCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                    "account_id": serializers.CharField(required=False),
+                    "contact_id": serializers.CharField(required=False, allow_null=True),
+                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -348,8 +383,27 @@ class LeadDetailView(APIView):
 
     @extend_schema(
         tags=["Leads"],
+        operation_id="leads_retrieve",
         parameters=swagger_params.organization_params,
         description="Lead Detail",
+        responses={
+            200: inline_serializer(
+                name="LeadDetailResponse",
+                fields={
+                    "lead_obj": LeadSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": LeadCommentSerializer(many=True),
+                    "users_mention": serializers.ListField(),
+                    "assigned_data": serializers.ListField(),
+                    "users": ProfileSerializer(many=True),
+                    "users_excluding_team": ProfileSerializer(many=True),
+                    "source": serializers.ListField(),
+                    "status": serializers.ListField(),
+                    "teams": TeamsSerializer(many=True),
+                    "countries": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, pk, **kwargs):
         self.lead_obj = self.get_object(pk)
@@ -358,8 +412,19 @@ class LeadDetailView(APIView):
 
     @extend_schema(
         tags=["Leads"],
+        operation_id="leads_comment_attachment",
         parameters=swagger_params.organization_params,
         request=LeadDetailEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="LeadCommentAttachmentResponse",
+                fields={
+                    "lead_obj": LeadSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": LeadCommentSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -427,6 +492,18 @@ class LeadDetailView(APIView):
         tags=["Leads"],
         parameters=swagger_params.organization_params,
         request=LeadCreateSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="LeadUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                    "account_id": serializers.CharField(required=False),
+                    "contact_id": serializers.CharField(required=False, allow_null=True),
+                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                },
+            )
+        },
     )
     def put(self, request, pk, **kwargs):
         params = request.data
@@ -534,6 +611,18 @@ class LeadDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=LeadDetailEditSwaggerSerializer,
         description="Partial Lead Update",
+        responses={
+            200: inline_serializer(
+                name="LeadPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                    "account_id": serializers.CharField(required=False),
+                    "contact_id": serializers.CharField(required=False, allow_null=True),
+                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                },
+            )
+        },
     )
     def patch(self, request, pk, **kwargs):
         """Handle partial updates to a lead, including conversion."""
@@ -640,6 +729,15 @@ class LeadDetailView(APIView):
         tags=["Leads"],
         parameters=swagger_params.organization_params,
         description="Lead Delete",
+        responses={
+            200: inline_serializer(
+                name="LeadDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
@@ -667,6 +765,15 @@ class LeadUploadView(APIView):
         tags=["Leads"],
         parameters=swagger_params.organization_params,
         request=LeadUploadSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="LeadUploadResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         lead_form = LeadListForm(request.POST, request.FILES)
@@ -699,6 +806,15 @@ class LeadCommentView(APIView):
         tags=["Leads"],
         parameters=swagger_params.organization_params,
         request=LeadCommentEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="LeadCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -732,6 +848,15 @@ class LeadCommentView(APIView):
         parameters=swagger_params.organization_params,
         request=LeadCommentEditSwaggerSerializer,
         description="Partial Comment Update",
+        responses={
+            200: inline_serializer(
+                name="LeadCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a comment."""
@@ -761,7 +886,19 @@ class LeadCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Leads"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="LeadCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -788,7 +925,19 @@ class LeadAttachmentView(APIView):
     model = Attachments
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Leads"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="LeadAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (
@@ -815,6 +964,15 @@ class CreateLeadFromSite(APIView):
         tags=["Leads"],
         parameters=swagger_params.organization_params,
         request=CreateLeadFromSiteSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="CreateLeadFromSiteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data

@@ -3,8 +3,8 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -80,15 +80,43 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         return context
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.contact_list_get_params)
+    @extend_schema(
+        operation_id="contacts_list",
+        tags=["contacts"],
+        parameters=swagger_params.contact_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="ContactListResponse",
+                fields={
+                    "count": serializers.IntegerField(),
+                    "results": ContactSerializer(many=True),
+                    "per_page": serializers.IntegerField(),
+                    "page_number": serializers.IntegerField(),
+                    "contacts_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "contact_obj_list": ContactSerializer(many=True),
+                },
+            )
+        },
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
+        operation_id="contacts_create",
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=CreateContactSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -147,7 +175,6 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
 
 class ContactDetailView(APIView):
-    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
@@ -155,9 +182,19 @@ class ContactDetailView(APIView):
         return get_object_or_404(Contact, pk=pk, org=self.request.profile.org)
 
     @extend_schema(
+        operation_id="contacts_update",
         tags=["contacts"],
         parameters=swagger_params.contact_create_post_params,
         request=CreateContactSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         data = request.data
@@ -242,7 +279,25 @@ class ContactDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="contacts_retrieve",
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactDetailResponse",
+                fields={
+                    "contact_obj": ContactSerializer(),
+                    "address_obj": serializers.DictField(),
+                    "comments": CommentSerializer(many=True),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "assigned_data": serializers.ListField(),
+                    "tasks": TaskSerializer(many=True),
+                    "users_mention": serializers.ListField(),
+                },
+            )
+        },
+    )
     def get(self, request, pk, format=None):
         context = {}
         contact_obj = self.get_object(pk)
@@ -323,7 +378,20 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="contacts_destroy",
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactDetailDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -350,9 +418,20 @@ class ContactDetailView(APIView):
         )
 
     @extend_schema(
+        operation_id="contacts_comment_attachment",
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=ContactDetailEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentAttachmentResponse",
+                fields={
+                    "contact_obj": ContactSerializer(),
+                    "comments": CommentSerializer(many=True),
+                    "attachments": AttachmentsSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -413,6 +492,15 @@ class ContactDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=CreateContactSerializer,
         description="Partial Contact Update",
+        responses={
+            200: inline_serializer(
+                name="ContactPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a contact."""
@@ -490,7 +578,6 @@ class ContactDetailView(APIView):
 
 class ContactCommentView(APIView):
     model = Comment
-    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -500,6 +587,15 @@ class ContactCommentView(APIView):
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=ContactCommentEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -533,6 +629,15 @@ class ContactCommentView(APIView):
         parameters=swagger_params.organization_params,
         request=ContactCommentEditSwaggerSerializer,
         description="Partial Comment Update",
+        responses={
+            200: inline_serializer(
+                name="ContactCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a comment."""
@@ -562,7 +667,19 @@ class ContactCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -586,10 +703,21 @@ class ContactCommentView(APIView):
 
 class ContactAttachmentView(APIView):
     model = Attachments
-    # #authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

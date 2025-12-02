@@ -20,9 +20,9 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -75,7 +75,17 @@ class GetTeamsAndUsersView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(tags=["users"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["users"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="TeamsAndUsersResponse",
+            fields={
+                "teams": TeamsSerializer(many=True),
+                "profiles": ProfileSerializer(many=True),
+            }
+        )},
+    )
     def get(self, request, *args, **kwargs):
         data = {}
         teams = Teams.objects.filter(org=request.profile.org).order_by("-id")
@@ -94,8 +104,13 @@ class UsersListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
+        tags=["users"],
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
+        responses={201: inline_serializer(
+            name="UserCreateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def post(self, request, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
@@ -142,7 +157,20 @@ class UsersListView(APIView, LimitOffsetPagination):
                         status=status.HTTP_201_CREATED,
                     )
 
-    @extend_schema(parameters=swagger_params.user_list_params)
+    @extend_schema(
+        tags=["users"],
+        parameters=swagger_params.user_list_params,
+        responses={200: inline_serializer(
+            name="UsersListResponse",
+            fields={
+                "active_users": serializers.DictField(),
+                "inactive_users": serializers.DictField(),
+                "admin_email": serializers.CharField(),
+                "roles": serializers.ListField(),
+                "status": serializers.ListField(),
+            }
+        )},
+    )
     def get(self, request, format=None):
         # Check if profile exists and user has permission
         if not self.request.profile:
@@ -218,7 +246,14 @@ class UserDetailView(APIView):
         # Security fix: Filter by org to prevent cross-org enumeration
         return get_object_or_404(Profile, pk=pk, org=self.request.profile.org)
 
-    @extend_schema(tags=["users"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["users"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="UserDetailResponse",
+            fields={"error": serializers.BooleanField(), "data": serializers.DictField()}
+        )},
+    )
     def get(self, request, pk, format=None):
         profile_obj = self.get_object(pk)
         if (
@@ -262,6 +297,10 @@ class UserDetailView(APIView):
         tags=["users"],
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="UserUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -321,6 +360,10 @@ class UserDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
         description="Partial User Update",
+        responses={200: inline_serializer(
+            name="UserPatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a user."""
@@ -370,7 +413,14 @@ class UserDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["users"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["users"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="UserDeleteResponse",
+            fields={"status": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
@@ -397,7 +447,23 @@ class ApiHomeView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["home"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="ApiHomeResponse",
+            fields={
+                "accounts_count": serializers.IntegerField(),
+                "contacts_count": serializers.IntegerField(),
+                "leads_count": serializers.IntegerField(),
+                "opportunities_count": serializers.IntegerField(),
+                "accounts": AccountSerializer(many=True),
+                "contacts": ContactSerializer(many=True),
+                "leads": LeadSerializer(many=True),
+                "opportunities": OpportunitySerializer(many=True),
+            }
+        )},
+    )
     def get(self, request, format=None):
         accounts = Account.objects.filter(is_active=True, org=request.profile.org)
         contacts = Contact.objects.filter(org=request.profile.org)
@@ -444,6 +510,7 @@ class OrgProfileCreateView(APIView):
     profile_serializer = CreateProfileSerializer
 
     @extend_schema(
+        operation_id="org_create",
         description="Organization and profile Creation api",
         request=OrgProfileCreateSerializer,
     )
@@ -479,6 +546,7 @@ class OrgProfileCreateView(APIView):
             )
 
     @extend_schema(
+        operation_id="org_list",
         description="Just Pass the token, will return ORG list, associated with user"
     )
     def get(self, request, format=None):
@@ -505,6 +573,7 @@ class OrgUpdateView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
+        operation_id="org_update",
         description="Update organization details",
         request=OrganizationSerializer,
         responses={200: OrganizationSerializer},
@@ -562,6 +631,7 @@ class OrgUpdateView(APIView):
         )
 
     @extend_schema(
+        operation_id="org_destroy",
         description="Partial update organization details",
         request=OrganizationSerializer,
         responses={200: OrganizationSerializer},
@@ -620,6 +690,7 @@ class OrgUpdateView(APIView):
         )
 
     @extend_schema(
+        operation_id="org_retrieve",
         description="Get organization details", responses={200: OrganizationSerializer}
     )
     def get(self, request, pk, format=None):
@@ -654,14 +725,32 @@ class OrgUpdateView(APIView):
 class ProfileView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["profile"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="ProfileViewResponse",
+            fields={"user_obj": ProfileSerializer()}
+        )},
+    )
     def get(self, request, format=None):
         # profile=Profile.objects.get(user=request.user)
         context = {}
         context["user_obj"] = ProfileSerializer(self.request.profile).data
         return Response(context, status=status.HTTP_200_OK)
 
-    @extend_schema(parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["profile"],
+        parameters=swagger_params.organization_params,
+        request=inline_serializer(
+            name="ProfilePatchRequest",
+            fields={"phone": serializers.CharField(required=False)}
+        ),
+        responses={200: inline_serializer(
+            name="ProfilePatchUpdateResponse",
+            fields={"message": serializers.CharField(), "user_obj": ProfileSerializer()}
+        )},
+    )
     def patch(self, request, format=None):
         profile = request.profile
         data = request.data
@@ -779,15 +868,34 @@ class DocumentListView(APIView, LimitOffsetPagination):
         context["status_choices"] = Document.DOCUMENT_STATUS_CHOICE
         return context
 
-    @extend_schema(tags=["documents"], parameters=swagger_params.document_get_params)
+    @extend_schema(
+        tags=["documents"],
+        operation_id="documents_list",
+        parameters=swagger_params.document_get_params,
+        responses={200: inline_serializer(
+            name="DocumentListResponse",
+            fields={
+                "search": serializers.BooleanField(),
+                "documents_active": serializers.DictField(),
+                "documents_inactive": serializers.DictField(),
+                "users": ProfileSerializer(many=True),
+                "status_choices": serializers.ListField(),
+            }
+        )},
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
         tags=["documents"],
+        operation_id="documents_create",
         parameters=swagger_params.organization_params,
         request=DocumentCreateSwaggerSerializer,
+        responses={201: inline_serializer(
+            name="DocumentCreateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -828,7 +936,19 @@ class DocumentDetailView(APIView):
         # Security fix: Filter by org to prevent cross-org enumeration
         return get_object_or_404(Document, id=pk, org=self.request.profile.org)
 
-    @extend_schema(tags=["documents"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["documents"],
+        operation_id="documents_retrieve",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="DocumentDetailResponse",
+            fields={
+                "doc_obj": DocumentSerializer(),
+                "file_type_code": serializers.CharField(),
+                "users": ProfileSerializer(many=True),
+            }
+        )},
+    )
     def get(self, request, pk, format=None):
         # get_object_or_404 now handles org filtering - returns 404 if not found/wrong org
         self.object = self.get_object(pk)
@@ -859,7 +979,15 @@ class DocumentDetailView(APIView):
         )
         return Response(context, status=status.HTTP_200_OK)
 
-    @extend_schema(tags=["documents"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["documents"],
+        operation_id="documents_destroy",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="DocumentDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, format=None):
         document = self.get_object(pk)
         if not document:
@@ -892,8 +1020,13 @@ class DocumentDetailView(APIView):
 
     @extend_schema(
         tags=["documents"],
+        operation_id="documents_update",
         parameters=swagger_params.organization_params,
         request=DocumentEditSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="DocumentUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -958,6 +1091,10 @@ class DocumentDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=DocumentEditSwaggerSerializer,
         description="Partial Document Update",
+        responses={200: inline_serializer(
+            name="DocumentPatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a document."""
@@ -1006,9 +1143,17 @@ class UserStatusView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
+        tags=["users"],
         description="User Status View",
         parameters=swagger_params.organization_params,
         request=UserUpdateStatusSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="UserStatusResponse",
+            fields={
+                "active_profiles": ProfileSerializer(many=True),
+                "inactive_profiles": ProfileSerializer(many=True),
+            }
+        )},
     )
     def post(self, request, pk, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
@@ -1050,7 +1195,19 @@ class DomainList(APIView):
     model = APISettings
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(tags=["Settings"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Settings"],
+        operation_id="api_settings_list",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="DomainListResponse",
+            fields={
+                "error": serializers.BooleanField(),
+                "api_settings": APISettingsListSerializer(many=True),
+                "users": ProfileSerializer(many=True),
+            }
+        )},
+    )
     def get(self, request, *args, **kwargs):
         api_settings = APISettings.objects.filter(org=request.profile.org)
         users = Profile.objects.filter(
@@ -1067,8 +1224,13 @@ class DomainList(APIView):
 
     @extend_schema(
         tags=["Settings"],
+        operation_id="api_settings_create",
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
+        responses={201: inline_serializer(
+            name="DomainCreateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -1106,7 +1268,15 @@ class DomainDetailView(APIView):
     def get_object(self, pk):
         return get_object_or_404(APISettings, pk=pk, org=self.request.profile.org)
 
-    @extend_schema(tags=["Settings"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Settings"],
+        operation_id="api_settings_retrieve",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="DomainDetailResponse",
+            fields={"error": serializers.BooleanField(), "domain": APISettingsListSerializer()}
+        )},
+    )
     def get(self, request, pk, format=None):
         api_setting = self.get_object(pk)
         return Response(
@@ -1116,8 +1286,13 @@ class DomainDetailView(APIView):
 
     @extend_schema(
         tags=["Settings"],
+        operation_id="api_settings_update",
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="DomainUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, **kwargs):
         api_setting = self.get_object(pk)
@@ -1153,6 +1328,10 @@ class DomainDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
         description="Partial API Settings Update",
+        responses={200: inline_serializer(
+            name="DomainPatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def patch(self, request, pk, **kwargs):
         """Handle partial updates to API settings."""
@@ -1170,7 +1349,15 @@ class DomainDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Settings"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Settings"],
+        operation_id="api_settings_destroy",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="DomainDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, **kwargs):
         api_setting = self.get_object(pk)
         if api_setting:
@@ -1189,6 +1376,25 @@ class GoogleOAuthCallbackView(APIView):
     permission_classes = []
     authentication_classes = []
 
+    @extend_schema(
+        tags=["auth"],
+        request=inline_serializer(
+            name="GoogleOAuthRequest",
+            fields={
+                "code": serializers.CharField(),
+                "code_verifier": serializers.CharField(),
+                "redirect_uri": serializers.CharField(),
+            }
+        ),
+        responses={200: inline_serializer(
+            name="GoogleOAuthResponse",
+            fields={
+                "access_token": serializers.CharField(),
+                "refresh_token": serializers.CharField(),
+                "user": serializers.DictField(),
+            }
+        )},
+    )
     def post(self, request):
         import base64
 
@@ -1460,21 +1666,20 @@ class OrgAwareTokenRefreshView(APIView):
 
     @extend_schema(
         description="Refresh access token with org membership validation",
-        request={
-            "type": "object",
-            "properties": {
-                "refresh": {"type": "string", "description": "Refresh token"}
+        request=inline_serializer(
+            name="OrgAwareTokenRefreshRequest",
+            fields={
+                "refresh": serializers.CharField(help_text="Refresh token")
             },
-            "required": ["refresh"],
-        },
+        ),
         responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "access": {"type": "string"},
-                    "refresh": {"type": "string"},
+            200: inline_serializer(
+                name="OrgAwareTokenRefreshResponse",
+                fields={
+                    "access": serializers.CharField(),
+                    "refresh": serializers.CharField(),
                 },
-            }
+            )
         },
     )
     def post(self, request):
@@ -1559,32 +1764,22 @@ class OrgSwitchView(APIView):
 
     @extend_schema(
         description="Switch to a different organization and get new JWT tokens",
-        request={
-            "type": "object",
-            "properties": {
-                "org_id": {
-                    "type": "string",
-                    "format": "uuid",
-                    "description": "Target organization ID",
-                }
+        request=inline_serializer(
+            name="OrgSwitchRequest",
+            fields={
+                "org_id": serializers.UUIDField(help_text="Target organization ID")
             },
-            "required": ["org_id"],
-        },
+        ),
         responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "access_token": {"type": "string"},
-                    "refresh_token": {"type": "string"},
-                    "current_org": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string"},
-                            "name": {"type": "string"},
-                        },
-                    },
+            200: inline_serializer(
+                name="OrgSwitchResponse",
+                fields={
+                    "access_token": serializers.CharField(),
+                    "refresh_token": serializers.CharField(),
+                    "current_org": serializers.DictField(),
+                    "profile": serializers.DictField(),
                 },
-            }
+            )
         },
     )
     def post(self, request):
@@ -1647,13 +1842,13 @@ class ProfileDetailView(APIView):
     @extend_schema(
         description="Get profile for current user in specified organization",
         parameters=[
-            {
-                "name": "org",
-                "in": "header",
-                "required": True,
-                "schema": {"type": "string", "format": "uuid"},
-                "description": "Organization ID",
-            }
+            OpenApiParameter(
+                "org",
+                OpenApiTypes.UUID,
+                OpenApiParameter.HEADER,
+                required=True,
+                description="Organization ID",
+            )
         ],
         responses={200: serializer.ProfileDetailSerializer},
     )
@@ -1768,7 +1963,21 @@ class TeamsListView(APIView, LimitOffsetPagination):
         context["teams"] = teams
         return context
 
-    @extend_schema(tags=["Teams"], parameters=swagger_params.teams_list_get_params)
+    @extend_schema(
+        tags=["Teams"],
+        operation_id="teams_list",
+        parameters=swagger_params.teams_list_get_params,
+        responses={200: inline_serializer(
+            name="TeamsListResponse",
+            fields={
+                "per_page": serializers.IntegerField(),
+                "page_number": serializers.ListField(),
+                "teams_count": serializers.IntegerField(),
+                "offset": serializers.IntegerField(allow_null=True),
+                "teams": TeamsSerializer(many=True),
+            }
+        )},
+    )
     def get(self, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
@@ -1783,8 +1992,13 @@ class TeamsListView(APIView, LimitOffsetPagination):
 
     @extend_schema(
         tags=["Teams"],
+        operation_id="teams_create",
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="TeamCreateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def post(self, request, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -1824,7 +2038,15 @@ class TeamsDetailView(APIView):
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
 
-    @extend_schema(tags=["Teams"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Teams"],
+        operation_id="teams_retrieve",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="TeamDetailResponse",
+            fields={"team": TeamsSerializer()}
+        )},
+    )
     def get(self, request, pk, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(
@@ -1841,8 +2063,13 @@ class TeamsDetailView(APIView):
 
     @extend_schema(
         tags=["Teams"],
+        operation_id="teams_update",
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="TeamUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -1891,6 +2118,10 @@ class TeamsDetailView(APIView):
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
         description="Partial Team Update",
+        responses={200: inline_serializer(
+            name="TeamPatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def patch(self, request, pk, *args, **kwargs):
         """Handle partial updates to a team."""
@@ -1918,7 +2149,15 @@ class TeamsDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Teams"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Teams"],
+        operation_id="teams_destroy",
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="TeamDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             return Response(

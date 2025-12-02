@@ -44,9 +44,7 @@ invoice_create_post_params = organization_params + [
     OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("email", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
     OpenApiParameter("phone", OpenApiTypes.STR, OpenApiParameter.QUERY),
-    OpenApiParameter(
-        "due_date", OpenApiTypes.DATE, OpenApiParameter.QUERY, examples=["2021-02-28"]
-    ),
+    OpenApiParameter("due_date", OpenApiTypes.DATE, OpenApiParameter.QUERY),
     OpenApiParameter(
         "currency", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True
     ),

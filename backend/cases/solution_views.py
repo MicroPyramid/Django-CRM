@@ -2,8 +2,8 @@
 Solution (Knowledge Base) Views
 """
 
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -185,6 +185,7 @@ class SolutionPublishView(APIView):
     @extend_schema(
         tags=["Solutions (Knowledge Base)"],
         description="Publish an approved solution",
+        request=None,
         responses={200: SolutionSerializer},
     )
     def post(self, request, pk):
@@ -220,6 +221,7 @@ class SolutionUnpublishView(APIView):
     @extend_schema(
         tags=["Solutions (Knowledge Base)"],
         description="Unpublish a solution",
+        request=None,
         responses={200: SolutionSerializer},
     )
     def post(self, request, pk):

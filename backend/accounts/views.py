@@ -150,13 +150,18 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["status"] = ["active", "inactive"]  # Maps to is_active field
         return context
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.account_get_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_list",
+        parameters=swagger_params.account_get_params,
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_create",
         parameters=swagger_params.organization_params,
         request=AccountCreateSerializer,
     )
@@ -220,6 +225,7 @@ class AccountDetailView(APIView):
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_update",
         parameters=swagger_params.organization_params,
         request=AccountWriteSerializer,
     )
@@ -318,7 +324,11 @@ class AccountDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_destroy",
+        parameters=swagger_params.organization_params,
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -341,7 +351,11 @@ class AccountDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_retrieve",
+        parameters=swagger_params.organization_params,
+    )
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
         if self.account.org != request.profile.org:
@@ -447,6 +461,7 @@ class AccountDetailView(APIView):
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_add_comment",
         parameters=swagger_params.organization_params,
         request=AccountDetailEditSwaggerSerializer,
     )
