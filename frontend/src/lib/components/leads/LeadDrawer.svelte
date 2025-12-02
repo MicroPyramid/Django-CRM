@@ -8,6 +8,8 @@
 		Calendar,
 		Target,
 		User,
+		Users,
+		UserPlus,
 		Star,
 		Globe,
 		Linkedin,
@@ -16,7 +18,9 @@
 		Activity,
 		MessageSquare,
 		Loader2,
-		ArrowRightCircle
+		ArrowRightCircle,
+		Tag,
+		Contact
 	} from '@lucide/svelte';
 	import SideDrawer from '$lib/components/layout/SideDrawer.svelte';
 	import { EditableField } from '$lib/components/ui/editable-field/index.js';
@@ -31,6 +35,7 @@
 	 * @typedef {Object} Lead
 	 * @property {string} [id]
 	 * @property {string} title
+	 * @property {string} [salutation]
 	 * @property {string} firstName
 	 * @property {string} lastName
 	 * @property {string} [email]
@@ -57,12 +62,20 @@
 	 * @property {string} [createdAt]
 	 * @property {{id?: string, name: string, email?: string}} [owner]
 	 * @property {Array<{id: string, body: string, createdAt: string, author?: {name: string}}>} [comments]
+	 * @property {Array<string>} [assignedTo]
+	 * @property {Array<string>} [teams]
+	 * @property {Array<string>} [contacts]
+	 * @property {Array<string>} [tags]
 	 */
 
 	/**
 	 * @typedef {Object} FormOptions
 	 * @property {Array<{value: string, label: string}>} statuses
 	 * @property {Array<{value: string, label: string}>} sources
+	 * @property {Array<{value: string, label: string}>} [users]
+	 * @property {Array<{value: string, label: string}>} [teamsList]
+	 * @property {Array<{value: string, label: string}>} [contactsList]
+	 * @property {Array<{value: string, label: string}>} [tagsList]
 	 */
 
 	/**
@@ -95,6 +108,7 @@
 	// Empty lead template
 	const emptyLead = {
 		title: '',
+		salutation: '',
 		firstName: '',
 		lastName: '',
 		email: '',
@@ -117,7 +131,11 @@
 		country: '',
 		lastContacted: '',
 		nextFollowUp: '',
-		description: ''
+		description: '',
+		assignedTo: [],
+		teams: [],
+		contacts: [],
+		tags: []
 	};
 
 	// Form data state
@@ -195,12 +213,13 @@
 			// Convert to API format (snake_case)
 			const apiData = {
 				title: formData.title || '',
+				salutation: formData.salutation || null,
 				first_name: formData.firstName || '',
 				last_name: formData.lastName || '',
 				email: formData.email || '',
 				phone: formData.phone || '',
-				company: formData.company || '',
-				contact_title: formData.contactTitle || '',
+				company_name: formData.company || '',
+				job_title: formData.contactTitle || '',
 				website: formData.website || '',
 				linkedin_url: formData.linkedinUrl || '',
 				status: formData.status || 'assigned',
@@ -217,7 +236,11 @@
 				country: formData.country || '',
 				last_contacted: formData.lastContacted || '',
 				next_follow_up: formData.nextFollowUp || '',
-				description: formData.description || ''
+				description: formData.description || '',
+				assigned_to: formData.assignedTo || [],
+				teams: formData.teams || [],
+				contacts: formData.contacts || [],
+				tags: formData.tags || []
 			};
 			await onSave?.(apiData);
 		} finally {
@@ -364,6 +387,15 @@
 		{ value: 'COLD', label: 'Cold' }
 	];
 
+	// Salutation options
+	const salutationOptions = [
+		{ value: '', label: 'Select' },
+		{ value: 'Mr', label: 'Mr' },
+		{ value: 'Mrs', label: 'Mrs' },
+		{ value: 'Ms', label: 'Ms' },
+		{ value: 'Dr', label: 'Dr' }
+	];
+
 	// Industry options (prepend empty option)
 	const industryOptions = INDUSTRIES;
 
@@ -421,6 +453,14 @@
 						/>
 						<!-- Editable Name -->
 						<div class="flex gap-2">
+							<EditableField
+								value={formData.salutation}
+								type="select"
+								options={salutationOptions}
+								emptyText="Title"
+								onchange={(v) => updateField('salutation', v)}
+								class="w-20 text-sm"
+							/>
 							<EditableField
 								value={formData.firstName}
 								placeholder="First name"
@@ -749,6 +789,79 @@
 						emptyText="Add notes..."
 						onchange={(v) => updateField('description', v)}
 					/>
+				</div>
+
+				<!-- Assignments Section -->
+				<div class="mb-6">
+					<p class="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
+						Assignments
+					</p>
+					<div class="space-y-2">
+						{#if options.users && options.users.length > 0}
+							<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
+								<UserPlus class="text-muted-foreground h-4 w-4 shrink-0" />
+								<div class="flex-1">
+									<span class="text-muted-foreground mr-2 text-xs">Assigned To</span>
+									<EditableField
+										value={formData.assignedTo?.[0] || ''}
+										type="select"
+										options={[{ value: '', label: 'Select user' }, ...options.users]}
+										emptyText="Select user"
+										onchange={(v) => updateField('assignedTo', v ? [v] : [])}
+										class="inline"
+									/>
+								</div>
+							</div>
+						{/if}
+						{#if options.teamsList && options.teamsList.length > 0}
+							<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
+								<Users class="text-muted-foreground h-4 w-4 shrink-0" />
+								<div class="flex-1">
+									<span class="text-muted-foreground mr-2 text-xs">Team</span>
+									<EditableField
+										value={formData.teams?.[0] || ''}
+										type="select"
+										options={[{ value: '', label: 'Select team' }, ...options.teamsList]}
+										emptyText="Select team"
+										onchange={(v) => updateField('teams', v ? [v] : [])}
+										class="inline"
+									/>
+								</div>
+							</div>
+						{/if}
+						{#if options.contactsList && options.contactsList.length > 0}
+							<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
+								<Contact class="text-muted-foreground h-4 w-4 shrink-0" />
+								<div class="flex-1">
+									<span class="text-muted-foreground mr-2 text-xs">Contact</span>
+									<EditableField
+										value={formData.contacts?.[0] || ''}
+										type="select"
+										options={[{ value: '', label: 'Select contact' }, ...options.contactsList]}
+										emptyText="Select contact"
+										onchange={(v) => updateField('contacts', v ? [v] : [])}
+										class="inline"
+									/>
+								</div>
+							</div>
+						{/if}
+						{#if options.tagsList && options.tagsList.length > 0}
+							<div class="bg-muted/30 flex items-center gap-3 rounded-lg px-3 py-2">
+								<Tag class="text-muted-foreground h-4 w-4 shrink-0" />
+								<div class="flex-1">
+									<span class="text-muted-foreground mr-2 text-xs">Tags</span>
+									<EditableField
+										value={formData.tags?.[0] || ''}
+										type="select"
+										options={[{ value: '', label: 'Select tag' }, ...options.tagsList]}
+										emptyText="Select tag"
+										onchange={(v) => updateField('tags', v ? [v] : [])}
+										class="inline"
+									/>
+								</div>
+							</div>
+						{/if}
+					</div>
 				</div>
 
 				{#if !isCreateMode}

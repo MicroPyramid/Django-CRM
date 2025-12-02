@@ -122,7 +122,7 @@
 			type: 'link'
 		},
 		{
-			href: '/leads/open',
+			href: '/leads',
 			label: 'Leads',
 			icon: Target,
 			type: 'link'

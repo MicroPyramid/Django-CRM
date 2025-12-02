@@ -38,6 +38,7 @@ class LeadSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             # Core Lead Information
+            "title",
             "salutation",
             "first_name",
             "last_name",
@@ -114,6 +115,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         model = Lead
         fields = (
             # Core Lead Information
+            "title",
             "salutation",
             "first_name",
             "last_name",
@@ -151,6 +153,7 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
         model = Lead
         fields = [
             # Core Lead Information
+            "title",
             "salutation",
             "first_name",
             "last_name",

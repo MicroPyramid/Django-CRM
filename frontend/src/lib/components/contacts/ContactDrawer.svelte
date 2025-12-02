@@ -165,7 +165,7 @@
 				title: formData.title || '',
 				department: formData.department || '',
 				do_not_call: formData.doNotCall || false,
-				linked_in_url: formData.linkedInUrl || '',
+				linkedin_url: formData.linkedInUrl || '',
 				address_line: formData.addressLine || '',
 				city: formData.city || '',
 				state: formData.state || '',

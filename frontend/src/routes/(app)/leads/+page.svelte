@@ -134,6 +134,7 @@
 
 	// Computed values
 	const leads = $derived(data.leads || []);
+	const formOptions = $derived(data.formOptions || {});
 
 	// Drawer state (simplified - single drawer, matching contacts page pattern)
 	let drawerOpen = $state(false);
@@ -658,9 +659,9 @@
 		formState.lastName = formData.last_name || '';
 		formState.email = formData.email || '';
 		formState.phone = formData.phone || '';
-		formState.company = formData.company || '';
+		formState.company = formData.company_name || '';
 		formState.title = formData.title || '';
-		formState.contactTitle = formData.contact_title || '';
+		formState.contactTitle = formData.job_title || '';
 		formState.website = formData.website || '';
 		formState.linkedinUrl = formData.linkedin_url || '';
 		// Sales Pipeline
@@ -1540,6 +1541,14 @@
 	lead={selectedLead}
 	mode={drawerMode}
 	loading={drawerLoading}
+	options={{
+		statuses: [],
+		sources: [],
+		users: formOptions.users || [],
+		teamsList: formOptions.teamsList || [],
+		contactsList: formOptions.contactsList || [],
+		tagsList: formOptions.tagsList || []
+	}}
 	onSave={handleFormSubmit}
 	onConvert={handleConvert}
 	onDelete={handleDelete}

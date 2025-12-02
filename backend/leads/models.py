@@ -23,6 +23,7 @@ class Lead(AssignableMixin, BaseModel):
     """
 
     # Core Lead Information
+    title = models.CharField(_("Title"), max_length=255, blank=True, null=True)
     salutation = models.CharField(
         _("Salutation"), max_length=64, blank=True, null=True,
         help_text="e.g., Mr, Mrs, Ms, Dr"

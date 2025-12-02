@@ -27,7 +27,15 @@ export async function load({ cookies, locals }) {
 		// Django leads endpoint - no status filter needed
 		// Django LeadListView already separates leads into open_leads and close_leads
 		// Valid Django status values: assigned, in process, converted, recycled, closed
-		const response = await apiRequest(`/leads/`, {}, { cookies, org });
+		// Fetch leads and dropdown data in parallel
+		const [response, usersResponse, teamsResponse, contactsResponse, tagsResponse] =
+			await Promise.all([
+				apiRequest(`/leads/`, {}, { cookies, org }),
+				apiRequest(`/users/`, {}, { cookies, org }).catch(() => ({ results: [] })),
+				apiRequest(`/teams/`, {}, { cookies, org }).catch(() => ({ teams: [] })),
+				apiRequest(`/contacts/`, {}, { cookies, org }).catch(() => ({ contact_obj_list: [] })),
+				apiRequest(`/tags/`, {}, { cookies, org }).catch(() => [])
+			]);
 
 		// Handle Django response format
 		// Django returns: { open_leads: { leads_count, open_leads: [...] }, close_leads: {...}, ... }
@@ -51,8 +59,9 @@ export async function load({ cookies, locals }) {
 			firstName: lead.first_name,
 			lastName: lead.last_name,
 			title: lead.title,
-			contactTitle: lead.contact_title,
-			company: lead.company,
+			salutation: lead.salutation,
+			contactTitle: lead.job_title,
+			company: lead.company_name,
 			email: lead.email,
 			phone: lead.phone,
 			website: lead.website,
@@ -104,18 +113,46 @@ export async function load({ cookies, locals }) {
 							}
 						: null,
 
-			// Assignment - Teams
-			teams: lead.teams || [],
+			// Assignment arrays (IDs for form editing)
+			assignedTo: (lead.assigned_to || []).map((u) => u.id),
+			teams: (lead.teams || []).map((t) => t.id),
 
 			// Related data
-			contacts: lead.contacts || [],
-			tags: lead.tags || [],
+			contacts: (lead.contacts || []).map((c) => c.id),
+			tags: (lead.tags || []).map((t) => t.id),
 			comments: lead.lead_comments || [],
 			attachments: lead.lead_attachment || []
 		}));
 
+		// Transform dropdown data for form options
+		const users = (usersResponse.results || usersResponse || []).map((u) => ({
+			value: u.id,
+			label: u.email || u.username || 'Unknown'
+		}));
+
+		const teamsList = (teamsResponse.teams || teamsResponse || []).map((t) => ({
+			value: t.id,
+			label: t.name || 'Unknown'
+		}));
+
+		const contactsList = (contactsResponse.contact_obj_list || contactsResponse.results || contactsResponse || []).map((c) => ({
+			value: c.id,
+			label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || 'Unknown'
+		}));
+
+		const tagsList = (Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []).map((t) => ({
+			value: t.id,
+			label: t.name || 'Unknown'
+		}));
+
 		return {
-			leads: transformedLeads
+			leads: transformedLeads,
+			formOptions: {
+				users,
+				teamsList,
+				contactsList,
+				tagsList
+			}
 		};
 	} catch (err) {
 		console.error('Error fetching leads from API:', err);
@@ -189,13 +226,13 @@ export const actions = {
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;
 			if (phone) leadData.phone = phone;
-			if (contactTitle) leadData.contact_title = contactTitle;
+			if (contactTitle) leadData.job_title = contactTitle;
 			if (website) leadData.website = website;
 			if (linkedinUrl) leadData.linkedin_url = linkedinUrl;
 			if (industry) leadData.industry = industry;
 
 			// Only include optional fields if they have valid values
-			if (companyId) leadData.company = companyId;
+			if (companyId) leadData.company_name = companyId;
 			if (source) leadData.source = source;
 			if (rating) leadData.rating = rating;
 			if (opportunityAmount) leadData.opportunity_amount = parseFloat(opportunityAmount);
@@ -288,11 +325,11 @@ export const actions = {
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;
 			if (phone) leadData.phone = phone;
-			if (contactTitle) leadData.contact_title = contactTitle;
+			if (contactTitle) leadData.job_title = contactTitle;
 			if (website) leadData.website = website;
 			if (linkedinUrl) leadData.linkedin_url = linkedinUrl;
 			if (industry) leadData.industry = industry;
-			if (companyId) leadData.company = companyId;
+			if (companyId) leadData.company_name = companyId;
 			if (source) leadData.source = source;
 			if (status) leadData.status = status;
 			if (rating) leadData.rating = rating;
@@ -395,11 +432,11 @@ export const actions = {
 			if (originalLead.last_name) leadData.last_name = originalLead.last_name;
 			if (originalLead.email) leadData.email = originalLead.email;
 			if (originalLead.phone) leadData.phone = originalLead.phone;
-			if (originalLead.contact_title) leadData.contact_title = originalLead.contact_title;
+			if (originalLead.job_title) leadData.job_title = originalLead.job_title;
 			if (originalLead.website) leadData.website = originalLead.website;
 			if (originalLead.linkedin_url) leadData.linkedin_url = originalLead.linkedin_url;
 			if (originalLead.industry) leadData.industry = originalLead.industry;
-			if (originalLead.company) leadData.company = originalLead.company;
+			if (originalLead.company_name) leadData.company_name = originalLead.company_name;
 			if (originalLead.source) leadData.source = originalLead.source;
 			if (originalLead.rating) leadData.rating = originalLead.rating;
 			if (originalLead.opportunity_amount) leadData.opportunity_amount = originalLead.opportunity_amount;

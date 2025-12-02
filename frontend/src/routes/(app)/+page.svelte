@@ -181,7 +181,7 @@
 					<TrendingUp class="h-5 w-5" />
 				{/snippet}
 				{#snippet headerAction()}
-					<Button variant="ghost" size="sm" href="/leads/open" class="text-xs" disabled={false}>
+					<Button variant="ghost" size="sm" href="/leads" class="text-xs" disabled={false}>
 						View all
 						<ChevronRight class="ml-1 h-3 w-3" />
 					</Button>
