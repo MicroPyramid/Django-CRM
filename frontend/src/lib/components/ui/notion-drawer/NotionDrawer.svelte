@@ -1,0 +1,207 @@
+<script>
+	import { X, Trash2 } from '@lucide/svelte';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { cn } from '$lib/utils.js';
+	import NotionPropertyRow from './NotionPropertyRow.svelte';
+
+	/**
+	 * @type {{
+	 *   open?: boolean,
+	 *   onOpenChange?: (open: boolean) => void,
+	 *   data?: Record<string, any> | null,
+	 *   columns?: any[],
+	 *   titleKey?: string,
+	 *   titlePlaceholder?: string,
+	 *   headerLabel?: string,
+	 *   onFieldChange?: (field: string, value: any) => void,
+	 *   onDelete?: () => void,
+	 *   onClose?: () => void,
+	 *   loading?: boolean,
+	 *   mode?: 'view' | 'create',
+	 *   class?: string,
+	 *   activitySection?: import('svelte').Snippet,
+	 *   footerActions?: import('svelte').Snippet,
+	 * }}
+	 */
+	let {
+		open = $bindable(false),
+		onOpenChange,
+		data = null,
+		columns = [],
+		titleKey = 'name',
+		titlePlaceholder = 'Untitled',
+		headerLabel = 'Item',
+		onFieldChange,
+		onDelete,
+		onClose,
+		loading = false,
+		mode = 'view',
+		class: className,
+		activitySection,
+		footerActions
+	} = $props();
+
+	/**
+	 * Get field value from data
+	 * @param {any} col
+	 */
+	function getFieldValue(col) {
+		if (!data) return '';
+		if (col.getValue) {
+			return col.getValue(data);
+		}
+		return data[col.key] ?? '';
+	}
+
+	/**
+	 * Handle field change
+	 * @param {string} key
+	 * @param {any} value
+	 */
+	function handleFieldChange(key, value) {
+		onFieldChange?.(key, value);
+	}
+
+	/**
+	 * Handle title change
+	 * @param {Event} e
+	 */
+	function handleTitleChange(e) {
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		onFieldChange?.(titleKey, target.value);
+	}
+
+	/**
+	 * Close the drawer
+	 */
+	function closeDrawer() {
+		open = false;
+		onOpenChange?.(false);
+		onClose?.();
+	}
+
+	/**
+	 * Handle delete
+	 */
+	function handleDelete() {
+		onDelete?.();
+	}
+
+	// Get title value
+	const titleValue = $derived(data?.[titleKey] || '');
+</script>
+
+<Sheet.Root bind:open onOpenChange={(value) => onOpenChange?.(value)}>
+	<Sheet.Content
+		side="right"
+		class={cn('w-[440px] overflow-hidden p-0 sm:max-w-[440px]', className)}
+	>
+		{#if loading}
+			<!-- Loading skeleton -->
+			<div class="flex h-full flex-col">
+				<div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+					<Skeleton class="h-4 w-16" />
+					<Skeleton class="h-6 w-6 rounded" />
+				</div>
+				<div class="flex-1 overflow-y-auto">
+					<div class="px-6 pb-4 pt-6">
+						<Skeleton class="h-8 w-48" />
+					</div>
+					<div class="px-4 pb-6 space-y-3">
+						{#each { length: 6 } as _}
+							<div class="flex items-center gap-2 py-2">
+								<Skeleton class="h-4 w-28" />
+								<Skeleton class="h-6 w-32" />
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+		{:else}
+			<div class="flex h-full flex-col">
+				<!-- Header with close button -->
+				<div
+					class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3"
+				>
+					<span class="text-sm text-gray-500 dark:text-gray-400">{headerLabel}</span>
+					<button
+						onclick={closeDrawer}
+						class="rounded p-1 transition-colors duration-75 hover:bg-gray-100 dark:hover:bg-gray-800"
+					>
+						<X class="h-4 w-4 text-gray-400" />
+					</button>
+				</div>
+
+				<!-- Scrollable content -->
+				<div class="flex-1 overflow-y-auto">
+					<!-- Title section -->
+					<div class="px-6 pb-4 pt-6">
+						<input
+							type="text"
+							value={titleValue}
+							oninput={handleTitleChange}
+							placeholder={titlePlaceholder}
+							class="w-full border-0 bg-transparent text-2xl font-semibold outline-none focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-600"
+						/>
+					</div>
+
+					<!-- Properties section -->
+					<div class="px-4 pb-6">
+						{#each columns as col (col.key)}
+							{#if col.key !== titleKey}
+								<NotionPropertyRow
+									label={col.label}
+									value={getFieldValue(col)}
+									type={col.type || 'text'}
+									icon={col.icon}
+									options={col.options}
+									placeholder={col.placeholder}
+									emptyText={col.emptyText}
+									editable={col.editable !== false}
+									prefix={col.prefix}
+									onchange={(value) => handleFieldChange(col.key, value)}
+								/>
+							{/if}
+						{/each}
+					</div>
+
+					<!-- Activity section (optional) -->
+					{#if activitySection}
+						<Separator class="mx-4" />
+						<div class="px-4 py-4">
+							{@render activitySection()}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Footer -->
+				<div class="mt-auto border-t border-gray-100 dark:border-gray-800 px-4 py-3">
+					<div class="flex items-center justify-between">
+						<!-- Delete button -->
+						{#if onDelete && mode !== 'create'}
+							<button
+								onclick={handleDelete}
+								class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50 dark:hover:bg-red-900/20"
+							>
+								<Trash2 class="h-4 w-4" />
+								Delete
+							</button>
+						{:else}
+							<div></div>
+						{/if}
+
+						<!-- Custom footer actions -->
+						{#if footerActions}
+							<div class="flex items-center gap-2">
+								{@render footerActions()}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+	</Sheet.Content>
+</Sheet.Root>

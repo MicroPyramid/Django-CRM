@@ -154,18 +154,18 @@ export const taskStatusOptions = [
 ];
 
 export const caseStatusOptions = [
-	{ value: 'NEW', label: 'New', color: 'bg-blue-100 text-blue-700' },
-	{ value: 'ASSIGNED', label: 'Assigned', color: 'bg-blue-100 text-blue-700' },
-	{ value: 'PENDING', label: 'Pending', color: 'bg-yellow-100 text-yellow-700' },
-	{ value: 'IN PROGRESS', label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' },
-	{ value: 'CLOSED', label: 'Closed', color: 'bg-gray-100 text-gray-600' },
-	{ value: 'REJECTED', label: 'Rejected', color: 'bg-red-100 text-red-700' }
+	{ value: 'New', label: 'New', color: 'bg-blue-100 text-blue-700' },
+	{ value: 'Assigned', label: 'Assigned', color: 'bg-blue-100 text-blue-700' },
+	{ value: 'Pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-700' },
+	{ value: 'Closed', label: 'Closed', color: 'bg-gray-100 text-gray-600' },
+	{ value: 'Rejected', label: 'Rejected', color: 'bg-red-100 text-red-700' },
+	{ value: 'Duplicate', label: 'Duplicate', color: 'bg-orange-100 text-orange-700' }
 ];
 
 export const caseTypeOptions = [
-	{ value: 'QUESTION', label: 'Question', color: 'bg-blue-100 text-blue-700' },
-	{ value: 'INCIDENT', label: 'Incident', color: 'bg-orange-100 text-orange-700' },
-	{ value: 'PROBLEM', label: 'Problem', color: 'bg-red-100 text-red-700' }
+	{ value: 'Question', label: 'Question', color: 'bg-blue-100 text-blue-700' },
+	{ value: 'Incident', label: 'Incident', color: 'bg-orange-100 text-orange-700' },
+	{ value: 'Problem', label: 'Problem', color: 'bg-red-100 text-red-700' }
 ];
 
 export const accountStatusOptions = [

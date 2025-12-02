@@ -40,14 +40,15 @@ export async function load({ url, locals, cookies }) {
 		if (account) queryParams.append('account', account);
 		// Django doesn't have direct owner name filter, we'd need to filter by assigned_to ID
 
-		// Fetch cases, users, accounts, contacts, and teams in parallel
-		const [casesResponse, usersResponse, accountsResponse, contactsResponse, teamsResponse] =
+		// Fetch cases, users, accounts, contacts, teams, and tags in parallel
+		const [casesResponse, usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] =
 			await Promise.all([
 				apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
 				apiRequest('/users/', {}, { cookies, org }),
 				apiRequest('/accounts/', {}, { cookies, org }),
 				apiRequest('/contacts/', {}, { cookies, org }),
-				apiRequest('/teams/', {}, { cookies, org })
+				apiRequest('/teams/', {}, { cookies, org }),
+				apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
 			]);
 
 		// Extract cases from response
@@ -130,6 +131,12 @@ export async function load({ url, locals, cookies }) {
 				name: team.name
 			})),
 
+			// Tags (M2M)
+			tags: (caseItem.tags || []).map((tag) => ({
+				id: tag.id,
+				name: tag.name
+			})),
+
 			// Comments (from detail endpoint)
 			comments: (caseItem.comments || []).map((comment) => ({
 				id: comment.id,
@@ -204,6 +211,21 @@ export async function load({ url, locals, cookies }) {
 			name: team.name
 		}));
 
+		// Transform tags list
+		let allTags = [];
+		if (tagsResponse.tags) {
+			allTags = tagsResponse.tags;
+		} else if (tagsResponse.results) {
+			allTags = tagsResponse.results;
+		} else if (Array.isArray(tagsResponse)) {
+			allTags = tagsResponse;
+		}
+
+		const transformedTags = allTags.map((tag) => ({
+			id: tag.id,
+			name: tag.name
+		}));
+
 		// Status options from Django (matching backend CASE_TYPE choices)
 		const statusOptions = ['New', 'Assigned', 'Pending', 'Closed', 'Rejected', 'Duplicate'];
 		const caseTypeOptions = ['Question', 'Incident', 'Problem'];
@@ -214,6 +236,7 @@ export async function load({ url, locals, cookies }) {
 			allAccounts: transformedAccounts,
 			allContacts: transformedContacts,
 			allTeams: transformedTeams,
+			allTags: transformedTags,
 			statusOptions,
 			caseTypeOptions
 		};
@@ -238,16 +261,19 @@ export const actions = {
 			const assignedToJson = form.get('assignedTo')?.toString();
 			const contactsJson = form.get('contacts')?.toString();
 			const teamsJson = form.get('teams')?.toString();
+			const tagsJson = form.get('tags')?.toString();
 
 			// Parse JSON arrays
 			let assignedTo = [];
 			let contacts = [];
 			let teams = [];
+			let tags = [];
 
 			try {
 				assignedTo = assignedToJson ? JSON.parse(assignedToJson) : [];
 				contacts = contactsJson ? JSON.parse(contactsJson) : [];
 				teams = teamsJson ? JSON.parse(teamsJson) : [];
+				tags = tagsJson ? JSON.parse(tagsJson) : [];
 			} catch {
 				// Fallback for single ID format
 				const ownerId = form.get('assignedId')?.toString();
@@ -269,6 +295,7 @@ export const actions = {
 				assigned_to: assignedTo,
 				contacts,
 				teams,
+				tags,
 				status: 'New'
 			};
 
@@ -303,16 +330,19 @@ export const actions = {
 			const assignedToJson = form.get('assignedTo')?.toString();
 			const contactsJson = form.get('contacts')?.toString();
 			const teamsJson = form.get('teams')?.toString();
+			const tagsJson = form.get('tags')?.toString();
 
 			// Parse JSON arrays
 			let assignedTo = [];
 			let contacts = [];
 			let teams = [];
+			let tags = [];
 
 			try {
 				assignedTo = assignedToJson ? JSON.parse(assignedToJson) : [];
 				contacts = contactsJson ? JSON.parse(contactsJson) : [];
 				teams = teamsJson ? JSON.parse(teamsJson) : [];
+				tags = tagsJson ? JSON.parse(tagsJson) : [];
 			} catch {
 				// Fallback for single ID format
 				const ownerId = form.get('assignedId')?.toString();
@@ -334,7 +364,8 @@ export const actions = {
 				case_type: caseType,
 				assigned_to: assignedTo,
 				contacts,
-				teams
+				teams,
+				tags
 			};
 
 			await apiRequest(
@@ -391,7 +422,7 @@ export const actions = {
 				`/cases/${caseId}/`,
 				{
 					method: 'PATCH',
-					body: { status: 'In Progress' }
+					body: { status: 'Assigned' }
 				},
 				{ cookies, org: locals.org }
 			);

@@ -1,31 +1,26 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { tick, onMount } from 'svelte';
+	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
-		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
 		CheckSquare,
 		Building2,
-		User,
 		Calendar,
 		List,
 		Flag,
 		Circle,
 		CheckCircle2,
-		AlertCircle,
 		Clock,
 		RotateCcw,
-		Eye,
-		Expand,
-		GripVertical,
 		Check,
 		X,
 		Trash2,
 		Users,
+		User,
 		Zap
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
@@ -34,11 +29,9 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { cn } from '$lib/utils.js';
-	import { formatRelativeDate } from '$lib/utils/formatting.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
 	import { useListFilters } from '$lib/hooks';
-
-	const STORAGE_KEY = 'tasks-table-columns';
+	import { NotionTable } from '$lib/components/ui/notion-table';
 
 	// Status and priority options with colors (matching notion style)
 	const statusOptions = [
@@ -55,53 +48,39 @@
 		{ value: 'Low', label: 'Low', color: 'bg-gray-100 text-gray-600' }
 	];
 
-	// Column definitions
-	const columns = [
-		{ key: 'subject', label: 'Task', type: 'text', width: 'w-64' },
-		{ key: 'account', label: 'Account', type: 'relation', width: 'w-40' },
-		{ key: 'assignedTo', label: 'Assigned To', type: 'relation', width: 'w-36' },
+	/**
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
+	 */
+
+	/** @type {TaskColumn[]} */
+	const taskColumns = [
+		{ key: 'subject', label: 'Task', type: 'text', width: 'w-64', canHide: false },
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'relation',
+			width: 'w-40',
+			relationIcon: 'building',
+			getValue: (/** @type {any} */ row) => row.account
+		},
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'user',
+			getValue: (/** @type {any} */ row) => {
+				const assigned = row.assignedTo || [];
+				if (assigned.length === 0) return null;
+				if (assigned.length === 1) return assigned[0];
+				return { name: `${assigned.length} users` };
+			}
+		},
 		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
 		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-32' },
 		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' }
 	];
-
-	// Column visibility state - all visible by default
-	let visibleColumns = $state(columns.map((c) => c.key));
-
-	// Load column visibility from localStorage
-	onMount(() => {
-		const saved = localStorage.getItem(STORAGE_KEY);
-		if (saved) {
-			try {
-				visibleColumns = JSON.parse(saved);
-			} catch (e) {
-				console.error('Failed to parse saved columns:', e);
-			}
-		}
-	});
-
-	// Save column visibility when changed
-	$effect(() => {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
-	});
-
-	/**
-	 * @param {string} key
-	 */
-	function isColumnVisible(key) {
-		return visibleColumns.includes(key);
-	}
-
-	/**
-	 * @param {string} key
-	 */
-	function toggleColumn(key) {
-		if (visibleColumns.includes(key)) {
-			visibleColumns = visibleColumns.filter((k) => k !== key);
-		} else {
-			visibleColumns = [...visibleColumns, key];
-		}
-	}
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -143,23 +122,12 @@
 		localTasks = [...filteredTasks];
 	});
 
-	// Editing state
-	/** @type {{ taskId: string, columnKey: string } | null} */
-	let editingCell = $state(null);
-	let editValue = $state('');
 
 	// Row detail sheet state
 	let sheetOpen = $state(false);
 	/** @type {string | null} */
 	let selectedTaskId = $state(null);
 
-	// Drag-and-drop state
-	/** @type {string | null} */
-	let draggedTaskId = $state(null);
-	/** @type {string | null} */
-	let dragOverTaskId = $state(null);
-	/** @type {'before' | 'after' | null} */
-	let dropPosition = $state(null);
 
 	// View mode state (list or calendar)
 	/** @type {'list' | 'calendar'} */
@@ -192,109 +160,45 @@
 	});
 
 	/**
-	 * @param {string} taskId
-	 * @param {string} columnKey
+	 * NotionTable callback - handle inline row changes
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	async function startEditing(taskId, columnKey) {
-		const task = localTasks.find((t) => t.id === taskId);
-		if (!task) return;
+	async function handleRowChange(row, field, value) {
+		// Optimistically update local state
+		localTasks = localTasks.map((t) => (t.id === row.id ? { ...t, [field]: value } : t));
 
-		editingCell = { taskId, columnKey };
-		editValue = task[columnKey]?.toString() ?? '';
-		await tick();
-
-		const input = document.querySelector(`[data-edit-input="${taskId}-${columnKey}"]`);
-		if (input) {
-			// @ts-ignore
-			input.focus();
-			// @ts-ignore
-			if (input.select) input.select();
-		}
-	}
-
-	/**
-	 * @param {boolean} save
-	 */
-	async function stopEditing(save = true) {
-		if (!editingCell) return;
-
-		if (save) {
-			const { taskId, columnKey } = editingCell;
-			const task = localTasks.find((t) => t.id === taskId);
-			if (task && task[columnKey] !== editValue) {
-				// Update local state optimistically
-				localTasks = localTasks.map((t) => {
-					if (t.id === taskId) {
-						return { ...t, [columnKey]: editValue };
-					}
-					return t;
-				});
-
-				// Submit update to server
-				formState.taskId = taskId;
-				formState.subject = columnKey === 'subject' ? editValue : task.subject || '';
-				formState.description = task.description || '';
-				formState.status = task.status || 'New';
-				formState.priority = task.priority || 'Medium';
-				formState.dueDate = task.dueDate ? task.dueDate.split('T')[0] : '';
-				formState.accountId = task.account?.id || '';
-				formState.assignedTo = (task.assignedTo || []).map((/** @type {any} */ a) => a.id);
-				formState.contacts = (task.contacts || []).map((/** @type {any} */ c) => c.id);
-				formState.teams = (task.teams || []).map((/** @type {any} */ t) => t.id);
-
-				await tick();
-				updateForm.requestSubmit();
-			}
-		}
-
-		editingCell = null;
-		editValue = '';
-	}
-
-	/**
-	 * @param {KeyboardEvent} e
-	 */
-	function handleKeydown(e) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			stopEditing(true);
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			stopEditing(false);
-		}
-	}
-
-	/**
-	 * @param {string} taskId
-	 * @param {string} columnKey
-	 * @param {string} value
-	 */
-	async function updateSelectValue(taskId, columnKey, value) {
-		const task = localTasks.find((t) => t.id === taskId);
-		if (!task) return;
-
-		// Update local state optimistically
-		localTasks = localTasks.map((t) => {
-			if (t.id === taskId) {
-				return { ...t, [columnKey]: value };
-			}
-			return t;
-		});
-
-		// Submit update to server
-		formState.taskId = taskId;
-		formState.subject = task.subject || '';
-		formState.description = task.description || '';
-		formState.status = columnKey === 'status' ? value : task.status || 'New';
-		formState.priority = columnKey === 'priority' ? value : task.priority || 'Medium';
-		formState.dueDate = task.dueDate ? task.dueDate.split('T')[0] : '';
-		formState.accountId = task.account?.id || '';
-		formState.assignedTo = (task.assignedTo || []).map((/** @type {any} */ a) => a.id);
-		formState.contacts = (task.contacts || []).map((/** @type {any} */ c) => c.id);
-		formState.teams = (task.teams || []).map((/** @type {any} */ t) => t.id);
+		// Prepare form state and submit to server
+		formState.taskId = row.id;
+		formState.subject = field === 'subject' ? value : row.subject || '';
+		formState.description = row.description || '';
+		formState.status = field === 'status' ? value : row.status || 'New';
+		formState.priority = field === 'priority' ? value : row.priority || 'Medium';
+		formState.dueDate = row.dueDate ? row.dueDate.split('T')[0] : '';
+		formState.accountId = row.account?.id || '';
+		formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
+		formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
+		formState.teams = (row.teams || []).map((/** @type {any} */ t) => t.id);
 
 		await tick();
 		updateForm.requestSubmit();
+	}
+
+	/**
+	 * NotionTable callback - handle row click to open sheet
+	 * @param {any} row
+	 */
+	function handleRowClick(row) {
+		openTaskSheet(row.id);
+	}
+
+	/**
+	 * NotionTable callback - handle reorder
+	 * @param {any[]} newData
+	 */
+	function handleReorder(newData) {
+		localTasks = newData;
 	}
 
 	/**
@@ -408,87 +312,6 @@
 		formState.taskId = selectedTaskId;
 		await tick();
 		reopenForm.requestSubmit();
-	}
-
-	// Drag-and-drop handlers
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} taskId
-	 */
-	function handleDragStart(e, taskId) {
-		draggedTaskId = taskId;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', taskId);
-		}
-	}
-
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} taskId
-	 */
-	function handleRowDragOver(e, taskId) {
-		e.preventDefault();
-		if (draggedTaskId === taskId) return;
-
-		dragOverTaskId = taskId;
-
-		// Determine drop position based on mouse position
-		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
-		const midpoint = rect.top + rect.height / 2;
-		dropPosition = e.clientY < midpoint ? 'before' : 'after';
-	}
-
-	function handleRowDragLeave() {
-		dragOverTaskId = null;
-		dropPosition = null;
-	}
-
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} targetTaskId
-	 */
-	function handleRowDrop(e, targetTaskId) {
-		e.preventDefault();
-		if (!draggedTaskId || draggedTaskId === targetTaskId) {
-			resetDragState();
-			return;
-		}
-
-		const draggedIndex = localTasks.findIndex((t) => t.id === draggedTaskId);
-		const targetIndex = localTasks.findIndex((t) => t.id === targetTaskId);
-
-		if (draggedIndex === -1 || targetIndex === -1) {
-			resetDragState();
-			return;
-		}
-
-		// Create new array and reorder
-		const newData = [...localTasks];
-		const [draggedItem] = newData.splice(draggedIndex, 1);
-
-		// Calculate insert position
-		let insertIndex = targetIndex;
-		if (dropPosition === 'after') {
-			insertIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-		} else {
-			insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
-		}
-
-		newData.splice(insertIndex, 0, draggedItem);
-		localTasks = newData;
-
-		resetDragState();
-	}
-
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	function resetDragState() {
-		draggedTaskId = null;
-		dragOverTaskId = null;
-		dropPosition = null;
 	}
 
 	// Get selected task data
@@ -670,40 +493,6 @@
 				</Button>
 			</div>
 
-			{#if viewMode === 'list'}
-				<!-- Column Visibility Dropdown (Notion style) -->
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline" size="sm" class="gap-2">
-								<Eye class="h-4 w-4" />
-								Columns
-								{#if visibleColumns.length < columns.length}
-									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
-									>
-										{visibleColumns.length}/{columns.length}
-									</span>
-								{/if}
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-48">
-						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						{#each columns as column (column.key)}
-							<DropdownMenu.CheckboxItem
-								class=""
-								checked={isColumnVisible(column.key)}
-								onCheckedChange={() => toggleColumn(column.key)}
-							>
-								{column.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			{/if}
-
 			<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 				{#snippet children()}
 					<div class="space-y-3">
@@ -745,278 +534,28 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	{#if viewMode === 'list'}
-		<!-- Notion-style Tasks Table -->
-		<div class="min-h-screen bg-white dark:bg-gray-950 rounded-lg border border-border/40">
-			<!-- Header -->
-			<div class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-				<div class="flex items-center justify-between">
-					<div>
-						<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Tasks Database</h1>
-						<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-							{filteredTasks.length} tasks
-						</p>
-					</div>
+		<NotionTable
+			data={localTasks}
+			columns={taskColumns}
+			storageKey="tasks-table-columns"
+			enableDragDrop={true}
+			enableColumnToggle={true}
+			enableNewRow={true}
+			onRowChange={handleRowChange}
+			onRowClick={handleRowClick}
+			onAddRow={addNewTask}
+			onReorder={handleReorder}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<CheckSquare class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No tasks found</h3>
+					<p class="text-muted-foreground mt-1 text-sm">
+						Try adjusting your search criteria or create a new task.
+					</p>
 				</div>
-			</div>
-
-			<!-- Table -->
-			<div class="overflow-x-auto">
-				<table class="w-full border-collapse">
-					<!-- Header -->
-					<thead>
-						<tr class="border-b border-gray-100/60 dark:border-gray-800/60">
-							<!-- Drag handle column -->
-							<th class="w-8 px-1"></th>
-							<!-- Expand button column -->
-							<th class="w-8 px-1"></th>
-							{#each columns as column (column.key)}
-								{#if isColumnVisible(column.key)}
-									<th
-										class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 dark:text-gray-500 {column.width}"
-									>
-										{column.label}
-									</th>
-								{/if}
-							{/each}
-						</tr>
-					</thead>
-
-					<!-- Body -->
-					<tbody>
-						{#if localTasks.length === 0}
-							<tr>
-								<td colspan={visibleColumns.length + 2} class="py-16 text-center">
-									<div class="flex flex-col items-center justify-center">
-										<CheckSquare class="text-muted-foreground/50 mb-4 h-12 w-12" />
-										<h3 class="text-foreground text-lg font-medium">No tasks found</h3>
-										<p class="text-muted-foreground mt-1 text-sm">
-											Try adjusting your search criteria or create a new task.
-										</p>
-										<Button onclick={addNewTask} class="mt-4">
-											<Plus class="mr-2 h-4 w-4" />
-											Create New Task
-										</Button>
-									</div>
-								</td>
-							</tr>
-						{:else}
-							{#each localTasks as task (task.id)}
-								{@const isOverdue =
-									task.dueDate && task.status !== 'Completed' && new Date(task.dueDate) < new Date()}
-
-								<!-- Drop indicator line (before row) -->
-								{#if dragOverTaskId === task.id && dropPosition === 'before'}
-									<tr class="h-0">
-										<td colspan={visibleColumns.length + 2} class="p-0">
-											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
-										</td>
-									</tr>
-								{/if}
-
-								<tr
-									class="group hover:bg-gray-50/30 dark:hover:bg-gray-900/30 transition-all duration-100 ease-out {draggedTaskId ===
-									task.id
-										? 'opacity-40 bg-gray-100 dark:bg-gray-800'
-										: ''}"
-									ondragover={(e) => handleRowDragOver(e, task.id)}
-									ondragleave={handleRowDragLeave}
-									ondrop={(e) => handleRowDrop(e, task.id)}
-								>
-									<!-- Drag Handle -->
-									<td class="w-8 px-1 py-3">
-										<div
-											draggable="true"
-											ondragstart={(e) => handleDragStart(e, task.id)}
-											ondragend={handleDragEnd}
-											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-grab active:cursor-grabbing"
-											role="button"
-											tabindex="0"
-											aria-label="Drag to reorder"
-										>
-											<GripVertical class="h-4 w-4 text-gray-400" />
-										</div>
-									</td>
-
-									<!-- Expand button -->
-									<td class="w-8 px-1 py-3">
-										<button
-											type="button"
-											onclick={() => openTaskSheet(task.id)}
-											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-75"
-										>
-											<Expand class="h-3.5 w-3.5 text-gray-500" />
-										</button>
-									</td>
-
-									{#each columns as column (column.key)}
-										{#if isColumnVisible(column.key)}
-											<td class="px-4 py-3 {column.width}">
-												<!-- Text cells (subject) -->
-												{#if column.type === 'text'}
-													{#if editingCell?.taskId === task.id && editingCell?.columnKey === column.key}
-														<input
-															type="text"
-															bind:value={editValue}
-															onkeydown={handleKeydown}
-															onblur={() => stopEditing(true)}
-															data-edit-input="{task.id}-{column.key}"
-															class="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 rounded outline-none ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-														/>
-													{:else}
-														<button
-															type="button"
-															onclick={() => startEditing(task.id, column.key)}
-															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-text transition-colors duration-75 {task.status ===
-															'Completed'
-																? 'line-through text-gray-500'
-																: ''}"
-														>
-															{#if task[column.key]}
-																{task[column.key]}
-															{:else}
-																<span class="text-gray-400">Empty</span>
-															{/if}
-														</button>
-													{/if}
-
-													<!-- Relation cells (account, assignedTo) -->
-												{:else if column.type === 'relation'}
-													{#if column.key === 'account'}
-														<button
-															type="button"
-															onclick={() => openTaskSheet(task.id)}
-															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-75"
-														>
-															{#if task.account}
-																<div class="flex items-center gap-1.5">
-																	<Building2 class="h-3.5 w-3.5 text-gray-400" />
-																	<span class="truncate">{task.account.name}</span>
-																</div>
-															{:else}
-																<span class="text-gray-400">-</span>
-															{/if}
-														</button>
-													{:else if column.key === 'assignedTo'}
-														<button
-															type="button"
-															onclick={() => openTaskSheet(task.id)}
-															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-75"
-														>
-															{#if task.assignedTo && task.assignedTo.length > 0}
-																<div class="flex items-center gap-1.5">
-																	<User class="h-3.5 w-3.5 text-gray-400" />
-																	<span class="truncate">
-																		{task.assignedTo.length === 1
-																			? task.assignedTo[0].name
-																			: `${task.assignedTo.length} users`}
-																	</span>
-																</div>
-															{:else}
-																<span class="text-gray-400">Unassigned</span>
-															{/if}
-														</button>
-													{/if}
-
-													<!-- Select cells (Status, Priority) -->
-												{:else if column.type === 'select'}
-													<DropdownMenu.Root>
-														<DropdownMenu.Trigger>
-															{#snippet child({ props })}
-																<button
-																	{...props}
-																	type="button"
-																	class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {getOptionStyle(
-																		task[column.key],
-																		column.options
-																	)} hover:opacity-80 transition-opacity"
-																>
-																	{getOptionLabel(task[column.key], column.options)}
-																	<ChevronDown class="h-3 w-3 opacity-60" />
-																</button>
-															{/snippet}
-														</DropdownMenu.Trigger>
-														<DropdownMenu.Content align="start" class="w-36">
-															{#each column.options as option (option.value)}
-																<DropdownMenu.Item
-																	onclick={() =>
-																		updateSelectValue(task.id, column.key, option.value)}
-																	class="flex items-center gap-2"
-																>
-																	<span
-																		class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"
-																	></span>
-																	{option.label}
-																	{#if task[column.key] === option.value}
-																		<Check class="h-4 w-4 ml-auto" />
-																	{/if}
-																</DropdownMenu.Item>
-															{/each}
-														</DropdownMenu.Content>
-													</DropdownMenu.Root>
-
-													<!-- Date cells -->
-												{:else if column.type === 'date'}
-													{#if editingCell?.taskId === task.id && editingCell?.columnKey === column.key}
-														<input
-															type="date"
-															bind:value={editValue}
-															onkeydown={handleKeydown}
-															onblur={() => stopEditing(true)}
-															data-edit-input="{task.id}-{column.key}"
-															class="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 rounded outline-none ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-														/>
-													{:else}
-														<button
-															type="button"
-															onclick={() => openTaskSheet(task.id)}
-															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-75 {isOverdue
-																? 'text-red-600 dark:text-red-400 font-medium'
-																: 'text-gray-900 dark:text-gray-100'}"
-														>
-															{#if task[column.key]}
-																<div class="flex items-center gap-1.5">
-																	<Calendar class="h-3.5 w-3.5 {isOverdue ? 'text-red-500' : 'text-gray-400'}" />
-																	{formatDate(task[column.key])}
-																</div>
-															{:else}
-																<span class="text-gray-400">-</span>
-															{/if}
-														</button>
-													{/if}
-												{/if}
-											</td>
-										{/if}
-									{/each}
-								</tr>
-
-								<!-- Drop indicator line (after row) -->
-								{#if dragOverTaskId === task.id && dropPosition === 'after'}
-									<tr class="h-0">
-										<td colspan={visibleColumns.length + 2} class="p-0">
-											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
-										</td>
-									</tr>
-								{/if}
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-
-			<!-- Add row button at bottom -->
-			{#if localTasks.length > 0}
-				<div class="border-t border-gray-100 dark:border-gray-800 px-4 py-2">
-					<button
-						type="button"
-						onclick={addNewTask}
-						class="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
-					>
-						<Plus class="h-4 w-4" />
-						New row
-					</button>
-				</div>
-			{/if}
-		</div>
+			{/snippet}
+		</NotionTable>
 	{:else}
 		<!-- Calendar View -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

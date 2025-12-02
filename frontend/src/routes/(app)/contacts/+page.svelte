@@ -421,6 +421,7 @@
 						<DropdownMenu.Separator />
 						{#each columns as column (column.key)}
 							<DropdownMenu.CheckboxItem
+								class=""
 								checked={isColumnVisible(column.key)}
 								onCheckedChange={() => toggleColumn(column.key)}
 								disabled={column.key === 'contact'}

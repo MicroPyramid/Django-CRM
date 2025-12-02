@@ -18,14 +18,10 @@
 		Briefcase,
 		Globe,
 		Check,
-		Trash2,
-		List,
-		LayoutGrid
+		Trash2
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { KanbanBoard } from '$lib/components/opportunities';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { formatCurrency } from '$lib/utils/formatting.js';
@@ -75,7 +71,6 @@
 	// State
 	let searchQuery = $state('');
 	let stageFilter = $state('ALL');
-	let viewMode = $state(/** @type {'list' | 'kanban'} */ ('list'));
 
 	// Column visibility state - all visible by default
 	let visibleColumns = $state(columns.map(c => c.key));
@@ -451,16 +446,6 @@
 		}
 	}
 
-	/**
-	 * Handle stage change from Kanban drag-and-drop
-	 * @param {string} opportunityId
-	 * @param {string} newStage
-	 */
-	async function handleStageChange(opportunityId, newStage) {
-		await saveFieldValue(opportunityId, 'stage', newStage);
-		toast.success('Stage updated');
-	}
-
 	// Get selected row data
 	const selectedRow = $derived(filteredOpportunities.find((/** @type {any} */ r) => r.id === selectedRowId));
 </script>
@@ -472,41 +457,8 @@
 <PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
-			<!-- View Toggle -->
-			<Tabs.Root bind:value={viewMode} class="hidden sm:block">
-				<Tabs.List class="h-9">
-					<Tabs.Trigger value="list" class="gap-1.5 px-3">
-						<List class="h-4 w-4" />
-						<span class="hidden md:inline">List</span>
-					</Tabs.Trigger>
-					<Tabs.Trigger value="kanban" class="gap-1.5 px-3">
-						<LayoutGrid class="h-4 w-4" />
-						<span class="hidden md:inline">Kanban</span>
-					</Tabs.Trigger>
-				</Tabs.List>
-			</Tabs.Root>
-
-			<!-- Mobile View Toggle -->
-			<div class="flex gap-1 sm:hidden">
-				<Button
-					variant={viewMode === 'list' ? 'default' : 'outline'}
-					size="icon"
-					onclick={() => (viewMode = 'list')}
-				>
-					<List class="h-4 w-4" />
-				</Button>
-				<Button
-					variant={viewMode === 'kanban' ? 'default' : 'outline'}
-					size="icon"
-					onclick={() => (viewMode = 'kanban')}
-				>
-					<LayoutGrid class="h-4 w-4" />
-				</Button>
-			</div>
-
-			{#if viewMode === 'list'}
-				<!-- Column Visibility Dropdown -->
-				<DropdownMenu.Root>
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
 					<DropdownMenu.Trigger asChild>
 						{#snippet child({ props })}
 							<Button {...props} variant="outline" size="sm" class="gap-2">
@@ -534,7 +486,6 @@
 						{/each}
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
-			{/if}
 
 			<FilterPopover activeCount={activeFiltersCount} onClear={clearFilters}>
 				{#snippet children()}
@@ -562,20 +513,8 @@
 </PageHeader>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Content View -->
-	{#if viewMode === 'kanban'}
-		<!-- Kanban View -->
-		<div class="h-[calc(100vh-400px)] min-h-[500px]">
-			<KanbanBoard
-				opportunities={filteredOpportunities}
-				onCardClick={(opp) => openRowSheet(opp.id)}
-				onStageChange={handleStageChange}
-				onCreateNew={addNewRow}
-			/>
-		</div>
-	{:else}
-		<!-- Notion-style Table View -->
-		<div class="min-h-screen bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
+	<!-- Table View -->
+	<div class="min-h-screen bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
 			<!-- Table -->
 			<div class="overflow-x-auto">
 				<table class="w-full border-collapse">
@@ -817,7 +756,6 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
 </div>
 
 <!-- Row Detail Sheet (Notion-style) -->

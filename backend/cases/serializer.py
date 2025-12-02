@@ -84,6 +84,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "description",
             "is_active",
             "account",
+            "org",
         )
         read_only_fields = ("org",)
 
