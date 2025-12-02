@@ -54,7 +54,7 @@ class Opportunity(AssignableMixin, BaseModel):
 
     # Assignment
     assigned_to = models.ManyToManyField(
-        Profile, related_name="opportunity_assigned_to"
+        Profile, related_name="opportunity_assigned_users"
     )
     teams = models.ManyToManyField(Teams, related_name="opportunity_teams")
     closed_by = models.ForeignKey(

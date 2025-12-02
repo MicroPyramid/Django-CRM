@@ -132,9 +132,6 @@ class Org(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
     api_key = models.TextField(default=generate_unique_key, unique=True, editable=False)
     is_active = models.BooleanField(default=True)
-    # address = models.TextField(blank=True, null=True)
-    # user_limit = models.IntegerField(default=5)
-    # country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
 
     class Meta:
         verbose_name = "Organization"
@@ -170,52 +167,6 @@ class Tags(BaseModel):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-
-
-# class User(AbstractBaseUser, PermissionsMixin):
-#     email = models.EmailField(_("email address"), blank=True, unique=True)
-#     profile_pic = models.FileField(
-#         max_length=1000, upload_to=img_url, null=True, blank=True
-#     )
-#     activation_key = models.CharField(max_length=150, null=True, blank=True)
-#     key_expires = models.DateTimeField(null=True, blank=True)
-
-
-#     USERNAME_FIELD = "email"
-#     REQUIRED_FIELDS = ["username"]
-
-#     objects = UserManager()
-
-#     def get_short_name(self):
-#         return self.username
-
-#     def documents(self):
-#         return self.document_uploaded.all()
-
-#     def get_full_name(self):
-#         full_name = None
-#         if self.first_name or self.last_name:
-#             full_name = self.first_name + " " + self.last_name
-#         elif self.username:
-#             full_name = self.username
-#         else:
-#             full_name = self.email
-#         return full_name
-
-#     @property
-#     def created_on_arrow(self):
-#         return arrow.get(self.date_joined).humanize()
-
-#     class Meta:
-#         ordering = ["-is_active"]
-
-#     def __str__(self):
-#         return self.email
-
-#     def save(self, *args, **kwargs):
-#         """by default the expiration time is set to 2 hours"""
-#         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-#         super().save(*args, **kwargs)
 
 
 class Profile(BaseModel):

@@ -121,13 +121,15 @@ class EmailLogSerializer(serializers.ModelSerializer):
 
 
 class AccountReadSerializer(serializers.ModelSerializer):
+    """Serializer for reading minimal Account data"""
 
     class Meta:
         model = Account
-        fields = ["name", "city", "tags"]
+        fields = ["id", "name", "city", "tags"]
 
 
 class AccountWriteSerializer(serializers.ModelSerializer):
+    """Serializer for API documentation of Account write operations"""
 
     class Meta:
         model = Account
@@ -144,11 +146,6 @@ class AccountWriteSerializer(serializers.ModelSerializer):
             "state",
             "postcode",
             "country",
-            "contacts",
-            "teams",
-            "assigned_to",
-            "tags",
-            "account_attachment",
             "description",
         ]
 

@@ -274,7 +274,7 @@ class TaskDetailView(APIView):
         context["users_excluding_team"] = ProfileSerializer(
             users_excluding_team, many=True
         ).data
-        context["teams"] = TeamsSerializer(Teams.objects.all(), many=True).data
+        context["teams"] = TeamsSerializer(Teams.objects.filter(org=request.profile.org), many=True).data
         return context
 
     @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)

@@ -24,6 +24,7 @@ from accounts.serializer import (
     EmailWriteSerializer,
     TagsSerializer,
 )
+from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
@@ -158,7 +159,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
     @extend_schema(
         tags=["Accounts"],
         parameters=swagger_params.organization_params,
-        request=AccountWriteSerializer,
+        request=AccountCreateSerializer,
     )
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -168,43 +169,31 @@ class AccountsListView(APIView, LimitOffsetPagination):
         # Save Account
         if serializer.is_valid():
             account_object = serializer.save(org=request.profile.org)
-            if data.get("contacts"):
-                contacts_list = json.loads(data.get("contacts"))
-                contacts = Contact.objects.filter(
-                    id__in=contacts_list, org=request.profile.org
-                )
-                if contacts:
-                    account_object.contacts.add(*contacts)
-            if data.get("tags"):
-                tags = json.loads(data.get("tags"))
-                for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                    account_object.tags.add(tag_obj)
-            if data.get("teams"):
-                teams_list = json.loads(data.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
-                if teams:
-                    account_object.teams.add(*teams)
-                if data.get("assigned_to"):
-                    assigned_to_list = json.loads(data.get("assigned_to"))
-                    profiles = Profile.objects.filter(
-                        id__in=assigned_to_list, org=request.profile.org, is_active=True
-                    )
-                    if profiles:
-                        account_object.assigned_to.add(*profiles)
 
+            # Handle M2M relationships using utilities
+            handle_m2m_assignment(
+                account_object, 'contacts', data.get('contacts'),
+                Contact, request.profile.org
+            )
+            tags = get_or_create_tags(data.get('tags'), request.profile.org)
+            if tags:
+                account_object.tags.add(*tags)
+            handle_m2m_assignment(
+                account_object, 'teams', data.get('teams'),
+                Teams, request.profile.org
+            )
+            handle_m2m_assignment(
+                account_object, 'assigned_to', data.get('assigned_to'),
+                Profile, request.profile.org, extra_filters={'is_active': True}
+            )
+
+            # Handle attachment
             if self.request.FILES.get("account_attachment"):
-                attachment = Attachments()
-                attachment.created_by = request.profile.user
-                attachment.file_name = request.FILES.get("account_attachment").name
-                attachment.content_object = account_object
-                attachment.attachment = request.FILES.get("account_attachment")
-                attachment.org = request.profile.org
-                attachment.save()
+                create_attachment(
+                    request.FILES.get("account_attachment"),
+                    account_object,
+                    request.profile
+                )
 
             recipients = list(
                 account_object.assigned_to.all().values_list("id", flat=True)

@@ -25,13 +25,9 @@ class Case(AssignableMixin, BaseModel):
         related_name="accounts_cases",
     )
     contacts = models.ManyToManyField(Contact, related_name="case_contacts")
-    # closed_on = models.DateTimeField()
     closed_on = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     assigned_to = models.ManyToManyField(Profile, related_name="case_assigned_users")
-    # created_by = models.ForeignKey(
-    #     Profile, related_name="case_created_by", on_delete=models.SET_NULL, null=True
-    # )
     is_active = models.BooleanField(default=True)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
     tags = models.ManyToManyField(Tags, related_name="case_tags", blank=True)

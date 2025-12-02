@@ -251,15 +251,7 @@ class Task(AssignableMixin, BaseModel):
 
     contacts = models.ManyToManyField(Contact, related_name="task_contacts")
 
-    assigned_to = models.ManyToManyField(Profile, related_name="users_tasks")
-
-    # created_by = models.ForeignKey(
-    #     Profile,
-    #     related_name="task_created",
-    #     blank=True,
-    #     null=True,
-    #     on_delete=models.SET_NULL,
-    # )
+    assigned_to = models.ManyToManyField(Profile, related_name="task_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
     tags = models.ManyToManyField(Tags, related_name="task_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")

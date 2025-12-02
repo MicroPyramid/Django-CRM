@@ -627,3 +627,107 @@ def append_str_to(append_to: str, *args, sep=", ", **kwargs):
             data = True
             break
     return f"{sep}".join(filter(len, result_list)) if data else ""
+
+
+# =============================================================================
+# CRM Entity Utilities
+# =============================================================================
+
+def get_or_create_tags(tag_data, org):
+    """
+    Handle tag creation/lookup for any CRM model.
+
+    Args:
+        tag_data: List of tag names or JSON string of tag names
+        org: Organization instance
+
+    Returns:
+        List of Tag objects
+    """
+    import json
+    from common.models import Tags
+
+    tags = []
+    if not tag_data:
+        return tags
+
+    # Handle JSON string input
+    if isinstance(tag_data, str):
+        try:
+            tag_data = json.loads(tag_data)
+        except json.JSONDecodeError:
+            tag_data = [tag_data]
+
+    for tag_name in tag_data:
+        if not tag_name:
+            continue
+        tag_obj, _ = Tags.objects.get_or_create(
+            slug=tag_name.lower(),
+            org=org,
+            defaults={'name': tag_name}
+        )
+        tags.append(tag_obj)
+    return tags
+
+
+def handle_m2m_assignment(instance, field_name, ids, model_class, org, extra_filters=None):
+    """
+    Handle ManyToMany field assignment with org filtering.
+
+    Args:
+        instance: Model instance with the M2M field
+        field_name: Name of the M2M field
+        ids: List of IDs or JSON string of IDs to assign
+        model_class: The related model class
+        org: Organization instance
+        extra_filters: Optional dict of additional filters (e.g., {'is_active': True})
+
+    Returns:
+        QuerySet of objects that were assigned
+    """
+    import json
+
+    field = getattr(instance, field_name)
+
+    if not ids:
+        return model_class.objects.none()
+
+    # Handle JSON string input
+    if isinstance(ids, str):
+        try:
+            ids = json.loads(ids)
+        except json.JSONDecodeError:
+            ids = [ids]
+
+    filters = {'id__in': ids, 'org': org}
+    if extra_filters:
+        filters.update(extra_filters)
+
+    objects = model_class.objects.filter(**filters)
+    if objects.exists():
+        field.add(*objects)
+    return objects
+
+
+def create_attachment(file, content_object, profile):
+    """
+    Create an attachment for any CRM content object.
+
+    Args:
+        file: The uploaded file object
+        content_object: The model instance to attach to
+        profile: The user's profile
+
+    Returns:
+        Attachments instance
+    """
+    from common.models import Attachments
+
+    attachment = Attachments()
+    attachment.created_by = profile.user
+    attachment.file_name = file.name
+    attachment.content_object = content_object
+    attachment.attachment = file
+    attachment.org = profile.org
+    attachment.save()
+    return attachment

@@ -30,7 +30,6 @@ class OpportunitySerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    opportunity_attachment = AttachmentsSerializer(read_only=True, many=True)
     get_team_users = ProfileSerializer(read_only=True, many=True)
     get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
     get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
@@ -61,8 +60,6 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "tags",
             # Notes
             "description",
-            # Related
-            "opportunity_attachment",
             # System
             "created_by",
             "created_at",
@@ -130,7 +127,6 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
 
 class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField()
-    opportunity_attachment = serializers.FileField()
 
     class Meta:
         model = Opportunity
@@ -149,13 +145,11 @@ class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "tags",
-            "opportunity_attachment",
         )
 
 
 class OpportunityDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
-    opportunity_attachment = serializers.FileField()
 
 
 class OpportunityCommentEditSwaggerSerializer(serializers.Serializer):

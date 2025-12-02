@@ -156,8 +156,6 @@ class LeadListView(APIView, LimitOffsetPagination):
         request=LeadCreateSwaggerSerializer,
     )
     def post(self, request, *args, **kwargs):
-
-        print("test")
         data = request.data
         serializer = LeadCreateSerializer(data=data, request_obj=request)
         if serializer.is_valid():
