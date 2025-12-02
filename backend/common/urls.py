@@ -1,44 +1,67 @@
 from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
-from common import views
+from common.views.auth_views import (
+    GoogleOAuthCallbackView,
+    LoginView,
+    MeView,
+    OrgAwareTokenRefreshView,
+    OrgSwitchView,
+    RegisterView,
+)
+from common.views.dashboard_views import ActivityListView, ApiHomeView
+from common.views.document_views import DocumentDetailView, DocumentListView
+from common.views.organization_views import (
+    OrgProfileCreateView,
+    OrgUpdateView,
+    ProfileDetailView,
+    ProfileView,
+)
+from common.views.settings_views import DomainDetailView, DomainList
+from common.views.team_views import TeamsDetailView, TeamsListView
+from common.views.user_views import (
+    GetTeamsAndUsersView,
+    UserDetailView,
+    UsersListView,
+    UserStatusView,
+)
 
 app_name = "api_common"
 
 
 urlpatterns = [
-    path("dashboard/", views.ApiHomeView.as_view()),
+    path("dashboard/", ApiHomeView.as_view()),
     # JWT Authentication endpoints for SvelteKit integration
-    path("auth/login/", views.LoginView.as_view(), name="login"),
-    path("auth/register/", views.RegisterView.as_view(), name="register"),
+    path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/register/", RegisterView.as_view(), name="register"),
     path(
         "auth/refresh-token/",
-        views.OrgAwareTokenRefreshView.as_view(),
+        OrgAwareTokenRefreshView.as_view(),
         name="token_refresh",
     ),
-    path("auth/me/", views.MeView.as_view(), name="me"),
-    path("auth/profile/", views.ProfileDetailView.as_view(), name="profile_detail"),
-    path("auth/switch-org/", views.OrgSwitchView.as_view(), name="switch_org"),
+    path("auth/me/", MeView.as_view(), name="me"),
+    path("auth/profile/", ProfileDetailView.as_view(), name="profile_detail"),
+    path("auth/switch-org/", OrgSwitchView.as_view(), name="switch_org"),
     # Google OAuth callback with PKCE (secure implementation)
-    path("auth/google/callback/", views.GoogleOAuthCallbackView.as_view()),
+    path("auth/google/callback/", GoogleOAuthCallbackView.as_view()),
     # Organization and profile management
-    path("org/", views.OrgProfileCreateView.as_view()),
-    path("org/<str:pk>/", views.OrgUpdateView.as_view()),
-    path("profile/", views.ProfileView.as_view()),
+    path("org/", OrgProfileCreateView.as_view()),
+    path("org/<str:pk>/", OrgUpdateView.as_view()),
+    path("profile/", ProfileView.as_view()),
     # User management
-    path("users/get-teams-and-users/", views.GetTeamsAndUsersView.as_view()),
-    path("users/", views.UsersListView.as_view()),
-    path("user/<str:pk>/", views.UserDetailView.as_view()),
-    path("user/<str:pk>/status/", views.UserStatusView.as_view()),
+    path("users/get-teams-and-users/", GetTeamsAndUsersView.as_view()),
+    path("users/", UsersListView.as_view()),
+    path("user/<str:pk>/", UserDetailView.as_view()),
+    path("user/<str:pk>/status/", UserStatusView.as_view()),
     # Documents
-    path("documents/", views.DocumentListView.as_view()),
-    path("documents/<str:pk>/", views.DocumentDetailView.as_view()),
+    path("documents/", DocumentListView.as_view()),
+    path("documents/<str:pk>/", DocumentDetailView.as_view()),
     # API Settings
-    path("api-settings/", views.DomainList.as_view()),
-    path("api-settings/<str:pk>/", views.DomainDetailView.as_view()),
+    path("api-settings/", DomainList.as_view()),
+    path("api-settings/<str:pk>/", DomainDetailView.as_view()),
     # Activities (for dashboard recent activities)
-    path("activities/", views.ActivityListView.as_view(), name="activities"),
+    path("activities/", ActivityListView.as_view(), name="activities"),
     # Teams (merged from teams app)
-    path("teams/", views.TeamsListView.as_view()),
-    path("teams/<str:pk>/", views.TeamsDetailView.as_view()),
+    path("teams/", TeamsListView.as_view()),
+    path("teams/<str:pk>/", TeamsDetailView.as_view()),
 ]
