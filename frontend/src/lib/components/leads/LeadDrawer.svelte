@@ -260,13 +260,6 @@
 	}
 
 	/**
-	 * Get full name
-	 */
-	function getFullName() {
-		return `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || 'New Lead';
-	}
-
-	/**
 	 * Get initials for avatar
 	 */
 	function getInitials() {

@@ -6,7 +6,6 @@
 	import {
 		Plus,
 		ChevronDown,
-		ChevronUp,
 		Phone,
 		Mail,
 		Building2,
@@ -20,8 +19,6 @@
 		Trash2,
 		Star,
 		Globe,
-		Linkedin,
-		MapPin,
 		Briefcase
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
@@ -32,11 +29,6 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
-	import {
-		LEAD_STATUSES as statuses,
-		LEAD_SOURCES as sources,
-		LEAD_RATINGS as ratings
-	} from '$lib/constants/filters.js';
 	import { useListFilters } from '$lib/hooks';
 	import {
 		leadStatusOptions,
@@ -504,7 +496,6 @@
 
 	// Filtered and sorted leads
 	const filteredLeads = $derived(list.filterAndSort(leads));
-	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -515,89 +506,6 @@
 	let deleteForm;
 	/** @type {HTMLFormElement} */
 	let convertForm;
-	/** @type {HTMLFormElement} */
-	let duplicateForm;
-
-	// Cell navigation for inline editing
-	const editableColumns = ['company', 'email', 'phone', 'rating', 'status'];
-
-	/** @type {Record<string, any>} */
-	let cellRefs = {};
-
-	/**
-	 * Register a cell reference for navigation
-	 * @param {string} rowId
-	 * @param {string} column
-	 * @param {any} ref
-	 */
-	function registerCell(rowId, column, ref) {
-		cellRefs[`${rowId}-${column}`] = ref;
-	}
-
-	/**
-	 * Focus a specific cell
-	 * @param {string} rowId
-	 * @param {string} column
-	 */
-	function focusCell(rowId, column) {
-		const ref = cellRefs[`${rowId}-${column}`];
-		ref?.startEditing();
-	}
-
-	/**
-	 * Move to next cell (Tab)
-	 * @param {string} rowId
-	 * @param {string} currentColumn
-	 */
-	function handleCellNext(rowId, currentColumn) {
-		const visibleColumns = editableColumns.filter((col) => isColumnVisible(col));
-		const idx = visibleColumns.indexOf(currentColumn);
-		if (idx < visibleColumns.length - 1) {
-			focusCell(rowId, visibleColumns[idx + 1]);
-		}
-	}
-
-	/**
-	 * Move to previous cell (Shift+Tab)
-	 * @param {string} rowId
-	 * @param {string} currentColumn
-	 */
-	function handleCellPrev(rowId, currentColumn) {
-		const visibleColumns = editableColumns.filter((col) => isColumnVisible(col));
-		const idx = visibleColumns.indexOf(currentColumn);
-		if (idx > 0) {
-			focusCell(rowId, visibleColumns[idx - 1]);
-		}
-	}
-
-	/**
-	 * Move to cell below (Enter)
-	 * @param {number} currentRowIndex
-	 * @param {string} column
-	 */
-	function handleCellDown(currentRowIndex, column) {
-		if (currentRowIndex < filteredLeads.length - 1) {
-			const nextRow = filteredLeads[currentRowIndex + 1];
-			focusCell(nextRow.id, column);
-		}
-	}
-
-	// Rating options for quick edit
-	const ratingOptions = [
-		{ value: 'HOT', label: 'Hot' },
-		{ value: 'WARM', label: 'Warm' },
-		{ value: 'COLD', label: 'Cold' }
-	];
-
-	// Status options for quick edit
-	const statusOptions = [
-		{ value: 'assigned', label: 'Assigned' },
-		{ value: 'in process', label: 'In Process' },
-		{ value: 'converted', label: 'Converted' },
-		{ value: 'recycled', label: 'Recycled' },
-		{ value: 'closed', label: 'Closed' }
-	];
-
 	// Form data state
 	let formState = $state({
 		leadId: '',
@@ -720,16 +628,6 @@
 		formState.leadId = selectedLead.id;
 		await tick();
 		convertForm.requestSubmit();
-	}
-
-	/**
-	 * Handle lead duplicate
-	 * @param {any} lead
-	 */
-	async function handleDuplicate(lead) {
-		formState.leadId = lead.id;
-		await tick();
-		duplicateForm.requestSubmit();
 	}
 
 	/**
@@ -1653,12 +1551,3 @@
 	<input type="hidden" name="leadId" value={formState.leadId} />
 </form>
 
-<form
-	method="POST"
-	action="?/duplicate"
-	bind:this={duplicateForm}
-	use:enhance={createEnhanceHandler('Lead duplicated successfully')}
-	class="hidden"
->
-	<input type="hidden" name="leadId" value={formState.leadId} />
-</form>
