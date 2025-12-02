@@ -8,25 +8,15 @@
 		Plus,
 		ChevronDown,
 		ChevronUp,
-		Phone,
-		Mail,
-		Building2,
-		User,
-		Calendar,
-		Briefcase,
 		Eye,
 		Expand,
 		GripVertical,
-		Check,
-		X,
-		Trash2,
-		Linkedin
+		User
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { ContactDrawer } from '$lib/components/contacts';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
@@ -99,9 +89,6 @@
 	let selectedContact = $state(null);
 	let drawerLoading = $state(false);
 
-	// Row detail sheet state
-	let sheetOpen = $state(false);
-	let selectedRowId = $state(null);
 
 	// Drag-and-drop state
 	let draggedRowId = $state(null);
@@ -186,19 +173,6 @@
 		if (!open) updateUrl(null, null);
 	}
 
-	// Row detail sheet functions
-	/**
-	 * @param {string} rowId
-	 */
-	function openRowSheet(rowId) {
-		selectedRowId = rowId;
-		sheetOpen = true;
-	}
-
-	function closeRowSheet() {
-		sheetOpen = false;
-		selectedRowId = null;
-	}
 
 	// Drag-and-drop handlers
 	/**
@@ -254,9 +228,6 @@
 		dragOverRowId = null;
 		dropPosition = null;
 	}
-
-	// Get selected row data for sheet
-	const selectedRow = $derived(contacts.find((r) => r.id === selectedRowId));
 
 	// Filter/search/sort state
 	const list = useListFilters({
@@ -335,7 +306,7 @@
 		formState.title = formData.title || '';
 		formState.department = formData.department || '';
 		formState.doNotCall = formData.do_not_call || false;
-		formState.linkedInUrl = formData.linked_in_url || '';
+		formState.linkedInUrl = formData.linkedin_url || '';
 		formState.addressLine = formData.address_line || '';
 		formState.city = formData.city || '';
 		formState.state = formData.state || '';
@@ -369,18 +340,6 @@
 		deleteForm.requestSubmit();
 	}
 
-	/**
-	 * Handle delete from sheet
-	 */
-	async function handleSheetDelete() {
-		if (!selectedRow) return;
-		if (!confirm(`Are you sure you want to delete ${getFullName(selectedRow)}?`)) return;
-
-		formState.contactId = selectedRow.id;
-		await tick();
-		deleteForm.requestSubmit();
-		closeRowSheet();
-	}
 
 	/**
 	 * Create enhance handler for form actions
@@ -572,7 +531,7 @@
 							<td class="w-8 px-1 py-3">
 								<button
 									type="button"
-									onclick={() => openRowSheet(contact.id)}
+									onclick={() => openContact(contact)}
 									class="flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all duration-75 group-hover:opacity-100 hover:bg-gray-200"
 								>
 									<Expand class="h-3.5 w-3.5 text-gray-500" />
@@ -729,228 +688,7 @@
 	{/if}
 </div>
 
-<!-- Row Detail Sheet (Notion-style) -->
-<Sheet.Root bind:open={sheetOpen} onOpenChange={(open) => !open && closeRowSheet()}>
-	<Sheet.Content side="right" class="w-[440px] overflow-hidden p-0 sm:max-w-[440px]">
-		{#if selectedRow}
-			<div class="flex h-full flex-col">
-				<!-- Header with close button -->
-				<div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-					<span class="text-sm text-gray-500">Contact</span>
-					<button
-						onclick={closeRowSheet}
-						class="rounded p-1 transition-colors duration-75 hover:bg-gray-100"
-					>
-						<X class="h-4 w-4 text-gray-400" />
-					</button>
-				</div>
-
-				<!-- Scrollable content -->
-				<div class="flex-1 overflow-y-auto">
-					<!-- Title section -->
-					<div class="px-6 pb-4 pt-6">
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-medium text-white"
-							>
-								{getContactInitials(selectedRow)}
-							</div>
-							<h2 class="text-2xl font-semibold text-gray-900">
-								{getFullName(selectedRow)}
-							</h2>
-						</div>
-					</div>
-
-					<!-- Properties section -->
-					<div class="px-4 pb-6">
-						<!-- Email property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Mail class="h-4 w-4 text-gray-400" />
-								Email
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.email}
-									<a
-										href="mailto:{selectedRow.email}"
-										class="rounded px-2 py-1 text-sm text-gray-900 hover:bg-gray-100"
-									>
-										{selectedRow.email}
-									</a>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Phone property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Phone class="h-4 w-4 text-gray-400" />
-								Phone
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.phone}
-									<a
-										href="tel:{selectedRow.phone}"
-										class="rounded px-2 py-1 text-sm text-gray-900 hover:bg-gray-100"
-									>
-										{formatPhone(selectedRow.phone)}
-									</a>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Company property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Building2 class="h-4 w-4 text-gray-400" />
-								Company
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.organization}
-									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.organization}</span>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Title property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Briefcase class="h-4 w-4 text-gray-400" />
-								Title
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.title}
-									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.title}</span>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Department property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Briefcase class="h-4 w-4 text-gray-400" />
-								Department
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.department}
-									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.department}</span>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Owner property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<User class="h-4 w-4 text-gray-400" />
-								Owner
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.owner?.name || selectedRow.owner?.email}
-									<span class="px-2 py-1 text-sm text-gray-900"
-										>{selectedRow.owner.name || selectedRow.owner.email}</span
-									>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- LinkedIn property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Linkedin class="h-4 w-4 text-gray-400" />
-								LinkedIn
-							</div>
-							<div class="min-w-0 flex-1">
-								{#if selectedRow.linkedInUrl}
-									<a
-										href={selectedRow.linkedInUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="rounded px-2 py-1 text-sm text-blue-600 hover:bg-gray-100 hover:underline"
-									>
-										View Profile
-									</a>
-								{:else}
-									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Created property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Calendar class="h-4 w-4 text-gray-400" />
-								Created
-							</div>
-							<div class="min-w-0 flex-1">
-								<span class="px-2 py-1 text-sm text-gray-900"
-									>{formatRelativeDate(selectedRow.createdAt)}</span
-								>
-							</div>
-						</div>
-
-						<!-- Description property -->
-						{#if selectedRow.description}
-							<div class="mt-4 border-t border-gray-100 pt-4">
-								<div class="mb-2 text-[13px] text-gray-500">Description</div>
-								<p class="text-sm text-gray-700">{selectedRow.description}</p>
-							</div>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Footer with actions -->
-				<div class="mt-auto flex items-center justify-between border-t border-gray-100 px-4 py-3">
-					<button
-						onclick={handleSheetDelete}
-						class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50"
-					>
-						<Trash2 class="h-4 w-4" />
-						Delete
-					</button>
-					<Button
-						size="sm"
-						onclick={() => {
-							closeRowSheet();
-							openContact(selectedRow);
-						}}
-					>
-						Edit
-					</Button>
-				</div>
-			</div>
-		{/if}
-	</Sheet.Content>
-</Sheet.Root>
-
-<!-- Unified Contact Drawer -->
+<!-- Contact Drawer -->
 <ContactDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from cases.models import Case
+from common.models import Tags
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -11,12 +12,19 @@ from common.serializer import (
 from contacts.serializer import ContactSerializer
 
 
+class TagsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tags
+        fields = ("id", "name", "slug")
+
+
 class CaseSerializer(serializers.ModelSerializer):
     account = AccountSerializer()
     contacts = ContactSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
     org = OrganizationSerializer()
 
     class Meta:
@@ -36,13 +44,14 @@ class CaseSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "assigned_to",
+            "tags",
             "org",
             "created_on_arrow",
         )
 
 
 class CaseCreateSerializer(serializers.ModelSerializer):
-    closed_on = serializers.DateField
+    closed_on = serializers.DateField(required=False, allow_null=True)
     org = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
@@ -70,14 +79,13 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "name",
             "status",
             "priority",
+            "case_type",
+            "closed_on",
             "description",
-            "created_by",
-            "created_at",
             "is_active",
             "account",
-            "org",
-            "created_on_arrow",
         )
+        read_only_fields = ("org",)
 
 
 class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
@@ -94,6 +102,7 @@ class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
             "account",
             "case_attachment",
             "contacts",
+            "tags",
             "description",
         )
 

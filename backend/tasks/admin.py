@@ -6,11 +6,6 @@ from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 admin.site.register(Task)
 
 
-# =============================================================================
-# Kanban Board Admin (merged from boards app)
-# =============================================================================
-
-
 @admin.register(Board)
 class BoardAdmin(admin.ModelAdmin):
     list_display = ("name", "owner", "org", "is_archived", "created_at")

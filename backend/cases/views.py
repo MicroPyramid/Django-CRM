@@ -21,7 +21,7 @@ from cases.serializer import (
     CaseSerializer,
 )
 from cases.tasks import send_email_to_assigned_user
-from common.models import Attachments, Comment, Profile, Teams
+from common.models import Attachments, Comment, Profile, Tags, Teams
 
 # from common.external_auth import CustomDualAuthentication
 from common.serializer import AttachmentsSerializer, CommentSerializer
@@ -136,12 +136,25 @@ class CaseListView(APIView, LimitOffsetPagination):
                 if profiles:
                     cases_obj.assigned_to.add(*profiles)
 
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    cases_obj.tags.add(tag_obj)
+
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.cases = cases_obj
+                attachment.content_object = cases_obj
                 attachment.attachment = self.request.FILES.get("case_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             recipients = list(cases_obj.assigned_to.all().values_list("id", flat=True))
@@ -237,12 +250,26 @@ class CaseDetailView(APIView):
                 if profiles:
                     cases_object.assigned_to.add(*profiles)
 
+            cases_object.tags.clear()
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    cases_object.tags.add(tag_obj)
+
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.case = cases_object
+                attachment.content_object = cases_object
                 attachment.attachment = self.request.FILES.get("case_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             assigned_to_list = list(
@@ -271,7 +298,7 @@ class CaseDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile != self.object.created_by:
+            if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
@@ -402,8 +429,9 @@ class CaseDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("case_attachment").name
-            attachment.case = self.cases_obj
+            attachment.content_object = self.cases_obj
             attachment.attachment = self.request.FILES.get("case_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         case_content_type = ContentType.objects.get_for_model(Case)
@@ -463,7 +491,51 @@ class CaseDetailView(APIView):
         )
 
         if serializer.is_valid():
-            cases_object = serializer.save()
+            cases_object = serializer.save(
+                closed_on=params.get("closed_on") if "closed_on" in params else cases_object.closed_on,
+                case_type=params.get("case_type") if "case_type" in params else cases_object.case_type,
+            )
+
+            # Handle M2M fields if present in request
+            if "contacts" in params:
+                cases_object.contacts.clear()
+                contacts_list = params.get("contacts")
+                if contacts_list:
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    cases_object.contacts.add(*contacts)
+
+            if "teams" in params:
+                cases_object.teams.clear()
+                teams_list = params.get("teams")
+                if teams_list:
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    cases_object.teams.add(*teams)
+
+            if "assigned_to" in params:
+                cases_object.assigned_to.clear()
+                assigned_to_list = params.get("assigned_to")
+                if assigned_to_list:
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    cases_object.assigned_to.add(*profiles)
+
+            if "tags" in params:
+                cases_object.tags.clear()
+                tags_list = params.get("tags")
+                if tags_list:
+                    if isinstance(tags_list, str):
+                        tags_list = json.loads(tags_list)
+                    for tag in tags_list:
+                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if tag_obj.exists():
+                            tag_obj = tag_obj[0]
+                        else:
+                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                        cases_object.tags.add(tag_obj)
+
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},
                 status=status.HTTP_200_OK,

@@ -16,20 +16,6 @@ from common.utils import (
 from contacts.models import Contact
 
 
-class Company(BaseModel):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="companies")
-
-    class Meta:
-        verbose_name = "Company"
-        verbose_name_plural = "Companies"
-        db_table = "company"
-        ordering = ("-created_at",)
-
-    def __str__(self):
-        return f"{self.name}"
-
-
 class Lead(AssignableMixin, BaseModel):
     """
     Lead model for CRM - Streamlined for modern sales workflow
@@ -37,14 +23,15 @@ class Lead(AssignableMixin, BaseModel):
     """
 
     # Core Lead Information
-    title = models.CharField(
-        pgettext_lazy("Treatment Pronouns for the customer", "Title"), max_length=64
+    salutation = models.CharField(
+        _("Salutation"), max_length=64, blank=True, null=True,
+        help_text="e.g., Mr, Mrs, Ms, Dr"
     )
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
-    contact_title = models.CharField(
+    job_title = models.CharField(
         _("Job Title"), max_length=255, blank=True, null=True
     )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
@@ -101,12 +88,38 @@ class Lead(AssignableMixin, BaseModel):
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")
-    company = models.ForeignKey(
-        Company,
+    company_name = models.CharField(
+        _("Company Name"), max_length=255, blank=True, null=True
+    )
+    converted_account = models.ForeignKey(
+        "accounts.Account",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="lead_company",
+        related_name="converted_from_leads",
+        help_text="Account created when this lead was converted",
+    )
+    converted_contact = models.ForeignKey(
+        "contacts.Contact",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="converted_from_leads",
+        help_text="Contact created when this lead was converted",
+    )
+    converted_opportunity = models.ForeignKey(
+        "opportunity.Opportunity",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="converted_from_leads",
+        help_text="Opportunity created when this lead was converted",
+    )
+    conversion_date = models.DateTimeField(
+        _("Conversion Date"),
+        null=True,
+        blank=True,
+        help_text="When this lead was converted",
     )
 
     class Meta:
@@ -121,7 +134,8 @@ class Lead(AssignableMixin, BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.title}"
+        name_parts = [self.salutation, self.first_name, self.last_name]
+        return " ".join(part for part in name_parts if part) or f"Lead {self.id}"
 
     def get_complete_address(self):
         return return_complete_address(self)

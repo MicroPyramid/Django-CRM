@@ -614,11 +614,6 @@ class ActivitySerializer(serializers.ModelSerializer):
         ]
 
 
-# =============================================================================
-# Teams Serializers (merged from teams app)
-# =============================================================================
-
-
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer()

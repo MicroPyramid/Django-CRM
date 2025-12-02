@@ -39,7 +39,7 @@ class ContactSerializer(serializers.ModelSerializer):
             "department",
             # Communication Preferences
             "do_not_call",
-            "linked_in_url",
+            "linkedin_url",
             # Address
             "address_line",
             "city",
@@ -58,6 +58,7 @@ class ContactSerializer(serializers.ModelSerializer):
             "created_at",
             "is_active",
             "org",
+            "account",
             "created_on_arrow",
             "get_team_users",
             "get_team_and_assigned_users",
@@ -107,7 +108,7 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "department",
             # Communication Preferences
             "do_not_call",
-            "linked_in_url",
+            "linkedin_url",
             # Address
             "address_line",
             "city",
@@ -116,6 +117,10 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "country",
             # Notes
             "description",
+            # Account
+            "account",
+            # Status
+            "is_active",
         )
 
 

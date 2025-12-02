@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment, Profile, Teams
+from common.models import Attachments, Comment, Profile, Tags, Teams
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import COUNTRIES
 
@@ -101,9 +101,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Contact model uses flat address fields, no separate Address object needed
-        contact_obj = contact_serializer.save()
-        contact_obj.org = request.profile.org
-        contact_obj.save()
+        contact_obj = contact_serializer.save(org=request.profile.org)
 
         if params.get("teams"):
             teams_list = params.get("teams")
@@ -117,6 +115,18 @@ class ContactsListView(APIView, LimitOffsetPagination):
             )
             contact_obj.assigned_to.add(*profiles)
 
+        if params.get("tags"):
+            tags = params.get("tags")
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            for tag in tags:
+                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                if tag_obj.exists():
+                    tag_obj = tag_obj[0]
+                else:
+                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                contact_obj.tags.add(tag_obj)
+
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
         send_email_to_assigned_user.delay(
             recipients,
@@ -127,8 +137,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
             attachment = Attachments()
             attachment.created_by = request.profile.user
             attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.contact = contact_obj
+            attachment.content_object = contact_obj
             attachment.attachment = request.FILES.get("contact_attachment")
+            attachment.org = request.profile.org
             attachment.save()
         return Response(
             {"error": False, "message": "Contact created Successfuly"},
@@ -194,6 +205,19 @@ class ContactDetailView(APIView):
             )
             contact_obj.assigned_to.add(*profiles)
 
+        contact_obj.tags.clear()
+        if data.get("tags"):
+            tags = data.get("tags")
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            for tag in tags:
+                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                if tag_obj.exists():
+                    tag_obj = tag_obj[0]
+                else:
+                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                contact_obj.tags.add(tag_obj)
+
         previous_assigned_to_users = list(
             contact_obj.assigned_to.all().values_list("id", flat=True)
         )
@@ -210,8 +234,9 @@ class ContactDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = request.profile.user
             attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.contact = contact_obj
+            attachment.content_object = contact_obj
             attachment.attachment = request.FILES.get("contact_attachment")
+            attachment.org = request.profile.org
             attachment.save()
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},
@@ -310,7 +335,7 @@ class ContactDetailView(APIView):
         if (
             self.request.profile.role != "ADMIN"
             and not self.request.profile.is_admin
-            and self.request.profile != self.object.created_by
+            and self.request.profile.user != self.object.created_by
         ):
             return Response(
                 {
@@ -319,8 +344,6 @@ class ContactDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if self.object.address_id:
-            self.object.address.delete()
         self.object.delete()
         return Response(
             {"error": False, "message": "Contact Deleted Successfully."},
@@ -361,8 +384,9 @@ class ContactDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("contact_attachment").name
-            attachment.contact = self.contact_obj
+            attachment.content_object = self.contact_obj
             attachment.attachment = self.request.FILES.get("contact_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         contact_content_type = ContentType.objects.get_for_model(Contact)
@@ -423,6 +447,42 @@ class ContactDetailView(APIView):
             )
 
         contact_obj = contact_serializer.save()
+
+        # Handle M2M fields if present in request
+        if "teams" in data:
+            contact_obj.teams.clear()
+            teams_list = data.get("teams")
+            if teams_list:
+                if isinstance(teams_list, str):
+                    teams_list = json.loads(teams_list)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                contact_obj.teams.add(*teams)
+
+        if "assigned_to" in data:
+            contact_obj.assigned_to.clear()
+            assigned_to_list = data.get("assigned_to")
+            if assigned_to_list:
+                if isinstance(assigned_to_list, str):
+                    assigned_to_list = json.loads(assigned_to_list)
+                profiles = Profile.objects.filter(
+                    id__in=assigned_to_list, org=request.profile.org
+                )
+                contact_obj.assigned_to.add(*profiles)
+
+        if "tags" in data:
+            contact_obj.tags.clear()
+            tags_list = data.get("tags")
+            if tags_list:
+                if isinstance(tags_list, str):
+                    tags_list = json.loads(tags_list)
+                for tag in tags_list:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    contact_obj.tags.add(tag_obj)
+
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},
             status=status.HTTP_200_OK,

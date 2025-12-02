@@ -666,11 +666,6 @@ class Activity(BaseModel):
         return arrow.get(self.created_at).humanize()
 
 
-# =============================================================================
-# Teams Model (merged from teams app)
-# =============================================================================
-
-
 class Teams(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField()
@@ -694,11 +689,6 @@ class Teams(BaseModel):
         return ",".join(
             [str(_id) for _id in list(self.users.values_list("id", flat=True))]
         )
-
-
-# =============================================================================
-# Contact Form Submission (for public website)
-# =============================================================================
 
 
 class ContactFormSubmission(BaseModel):

@@ -47,10 +47,6 @@ class AuditModel(TimeAuditModel, UserAuditModel):
         abstract = True
 
 
-# =============================================================================
-# View Mixins for Organization-Scoped Access
-# =============================================================================
-
 from django.db.models import Q
 from rest_framework.exceptions import NotFound, PermissionDenied
 

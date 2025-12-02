@@ -290,11 +290,6 @@ def send_email_to_reset_password(user_email):
         msg.send()
 
 
-# =============================================================================
-# Teams Celery Tasks (merged from teams app)
-# =============================================================================
-
-
 @app.task
 def remove_users(removed_users_list, team_id, org_id=None):
     # Set RLS context for org-scoped queries

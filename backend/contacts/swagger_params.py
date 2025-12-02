@@ -38,7 +38,7 @@ contact_create_post_params = [
     OpenApiParameter("pincode", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("country", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("description", OpenApiTypes.STR, OpenApiParameter.QUERY),
-    OpenApiParameter("linked_in_url", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    OpenApiParameter("linkedin_url", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("facebook_url", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("twitter_username", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("teams", OpenApiTypes.STR, OpenApiParameter.QUERY),

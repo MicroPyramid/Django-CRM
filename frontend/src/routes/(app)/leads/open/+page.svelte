@@ -32,7 +32,7 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
-		import {
+	import {
 		LEAD_STATUSES as statuses,
 		LEAD_SOURCES as sources,
 		LEAD_RATINGS as ratings
@@ -249,10 +249,6 @@
 		if (!open) updateUrl(null, null);
 	}
 
-	// ============================================
-	// Sheet (Notion-style row detail panel) functions
-	// ============================================
-
 	/**
 	 * Open row sheet
 	 * @param {string} rowId
@@ -279,10 +275,6 @@
 		if (!selectedRowId) return;
 		trackChange(selectedRowId, field, value);
 	}
-
-	// ============================================
-	// Drag-and-drop functions
-	// ============================================
 
 	/**
 	 * Handle drag start
@@ -341,10 +333,6 @@
 		dragOverRowId = null;
 		dropPosition = null;
 	}
-
-	// ============================================
-	// Inline editing functions
-	// ============================================
 
 	/**
 	 * Start editing a cell
@@ -416,10 +404,6 @@
 	function updateSelectValue(rowId, columnKey, value) {
 		trackChange(rowId, columnKey, value);
 	}
-
-	// ============================================
-	// Dirty tracking and batch save
-	// ============================================
 
 	/**
 	 * Track a change to a field
@@ -565,7 +549,7 @@
 	 * @param {string} currentColumn
 	 */
 	function handleCellNext(rowId, currentColumn) {
-		const visibleColumns = editableColumns.filter(col => isColumnVisible(col));
+		const visibleColumns = editableColumns.filter((col) => isColumnVisible(col));
 		const idx = visibleColumns.indexOf(currentColumn);
 		if (idx < visibleColumns.length - 1) {
 			focusCell(rowId, visibleColumns[idx + 1]);
@@ -578,7 +562,7 @@
 	 * @param {string} currentColumn
 	 */
 	function handleCellPrev(rowId, currentColumn) {
-		const visibleColumns = editableColumns.filter(col => isColumnVisible(col));
+		const visibleColumns = editableColumns.filter((col) => isColumnVisible(col));
 		const idx = visibleColumns.indexOf(currentColumn);
 		if (idx > 0) {
 			focusCell(rowId, visibleColumns[idx - 1]);
@@ -845,7 +829,7 @@
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-2xl font-semibold text-gray-900">Leads</h1>
-				<p class="text-sm text-gray-500 mt-1">{filteredLeads.length} leads</p>
+				<p class="mt-1 text-sm text-gray-500">{filteredLeads.length} leads</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<!-- Save Changes Button (shown when dirty) -->
@@ -866,7 +850,9 @@
 								<Eye class="h-4 w-4" />
 								Columns
 								{#if columnConfig.filter((c) => c.visible).length < columnConfig.length}
-									<span class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+									<span
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+									>
 										{columnConfig.filter((c) => c.visible).length}/{columnConfig.length}
 									</span>
 								{/if}
@@ -906,364 +892,387 @@
 	<!-- Table -->
 	{#if filteredLeads.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<User class="text-gray-300 mb-4 h-12 w-12" />
-			<h3 class="text-gray-900 text-lg font-medium">No leads found</h3>
-			<p class="text-gray-500 mt-1 text-sm">
-				Create your first lead to get started.
-			</p>
+			<User class="mb-4 h-12 w-12 text-gray-300" />
+			<h3 class="text-lg font-medium text-gray-900">No leads found</h3>
+			<p class="mt-1 text-sm text-gray-500">Create your first lead to get started.</p>
 			<Button onclick={openCreate} class="mt-4" size="sm">
 				<Plus class="mr-2 h-4 w-4" />
 				New Lead
 			</Button>
 		</div>
-			{:else}
-				<!-- Desktop Table - Notion-style native HTML table -->
-				<div class="hidden md:block overflow-x-auto">
-					<table class="w-full border-collapse">
-						<!-- Header -->
-						<thead>
-							<tr class="border-b border-gray-100/60">
-								<!-- Drag handle column -->
-								<th class="w-8 px-1"></th>
-								<!-- Expand button column -->
-								<th class="w-8 px-1"></th>
-								{#if isColumnVisible('lead')}
-									<th class="w-[250px] px-4 py-3 text-left text-[13px] font-normal text-gray-400">Name</th>
-								{/if}
-								{#if isColumnVisible('company')}
-									<th class="w-40 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Company</th>
-								{/if}
-								{#if isColumnVisible('email')}
-									<th class="w-52 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Email</th>
-								{/if}
-								{#if isColumnVisible('phone')}
-									<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Phone</th>
-								{/if}
-								{#if isColumnVisible('rating')}
-									<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Rating</th>
-								{/if}
-								{#if isColumnVisible('status')}
-									<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Status</th>
-								{/if}
-								{#if isColumnVisible('created')}
-									<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">
-										Created
-									</th>
-								{/if}
+	{:else}
+		<!-- Desktop Table - Notion-style native HTML table -->
+		<div class="hidden overflow-x-auto md:block">
+			<table class="w-full border-collapse">
+				<!-- Header -->
+				<thead>
+					<tr class="border-b border-gray-100/60">
+						<!-- Drag handle column -->
+						<th class="w-8 px-1"></th>
+						<!-- Expand button column -->
+						<th class="w-8 px-1"></th>
+						{#if isColumnVisible('lead')}
+							<th class="w-[250px] px-4 py-3 text-left text-[13px] font-normal text-gray-400"
+								>Name</th
+							>
+						{/if}
+						{#if isColumnVisible('company')}
+							<th class="w-40 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Company</th
+							>
+						{/if}
+						{#if isColumnVisible('email')}
+							<th class="w-52 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Email</th>
+						{/if}
+						{#if isColumnVisible('phone')}
+							<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Phone</th>
+						{/if}
+						{#if isColumnVisible('rating')}
+							<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Rating</th>
+						{/if}
+						{#if isColumnVisible('status')}
+							<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Status</th>
+						{/if}
+						{#if isColumnVisible('created')}
+							<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">
+								Created
+							</th>
+						{/if}
+					</tr>
+				</thead>
+
+				<!-- Body -->
+				<tbody>
+					{#each filteredLeads as lead, rowIndex (lead.id)}
+						{@const displayRating = getDisplayValue(lead, 'rating') || lead.rating}
+						{@const displayStatus = getDisplayValue(lead, 'status') || lead.status}
+						{@const displayCompany =
+							getDisplayValue(lead, 'company') ??
+							(typeof lead.company === 'object' ? lead.company?.name : lead.company)}
+						{@const displayEmail = getDisplayValue(lead, 'email') || lead.email}
+						{@const displayPhone = getDisplayValue(lead, 'phone') || lead.phone}
+
+						<!-- Drop indicator line (before row) -->
+						{#if dragOverRowId === lead.id && dropPosition === 'before'}
+							<tr class="h-0">
+								<td colspan="10" class="p-0">
+									<div class={dropIndicatorClasses}></div>
+								</td>
 							</tr>
-						</thead>
+						{/if}
 
-						<!-- Body -->
-						<tbody>
-							{#each filteredLeads as lead, rowIndex (lead.id)}
-								{@const displayRating = getDisplayValue(lead, 'rating') || lead.rating}
-								{@const displayStatus = getDisplayValue(lead, 'status') || lead.status}
-								{@const displayCompany = getDisplayValue(lead, 'company') ?? (typeof lead.company === 'object' ? lead.company?.name : lead.company)}
-								{@const displayEmail = getDisplayValue(lead, 'email') || lead.email}
-								{@const displayPhone = getDisplayValue(lead, 'phone') || lead.phone}
-
-								<!-- Drop indicator line (before row) -->
-								{#if dragOverRowId === lead.id && dropPosition === 'before'}
-									<tr class="h-0">
-										<td colspan="10" class="p-0">
-											<div class={dropIndicatorClasses}></div>
-										</td>
-									</tr>
-								{/if}
-
-								<tr
-									class={cn(
-										'group hover:bg-gray-50/30 transition-all duration-100 ease-out',
-										draggedRowId === lead.id && draggedRowClasses,
-										pendingChanges.has(lead.id) && 'bg-amber-50/30'
-									)}
-									ondragover={(e) => handleRowDragOver(e, lead.id)}
-									ondragleave={handleRowDragLeave}
-									ondrop={(e) => handleRowDrop(e, lead.id)}
+						<tr
+							class={cn(
+								'group transition-all duration-100 ease-out hover:bg-gray-50/30',
+								draggedRowId === lead.id && draggedRowClasses,
+								pendingChanges.has(lead.id) && 'bg-amber-50/30'
+							)}
+							ondragover={(e) => handleRowDragOver(e, lead.id)}
+							ondragleave={handleRowDragLeave}
+							ondrop={(e) => handleRowDrop(e, lead.id)}
+						>
+							<!-- Drag Handle -->
+							<td class="w-8 px-1 py-3">
+								<div
+									draggable="true"
+									ondragstart={(e) => handleDragStart(e, lead.id)}
+									ondragend={handleDragEnd}
+									class={dragHandleClasses}
+									role="button"
+									tabindex="0"
+									aria-label="Drag to reorder"
 								>
-									<!-- Drag Handle -->
-									<td class="w-8 px-1 py-3">
-										<div
-											draggable="true"
-											ondragstart={(e) => handleDragStart(e, lead.id)}
-											ondragend={handleDragEnd}
-											class={dragHandleClasses}
-											role="button"
-											tabindex="0"
-											aria-label="Drag to reorder"
-										>
-											<GripVertical class="h-4 w-4 text-gray-400" />
-										</div>
-									</td>
+									<GripVertical class="h-4 w-4 text-gray-400" />
+								</div>
+							</td>
 
-									<!-- Expand button -->
-									<td class="w-8 px-1 py-3">
+							<!-- Expand button -->
+							<td class="w-8 px-1 py-3">
+								<button
+									type="button"
+									onclick={() => openRowSheet(lead.id)}
+									class={expandButtonClasses}
+								>
+									<Expand class="h-3.5 w-3.5 text-gray-500" />
+								</button>
+							</td>
+
+							{#if isColumnVisible('lead')}
+								<td class="w-48 px-4 py-3">
+									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'name'}
+										<input
+											type="text"
+											bind:value={editValue}
+											onkeydown={handleEditKeydown}
+											onblur={() => stopEditing(true)}
+											data-edit-input="{lead.id}-name"
+											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
+										/>
+									{:else}
 										<button
 											type="button"
 											onclick={() => openRowSheet(lead.id)}
-											class={expandButtonClasses}
+											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
 										>
-											<Expand class="h-3.5 w-3.5 text-gray-500" />
+											{getFullName(lead) || 'Empty'}
 										</button>
-									</td>
+									{/if}
+								</td>
+							{/if}
 
-									{#if isColumnVisible('lead')}
-										<td class="px-4 py-3 w-48">
-											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'name'}
-												<input
-													type="text"
-													bind:value={editValue}
-													onkeydown={handleEditKeydown}
-													onblur={() => stopEditing(true)}
-													data-edit-input="{lead.id}-name"
-													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-												/>
-											{:else}
+							{#if isColumnVisible('company')}
+								<td class="w-40 px-4 py-3">
+									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'company'}
+										<input
+											type="text"
+											bind:value={editValue}
+											onkeydown={handleEditKeydown}
+											onblur={() => stopEditing(true)}
+											data-edit-input="{lead.id}-company"
+											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
+										/>
+									{:else}
+										<button
+											type="button"
+											onclick={() => startEditing(lead.id, 'company')}
+											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
+										>
+											{displayCompany || ''}
+										</button>
+									{/if}
+								</td>
+							{/if}
+
+							{#if isColumnVisible('email')}
+								<td class="w-52 px-4 py-3">
+									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'email'}
+										<input
+											type="email"
+											bind:value={editValue}
+											onkeydown={handleEditKeydown}
+											onblur={() => stopEditing(true)}
+											data-edit-input="{lead.id}-email"
+											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
+										/>
+									{:else}
+										<button
+											type="button"
+											onclick={() => startEditing(lead.id, 'email')}
+											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
+										>
+											{displayEmail || ''}
+										</button>
+									{/if}
+								</td>
+							{/if}
+
+							{#if isColumnVisible('phone')}
+								<td class="w-36 px-4 py-3">
+									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'phone'}
+										<input
+											type="tel"
+											bind:value={editValue}
+											onkeydown={handleEditKeydown}
+											onblur={() => stopEditing(true)}
+											data-edit-input="{lead.id}-phone"
+											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
+										/>
+									{:else}
+										<button
+											type="button"
+											onclick={() => startEditing(lead.id, 'phone')}
+											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
+										>
+											{displayPhone || ''}
+										</button>
+									{/if}
+								</td>
+							{/if}
+
+							{#if isColumnVisible('rating')}
+								<td class="w-28 px-4 py-3">
+									<DropdownMenu.Root>
+										<DropdownMenu.Trigger asChild>
+											{#snippet child({ props })}
 												<button
+													{...props}
 													type="button"
-													onclick={() => openRowSheet(lead.id)}
-													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+													class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {getOptionStyle(
+														displayRating,
+														leadRatingOptions
+													)} transition-opacity hover:opacity-80"
 												>
-													{getFullName(lead) || 'Empty'}
+													{getOptionLabel(displayRating, leadRatingOptions) || ''}
+													<ChevronDown class="h-3 w-3 opacity-60" />
 												</button>
-											{/if}
-										</td>
-									{/if}
+											{/snippet}
+										</DropdownMenu.Trigger>
+										<DropdownMenu.Content align="start" class="w-36">
+											{#each leadRatingOptions as option (option.value)}
+												<DropdownMenu.Item
+													onclick={() => updateSelectValue(lead.id, 'rating', option.value)}
+													class="flex items-center gap-2"
+												>
+													<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
+													{option.label}
+													{#if displayRating === option.value}
+														<Check class="ml-auto h-4 w-4" />
+													{/if}
+												</DropdownMenu.Item>
+											{/each}
+										</DropdownMenu.Content>
+									</DropdownMenu.Root>
+								</td>
+							{/if}
 
-									{#if isColumnVisible('company')}
-										<td class="px-4 py-3 w-40">
-											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'company'}
-												<input
-													type="text"
-													bind:value={editValue}
-													onkeydown={handleEditKeydown}
-													onblur={() => stopEditing(true)}
-													data-edit-input="{lead.id}-company"
-													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-												/>
-											{:else}
+							{#if isColumnVisible('status')}
+								<td class="w-28 px-4 py-3">
+									<DropdownMenu.Root>
+										<DropdownMenu.Trigger asChild>
+											{#snippet child({ props })}
 												<button
+													{...props}
 													type="button"
-													onclick={() => startEditing(lead.id, 'company')}
-													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+													class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {getOptionStyle(
+														displayStatus,
+														leadStatusOptions
+													)} transition-opacity hover:opacity-80"
 												>
-													{displayCompany || ''}
+													{getOptionLabel(displayStatus, leadStatusOptions) || ''}
+													<ChevronDown class="h-3 w-3 opacity-60" />
 												</button>
-											{/if}
-										</td>
-									{/if}
-
-									{#if isColumnVisible('email')}
-										<td class="px-4 py-3 w-52">
-											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'email'}
-												<input
-													type="email"
-													bind:value={editValue}
-													onkeydown={handleEditKeydown}
-													onblur={() => stopEditing(true)}
-													data-edit-input="{lead.id}-email"
-													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-												/>
-											{:else}
-												<button
-													type="button"
-													onclick={() => startEditing(lead.id, 'email')}
-													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
+											{/snippet}
+										</DropdownMenu.Trigger>
+										<DropdownMenu.Content align="start" class="w-36">
+											{#each leadStatusOptions as option (option.value)}
+												<DropdownMenu.Item
+													onclick={() => updateSelectValue(lead.id, 'status', option.value)}
+													class="flex items-center gap-2"
 												>
-													{displayEmail || ''}
-												</button>
-											{/if}
-										</td>
-									{/if}
+													<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
+													{option.label}
+													{#if displayStatus === option.value}
+														<Check class="ml-auto h-4 w-4" />
+													{/if}
+												</DropdownMenu.Item>
+											{/each}
+										</DropdownMenu.Content>
+									</DropdownMenu.Root>
+								</td>
+							{/if}
 
-									{#if isColumnVisible('phone')}
-										<td class="px-4 py-3 w-36">
-											{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'phone'}
-												<input
-													type="tel"
-													bind:value={editValue}
-													onkeydown={handleEditKeydown}
-													onblur={() => stopEditing(true)}
-													data-edit-input="{lead.id}-phone"
-													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-												/>
-											{:else}
-												<button
-													type="button"
-													onclick={() => startEditing(lead.id, 'phone')}
-													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
-												>
-													{displayPhone || ''}
-												</button>
-											{/if}
-										</td>
-									{/if}
+							{#if isColumnVisible('created')}
+								<td class="w-36 px-4 py-3">
+									<button
+										type="button"
+										class="-mx-2 -my-1.5 rounded px-2 py-1.5 text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{formatDate(lead.createdAt)}
+									</button>
+								</td>
+							{/if}
+						</tr>
 
-									{#if isColumnVisible('rating')}
-										<td class="px-4 py-3 w-28">
-											<DropdownMenu.Root>
-												<DropdownMenu.Trigger asChild>
-													{#snippet child({ props })}
-														<button
-															{...props}
-															type="button"
-															class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {getOptionStyle(displayRating, leadRatingOptions)} hover:opacity-80 transition-opacity"
-														>
-															{getOptionLabel(displayRating, leadRatingOptions) || ''}
-															<ChevronDown class="h-3 w-3 opacity-60" />
-														</button>
-													{/snippet}
-												</DropdownMenu.Trigger>
-												<DropdownMenu.Content align="start" class="w-36">
-													{#each leadRatingOptions as option (option.value)}
-														<DropdownMenu.Item
-															onclick={() => updateSelectValue(lead.id, 'rating', option.value)}
-															class="flex items-center gap-2"
-														>
-															<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
-															{option.label}
-															{#if displayRating === option.value}
-																<Check class="h-4 w-4 ml-auto" />
-															{/if}
-														</DropdownMenu.Item>
-													{/each}
-												</DropdownMenu.Content>
-											</DropdownMenu.Root>
-										</td>
-									{/if}
-
-									{#if isColumnVisible('status')}
-										<td class="px-4 py-3 w-28">
-											<DropdownMenu.Root>
-												<DropdownMenu.Trigger asChild>
-													{#snippet child({ props })}
-														<button
-															{...props}
-															type="button"
-															class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {getOptionStyle(displayStatus, leadStatusOptions)} hover:opacity-80 transition-opacity"
-														>
-															{getOptionLabel(displayStatus, leadStatusOptions) || ''}
-															<ChevronDown class="h-3 w-3 opacity-60" />
-														</button>
-													{/snippet}
-												</DropdownMenu.Trigger>
-												<DropdownMenu.Content align="start" class="w-36">
-													{#each leadStatusOptions as option (option.value)}
-														<DropdownMenu.Item
-															onclick={() => updateSelectValue(lead.id, 'status', option.value)}
-															class="flex items-center gap-2"
-														>
-															<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
-															{option.label}
-															{#if displayStatus === option.value}
-																<Check class="h-4 w-4 ml-auto" />
-															{/if}
-														</DropdownMenu.Item>
-													{/each}
-												</DropdownMenu.Content>
-											</DropdownMenu.Root>
-										</td>
-									{/if}
-
-									{#if isColumnVisible('created')}
-										<td class="px-4 py-3 w-36">
-											<button
-												type="button"
-												class="text-sm text-gray-900 px-2 py-1.5 -mx-2 -my-1.5 rounded hover:bg-gray-100/50 transition-colors duration-75"
-											>
-												{formatDate(lead.createdAt)}
-											</button>
-										</td>
-									{/if}
-								</tr>
-
-								<!-- Drop indicator line (after row) -->
-								{#if dragOverRowId === lead.id && dropPosition === 'after'}
-									<tr class="h-0">
-										<td colspan="10" class="p-0">
-											<div class={dropIndicatorClasses}></div>
-										</td>
-									</tr>
-								{/if}
-							{/each}
-						</tbody>
-					</table>
-
-					<!-- New row button (Notion-style) -->
-					<div class="px-4 py-2 border-t border-gray-100/60">
-						<button
-							type="button"
-							onclick={openCreate}
-							class="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-						>
-							<Plus class="h-4 w-4" />
-							New
-						</button>
-					</div>
-				</div>
-
-				<!-- Mobile Card View -->
-				<div class="divide-y md:hidden">
-					{#each filteredLeads as lead (lead.id)}
-						<button
-							type="button"
-							class="hover:bg-gray-50/30 flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
-							onclick={() => openRowSheet(lead.id)}
-						>
-							<div class="min-w-0 flex-1">
-								<div class="flex items-start justify-between gap-2">
-									<div>
-										<p class="text-gray-900 font-medium text-sm">{getFullName(lead)}</p>
-										{#if lead.company}
-											<p class="text-gray-500 text-sm">{typeof lead.company === 'object' ? lead.company.name : lead.company}</p>
-										{/if}
-									</div>
-									<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {getOptionStyle(lead.status, leadStatusOptions)}">
-										{getOptionLabel(lead.status, leadStatusOptions)}
-									</span>
-								</div>
-								<div class="text-gray-500 mt-2 flex flex-wrap items-center gap-3 text-xs">
-									{#if lead.rating}
-										<span class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}">
-											{getOptionLabel(lead.rating, leadRatingOptions)}
-										</span>
-									{/if}
-									<span>{formatRelativeDate(lead.createdAt)}</span>
-								</div>
-							</div>
-						</button>
+						<!-- Drop indicator line (after row) -->
+						{#if dragOverRowId === lead.id && dropPosition === 'after'}
+							<tr class="h-0">
+								<td colspan="10" class="p-0">
+									<div class={dropIndicatorClasses}></div>
+								</td>
+							</tr>
+						{/if}
 					{/each}
+				</tbody>
+			</table>
 
-					<!-- Mobile new row button -->
-					<button
-						type="button"
-						onclick={openCreate}
-						class="flex items-center gap-2 px-4 py-3 w-full text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-					>
-						<Plus class="h-4 w-4" />
-						New
-					</button>
-				</div>
-			{/if}
+			<!-- New row button (Notion-style) -->
+			<div class="border-t border-gray-100/60 px-4 py-2">
+				<button
+					type="button"
+					onclick={openCreate}
+					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+				>
+					<Plus class="h-4 w-4" />
+					New
+				</button>
+			</div>
+		</div>
+
+		<!-- Mobile Card View -->
+		<div class="divide-y md:hidden">
+			{#each filteredLeads as lead (lead.id)}
+				<button
+					type="button"
+					class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30"
+					onclick={() => openRowSheet(lead.id)}
+				>
+					<div class="min-w-0 flex-1">
+						<div class="flex items-start justify-between gap-2">
+							<div>
+								<p class="text-sm font-medium text-gray-900">{getFullName(lead)}</p>
+								{#if lead.company}
+									<p class="text-sm text-gray-500">
+										{typeof lead.company === 'object' ? lead.company.name : lead.company}
+									</p>
+								{/if}
+							</div>
+							<span
+								class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {getOptionStyle(
+									lead.status,
+									leadStatusOptions
+								)}"
+							>
+								{getOptionLabel(lead.status, leadStatusOptions)}
+							</span>
+						</div>
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+							{#if lead.rating}
+								<span
+									class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}"
+								>
+									{getOptionLabel(lead.rating, leadRatingOptions)}
+								</span>
+							{/if}
+							<span>{formatRelativeDate(lead.createdAt)}</span>
+						</div>
+					</div>
+				</button>
+			{/each}
+
+			<!-- Mobile new row button -->
+			<button
+				type="button"
+				onclick={openCreate}
+				class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+			>
+				<Plus class="h-4 w-4" />
+				New
+			</button>
+		</div>
+	{/if}
 </div>
 
 <!-- Row Detail Sheet (Notion-style) -->
 <Sheet.Root bind:open={sheetOpen} onOpenChange={(open) => !open && closeRowSheet()}>
-	<Sheet.Content side="right" class="w-[440px] sm:max-w-[440px] p-0 overflow-hidden">
+	<Sheet.Content side="right" class="w-[440px] overflow-hidden p-0 sm:max-w-[440px]">
 		{#if selectedRow}
 			{@const displayFirstName = getDisplayValue(selectedRow, 'firstName') || selectedRow.firstName}
 			{@const displayLastName = getDisplayValue(selectedRow, 'lastName') || selectedRow.lastName}
 			{@const displayEmail = getDisplayValue(selectedRow, 'email') || selectedRow.email}
 			{@const displayPhone = getDisplayValue(selectedRow, 'phone') || selectedRow.phone}
-			{@const displayCompany = getDisplayValue(selectedRow, 'company') ?? (typeof selectedRow.company === 'object' ? selectedRow.company?.name : selectedRow.company)}
+			{@const displayCompany =
+				getDisplayValue(selectedRow, 'company') ??
+				(typeof selectedRow.company === 'object' ? selectedRow.company?.name : selectedRow.company)}
 			{@const displayStatus = getDisplayValue(selectedRow, 'status') || selectedRow.status}
 			{@const displayRating = getDisplayValue(selectedRow, 'rating') || selectedRow.rating}
 			{@const displayWebsite = getDisplayValue(selectedRow, 'website') || selectedRow.website}
-			<div class="h-full flex flex-col">
+			<div class="flex h-full flex-col">
 				<!-- Header with close button -->
-				<div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+				<div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
 					<span class="text-sm text-gray-500">Lead</span>
-					<button onclick={closeRowSheet} class="p-1 rounded hover:bg-gray-100 transition-colors duration-75">
+					<button
+						onclick={closeRowSheet}
+						class="rounded p-1 transition-colors duration-75 hover:bg-gray-100"
+					>
 						<X class="h-4 w-4 text-gray-400" />
 					</button>
 				</div>
@@ -1272,8 +1281,10 @@
 				<div class="flex-1 overflow-y-auto">
 					<!-- Title section -->
 					<div class="px-6 pt-6 pb-4">
-						<div class="flex items-center gap-3 mb-4">
-							<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-lg font-medium text-white">
+						<div class="mb-4 flex items-center gap-3">
+							<div
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-lg font-medium text-white"
+							>
 								{getLeadInitials(selectedRow)}
 							</div>
 							<div>
@@ -1282,85 +1293,111 @@
 									value="{displayFirstName} {displayLastName}"
 									readonly
 									placeholder="Untitled"
-									class="w-full text-xl font-semibold bg-transparent border-0 outline-none focus:ring-0 placeholder:text-gray-300 cursor-default"
+									class="w-full cursor-default border-0 bg-transparent text-xl font-semibold outline-none placeholder:text-gray-300 focus:ring-0"
 								/>
 							</div>
 						</div>
 					</div>
 
 					<!-- Properties section -->
-					<div class="px-4 pb-6 space-y-1">
+					<div class="space-y-1 px-4 pb-6">
 						<!-- Email property -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Mail class="h-4 w-4 text-gray-400" />
 								Email
 							</div>
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<input
 									type="email"
 									value={displayEmail || ''}
-									oninput={(e) => updateSelectedRowField('email', /** @type {HTMLInputElement} */ (e.target).value)}
+									oninput={(e) =>
+										updateSelectedRowField(
+											'email',
+											/** @type {HTMLInputElement} */ (e.target).value
+										)}
 									placeholder="Add email"
-									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
 								/>
 							</div>
 						</div>
 
 						<!-- Phone property -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Phone class="h-4 w-4 text-gray-400" />
 								Phone
 							</div>
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<input
 									type="tel"
 									value={displayPhone || ''}
-									oninput={(e) => updateSelectedRowField('phone', /** @type {HTMLInputElement} */ (e.target).value)}
+									oninput={(e) =>
+										updateSelectedRowField(
+											'phone',
+											/** @type {HTMLInputElement} */ (e.target).value
+										)}
 									placeholder="Add phone"
-									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
 								/>
 							</div>
 						</div>
 
 						<!-- Company property -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Building2 class="h-4 w-4 text-gray-400" />
 								Company
 							</div>
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<input
 									type="text"
 									value={displayCompany || ''}
-									oninput={(e) => updateSelectedRowField('company', /** @type {HTMLInputElement} */ (e.target).value)}
+									oninput={(e) =>
+										updateSelectedRowField(
+											'company',
+											/** @type {HTMLInputElement} */ (e.target).value
+										)}
 									placeholder="Add company"
-									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
 								/>
 							</div>
 						</div>
 
 						<!-- Website property -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Globe class="h-4 w-4 text-gray-400" />
 								Website
 							</div>
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<input
 									type="url"
 									value={displayWebsite || ''}
-									oninput={(e) => updateSelectedRowField('website', /** @type {HTMLInputElement} */ (e.target).value)}
+									oninput={(e) =>
+										updateSelectedRowField(
+											'website',
+											/** @type {HTMLInputElement} */ (e.target).value
+										)}
 									placeholder="Add website"
-									class="w-full px-2 py-1 text-sm bg-transparent border-0 outline-none focus:bg-gray-50 rounded transition-colors placeholder:text-gray-400"
+									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
 								/>
 							</div>
 						</div>
 
 						<!-- Status property (select) -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Briefcase class="h-4 w-4 text-gray-400" />
 								Status
 							</div>
@@ -1371,9 +1408,17 @@
 											<button
 												{...props}
 												type="button"
-												class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-sm {getOptionStyle(displayStatus, leadStatusOptions)} hover:opacity-90 transition-opacity"
+												class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-sm {getOptionStyle(
+													displayStatus,
+													leadStatusOptions
+												)} transition-opacity hover:opacity-90"
 											>
-												<span class="w-2 h-2 rounded-full {getOptionBgColor(displayStatus, leadStatusOptions)}"></span>
+												<span
+													class="h-2 w-2 rounded-full {getOptionBgColor(
+														displayStatus,
+														leadStatusOptions
+													)}"
+												></span>
 												{getOptionLabel(displayStatus, leadStatusOptions) || 'Set status'}
 											</button>
 										{/snippet}
@@ -1384,10 +1429,10 @@
 												onclick={() => updateSelectedRowField('status', option.value)}
 												class="flex items-center gap-2"
 											>
-												<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+												<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
 												{option.label}
 												{#if displayStatus === option.value}
-													<Check class="h-4 w-4 ml-auto" />
+													<Check class="ml-auto h-4 w-4" />
 												{/if}
 											</DropdownMenu.Item>
 										{/each}
@@ -1397,8 +1442,10 @@
 						</div>
 
 						<!-- Rating property (select) -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Star class="h-4 w-4 text-gray-400" />
 								Rating
 							</div>
@@ -1409,9 +1456,17 @@
 											<button
 												{...props}
 												type="button"
-												class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-sm {getOptionStyle(displayRating, leadRatingOptions)} hover:opacity-90 transition-opacity"
+												class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-sm {getOptionStyle(
+													displayRating,
+													leadRatingOptions
+												)} transition-opacity hover:opacity-90"
 											>
-												<span class="w-2 h-2 rounded-full {getOptionBgColor(displayRating, leadRatingOptions)}"></span>
+												<span
+													class="h-2 w-2 rounded-full {getOptionBgColor(
+														displayRating,
+														leadRatingOptions
+													)}"
+												></span>
 												{getOptionLabel(displayRating, leadRatingOptions) || 'Set rating'}
 											</button>
 										{/snippet}
@@ -1422,10 +1477,10 @@
 												onclick={() => updateSelectedRowField('rating', option.value)}
 												class="flex items-center gap-2"
 											>
-												<span class="w-2 h-2 rounded-full {option.color.split(' ')[0]}"></span>
+												<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
 												{option.label}
 												{#if displayRating === option.value}
-													<Check class="h-4 w-4 ml-auto" />
+													<Check class="ml-auto h-4 w-4" />
 												{/if}
 											</DropdownMenu.Item>
 										{/each}
@@ -1435,12 +1490,14 @@
 						</div>
 
 						<!-- Created date -->
-						<div class="flex items-center min-h-[36px] px-2 -mx-2 rounded hover:bg-gray-50/60 transition-colors duration-75 group">
-							<div class="w-28 shrink-0 flex items-center gap-2 text-[13px] text-gray-500">
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
 								<Calendar class="h-4 w-4 text-gray-400" />
 								Created
 							</div>
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<span class="px-2 py-1 text-sm text-gray-700">
 									{formatDate(selectedRow.createdAt)}
 								</span>
@@ -1450,18 +1507,24 @@
 				</div>
 
 				<!-- Footer with actions -->
-				<div class="px-4 py-3 border-t border-gray-100 mt-auto flex items-center justify-between">
+				<div class="mt-auto flex items-center justify-between border-t border-gray-100 px-4 py-3">
 					<button
 						onclick={() => {
 							closeRowSheet();
 							handleRowDelete(selectedRow);
 						}}
-						class="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors duration-75"
+						class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50"
 					>
 						<Trash2 class="h-4 w-4" />
 						Delete
 					</button>
-					<Button size="sm" onclick={() => { closeRowSheet(); openLead(selectedRow); }}>
+					<Button
+						size="sm"
+						onclick={() => {
+							closeRowSheet();
+							openLead(selectedRow);
+						}}
+					>
 						Open Full View
 					</Button>
 				</div>

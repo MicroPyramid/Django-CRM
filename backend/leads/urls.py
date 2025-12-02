@@ -17,6 +17,4 @@ urlpatterns = [
     path("upload/", views.LeadUploadView.as_view()),
     path("comment/<str:pk>/", views.LeadCommentView.as_view()),
     path("attachment/<str:pk>/", views.LeadAttachmentView.as_view()),
-    path("companies", views.CompaniesView.as_view()),
-    path("company/<str:pk>", views.CompanyDetail.as_view()),
 ]

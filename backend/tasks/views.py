@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.models import Attachments, Comment, Profile, Teams
+from common.models import Attachments, Comment, Profile, Tags, Teams
 
 # from common.external_auth import CustomDualAuthentication
 from common.serializer import (
@@ -134,6 +134,49 @@ class TaskListView(APIView, LimitOffsetPagination):
                     id__in=assinged_to_list, org=request.profile.org, is_active=True
                 )
                 task_obj.assigned_to.add(*profiles)
+
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    task_obj.tags.add(tag_obj)
+
+            # Handle new FK relationships with org validation
+            if params.get("opportunity"):
+                from opportunity.models import Opportunity
+
+                opp = Opportunity.objects.filter(
+                    id=params.get("opportunity"), org=request.profile.org
+                ).first()
+                if opp:
+                    task_obj.opportunity = opp
+                    task_obj.save()
+
+            if params.get("case"):
+                from cases.models import Case
+
+                case = Case.objects.filter(
+                    id=params.get("case"), org=request.profile.org
+                ).first()
+                if case:
+                    task_obj.case = case
+                    task_obj.save()
+
+            if params.get("lead"):
+                from leads.models import Lead
+
+                lead = Lead.objects.filter(
+                    id=params.get("lead"), org=request.profile.org
+                ).first()
+                if lead:
+                    task_obj.lead = lead
+                    task_obj.save()
 
             return Response(
                 {"error": False, "message": "Task Created Successfully"},
@@ -273,8 +316,9 @@ class TaskDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("task_attachment").name
-            attachment.task = self.task_obj
+            attachment.content_object = self.task_obj
             attachment.attachment = self.request.FILES.get("task_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         task_content_type = ContentType.objects.get_for_model(Task)
@@ -337,6 +381,52 @@ class TaskDetailView(APIView):
                 )
                 task_obj.assigned_to.add(*profiles)
 
+            task_obj.tags.clear()
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    task_obj.tags.add(tag_obj)
+
+            # Handle FK relationships with org validation
+            if params.get("opportunity"):
+                from opportunity.models import Opportunity
+
+                opp = Opportunity.objects.filter(
+                    id=params.get("opportunity"), org=request.profile.org
+                ).first()
+                task_obj.opportunity = opp
+            elif "opportunity" in params:
+                task_obj.opportunity = None
+
+            if params.get("case"):
+                from cases.models import Case
+
+                case = Case.objects.filter(
+                    id=params.get("case"), org=request.profile.org
+                ).first()
+                task_obj.case = case
+            elif "case" in params:
+                task_obj.case = None
+
+            if params.get("lead"):
+                from leads.models import Lead
+
+                lead = Lead.objects.filter(
+                    id=params.get("lead"), org=request.profile.org
+                ).first()
+                task_obj.lead = lead
+            elif "lead" in params:
+                task_obj.lead = None
+
+            task_obj.save()
+
             return Response(
                 {"error": False, "message": "Task updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -377,6 +467,83 @@ class TaskDetailView(APIView):
         )
         if serializer.is_valid():
             task_obj = serializer.save()
+
+            # Handle M2M fields if present in request
+            if "contacts" in params:
+                task_obj.contacts.clear()
+                contacts_list = params.get("contacts")
+                if contacts_list:
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    task_obj.contacts.add(*contacts)
+
+            if "teams" in params:
+                task_obj.teams.clear()
+                teams_list = params.get("teams")
+                if teams_list:
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    task_obj.teams.add(*teams)
+
+            if "assigned_to" in params:
+                task_obj.assigned_to.clear()
+                assigned_to_list = params.get("assigned_to")
+                if assigned_to_list:
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    task_obj.assigned_to.add(*profiles)
+
+            if "tags" in params:
+                task_obj.tags.clear()
+                tags_list = params.get("tags")
+                if tags_list:
+                    if isinstance(tags_list, str):
+                        tags_list = json.loads(tags_list)
+                    for tag in tags_list:
+                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if tag_obj.exists():
+                            tag_obj = tag_obj[0]
+                        else:
+                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                        task_obj.tags.add(tag_obj)
+
+            # Handle FK relationships with org validation
+            if "opportunity" in params:
+                if params.get("opportunity"):
+                    from opportunity.models import Opportunity
+
+                    opp = Opportunity.objects.filter(
+                        id=params.get("opportunity"), org=request.profile.org
+                    ).first()
+                    task_obj.opportunity = opp
+                else:
+                    task_obj.opportunity = None
+
+            if "case" in params:
+                if params.get("case"):
+                    from cases.models import Case
+
+                    case = Case.objects.filter(
+                        id=params.get("case"), org=request.profile.org
+                    ).first()
+                    task_obj.case = case
+                else:
+                    task_obj.case = None
+
+            if "lead" in params:
+                if params.get("lead"):
+                    from leads.models import Lead
+
+                    lead = Lead.objects.filter(
+                        id=params.get("lead"), org=request.profile.org
+                    ).first()
+                    task_obj.lead = lead
+                else:
+                    task_obj.lead = None
+
+            task_obj.save()
+
             return Response(
                 {"error": False, "message": "Task updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -529,10 +696,6 @@ class TaskAttachmentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-
-# =============================================================================
-# Kanban Board Views (merged from boards app)
-# =============================================================================
 
 
 class BoardListCreateView(APIView, LimitOffsetPagination):

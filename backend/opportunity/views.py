@@ -120,7 +120,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         if serializer.is_valid():
             opportunity_obj = serializer.save(
                 created_by=request.profile.user,
-                closed_on=params.get("due_date"),
+                closed_on=params.get("closed_on"),
                 org=request.profile.org,
             )
 
@@ -134,11 +134,11 @@ class OpportunityListView(APIView, LimitOffsetPagination):
             if params.get("tags"):
                 tags = params.get("tags")
                 for tag in tags:
-                    obj_tag = Tags.objects.filter(slug=tag.lower())
+                    obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
                     if obj_tag.exists():
                         obj_tag = obj_tag[0]
                     else:
-                        obj_tag = Tags.objects.create(name=tag)
+                        obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
                     opportunity_obj.tags.add(obj_tag)
 
             if params.get("stage"):
@@ -164,8 +164,9 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
-                attachment.opportunity = opportunity_obj
+                attachment.content_object = opportunity_obj
                 attachment.attachment = self.request.FILES.get("opportunity_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             recipients = list(
@@ -229,7 +230,7 @@ class OpportunityDetailView(APIView):
         )
 
         if serializer.is_valid():
-            opportunity_object = serializer.save(closed_on=params.get("due_date"))
+            opportunity_object = serializer.save(closed_on=params.get("closed_on"))
             previous_assigned_to_users = list(
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
@@ -245,11 +246,11 @@ class OpportunityDetailView(APIView):
             if params.get("tags"):
                 tags = params.get("tags")
                 for tag in tags:
-                    obj_tag = Tags.objects.filter(slug=tag.lower())
+                    obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
                     if obj_tag.exists():
                         obj_tag = obj_tag[0]
                     else:
-                        obj_tag = Tags.objects.create(name=tag)
+                        obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
                     opportunity_object.tags.add(obj_tag)
 
             if params.get("stage"):
@@ -277,8 +278,9 @@ class OpportunityDetailView(APIView):
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
-                attachment.opportunity = opportunity_object
+                attachment.content_object = opportunity_object
                 attachment.attachment = self.request.FILES.get("opportunity_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             assigned_to_list = list(
@@ -309,7 +311,7 @@ class OpportunityDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.profile != self.object.created_by:
+            if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
@@ -444,8 +446,9 @@ class OpportunityDetailView(APIView):
                 attachment.file_name = self.request.FILES.get(
                     "opportunity_attachment"
                 ).name
-                attachment.opportunity = self.opportunity_obj
+                attachment.content_object = self.opportunity_obj
                 attachment.attachment = self.request.FILES.get("opportunity_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
         opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
@@ -504,7 +507,53 @@ class OpportunityDetailView(APIView):
         )
 
         if serializer.is_valid():
-            opportunity_object = serializer.save()
+            opportunity_object = serializer.save(
+                closed_on=params.get("closed_on") if "closed_on" in params else opportunity_object.closed_on
+            )
+
+            # Handle M2M fields if present in request
+            if "contacts" in params:
+                opportunity_object.contacts.clear()
+                contacts_list = params.get("contacts")
+                if contacts_list:
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    opportunity_object.contacts.add(*contacts)
+
+            if "tags" in params:
+                opportunity_object.tags.clear()
+                tags = params.get("tags")
+                if tags:
+                    for tag in tags:
+                        obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if obj_tag.exists():
+                            obj_tag = obj_tag[0]
+                        else:
+                            obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
+                        opportunity_object.tags.add(obj_tag)
+
+            if "teams" in params:
+                opportunity_object.teams.clear()
+                teams_list = params.get("teams")
+                if teams_list:
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    opportunity_object.teams.add(*teams)
+
+            if "assigned_to" in params:
+                opportunity_object.assigned_to.clear()
+                assigned_to_list = params.get("assigned_to")
+                if assigned_to_list:
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    opportunity_object.assigned_to.add(*profiles)
+
+            # Handle closed_by if stage changed to closed
+            if params.get("stage") in ["CLOSED_WON", "CLOSED_LOST"]:
+                opportunity_object.closed_by = self.request.profile
+                opportunity_object.save()
+
             return Response(
                 {"error": False, "message": "Opportunity Updated Successfully"},
                 status=status.HTTP_200_OK,

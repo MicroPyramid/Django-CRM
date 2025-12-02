@@ -178,11 +178,11 @@ class AccountsListView(APIView, LimitOffsetPagination):
             if data.get("tags"):
                 tags = json.loads(data.get("tags"))
                 for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
                     if tag_obj.exists():
                         tag_obj = tag_obj[0]
                     else:
-                        tag_obj = Tags.objects.create(name=tag)
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
                     account_object.tags.add(tag_obj)
             if data.get("teams"):
                 teams_list = json.loads(data.get("teams"))
@@ -201,8 +201,9 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 attachment = Attachments()
                 attachment.created_by = request.profile.user
                 attachment.file_name = request.FILES.get("account_attachment").name
-                attachment.account = account_object
+                attachment.content_object = account_object
                 attachment.attachment = request.FILES.get("account_attachment")
+                attachment.org = request.profile.org
                 attachment.save()
 
             recipients = list(
@@ -281,11 +282,11 @@ class AccountDetailView(APIView):
             if data.get("tags"):
                 tags = json.loads(data.get("tags"))
                 for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
                     if tag_obj.exists():
                         tag_obj = tag_obj[0]
                     else:
-                        tag_obj = Tags.objects.create(name=tag)
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
                     account_object.tags.add(tag_obj)
 
             account_object.teams.clear()
@@ -308,8 +309,9 @@ class AccountDetailView(APIView):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("account_attachment").name
-                attachment.account = account_object
+                attachment.content_object = account_object
                 attachment.attachment = self.request.FILES.get("account_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             assigned_to_list = list(
@@ -338,7 +340,7 @@ class AccountDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile != self.object.created_by:
+            if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
@@ -497,8 +499,9 @@ class AccountDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("account_attachment").name
-            attachment.account = self.account_obj
+            attachment.content_object = self.account_obj
             attachment.attachment = self.request.FILES.get("account_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         account_content_type = ContentType.objects.get_for_model(Account)
@@ -559,6 +562,53 @@ class AccountDetailView(APIView):
 
         if serializer.is_valid():
             account_object = serializer.save()
+
+            # Handle M2M fields if present in request
+            if "contacts" in data:
+                account_object.contacts.clear()
+                contacts_list = data.get("contacts")
+                if contacts_list:
+                    if isinstance(contacts_list, str):
+                        contacts_list = json.loads(contacts_list)
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    account_object.contacts.add(*contacts)
+
+            if "tags" in data:
+                account_object.tags.clear()
+                tags = data.get("tags")
+                if tags:
+                    if isinstance(tags, str):
+                        tags = json.loads(tags)
+                    for tag in tags:
+                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if tag_obj.exists():
+                            tag_obj = tag_obj[0]
+                        else:
+                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                        account_object.tags.add(tag_obj)
+
+            if "teams" in data:
+                account_object.teams.clear()
+                teams_list = data.get("teams")
+                if teams_list:
+                    if isinstance(teams_list, str):
+                        teams_list = json.loads(teams_list)
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    account_object.teams.add(*teams)
+
+            if "assigned_to" in data:
+                account_object.assigned_to.clear()
+                assigned_to_list = data.get("assigned_to")
+                if assigned_to_list:
+                    if isinstance(assigned_to_list, str):
+                        assigned_to_list = json.loads(assigned_to_list)
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    account_object.assigned_to.add(*profiles)
+
             return Response(
                 {"error": False, "message": "Account Updated Successfully"},
                 status=status.HTTP_200_OK,

@@ -23,10 +23,8 @@ from common.utils import COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS
 from contacts.models import Contact
 from leads import swagger_params
 from leads.forms import LeadListForm
-from leads.models import Company, Lead
+from leads.models import Lead
 from leads.serializer import (
-    CompanySerializer,
-    CompanySwaggerSerializer,
     CreateLeadFromSiteSwaggerSerializer,
     LeadCommentEditSwaggerSerializer,
     LeadCreateSerializer,
@@ -43,7 +41,7 @@ from leads.tasks import (
 )
 
 from .forms import LeadListForm
-from .models import Company, Lead
+from .models import Lead
 
 
 class LeadListView(APIView, LimitOffsetPagination):
@@ -73,8 +71,8 @@ class LeadListView(APIView, LimitOffsetPagination):
                     Q(first_name__icontains=params.get("name"))
                     & Q(last_name__icontains=params.get("name"))
                 )
-            if params.get("title"):
-                queryset = queryset.filter(title__icontains=params.get("title"))
+            if params.get("salutation"):
+                queryset = queryset.filter(salutation__icontains=params.get("salutation"))
             if params.get("source"):
                 queryset = queryset.filter(source=params.get("source"))
             if params.getlist("assigned_to"):
@@ -134,9 +132,6 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["contacts"] = contacts
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
-        context["companies"] = CompanySerializer(
-            Company.objects.filter(org=self.request.profile.org), many=True
-        ).data
         context["tags"] = TagsSerializer(
             Tags.objects.filter(org=self.request.profile.org), many=True
         ).data
@@ -172,11 +167,11 @@ class LeadListView(APIView, LimitOffsetPagination):
             if data.get("tags", None):
                 tags = data.get("tags")
                 for t in tags:
-                    tag = Tags.objects.filter(slug=t.lower())
+                    tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
                     if tag.exists():
                         tag = tag[0]
                     else:
-                        tag = Tags.objects.create(name=t)
+                        tag = Tags.objects.create(name=t, org=request.profile.org)
                     lead_obj.tags.add(tag)
 
             if data.get("contacts", None):
@@ -195,8 +190,9 @@ class LeadListView(APIView, LimitOffsetPagination):
                 attachment = Attachments()
                 attachment.created_by = request.profile.user
                 attachment.file_name = request.FILES.get("lead_attachment").name
-                attachment.lead = lead_obj
+                attachment.content_object = lead_obj
                 attachment.attachment = request.FILES.get("lead_attachment")
+                attachment.org = request.profile.org
                 attachment.save()
 
             if data.get("teams", None):
@@ -212,62 +208,23 @@ class LeadListView(APIView, LimitOffsetPagination):
                 lead_obj.assigned_to.add(*profiles)
 
             if data.get("status") == "converted":
-                account_object = Account.objects.create(
-                    created_by=request.profile.user,
-                    name=(
-                        lead_obj.company.name
-                        if lead_obj.company
-                        else f"{lead_obj.first_name} {lead_obj.last_name}"
-                    ),
-                    email=lead_obj.email,
-                    phone=lead_obj.phone,
-                    description=data.get("description"),
-                    website=data.get("website"),
-                    org=request.profile.org,
-                )
+                from leads.services import convert_lead_to_account
 
-                account_object.billing_address_line = lead_obj.address_line
-                account_object.billing_street = lead_obj.street
-                account_object.billing_city = lead_obj.city
-                account_object.billing_state = lead_obj.state
-                account_object.billing_postcode = lead_obj.postcode
-                account_object.billing_country = lead_obj.country
-                lead_content_type = ContentType.objects.get_for_model(Lead)
-                account_content_type = ContentType.objects.get_for_model(Account)
-                comments = Comment.objects.filter(
-                    content_type=lead_content_type,
-                    object_id=self.lead_obj.id,
-                    org=request.profile.org,
-                )
-                if comments.exists():
-                    for comment in comments:
-                        comment.content_type = account_content_type
-                        comment.object_id = account_object.id
-                        comment.save()
-                attachments = Attachments.objects.filter(
-                    content_type=lead_content_type,
-                    object_id=self.lead_obj.id,
-                    org=request.profile.org,
-                )
-                if attachments.exists():
-                    for attachment in attachments:
-                        attachment.content_type = account_content_type
-                        attachment.object_id = account_object.id
-                        attachment.save()
-                for tag in lead_obj.tags.all():
-                    account_object.tags.add(tag)
+                account, contact, opportunity = convert_lead_to_account(lead_obj, request)
 
                 if data.get("assigned_to", None):
                     assigned_to_list = data.getlist("assigned_to")
-                    recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
-                        recipients,
+                        assigned_to_list,
                         lead_obj.id,
                     )
                 return Response(
                     {
                         "error": False,
-                        "message": "Lead Converted to Account Successfully",
+                        "message": "Lead Converted Successfully",
+                        "account_id": str(account.id),
+                        "contact_id": str(contact.id) if contact else None,
+                        "opportunity_id": str(opportunity.id) if opportunity else None,
                     },
                     status=status.HTTP_200_OK,
                 )
@@ -444,8 +401,9 @@ class LeadDetailView(APIView):
                 )
 
                 attachment.file_name = self.request.FILES.get("lead_attachment").name
-                attachment.lead = self.lead_obj
+                attachment.content_object = self.lead_obj
                 attachment.attachment = self.request.FILES.get("lead_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
         lead_content_type = ContentType.objects.get_for_model(Lead)
@@ -497,15 +455,12 @@ class LeadDetailView(APIView):
             lead_obj.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
-                # for t in tags:
-                #     tag,_ = Tags.objects.get_or_create(name=t)
-                #     lead_obj.tags.add(tag)
                 for t in tags:
-                    tag = Tags.objects.filter(slug=t.lower())
+                    tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
                     if tag.exists():
                         tag = tag[0]
                     else:
-                        tag = Tags.objects.create(name=t)
+                        tag = Tags.objects.create(name=t, org=request.profile.org)
                     lead_obj.tags.add(tag)
 
             assigned_to_list = list(
@@ -520,16 +475,17 @@ class LeadDetailView(APIView):
                 attachment = Attachments()
                 attachment.created_by = request.profile.user
                 attachment.file_name = request.FILES.get("lead_attachment").name
-                attachment.lead = lead_obj
+                attachment.content_object = lead_obj
                 attachment.attachment = request.FILES.get("lead_attachment")
+                attachment.org = request.profile.org
                 attachment.save()
 
             lead_obj.contacts.clear()
             if params.get("contacts"):
                 obj_contact = Contact.objects.filter(
-                    id=params.get("contacts"), org=request.profile.org
+                    id__in=params.get("contacts"), org=request.profile.org
                 )
-                lead_obj.contacts.add(obj_contact)
+                lead_obj.contacts.add(*obj_contact)
 
             lead_obj.teams.clear()
             if params.get("teams"):
@@ -546,65 +502,24 @@ class LeadDetailView(APIView):
                 lead_obj.assigned_to.add(*profiles)
 
             if params.get("status") == "converted":
-                account_object = Account.objects.create(
-                    created_by=request.profile.user,
-                    name=(
-                        lead_obj.company.name
-                        if lead_obj.company
-                        else f"{lead_obj.first_name} {lead_obj.last_name}"
-                    ),
-                    email=lead_obj.email,
-                    phone=lead_obj.phone,
-                    description=params.get("description"),
-                    website=params.get("website"),
-                    lead=lead_obj,
-                    org=request.profile.org,
-                )
-                account_object.billing_address_line = lead_obj.address_line
-                account_object.billing_street = lead_obj.street
-                account_object.billing_city = lead_obj.city
-                account_object.billing_state = lead_obj.state
-                account_object.billing_postcode = lead_obj.postcode
-                account_object.billing_country = lead_obj.country
-                lead_content_type = ContentType.objects.get_for_model(Lead)
-                account_content_type = ContentType.objects.get_for_model(Account)
-                comments = Comment.objects.filter(
-                    content_type=lead_content_type,
-                    object_id=self.lead_obj.id,
-                    org=request.profile.org,
-                )
-                if comments.exists():
-                    for comment in comments:
-                        comment.content_type = account_content_type
-                        comment.object_id = account_object.id
-                        comment.save()
-                attachments = Attachments.objects.filter(
-                    content_type=lead_content_type,
-                    object_id=self.lead_obj.id,
-                    org=request.profile.org,
-                )
-                if attachments.exists():
-                    for attachment in attachments:
-                        attachment.content_type = account_content_type
-                        attachment.object_id = account_object.id
-                        attachment.save()
-                for tag in lead_obj.tags.all():
-                    account_object.tags.add(tag)
+                from leads.services import convert_lead_to_account
+
+                account, contact, opportunity = convert_lead_to_account(lead_obj, request)
+
                 if params.get("assigned_to"):
-                    # account_object.assigned_to.add(*params.getlist('assigned_to'))
                     assigned_to_list = params.get("assigned_to")
-                    recipients = assigned_to_list
                     send_email_to_assigned_user.delay(
-                        recipients,
+                        assigned_to_list,
                         lead_obj.id,
                     )
 
-                # Comments and attachments already migrated above
-                account_object.save()
                 return Response(
                     {
                         "error": False,
-                        "message": "Lead Converted to Account Successfully",
+                        "message": "Lead Converted Successfully",
+                        "account_id": str(account.id),
+                        "contact_id": str(contact.id) if contact else None,
+                        "opportunity_id": str(opportunity.id) if opportunity else None,
                     },
                     status=status.HTTP_200_OK,
                 )
@@ -652,95 +567,17 @@ class LeadDetailView(APIView):
 
         # Handle conversion if status is being set to converted
         if params.get("status") == "converted" or params.get("is_converted"):
-            # Create Account from Lead
-            account_object = Account.objects.create(
-                created_by=request.profile.user,
-                name=(
-                    self.lead_obj.company.name
-                    if self.lead_obj.company
-                    else f"{self.lead_obj.first_name} {self.lead_obj.last_name}"
-                ),
-                email=self.lead_obj.email,
-                phone=self.lead_obj.phone,
-                description=self.lead_obj.description,
-                website=self.lead_obj.website,
-                org=request.profile.org,
-                is_active=True,  # Set as active when converted from lead
-                # Copy address fields
-                address_line=self.lead_obj.address_line,
-                city=self.lead_obj.city,
-                state=self.lead_obj.state,
-                postcode=self.lead_obj.postcode,
-                country=self.lead_obj.country,
-            )
+            from leads.services import convert_lead_to_account
 
-            # Copy tags
-            for tag in self.lead_obj.tags.all():
-                account_object.tags.add(tag)
-
-            # Move comments to account
-            lead_content_type = ContentType.objects.get_for_model(Lead)
-            account_content_type = ContentType.objects.get_for_model(Account)
-            comments = Comment.objects.filter(
-                content_type=lead_content_type,
-                object_id=self.lead_obj.id,
-                org=request.profile.org,
-            )
-            for comment in comments:
-                comment.content_type = account_content_type
-                comment.object_id = account_object.id
-                comment.save()
-
-            # Move attachments to account
-            attachments = Attachments.objects.filter(
-                content_type=lead_content_type,
-                object_id=self.lead_obj.id,
-                org=request.profile.org,
-            )
-            for attachment in attachments:
-                attachment.content_type = account_content_type
-                attachment.object_id = account_object.id
-                attachment.save()
-
-            # Copy assigned users
-            for profile in self.lead_obj.assigned_to.all():
-                account_object.assigned_to.add(profile)
-
-            account_object.save()
-
-            # Update lead status
-            self.lead_obj.status = "converted"
-            self.lead_obj.save()
-
-            # Create Contact from Lead
-            contact_obj = None
-            if self.lead_obj.email:
-                contact_obj = Contact.objects.create(
-                    first_name=self.lead_obj.first_name or "",
-                    last_name=self.lead_obj.last_name or "",
-                    email=self.lead_obj.email,
-                    phone=self.lead_obj.phone,
-                    organization=(
-                        self.lead_obj.company.name if self.lead_obj.company else ""
-                    ),
-                    title=self.lead_obj.contact_title,
-                    description=self.lead_obj.description,
-                    address_line=self.lead_obj.address_line,
-                    city=self.lead_obj.city,
-                    state=self.lead_obj.state,
-                    postcode=self.lead_obj.postcode,
-                    country=self.lead_obj.country,
-                    created_by=request.profile.user,
-                    org=request.profile.org,
-                )
-                contact_obj.assigned_to.set(self.lead_obj.assigned_to.all())
+            account, contact, opportunity = convert_lead_to_account(self.lead_obj, request)
 
             return Response(
                 {
                     "error": False,
-                    "message": "Lead Converted to Account Successfully",
-                    "account_id": str(account_object.id),
-                    "contact_id": str(contact_obj.id) if contact_obj else None,
+                    "message": "Lead Converted Successfully",
+                    "account_id": str(account.id),
+                    "contact_id": str(contact.id) if contact else None,
+                    "opportunity_id": str(opportunity.id) if opportunity else None,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -754,6 +591,45 @@ class LeadDetailView(APIView):
         )
         if serializer.is_valid():
             lead_obj = serializer.save()
+
+            # Handle M2M fields if present in request
+            if "tags" in params:
+                lead_obj.tags.clear()
+                tags = params.get("tags")
+                if tags:
+                    for t in tags:
+                        tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
+                        if tag.exists():
+                            tag = tag[0]
+                        else:
+                            tag = Tags.objects.create(name=t, org=request.profile.org)
+                        lead_obj.tags.add(tag)
+
+            if "contacts" in params:
+                lead_obj.contacts.clear()
+                contacts_list = params.get("contacts")
+                if contacts_list:
+                    obj_contact = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    lead_obj.contacts.add(*obj_contact)
+
+            if "teams" in params:
+                lead_obj.teams.clear()
+                teams_list = params.get("teams")
+                if teams_list:
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    lead_obj.teams.add(*teams)
+
+            if "assigned_to" in params:
+                lead_obj.assigned_to.clear()
+                assigned_to_list = params.get("assigned_to")
+                if assigned_to_list:
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org
+                    )
+                    lead_obj.assigned_to.add(*profiles)
+
             return Response(
                 {"error": False, "message": "Lead updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -961,11 +837,11 @@ class CreateLeadFromSite(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if api_setting and params.get("email") and params.get("title"):
+        if api_setting and params.get("email"):
             # user = User.objects.filter(is_admin=True, is_active=True).first()
             user = api_setting.created_by
             lead = Lead.objects.create(
-                title=params.get("title"),
+                salutation=params.get("title"),  # 'title' param maps to salutation for backwards compatibility
                 first_name=params.get("first_name"),
                 last_name=params.get("last_name"),
                 status="assigned",
@@ -984,7 +860,8 @@ class CreateLeadFromSite(APIView):
             # Create Contact
             try:
                 contact = Contact.objects.create(
-                    first_name=params.get("title"),
+                    first_name=params.get("first_name") or "",
+                    last_name=params.get("last_name") or "",
                     email=params.get("email"),
                     phone=params.get("phone"),
                     description=params.get("message"),
@@ -1005,129 +882,4 @@ class CreateLeadFromSite(APIView):
         return Response(
             {"error": True, "message": "Invalid data"},
             status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class CompaniesView(APIView):
-
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(tags=["Company"], parameters=swagger_params.organization_params)
-    def get(self, request, *args, **kwargs):
-        try:
-            companies = Company.objects.filter(org=request.profile.org)
-            serializer = CompanySerializer(companies, many=True)
-            return Response(
-                {"error": False, "data": serializer.data},
-                status=status.HTTP_200_OK,
-            )
-        except:
-            return Response(
-                {"error": True, "message": "Organization is missing"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-    @extend_schema(
-        tags=["Company"],
-        description="Company Create",
-        parameters=swagger_params.organization_params,
-        request=CompanySwaggerSerializer,
-    )
-    def post(self, request, *args, **kwargs):
-        request.data["org"] = request.profile.org.id
-        print(request.data)
-        company = CompanySerializer(data=request.data)
-        if Company.objects.filter(**request.data).exists():
-            return Response(
-                {"error": True, "message": "This data already exists"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if company.is_valid():
-            company.save()
-            return Response(
-                {"error": False, "message": "Company created successfully"},
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return Response(
-                {"error": True, "message": company.errors},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
-class CompanyDetail(APIView):
-
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self, pk):
-        try:
-            return Company.objects.get(pk=pk)
-        except Company.DoesNotExist:
-            raise Http404
-
-    @extend_schema(tags=["Company"], parameters=swagger_params.organization_params)
-    def get(self, request, pk, format=None):
-        company = self.get_object(pk)
-        serializer = CompanySerializer(company)
-        return Response(
-            {"error": False, "data": serializer.data},
-            status=status.HTTP_200_OK,
-        )
-
-    @extend_schema(
-        tags=["Company"],
-        description="Company Update",
-        parameters=swagger_params.organization_params,
-        request=CompanySerializer,
-    )
-    def put(self, request, pk, format=None):
-        company = self.get_object(pk)
-        serializer = CompanySerializer(company, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "error": False,
-                    "data": serializer.data,
-                    "message": "Updated Successfully",
-                },
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "message": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    @extend_schema(
-        tags=["Company"],
-        description="Partial Company Update",
-        parameters=swagger_params.organization_params,
-        request=CompanySerializer,
-    )
-    def patch(self, request, pk, format=None):
-        """Handle partial updates to a company."""
-        company = self.get_object(pk)
-        serializer = CompanySerializer(company, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "error": False,
-                    "data": serializer.data,
-                    "message": "Updated Successfully",
-                },
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": True, "message": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    @extend_schema(tags=["Company"], parameters=swagger_params.organization_params)
-    def delete(self, request, pk, format=None):
-        company = self.get_object(pk)
-        company.delete()
-        return Response(
-            {"error": False, "message": "Deleted successfully"},
-            status=status.HTTP_200_OK,
         )

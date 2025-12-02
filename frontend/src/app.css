@@ -4,9 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ============================================
-   shadcn-svelte Theme Variables
-   ============================================ */
 :root {
 	/* Base radius for components */
 	--radius: 0.5rem;
@@ -48,9 +45,6 @@
 	--sidebar-border: oklch(0.922 0 0);
 	--sidebar-ring: oklch(0.708 0 0);
 
-	/* ============================================
-	   BottleCRM Design Tokens (from design_spec.md)
-	   ============================================ */
 
 	/* Background Layers */
 	--bg-base: #ffffff;
@@ -239,6 +233,7 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	body {
 		@apply bg-background text-foreground;
 		font-family: var(--font-sans);

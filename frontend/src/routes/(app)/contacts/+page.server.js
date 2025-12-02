@@ -79,7 +79,7 @@ export async function load({ url, locals, cookies }) {
 			department: contact.department,
 			// Communication preferences
 			doNotCall: contact.do_not_call || false,
-			linkedInUrl: contact.linked_in_url,
+			linkedInUrl: contact.linkedin_url,
 			// Address fields
 			addressLine: contact.address_line,
 			city: contact.city,
@@ -206,7 +206,7 @@ export const actions = {
 				title: title || null,
 				department: department || null,
 				do_not_call: doNotCall,
-				linked_in_url: linkedInUrl || null,
+				linkedin_url: linkedInUrl || null,
 				address_line: addressLine || null,
 				city: city || null,
 				state: state || null,
@@ -272,7 +272,7 @@ export const actions = {
 				title: title || null,
 				department: department || null,
 				do_not_call: doNotCall,
-				linked_in_url: linkedInUrl || null,
+				linkedin_url: linkedInUrl || null,
 				address_line: addressLine || null,
 				city: city || null,
 				state: state || null,

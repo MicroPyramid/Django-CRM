@@ -1764,11 +1764,6 @@ class ActivityListView(APIView):
         )
 
 
-# =============================================================================
-# Teams Views (merged from teams app)
-# =============================================================================
-
-
 class TeamsListView(APIView, LimitOffsetPagination):
     model = Teams
     permission_classes = (IsAuthenticated,)

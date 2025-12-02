@@ -11,25 +11,13 @@ from common.serializer import (
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-from leads.models import Company, Lead
+from leads.models import Lead
 
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = ("id", "name", "slug")
-
-
-class CompanySwaggerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ("name",)
-
-
-class CompanySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ("id", "name", "org")
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -41,6 +29,10 @@ class LeadSerializer(serializers.ModelSerializer):
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
+    converted_account = serializers.PrimaryKeyRelatedField(read_only=True)
+    converted_contact = serializers.PrimaryKeyRelatedField(read_only=True)
+    converted_opportunity = serializers.PrimaryKeyRelatedField(read_only=True)
+    conversion_date = serializers.DateTimeField(read_only=True)
 
     def get_country(self, obj):
         return obj.get_country_display()
@@ -50,12 +42,12 @@ class LeadSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             # Core Lead Information
-            "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -89,7 +81,11 @@ class LeadSerializer(serializers.ModelSerializer):
             "created_at",
             "is_active",
             "created_from_site",
-            "company",
+            "company_name",
+            "converted_account",
+            "converted_contact",
+            "converted_opportunity",
+            "conversion_date",
         )
 
 
@@ -109,7 +105,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             self.fields["email"].required = True
         self.fields["first_name"].required = False
         self.fields["last_name"].required = False
-        self.fields["title"].required = True
+        self.fields["salutation"].required = False
         self.org = request_obj.profile.org
 
         if self.instance:
@@ -122,12 +118,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         model = Lead
         fields = (
             # Core Lead Information
-            "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -149,8 +145,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "next_follow_up",
             "description",
             # System
-            "org",
-            "company",
+            "company_name",
         )
 
 
@@ -159,12 +154,12 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
         model = Lead
         fields = [
             # Core Lead Information
-            "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -191,7 +186,7 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
             "next_follow_up",
             "description",
             # System
-            "company",
+            "company_name",
             "lead_attachment",
         ]
 

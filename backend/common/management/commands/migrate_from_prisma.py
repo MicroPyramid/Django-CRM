@@ -51,10 +51,6 @@ from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# ENUM MAPPINGS: Prisma → Django
-# =============================================================================
-
 LEAD_STATUS_MAP = {
     "NEW": "assigned",
     "PENDING": "assigned",
@@ -258,10 +254,6 @@ class Command(BaseCommand):
             return model.objects.get(**kwargs)
         except model.DoesNotExist:
             return None
-
-    # =========================================================================
-    # MIGRATION FUNCTIONS
-    # =========================================================================
 
     def migrate_organizations(self):
         """Migrate Organization → Org"""

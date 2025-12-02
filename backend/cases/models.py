@@ -5,7 +5,7 @@ from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
-from common.models import Org, Profile, Teams
+from common.models import Org, Profile, Tags, Teams
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 
@@ -24,7 +24,7 @@ class Case(AssignableMixin, BaseModel):
         null=True,
         related_name="accounts_cases",
     )
-    contacts = models.ManyToManyField(Contact)
+    contacts = models.ManyToManyField(Contact, related_name="case_contacts")
     # closed_on = models.DateTimeField()
     closed_on = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -34,6 +34,7 @@ class Case(AssignableMixin, BaseModel):
     # )
     is_active = models.BooleanField(default=True)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
+    tags = models.ManyToManyField(Tags, blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="cases")
 
     class Meta:

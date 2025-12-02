@@ -1,6 +1,7 @@
 import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
@@ -17,7 +18,7 @@ class Contact(AssignableMixin, BaseModel):
     first_name = models.CharField(_("First name"), max_length=255)
     last_name = models.CharField(_("Last name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = models.CharField(_("Phone"), max_length=32, null=True, blank=True)
+    phone = PhoneNumberField(_("Phone"), null=True, blank=True)
 
     # Professional Information
     organization = models.CharField(_("Company"), max_length=255, blank=True, null=True)
@@ -28,7 +29,7 @@ class Contact(AssignableMixin, BaseModel):
 
     # Communication Preferences
     do_not_call = models.BooleanField(_("Do Not Call"), default=False)
-    linked_in_url = models.URLField(_("LinkedIn URL"), blank=True, null=True)
+    linkedin_url = models.URLField(_("LinkedIn URL"), blank=True, null=True)
 
     # Address (flat fields like Lead model)
     address_line = models.CharField(_("Address"), max_length=255, blank=True, null=True)
@@ -52,6 +53,16 @@ class Contact(AssignableMixin, BaseModel):
     # System Fields
     is_active = models.BooleanField(default=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="contacts")
+
+    # Account relationship (optional - contact can exist without an account)
+    account = models.ForeignKey(
+        "accounts.Account",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="primary_contacts",
+        help_text="Primary account this contact belongs to",
+    )
 
     class Meta:
         verbose_name = "Contact"
