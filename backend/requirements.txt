@@ -19,3 +19,6 @@ arrow==1.4.0
 phonenumbers==9.0.19
 pytz==2025.2
 requests==2.32.5
+
+# Production server
+gunicorn>=23.0.0

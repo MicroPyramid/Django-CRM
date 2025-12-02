@@ -13,88 +13,75 @@
 		Building2,
 		User,
 		Calendar,
-		Briefcase
+		Briefcase,
+		Eye,
+		Expand,
+		GripVertical,
+		Check,
+		X,
+		Trash2,
+		Linkedin
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { ContactDrawer } from '$lib/components/contacts';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
-	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'contacts-column-config';
 
-	/**
-	 * @typedef {Object} ColumnConfig
-	 * @property {string} key
-	 * @property {string} label
-	 * @property {boolean} visible
-	 * @property {boolean} [canHide]
-	 */
-
-	/** @type {ColumnConfig[]} */
-	const defaultColumns = [
-		{ key: 'contact', label: 'Contact', visible: true, canHide: false },
-		{ key: 'title', label: 'Title & Department', visible: true, canHide: true },
-		{ key: 'email', label: 'Email', visible: true, canHide: true },
-		{ key: 'phone', label: 'Phone', visible: true, canHide: true },
-		{ key: 'company', label: 'Company', visible: true, canHide: true },
-		{ key: 'owner', label: 'Owner', visible: true, canHide: true },
-		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	// Column definitions
+	const columns = [
+		{ key: 'contact', label: 'Contact', width: 'w-48' },
+		{ key: 'title', label: 'Title', width: 'w-36' },
+		{ key: 'email', label: 'Email', width: 'w-52' },
+		{ key: 'phone', label: 'Phone', width: 'w-36' },
+		{ key: 'company', label: 'Company', width: 'w-40' },
+		{ key: 'owner', label: 'Owner', width: 'w-36' },
+		{ key: 'created', label: 'Created', width: 'w-32' }
 	];
 
-	/**
-	 * Load column config from localStorage
-	 * @returns {typeof defaultColumns}
-	 */
-	function loadColumnConfig() {
-		if (typeof window === 'undefined') return defaultColumns;
-		try {
-			const saved = localStorage.getItem(STORAGE_KEY);
-			if (saved) {
-				const parsed = JSON.parse(saved);
-				return defaultColumns.map((def) => {
-					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
-					return savedCol ? { ...def, visible: savedCol.visible } : def;
-				});
-			}
-		} catch (e) {
-			console.error('Failed to load column config:', e);
-		}
-		return defaultColumns;
-	}
+	// Column visibility state
+	let visibleColumns = $state(columns.map((c) => c.key));
 
-	let columnConfig = $state(defaultColumns);
-
+	// Load column visibility from localStorage
 	onMount(() => {
-		columnConfig = loadColumnConfig();
-	});
-
-	// Save to localStorage when column config changes
-	$effect(() => {
-		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
 		}
 	});
 
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
 	/**
-	 * Check if a column is visible
 	 * @param {string} key
 	 */
 	function isColumnVisible(key) {
-		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+		return visibleColumns.includes(key);
 	}
 
 	/**
-	 * Handle column config change
-	 * @param {ColumnConfig[]} newConfig
+	 * @param {string} key
 	 */
-	function handleColumnChange(newConfig) {
-		columnConfig = newConfig;
+	function toggleColumn(key) {
+		if (key === 'contact') return; // Don't allow hiding contact column
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
 
 	/** @type {{ data: import('./$types').PageData }} */
@@ -111,6 +98,16 @@
 	/** @type {any} */
 	let selectedContact = $state(null);
 	let drawerLoading = $state(false);
+
+	// Row detail sheet state
+	let sheetOpen = $state(false);
+	let selectedRowId = $state(null);
+
+	// Drag-and-drop state
+	let draggedRowId = $state(null);
+	let dragOverRowId = $state(null);
+	/** @type {'before' | 'after' | null} */
+	let dropPosition = $state(null);
 
 	// URL sync
 	$effect(() => {
@@ -188,6 +185,78 @@
 		drawerOpen = open;
 		if (!open) updateUrl(null, null);
 	}
+
+	// Row detail sheet functions
+	/**
+	 * @param {string} rowId
+	 */
+	function openRowSheet(rowId) {
+		selectedRowId = rowId;
+		sheetOpen = true;
+	}
+
+	function closeRowSheet() {
+		sheetOpen = false;
+		selectedRowId = null;
+	}
+
+	// Drag-and-drop handlers
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleDragStart(e, rowId) {
+		draggedRowId = rowId;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', rowId);
+		}
+	}
+
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleRowDragOver(e, rowId) {
+		e.preventDefault();
+		if (draggedRowId === rowId) return;
+
+		dragOverRowId = rowId;
+
+		// Determine drop position based on mouse position
+		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		dropPosition = e.clientY < midpoint ? 'before' : 'after';
+	}
+
+	function handleRowDragLeave() {
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} targetRowId
+	 */
+	function handleRowDrop(e, targetRowId) {
+		e.preventDefault();
+		// Note: For contacts, we'd need to implement reordering via API
+		// For now, just reset drag state
+		resetDragState();
+	}
+
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	function resetDragState() {
+		draggedRowId = null;
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	// Get selected row data for sheet
+	const selectedRow = $derived(contacts.find((r) => r.id === selectedRowId));
 
 	// Filter/search/sort state
 	const list = useListFilters({
@@ -301,6 +370,19 @@
 	}
 
 	/**
+	 * Handle delete from sheet
+	 */
+	async function handleSheetDelete() {
+		if (!selectedRow) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(selectedRow)}?`)) return;
+
+		formState.contactId = selectedRow.id;
+		await tick();
+		deleteForm.requestSubmit();
+		closeRowSheet();
+	}
+
+	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
 	 * @param {boolean} closeOnSuccess
@@ -328,80 +410,111 @@
 	<title>Contacts - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
-	{#snippet actions()}
-		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
-		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-			{#snippet children()}
-				<div>
-					<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
-					<select
-						id="owner-filter"
-						bind:value={list.filters.ownerFilter}
-						class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-					>
-						<option value="ALL">All Owners</option>
-						{#each owners as owner}
-							<option value={owner.id}>{owner.name || owner.email}</option>
-						{/each}
-					</select>
-				</div>
-			{/snippet}
-		</FilterPopover>
-		<Button class="" onclick={openCreate} disabled={false}>
-			<Plus class="mr-2 h-4 w-4" />
-			New Contact
-		</Button>
-	{/snippet}
-</PageHeader>
+<div class="min-h-screen bg-white">
+	<!-- Header -->
+	<div class="border-b border-gray-200 px-6 py-4">
+		<div class="flex items-center justify-between">
+			<div>
+				<h1 class="text-2xl font-semibold text-gray-900">Contacts</h1>
+				<p class="mt-1 text-sm text-gray-500">
+					{filteredContacts.length} of {contacts.length} contacts
+				</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<!-- Filter Popover -->
+				<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
+					{#snippet children()}
+						<div>
+							<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
+							<select
+								id="owner-filter"
+								bind:value={list.filters.ownerFilter}
+								class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+							>
+								<option value="ALL">All Owners</option>
+								{#each owners as owner}
+									<option value={owner.id}>{owner.name || owner.email}</option>
+								{/each}
+							</select>
+						</div>
+					{/snippet}
+				</FilterPopover>
 
-<div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Contacts Table -->
-	<Card.Root class="border-0 shadow-sm">
-		<Card.Content class="p-0">
-			{#if filteredContacts.length === 0}
-				<div class="flex flex-col items-center justify-center py-16 text-center">
-					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
-					<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new contact.
-					</p>
-					<Button onclick={openCreate} class="mt-4" disabled={false}>
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Contact
-					</Button>
-				</div>
-			{:else}
-				<!-- Desktop Table -->
-				<div class="hidden md:block">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row class="border-b border-border/40 hover:bg-transparent">
-								{#if isColumnVisible('contact')}
-									<Table.Head class="w-[250px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Contact</Table.Head>
-								{/if}
-								{#if isColumnVisible('title')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Title & Department</Table.Head>
-								{/if}
-								{#if isColumnVisible('email')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Email</Table.Head>
-								{/if}
-								{#if isColumnVisible('phone')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Phone</Table.Head>
-								{/if}
-								{#if isColumnVisible('company')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Company</Table.Head>
-								{/if}
-								{#if isColumnVisible('owner')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Owner</Table.Head>
-								{/if}
-								{#if isColumnVisible('created')}
-									<Table.Head
-										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
-										onclick={() => list.toggleSort('createdAt')}
+				<!-- Column Visibility Dropdown -->
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Eye class="h-4 w-4" />
+								Columns
+								{#if visibleColumns.length < columns.length}
+									<span
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
 									>
-										<div class="flex items-center gap-1">
-											Created
+										{visibleColumns.length}/{columns.length}
+									</span>
+								{/if}
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each columns as column (column.key)}
+							<DropdownMenu.CheckboxItem
+								checked={isColumnVisible(column.key)}
+								onCheckedChange={() => toggleColumn(column.key)}
+								disabled={column.key === 'contact'}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<Button size="sm" class="gap-2" onclick={openCreate}>
+					<Plus class="h-4 w-4" />
+					New
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Table -->
+	<div class="overflow-x-auto">
+		{#if filteredContacts.length === 0}
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+				<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+				<p class="text-muted-foreground mt-1 text-sm">
+					Try adjusting your search criteria or create a new contact.
+				</p>
+				<Button onclick={openCreate} class="mt-4">
+					<Plus class="mr-2 h-4 w-4" />
+					Create New Contact
+				</Button>
+			</div>
+		{:else}
+			<table class="w-full border-collapse">
+				<!-- Header -->
+				<thead>
+					<tr class="border-b border-gray-100/60">
+						<!-- Drag handle column -->
+						<th class="w-8 px-1"></th>
+						<!-- Expand button column -->
+						<th class="w-8 px-1"></th>
+						{#each columns as column (column.key)}
+							{#if isColumnVisible(column.key)}
+								<th
+									class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 {column.width}"
+								>
+									{#if column.key === 'created'}
+										<button
+											type="button"
+											class="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-gray-100 transition-colors"
+											onclick={() => list.toggleSort('createdAt')}
+										>
+											{column.label}
 											{#if list.sortColumn === 'createdAt'}
 												{#if list.sortDirection === 'asc'}
 													<ChevronUp class="h-3.5 w-3.5" />
@@ -409,156 +522,433 @@
 													<ChevronDown class="h-3.5 w-3.5" />
 												{/if}
 											{/if}
-										</div>
-									</Table.Head>
-								{/if}
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{#each filteredContacts as contact (contact.id)}
-								<Table.Row
-									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
-									onclick={() => openContact(contact)}
+										</button>
+									{:else}
+										{column.label}
+									{/if}
+								</th>
+							{/if}
+						{/each}
+					</tr>
+				</thead>
+
+				<!-- Body -->
+				<tbody>
+					{#each filteredContacts as contact (contact.id)}
+						<!-- Drop indicator line (before row) -->
+						{#if dragOverRowId === contact.id && dropPosition === 'before'}
+							<tr class="h-0">
+								<td colspan={visibleColumns.length + 2} class="p-0">
+									<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
+								</td>
+							</tr>
+						{/if}
+
+						<tr
+							class="group transition-all duration-100 ease-out hover:bg-gray-50/30 {draggedRowId ===
+							contact.id
+								? 'bg-gray-100 opacity-40'
+								: ''}"
+							ondragover={(e) => handleRowDragOver(e, contact.id)}
+							ondragleave={handleRowDragLeave}
+							ondrop={(e) => handleRowDrop(e, contact.id)}
+						>
+							<!-- Drag Handle -->
+							<td class="w-8 px-1 py-3">
+								<div
+									draggable="true"
+									ondragstart={(e) => handleDragStart(e, contact.id)}
+									ondragend={handleDragEnd}
+									class="flex h-6 w-6 cursor-grab items-center justify-center rounded opacity-0 transition-all group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 active:cursor-grabbing"
+									role="button"
+									tabindex="0"
+									aria-label="Drag to reorder"
 								>
-									{#if isColumnVisible('contact')}
-										<Table.Cell class="py-2 px-4">
-											<div class="flex items-center gap-3">
-												<div
-													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-medium text-white"
-												>
-													{getContactInitials(contact)}
-												</div>
-												<div class="min-w-0">
-													<p class="text-foreground truncate font-medium">
-														{getFullName(contact)}
-													</p>
-												</div>
-											</div>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('title')}
-										<Table.Cell class="py-2 px-4">
-											<div class="space-y-1">
-												{#if contact.title}
-													<p class="text-foreground text-sm">{contact.title}</p>
-												{/if}
-												{#if contact.department}
-													<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-														<Briefcase class="h-3.5 w-3.5" />
-														<span>{contact.department}</span>
-													</div>
-												{/if}
-												{#if !contact.title && !contact.department}
-													<span class="text-muted-foreground">-</span>
-												{/if}
-											</div>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('email')}
-										<Table.Cell class="py-2 px-4">
-											{#if contact.email}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Mail class="text-muted-foreground h-3.5 w-3.5" />
-													<span class="max-w-[200px] truncate">{contact.email}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('phone')}
-										<Table.Cell class="py-2 px-4">
-											{#if contact.phone}
-												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-													<Phone class="h-3.5 w-3.5" />
-													<span>{formatPhone(contact.phone)}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('company')}
-										<Table.Cell class="py-2 px-4">
-											{#if contact.organization}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Building2 class="text-muted-foreground h-4 w-4" />
-													<span class="truncate">{contact.organization}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('owner')}
-										<Table.Cell class="py-2 px-4">
-											<span class="text-foreground text-sm">
-												{contact.owner?.name || contact.owner?.email || '-'}
-											</span>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('created')}
-										<Table.Cell class="py-2 px-4">
-											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-												<Calendar class="h-3.5 w-3.5" />
-												<span>{formatRelativeDate(contact.createdAt)}</span>
-											</div>
-										</Table.Cell>
-									{/if}
-								</Table.Row>
-							{/each}
-						</Table.Body>
-					</Table.Root>
+									<GripVertical class="h-4 w-4 text-gray-400" />
+								</div>
+							</td>
+
+							<!-- Expand button -->
+							<td class="w-8 px-1 py-3">
+								<button
+									type="button"
+									onclick={() => openRowSheet(contact.id)}
+									class="flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all duration-75 group-hover:opacity-100 hover:bg-gray-200"
+								>
+									<Expand class="h-3.5 w-3.5 text-gray-500" />
+								</button>
+							</td>
+
+							<!-- Contact -->
+							{#if isColumnVisible('contact')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'contact')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 flex w-full cursor-pointer items-center gap-3 rounded px-2 py-1.5 text-left transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										<div
+											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-medium text-white"
+										>
+											{getContactInitials(contact)}
+										</div>
+										<span class="truncate text-sm text-gray-900">
+											{getFullName(contact)}
+										</span>
+									</button>
+								</td>
+							{/if}
+
+							<!-- Title -->
+							{#if isColumnVisible('title')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'title')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{#if contact.title}
+											<span class="text-gray-900">{contact.title}</span>
+										{:else}
+											<span class="text-gray-400">Empty</span>
+										{/if}
+									</button>
+								</td>
+							{/if}
+
+							<!-- Email -->
+							{#if isColumnVisible('email')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'email')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{#if contact.email}
+											<span class="truncate text-gray-900">{contact.email}</span>
+										{:else}
+											<span class="text-gray-400">Empty</span>
+										{/if}
+									</button>
+								</td>
+							{/if}
+
+							<!-- Phone -->
+							{#if isColumnVisible('phone')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'phone')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{#if contact.phone}
+											<span class="text-gray-900">{formatPhone(contact.phone)}</span>
+										{:else}
+											<span class="text-gray-400">Empty</span>
+										{/if}
+									</button>
+								</td>
+							{/if}
+
+							<!-- Company -->
+							{#if isColumnVisible('company')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'company')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{#if contact.organization}
+											<span class="truncate text-gray-900">{contact.organization}</span>
+										{:else}
+											<span class="text-gray-400">Empty</span>
+										{/if}
+									</button>
+								</td>
+							{/if}
+
+							<!-- Owner -->
+							{#if isColumnVisible('owner')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'owner')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										{#if contact.owner?.name || contact.owner?.email}
+											<span class="text-gray-900"
+												>{contact.owner.name || contact.owner.email}</span
+											>
+										{:else}
+											<span class="text-gray-400">Empty</span>
+										{/if}
+									</button>
+								</td>
+							{/if}
+
+							<!-- Created -->
+							{#if isColumnVisible('created')}
+								<td class="px-4 py-3 {columns.find((c) => c.key === 'created')?.width}">
+									<button
+										type="button"
+										onclick={() => openContact(contact)}
+										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
+									>
+										<span class="text-gray-900">{formatRelativeDate(contact.createdAt)}</span>
+									</button>
+								</td>
+							{/if}
+						</tr>
+
+						<!-- Drop indicator line (after row) -->
+						{#if dragOverRowId === contact.id && dropPosition === 'after'}
+							<tr class="h-0">
+								<td colspan={visibleColumns.length + 2} class="p-0">
+									<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
+								</td>
+							</tr>
+						{/if}
+					{/each}
+				</tbody>
+			</table>
+		{/if}
+	</div>
+
+	<!-- Add row button at bottom -->
+	{#if filteredContacts.length > 0}
+		<div class="border-t border-gray-100 px-4 py-2">
+			<button
+				type="button"
+				onclick={openCreate}
+				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+			>
+				<Plus class="h-4 w-4" />
+				New contact
+			</button>
+		</div>
+	{/if}
+</div>
+
+<!-- Row Detail Sheet (Notion-style) -->
+<Sheet.Root bind:open={sheetOpen} onOpenChange={(open) => !open && closeRowSheet()}>
+	<Sheet.Content side="right" class="w-[440px] overflow-hidden p-0 sm:max-w-[440px]">
+		{#if selectedRow}
+			<div class="flex h-full flex-col">
+				<!-- Header with close button -->
+				<div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+					<span class="text-sm text-gray-500">Contact</span>
+					<button
+						onclick={closeRowSheet}
+						class="rounded p-1 transition-colors duration-75 hover:bg-gray-100"
+					>
+						<X class="h-4 w-4 text-gray-400" />
+					</button>
 				</div>
 
-				<!-- Mobile Card View -->
-				<div class="divide-y md:hidden">
-					{#each filteredContacts as contact (contact.id)}
-						<button
-							type="button"
-							class="hover:bg-muted/50 flex w-full items-start gap-4 p-4 text-left"
-							onclick={() => openContact(contact)}
-						>
+				<!-- Scrollable content -->
+				<div class="flex-1 overflow-y-auto">
+					<!-- Title section -->
+					<div class="px-6 pb-4 pt-6">
+						<div class="flex items-center gap-3">
 							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-medium text-white"
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-medium text-white"
 							>
-								{getContactInitials(contact)}
+								{getContactInitials(selectedRow)}
+							</div>
+							<h2 class="text-2xl font-semibold text-gray-900">
+								{getFullName(selectedRow)}
+							</h2>
+						</div>
+					</div>
+
+					<!-- Properties section -->
+					<div class="px-4 pb-6">
+						<!-- Email property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Mail class="h-4 w-4 text-gray-400" />
+								Email
 							</div>
 							<div class="min-w-0 flex-1">
-								<div class="flex items-start justify-between gap-2">
-									<div>
-										<p class="text-foreground font-medium">{getFullName(contact)}</p>
-										{#if contact.title}
-											<p class="text-muted-foreground text-sm">{contact.title}</p>
-										{/if}
-									</div>
-								</div>
-								<div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
-									{#if contact.email}
-										<div class="flex items-center gap-1">
-											<Mail class="h-3.5 w-3.5" />
-											<span class="max-w-[150px] truncate">{contact.email}</span>
-										</div>
-									{/if}
-									{#if contact.organization}
-										<div class="flex items-center gap-1">
-											<Building2 class="h-3.5 w-3.5" />
-											<span>{contact.organization}</span>
-										</div>
-									{/if}
-									<div class="flex items-center gap-1">
-										<Calendar class="h-3.5 w-3.5" />
-										<span>{formatRelativeDate(contact.createdAt)}</span>
-									</div>
-								</div>
+								{#if selectedRow.email}
+									<a
+										href="mailto:{selectedRow.email}"
+										class="rounded px-2 py-1 text-sm text-gray-900 hover:bg-gray-100"
+									>
+										{selectedRow.email}
+									</a>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
 							</div>
-						</button>
-					{/each}
+						</div>
+
+						<!-- Phone property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Phone class="h-4 w-4 text-gray-400" />
+								Phone
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.phone}
+									<a
+										href="tel:{selectedRow.phone}"
+										class="rounded px-2 py-1 text-sm text-gray-900 hover:bg-gray-100"
+									>
+										{formatPhone(selectedRow.phone)}
+									</a>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Company property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Building2 class="h-4 w-4 text-gray-400" />
+								Company
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.organization}
+									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.organization}</span>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Title property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Briefcase class="h-4 w-4 text-gray-400" />
+								Title
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.title}
+									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.title}</span>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Department property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Briefcase class="h-4 w-4 text-gray-400" />
+								Department
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.department}
+									<span class="px-2 py-1 text-sm text-gray-900">{selectedRow.department}</span>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Owner property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<User class="h-4 w-4 text-gray-400" />
+								Owner
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.owner?.name || selectedRow.owner?.email}
+									<span class="px-2 py-1 text-sm text-gray-900"
+										>{selectedRow.owner.name || selectedRow.owner.email}</span
+									>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- LinkedIn property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Linkedin class="h-4 w-4 text-gray-400" />
+								LinkedIn
+							</div>
+							<div class="min-w-0 flex-1">
+								{#if selectedRow.linkedInUrl}
+									<a
+										href={selectedRow.linkedInUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="rounded px-2 py-1 text-sm text-blue-600 hover:bg-gray-100 hover:underline"
+									>
+										View Profile
+									</a>
+								{:else}
+									<span class="px-2 py-1 text-sm text-gray-400">Empty</span>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Created property -->
+						<div
+							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
+						>
+							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
+								<Calendar class="h-4 w-4 text-gray-400" />
+								Created
+							</div>
+							<div class="min-w-0 flex-1">
+								<span class="px-2 py-1 text-sm text-gray-900"
+									>{formatRelativeDate(selectedRow.createdAt)}</span
+								>
+							</div>
+						</div>
+
+						<!-- Description property -->
+						{#if selectedRow.description}
+							<div class="mt-4 border-t border-gray-100 pt-4">
+								<div class="mb-2 text-[13px] text-gray-500">Description</div>
+								<p class="text-sm text-gray-700">{selectedRow.description}</p>
+							</div>
+						{/if}
+					</div>
 				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
-</div>
+
+				<!-- Footer with actions -->
+				<div class="mt-auto flex items-center justify-between border-t border-gray-100 px-4 py-3">
+					<button
+						onclick={handleSheetDelete}
+						class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50"
+					>
+						<Trash2 class="h-4 w-4" />
+						Delete
+					</button>
+					<Button
+						size="sm"
+						onclick={() => {
+							closeRowSheet();
+							openContact(selectedRow);
+						}}
+					>
+						Edit
+					</Button>
+				</div>
+			</div>
+		{/if}
+	</Sheet.Content>
+</Sheet.Root>
 
 <!-- Unified Contact Drawer -->
 <ContactDrawer

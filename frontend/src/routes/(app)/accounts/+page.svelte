@@ -14,7 +14,6 @@
 		Users,
 		Target,
 		Calendar,
-		DollarSign,
 		MapPin,
 		GripVertical,
 		Expand,
@@ -236,14 +235,6 @@
 	// Visible column count for the toggle button
 	const visibleColumnCount = $derived(visibleColumns.length);
 	const totalColumnCount = $derived(columns.length);
-
-	// Stats
-	const stats = $derived.by(() => ({
-		total: accounts.length,
-		active: accounts.filter((a) => a.isActive !== false).length,
-		totalContacts: accounts.reduce((sum, a) => sum + (a.contactCount || 0), 0),
-		totalOpportunities: accounts.reduce((sum, a) => sum + (a.opportunityCount || 0), 0)
-	}));
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -621,70 +612,6 @@
 </PageHeader>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Stats Cards -->
-	<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-		<Card.Root>
-			<Card.Content class="p-4">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
-					>
-						<Building2 class="h-5 w-5 text-blue-600 dark:text-blue-400" />
-					</div>
-					<div>
-						<p class="text-muted-foreground text-sm">Total Accounts</p>
-						<p class="text-2xl font-bold">{stats.total}</p>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-		<Card.Root>
-			<Card.Content class="p-4">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30"
-					>
-						<Target class="h-5 w-5 text-green-600 dark:text-green-400" />
-					</div>
-					<div>
-						<p class="text-muted-foreground text-sm">Active</p>
-						<p class="text-2xl font-bold">{stats.active}</p>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-		<Card.Root>
-			<Card.Content class="p-4">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30"
-					>
-						<Users class="h-5 w-5 text-orange-600 dark:text-orange-400" />
-					</div>
-					<div>
-						<p class="text-muted-foreground text-sm">Contacts</p>
-						<p class="text-2xl font-bold">{stats.totalContacts}</p>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-		<Card.Root>
-			<Card.Content class="p-4">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30"
-					>
-						<DollarSign class="h-5 w-5 text-purple-600 dark:text-purple-400" />
-					</div>
-					<div>
-						<p class="text-muted-foreground text-sm">Opportunities</p>
-						<p class="text-2xl font-bold">{stats.totalOpportunities}</p>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-	</div>
-
 	<!-- Accounts Table -->
 	<Card.Root class="border-0 shadow-sm">
 		<Card.Content class="p-0">

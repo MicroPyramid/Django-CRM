@@ -5,8 +5,11 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
+		Eye,
+		Expand,
+		GripVertical,
 		ChevronDown,
-		ChevronUp,
+		Check,
 		Briefcase,
 		Building2,
 		User,
@@ -21,7 +24,7 @@
 	import { CaseDrawer } from '$lib/components/cases';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
@@ -36,89 +39,81 @@
 		PRIORITIES as priorities
 	} from '$lib/constants/filters.js';
 	import { useDrawerState, useListFilters } from '$lib/hooks';
-	import { ColumnCustomizer } from '$lib/components/ui/column-customizer/index.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'cases-column-config';
 
-	/**
-	 * @typedef {Object} ColumnConfig
-	 * @property {string} key
-	 * @property {string} label
-	 * @property {boolean} visible
-	 * @property {boolean} [canHide]
-	 */
-
-	/** @type {ColumnConfig[]} */
-	const defaultColumns = [
-		{ key: 'case', label: 'Case', visible: true, canHide: false },
-		{ key: 'account', label: 'Account', visible: true, canHide: true },
-		{ key: 'type', label: 'Type', visible: true, canHide: true },
-		{ key: 'assignedTo', label: 'Assigned To', visible: true, canHide: true },
-		{ key: 'priority', label: 'Priority', visible: true, canHide: true },
-		{ key: 'status', label: 'Status', visible: true, canHide: true },
-		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	// Column definitions
+	const columns = [
+		{ key: 'case', label: 'Case', width: 'w-[300px]' },
+		{ key: 'account', label: 'Account', width: 'w-40' },
+		{ key: 'type', label: 'Type', width: 'w-28' },
+		{ key: 'assignedTo', label: 'Assigned To', width: 'w-36' },
+		{ key: 'priority', label: 'Priority', width: 'w-28' },
+		{ key: 'status', label: 'Status', width: 'w-28' },
+		{ key: 'created', label: 'Created', width: 'w-32' }
 	];
 
-	/**
-	 * Load column config from localStorage
-	 * @returns {typeof defaultColumns}
-	 */
-	function loadColumnConfig() {
-		if (typeof window === 'undefined') return defaultColumns;
-		try {
-			const saved = localStorage.getItem(STORAGE_KEY);
-			if (saved) {
-				const parsed = JSON.parse(saved);
-				return defaultColumns.map((def) => {
-					const savedCol = parsed.find((/** @type {ColumnConfig} */ p) => p.key === def.key);
-					return savedCol ? { ...def, visible: savedCol.visible } : def;
-				});
-			}
-		} catch (e) {
-			console.error('Failed to load column config:', e);
-		}
-		return defaultColumns;
-	}
+	// Column visibility state - all columns visible by default
+	let visibleColumns = $state(columns.map((c) => c.key));
 
-	let columnConfig = $state(defaultColumns);
+	// Drag-and-drop state
+	let draggedRowId = $state(null);
+	let dragOverRowId = $state(null);
+	/** @type {'before' | 'after' | null} */
+	let dropPosition = $state(null);
 
+	// Load column visibility from localStorage
 	onMount(() => {
-		columnConfig = loadColumnConfig();
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
 	});
 
-	// Save to localStorage when column config changes
+	// Save column visibility when changed
 	$effect(() => {
-		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
 		}
 	});
 
 	/**
-	 * Check if a column is visible
 	 * @param {string} key
 	 */
 	function isColumnVisible(key) {
-		return columnConfig.find((c) => c.key === key)?.visible ?? true;
+		return visibleColumns.includes(key);
 	}
 
 	/**
-	 * Handle column config change
-	 * @param {ColumnConfig[]} newConfig
+	 * @param {string} key
 	 */
-	function handleColumnChange(newConfig) {
-		columnConfig = newConfig;
+	function toggleColumn(key) {
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
 	// Computed values
-	const cases = $derived(data.cases || []);
+	let casesData = $state(data.cases || []);
 	const accounts = $derived(data.allAccounts || []);
 	const users = $derived(data.allUsers || []);
 	const contacts = $derived(data.allContacts || []);
 	const teams = $derived(data.allTeams || []);
+
+	// Sync casesData when data changes
+	$effect(() => {
+		casesData = data.cases || [];
+	});
 
 	// Drawer state using hook
 	const drawer = useDrawerState();
@@ -148,7 +143,7 @@
 	});
 
 	// Filtered and sorted cases
-	const filteredCases = $derived(list.filterAndSort(cases));
+	const filteredCases = $derived(list.filterAndSort(casesData));
 	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
 	const accountOptions = $derived([
@@ -292,15 +287,127 @@
 		})),
 		teams: teams.map((/** @type {any} */ team) => ({ id: team.id, name: team.name }))
 	});
+
+	// Drag-and-drop handlers
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleDragStart(e, rowId) {
+		draggedRowId = rowId;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', rowId);
+		}
+	}
+
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} rowId
+	 */
+	function handleRowDragOver(e, rowId) {
+		e.preventDefault();
+		if (draggedRowId === rowId) return;
+
+		dragOverRowId = rowId;
+
+		// Determine drop position based on mouse position
+		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		dropPosition = e.clientY < midpoint ? 'before' : 'after';
+	}
+
+	function handleRowDragLeave() {
+		dragOverRowId = null;
+		dropPosition = null;
+	}
+
+	/**
+	 * @param {DragEvent} e
+	 * @param {string} targetRowId
+	 */
+	function handleRowDrop(e, targetRowId) {
+		e.preventDefault();
+		if (!draggedRowId || draggedRowId === targetRowId) {
+			resetDragState();
+			return;
+		}
+
+		const draggedIndex = casesData.findIndex((/** @type {any} */ r) => r.id === draggedRowId);
+		const targetIndex = casesData.findIndex((/** @type {any} */ r) => r.id === targetRowId);
+
+		if (draggedIndex === -1 || targetIndex === -1) {
+			resetDragState();
+			return;
+		}
+
+		// Create new array and reorder
+		const newData = [...casesData];
+		const [draggedItem] = newData.splice(draggedIndex, 1);
+
+		// Calculate insert position
+		let insertIndex = targetIndex;
+		if (dropPosition === 'after') {
+			insertIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
+		} else {
+			insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+		}
+
+		newData.splice(insertIndex, 0, draggedItem);
+		casesData = newData;
+
+		resetDragState();
+	}
+
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	function resetDragState() {
+		draggedRowId = null;
+		dragOverRowId = null;
+		dropPosition = null;
+	}
 </script>
 
 <svelte:head>
 	<title>Cases - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Cases" subtitle="{filteredCases.length} of {cases.length} cases">
+<PageHeader title="Cases" subtitle="{filteredCases.length} of {casesData.length} cases">
 	{#snippet actions()}
-		<ColumnCustomizer columns={columnConfig} onchange={handleColumnChange} />
+		<!-- Column Visibility Dropdown -->
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="sm" class="gap-2">
+						<Eye class="h-4 w-4" />
+						Columns
+						{#if visibleColumns.length < columns.length}
+							<span
+								class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+							>
+								{visibleColumns.length}/{columns.length}
+							</span>
+						{/if}
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-48">
+				<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+				<DropdownMenu.Separator />
+				{#each columns as column (column.key)}
+					<DropdownMenu.CheckboxItem
+						class=""
+						checked={isColumnVisible(column.key)}
+						onCheckedChange={() => toggleColumn(column.key)}
+					>
+						{column.label}
+					</DropdownMenu.CheckboxItem>
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+
 		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
 			{#snippet children()}
 				<div class="space-y-3">
@@ -367,159 +474,214 @@
 					</Button>
 				</div>
 			{:else}
-				<!-- Desktop Table -->
+				<!-- Desktop Table - Notion Style -->
 				<div class="hidden md:block">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row class="border-b border-border/40 hover:bg-transparent">
-								{#if isColumnVisible('case')}
-									<Table.Head class="w-[300px] py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Case</Table.Head>
-								{/if}
-								{#if isColumnVisible('account')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Account</Table.Head>
-								{/if}
-								{#if isColumnVisible('type')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Type</Table.Head>
-								{/if}
-								{#if isColumnVisible('assignedTo')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Assigned To</Table.Head>
-								{/if}
-								{#if isColumnVisible('priority')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Priority</Table.Head>
-								{/if}
-								{#if isColumnVisible('status')}
-									<Table.Head class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70">Status</Table.Head>
-								{/if}
-								{#if isColumnVisible('created')}
-									<Table.Head
-										class="py-2.5 px-4 text-xs font-normal uppercase tracking-wide text-muted-foreground/70 hover:bg-muted/30 cursor-pointer rounded transition-colors"
-										onclick={() => list.toggleSort('createdAt')}
-									>
-										<div class="flex items-center gap-1">
-											Created
-											{#if list.sortColumn === 'createdAt'}
-												{#if list.sortDirection === 'asc'}
-													<ChevronUp class="h-3.5 w-3.5" />
-												{:else}
-													<ChevronDown class="h-3.5 w-3.5" />
-												{/if}
-											{/if}
-										</div>
-									</Table.Head>
-								{/if}
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{#each filteredCases as caseItem (caseItem.id)}
-								{@const StatusIcon = getStatusIcon(caseItem.status)}
-								<Table.Row
-									class="group relative h-[52px] border-b border-border/30 hover:bg-muted/20 cursor-pointer transition-all duration-150 ease-out"
-									onclick={() => drawer.openDetail(caseItem)}
-								>
-									{#if isColumnVisible('case')}
-										<Table.Cell class="py-2 px-4">
-											<div class="flex items-center gap-3">
-												<div
-													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600"
-												>
-													<Briefcase class="h-4 w-4 text-white" />
-												</div>
-												<div class="min-w-0">
-													<p class="text-foreground truncate font-medium">
-														{caseItem.subject}
-													</p>
-													{#if caseItem.description}
-														<p class="text-muted-foreground line-clamp-1 text-sm">
-															{caseItem.description}
-														</p>
-													{/if}
-												</div>
-											</div>
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('account')}
-										<Table.Cell class="py-2 px-4">
-											{#if caseItem.account}
-												<div class="flex items-center gap-1.5 text-sm">
-													<Building2 class="text-muted-foreground h-4 w-4" />
-													<span class="truncate">{caseItem.account.name}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('type')}
-										<Table.Cell class="py-2 px-4">
-											{#if caseItem.caseType}
-												<span
-													class={cn(
-														'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-														getCaseTypeClass(caseItem.caseType)
-													)}
-												>
-													<Tag class="h-3 w-3" />
-													{caseItem.caseType}
-												</span>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('assignedTo')}
-										<Table.Cell class="py-2 px-4">
-											{#if caseItem.owner}
-												<div class="flex items-center gap-1.5 text-sm">
-													<User class="text-muted-foreground h-4 w-4" />
-													<span class="truncate">{caseItem.owner.name}</span>
-												</div>
-											{:else}
-												<span class="text-muted-foreground">Unassigned</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('priority')}
-										<Table.Cell class="py-2 px-4">
-											{#if caseItem.priority}
-												<span
-													class={cn(
-														'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-														getPriorityClass(caseItem.priority)
-													)}
-												>
-													<Flag class="h-3 w-3" />
-													{caseItem.priority}
-												</span>
-											{:else}
-												<span class="text-muted-foreground">-</span>
-											{/if}
-										</Table.Cell>
-									{/if}
-									{#if isColumnVisible('status')}
-										<Table.Cell class="py-2 px-4">
-											<span
-												class={cn(
-													'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-													getCaseStatusClass(caseItem.status)
-												)}
+					<div class="overflow-x-auto">
+						<table class="w-full border-collapse">
+							<!-- Header -->
+							<thead>
+								<tr class="border-b border-gray-100/60">
+									<!-- Drag handle column -->
+									<th class="w-8 px-1"></th>
+									<!-- Expand button column -->
+									<th class="w-8 px-1"></th>
+									{#each columns as column (column.key)}
+										{#if isColumnVisible(column.key)}
+											<th
+												class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 {column.width}"
 											>
-												<StatusIcon class="h-3 w-3" />
-												{formatStatusDisplay(caseItem.status)}
-											</span>
-										</Table.Cell>
+												{column.label}
+											</th>
+										{/if}
+									{/each}
+								</tr>
+							</thead>
+
+							<!-- Body -->
+							<tbody>
+								{#each filteredCases as caseItem (caseItem.id)}
+									{@const StatusIcon = getStatusIcon(caseItem.status)}
+
+									<!-- Drop indicator line (before row) -->
+									{#if dragOverRowId === caseItem.id && dropPosition === 'before'}
+										<tr class="h-0">
+											<td colspan={visibleColumns.length + 2} class="p-0">
+												<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
+											</td>
+										</tr>
 									{/if}
-									{#if isColumnVisible('created')}
-										<Table.Cell class="py-2 px-4">
-											<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
-												<Calendar class="h-3.5 w-3.5" />
-												<span>{formatRelativeDate(caseItem.createdAt)}</span>
+
+									<tr
+										class="group transition-all duration-100 ease-out hover:bg-gray-50/30 {draggedRowId ===
+										caseItem.id
+											? 'bg-gray-100 opacity-40'
+											: ''}"
+										ondragover={(e) => handleRowDragOver(e, caseItem.id)}
+										ondragleave={handleRowDragLeave}
+										ondrop={(e) => handleRowDrop(e, caseItem.id)}
+									>
+										<!-- Drag Handle -->
+										<td class="w-8 px-1 py-3">
+											<div
+												draggable="true"
+												ondragstart={(e) => handleDragStart(e, caseItem.id)}
+												ondragend={handleDragEnd}
+												class="flex h-6 w-6 cursor-grab items-center justify-center rounded opacity-0 transition-all hover:bg-gray-200 hover:!opacity-70 group-hover:opacity-40 active:cursor-grabbing"
+												role="button"
+												tabindex="0"
+												aria-label="Drag to reorder"
+											>
+												<GripVertical class="h-4 w-4 text-gray-400" />
 											</div>
-										</Table.Cell>
+										</td>
+
+										<!-- Expand button -->
+										<td class="w-8 px-1 py-3">
+											<button
+												type="button"
+												onclick={() => drawer.openDetail(caseItem)}
+												class="flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all duration-75 hover:bg-gray-200 group-hover:opacity-100"
+											>
+												<Expand class="h-3.5 w-3.5 text-gray-500" />
+											</button>
+										</td>
+
+										{#if isColumnVisible('case')}
+											<td class="w-[300px] px-4 py-3">
+												<button
+													type="button"
+													onclick={() => drawer.openDetail(caseItem)}
+													class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left transition-colors duration-75 hover:bg-gray-100/50"
+												>
+													<div class="flex items-center gap-3">
+														<div
+															class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600"
+														>
+															<Briefcase class="h-4 w-4 text-white" />
+														</div>
+														<div class="min-w-0">
+															<p class="text-foreground truncate text-sm font-medium">
+																{caseItem.subject}
+															</p>
+															{#if caseItem.description}
+																<p class="text-muted-foreground line-clamp-1 text-xs">
+																	{caseItem.description}
+																</p>
+															{/if}
+														</div>
+													</div>
+												</button>
+											</td>
+										{/if}
+
+										{#if isColumnVisible('account')}
+											<td class="w-40 px-4 py-3">
+												{#if caseItem.account}
+													<div class="flex items-center gap-1.5 text-sm">
+														<Building2 class="text-muted-foreground h-4 w-4" />
+														<span class="truncate">{caseItem.account.name}</span>
+													</div>
+												{:else}
+													<span class="text-gray-400">Empty</span>
+												{/if}
+											</td>
+										{/if}
+
+										{#if isColumnVisible('type')}
+											<td class="w-28 px-4 py-3">
+												{#if caseItem.caseType}
+													<span
+														class={cn(
+															'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+															getCaseTypeClass(caseItem.caseType)
+														)}
+													>
+														{caseItem.caseType}
+													</span>
+												{:else}
+													<span class="text-gray-400">Empty</span>
+												{/if}
+											</td>
+										{/if}
+
+										{#if isColumnVisible('assignedTo')}
+											<td class="w-36 px-4 py-3">
+												{#if caseItem.owner}
+													<div class="flex items-center gap-1.5 text-sm">
+														<User class="text-muted-foreground h-4 w-4" />
+														<span class="truncate">{caseItem.owner.name}</span>
+													</div>
+												{:else}
+													<span class="text-gray-400">Unassigned</span>
+												{/if}
+											</td>
+										{/if}
+
+										{#if isColumnVisible('priority')}
+											<td class="w-28 px-4 py-3">
+												{#if caseItem.priority}
+													<span
+														class={cn(
+															'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+															getPriorityClass(caseItem.priority)
+														)}
+													>
+														{caseItem.priority}
+													</span>
+												{:else}
+													<span class="text-gray-400">Empty</span>
+												{/if}
+											</td>
+										{/if}
+
+										{#if isColumnVisible('status')}
+											<td class="w-28 px-4 py-3">
+												<span
+													class={cn(
+														'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+														getCaseStatusClass(caseItem.status)
+													)}
+												>
+													<StatusIcon class="h-3 w-3" />
+													{formatStatusDisplay(caseItem.status)}
+												</span>
+											</td>
+										{/if}
+
+										{#if isColumnVisible('created')}
+											<td class="w-32 px-4 py-3">
+												<div class="text-muted-foreground flex items-center gap-1.5 text-sm">
+													<Calendar class="h-3.5 w-3.5" />
+													<span>{formatRelativeDate(caseItem.createdAt)}</span>
+												</div>
+											</td>
+										{/if}
+									</tr>
+
+									<!-- Drop indicator line (after row) -->
+									{#if dragOverRowId === caseItem.id && dropPosition === 'after'}
+										<tr class="h-0">
+											<td colspan={visibleColumns.length + 2} class="p-0">
+												<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
+											</td>
+										</tr>
 									{/if}
-								</Table.Row>
-							{/each}
-						</Table.Body>
-					</Table.Root>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- Add row button at bottom -->
+				<div class="hidden border-t border-gray-100 px-4 py-2 md:block">
+					<button
+						type="button"
+						onclick={drawer.openCreate}
+						class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+					>
+						<Plus class="h-4 w-4" />
+						New row
+					</button>
 				</div>
 
 				<!-- Mobile Card View -->
