@@ -138,8 +138,8 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                     lead.created_by = profile
                     lead.org = org
                     lead.save()
-                except Exception as e:
-                    print(e)
+                except Exception:
+                    pass
 
 
 @app.task

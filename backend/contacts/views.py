@@ -15,8 +15,6 @@ from rest_framework.views import APIView
 from common.models import Attachments, Comment, Profile, Tags, Teams
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import COUNTRIES
-
-# from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params
 from contacts.models import Contact, Profile
 from contacts.serializer import *
@@ -25,7 +23,6 @@ from tasks.serializer import TaskSerializer
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 

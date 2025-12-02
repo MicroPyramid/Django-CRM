@@ -56,8 +56,8 @@ def send_email(email_obj_id):
                         EmailLog.objects.create(
                             email=email_obj, contact=contact_obj, is_sent=True
                         )
-                except Exception as e:
-                    print(e)
+                except Exception:
+                    pass
 
 
 @app.task
@@ -89,7 +89,6 @@ def send_email_to_assigned_user(recipients, from_email):
 @app.task
 def send_scheduled_emails():
     email_objs = Email.objects.filter(scheduled_later=True)
-    # TODO: modify this later , since models are updated
     for each in email_objs:
         scheduled_date_time = each.scheduled_date_time
 
@@ -99,13 +98,6 @@ def send_scheduled_emails():
         sent_time = local_tz.localize(sent_time)
         sent_time = convert_to_custom_timezone(sent_time, each.timezone, to_utc=True)
 
-        # if (
-        #     str(each.scheduled_date_time.date()) == str(sent_time.date()) and
-        #     str(scheduled_date_time.hour) == str(sent_time.hour) and
-        #     (str(scheduled_date_time.minute + 5) < str(sent_time.minute) or
-        #     str(scheduled_date_time.minute - 5) > str(sent_time.minute))
-        # ):
-        #     send_email.delay(each.id)
         if (
             str(each.scheduled_date_time.date()) == str(sent_time.date())
             and str(scheduled_date_time.hour) == str(sent_time.hour)

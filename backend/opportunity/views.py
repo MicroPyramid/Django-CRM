@@ -14,8 +14,6 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-
-# from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -32,7 +30,6 @@ from opportunity.tasks import send_email_to_assigned_user
 
 class OpportunityListView(APIView, LimitOffsetPagination):
 
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
 
@@ -191,7 +188,6 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
 
 class OpportunityDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
 
@@ -568,7 +564,6 @@ class OpportunityDetailView(APIView):
 
 class OpportunityCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -667,7 +662,6 @@ class OpportunityCommentView(APIView):
 
 class OpportunityAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(

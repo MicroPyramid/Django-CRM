@@ -12,8 +12,6 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from common.models import APISettings, Attachments, Comment, Profile, Tags, Teams, User
-
-# from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -240,7 +238,6 @@ class LeadListView(APIView, LimitOffsetPagination):
 
 class LeadDetailView(APIView):
     model = Lead
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -664,7 +661,6 @@ class LeadDetailView(APIView):
 
 class LeadUploadView(APIView):
     model = Lead
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
@@ -694,7 +690,6 @@ class LeadUploadView(APIView):
 
 class LeadCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -791,7 +786,6 @@ class LeadCommentView(APIView):
 
 class LeadAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["Leads"], parameters=swagger_params.organization_params)

@@ -30,8 +30,6 @@ from common.utils import create_attachment, get_or_create_tags, handle_m2m_assig
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-
-# from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -57,7 +55,6 @@ from tasks.serializer import TaskSerializer
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
     serializer_class = AccountReadSerializer
@@ -215,7 +212,6 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 
 class AccountDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountReadSerializer
 
@@ -612,7 +608,6 @@ class AccountDetailView(APIView):
 
 class AccountCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountCommentEditSwaggerSerializer
 
@@ -710,7 +705,6 @@ class AccountCommentView(APIView):
 
 class AccountAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountDetailEditSwaggerSerializer
 
@@ -737,7 +731,6 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
     serializer_class = EmailWriteSerializer

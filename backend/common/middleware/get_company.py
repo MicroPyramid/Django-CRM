@@ -123,12 +123,7 @@ class GetProfileAndOrg(object):
             return
 
     def _process_api_key_auth(self, request, api_key):
-        """
-        Process API key authentication.
-
-        Note: API keys are scoped to a specific org and use an admin profile.
-        TODO: Create dedicated API key model with granular permissions.
-        """
+        """Process API key authentication."""
         try:
             organization = Org.objects.get(api_key=api_key, is_active=True)
 

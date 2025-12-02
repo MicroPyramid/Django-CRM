@@ -15,8 +15,6 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-
-# from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -44,7 +42,6 @@ from tasks.utils import PRIORITY_CHOICES, STATUS_CHOICES
 
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_context_data(self, **kwargs):
@@ -192,7 +189,6 @@ class TaskListView(APIView, LimitOffsetPagination):
 
 class TaskDetailView(APIView):
     model = Task
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -576,7 +572,6 @@ class TaskDetailView(APIView):
 
 class TaskCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -674,7 +669,6 @@ class TaskCommentView(APIView):
 
 class TaskAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(tags=["Tasks"], parameters=swagger_params.organization_params)

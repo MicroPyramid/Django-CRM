@@ -22,7 +22,6 @@ from django.views.decorators.http import require_http_methods
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 
-# from common.external_auth import CustomDualAuthentication
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import LimitOffsetPagination
@@ -54,12 +53,6 @@ from common.models import (
 )
 from common.serializer import *
 from common.serializer import OrgAwareRefreshToken
-
-# from common.serializer import (
-#     CreateUserSerializer,
-#     PasswordChangeSerializer,
-#     RegisterOrganizationSerializer,
-# )
 from common.tasks import (
     remove_users,
     resend_activation_link_to_user,
@@ -69,8 +62,6 @@ from common.tasks import (
     update_team_users,
 )
 from common.token_generator import account_activation_token
-
-# from rest_framework_jwt.serializers import jwt_encode_handler
 from common.utils import COUNTRIES, ROLES, jwt_payload_handler
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -107,7 +98,6 @@ class UsersListView(APIView, LimitOffsetPagination):
         request=UserCreateSwaggerSerializer,
     )
     def post(self, request, format=None):
-        print(request.profile.role, request.user.is_superuser)
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Permission Denied"},
@@ -140,9 +130,6 @@ class UsersListView(APIView, LimitOffsetPagination):
                     )
                     user.email = user.email
                     user.save()
-                    # if params.get("password"):
-                    #     user.set_password(params.get("password"))
-                    #     user.save()
                     profile = Profile.objects.create(
                         user=user,
                         date_of_joining=timezone.now(),
@@ -150,11 +137,6 @@ class UsersListView(APIView, LimitOffsetPagination):
                         address=address_obj,
                         org=request.profile.org,
                     )
-
-                    # send_email_to_new_user.delay(
-                    #     profile.id,
-                    #     request.profile.org.id,
-                    # )
                     return Response(
                         {"error": False, "message": "User Created Successfully"},
                         status=status.HTTP_201_CREATED,
@@ -454,7 +436,6 @@ class ApiHomeView(APIView):
 
 
 class OrgProfileCreateView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     model1 = Org
@@ -703,7 +684,6 @@ class ProfileView(APIView):
 
 
 class DocumentListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Document
 
@@ -842,7 +822,6 @@ class DocumentListView(APIView, LimitOffsetPagination):
 
 
 class DocumentDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
@@ -1122,7 +1101,6 @@ class DomainList(APIView):
 
 class DomainDetailView(APIView):
     model = APISettings
-    # authentication_classes = (CustomDualAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
@@ -1436,10 +1414,6 @@ class RegisterView(APIView):
         serializer_obj = serializer.RegisterSerializer(data=request.data)
         if serializer_obj.is_valid():
             user = serializer_obj.save()
-
-            # TODO: Send activation email
-            # send_email_to_new_user.delay(user.email, user.id)
-
             return Response(
                 {
                     "message": "User registered successfully. Please check your email for activation link.",
