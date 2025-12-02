@@ -22,7 +22,7 @@ from accounts.serializer import (
     AccountWriteSerializer,
     EmailSerializer,
     EmailWriteSerializer,
-    TagsSerailizer,
+    TagsSerializer,
 )
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
@@ -135,7 +135,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["industries"] = INDCHOICES
 
         tags = Tags.objects.filter(org=self.request.profile.org)
-        tags = TagsSerailizer(tags, many=True).data
+        tags = TagsSerializer(tags, many=True).data
 
         context["tags"] = tags
         users = Profile.objects.filter(

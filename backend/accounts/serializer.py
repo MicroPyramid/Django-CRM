@@ -12,7 +12,7 @@ from common.serializer import (
 from contacts.serializer import ContactSerializer
 
 
-class TagsSerailizer(serializers.ModelSerializer):
+class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = ("id", "name", "slug")
@@ -23,7 +23,7 @@ class AccountSerializer(serializers.ModelSerializer):
 
     created_by = UserSerializer()
     org = OrganizationSerializer()
-    tags = TagsSerailizer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)

@@ -45,7 +45,7 @@ class Contact(AssignableMixin, BaseModel):
     teams = models.ManyToManyField(Teams, related_name="contact_teams")
 
     # Tags
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="contact_tags", blank=True)
 
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)

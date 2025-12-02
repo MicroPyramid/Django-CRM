@@ -84,7 +84,7 @@ class Lead(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="lead_tags", blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     created_from_site = models.BooleanField(default=False)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")

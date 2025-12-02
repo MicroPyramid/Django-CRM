@@ -146,6 +146,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "description",
             # System
             "company_name",
+            "is_active",
         )
 
 

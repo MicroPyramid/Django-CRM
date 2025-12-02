@@ -261,7 +261,7 @@ class Task(AssignableMixin, BaseModel):
     #     on_delete=models.SET_NULL,
     # )
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="task_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")
 
     class Meta:

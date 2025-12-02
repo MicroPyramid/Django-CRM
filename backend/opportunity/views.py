@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Account
-from accounts.serializer import AccountSerializer, TagsSerailizer
+from accounts.serializer import AccountSerializer, TagsSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
 
 # from common.external_auth import CustomDualAuthentication
@@ -92,7 +92,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["opportunities"] = opportunities
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
-        context["tags"] = TagsSerailizer(
+        context["tags"] = TagsSerializer(
             Tags.objects.filter(org=self.request.profile.org), many=True
         ).data
         context["stage"] = STAGES

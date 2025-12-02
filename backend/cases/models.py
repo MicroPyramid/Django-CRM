@@ -34,7 +34,7 @@ class Case(AssignableMixin, BaseModel):
     # )
     is_active = models.BooleanField(default=True)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="case_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="cases")
 
     class Meta:

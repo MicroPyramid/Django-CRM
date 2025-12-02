@@ -123,6 +123,8 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "lead_source",
             # Notes
             "description",
+            # Status
+            "is_active",
         )
 
 

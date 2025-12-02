@@ -66,7 +66,7 @@ class Opportunity(AssignableMixin, BaseModel):
     )
 
     # Tags
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="opportunity_tags", blank=True)
 
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
