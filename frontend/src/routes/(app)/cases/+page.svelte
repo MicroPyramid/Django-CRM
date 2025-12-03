@@ -21,8 +21,8 @@
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { NotionTable } from '$lib/components/ui/notion-table';
-	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import {
 		caseStatusOptions,
 		caseTypeOptions,
@@ -514,7 +514,7 @@
 
 	<!-- Table -->
 	<div class="overflow-x-auto">
-		<NotionTable
+		<CrmTable
 			data={filteredCases}
 			{columns}
 			bind:visibleColumns
@@ -532,7 +532,7 @@
 					</Button>
 				</div>
 			{/snippet}
-		</NotionTable>
+		</CrmTable>
 	</div>
 
 	<!-- Add row button at bottom -->
@@ -550,8 +550,8 @@
 	{/if}
 </div>
 
-<!-- Case Drawer (using NotionDrawer) -->
-<NotionDrawer
+<!-- Case Drawer -->
+<CrmDrawer
 	bind:open={drawer.detailOpen}
 	onOpenChange={(open) => !open && drawer.closeAll()}
 	data={drawerFormData}
@@ -624,7 +624,7 @@
 			</Button>
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>
 
 <!-- Hidden forms for server actions -->
 <form

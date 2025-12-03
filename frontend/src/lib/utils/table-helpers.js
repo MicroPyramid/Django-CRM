@@ -1,5 +1,5 @@
 /**
- * Table helper utilities for Notion-style inline editing tables
+ * Table helper utilities for CRM-style inline editing tables
  * @module lib/utils/table-helpers
  */
 

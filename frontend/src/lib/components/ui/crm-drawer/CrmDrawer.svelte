@@ -5,7 +5,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { cn } from '$lib/utils.js';
-	import NotionPropertyRow from './NotionPropertyRow.svelte';
+	import CrmPropertyRow from './CrmPropertyRow.svelte';
 
 	/**
 	 * @type {{
@@ -152,7 +152,7 @@
 					<div class="px-4 pb-6">
 						{#each columns as col (col.key)}
 							{#if col.key !== titleKey}
-								<NotionPropertyRow
+								<CrmPropertyRow
 									label={col.label}
 									value={getFieldValue(col)}
 									type={col.type || 'text'}

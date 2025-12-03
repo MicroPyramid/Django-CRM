@@ -25,14 +25,14 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { cn } from '$lib/utils.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
 	import { useListFilters } from '$lib/hooks';
-	import { NotionTable } from '$lib/components/ui/notion-table';
+	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
 
-	// Status and priority options with colors (matching notion style)
+	// Status and priority options with colors
 	const statusOptions = [
 		{ value: 'New', label: 'New', color: 'bg-blue-100 text-blue-700' },
 		{ value: 'In Progress', label: 'In Progress', color: 'bg-amber-100 text-amber-700' },
@@ -673,7 +673,7 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	{#if viewMode === 'list'}
-		<NotionTable
+		<CrmTable
 			data={localTasks}
 			columns={taskColumns}
 			bind:visibleColumns
@@ -689,7 +689,7 @@
 					</p>
 				</div>
 			{/snippet}
-		</NotionTable>
+		</CrmTable>
 		{#if localTasks.length > 0}
 			<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
 				<button
@@ -908,7 +908,7 @@
 </div>
 
 <!-- Task Detail Drawer -->
-<NotionDrawer
+<CrmDrawer
 	bind:open={sheetOpen}
 	onOpenChange={(open) => !open && closeTaskSheet()}
 	data={drawerFormData}
@@ -960,7 +960,7 @@
 			{/if}
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>
 
 <!-- Hidden forms for server actions -->
 <form

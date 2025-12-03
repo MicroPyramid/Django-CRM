@@ -24,10 +24,10 @@
 		AlertTriangle
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { NotionTable } from '$lib/components/ui/notion-table';
+	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
@@ -699,9 +699,9 @@
 			</Button>
 		</div>
 	{:else}
-		<!-- Desktop Table using NotionTable -->
+		<!-- Desktop Table using CrmTable -->
 		<div class="hidden md:block">
-			<NotionTable
+			<CrmTable
 				data={filteredAccounts}
 				{columns}
 				bind:visibleColumns
@@ -721,7 +721,7 @@
 						</Button>
 					</div>
 				{/snippet}
-			</NotionTable>
+			</CrmTable>
 
 			<!-- New row button -->
 			<div class="border-t border-gray-100/60 px-4 py-2">
@@ -814,8 +814,8 @@
 	{/if}
 </div>
 
-<!-- Account Drawer using NotionDrawer -->
-<NotionDrawer
+<!-- Account Drawer -->
+<CrmDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
 	data={drawerFormData}
@@ -944,7 +944,7 @@
 			</Button>
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>
 
 <!-- Hidden forms for server actions -->
 <form

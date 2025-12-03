@@ -20,8 +20,8 @@
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
-	import { NotionTable } from '$lib/components/ui/notion-table';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatCurrency, formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
 		OPPORTUNITY_STAGES as stages,
@@ -29,7 +29,7 @@
 		OPPORTUNITY_SOURCES
 	} from '$lib/constants/filters.js';
 
-	const STORAGE_KEY = 'opportunities-notion-columns';
+	const STORAGE_KEY = 'opportunities-crm-columns';
 
 	// Stage options with colors
 	const stageOptions = [
@@ -594,7 +594,7 @@
 			</Button>
 		</div>
 	{:else}
-		<NotionTable
+		<CrmTable
 			data={filteredOpportunities}
 			{columns}
 			bind:visibleColumns
@@ -614,7 +614,7 @@
 					</Button>
 				</div>
 			{/snippet}
-		</NotionTable>
+		</CrmTable>
 
 		<!-- Add row button at bottom -->
 		<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
@@ -631,8 +631,8 @@
 	{/if}
 </div>
 
-<!-- Opportunity Drawer using NotionDrawer -->
-<NotionDrawer
+<!-- Opportunity Drawer -->
+<CrmDrawer
 	bind:open={drawerOpen}
 	onOpenChange={(open) => !open && closeDrawer()}
 	data={drawerFormData}
@@ -698,4 +698,4 @@
 			</Button>
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>

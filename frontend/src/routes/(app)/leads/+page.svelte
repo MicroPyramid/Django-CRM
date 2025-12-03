@@ -41,8 +41,8 @@
 		getOptionLabel,
 		getOptionBgColor
 	} from '$lib/utils/table-helpers.js';
-	import NotionTable from '$lib/components/ui/notion-table/NotionTable.svelte';
-	import NotionDrawer from '$lib/components/ui/notion-drawer/NotionDrawer.svelte';
+	import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
+	import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
@@ -884,9 +884,9 @@
 			</Button>
 		</div>
 	{:else}
-		<!-- Desktop Table using NotionTable -->
+		<!-- Desktop Table using CrmTable -->
 		<div class="hidden md:block">
-			<NotionTable
+			<CrmTable
 				data={filteredLeads}
 				{columns}
 				bind:visibleColumns
@@ -904,9 +904,9 @@
 						</Button>
 					</div>
 				{/snippet}
-			</NotionTable>
+			</CrmTable>
 
-			<!-- New row button (Notion-style) -->
+			<!-- New row button -->
 			<div class="border-t border-gray-100/60 px-4 py-2">
 				<button
 					type="button"
@@ -973,8 +973,8 @@
 	{/if}
 </div>
 
-<!-- Lead Drawer (Notion-style) -->
-<NotionDrawer
+<!-- Lead Drawer -->
+<CrmDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
 	data={currentDrawerData}
@@ -1038,7 +1038,7 @@
 			</Button>
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>
 
 <!-- Hidden forms for server actions -->
 <form

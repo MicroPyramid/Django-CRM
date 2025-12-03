@@ -19,10 +19,10 @@
 		Calendar
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { NotionTable } from '$lib/components/ui/notion-table';
+	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
@@ -545,7 +545,7 @@
 			</Button>
 		</div>
 	{:else}
-		<NotionTable
+		<CrmTable
 			data={filteredContacts}
 			{columns}
 			bind:visibleColumns
@@ -564,7 +564,7 @@
 					</Button>
 				</div>
 			{/snippet}
-		</NotionTable>
+		</CrmTable>
 
 		<!-- Add row button at bottom -->
 		<div class="border-t border-gray-100/60 px-4 py-2">
@@ -580,8 +580,8 @@
 	{/if}
 </div>
 
-<!-- Contact Drawer using NotionDrawer -->
-<NotionDrawer
+<!-- Contact Drawer -->
+<CrmDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
 	data={drawerFormData}
@@ -625,7 +625,7 @@
 			</Button>
 		{/if}
 	{/snippet}
-</NotionDrawer>
+</CrmDrawer>
 
 <!-- Hidden forms for server actions -->
 <form
