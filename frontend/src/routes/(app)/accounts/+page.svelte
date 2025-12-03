@@ -6,39 +6,185 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
-		ChevronDown,
-		ChevronUp,
-		Phone,
-		Globe,
 		Building2,
 		Users,
 		Target,
 		Calendar,
+		Eye,
+		Globe,
+		Phone,
+		Mail,
+		DollarSign,
+		Briefcase,
 		MapPin,
-		GripVertical,
-		Expand,
-		Eye
+		FileText,
+		Hash,
+		Lock,
+		Unlock,
+		AlertTriangle
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { AccountDrawer } from '$lib/components/accounts';
+	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { NotionTable } from '$lib/components/ui/notion-table';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
-	import { reorderItems } from '$lib/utils/drag-drop.js';
+	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'accounts-column-config';
 
-	// Column definitions
+	/**
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string }} ColumnDef
+	 */
+
+	// Status options for select column
+	const statusOptions = [
+		{ value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-700' },
+		{ value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-600' }
+	];
+
+	// Industry options for drawer
+	const industryOptions = [
+		{ value: 'ADVERTISING', label: 'Advertising' },
+		{ value: 'AGRICULTURE', label: 'Agriculture' },
+		{ value: 'APPAREL & ACCESSORIES', label: 'Apparel & Accessories' },
+		{ value: 'AUTOMOTIVE', label: 'Automotive' },
+		{ value: 'BANKING', label: 'Banking' },
+		{ value: 'BIOTECHNOLOGY', label: 'Biotechnology' },
+		{ value: 'BUILDING MATERIALS & EQUIPMENT', label: 'Building Materials & Equipment' },
+		{ value: 'CHEMICAL', label: 'Chemical' },
+		{ value: 'COMPUTER', label: 'Computer' },
+		{ value: 'EDUCATION', label: 'Education' },
+		{ value: 'ELECTRONICS', label: 'Electronics' },
+		{ value: 'ENERGY', label: 'Energy' },
+		{ value: 'ENTERTAINMENT & LEISURE', label: 'Entertainment & Leisure' },
+		{ value: 'FINANCE', label: 'Finance' },
+		{ value: 'FOOD & BEVERAGE', label: 'Food & Beverage' },
+		{ value: 'GROCERY', label: 'Grocery' },
+		{ value: 'HEALTHCARE', label: 'Healthcare' },
+		{ value: 'INSURANCE', label: 'Insurance' },
+		{ value: 'LEGAL', label: 'Legal' },
+		{ value: 'MANUFACTURING', label: 'Manufacturing' },
+		{ value: 'PUBLISHING', label: 'Publishing' },
+		{ value: 'REAL ESTATE', label: 'Real Estate' },
+		{ value: 'SERVICE', label: 'Service' },
+		{ value: 'SOFTWARE', label: 'Software' },
+		{ value: 'SPORTS', label: 'Sports' },
+		{ value: 'TECHNOLOGY', label: 'Technology' },
+		{ value: 'TELECOMMUNICATIONS', label: 'Telecommunications' },
+		{ value: 'TELEVISION', label: 'Television' },
+		{ value: 'TRANSPORTATION', label: 'Transportation' },
+		{ value: 'VENTURE CAPITAL', label: 'Venture Capital' }
+	];
+
+	// Country options for drawer
+	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
+
+	// Drawer column definitions for NotionDrawer
+	const drawerColumns = [
+		{ key: 'name', label: 'Name', type: 'text' },
+		{
+			key: 'industry',
+			label: 'Industry',
+			type: 'select',
+			icon: Briefcase,
+			options: industryOptions,
+			placeholder: 'Select industry'
+		},
+		{
+			key: 'website',
+			label: 'Website',
+			type: 'text',
+			icon: Globe,
+			placeholder: 'https://example.com'
+		},
+		{ key: 'phone', label: 'Phone', type: 'text', icon: Phone, placeholder: '+1 (555) 000-0000' },
+		{
+			key: 'email',
+			label: 'Email',
+			type: 'email',
+			icon: Mail,
+			placeholder: 'contact@company.com'
+		},
+		{
+			key: 'annualRevenue',
+			label: 'Revenue',
+			type: 'number',
+			icon: DollarSign,
+			prefix: '$',
+			placeholder: '0'
+		},
+		{
+			key: 'numberOfEmployees',
+			label: 'Employees',
+			type: 'number',
+			icon: Users,
+			placeholder: '0'
+		},
+		{
+			key: 'addressLine',
+			label: 'Address',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Street address'
+		},
+		{ key: 'city', label: 'City', type: 'text', placeholder: 'City' },
+		{ key: 'state', label: 'State', type: 'text', placeholder: 'State/Province' },
+		{ key: 'postcode', label: 'Postal Code', type: 'text', placeholder: 'Postal code' },
+		{
+			key: 'country',
+			label: 'Country',
+			type: 'select',
+			options: countryOptions,
+			placeholder: 'Select country'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes about this account...'
+		}
+	];
+
+	/** @type {ColumnDef[]} */
 	const columns = [
-		{ key: 'account', label: 'Account', type: 'text', width: 'w-60', canHide: false },
-		{ key: 'industry', label: 'Industry', type: 'text', width: 'w-40', canHide: true },
-		{ key: 'contact', label: 'Contact Info', type: 'custom', width: 'w-48', canHide: true },
-		{ key: 'revenue', label: 'Revenue', type: 'number', width: 'w-32', canHide: true },
-		{ key: 'relations', label: 'Relations', type: 'custom', width: 'w-28', canHide: true },
-		{ key: 'created', label: 'Created', type: 'date', width: 'w-36', canHide: true }
+		{
+			key: 'name',
+			label: 'Account',
+			type: 'text',
+			width: 'w-60',
+			canHide: false,
+			emptyText: 'Untitled'
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			width: 'w-28',
+			options: statusOptions,
+			getValue: (row) => (row.isActive !== false ? 'active' : 'closed')
+		},
+		{ key: 'industry', label: 'Industry', type: 'text', width: 'w-40', emptyText: '' },
+		{ key: 'website', label: 'Website', type: 'text', width: 'w-44', emptyText: '' },
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
+		{
+			key: 'annualRevenue',
+			label: 'Revenue',
+			type: 'number',
+			width: 'w-32',
+			format: (value) => formatCurrency(value, 'USD', true)
+		},
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			width: 'w-36',
+			editable: false
+		}
 	];
 
 	// Column visibility state - simple array of visible keys
@@ -64,47 +210,19 @@
 	});
 
 	/**
-	 * Check if a column is visible
-	 * @param {string} key
-	 */
-	function isColumnVisible(key) {
-		return visibleColumns.includes(key);
-	}
-
-	/**
 	 * Toggle column visibility
 	 * @param {string} key
 	 */
 	function toggleColumn(key) {
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
+
 		if (visibleColumns.includes(key)) {
 			visibleColumns = visibleColumns.filter((k) => k !== key);
 		} else {
 			visibleColumns = [...visibleColumns, key];
 		}
 	}
-
-	// Drag-and-drop state
-	/** @type {string | null} */
-	let draggedRowId = $state(null);
-	/** @type {string | null} */
-	let dragOverRowId = $state(null);
-	/** @type {'before' | 'after' | null} */
-	let dropPosition = $state(null);
-
-	// Inline editing state
-	/** @type {{ rowId: string, columnKey: string } | null} */
-	let editingCell = $state(null);
-	let editValue = $state('');
-
-	// Local accounts state for drag-drop reordering
-	let localAccounts = $state(/** @type {any[]} */ ([]));
-
-	// Sync local accounts with data
-	$effect(() => {
-		if (data.accounts) {
-			localAccounts = [...data.accounts];
-		}
-	});
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -120,6 +238,41 @@
 	/** @type {any} */
 	let selectedAccount = $state(null);
 	let drawerLoading = $state(false);
+	let isSubmitting = $state(false);
+
+	// Empty account template for create mode
+	const emptyAccount = {
+		name: '',
+		industry: '',
+		website: '',
+		phone: '',
+		email: '',
+		description: '',
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		annualRevenue: '',
+		numberOfEmployees: ''
+	};
+
+	// Drawer form data - mutable copy of selectedAccount for editing
+	let drawerFormData = $state({ ...emptyAccount });
+
+	// Reset form data when account changes or drawer opens
+	$effect(() => {
+		if (drawerOpen) {
+			if (drawerMode === 'create') {
+				drawerFormData = { ...emptyAccount };
+			} else if (selectedAccount) {
+				drawerFormData = { ...selectedAccount };
+			}
+		}
+	});
+
+	// Check if account is closed (inactive)
+	const isClosed = $derived(selectedAccount?.isActive === false);
 
 	// URL sync for drawer state
 	$effect(() => {
@@ -228,8 +381,8 @@
 		defaultSortDirection: 'desc'
 	});
 
-	// Filtered and sorted accounts - use localAccounts for drag-drop support
-	const filteredAccounts = $derived(list.filterAndSort(localAccounts));
+	// Filtered and sorted accounts
+	const filteredAccounts = $derived(list.filterAndSort(accounts));
 	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
 	// Visible column count for the toggle button
@@ -274,190 +427,108 @@
 		return getInitials(account.name, 1);
 	}
 
-	// ===== Drag-and-drop handlers =====
 	/**
-	 * Handle drag start
-	 * @param {DragEvent} e
-	 * @param {string} rowId
+	 * Handle row change from NotionTable (inline editing)
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	function handleDragStart(e, rowId) {
-		draggedRowId = rowId;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', rowId);
-		}
-	}
-
-	/**
-	 * Handle drag over row
-	 * @param {DragEvent} e
-	 * @param {string} rowId
-	 */
-	function handleRowDragOver(e, rowId) {
-		e.preventDefault();
-		if (draggedRowId === rowId) return;
-
-		dragOverRowId = rowId;
-
-		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
-		const midpoint = rect.top + rect.height / 2;
-		dropPosition = e.clientY < midpoint ? 'before' : 'after';
-	}
-
-	function handleRowDragLeave() {
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
-	/**
-	 * Handle row drop
-	 * @param {DragEvent} e
-	 * @param {string} targetRowId
-	 */
-	function handleRowDrop(e, targetRowId) {
-		e.preventDefault();
-		if (!draggedRowId || draggedRowId === targetRowId || !dropPosition) {
-			resetDragState();
+	async function handleRowChange(row, field, value) {
+		// Handle status changes specially (activate/deactivate)
+		if (field === 'status') {
+			formState.accountId = row.id;
+			await tick();
+			if (value === 'closed') {
+				deactivateForm.requestSubmit();
+			} else {
+				activateForm.requestSubmit();
+			}
 			return;
 		}
 
-		localAccounts = reorderItems(
-			localAccounts,
-			draggedRowId,
-			targetRowId,
-			dropPosition,
-			(/** @type {any} */ item) => item.id
-		);
-
-		resetDragState();
-	}
-
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	function resetDragState() {
-		draggedRowId = null;
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
-	// ===== Inline editing handlers =====
-	/**
-	 * Start editing a cell
-	 * @param {string} rowId
-	 * @param {string} columnKey
-	 */
-	async function startEditing(rowId, columnKey) {
-		const account = localAccounts.find((a) => a.id === rowId);
-		if (!account) return;
-
-		// Map column key to account field
-		let value = '';
-		if (columnKey === 'name') value = account.name || '';
-		else if (columnKey === 'industry') value = account.industry || '';
-
-		editingCell = { rowId, columnKey };
-		editValue = value;
-		await tick();
-
-		const input = document.querySelector(`[data-edit-input="${rowId}-${columnKey}"]`);
-		if (input) {
-			// @ts-ignore
-			input.focus();
-			// @ts-ignore
-			if (input.select) input.select();
-		}
-	}
-
-	/**
-	 * Commit the current edit
-	 * @param {boolean} save
-	 */
-	async function stopEditing(save = true) {
-		if (!editingCell) return;
-
-		if (save) {
-			const { rowId, columnKey } = editingCell;
-			const account = localAccounts.find((a) => a.id === rowId);
-			if (account) {
-				// Update local state
-				let fieldName = columnKey;
-				if (columnKey === 'name') fieldName = 'name';
-				else if (columnKey === 'industry') fieldName = 'industry';
-
-				// Update locally and trigger server update
-				const updatedAccount = { ...account, [fieldName]: editValue };
-				localAccounts = localAccounts.map((a) => (a.id === rowId ? updatedAccount : a));
-
-				// Submit update to server
-				formState.accountId = rowId;
-				formState.name = updatedAccount.name || '';
-				formState.email = updatedAccount.email || '';
-				formState.phone = updatedAccount.phone || '';
-				formState.website = updatedAccount.website || '';
-				formState.industry = updatedAccount.industry || '';
-				formState.description = updatedAccount.description || '';
-				formState.address_line = updatedAccount.addressLine || '';
-				formState.city = updatedAccount.city || '';
-				formState.state = updatedAccount.state || '';
-				formState.postcode = updatedAccount.postcode || '';
-				formState.country = updatedAccount.country || '';
-				formState.annual_revenue = updatedAccount.annualRevenue?.toString() || '';
-				formState.number_of_employees = updatedAccount.numberOfEmployees?.toString() || '';
-
-				await tick();
-				updateForm.requestSubmit();
-			}
-		}
-
-		editingCell = null;
-		editValue = '';
-	}
-
-	/**
-	 * Handle keyboard events during editing
-	 * @param {KeyboardEvent} e
-	 */
-	function handleEditKeydown(e) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			stopEditing(true);
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			stopEditing(false);
-		}
-	}
-
-	/**
-	 * Handle form submit from drawer
-	 * @param {any} formData
-	 */
-	async function handleFormSubmit(formData) {
-		// Populate form state with all API fields
-		formState.name = formData.name || '';
-		formState.email = formData.email || '';
-		formState.phone = formData.phone || '';
-		formState.website = formData.website || '';
-		formState.industry = formData.industry || '';
-		formState.description = formData.description || '';
-		formState.address_line = formData.address_line || '';
-		formState.city = formData.city || '';
-		formState.state = formData.state || '';
-		formState.postcode = formData.postcode || '';
-		formState.country = formData.country || '';
-		formState.annual_revenue = formData.annual_revenue || '';
-		formState.number_of_employees = formData.number_of_employees || '';
+		// For other fields, submit a regular update
+		formState.accountId = row.id;
+		formState.name = field === 'name' ? value : row.name || '';
+		formState.email = row.email || '';
+		formState.phone = field === 'phone' ? value : row.phone || '';
+		formState.website = field === 'website' ? value : row.website || '';
+		formState.industry = field === 'industry' ? value : row.industry || '';
+		formState.description = row.description || '';
+		formState.address_line = row.addressLine || '';
+		formState.city = row.city || '';
+		formState.state = row.state || '';
+		formState.postcode = row.postcode || '';
+		formState.country = row.country || '';
+		formState.annual_revenue =
+			field === 'annualRevenue' ? value?.toString() || '' : row.annualRevenue?.toString() || '';
+		formState.number_of_employees = row.numberOfEmployees?.toString() || '';
 
 		await tick();
+		updateForm.requestSubmit();
+	}
 
-		if (drawerMode === 'view' && selectedAccount) {
+	/**
+	 * Handle field change from NotionDrawer
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleDrawerFieldChange(field, value) {
+		// Update local form data
+		drawerFormData = { ...drawerFormData, [field]: value };
+
+		// For view mode (editing), auto-save changes
+		if (drawerMode === 'view' && selectedAccount && !isClosed) {
+			// Convert to API format and save
 			formState.accountId = selectedAccount.id;
+			formState.name = field === 'name' ? value : drawerFormData.name || '';
+			formState.email = field === 'email' ? value : drawerFormData.email || '';
+			formState.phone = field === 'phone' ? value : drawerFormData.phone || '';
+			formState.website = field === 'website' ? value : drawerFormData.website || '';
+			formState.industry = field === 'industry' ? value : drawerFormData.industry || '';
+			formState.description = field === 'description' ? value : drawerFormData.description || '';
+			formState.address_line =
+				field === 'addressLine' ? value : drawerFormData.addressLine || '';
+			formState.city = field === 'city' ? value : drawerFormData.city || '';
+			formState.state = field === 'state' ? value : drawerFormData.state || '';
+			formState.postcode = field === 'postcode' ? value : drawerFormData.postcode || '';
+			formState.country = field === 'country' ? value : drawerFormData.country || '';
+			formState.annual_revenue =
+				field === 'annualRevenue'
+					? value?.toString() || ''
+					: drawerFormData.annualRevenue?.toString() || '';
+			formState.number_of_employees =
+				field === 'numberOfEmployees'
+					? value?.toString() || ''
+					: drawerFormData.numberOfEmployees?.toString() || '';
+
 			await tick();
 			updateForm.requestSubmit();
-		} else {
-			createForm.requestSubmit();
 		}
+	}
+
+	/**
+	 * Handle save for create mode
+	 */
+	async function handleDrawerSave() {
+		if (drawerMode !== 'create') return;
+
+		isSubmitting = true;
+		formState.name = drawerFormData.name || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.website = drawerFormData.website || '';
+		formState.industry = drawerFormData.industry || '';
+		formState.description = drawerFormData.description || '';
+		formState.address_line = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+
+		await tick();
+		createForm.requestSubmit();
 	}
 
 	/**
@@ -502,6 +573,7 @@
 	function createEnhanceHandler(successMessage, shouldCloseDrawer = false) {
 		return () => {
 			return async ({ result }) => {
+				isSubmitting = false;
 				if (result.type === 'success') {
 					toast.success(successMessage);
 					if (shouldCloseDrawer) {
@@ -540,7 +612,7 @@
 	<title>Accounts - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {localAccounts.length} accounts">
+<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
 	{#snippet actions()}
 		<!-- Column Visibility Dropdown -->
 		<DropdownMenu.Root>
@@ -550,7 +622,9 @@
 						<Eye class="h-4 w-4" />
 						Columns
 						{#if visibleColumnCount < totalColumnCount}
-							<span class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+							<span
+								class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+							>
 								{visibleColumnCount}/{totalColumnCount}
 							</span>
 						{/if}
@@ -561,15 +635,14 @@
 				<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				{#each columns as column (column.key)}
-					{#if column.canHide}
-						<DropdownMenu.CheckboxItem
-							class=""
-							checked={isColumnVisible(column.key)}
-							onCheckedChange={() => toggleColumn(column.key)}
-						>
-							{column.label}
-						</DropdownMenu.CheckboxItem>
-					{/if}
+					<DropdownMenu.CheckboxItem
+						class=""
+						checked={visibleColumns.includes(column.key)}
+						onCheckedChange={() => toggleColumn(column.key)}
+						disabled={column.canHide === false}
+					>
+						{column.label}
+					</DropdownMenu.CheckboxItem>
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
@@ -613,311 +686,114 @@
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Accounts Table -->
-	<Card.Root class="border-0 shadow-sm">
-		<Card.Content class="p-0">
-			{#if filteredAccounts.length === 0}
-				<div class="flex flex-col items-center justify-center py-16 text-center">
-					<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
-					<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new account.
-					</p>
-					<Button onclick={openCreate} class="mt-4" disabled={false}>
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Account
-					</Button>
-				</div>
-			{:else}
-				<!-- Desktop Table (Notion-style) -->
-				<div class="hidden md:block overflow-x-auto">
-					<table class="w-full border-collapse">
-						<!-- Header -->
-						<thead>
-							<tr class="border-b border-gray-100/60">
-								<!-- Drag handle column -->
-								<th class="w-8 px-1"></th>
-								<!-- Expand button column -->
-								<th class="w-8 px-1"></th>
-								{#if isColumnVisible('account')}
-									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-60">Account</th>
-								{/if}
-								{#if isColumnVisible('industry')}
-									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-40">Industry</th>
-								{/if}
-								{#if isColumnVisible('contact')}
-									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-48">Contact Info</th>
-								{/if}
-								{#if isColumnVisible('revenue')}
-									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-32">Revenue</th>
-								{/if}
-								{#if isColumnVisible('relations')}
-									<th class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-28">Relations</th>
-								{/if}
-								{#if isColumnVisible('created')}
-									<th
-										class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 w-36 cursor-pointer hover:bg-gray-50 rounded transition-colors"
-										onclick={() => list.toggleSort('createdAt')}
-									>
-										<div class="flex items-center gap-1">
-											Created
-											{#if list.sortColumn === 'createdAt'}
-												{#if list.sortDirection === 'asc'}
-													<ChevronUp class="h-3.5 w-3.5" />
-												{:else}
-													<ChevronDown class="h-3.5 w-3.5" />
-												{/if}
-											{/if}
-										</div>
-									</th>
-								{/if}
-							</tr>
-						</thead>
+	{#if filteredAccounts.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
+			<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+			<p class="text-muted-foreground mt-1 text-sm">
+				Try adjusting your search criteria or create a new account.
+			</p>
+			<Button onclick={openCreate} class="mt-4" disabled={false}>
+				<Plus class="mr-2 h-4 w-4" />
+				Create New Account
+			</Button>
+		</div>
+	{:else}
+		<!-- Desktop Table using NotionTable -->
+		<div class="hidden md:block">
+			<NotionTable
+				data={filteredAccounts}
+				{columns}
+				bind:visibleColumns
+				onRowChange={handleRowChange}
+				onRowClick={(row) => openAccount(row)}
+			>
+				{#snippet emptyState()}
+					<div class="flex flex-col items-center justify-center py-16 text-center">
+						<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
+						<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+						<p class="text-muted-foreground mt-1 text-sm">
+							Try adjusting your search criteria or create a new account.
+						</p>
+						<Button onclick={openCreate} class="mt-4" disabled={false}>
+							<Plus class="mr-2 h-4 w-4" />
+							Create New Account
+						</Button>
+					</div>
+				{/snippet}
+			</NotionTable>
 
-						<!-- Body -->
-						<tbody>
-							{#each filteredAccounts as account (account.id)}
-								<!-- Drop indicator line (before row) -->
-								{#if dragOverRowId === account.id && dropPosition === 'before'}
-									<tr class="h-0">
-										<td colspan={visibleColumnCount + 2} class="p-0">
-											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
-										</td>
-									</tr>
-								{/if}
+			<!-- New row button -->
+			<div class="border-t border-gray-100/60 px-4 py-2">
+				<button
+					type="button"
+					onclick={openCreate}
+					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+				>
+					<Plus class="h-4 w-4" />
+					New account
+				</button>
+			</div>
+		</div>
 
-								<tr
-									class="group hover:bg-gray-50/30 transition-all duration-100 ease-out {draggedRowId === account.id ? 'opacity-40 bg-gray-100' : ''} {!account.isActive ? 'opacity-60' : ''}"
-									ondragover={(e) => handleRowDragOver(e, account.id)}
-									ondragleave={handleRowDragLeave}
-									ondrop={(e) => handleRowDrop(e, account.id)}
-								>
-									<!-- Drag Handle -->
-									<td class="w-8 px-1 py-3">
-										<div
-											draggable="true"
-											ondragstart={(e) => handleDragStart(e, account.id)}
-											ondragend={handleDragEnd}
-											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 transition-all cursor-grab active:cursor-grabbing"
-											role="button"
-											tabindex="0"
-											aria-label="Drag to reorder"
+		<!-- Mobile Card View -->
+		<div class="divide-y md:hidden">
+			{#each filteredAccounts as account (account.id)}
+				<button
+					type="button"
+					class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 {!account.isActive
+						? 'opacity-60'
+						: ''}"
+					onclick={() => openAccount(account)}
+				>
+					<div
+						class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+					>
+						{getAccountInitials(account)}
+					</div>
+					<div class="min-w-0 flex-1">
+						<div class="flex items-start justify-between gap-2">
+							<div>
+								<p class="font-medium text-gray-900">{account.name}</p>
+								<div class="mt-1 flex items-center gap-1.5">
+									{#if account.isActive !== false}
+										<span
+											class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
 										>
-											<GripVertical class="h-4 w-4 text-gray-400" />
-										</div>
-									</td>
-
-									<!-- Expand button -->
-									<td class="w-8 px-1 py-3">
-										<button
-											type="button"
-											onclick={() => openAccount(account)}
-											class="flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all duration-75"
+											Active
+										</span>
+									{:else}
+										<span
+											class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
 										>
-											<Expand class="h-3.5 w-3.5 text-gray-500" />
-										</button>
-									</td>
-
-									{#if isColumnVisible('account')}
-										<td class="px-4 py-3 w-60">
-											<div class="flex items-center gap-3">
-												<div
-													class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
-												>
-													{getAccountInitials(account)}
-												</div>
-												<div class="min-w-0 flex-1">
-													<!-- Editable name -->
-													{#if editingCell?.rowId === account.id && editingCell?.columnKey === 'name'}
-														<input
-															type="text"
-															bind:value={editValue}
-															onkeydown={handleEditKeydown}
-															onblur={() => stopEditing(true)}
-															data-edit-input="{account.id}-name"
-															class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-														/>
-													{:else}
-														<button
-															type="button"
-															onclick={(e) => { e.stopPropagation(); startEditing(account.id, 'name'); }}
-															class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
-														>
-															{account.name || 'Untitled'}
-														</button>
-													{/if}
-													<div class="mt-1 flex items-center gap-1.5">
-														{#if account.isActive !== false}
-															<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-																Active
-															</span>
-														{:else}
-															<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-																Closed
-															</span>
-														{/if}
-													</div>
-												</div>
-											</div>
-										</td>
+											Closed
+										</span>
 									{/if}
-									{#if isColumnVisible('industry')}
-										<td class="px-4 py-3 w-40">
-											<!-- Editable industry -->
-											{#if editingCell?.rowId === account.id && editingCell?.columnKey === 'industry'}
-												<input
-													type="text"
-													bind:value={editValue}
-													onkeydown={handleEditKeydown}
-													onblur={() => stopEditing(true)}
-													data-edit-input="{account.id}-industry"
-													class="w-full px-2 py-1.5 text-sm bg-white rounded outline-none ring-1 ring-gray-200 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
-												/>
-											{:else}
-												<button
-													type="button"
-													onclick={(e) => { e.stopPropagation(); startEditing(account.id, 'industry'); }}
-													class="w-full text-left px-2 py-1.5 -mx-2 -my-1.5 rounded text-sm text-gray-900 hover:bg-gray-100/50 cursor-text transition-colors duration-75"
-												>
-													{#if account.industry}
-														{account.industry}
-													{:else}
-														<span class="text-gray-400">Empty</span>
-													{/if}
-												</button>
-											{/if}
-										</td>
-									{/if}
-									{#if isColumnVisible('contact')}
-										<td class="px-4 py-3 w-48">
-											<div class="space-y-1">
-												{#if account.website}
-													<div class="flex items-center gap-1.5 text-sm text-gray-700">
-														<Globe class="h-3.5 w-3.5 text-gray-400" />
-														<span class="max-w-[140px] truncate">
-															{account.website.replace(/^https?:\/\//, '')}
-														</span>
-													</div>
-												{/if}
-												{#if account.phone}
-													<div class="flex items-center gap-1.5 text-sm text-gray-500">
-														<Phone class="h-3.5 w-3.5 text-gray-400" />
-														<span>{account.phone}</span>
-													</div>
-												{/if}
-												{#if account.city || account.state}
-													<div class="flex items-center gap-1.5 text-sm text-gray-500">
-														<MapPin class="h-3.5 w-3.5 text-gray-400" />
-														<span class="truncate">
-															{[account.city, account.state].filter(Boolean).join(', ')}
-														</span>
-													</div>
-												{/if}
-												{#if !account.website && !account.phone && !account.city}
-													<span class="text-gray-400 text-sm">-</span>
-												{/if}
-											</div>
-										</td>
-									{/if}
-									{#if isColumnVisible('revenue')}
-										<td class="px-4 py-3 w-32">
-											<span class="text-sm font-medium text-gray-900">
-												{formatCurrency(account.annualRevenue, 'USD', true)}
-											</span>
-										</td>
-									{/if}
-									{#if isColumnVisible('relations')}
-										<td class="px-4 py-3 w-28">
-											<div class="flex items-center gap-3">
-												<div class="flex items-center gap-1">
-													<Users class="h-4 w-4 text-gray-400" />
-													<span class="text-sm font-medium text-gray-700">{account.contactCount || 0}</span>
-												</div>
-												<div class="flex items-center gap-1">
-													<Target class="h-4 w-4 text-gray-400" />
-													<span class="text-sm font-medium text-gray-700">{account.opportunityCount || 0}</span>
-												</div>
-											</div>
-										</td>
-									{/if}
-									{#if isColumnVisible('created')}
-										<td class="px-4 py-3 w-36">
-											<div class="flex items-center gap-1.5 text-sm text-gray-500">
-												<Calendar class="h-3.5 w-3.5 text-gray-400" />
-												<span>{formatRelativeDate(account.createdAt)}</span>
-											</div>
-										</td>
-									{/if}
-								</tr>
-
-								<!-- Drop indicator line (after row) -->
-								{#if dragOverRowId === account.id && dropPosition === 'after'}
-									<tr class="h-0">
-										<td colspan={visibleColumnCount + 2} class="p-0">
-											<div class="h-0.5 bg-blue-400 rounded-full mx-4"></div>
-										</td>
-									</tr>
-								{/if}
-							{/each}
-						</tbody>
-					</table>
-				</div>
-
-				<!-- Mobile Card View -->
-				<div class="divide-y md:hidden">
-					{#each filteredAccounts as account (account.id)}
-						<button
-							type="button"
-							class="hover:bg-gray-50 flex w-full items-start gap-4 p-4 text-left transition-colors {!account.isActive
-								? 'opacity-60'
-								: ''}"
-							onclick={() => openAccount(account)}
-						>
-							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
-							>
-								{getAccountInitials(account)}
-							</div>
-							<div class="min-w-0 flex-1">
-								<div class="flex items-start justify-between gap-2">
-									<div>
-										<p class="font-medium text-gray-900">{account.name}</p>
-										<div class="mt-1 flex items-center gap-1.5">
-											{#if account.isActive !== false}
-												<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-													Active
-												</span>
-											{:else}
-												<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-													Closed
-												</span>
-											{/if}
-										</div>
-									</div>
-								</div>
-								<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-									{#if account.industry}
-										<span>{account.industry}</span>
-									{/if}
-									<div class="flex items-center gap-1">
-										<Users class="h-3.5 w-3.5 text-gray-400" />
-										<span>{account.contactCount || 0}</span>
-									</div>
-									<div class="flex items-center gap-1">
-										<Target class="h-3.5 w-3.5 text-gray-400" />
-										<span>{account.opportunityCount || 0}</span>
-									</div>
-									<div class="flex items-center gap-1">
-										<Calendar class="h-3.5 w-3.5 text-gray-400" />
-										<span>{formatRelativeDate(account.createdAt)}</span>
-									</div>
 								</div>
 							</div>
-						</button>
-					{/each}
-				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
+						</div>
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+							{#if account.industry}
+								<span>{account.industry}</span>
+							{/if}
+							<div class="flex items-center gap-1">
+								<Users class="h-3.5 w-3.5 text-gray-400" />
+								<span>{account.contactCount || 0}</span>
+							</div>
+							<div class="flex items-center gap-1">
+								<Target class="h-3.5 w-3.5 text-gray-400" />
+								<span>{account.opportunityCount || 0}</span>
+							</div>
+							<div class="flex items-center gap-1">
+								<Calendar class="h-3.5 w-3.5 text-gray-400" />
+								<span>{formatRelativeDate(account.createdAt)}</span>
+							</div>
+						</div>
+					</div>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Pagination -->
 	{#if pagination.totalPages > 1}
@@ -938,21 +814,137 @@
 	{/if}
 </div>
 
-<!-- Account Drawer (unified) -->
-<AccountDrawer
+<!-- Account Drawer using NotionDrawer -->
+<NotionDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
-	account={selectedAccount}
+	data={drawerFormData}
+	columns={drawerColumns}
+	titleKey="name"
+	titlePlaceholder="Account name"
+	headerLabel="Account"
 	mode={drawerMode}
-	loading={drawerLoading}
-	onSave={handleFormSubmit}
+	loading={drawerLoading || isSubmitting}
+	onFieldChange={handleDrawerFieldChange}
 	onDelete={handleDelete}
-	onClose={handleClose}
-	onReopen={handleReopen}
-	onAddContact={handleAddContact}
-	onAddOpportunity={handleAddOpportunity}
-	onCancel={closeDrawer}
-/>
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		<!-- Closed account warning -->
+		{#if isClosed && drawerMode !== 'create'}
+			<div class="border-red-200 bg-red-50 mb-4 rounded-lg border p-3">
+				<div class="flex gap-2">
+					<AlertTriangle class="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+					<div>
+						<p class="text-red-700 text-sm font-medium">This account is closed</p>
+						<p class="text-red-600 text-xs mt-0.5">Reopen the account to make changes</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Related entity stats (view mode only) -->
+		{#if drawerMode !== 'create' && selectedAccount}
+			<div class="mb-4">
+				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">
+					Related
+				</p>
+				<div class="grid grid-cols-3 gap-2">
+					<div class="bg-gray-50 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400">
+							<Users class="h-3.5 w-3.5" />
+						</div>
+						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+							{selectedAccount.contactCount || 0}
+						</p>
+						<p class="text-gray-500 text-[10px]">Contacts</p>
+					</div>
+					<div class="bg-gray-50 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400">
+							<Target class="h-3.5 w-3.5" />
+						</div>
+						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+							{selectedAccount.opportunityCount || 0}
+						</p>
+						<p class="text-gray-500 text-[10px]">Opportunities</p>
+					</div>
+					<div class="bg-gray-50 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400">
+							<AlertTriangle class="h-3.5 w-3.5" />
+						</div>
+						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+							{selectedAccount.caseCount || 0}
+						</p>
+						<p class="text-gray-500 text-[10px]">Cases</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Quick actions (for active accounts only) -->
+			{#if !isClosed}
+				<div class="mb-4">
+					<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">
+						Quick Actions
+					</p>
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" onclick={handleAddContact} class="flex-1">
+							<Users class="mr-1.5 h-3.5 w-3.5" />
+							Add Contact
+						</Button>
+						<Button variant="outline" size="sm" onclick={handleAddOpportunity} class="flex-1">
+							<Target class="mr-1.5 h-3.5 w-3.5" />
+							Add Opportunity
+						</Button>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Metadata -->
+			<div>
+				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<div class="grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<p class="text-gray-400 text-xs">Owner</p>
+						<p class="text-gray-900 font-medium">{selectedAccount.owner?.name || 'Unassigned'}</p>
+					</div>
+					<div>
+						<p class="text-gray-400 text-xs">Created</p>
+						<p class="text-gray-900 font-medium">{formatRelativeDate(selectedAccount.createdAt)}</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button onclick={handleDrawerSave} disabled={isSubmitting || !drawerFormData.name?.trim()}>
+				{isSubmitting ? 'Creating...' : 'Create Account'}
+			</Button>
+		{:else if isClosed}
+			<Button
+				variant="outline"
+				class="text-green-600 hover:text-green-700"
+				onclick={handleReopen}
+				disabled={isSubmitting}
+			>
+				<Unlock class="mr-1.5 h-4 w-4" />
+				Reopen Account
+			</Button>
+		{:else}
+			<Button
+				variant="ghost"
+				class="text-orange-600 hover:text-orange-700"
+				onclick={handleClose}
+				disabled={isSubmitting}
+			>
+				<Lock class="mr-1.5 h-4 w-4" />
+				Close Account
+			</Button>
+		{/if}
+	{/snippet}
+</NotionDrawer>
 
 <!-- Hidden forms for server actions -->
 <form
@@ -981,7 +973,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Account updated successfully', true)}
+	use:enhance={createEnhanceHandler('Account updated successfully', false)}
 	class="hidden"
 >
 	<input type="hidden" name="accountId" value={formState.accountId} />

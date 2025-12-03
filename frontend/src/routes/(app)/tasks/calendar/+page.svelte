@@ -1,5 +1,5 @@
 <script>
-	// This page redirects to /tasks/list via +page.server.js
+	// This page redirects to /tasks via +page.server.js
 	// The calendar view is now integrated into the main tasks page
 </script>
 

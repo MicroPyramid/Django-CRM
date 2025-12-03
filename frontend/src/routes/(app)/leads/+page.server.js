@@ -31,7 +31,7 @@ export async function load({ cookies, locals }) {
 		const [response, usersResponse, teamsResponse, contactsResponse, tagsResponse] =
 			await Promise.all([
 				apiRequest(`/leads/`, {}, { cookies, org }),
-				apiRequest(`/users/`, {}, { cookies, org }).catch(() => ({ results: [] })),
+				apiRequest(`/users/`, {}, { cookies, org }).catch(() => ({ active_users: { active_users: [] } })),
 				apiRequest(`/teams/`, {}, { cookies, org }).catch(() => ({ teams: [] })),
 				apiRequest(`/contacts/`, {}, { cookies, org }).catch(() => ({ contact_obj_list: [] })),
 				apiRequest(`/tags/`, {}, { cookies, org }).catch(() => [])
@@ -125,9 +125,11 @@ export async function load({ cookies, locals }) {
 		}));
 
 		// Transform dropdown data for form options
-		const users = (usersResponse.results || usersResponse || []).map((u) => ({
+		// /users/ endpoint returns { active_users: { active_users: [...] }, inactive_users: { inactive_users: [...] } }
+		const activeUsers = usersResponse?.active_users?.active_users || [];
+		const users = activeUsers.map((u) => ({
 			value: u.id,
-			label: u.email || u.username || 'Unknown'
+			label: u.user_details?.email || u.user?.email || u.email || 'Unknown'
 		}));
 
 		const teamsList = (teamsResponse.teams || teamsResponse || []).map((t) => ({

@@ -6,33 +6,131 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
-		ChevronDown,
-		ChevronUp,
 		Eye,
-		Expand,
-		GripVertical,
-		User
+		User,
+		Mail,
+		Phone,
+		Building2,
+		Briefcase,
+		MapPin,
+		FileText,
+		Linkedin,
+		PhoneOff,
+		Calendar
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
-	import { ContactDrawer } from '$lib/components/contacts';
+	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { NotionTable } from '$lib/components/ui/notion-table';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
+	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'contacts-column-config';
 
-	// Column definitions
+	/**
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string }} ColumnDef
+	 */
+
+	/** @type {ColumnDef[]} */
 	const columns = [
-		{ key: 'contact', label: 'Contact', width: 'w-48' },
-		{ key: 'title', label: 'Title', width: 'w-36' },
-		{ key: 'email', label: 'Email', width: 'w-52' },
-		{ key: 'phone', label: 'Phone', width: 'w-36' },
-		{ key: 'company', label: 'Company', width: 'w-40' },
-		{ key: 'owner', label: 'Owner', width: 'w-36' },
-		{ key: 'created', label: 'Created', width: 'w-32' }
+		{
+			key: 'name',
+			label: 'Contact',
+			type: 'text',
+			width: 'w-48',
+			editable: false,
+			canHide: false,
+			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+			emptyText: 'Unnamed'
+		},
+		{ key: 'title', label: 'Title', type: 'text', width: 'w-36', emptyText: 'Empty' },
+		{ key: 'email', label: 'Email', type: 'email', width: 'w-52', emptyText: '' },
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
+		{
+			key: 'organization',
+			label: 'Company',
+			type: 'text',
+			width: 'w-40',
+			emptyText: ''
+		},
+		{
+			key: 'owner',
+			label: 'Owner',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'user',
+			getValue: (row) => row.owner?.name || row.owner?.email,
+			emptyText: ''
+		},
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			width: 'w-32',
+			editable: false
+		}
+	];
+
+	// Country options for drawer
+	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
+
+	// Drawer column definitions for NotionDrawer
+	const drawerColumns = [
+		{ key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'First name' },
+		{ key: 'lastName', label: 'Last Name', type: 'text', placeholder: 'Last name' },
+		{ key: 'email', label: 'Email', type: 'email', icon: Mail, placeholder: 'email@example.com' },
+		{ key: 'phone', label: 'Phone', type: 'text', icon: Phone, placeholder: '+1 (555) 000-0000' },
+		{
+			key: 'organization',
+			label: 'Company',
+			type: 'text',
+			icon: Building2,
+			placeholder: 'Company name'
+		},
+		{ key: 'title', label: 'Job Title', type: 'text', icon: Briefcase, placeholder: 'Job title' },
+		{ key: 'department', label: 'Department', type: 'text', placeholder: 'Department' },
+		{
+			key: 'doNotCall',
+			label: 'Do Not Call',
+			type: 'checkbox',
+			icon: PhoneOff
+		},
+		{
+			key: 'linkedInUrl',
+			label: 'LinkedIn',
+			type: 'text',
+			icon: Linkedin,
+			placeholder: 'https://linkedin.com/in/...'
+		},
+		{
+			key: 'addressLine',
+			label: 'Address',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Street address'
+		},
+		{ key: 'city', label: 'City', type: 'text', placeholder: 'City' },
+		{ key: 'state', label: 'State', type: 'text', placeholder: 'State/Province' },
+		{ key: 'postcode', label: 'Postal Code', type: 'text', placeholder: 'Postal code' },
+		{
+			key: 'country',
+			label: 'Country',
+			type: 'select',
+			options: countryOptions,
+			placeholder: 'Select country'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes about this contact...'
+		}
 	];
 
 	// Column visibility state
@@ -58,15 +156,10 @@
 	/**
 	 * @param {string} key
 	 */
-	function isColumnVisible(key) {
-		return visibleColumns.includes(key);
-	}
-
-	/**
-	 * @param {string} key
-	 */
 	function toggleColumn(key) {
-		if (key === 'contact') return; // Don't allow hiding contact column
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
+
 		if (visibleColumns.includes(key)) {
 			visibleColumns = visibleColumns.filter((k) => k !== key);
 		} else {
@@ -88,13 +181,40 @@
 	/** @type {any} */
 	let selectedContact = $state(null);
 	let drawerLoading = $state(false);
+	let isSubmitting = $state(false);
 
+	// Empty contact template for create mode
+	const emptyContact = {
+		firstName: '',
+		lastName: '',
+		email: '',
+		phone: '',
+		organization: '',
+		title: '',
+		department: '',
+		doNotCall: false,
+		linkedInUrl: '',
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		description: ''
+	};
 
-	// Drag-and-drop state
-	let draggedRowId = $state(null);
-	let dragOverRowId = $state(null);
-	/** @type {'before' | 'after' | null} */
-	let dropPosition = $state(null);
+	// Drawer form data - mutable copy for editing
+	let drawerFormData = $state({ ...emptyContact });
+
+	// Reset form data when contact changes or drawer opens
+	$effect(() => {
+		if (drawerOpen) {
+			if (drawerMode === 'create') {
+				drawerFormData = { ...emptyContact };
+			} else if (selectedContact) {
+				drawerFormData = { ...selectedContact };
+			}
+		}
+	});
 
 	// URL sync
 	$effect(() => {
@@ -174,61 +294,6 @@
 	}
 
 
-	// Drag-and-drop handlers
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} rowId
-	 */
-	function handleDragStart(e, rowId) {
-		draggedRowId = rowId;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', rowId);
-		}
-	}
-
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} rowId
-	 */
-	function handleRowDragOver(e, rowId) {
-		e.preventDefault();
-		if (draggedRowId === rowId) return;
-
-		dragOverRowId = rowId;
-
-		// Determine drop position based on mouse position
-		const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect();
-		const midpoint = rect.top + rect.height / 2;
-		dropPosition = e.clientY < midpoint ? 'before' : 'after';
-	}
-
-	function handleRowDragLeave() {
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
-	/**
-	 * @param {DragEvent} e
-	 * @param {string} targetRowId
-	 */
-	function handleRowDrop(e, targetRowId) {
-		e.preventDefault();
-		// Note: For contacts, we'd need to implement reordering via API
-		// For now, just reset drag state
-		resetDragState();
-	}
-
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	function resetDragState() {
-		draggedRowId = null;
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
 	// Filter/search/sort state
 	const list = useListFilters({
 		searchFields: ['firstName', 'lastName', 'email', 'phone', 'title', 'organization'],
@@ -293,39 +358,64 @@
 	}
 
 	/**
-	 * Handle form submit from drawer
-	 * @param {any} formData
+	 * Handle field change from NotionDrawer
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	async function handleFormSubmit(formData) {
-		// Populate form state
-		formState.firstName = formData.first_name || '';
-		formState.lastName = formData.last_name || '';
-		formState.email = formData.email || '';
-		formState.phone = formData.phone || '';
-		formState.organization = formData.organization || '';
-		formState.title = formData.title || '';
-		formState.department = formData.department || '';
-		formState.doNotCall = formData.do_not_call || false;
-		formState.linkedInUrl = formData.linkedin_url || '';
-		formState.addressLine = formData.address_line || '';
-		formState.city = formData.city || '';
-		formState.state = formData.state || '';
-		formState.postcode = formData.postcode || '';
-		formState.country = formData.country || '';
-		formState.description = formData.description || '';
-		formState.ownerId = formData.owner_id || '';
+	async function handleDrawerFieldChange(field, value) {
+		// Update local form data
+		drawerFormData = { ...drawerFormData, [field]: value };
 
-		await tick();
-
+		// For view mode (editing), auto-save changes
 		if (drawerMode === 'view' && selectedContact) {
-			// Edit mode
 			formState.contactId = selectedContact.id;
+			formState.firstName = field === 'firstName' ? value : drawerFormData.firstName || '';
+			formState.lastName = field === 'lastName' ? value : drawerFormData.lastName || '';
+			formState.email = field === 'email' ? value : drawerFormData.email || '';
+			formState.phone = field === 'phone' ? value : drawerFormData.phone || '';
+			formState.organization =
+				field === 'organization' ? value : drawerFormData.organization || '';
+			formState.title = field === 'title' ? value : drawerFormData.title || '';
+			formState.department = field === 'department' ? value : drawerFormData.department || '';
+			formState.doNotCall = field === 'doNotCall' ? value : drawerFormData.doNotCall || false;
+			formState.linkedInUrl = field === 'linkedInUrl' ? value : drawerFormData.linkedInUrl || '';
+			formState.addressLine = field === 'addressLine' ? value : drawerFormData.addressLine || '';
+			formState.city = field === 'city' ? value : drawerFormData.city || '';
+			formState.state = field === 'state' ? value : drawerFormData.state || '';
+			formState.postcode = field === 'postcode' ? value : drawerFormData.postcode || '';
+			formState.country = field === 'country' ? value : drawerFormData.country || '';
+			formState.description = field === 'description' ? value : drawerFormData.description || '';
+
 			await tick();
 			updateForm.requestSubmit();
-		} else {
-			// Create mode
-			createForm.requestSubmit();
 		}
+	}
+
+	/**
+	 * Handle save for create mode
+	 */
+	async function handleDrawerSave() {
+		if (drawerMode !== 'create') return;
+
+		isSubmitting = true;
+		formState.firstName = drawerFormData.firstName || '';
+		formState.lastName = drawerFormData.lastName || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.organization = drawerFormData.organization || '';
+		formState.title = drawerFormData.title || '';
+		formState.department = drawerFormData.department || '';
+		formState.doNotCall = drawerFormData.doNotCall || false;
+		formState.linkedInUrl = drawerFormData.linkedInUrl || '';
+		formState.addressLine = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.description = drawerFormData.description || '';
+
+		await tick();
+		createForm.requestSubmit();
 	}
 
 	/**
@@ -349,6 +439,7 @@
 	function createEnhanceHandler(successMessage, closeOnSuccess = true) {
 		return () => {
 			return async ({ result }) => {
+				isSubmitting = false;
 				if (result.type === 'success') {
 					toast.success(successMessage);
 					if (closeOnSuccess) {
@@ -422,9 +513,9 @@
 						{#each columns as column (column.key)}
 							<DropdownMenu.CheckboxItem
 								class=""
-								checked={isColumnVisible(column.key)}
+								checked={visibleColumns.includes(column.key)}
 								onCheckedChange={() => toggleColumn(column.key)}
-								disabled={column.key === 'contact'}
+								disabled={column.canHide === false}
 							>
 								{column.label}
 							</DropdownMenu.CheckboxItem>
@@ -441,242 +532,42 @@
 	</div>
 
 	<!-- Table -->
-	<div class="overflow-x-auto">
-		{#if filteredContacts.length === 0}
-			<div class="flex flex-col items-center justify-center py-16 text-center">
-				<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
-				<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
-				<p class="text-muted-foreground mt-1 text-sm">
-					Try adjusting your search criteria or create a new contact.
-				</p>
-				<Button onclick={openCreate} class="mt-4">
-					<Plus class="mr-2 h-4 w-4" />
-					Create New Contact
-				</Button>
-			</div>
-		{:else}
-			<table class="w-full border-collapse">
-				<!-- Header -->
-				<thead>
-					<tr class="border-b border-gray-100/60">
-						<!-- Drag handle column -->
-						<th class="w-8 px-1"></th>
-						<!-- Expand button column -->
-						<th class="w-8 px-1"></th>
-						{#each columns as column (column.key)}
-							{#if isColumnVisible(column.key)}
-								<th
-									class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 {column.width}"
-								>
-									{#if column.key === 'created'}
-										<button
-											type="button"
-											class="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-gray-100 transition-colors"
-											onclick={() => list.toggleSort('createdAt')}
-										>
-											{column.label}
-											{#if list.sortColumn === 'createdAt'}
-												{#if list.sortDirection === 'asc'}
-													<ChevronUp class="h-3.5 w-3.5" />
-												{:else}
-													<ChevronDown class="h-3.5 w-3.5" />
-												{/if}
-											{/if}
-										</button>
-									{:else}
-										{column.label}
-									{/if}
-								</th>
-							{/if}
-						{/each}
-					</tr>
-				</thead>
+	{#if filteredContacts.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+			<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+			<p class="text-muted-foreground mt-1 text-sm">
+				Try adjusting your search criteria or create a new contact.
+			</p>
+			<Button onclick={openCreate} class="mt-4">
+				<Plus class="mr-2 h-4 w-4" />
+				Create New Contact
+			</Button>
+		</div>
+	{:else}
+		<NotionTable
+			data={filteredContacts}
+			{columns}
+			bind:visibleColumns
+			onRowClick={(row) => openContact(row)}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+					<p class="text-muted-foreground mt-1 text-sm">
+						Try adjusting your search criteria or create a new contact.
+					</p>
+					<Button onclick={openCreate} class="mt-4">
+						<Plus class="mr-2 h-4 w-4" />
+						Create New Contact
+					</Button>
+				</div>
+			{/snippet}
+		</NotionTable>
 
-				<!-- Body -->
-				<tbody>
-					{#each filteredContacts as contact (contact.id)}
-						<!-- Drop indicator line (before row) -->
-						{#if dragOverRowId === contact.id && dropPosition === 'before'}
-							<tr class="h-0">
-								<td colspan={visibleColumns.length + 2} class="p-0">
-									<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
-								</td>
-							</tr>
-						{/if}
-
-						<tr
-							class="group transition-all duration-100 ease-out hover:bg-gray-50/30 {draggedRowId ===
-							contact.id
-								? 'bg-gray-100 opacity-40'
-								: ''}"
-							ondragover={(e) => handleRowDragOver(e, contact.id)}
-							ondragleave={handleRowDragLeave}
-							ondrop={(e) => handleRowDrop(e, contact.id)}
-						>
-							<!-- Drag Handle -->
-							<td class="w-8 px-1 py-3">
-								<div
-									draggable="true"
-									ondragstart={(e) => handleDragStart(e, contact.id)}
-									ondragend={handleDragEnd}
-									class="flex h-6 w-6 cursor-grab items-center justify-center rounded opacity-0 transition-all group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 active:cursor-grabbing"
-									role="button"
-									tabindex="0"
-									aria-label="Drag to reorder"
-								>
-									<GripVertical class="h-4 w-4 text-gray-400" />
-								</div>
-							</td>
-
-							<!-- Expand button -->
-							<td class="w-8 px-1 py-3">
-								<button
-									type="button"
-									onclick={() => openContact(contact)}
-									class="flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all duration-75 group-hover:opacity-100 hover:bg-gray-200"
-								>
-									<Expand class="h-3.5 w-3.5 text-gray-500" />
-								</button>
-							</td>
-
-							<!-- Contact -->
-							{#if isColumnVisible('contact')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'contact')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 flex w-full cursor-pointer items-center gap-3 rounded px-2 py-1.5 text-left transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										<div
-											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-medium text-white"
-										>
-											{getContactInitials(contact)}
-										</div>
-										<span class="truncate text-sm text-gray-900">
-											{getFullName(contact)}
-										</span>
-									</button>
-								</td>
-							{/if}
-
-							<!-- Title -->
-							{#if isColumnVisible('title')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'title')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{#if contact.title}
-											<span class="text-gray-900">{contact.title}</span>
-										{:else}
-											<span class="text-gray-400">Empty</span>
-										{/if}
-									</button>
-								</td>
-							{/if}
-
-							<!-- Email -->
-							{#if isColumnVisible('email')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'email')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{#if contact.email}
-											<span class="truncate text-gray-900">{contact.email}</span>
-										{:else}
-											<span class="text-gray-400">Empty</span>
-										{/if}
-									</button>
-								</td>
-							{/if}
-
-							<!-- Phone -->
-							{#if isColumnVisible('phone')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'phone')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{#if contact.phone}
-											<span class="text-gray-900">{formatPhone(contact.phone)}</span>
-										{:else}
-											<span class="text-gray-400">Empty</span>
-										{/if}
-									</button>
-								</td>
-							{/if}
-
-							<!-- Company -->
-							{#if isColumnVisible('company')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'company')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{#if contact.organization}
-											<span class="truncate text-gray-900">{contact.organization}</span>
-										{:else}
-											<span class="text-gray-400">Empty</span>
-										{/if}
-									</button>
-								</td>
-							{/if}
-
-							<!-- Owner -->
-							{#if isColumnVisible('owner')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'owner')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{#if contact.owner?.name || contact.owner?.email}
-											<span class="text-gray-900"
-												>{contact.owner.name || contact.owner.email}</span
-											>
-										{:else}
-											<span class="text-gray-400">Empty</span>
-										{/if}
-									</button>
-								</td>
-							{/if}
-
-							<!-- Created -->
-							{#if isColumnVisible('created')}
-								<td class="px-4 py-3 {columns.find((c) => c.key === 'created')?.width}">
-									<button
-										type="button"
-										onclick={() => openContact(contact)}
-										class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										<span class="text-gray-900">{formatRelativeDate(contact.createdAt)}</span>
-									</button>
-								</td>
-							{/if}
-						</tr>
-
-						<!-- Drop indicator line (after row) -->
-						{#if dragOverRowId === contact.id && dropPosition === 'after'}
-							<tr class="h-0">
-								<td colspan={visibleColumns.length + 2} class="p-0">
-									<div class="mx-4 h-0.5 rounded-full bg-blue-400"></div>
-								</td>
-							</tr>
-						{/if}
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-	</div>
-
-	<!-- Add row button at bottom -->
-	{#if filteredContacts.length > 0}
-		<div class="border-t border-gray-100 px-4 py-2">
+		<!-- Add row button at bottom -->
+		<div class="border-t border-gray-100/60 px-4 py-2">
 			<button
 				type="button"
 				onclick={openCreate}
@@ -689,17 +580,52 @@
 	{/if}
 </div>
 
-<!-- Contact Drawer -->
-<ContactDrawer
+<!-- Contact Drawer using NotionDrawer -->
+<NotionDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
-	contact={selectedContact}
+	data={drawerFormData}
+	columns={drawerColumns}
+	titleKey="firstName"
+	titlePlaceholder="First name"
+	headerLabel="Contact"
 	mode={drawerMode}
-	loading={drawerLoading}
-	onSave={handleFormSubmit}
+	loading={drawerLoading || isSubmitting}
+	onFieldChange={handleDrawerFieldChange}
 	onDelete={handleDelete}
-	onCancel={closeDrawer}
-/>
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		<!-- Metadata (view mode only) -->
+		{#if drawerMode !== 'create' && selectedContact}
+			<div>
+				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<div class="grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<p class="text-gray-400 text-xs">Owner</p>
+						<p class="text-gray-900 font-medium">{selectedContact.owner?.name || 'Unassigned'}</p>
+					</div>
+					<div>
+						<p class="text-gray-400 text-xs">Created</p>
+						<p class="text-gray-900 font-medium">{formatRelativeDate(selectedContact.createdAt)}</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				onclick={handleDrawerSave}
+				disabled={isSubmitting || !drawerFormData.firstName?.trim()}
+			>
+				{isSubmitting ? 'Creating...' : 'Create Contact'}
+			</Button>
+		{/if}
+	{/snippet}
+</NotionDrawer>
 
 <!-- Hidden forms for server actions -->
 <form
@@ -731,7 +657,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Contact updated successfully')}
+	use:enhance={createEnhanceHandler('Contact updated successfully', false)}
 	class="hidden"
 >
 	<input type="hidden" name="contactId" value={formState.contactId} />

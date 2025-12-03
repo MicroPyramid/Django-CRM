@@ -1,7 +1,20 @@
 <script>
-	import { Mail, Building2, Circle, Zap, DollarSign, Calendar, Star } from '@lucide/svelte';
+	import { onMount } from 'svelte';
+	import {
+		Mail,
+		Building2,
+		Circle,
+		Zap,
+		DollarSign,
+		Calendar,
+		Star,
+		Eye,
+		Plus
+	} from '@lucide/svelte';
 	import { NotionTable } from '$lib/components/ui/notion-table';
 	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	// Status and priority options with colors
 	const statusOptions = [
@@ -173,6 +186,58 @@
 		}
 	]);
 
+	// Column visibility state
+	const STORAGE_KEY = 'notion-table-columns';
+	let visibleColumns = $state(columns.map((c) => c.key));
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				// Only use saved columns that still exist
+				visibleColumns = parsed.filter((/** @type {string} */ key) =>
+					columns.some((c) => c.key === key)
+				);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
+	/**
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return visibleColumns.includes(key);
+	}
+
+	/**
+	 * @param {string} key
+	 */
+	function toggleColumn(key) {
+		const column = columns.find((c) => c.key === key);
+		// @ts-ignore
+		if (column?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
+	}
+
+	const columnCounts = $derived({
+		visible: visibleColumns.length,
+		total: columns.length
+	});
+
 	// Drawer state
 	let drawerOpen = $state(false);
 	/** @type {string | null} */
@@ -223,14 +288,6 @@
 		];
 	}
 
-	/**
-	 * Handle reorder
-	 * @param {any[]} newData
-	 */
-	function handleReorder(newData) {
-		data = newData;
-	}
-
 	function closeDrawer() {
 		drawerOpen = false;
 		selectedRowId = null;
@@ -258,16 +315,83 @@
 	}
 </script>
 
-<NotionTable
-	{data}
-	{columns}
-	storageKey="notion-table-columns"
-	title="Contacts Database"
-	onRowChange={handleRowChange}
-	onRowClick={handleRowClick}
-	onAddRow={handleAddRow}
-	onReorder={handleReorder}
-/>
+<div class="min-h-screen rounded-lg border border-border/40 bg-white dark:bg-gray-950">
+	<!-- Header -->
+	<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+		<div class="flex items-center justify-between">
+			<div>
+				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Contacts Database</h1>
+				{#if data.length > 0}
+					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{data.length} items</p>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
+				<!-- Columns dropdown -->
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Eye class="h-4 w-4" />
+								Columns
+								{#if columnCounts.visible < columnCounts.total}
+									<span
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+									>
+										{columnCounts.visible}/{columnCounts.total}
+									</span>
+								{/if}
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each columns as column (column.key)}
+							<DropdownMenu.CheckboxItem
+								class=""
+								checked={isColumnVisible(column.key)}
+								onCheckedChange={() => toggleColumn(column.key)}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<!-- New button -->
+				<Button size="sm" class="gap-2" onclick={handleAddRow}>
+					<Plus class="h-4 w-4" />
+					New
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Table -->
+	<div class="overflow-x-auto">
+		<NotionTable
+			{data}
+			{columns}
+			bind:visibleColumns
+			onRowChange={handleRowChange}
+			onRowClick={handleRowClick}
+		/>
+	</div>
+
+	<!-- Bottom New row button -->
+	{#if data.length > 0}
+		<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
+			<button
+				type="button"
+				onclick={handleAddRow}
+				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+			>
+				<Plus class="h-4 w-4" />
+				New row
+			</button>
+		</div>
+	{/if}
+</div>
 
 <!-- Row Detail Drawer -->
 <NotionDrawer

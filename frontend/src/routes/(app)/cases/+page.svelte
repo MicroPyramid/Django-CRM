@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -16,9 +16,11 @@
 		FileText,
 		MessageSquare,
 		Activity,
-		Loader2
+		Loader2,
+		Eye
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { NotionTable } from '$lib/components/ui/notion-table';
 	import { NotionDrawer } from '$lib/components/ui/notion-drawer';
 	import {
@@ -36,6 +38,7 @@
 	 * @property {string} [width]
 	 * @property {{ value: string, label: string, color: string }[]} [options]
 	 * @property {boolean} [editable]
+	 * @property {boolean} [canHide]
 	 * @property {string} [relationIcon]
 	 * @property {(row: any) => any} [getValue]
 	 */
@@ -43,7 +46,7 @@
 	// NotionTable column configuration
 	/** @type {ColumnDef[]} */
 	const columns = [
-		{ key: 'subject', label: 'Case', type: 'text', width: 'w-[250px]' },
+		{ key: 'subject', label: 'Case', type: 'text', width: 'w-[250px]', canHide: false },
 		{
 			key: 'account',
 			label: 'Account',
@@ -65,6 +68,57 @@
 		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
 		{ key: 'createdAt', label: 'Created', type: 'date', width: 'w-32', editable: false }
 	];
+
+	// Column visibility state
+	const STORAGE_KEY = 'cases-column-config';
+	let visibleColumns = $state(columns.map((c) => c.key));
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				visibleColumns = parsed.filter((/** @type {string} */ key) =>
+					columns.some((c) => c.key === key)
+				);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
+	/**
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return visibleColumns.includes(key);
+	}
+
+	/**
+	 * @param {string} key
+	 */
+	function toggleColumn(key) {
+		const column = columns.find((c) => c.key === key);
+		// @ts-ignore
+		if (column?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
+	}
+
+	const columnCounts = $derived({
+		visible: visibleColumns.length,
+		total: columns.length
+	});
 
 	// Drawer local form state
 	let drawerFormData = $state({
@@ -403,43 +457,98 @@
 			casesData[index] = { ...casesData[index], [field]: value };
 		}
 	}
-
-	/**
-	 * Handle row reordering (client-side only for now)
-	 * @param {any[]} newData
-	 */
-	function handleTableReorder(newData) {
-		casesData = newData;
-	}
 </script>
 
 <svelte:head>
 	<title>Cases - BottleCRM</title>
 </svelte:head>
 
-<NotionTable
-	data={filteredCases}
-	{columns}
-	storageKey="cases-column-config"
-	title="Cases"
-	subtitle="{filteredCases.length} items"
-	onRowChange={handleRowChange}
-	onRowClick={(row) => drawer.openDetail(row)}
-	onAddRow={drawer.openCreate}
-	onReorder={handleTableReorder}
->
-	{#snippet emptyState()}
-		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
-			<h3 class="text-foreground text-lg font-medium">No cases found</h3>
-			<p class="text-muted-foreground mt-1 text-sm">Create a new case to get started.</p>
-			<Button onclick={drawer.openCreate} class="mt-4">
-				<Plus class="mr-2 h-4 w-4" />
-				Create New Case
-			</Button>
+<div class="min-h-screen rounded-lg border border-border/40 bg-white dark:bg-gray-950">
+	<!-- Header -->
+	<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+		<div class="flex items-center justify-between">
+			<div>
+				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Cases</h1>
+				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{filteredCases.length} items</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Eye class="h-4 w-4" />
+								Columns
+								{#if columnCounts.visible < columnCounts.total}
+									<span
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+									>
+										{columnCounts.visible}/{columnCounts.total}
+									</span>
+								{/if}
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each columns as column (column.key)}
+							<DropdownMenu.CheckboxItem
+								class=""
+								checked={isColumnVisible(column.key)}
+								onCheckedChange={() => toggleColumn(column.key)}
+								disabled={column.canHide === false}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<Button size="sm" class="gap-2" onclick={drawer.openCreate}>
+					<Plus class="h-4 w-4" />
+					New
+				</Button>
+			</div>
 		</div>
-	{/snippet}
-</NotionTable>
+	</div>
+
+	<!-- Table -->
+	<div class="overflow-x-auto">
+		<NotionTable
+			data={filteredCases}
+			{columns}
+			bind:visibleColumns
+			onRowChange={handleRowChange}
+			onRowClick={(row) => drawer.openDetail(row)}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No cases found</h3>
+					<p class="text-muted-foreground mt-1 text-sm">Create a new case to get started.</p>
+					<Button onclick={drawer.openCreate} class="mt-4">
+						<Plus class="mr-2 h-4 w-4" />
+						Create New Case
+					</Button>
+				</div>
+			{/snippet}
+		</NotionTable>
+	</div>
+
+	<!-- Add row button at bottom -->
+	{#if filteredCases.length > 0}
+		<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
+			<button
+				type="button"
+				onclick={drawer.openCreate}
+				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+			>
+				<Plus class="h-4 w-4" />
+				New row
+			</button>
+		</div>
+	{/if}
+</div>
 
 <!-- Case Drawer (using NotionDrawer) -->
 <NotionDrawer

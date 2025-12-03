@@ -5,29 +5,33 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
-		ChevronDown,
 		Phone,
 		Mail,
 		Building2,
 		User,
 		Calendar,
-		GripVertical,
-		Expand,
-		X,
 		Eye,
-		Check,
-		Trash2,
 		Star,
 		Globe,
-		Briefcase
+		Briefcase,
+		Linkedin,
+		Target,
+		DollarSign,
+		Percent,
+		MapPin,
+		FileText,
+		Users,
+		UserPlus,
+		Tag,
+		MessageSquare,
+		Loader2,
+		ArrowRightCircle
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { LeadDrawer } from '$lib/components/leads';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import * as Sheet from '$lib/components/ui/sheet/index.js';
-	import { cn } from '$lib/utils.js';
 	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import {
@@ -37,88 +41,278 @@
 		getOptionLabel,
 		getOptionBgColor
 	} from '$lib/utils/table-helpers.js';
-	import {
-		createDragState,
-		calculateDropPosition,
-		reorderItems,
-		handleDragStart as dndDragStart,
-		dragHandleClasses,
-		expandButtonClasses,
-		dropIndicatorClasses,
-		draggedRowClasses
-	} from '$lib/utils/drag-drop.js';
+	import NotionTable from '$lib/components/ui/notion-table/NotionTable.svelte';
+	import NotionDrawer from '$lib/components/ui/notion-drawer/NotionDrawer.svelte';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
 
 	/**
-	 * @typedef {Object} ColumnConfig
-	 * @property {string} key
-	 * @property {string} label
-	 * @property {boolean} visible
-	 * @property {boolean} [canHide]
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[] }} ColumnDef
 	 */
 
-	/** @type {ColumnConfig[]} */
-	const defaultColumns = [
-		{ key: 'lead', label: 'Lead', visible: true, canHide: false },
-		{ key: 'company', label: 'Company', visible: true, canHide: true },
-		{ key: 'email', label: 'Email', visible: true, canHide: true },
-		{ key: 'phone', label: 'Phone', visible: false, canHide: true },
-		{ key: 'rating', label: 'Rating', visible: true, canHide: true },
-		{ key: 'status', label: 'Status', visible: true, canHide: true },
-		{ key: 'created', label: 'Created', visible: true, canHide: true }
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{
+			key: 'name',
+			label: 'Name',
+			type: 'text',
+			width: 'w-[200px]',
+			editable: false,
+			canHide: false,
+			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+			emptyText: 'Untitled'
+		},
+		{
+			key: 'company',
+			label: 'Company',
+			type: 'relation',
+			width: 'w-40',
+			relationIcon: 'building',
+			getValue: (row) => (typeof row.company === 'object' ? row.company?.name : row.company),
+			emptyText: ''
+		},
+		{
+			key: 'email',
+			label: 'Email',
+			type: 'email',
+			width: 'w-52',
+			emptyText: ''
+		},
+		{
+			key: 'phone',
+			label: 'Phone',
+			type: 'text',
+			width: 'w-36',
+			emptyText: ''
+		},
+		{
+			key: 'rating',
+			label: 'Rating',
+			type: 'select',
+			width: 'w-28',
+			options: leadRatingOptions
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			width: 'w-28',
+			options: leadStatusOptions
+		},
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			width: 'w-36',
+			editable: false
+		}
 	];
 
+	// Visible columns state
+	let visibleColumns = $state(columns.map((c) => c.key));
+
+	// Source options for leads
+	const sourceOptions = [
+		{ value: 'call', label: 'Call', color: 'bg-blue-100 text-blue-700' },
+		{ value: 'email', label: 'Email', color: 'bg-purple-100 text-purple-700' },
+		{ value: 'existing customer', label: 'Existing Customer', color: 'bg-green-100 text-green-700' },
+		{ value: 'partner', label: 'Partner', color: 'bg-orange-100 text-orange-700' },
+		{ value: 'public relations', label: 'Public Relations', color: 'bg-pink-100 text-pink-700' },
+		{ value: 'campaign', label: 'Campaign', color: 'bg-cyan-100 text-cyan-700' },
+		{ value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-700' }
+	];
+
+	// Full drawer columns for NotionDrawer (all lead fields)
+	const drawerColumns = [
+		// Contact Information
+		{
+			key: 'email',
+			label: 'Email',
+			type: 'email',
+			icon: Mail,
+			placeholder: 'Add email'
+		},
+		{
+			key: 'phone',
+			label: 'Phone',
+			type: 'text',
+			icon: Phone,
+			placeholder: 'Add phone'
+		},
+		{
+			key: 'company',
+			label: 'Company',
+			type: 'text',
+			icon: Building2,
+			getValue: (/** @type {any} */ row) =>
+				typeof row.company === 'object' ? row.company?.name : row.company,
+			placeholder: 'Add company'
+		},
+		{
+			key: 'website',
+			label: 'Website',
+			type: 'text',
+			icon: Globe,
+			placeholder: 'Add website'
+		},
+		{
+			key: 'linkedinUrl',
+			label: 'LinkedIn',
+			type: 'text',
+			icon: Linkedin,
+			placeholder: 'Add LinkedIn URL'
+		},
+		// Lead Details
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			icon: Briefcase,
+			options: leadStatusOptions
+		},
+		{
+			key: 'rating',
+			label: 'Rating',
+			type: 'select',
+			icon: Star,
+			options: leadRatingOptions
+		},
+		{
+			key: 'leadSource',
+			label: 'Source',
+			type: 'select',
+			icon: Target,
+			options: sourceOptions
+		},
+		{
+			key: 'industry',
+			label: 'Industry',
+			type: 'select',
+			icon: Building2,
+			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700' }))
+		},
+		// Deal Information
+		{
+			key: 'opportunityAmount',
+			label: 'Deal Value',
+			type: 'number',
+			icon: DollarSign,
+			prefix: '$',
+			placeholder: '0'
+		},
+		{
+			key: 'probability',
+			label: 'Probability',
+			type: 'number',
+			icon: Percent,
+			placeholder: '0-100'
+		},
+		{
+			key: 'closeDate',
+			label: 'Close Date',
+			type: 'date',
+			icon: Calendar,
+			placeholder: 'Set date'
+		},
+		// Activity
+		{
+			key: 'lastContacted',
+			label: 'Last Contact',
+			type: 'date',
+			icon: Calendar,
+			placeholder: 'Set date'
+		},
+		{
+			key: 'nextFollowUp',
+			label: 'Follow-up',
+			type: 'date',
+			icon: Calendar,
+			placeholder: 'Set date'
+		},
+		// Address
+		{
+			key: 'addressLine',
+			label: 'Address',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Street address'
+		},
+		{
+			key: 'city',
+			label: 'City',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'City'
+		},
+		{
+			key: 'country',
+			label: 'Country',
+			type: 'select',
+			icon: Globe,
+			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700' }))
+		},
+		// Notes
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes...'
+		},
+		// Metadata (read-only)
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			icon: Calendar,
+			editable: false
+		}
+	];
+
+
 	/**
-	 * Load column config from localStorage
-	 * @returns {typeof defaultColumns}
+	 * Load column visibility from localStorage
 	 */
-	function loadColumnConfig() {
-		if (typeof window === 'undefined') return defaultColumns;
+	function loadColumnVisibility() {
+		if (typeof window === 'undefined') return;
 		try {
 			const saved = localStorage.getItem(STORAGE_KEY);
 			if (saved) {
 				const parsed = JSON.parse(saved);
-				// Merge with defaults to handle new columns
-				return defaultColumns.map((def) => {
-					const saved = parsed.find((p) => p.key === def.key);
-					return saved ? { ...def, visible: saved.visible } : def;
-				});
+				// Filter to only include valid column keys
+				visibleColumns = parsed.filter((key) => columns.some((c) => c.key === key));
 			}
 		} catch (e) {
-			console.error('Failed to load column config:', e);
+			console.error('Failed to load column visibility:', e);
 		}
-		return defaultColumns;
 	}
-
-	let columnConfig = $state(defaultColumns);
 
 	onMount(() => {
-		columnConfig = loadColumnConfig();
+		loadColumnVisibility();
 	});
 
-	// Save to localStorage when column config changes
+	// Save to localStorage when column visibility changes
 	$effect(() => {
-		if (typeof window !== 'undefined' && columnConfig !== defaultColumns) {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(columnConfig));
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
 		}
 	});
 
 	/**
-	 * Check if a column is visible
+	 * Toggle column visibility
 	 * @param {string} key
 	 */
-	function isColumnVisible(key) {
-		return columnConfig.find((c) => c.key === key)?.visible ?? true;
-	}
+	function toggleColumn(key) {
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
 
-	/**
-	 * Handle column config change
-	 * @param {ColumnConfig[]} newConfig
-	 */
-	function handleColumnChange(newConfig) {
-		columnConfig = newConfig;
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
 
 	/** @type {{ data: any }} */
@@ -128,42 +322,42 @@
 	const leads = $derived(data.leads || []);
 	const formOptions = $derived(data.formOptions || {});
 
-	// Drawer state (simplified - single drawer, matching contacts page pattern)
+	// Drawer state (NotionDrawer for view/create)
 	let drawerOpen = $state(false);
 	/** @type {'view' | 'create'} */
-	let drawerMode = $state('view');
+	let drawerMode = $state(/** @type {'view' | 'create'} */ ('view'));
 	/** @type {any} */
-	let selectedLead = $state(null);
+	let drawerData = $state(null);
 	let drawerLoading = $state(false);
+	let isSaving = $state(false);
 
-	// Sheet state (Notion-style row detail panel)
-	let sheetOpen = $state(false);
-	/** @type {string | null} */
-	let selectedRowId = $state(null);
+	// For create mode - temporary form data
+	let createFormData = $state(/** @type {Record<string, any>} */ ({
+		title: '',
+		firstName: '',
+		lastName: '',
+		email: '',
+		phone: '',
+		company: '',
+		website: '',
+		linkedinUrl: '',
+		status: 'assigned',
+		rating: '',
+		leadSource: '',
+		industry: '',
+		opportunityAmount: '',
+		probability: '',
+		closeDate: '',
+		lastContacted: '',
+		nextFollowUp: '',
+		addressLine: '',
+		city: '',
+		country: '',
+		description: ''
+	}));
 
-	// Drag-and-drop state
-	/** @type {string | null} */
-	let draggedRowId = $state(null);
-	/** @type {string | null} */
-	let dragOverRowId = $state(null);
-	/** @type {'before' | 'after' | null} */
-	let dropPosition = $state(null);
-
-	// Inline editing state
-	/** @type {{ rowId: string, columnKey: string } | null} */
-	let editingCell = $state(null);
-	let editValue = $state('');
-
-	// Dirty tracking for batch save
-	/** @type {Map<string, Record<string, any>>} */
-	let pendingChanges = $state(new Map());
-	let saving = $state(false);
-
-	// Derived: check if there are unsaved changes
-	const hasUnsavedChanges = $derived(pendingChanges.size > 0);
-
-	// Get selected row data for Sheet
-	const selectedRow = $derived(leads.find((/** @type {any} */ l) => l.id === selectedRowId));
+	// Current drawer data (either selected lead or create form data)
+	const currentDrawerData = $derived(drawerMode === 'create' ? createFormData : drawerData);
 
 	// URL sync
 	$effect(() => {
@@ -171,13 +365,13 @@
 		const action = $page.url.searchParams.get('action');
 
 		if (action === 'create') {
-			selectedLead = null;
+			drawerData = null;
 			drawerMode = 'create';
 			drawerOpen = true;
 		} else if (viewId && leads.length > 0) {
 			const lead = leads.find((l) => l.id === viewId);
 			if (lead) {
-				selectedLead = lead;
+				drawerData = lead;
 				drawerMode = 'view';
 				drawerOpen = true;
 			}
@@ -209,7 +403,7 @@
 	 * @param {any} lead
 	 */
 	function openLead(lead) {
-		selectedLead = lead;
+		drawerData = lead;
 		drawerMode = 'view';
 		drawerOpen = true;
 		updateUrl(lead.id, null);
@@ -219,7 +413,31 @@
 	 * Open drawer for creating a new lead
 	 */
 	function openCreate() {
-		selectedLead = null;
+		// Reset create form data
+		createFormData = {
+			title: '',
+			firstName: '',
+			lastName: '',
+			email: '',
+			phone: '',
+			company: '',
+			website: '',
+			linkedinUrl: '',
+			status: 'assigned',
+			rating: '',
+			leadSource: '',
+			industry: '',
+			opportunityAmount: '',
+			probability: '',
+			closeDate: '',
+			lastContacted: '',
+			nextFollowUp: '',
+			addressLine: '',
+			city: '',
+			country: '',
+			description: ''
+		};
+		drawerData = null;
 		drawerMode = 'create';
 		drawerOpen = true;
 		updateUrl(null, 'create');
@@ -230,6 +448,7 @@
 	 */
 	function closeDrawer() {
 		drawerOpen = false;
+		drawerData = null;
 		updateUrl(null, null);
 	}
 
@@ -239,235 +458,116 @@
 	 */
 	function handleDrawerChange(open) {
 		drawerOpen = open;
-		if (!open) updateUrl(null, null);
+		if (!open) {
+			drawerData = null;
+			updateUrl(null, null);
+		}
 	}
 
 	/**
-	 * Open row sheet
-	 * @param {string} rowId
-	 */
-	function openRowSheet(rowId) {
-		selectedRowId = rowId;
-		sheetOpen = true;
-	}
-
-	/**
-	 * Close row sheet
-	 */
-	function closeRowSheet() {
-		sheetOpen = false;
-		selectedRowId = null;
-	}
-
-	/**
-	 * Update a field in the selected row (for Sheet edits)
+	 * Handle row change from NotionTable (inline editing)
+	 * @param {any} row
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	function updateSelectedRowField(field, value) {
-		if (!selectedRowId) return;
-		trackChange(selectedRowId, field, value);
+	async function handleRowChange(row, field, value) {
+		await handleQuickEdit(row, field, value);
 	}
 
 	/**
-	 * Handle drag start
-	 * @param {DragEvent} e
-	 * @param {string} rowId
+	 * Handle field change from NotionDrawer
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	function handleDragStart(e, rowId) {
-		draggedRowId = rowId;
-		dndDragStart(e, rowId);
-	}
-
-	/**
-	 * Handle drag over a row
-	 * @param {DragEvent} e
-	 * @param {string} rowId
-	 */
-	function handleRowDragOver(e, rowId) {
-		e.preventDefault();
-		if (draggedRowId === rowId) return;
-		dragOverRowId = rowId;
-		dropPosition = calculateDropPosition(e);
-	}
-
-	/**
-	 * Handle drag leave
-	 */
-	function handleRowDragLeave() {
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
-	/**
-	 * Handle row drop
-	 * @param {DragEvent} e
-	 * @param {string} targetRowId
-	 */
-	function handleRowDrop(e, targetRowId) {
-		e.preventDefault();
-		// Note: For now, drag-and-drop just reorders visually
-		// In a real app, you'd persist this order
-		resetDragState();
-	}
-
-	/**
-	 * Handle drag end
-	 */
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	/**
-	 * Reset drag state
-	 */
-	function resetDragState() {
-		draggedRowId = null;
-		dragOverRowId = null;
-		dropPosition = null;
-	}
-
-	/**
-	 * Start editing a cell
-	 * @param {string} rowId
-	 * @param {string} columnKey
-	 */
-	async function startEditing(rowId, columnKey) {
-		const row = leads.find((/** @type {any} */ l) => l.id === rowId);
-		if (!row) return;
-
-		// Get the current value (check pending changes first)
-		const pending = pendingChanges.get(rowId);
-		let currentValue = pending?.[columnKey] ?? row[columnKey];
-
-		// Handle special cases
-		if (columnKey === 'company') {
-			currentValue = typeof row.company === 'object' ? row.company?.name || '' : row.company || '';
-		}
-
-		editingCell = { rowId, columnKey };
-		editValue = currentValue?.toString() ?? '';
-
-		await tick();
-		const input = document.querySelector(`[data-edit-input="${rowId}-${columnKey}"]`);
-		if (input) {
-			// @ts-ignore
-			input.focus();
-			// @ts-ignore
-			if (input.select) input.select();
+	async function handleDrawerFieldChange(field, value) {
+		if (drawerMode === 'create') {
+			// For create mode, just update the form data
+			createFormData = { ...createFormData, [field]: value };
+		} else if (drawerData) {
+			// For edit mode, save immediately
+			await handleQuickEdit(drawerData, field, value);
 		}
 	}
 
 	/**
-	 * Stop editing and optionally save
-	 * @param {boolean} save
-	 */
-	function stopEditing(save = true) {
-		if (!editingCell) return;
-
-		if (save) {
-			const { rowId, columnKey } = editingCell;
-			trackChange(rowId, columnKey, editValue);
-		}
-
-		editingCell = null;
-		editValue = '';
-	}
-
-	/**
-	 * Handle keyboard events in edit mode
-	 * @param {KeyboardEvent} e
-	 */
-	function handleEditKeydown(e) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			stopEditing(true);
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			stopEditing(false);
-		}
-	}
-
-	/**
-	 * Update a select value inline
-	 * @param {string} rowId
-	 * @param {string} columnKey
+	 * Handle title change from NotionDrawer
 	 * @param {string} value
 	 */
-	function updateSelectValue(rowId, columnKey, value) {
-		trackChange(rowId, columnKey, value);
-	}
-
-	/**
-	 * Track a change to a field
-	 * @param {string} rowId
-	 * @param {string} field
-	 * @param {any} value
-	 */
-	function trackChange(rowId, field, value) {
-		const existing = pendingChanges.get(rowId) || {};
-		pendingChanges.set(rowId, { ...existing, [field]: value });
-		pendingChanges = new Map(pendingChanges); // Trigger reactivity
-	}
-
-	/**
-	 * Get the display value for a field (pending change or original)
-	 * @param {any} lead
-	 * @param {string} field
-	 */
-	function getDisplayValue(lead, field) {
-		const pending = pendingChanges.get(lead.id);
-		if (pending && field in pending) {
-			return pending[field];
+	async function handleTitleChange(value) {
+		if (drawerMode === 'create') {
+			// Parse the name into firstName and lastName
+			const parts = value.trim().split(' ');
+			createFormData = {
+				...createFormData,
+				title: value,
+				firstName: parts[0] || '',
+				lastName: parts.slice(1).join(' ') || ''
+			};
+		} else if (drawerData) {
+			// For existing leads, update title
+			await handleQuickEdit(drawerData, 'title', value);
 		}
-		return lead[field];
 	}
 
 	/**
-	 * Save all pending changes
+	 * Handle delete from NotionDrawer
 	 */
-	async function saveAllChanges() {
-		if (pendingChanges.size === 0) return;
+	async function handleDrawerDelete() {
+		if (!drawerData) return;
+		const lead = drawerData;
+		closeDrawer();
+		await handleRowDelete(lead);
+	}
 
-		saving = true;
+	/**
+	 * Handle convert from NotionDrawer
+	 */
+	async function handleDrawerConvert() {
+		if (!drawerData) return;
+		formState.leadId = drawerData.id;
+		await tick();
+		convertForm.requestSubmit();
+	}
 
+	/**
+	 * Handle create new lead
+	 */
+	async function handleCreateLead() {
+		if (!createFormData.title?.trim()) {
+			toast.error('Lead title is required');
+			return;
+		}
+
+		isSaving = true;
 		try {
-			// Process each changed row
-			for (const [rowId, changes] of pendingChanges) {
-				const lead = leads.find((/** @type {any} */ l) => l.id === rowId);
-				if (!lead) continue;
+			// Populate form state
+			formState.title = createFormData.title || '';
+			formState.firstName = createFormData.firstName || '';
+			formState.lastName = createFormData.lastName || '';
+			formState.email = createFormData.email || '';
+			formState.phone = createFormData.phone || '';
+			formState.company = createFormData.company || '';
+			formState.website = createFormData.website || '';
+			formState.linkedinUrl = createFormData.linkedinUrl || '';
+			formState.status = createFormData.status || 'assigned';
+			formState.source = createFormData.leadSource || '';
+			formState.rating = createFormData.rating || '';
+			formState.industry = createFormData.industry || '';
+			formState.opportunityAmount = createFormData.opportunityAmount || '';
+			formState.probability = createFormData.probability || '';
+			formState.closeDate = createFormData.closeDate || '';
+			formState.lastContacted = createFormData.lastContacted || '';
+			formState.nextFollowUp = createFormData.nextFollowUp || '';
+			formState.addressLine = createFormData.addressLine || '';
+			formState.city = createFormData.city || '';
+			formState.country = createFormData.country || '';
+			formState.description = createFormData.description || '';
 
-				// Build form state with all lead data + changes
-				const currentState = leadToFormState(lead);
-				Object.assign(currentState, changes);
-
-				// Copy to form state
-				Object.assign(formState, currentState);
-
-				await tick();
-				updateForm.requestSubmit();
-
-				// Wait a bit between requests to avoid overwhelming the server
-				await new Promise((resolve) => setTimeout(resolve, 100));
-			}
-
-			pendingChanges.clear();
-			pendingChanges = new Map(); // Trigger reactivity
-			toast.success('Changes saved successfully');
-		} catch (error) {
-			toast.error('Failed to save some changes');
+			await tick();
+			createForm.requestSubmit();
 		} finally {
-			saving = false;
+			isSaving = false;
 		}
-	}
-
-	/**
-	 * Discard all pending changes
-	 */
-	function discardChanges() {
-		if (!confirm('Discard all unsaved changes?')) return;
-		pendingChanges.clear();
-		pendingChanges = new Map();
 	}
 
 	// Filter/search/sort state
@@ -593,11 +693,11 @@
 
 		await tick();
 
-		if (drawerMode === 'view' && selectedLead) {
+		if (drawerMode === 'view' && drawerData) {
 			// Edit mode
-			formState.leadId = selectedLead.id;
+			formState.leadId = drawerData.id;
 			// Use existing owner when editing (form doesn't have owner selection)
-			formState.ownerId = selectedLead.owner?.id || '';
+			formState.ownerId = drawerData.owner?.id || '';
 			await tick();
 			updateForm.requestSubmit();
 		} else {
@@ -611,10 +711,10 @@
 	 * Handle lead delete
 	 */
 	async function handleDelete() {
-		if (!selectedLead) return;
-		if (!confirm(`Are you sure you want to delete ${getFullName(selectedLead)}?`)) return;
+		if (!drawerData) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(drawerData)}?`)) return;
 
-		formState.leadId = selectedLead.id;
+		formState.leadId = drawerData.id;
 		await tick();
 		deleteForm.requestSubmit();
 	}
@@ -623,9 +723,9 @@
 	 * Handle lead convert
 	 */
 	async function handleConvert() {
-		if (!selectedLead) return;
+		if (!drawerData) return;
 
-		formState.leadId = selectedLead.id;
+		formState.leadId = drawerData.id;
 		await tick();
 		convertForm.requestSubmit();
 	}
@@ -731,16 +831,6 @@
 				<p class="mt-1 text-sm text-gray-500">{filteredLeads.length} leads</p>
 			</div>
 			<div class="flex items-center gap-2">
-				<!-- Save Changes Button (shown when dirty) -->
-				{#if hasUnsavedChanges}
-					<Button variant="outline" size="sm" onclick={discardChanges} disabled={saving}>
-						Discard
-					</Button>
-					<Button size="sm" onclick={saveAllChanges} disabled={saving}>
-						{saving ? 'Saving...' : 'Save Changes'}
-					</Button>
-				{/if}
-
 				<!-- Column Visibility (Notion-style) -->
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger asChild>
@@ -748,11 +838,11 @@
 							<Button {...props} variant="outline" size="sm" class="gap-2">
 								<Eye class="h-4 w-4" />
 								Columns
-								{#if columnConfig.filter((c) => c.visible).length < columnConfig.length}
+								{#if visibleColumns.length < columns.length}
 									<span
 										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
 									>
-										{columnConfig.filter((c) => c.visible).length}/{columnConfig.length}
+										{visibleColumns.length}/{columns.length}
 									</span>
 								{/if}
 							</Button>
@@ -761,18 +851,12 @@
 					<DropdownMenu.Content align="end" class="w-48">
 						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
 						<DropdownMenu.Separator />
-						{#each columnConfig as column (column.key)}
+						{#each columns as column (column.key)}
 							<DropdownMenu.CheckboxItem
 								class=""
-								checked={column.visible}
-								disabled={!column.canHide}
-								onCheckedChange={() => {
-									if (column.canHide) {
-										columnConfig = columnConfig.map((c) =>
-											c.key === column.key ? { ...c, visible: !c.visible } : c
-										);
-									}
-								}}
+								checked={visibleColumns.includes(column.key)}
+								disabled={column.canHide === false}
+								onCheckedChange={() => toggleColumn(column.key)}
 							>
 								{column.label}
 							</DropdownMenu.CheckboxItem>
@@ -800,288 +884,27 @@
 			</Button>
 		</div>
 	{:else}
-		<!-- Desktop Table - Notion-style native HTML table -->
-		<div class="hidden overflow-x-auto md:block">
-			<table class="w-full border-collapse">
-				<!-- Header -->
-				<thead>
-					<tr class="border-b border-gray-100/60">
-						<!-- Drag handle column -->
-						<th class="w-8 px-1"></th>
-						<!-- Expand button column -->
-						<th class="w-8 px-1"></th>
-						{#if isColumnVisible('lead')}
-							<th class="w-[250px] px-4 py-3 text-left text-[13px] font-normal text-gray-400"
-								>Name</th
-							>
-						{/if}
-						{#if isColumnVisible('company')}
-							<th class="w-40 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Company</th
-							>
-						{/if}
-						{#if isColumnVisible('email')}
-							<th class="w-52 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Email</th>
-						{/if}
-						{#if isColumnVisible('phone')}
-							<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Phone</th>
-						{/if}
-						{#if isColumnVisible('rating')}
-							<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Rating</th>
-						{/if}
-						{#if isColumnVisible('status')}
-							<th class="w-28 px-4 py-3 text-left text-[13px] font-normal text-gray-400">Status</th>
-						{/if}
-						{#if isColumnVisible('created')}
-							<th class="w-36 px-4 py-3 text-left text-[13px] font-normal text-gray-400">
-								Created
-							</th>
-						{/if}
-					</tr>
-				</thead>
-
-				<!-- Body -->
-				<tbody>
-					{#each filteredLeads as lead, rowIndex (lead.id)}
-						{@const displayRating = getDisplayValue(lead, 'rating') || lead.rating}
-						{@const displayStatus = getDisplayValue(lead, 'status') || lead.status}
-						{@const displayCompany =
-							getDisplayValue(lead, 'company') ??
-							(typeof lead.company === 'object' ? lead.company?.name : lead.company)}
-						{@const displayEmail = getDisplayValue(lead, 'email') || lead.email}
-						{@const displayPhone = getDisplayValue(lead, 'phone') || lead.phone}
-
-						<!-- Drop indicator line (before row) -->
-						{#if dragOverRowId === lead.id && dropPosition === 'before'}
-							<tr class="h-0">
-								<td colspan="10" class="p-0">
-									<div class={dropIndicatorClasses}></div>
-								</td>
-							</tr>
-						{/if}
-
-						<tr
-							class={cn(
-								'group transition-all duration-100 ease-out hover:bg-gray-50/30',
-								draggedRowId === lead.id && draggedRowClasses,
-								pendingChanges.has(lead.id) && 'bg-amber-50/30'
-							)}
-							ondragover={(e) => handleRowDragOver(e, lead.id)}
-							ondragleave={handleRowDragLeave}
-							ondrop={(e) => handleRowDrop(e, lead.id)}
-						>
-							<!-- Drag Handle -->
-							<td class="w-8 px-1 py-3">
-								<div
-									draggable="true"
-									ondragstart={(e) => handleDragStart(e, lead.id)}
-									ondragend={handleDragEnd}
-									class={dragHandleClasses}
-									role="button"
-									tabindex="0"
-									aria-label="Drag to reorder"
-								>
-									<GripVertical class="h-4 w-4 text-gray-400" />
-								</div>
-							</td>
-
-							<!-- Expand button -->
-							<td class="w-8 px-1 py-3">
-								<button
-									type="button"
-									onclick={() => openRowSheet(lead.id)}
-									class={expandButtonClasses}
-								>
-									<Expand class="h-3.5 w-3.5 text-gray-500" />
-								</button>
-							</td>
-
-							{#if isColumnVisible('lead')}
-								<td class="w-48 px-4 py-3">
-									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'name'}
-										<input
-											type="text"
-											bind:value={editValue}
-											onkeydown={handleEditKeydown}
-											onblur={() => stopEditing(true)}
-											data-edit-input="{lead.id}-name"
-											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
-										/>
-									{:else}
-										<button
-											type="button"
-											onclick={() => openRowSheet(lead.id)}
-											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
-										>
-											{getFullName(lead) || 'Empty'}
-										</button>
-									{/if}
-								</td>
-							{/if}
-
-							{#if isColumnVisible('company')}
-								<td class="w-40 px-4 py-3">
-									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'company'}
-										<input
-											type="text"
-											bind:value={editValue}
-											onkeydown={handleEditKeydown}
-											onblur={() => stopEditing(true)}
-											data-edit-input="{lead.id}-company"
-											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
-										/>
-									{:else}
-										<button
-											type="button"
-											onclick={() => startEditing(lead.id, 'company')}
-											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
-										>
-											{displayCompany || ''}
-										</button>
-									{/if}
-								</td>
-							{/if}
-
-							{#if isColumnVisible('email')}
-								<td class="w-52 px-4 py-3">
-									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'email'}
-										<input
-											type="email"
-											bind:value={editValue}
-											onkeydown={handleEditKeydown}
-											onblur={() => stopEditing(true)}
-											data-edit-input="{lead.id}-email"
-											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
-										/>
-									{:else}
-										<button
-											type="button"
-											onclick={() => startEditing(lead.id, 'email')}
-											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
-										>
-											{displayEmail || ''}
-										</button>
-									{/if}
-								</td>
-							{/if}
-
-							{#if isColumnVisible('phone')}
-								<td class="w-36 px-4 py-3">
-									{#if editingCell?.rowId === lead.id && editingCell?.columnKey === 'phone'}
-										<input
-											type="tel"
-											bind:value={editValue}
-											onkeydown={handleEditKeydown}
-											onblur={() => stopEditing(true)}
-											data-edit-input="{lead.id}-phone"
-											class="w-full rounded bg-white px-2 py-1.5 text-sm shadow-sm ring-1 ring-gray-200 transition-shadow duration-100 outline-none focus:ring-blue-300"
-										/>
-									{:else}
-										<button
-											type="button"
-											onclick={() => startEditing(lead.id, 'phone')}
-											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
-										>
-											{displayPhone || ''}
-										</button>
-									{/if}
-								</td>
-							{/if}
-
-							{#if isColumnVisible('rating')}
-								<td class="w-28 px-4 py-3">
-									<DropdownMenu.Root>
-										<DropdownMenu.Trigger asChild>
-											{#snippet child({ props })}
-												<button
-													{...props}
-													type="button"
-													class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {getOptionStyle(
-														displayRating,
-														leadRatingOptions
-													)} transition-opacity hover:opacity-80"
-												>
-													{getOptionLabel(displayRating, leadRatingOptions) || ''}
-													<ChevronDown class="h-3 w-3 opacity-60" />
-												</button>
-											{/snippet}
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content align="start" class="w-36">
-											{#each leadRatingOptions as option (option.value)}
-												<DropdownMenu.Item
-													onclick={() => updateSelectValue(lead.id, 'rating', option.value)}
-													class="flex items-center gap-2"
-												>
-													<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
-													{option.label}
-													{#if displayRating === option.value}
-														<Check class="ml-auto h-4 w-4" />
-													{/if}
-												</DropdownMenu.Item>
-											{/each}
-										</DropdownMenu.Content>
-									</DropdownMenu.Root>
-								</td>
-							{/if}
-
-							{#if isColumnVisible('status')}
-								<td class="w-28 px-4 py-3">
-									<DropdownMenu.Root>
-										<DropdownMenu.Trigger asChild>
-											{#snippet child({ props })}
-												<button
-													{...props}
-													type="button"
-													class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {getOptionStyle(
-														displayStatus,
-														leadStatusOptions
-													)} transition-opacity hover:opacity-80"
-												>
-													{getOptionLabel(displayStatus, leadStatusOptions) || ''}
-													<ChevronDown class="h-3 w-3 opacity-60" />
-												</button>
-											{/snippet}
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content align="start" class="w-36">
-											{#each leadStatusOptions as option (option.value)}
-												<DropdownMenu.Item
-													onclick={() => updateSelectValue(lead.id, 'status', option.value)}
-													class="flex items-center gap-2"
-												>
-													<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
-													{option.label}
-													{#if displayStatus === option.value}
-														<Check class="ml-auto h-4 w-4" />
-													{/if}
-												</DropdownMenu.Item>
-											{/each}
-										</DropdownMenu.Content>
-									</DropdownMenu.Root>
-								</td>
-							{/if}
-
-							{#if isColumnVisible('created')}
-								<td class="w-36 px-4 py-3">
-									<button
-										type="button"
-										class="-mx-2 -my-1.5 rounded px-2 py-1.5 text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50"
-									>
-										{formatDate(lead.createdAt)}
-									</button>
-								</td>
-							{/if}
-						</tr>
-
-						<!-- Drop indicator line (after row) -->
-						{#if dragOverRowId === lead.id && dropPosition === 'after'}
-							<tr class="h-0">
-								<td colspan="10" class="p-0">
-									<div class={dropIndicatorClasses}></div>
-								</td>
-							</tr>
-						{/if}
-					{/each}
-				</tbody>
-			</table>
+		<!-- Desktop Table using NotionTable -->
+		<div class="hidden md:block">
+			<NotionTable
+				data={filteredLeads}
+				{columns}
+				bind:visibleColumns
+				onRowChange={handleRowChange}
+				onRowClick={(row) => openLead(row)}
+			>
+				{#snippet emptyState()}
+					<div class="flex flex-col items-center justify-center py-16 text-center">
+						<User class="mb-4 h-12 w-12 text-gray-300" />
+						<h3 class="text-lg font-medium text-gray-900">No leads found</h3>
+						<p class="mt-1 text-sm text-gray-500">Create your first lead to get started.</p>
+						<Button onclick={openCreate} class="mt-4" size="sm">
+							<Plus class="mr-2 h-4 w-4" />
+							New Lead
+						</Button>
+					</div>
+				{/snippet}
+			</NotionTable>
 
 			<!-- New row button (Notion-style) -->
 			<div class="border-t border-gray-100/60 px-4 py-2">
@@ -1102,7 +925,7 @@
 				<button
 					type="button"
 					class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30"
-					onclick={() => openRowSheet(lead.id)}
+					onclick={() => openLead(lead)}
 				>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-start justify-between gap-2">
@@ -1150,308 +973,72 @@
 	{/if}
 </div>
 
-<!-- Row Detail Sheet (Notion-style) -->
-<Sheet.Root bind:open={sheetOpen} onOpenChange={(open) => !open && closeRowSheet()}>
-	<Sheet.Content side="right" class="w-[440px] overflow-hidden p-0 sm:max-w-[440px]">
-		{#if selectedRow}
-			{@const displayFirstName = getDisplayValue(selectedRow, 'firstName') || selectedRow.firstName}
-			{@const displayLastName = getDisplayValue(selectedRow, 'lastName') || selectedRow.lastName}
-			{@const displayEmail = getDisplayValue(selectedRow, 'email') || selectedRow.email}
-			{@const displayPhone = getDisplayValue(selectedRow, 'phone') || selectedRow.phone}
-			{@const displayCompany =
-				getDisplayValue(selectedRow, 'company') ??
-				(typeof selectedRow.company === 'object' ? selectedRow.company?.name : selectedRow.company)}
-			{@const displayStatus = getDisplayValue(selectedRow, 'status') || selectedRow.status}
-			{@const displayRating = getDisplayValue(selectedRow, 'rating') || selectedRow.rating}
-			{@const displayWebsite = getDisplayValue(selectedRow, 'website') || selectedRow.website}
-			<div class="flex h-full flex-col">
-				<!-- Header with close button -->
-				<div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-					<span class="text-sm text-gray-500">Lead</span>
-					<button
-						onclick={closeRowSheet}
-						class="rounded p-1 transition-colors duration-75 hover:bg-gray-100"
-					>
-						<X class="h-4 w-4 text-gray-400" />
-					</button>
-				</div>
-
-				<!-- Scrollable content -->
-				<div class="flex-1 overflow-y-auto">
-					<!-- Title section -->
-					<div class="px-6 pt-6 pb-4">
-						<div class="mb-4 flex items-center gap-3">
-							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-lg font-medium text-white"
-							>
-								{getLeadInitials(selectedRow)}
-							</div>
-							<div>
-								<input
-									type="text"
-									value="{displayFirstName} {displayLastName}"
-									readonly
-									placeholder="Untitled"
-									class="w-full cursor-default border-0 bg-transparent text-xl font-semibold outline-none placeholder:text-gray-300 focus:ring-0"
-								/>
-							</div>
-						</div>
-					</div>
-
-					<!-- Properties section -->
-					<div class="space-y-1 px-4 pb-6">
-						<!-- Email property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Mail class="h-4 w-4 text-gray-400" />
-								Email
-							</div>
-							<div class="min-w-0 flex-1">
-								<input
-									type="email"
-									value={displayEmail || ''}
-									oninput={(e) =>
-										updateSelectedRowField(
-											'email',
-											/** @type {HTMLInputElement} */ (e.target).value
-										)}
-									placeholder="Add email"
-									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
-								/>
-							</div>
-						</div>
-
-						<!-- Phone property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Phone class="h-4 w-4 text-gray-400" />
-								Phone
-							</div>
-							<div class="min-w-0 flex-1">
-								<input
-									type="tel"
-									value={displayPhone || ''}
-									oninput={(e) =>
-										updateSelectedRowField(
-											'phone',
-											/** @type {HTMLInputElement} */ (e.target).value
-										)}
-									placeholder="Add phone"
-									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
-								/>
-							</div>
-						</div>
-
-						<!-- Company property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Building2 class="h-4 w-4 text-gray-400" />
-								Company
-							</div>
-							<div class="min-w-0 flex-1">
-								<input
-									type="text"
-									value={displayCompany || ''}
-									oninput={(e) =>
-										updateSelectedRowField(
-											'company',
-											/** @type {HTMLInputElement} */ (e.target).value
-										)}
-									placeholder="Add company"
-									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
-								/>
-							</div>
-						</div>
-
-						<!-- Website property -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Globe class="h-4 w-4 text-gray-400" />
-								Website
-							</div>
-							<div class="min-w-0 flex-1">
-								<input
-									type="url"
-									value={displayWebsite || ''}
-									oninput={(e) =>
-										updateSelectedRowField(
-											'website',
-											/** @type {HTMLInputElement} */ (e.target).value
-										)}
-									placeholder="Add website"
-									class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm transition-colors outline-none placeholder:text-gray-400 focus:bg-gray-50"
-								/>
-							</div>
-						</div>
-
-						<!-- Status property (select) -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Briefcase class="h-4 w-4 text-gray-400" />
-								Status
-							</div>
-							<div class="flex-1">
-								<DropdownMenu.Root>
-									<DropdownMenu.Trigger asChild>
-										{#snippet child({ props })}
-											<button
-												{...props}
-												type="button"
-												class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-sm {getOptionStyle(
-													displayStatus,
-													leadStatusOptions
-												)} transition-opacity hover:opacity-90"
-											>
-												<span
-													class="h-2 w-2 rounded-full {getOptionBgColor(
-														displayStatus,
-														leadStatusOptions
-													)}"
-												></span>
-												{getOptionLabel(displayStatus, leadStatusOptions) || 'Set status'}
-											</button>
-										{/snippet}
-									</DropdownMenu.Trigger>
-									<DropdownMenu.Content align="start" class="w-36">
-										{#each leadStatusOptions as option (option.value)}
-											<DropdownMenu.Item
-												onclick={() => updateSelectedRowField('status', option.value)}
-												class="flex items-center gap-2"
-											>
-												<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
-												{option.label}
-												{#if displayStatus === option.value}
-													<Check class="ml-auto h-4 w-4" />
-												{/if}
-											</DropdownMenu.Item>
-										{/each}
-									</DropdownMenu.Content>
-								</DropdownMenu.Root>
-							</div>
-						</div>
-
-						<!-- Rating property (select) -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Star class="h-4 w-4 text-gray-400" />
-								Rating
-							</div>
-							<div class="flex-1">
-								<DropdownMenu.Root>
-									<DropdownMenu.Trigger asChild>
-										{#snippet child({ props })}
-											<button
-												{...props}
-												type="button"
-												class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-sm {getOptionStyle(
-													displayRating,
-													leadRatingOptions
-												)} transition-opacity hover:opacity-90"
-											>
-												<span
-													class="h-2 w-2 rounded-full {getOptionBgColor(
-														displayRating,
-														leadRatingOptions
-													)}"
-												></span>
-												{getOptionLabel(displayRating, leadRatingOptions) || 'Set rating'}
-											</button>
-										{/snippet}
-									</DropdownMenu.Trigger>
-									<DropdownMenu.Content align="start" class="w-36">
-										{#each leadRatingOptions as option (option.value)}
-											<DropdownMenu.Item
-												onclick={() => updateSelectedRowField('rating', option.value)}
-												class="flex items-center gap-2"
-											>
-												<span class="h-2 w-2 rounded-full {option.color.split(' ')[0]}"></span>
-												{option.label}
-												{#if displayRating === option.value}
-													<Check class="ml-auto h-4 w-4" />
-												{/if}
-											</DropdownMenu.Item>
-										{/each}
-									</DropdownMenu.Content>
-								</DropdownMenu.Root>
-							</div>
-						</div>
-
-						<!-- Created date -->
-						<div
-							class="group -mx-2 flex min-h-[36px] items-center rounded px-2 transition-colors duration-75 hover:bg-gray-50/60"
-						>
-							<div class="flex w-28 shrink-0 items-center gap-2 text-[13px] text-gray-500">
-								<Calendar class="h-4 w-4 text-gray-400" />
-								Created
-							</div>
-							<div class="min-w-0 flex-1">
-								<span class="px-2 py-1 text-sm text-gray-700">
-									{formatDate(selectedRow.createdAt)}
-								</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Footer with actions -->
-				<div class="mt-auto flex items-center justify-between border-t border-gray-100 px-4 py-3">
-					<button
-						onclick={() => {
-							closeRowSheet();
-							handleRowDelete(selectedRow);
-						}}
-						class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50"
-					>
-						<Trash2 class="h-4 w-4" />
-						Delete
-					</button>
-					<Button
-						size="sm"
-						onclick={() => {
-							closeRowSheet();
-							openLead(selectedRow);
-						}}
-					>
-						Open Full View
-					</Button>
-				</div>
-			</div>
-		{/if}
-	</Sheet.Content>
-</Sheet.Root>
-
-<!-- Lead Drawer (unified view/create/edit) -->
-<LeadDrawer
+<!-- Lead Drawer (Notion-style) -->
+<NotionDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
-	lead={selectedLead}
+	data={currentDrawerData}
+	columns={drawerColumns}
+	titleKey="title"
+	titlePlaceholder={drawerMode === 'create' ? 'New Lead' : 'Untitled Lead'}
+	headerLabel={drawerMode === 'create' ? 'New Lead' : 'Lead'}
 	mode={drawerMode}
 	loading={drawerLoading}
-	options={{
-		statuses: [],
-		sources: [],
-		users: formOptions.users || [],
-		teamsList: formOptions.teamsList || [],
-		contactsList: formOptions.contactsList || [],
-		tagsList: formOptions.tagsList || []
-	}}
-	onSave={handleFormSubmit}
-	onConvert={handleConvert}
-	onDelete={handleDelete}
-	onCancel={closeDrawer}
-/>
+	onFieldChange={handleDrawerFieldChange}
+	onDelete={drawerMode !== 'create' ? handleDrawerDelete : undefined}
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		{#if drawerMode !== 'create' && drawerData?.comments?.length > 0}
+			<div class="space-y-3">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500">
+					<MessageSquare class="h-4 w-4" />
+					Activity
+				</div>
+				{#each drawerData.comments.slice(0, 3) as comment (comment.id)}
+					<div class="flex gap-3">
+						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
+							<MessageSquare class="h-4 w-4 text-gray-400" />
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="text-sm text-gray-900">
+								<span class="font-medium">{comment.author?.name || 'Unknown'}</span>
+								{' '}added a note
+							</p>
+							<p class="mt-0.5 text-xs text-gray-500">
+								{formatRelativeDate(comment.createdAt)}
+							</p>
+							<p class="mt-1 line-clamp-2 text-sm text-gray-600">
+								{comment.body}
+							</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button variant="outline" onclick={closeDrawer}>
+				Cancel
+			</Button>
+			<Button onclick={handleCreateLead} disabled={isSaving}>
+				{#if isSaving}
+					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					Creating...
+				{:else}
+					Create Lead
+				{/if}
+			</Button>
+		{:else if drawerData?.status !== 'converted'}
+			<Button variant="outline" onclick={handleDrawerConvert}>
+				<ArrowRightCircle class="mr-2 h-4 w-4" />
+				Convert
+			</Button>
+		{/if}
+	{/snippet}
+</NotionDrawer>
 
 <!-- Hidden forms for server actions -->
 <form

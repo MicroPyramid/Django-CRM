@@ -152,7 +152,7 @@
 			type: 'link'
 		},
 		{
-			href: '/tasks/list',
+			href: '/tasks',
 			label: 'Tasks',
 			icon: CheckSquare,
 			type: 'link'

@@ -18,6 +18,7 @@ from common.views.organization_views import (
     ProfileView,
 )
 from common.views.settings_views import DomainDetailView, DomainList
+from common.views.tags_views import TagsDetailView, TagsListView
 from common.views.team_views import TeamsDetailView, TeamsListView
 from common.views.user_views import (
     GetTeamsAndUsersView,
@@ -64,4 +65,7 @@ urlpatterns = [
     # Teams (merged from teams app)
     path("teams/", TeamsListView.as_view()),
     path("teams/<str:pk>/", TeamsDetailView.as_view()),
+    # Tags
+    path("tags/", TagsListView.as_view()),
+    path("tags/<str:pk>/", TagsDetailView.as_view()),
 ]
