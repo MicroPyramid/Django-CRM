@@ -16,7 +16,8 @@
 		FileText,
 		Linkedin,
 		PhoneOff,
-		Calendar
+		Calendar,
+		Tag
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -79,8 +80,14 @@
 	// Country options for drawer
 	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
 
-	// Drawer column definitions for NotionDrawer
-	const drawerColumns = [
+	/** @type {{ data: import('./$types').PageData }} */
+	let { data } = $props();
+
+	// Computed values from data (moved here for drawerColumns access)
+	const allTags = $derived(data.allTags || []);
+
+	// Drawer column definitions for CrmDrawer (derived to include allTags)
+	const drawerColumns = $derived([
 		{ key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'First name' },
 		{ key: 'lastName', label: 'Last Name', type: 'text', placeholder: 'Last name' },
 		{ key: 'email', label: 'Email', type: 'email', icon: Mail, placeholder: 'email@example.com' },
@@ -125,13 +132,21 @@
 			placeholder: 'Select country'
 		},
 		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: allTags.map((/** @type {any} */ t) => ({ id: t.id, name: t.name })),
+			emptyText: 'No tags'
+		},
+		{
 			key: 'description',
 			label: 'Notes',
 			type: 'textarea',
 			icon: FileText,
 			placeholder: 'Add notes about this contact...'
 		}
-	];
+	]);
 
 	// Column visibility state
 	let visibleColumns = $state(columns.map((c) => c.key));
@@ -167,10 +182,7 @@
 		}
 	}
 
-	/** @type {{ data: import('./$types').PageData }} */
-	let { data } = $props();
-
-	// Computed values from data
+	// Computed values from data (contacts and owners)
 	const contacts = $derived(data.contacts || []);
 	const owners = $derived(data.owners || []);
 
@@ -199,7 +211,8 @@
 		state: '',
 		postcode: '',
 		country: '',
-		description: ''
+		description: '',
+		tags: /** @type {string[]} */ ([])
 	};
 
 	// Drawer form data - mutable copy for editing
@@ -211,7 +224,11 @@
 			if (drawerMode === 'create') {
 				drawerFormData = { ...emptyContact };
 			} else if (selectedContact) {
-				drawerFormData = { ...selectedContact };
+				drawerFormData = {
+					...selectedContact,
+					// Extract tag IDs from tag objects
+					tags: (selectedContact.tags || []).map((/** @type {any} */ t) => t.id)
+				};
 			}
 		}
 	});
@@ -338,7 +355,8 @@
 		postcode: '',
 		country: '',
 		description: '',
-		ownerId: ''
+		ownerId: '',
+		tags: /** @type {string[]} */ ([])
 	});
 
 	/**
@@ -385,6 +403,7 @@
 			formState.postcode = field === 'postcode' ? value : drawerFormData.postcode || '';
 			formState.country = field === 'country' ? value : drawerFormData.country || '';
 			formState.description = field === 'description' ? value : drawerFormData.description || '';
+			formState.tags = field === 'tags' ? value : drawerFormData.tags || [];
 
 			await tick();
 			updateForm.requestSubmit();
@@ -413,6 +432,7 @@
 		formState.postcode = drawerFormData.postcode || '';
 		formState.country = drawerFormData.country || '';
 		formState.description = drawerFormData.description || '';
+		formState.tags = drawerFormData.tags || [];
 
 		await tick();
 		createForm.requestSubmit();
@@ -651,6 +671,7 @@
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="description" value={formState.description} />
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form
@@ -677,6 +698,7 @@
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="description" value={formState.description} />
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form

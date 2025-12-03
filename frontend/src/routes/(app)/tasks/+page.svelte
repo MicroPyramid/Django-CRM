@@ -19,7 +19,11 @@
 		Users,
 		User,
 		Eye,
-		FileText
+		FileText,
+		Target,
+		Briefcase,
+		UserPlus,
+		Tag
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -40,9 +44,7 @@
 	];
 
 	const priorityOptions = [
-		{ value: 'Urgent', label: 'Urgent', color: 'bg-red-100 text-red-700' },
-		{ value: 'High', label: 'High', color: 'bg-orange-100 text-orange-700' },
-		{ value: 'Normal', label: 'Normal', color: 'bg-blue-100 text-blue-700' },
+		{ value: 'High', label: 'High', color: 'bg-red-100 text-red-700' },
 		{ value: 'Medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
 		{ value: 'Low', label: 'Low', color: 'bg-gray-100 text-gray-600' }
 	];
@@ -55,8 +57,12 @@
 		priority: 'Medium',
 		dueDate: '',
 		accountId: '',
+		opportunityId: '',
+		caseId: '',
+		leadId: '',
 		assignedTo: /** @type {string[]} */ ([]),
-		teams: /** @type {string[]} */ ([])
+		teams: /** @type {string[]} */ ([]),
+		tags: /** @type {string[]} */ ([])
 	};
 
 	/**
@@ -90,7 +96,33 @@
 		},
 		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
 		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-32' },
-		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' }
+		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
+		{
+			key: 'teams',
+			label: 'Teams',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'users',
+			getValue: (/** @type {any} */ row) => {
+				const teams = row.teams || [];
+				if (teams.length === 0) return null;
+				if (teams.length === 1) return teams[0];
+				return { name: `${teams.length} teams` };
+			}
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'relation',
+			width: 'w-32',
+			relationIcon: 'tag',
+			getValue: (/** @type {any} */ row) => {
+				const tags = row.tags || [];
+				if (tags.length === 0) return null;
+				if (tags.length === 1) return tags[0];
+				return { name: `${tags.length} tags` };
+			}
+		}
 	];
 
 	// Column visibility state
@@ -152,6 +184,10 @@
 	const users = $derived(data.allUsers || []);
 	const contacts = $derived(data.allContacts || []);
 	const teams = $derived(data.allTeams || []);
+	const opportunities = $derived(data.allOpportunities || []);
+	const cases = $derived(data.allCases || []);
+	const leads = $derived(data.allLeads || []);
+	const allTags = $derived(data.allTags || []);
 
 	// Filter/search/sort state using hook
 	const list = useListFilters({
@@ -213,9 +249,13 @@
 		priority: 'Medium',
 		dueDate: '',
 		accountId: '',
+		opportunityId: '',
+		caseId: '',
+		leadId: '',
 		assignedTo: /** @type {string[]} */ ([]),
 		contacts: /** @type {string[]} */ ([]),
-		teams: /** @type {string[]} */ ([])
+		teams: /** @type {string[]} */ ([]),
+		tags: /** @type {string[]} */ ([])
 	});
 
 	/**
@@ -236,9 +276,13 @@
 		formState.priority = field === 'priority' ? value : row.priority || 'Medium';
 		formState.dueDate = row.dueDate ? row.dueDate.split('T')[0] : '';
 		formState.accountId = row.account?.id || '';
+		formState.opportunityId = row.opportunity?.id || '';
+		formState.caseId = row.case_?.id || '';
+		formState.leadId = row.lead?.id || '';
 		formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
 		formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
 		formState.teams = (row.teams || []).map((/** @type {any} */ t) => t.id);
+		formState.tags = (row.tags || []).map((/** @type {any} */ t) => t.id);
 
 		await tick();
 		updateForm.requestSubmit();
@@ -290,9 +334,13 @@
 			priority: 'Medium',
 			dueDate: '',
 			accountId: '',
+			opportunityId: '',
+			caseId: '',
+			leadId: '',
 			assignedTo: [],
 			contacts: [],
-			teams: []
+			teams: [],
+			tags: []
 		};
 		sheetOpen = true;
 	}
@@ -313,9 +361,13 @@
 				priority: task.priority || 'Medium',
 				dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
 				accountId: task.account?.id || '',
+				opportunityId: task.opportunity?.id || '',
+				caseId: task.case_?.id || '',
+				leadId: task.lead?.id || '',
 				assignedTo: (task.assignedTo || []).map((/** @type {any} */ a) => a.id),
 				contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
-				teams: (task.teams || []).map((/** @type {any} */ t) => t.id)
+				teams: (task.teams || []).map((/** @type {any} */ t) => t.id),
+				tags: (task.tags || []).map((/** @type {any} */ t) => t.id)
 			};
 		}
 		sheetOpen = true;
@@ -508,6 +560,29 @@
 		teams.map((/** @type {any} */ t) => ({ value: t.id, label: t.name }))
 	);
 
+	// Opportunity options for drawer
+	const opportunityOptions = $derived([
+		{ value: '', label: 'None' },
+		...opportunities.map((/** @type {any} */ o) => ({ value: o.id, label: o.name }))
+	]);
+
+	// Case options for drawer
+	const caseOptions = $derived([
+		{ value: '', label: 'None' },
+		...cases.map((/** @type {any} */ c) => ({ value: c.id, label: c.name }))
+	]);
+
+	// Lead options for drawer
+	const leadOptions = $derived([
+		{ value: '', label: 'None' },
+		...leads.map((/** @type {any} */ l) => ({ value: l.id, label: l.name }))
+	]);
+
+	// Tag options for drawer
+	const tagOptions = $derived(
+		allTags.map((/** @type {any} */ t) => ({ value: t.id, label: t.name }))
+	);
+
 	// Drawer columns for NotionDrawer (derived to use dynamic options)
 	const drawerColumns = $derived([
 		{ key: 'subject', label: 'Subject', type: 'text', icon: FileText },
@@ -515,8 +590,12 @@
 		{ key: 'priority', label: 'Priority', type: 'select', icon: Flag, options: priorityOptions },
 		{ key: 'dueDate', label: 'Due Date', type: 'date', icon: Calendar },
 		{ key: 'accountId', label: 'Account', type: 'select', icon: Building2, options: accountOptions },
+		{ key: 'opportunityId', label: 'Opportunity', type: 'select', icon: Target, options: opportunityOptions },
+		{ key: 'caseId', label: 'Case', type: 'select', icon: Briefcase, options: caseOptions },
+		{ key: 'leadId', label: 'Lead', type: 'select', icon: UserPlus, options: leadOptions },
 		{ key: 'assignedTo', label: 'Assigned To', type: 'multiselect', icon: User, options: userOptions },
 		{ key: 'teams', label: 'Teams', type: 'multiselect', icon: Users, options: teamOptions },
+		{ key: 'tags', label: 'Tags', type: 'multiselect', icon: Tag, options: tagOptions },
 		{ key: 'description', label: 'Description', type: 'textarea' }
 	]);
 
@@ -532,8 +611,12 @@
 			priority: formState.priority,
 			dueDate: formState.dueDate,
 			accountId: formState.accountId,
+			opportunityId: formState.opportunityId,
+			caseId: formState.caseId,
+			leadId: formState.leadId,
 			assignedTo: formState.assignedTo,
-			teams: formState.teams
+			teams: formState.teams,
+			tags: formState.tags
 		};
 	});
 
@@ -976,9 +1059,13 @@
 	<input type="hidden" name="priority" value={formState.priority} />
 	<input type="hidden" name="dueDate" value={formState.dueDate} />
 	<input type="hidden" name="accountId" value={formState.accountId} />
+	<input type="hidden" name="opportunityId" value={formState.opportunityId} />
+	<input type="hidden" name="caseId" value={formState.caseId} />
+	<input type="hidden" name="leadId" value={formState.leadId} />
 	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
 	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
 	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form
@@ -995,9 +1082,13 @@
 	<input type="hidden" name="priority" value={formState.priority} />
 	<input type="hidden" name="dueDate" value={formState.dueDate} />
 	<input type="hidden" name="accountId" value={formState.accountId} />
+	<input type="hidden" name="opportunityId" value={formState.opportunityId} />
+	<input type="hidden" name="caseId" value={formState.caseId} />
+	<input type="hidden" name="leadId" value={formState.leadId} />
 	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
 	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
 	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form

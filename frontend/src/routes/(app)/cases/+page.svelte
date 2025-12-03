@@ -26,7 +26,7 @@
 	import {
 		caseStatusOptions,
 		caseTypeOptions,
-		priorityOptions
+		casePriorityOptions
 	} from '$lib/utils/table-helpers.js';
 	import { useDrawerState, useListFilters } from '$lib/hooks';
 
@@ -64,7 +64,7 @@
 			width: 'w-36',
 			getValue: (/** @type {any} */ row) => row.owner
 		},
-		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
+		{ key: 'priority', label: 'Priority', type: 'select', options: casePriorityOptions, width: 'w-28' },
 		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
 		{ key: 'createdAt', label: 'Created', type: 'date', width: 'w-32', editable: false }
 	];
@@ -195,7 +195,7 @@
 			label: 'Priority',
 			type: 'select',
 			icon: Flag,
-			options: priorityOptions
+			options: casePriorityOptions
 		},
 		{
 			key: 'description',

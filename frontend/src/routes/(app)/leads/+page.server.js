@@ -174,6 +174,7 @@ export const actions = {
 			const form = await request.formData();
 
 			// Core Information
+			const salutation = form.get('salutation')?.toString().trim() || '';
 			const firstName = form.get('firstName')?.toString().trim();
 			const lastName = form.get('lastName')?.toString().trim();
 			const email = form.get('email')?.toString().trim();
@@ -209,9 +210,36 @@ export const actions = {
 			const description = form.get('description')?.toString().trim() || '';
 			const ownerId = form.get('ownerId')?.toString();
 
+			// Assignment (multi-select arrays)
+			const assignedToRaw = form.get('assignedTo')?.toString() || '[]';
+			const teamsRaw = form.get('teams')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assignedTo = [];
+			/** @type {string[]} */
+			let teams = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assignedTo = JSON.parse(assignedToRaw);
+				teams = JSON.parse(teamsRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
 			if (!title) {
 				return fail(400, { error: 'Lead title is required.' });
 			}
+
+			// Use assignedTo array if provided, otherwise fall back to ownerId
+			const finalAssignedTo = assignedTo.length > 0 ? assignedTo : (ownerId ? [ownerId] : []);
 
 			const leadData = {
 				// Core Information (title is required, others optional)
@@ -219,11 +247,15 @@ export const actions = {
 				description,
 				// Sales Pipeline
 				status,
-				assigned_to: ownerId ? [ownerId] : [],
+				assigned_to: finalAssignedTo,
+				teams: teams,
+				contacts: contacts,
+				tags: tags,
 				org: locals.org.id
 			};
 
 			// Only include optional fields if they have values
+			if (salutation) leadData.salutation = salutation;
 			if (firstName) leadData.first_name = firstName;
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;
@@ -275,6 +307,7 @@ export const actions = {
 			const leadId = form.get('leadId')?.toString();
 
 			// Core Information
+			const salutation = form.get('salutation')?.toString().trim() || '';
 			const firstName = form.get('firstName')?.toString().trim();
 			const lastName = form.get('lastName')?.toString().trim();
 			const email = form.get('email')?.toString().trim();
@@ -310,19 +343,50 @@ export const actions = {
 			const description = form.get('description')?.toString().trim() || '';
 			const ownerId = form.get('ownerId')?.toString();
 
+			// Assignment (multi-select arrays)
+			const assignedToRaw = form.get('assignedTo')?.toString() || '[]';
+			const teamsRaw = form.get('teams')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assignedTo = [];
+			/** @type {string[]} */
+			let teams = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assignedTo = JSON.parse(assignedToRaw);
+				teams = JSON.parse(teamsRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
 			if (!leadId || !title) {
 				return fail(400, { error: 'Lead ID and title are required.' });
 			}
+
+			// Use assignedTo array if provided, otherwise fall back to ownerId
+			const finalAssignedTo = assignedTo.length > 0 ? assignedTo : (ownerId ? [ownerId] : []);
 
 			const leadData = {
 				// Core Information (title is required, others optional)
 				title,
 				description,
-				assigned_to: ownerId ? [ownerId] : [],
+				assigned_to: finalAssignedTo,
+				teams: teams,
+				contacts: contacts,
+				tags: tags,
 				org: locals.org.id
 			};
 
 			// Only include optional fields if they have values
+			if (salutation) leadData.salutation = salutation;
 			if (firstName) leadData.first_name = firstName;
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;

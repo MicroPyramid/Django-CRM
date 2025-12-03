@@ -31,15 +31,28 @@ export async function load({ locals, cookies }) {
 			order: 'desc'
 		});
 
-		// Fetch tasks, users, accounts, contacts, and teams in parallel
-		const [tasksResponse, usersResponse, accountsResponse, contactsResponse, teamsResponse] =
-			await Promise.all([
-				apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org }),
-				apiRequest('/users/', {}, { cookies, org }),
-				apiRequest('/accounts/', {}, { cookies, org }),
-				apiRequest('/contacts/', {}, { cookies, org }),
-				apiRequest('/teams/', {}, { cookies, org })
-			]);
+		// Fetch tasks, users, accounts, contacts, teams, opportunities, cases, leads, and tags in parallel
+		const [
+			tasksResponse,
+			usersResponse,
+			accountsResponse,
+			contactsResponse,
+			teamsResponse,
+			opportunitiesResponse,
+			casesResponse,
+			leadsResponse,
+			tagsResponse
+		] = await Promise.all([
+			apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org }),
+			apiRequest('/users/', {}, { cookies, org }),
+			apiRequest('/accounts/', {}, { cookies, org }),
+			apiRequest('/contacts/', {}, { cookies, org }),
+			apiRequest('/teams/', {}, { cookies, org }),
+			apiRequest('/opportunities/', {}, { cookies, org }),
+			apiRequest('/cases/', {}, { cookies, org }),
+			apiRequest('/leads/', {}, { cookies, org }),
+			apiRequest('/tags/', {}, { cookies, org })
+		]);
 
 		// Handle Django response structure
 		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -83,11 +96,44 @@ export async function load({ locals, cookies }) {
 				name: t.name
 			})),
 
+			// Tags (M2M)
+			tags: (task.tags || []).map((t) => ({
+				id: t.id,
+				name: t.name
+			})),
+
 			// Account (FK)
 			account: task.account
 				? {
 						id: task.account.id || task.account,
 						name: task.account.name || task.account
+					}
+				: null,
+
+			// Opportunity (FK)
+			opportunity: task.opportunity
+				? {
+						id: task.opportunity.id || task.opportunity,
+						name: task.opportunity.name || 'Opportunity'
+					}
+				: null,
+
+			// Case (FK)
+			case_: task.case
+				? {
+						id: task.case.id || task.case,
+						name: task.case.name || 'Case'
+					}
+				: null,
+
+			// Lead (FK)
+			lead: task.lead
+				? {
+						id: task.lead.id || task.lead,
+						name:
+							task.lead.first_name || task.lead.last_name
+								? `${task.lead.first_name || ''} ${task.lead.last_name || ''}`.trim()
+								: task.lead.title || 'Lead'
 					}
 				: null,
 
@@ -155,12 +201,79 @@ export async function load({ locals, cookies }) {
 			name: team.name
 		}));
 
+		// Transform opportunities list
+		let allOpportunitiesList = [];
+		if (opportunitiesResponse.opportunities) {
+			allOpportunitiesList = opportunitiesResponse.opportunities;
+		} else if (opportunitiesResponse.results) {
+			allOpportunitiesList = opportunitiesResponse.results;
+		} else if (Array.isArray(opportunitiesResponse)) {
+			allOpportunitiesList = opportunitiesResponse;
+		}
+
+		const allOpportunities = allOpportunitiesList.map((opp) => ({
+			id: opp.id,
+			name: opp.name
+		}));
+
+		// Transform cases list
+		let allCasesList = [];
+		if (casesResponse.cases) {
+			allCasesList = casesResponse.cases;
+		} else if (casesResponse.results) {
+			allCasesList = casesResponse.results;
+		} else if (Array.isArray(casesResponse)) {
+			allCasesList = casesResponse;
+		}
+
+		const allCases = allCasesList.map((c) => ({
+			id: c.id,
+			name: c.name
+		}));
+
+		// Transform leads list
+		let allLeadsList = [];
+		if (leadsResponse.leads) {
+			allLeadsList = leadsResponse.leads;
+		} else if (leadsResponse.results) {
+			allLeadsList = leadsResponse.results;
+		} else if (Array.isArray(leadsResponse)) {
+			allLeadsList = leadsResponse;
+		}
+
+		const allLeads = allLeadsList.map((lead) => ({
+			id: lead.id,
+			name:
+				lead.first_name || lead.last_name
+					? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
+					: lead.title || 'Lead'
+		}));
+
+		// Transform tags list
+		let allTagsList = [];
+		if (tagsResponse.tags) {
+			allTagsList = tagsResponse.tags;
+		} else if (tagsResponse.results) {
+			allTagsList = tagsResponse.results;
+		} else if (Array.isArray(tagsResponse)) {
+			allTagsList = tagsResponse;
+		}
+
+		const allTags = allTagsList.map((tag) => ({
+			id: tag.id,
+			name: tag.name
+		}));
+
 		return {
 			tasks: transformedTasks,
 			allUsers,
 			allAccounts: transformedAccounts,
 			allContacts: transformedContacts,
-			allTeams
+			allTeams,
+			allOpportunities,
+			allCases,
+			allLeads,
+			allTags
 		};
 	} catch (err) {
 		console.error('Error loading tasks from API:', err);
@@ -181,15 +294,20 @@ export const actions = {
 			const priority = form.get('priority')?.toString() || 'Medium';
 			const dueDate = form.get('dueDate')?.toString() || null;
 			const accountId = form.get('accountId')?.toString() || null;
+			const opportunityId = form.get('opportunityId')?.toString() || null;
+			const caseId = form.get('caseId')?.toString() || null;
+			const leadId = form.get('leadId')?.toString() || null;
 
 			// Parse array fields (sent as JSON strings)
 			const assignedToJson = form.get('assignedTo')?.toString() || '[]';
 			const contactsJson = form.get('contacts')?.toString() || '[]';
 			const teamsJson = form.get('teams')?.toString() || '[]';
+			const tagsJson = form.get('tags')?.toString() || '[]';
 
 			const assignedTo = JSON.parse(assignedToJson);
 			const contacts = JSON.parse(contactsJson);
 			const teams = JSON.parse(teamsJson);
+			const tags = JSON.parse(tagsJson);
 
 			if (!subject) {
 				return { success: false, error: 'Subject is required' };
@@ -205,7 +323,11 @@ export const actions = {
 				assigned_to: assignedTo,
 				contacts: contacts,
 				teams: teams,
-				account: accountId || null
+				tags: tags,
+				account: accountId || null,
+				opportunity: opportunityId || null,
+				case: caseId || null,
+				lead: leadId || null
 			};
 
 			await apiRequest(
@@ -236,15 +358,20 @@ export const actions = {
 			const priority = form.get('priority')?.toString() || 'Medium';
 			const dueDate = form.get('dueDate')?.toString() || null;
 			const accountId = form.get('accountId')?.toString() || null;
+			const opportunityId = form.get('opportunityId')?.toString() || null;
+			const caseId = form.get('caseId')?.toString() || null;
+			const leadId = form.get('leadId')?.toString() || null;
 
 			// Parse array fields (sent as JSON strings)
 			const assignedToJson = form.get('assignedTo')?.toString() || '[]';
 			const contactsJson = form.get('contacts')?.toString() || '[]';
 			const teamsJson = form.get('teams')?.toString() || '[]';
+			const tagsJson = form.get('tags')?.toString() || '[]';
 
 			const assignedTo = JSON.parse(assignedToJson);
 			const contacts = JSON.parse(contactsJson);
 			const teams = JSON.parse(teamsJson);
+			const tags = JSON.parse(tagsJson);
 
 			if (!taskId || !subject) {
 				return { success: false, error: 'Task ID and subject are required' };
@@ -260,7 +387,11 @@ export const actions = {
 				assigned_to: assignedTo,
 				contacts: contacts,
 				teams: teams,
-				account: accountId || null
+				tags: tags,
+				account: accountId || null,
+				opportunity: opportunityId || null,
+				case: caseId || null,
+				lead: leadId || null
 			};
 
 			await apiRequest(

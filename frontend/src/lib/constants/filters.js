@@ -55,9 +55,7 @@ export const CASE_TYPES = [
 /** @type {{ value: string, label: string }[]} */
 export const PRIORITIES = [
 	{ value: 'ALL', label: 'All Priorities' },
-	{ value: 'Urgent', label: 'Urgent' },
 	{ value: 'High', label: 'High' },
-	{ value: 'Normal', label: 'Normal' },
 	{ value: 'Medium', label: 'Medium' },
 	{ value: 'Low', label: 'Low' }
 ];

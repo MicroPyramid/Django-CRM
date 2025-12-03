@@ -107,11 +107,52 @@
 			type: 'date',
 			width: 'w-36',
 			editable: false
+		},
+		{
+			key: 'title',
+			label: 'Title',
+			type: 'text',
+			width: 'w-36',
+			canHide: true,
+			emptyText: ''
+		},
+		{
+			key: 'contactTitle',
+			label: 'Job Title',
+			type: 'text',
+			width: 'w-36',
+			canHide: true,
+			emptyText: ''
+		},
+		{
+			key: 'leadSource',
+			label: 'Source',
+			type: 'select',
+			width: 'w-28',
+			canHide: true
+		},
+		{
+			key: 'industry',
+			label: 'Industry',
+			type: 'select',
+			width: 'w-32',
+			canHide: true,
+			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700' }))
+		},
+		{
+			key: 'owner',
+			label: 'Assigned',
+			type: 'relation',
+			width: 'w-36',
+			canHide: true,
+			relationIcon: 'user',
+			getValue: (row) => row.owner?.name || '',
+			emptyText: ''
 		}
 	];
 
-	// Visible columns state
-	let visibleColumns = $state(columns.map((c) => c.key));
+	// Visible columns state - default to hiding new columns
+	let visibleColumns = $state(columns.filter((c) => !['title', 'contactTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
 
 	// Source options for leads
 	const sourceOptions = [
@@ -124,9 +165,25 @@
 		{ value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-700' }
 	];
 
+	// Salutation options
+	const salutationOptions = [
+		{ value: 'Mr', label: 'Mr', color: 'bg-gray-100 text-gray-700' },
+		{ value: 'Mrs', label: 'Mrs', color: 'bg-gray-100 text-gray-700' },
+		{ value: 'Ms', label: 'Ms', color: 'bg-gray-100 text-gray-700' },
+		{ value: 'Dr', label: 'Dr', color: 'bg-gray-100 text-gray-700' },
+		{ value: 'Prof', label: 'Prof', color: 'bg-gray-100 text-gray-700' }
+	];
+
 	// Full drawer columns for NotionDrawer (all lead fields)
 	const drawerColumns = [
 		// Contact Information
+		{
+			key: 'salutation',
+			label: 'Salutation',
+			type: 'select',
+			icon: User,
+			options: salutationOptions
+		},
 		{
 			key: 'email',
 			label: 'Email',
@@ -140,6 +197,13 @@
 			type: 'text',
 			icon: Phone,
 			placeholder: 'Add phone'
+		},
+		{
+			key: 'contactTitle',
+			label: 'Job Title',
+			type: 'text',
+			icon: Briefcase,
+			placeholder: 'Add job title'
 		},
 		{
 			key: 'company',
@@ -247,6 +311,20 @@
 			placeholder: 'City'
 		},
 		{
+			key: 'state',
+			label: 'State',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'State/Province'
+		},
+		{
+			key: 'postcode',
+			label: 'Postal Code',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Postal code'
+		},
+		{
 			key: 'country',
 			label: 'Country',
 			type: 'select',
@@ -268,6 +346,35 @@
 			type: 'date',
 			icon: Calendar,
 			editable: false
+		},
+		// Assignment (multi-select fields - options populated dynamically)
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: Users,
+			options: []
+		},
+		{
+			key: 'teams',
+			label: 'Teams',
+			type: 'multiselect',
+			icon: Users,
+			options: []
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: UserPlus,
+			options: []
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: []
 		}
 	];
 
@@ -334,10 +441,12 @@
 	// For create mode - temporary form data
 	let createFormData = $state(/** @type {Record<string, any>} */ ({
 		title: '',
+		salutation: '',
 		firstName: '',
 		lastName: '',
 		email: '',
 		phone: '',
+		contactTitle: '',
 		company: '',
 		website: '',
 		linkedinUrl: '',
@@ -352,12 +461,29 @@
 		nextFollowUp: '',
 		addressLine: '',
 		city: '',
+		state: '',
+		postcode: '',
 		country: '',
-		description: ''
+		description: '',
+		assignedTo: [],
+		teams: [],
+		contacts: [],
+		tags: []
 	}));
 
 	// Current drawer data (either selected lead or create form data)
 	const currentDrawerData = $derived(drawerMode === 'create' ? createFormData : drawerData);
+
+	// Drawer columns with dynamic options for multi-selects
+	const drawerColumnsWithOptions = $derived(
+		drawerColumns.map((col) => {
+			if (col.key === 'assignedTo') return { ...col, options: formOptions.users || [] };
+			if (col.key === 'teams') return { ...col, options: formOptions.teamsList || [] };
+			if (col.key === 'contacts') return { ...col, options: formOptions.contactsList || [] };
+			if (col.key === 'tags') return { ...col, options: formOptions.tagsList || [] };
+			return col;
+		})
+	);
 
 	// URL sync
 	$effect(() => {
@@ -416,10 +542,12 @@
 		// Reset create form data
 		createFormData = {
 			title: '',
+			salutation: '',
 			firstName: '',
 			lastName: '',
 			email: '',
 			phone: '',
+			contactTitle: '',
 			company: '',
 			website: '',
 			linkedinUrl: '',
@@ -434,8 +562,14 @@
 			nextFollowUp: '',
 			addressLine: '',
 			city: '',
+			state: '',
+			postcode: '',
 			country: '',
-			description: ''
+			description: '',
+			assignedTo: [],
+			teams: [],
+			contacts: [],
+			tags: []
 		};
 		drawerData = null;
 		drawerMode = 'create';
@@ -541,11 +675,13 @@
 		isSaving = true;
 		try {
 			// Populate form state
+			formState.salutation = createFormData.salutation || '';
 			formState.title = createFormData.title || '';
 			formState.firstName = createFormData.firstName || '';
 			formState.lastName = createFormData.lastName || '';
 			formState.email = createFormData.email || '';
 			formState.phone = createFormData.phone || '';
+			formState.contactTitle = createFormData.contactTitle || '';
 			formState.company = createFormData.company || '';
 			formState.website = createFormData.website || '';
 			formState.linkedinUrl = createFormData.linkedinUrl || '';
@@ -560,8 +696,14 @@
 			formState.nextFollowUp = createFormData.nextFollowUp || '';
 			formState.addressLine = createFormData.addressLine || '';
 			formState.city = createFormData.city || '';
+			formState.state = createFormData.state || '';
+			formState.postcode = createFormData.postcode || '';
 			formState.country = createFormData.country || '';
 			formState.description = createFormData.description || '';
+			formState.assignedTo = createFormData.assignedTo || [];
+			formState.teams = createFormData.teams || [];
+			formState.contacts = createFormData.contacts || [];
+			formState.tags = createFormData.tags || [];
 
 			await tick();
 			createForm.requestSubmit();
@@ -610,6 +752,7 @@
 	let formState = $state({
 		leadId: '',
 		// Core Information
+		salutation: '',
 		firstName: '',
 		lastName: '',
 		email: '',
@@ -637,7 +780,12 @@
 		lastContacted: '',
 		nextFollowUp: '',
 		description: '',
-		ownerId: ''
+		// Assignment
+		ownerId: '',
+		assignedTo: /** @type {string[]} */ ([]),
+		teams: /** @type {string[]} */ ([]),
+		contacts: /** @type {string[]} */ ([]),
+		tags: /** @type {string[]} */ ([])
 	});
 
 	/**
@@ -749,6 +897,7 @@
 	function leadToFormState(lead) {
 		return {
 			leadId: lead.id,
+			salutation: lead.salutation || '',
 			firstName: lead.firstName || '',
 			lastName: lead.lastName || '',
 			email: lead.email || '',
@@ -773,7 +922,11 @@
 			lastContacted: lead.lastContacted || '',
 			nextFollowUp: lead.nextFollowUp || '',
 			description: lead.description || '',
-			ownerId: lead.owner?.id || ''
+			ownerId: lead.owner?.id || '',
+			assignedTo: lead.assignedTo || [],
+			teams: lead.teams || [],
+			contacts: lead.contacts || [],
+			tags: lead.tags || []
 		};
 	}
 
@@ -978,7 +1131,7 @@
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
 	data={currentDrawerData}
-	columns={drawerColumns}
+	columns={drawerColumnsWithOptions}
 	titleKey="title"
 	titlePlaceholder={drawerMode === 'create' ? 'New Lead' : 'Untitled Lead'}
 	headerLabel={drawerMode === 'create' ? 'New Lead' : 'Lead'}
@@ -1049,6 +1202,7 @@
 	class="hidden"
 >
 	<!-- Core Information -->
+	<input type="hidden" name="salutation" value={formState.salutation} />
 	<input type="hidden" name="firstName" value={formState.firstName} />
 	<input type="hidden" name="lastName" value={formState.lastName} />
 	<input type="hidden" name="email" value={formState.email} />
@@ -1076,7 +1230,12 @@
 	<input type="hidden" name="lastContacted" value={formState.lastContacted} />
 	<input type="hidden" name="nextFollowUp" value={formState.nextFollowUp} />
 	<input type="hidden" name="description" value={formState.description} />
+	<!-- Assignment -->
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
+	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
+	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form
@@ -1088,6 +1247,7 @@
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />
 	<!-- Core Information -->
+	<input type="hidden" name="salutation" value={formState.salutation} />
 	<input type="hidden" name="firstName" value={formState.firstName} />
 	<input type="hidden" name="lastName" value={formState.lastName} />
 	<input type="hidden" name="email" value={formState.email} />
@@ -1115,7 +1275,12 @@
 	<input type="hidden" name="lastContacted" value={formState.lastContacted} />
 	<input type="hidden" name="nextFollowUp" value={formState.nextFollowUp} />
 	<input type="hidden" name="description" value={formState.description} />
+	<!-- Assignment -->
 	<input type="hidden" name="ownerId" value={formState.ownerId} />
+	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
+	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
 <form

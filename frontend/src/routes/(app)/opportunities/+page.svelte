@@ -11,11 +11,15 @@
 		Calendar,
 		Percent,
 		User,
+		Users,
 		Briefcase,
 		Globe,
 		FileText,
 		Trophy,
-		XCircle
+		XCircle,
+		Banknote,
+		Contact,
+		Tags
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -26,7 +30,8 @@
 	import {
 		OPPORTUNITY_STAGES as stages,
 		OPPORTUNITY_TYPES,
-		OPPORTUNITY_SOURCES
+		OPPORTUNITY_SOURCES,
+		CURRENCY_CODES
 	} from '$lib/constants/filters.js';
 
 	const STORAGE_KEY = 'opportunities-crm-columns';
@@ -55,61 +60,13 @@
 		color: 'bg-indigo-100 text-indigo-700'
 	}));
 
-	// Drawer column definitions for NotionDrawer
-	const drawerColumns = [
-		{ key: 'name', label: 'Name', type: 'text' },
-		{
-			key: 'stage',
-			label: 'Stage',
-			type: 'select',
-			icon: Target,
-			options: stageOptions
-		},
-		{
-			key: 'opportunityType',
-			label: 'Type',
-			type: 'select',
-			icon: Briefcase,
-			options: typeOptions,
-			placeholder: 'Select type'
-		},
-		{
-			key: 'amount',
-			label: 'Amount',
-			type: 'number',
-			icon: DollarSign,
-			prefix: '$',
-			placeholder: '0'
-		},
-		{
-			key: 'probability',
-			label: 'Probability',
-			type: 'number',
-			icon: Percent,
-			placeholder: '0'
-		},
-		{
-			key: 'closedOn',
-			label: 'Close Date',
-			type: 'date',
-			icon: Calendar
-		},
-		{
-			key: 'leadSource',
-			label: 'Lead Source',
-			type: 'select',
-			icon: Globe,
-			options: sourceOptions,
-			placeholder: 'Select source'
-		},
-		{
-			key: 'description',
-			label: 'Notes',
-			type: 'textarea',
-			icon: FileText,
-			placeholder: 'Add notes...'
-		}
-	];
+	// Currency options
+	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
+		value: c.value,
+		label: c.label,
+		color: 'bg-amber-100 text-amber-700'
+	}));
+
 
 	/**
 	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
@@ -172,8 +129,156 @@
 	const formOptions = $derived({
 		accounts: data.options?.accounts || [],
 		contacts: data.options?.contacts || [],
-		tags: data.options?.tags || []
+		tags: data.options?.tags || [],
+		users: data.options?.users || [],
+		teams: data.options?.teams || []
 	});
+
+	// Account options for select field
+	const accountOptions = $derived(
+		formOptions.accounts.map((a) => ({
+			value: a.id,
+			label: a.name
+		}))
+	);
+
+	// Contact options for multiselect (uses id/name format)
+	const contactOptions = $derived(
+		formOptions.contacts.map((c) => ({
+			id: c.id,
+			name: c.name || c.email,
+			email: c.email
+		}))
+	);
+
+	// User options for assignedTo multiselect (uses id/name format)
+	const userOptions = $derived(
+		formOptions.users.map((u) => ({
+			id: u.id,
+			name: u.name || u.email,
+			email: u.email
+		}))
+	);
+
+	// Team options for teams multiselect (uses id/name format)
+	const teamOptions = $derived(
+		formOptions.teams.map((t) => ({
+			id: t.id,
+			name: t.name
+		}))
+	);
+
+	// Tag options for tags multiselect (uses id/name format)
+	const tagOptions = $derived(
+		formOptions.tags.map((t) => ({
+			id: t.id,
+			name: t.name
+		}))
+	);
+
+	// Drawer column definitions for CrmDrawer (derived since some options come from data)
+	const drawerColumns = $derived([
+		{ key: 'name', label: 'Name', type: 'text' },
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'select',
+			icon: Building2,
+			options: accountOptions,
+			placeholder: 'Select account'
+		},
+		{
+			key: 'stage',
+			label: 'Stage',
+			type: 'select',
+			icon: Target,
+			options: stageOptions
+		},
+		{
+			key: 'opportunityType',
+			label: 'Type',
+			type: 'select',
+			icon: Briefcase,
+			options: typeOptions,
+			placeholder: 'Select type'
+		},
+		{
+			key: 'amount',
+			label: 'Amount',
+			type: 'number',
+			icon: DollarSign,
+			prefix: '$',
+			placeholder: '0'
+		},
+		{
+			key: 'currency',
+			label: 'Currency',
+			type: 'select',
+			icon: Banknote,
+			options: currencyOptions,
+			placeholder: 'Select currency'
+		},
+		{
+			key: 'probability',
+			label: 'Probability',
+			type: 'number',
+			icon: Percent,
+			placeholder: '0'
+		},
+		{
+			key: 'closedOn',
+			label: 'Close Date',
+			type: 'date',
+			icon: Calendar
+		},
+		{
+			key: 'leadSource',
+			label: 'Lead Source',
+			type: 'select',
+			icon: Globe,
+			options: sourceOptions,
+			placeholder: 'Select source'
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: Contact,
+			options: contactOptions,
+			placeholder: 'Select contacts'
+		},
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: Users,
+			options: userOptions,
+			placeholder: 'Select users'
+		},
+		{
+			key: 'teams',
+			label: 'Teams',
+			type: 'multiselect',
+			icon: Users,
+			options: teamOptions,
+			placeholder: 'Select teams'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tags,
+			options: tagOptions,
+			placeholder: 'Select tags'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes...'
+		}
+	]);
 
 	// State
 	let searchQuery = $state('');
@@ -193,12 +298,18 @@
 	// Empty opportunity template for create mode
 	const emptyOpportunity = {
 		name: '',
+		account: '',
 		stage: 'PROSPECTING',
 		opportunityType: '',
 		amount: 0,
+		currency: '',
 		probability: 50,
 		closedOn: '',
 		leadSource: '',
+		contacts: [],
+		assignedTo: [],
+		teams: [],
+		tags: [],
 		description: ''
 	};
 
@@ -211,7 +322,17 @@
 			if (drawerMode === 'create') {
 				drawerFormData = { ...emptyOpportunity };
 			} else if (selectedRow) {
-				drawerFormData = { ...selectedRow };
+				// Extract IDs for multiselect fields and account select
+				drawerFormData = {
+					...selectedRow,
+					// Account ID for select
+					account: selectedRow.account?.id || '',
+					// Extract IDs for multiselect fields
+					contacts: (selectedRow.contacts || []).map((/** @type {any} */ c) => c.id),
+					assignedTo: (selectedRow.assignedTo || []).map((/** @type {any} */ u) => u.id),
+					teams: (selectedRow.teams || []).map((/** @type {any} */ t) => t.id),
+					tags: (selectedRow.tags || []).map((/** @type {any} */ t) => t.id)
+				};
 			}
 		}
 	});
@@ -289,35 +410,47 @@
 			// Map field names to API field names
 			const fieldMapping = /** @type {Record<string, string>} */ ({
 				name: 'name',
+				account: 'accountId',
 				amount: 'amount',
+				currency: 'currency',
 				probability: 'probability',
 				stage: 'stage',
 				opportunityType: 'opportunityType',
-				closedOn: 'closedOn'
+				closedOn: 'closedOn',
+				leadSource: 'leadSource',
+				description: 'description'
 			});
 
-			const apiField = fieldMapping[field];
-			if (apiField) {
-				// Convert value based on type
-				let apiValue = value;
-				if (fieldType === 'number') {
-					apiValue = parseFloat(value) || 0;
-				}
-				form.append(apiField, apiValue?.toString() || '');
+			// Multi-select fields need special handling
+			const multiSelectFields = ['contacts', 'assignedTo', 'teams', 'tags'];
 
-				// Need to send required fields too
-				const opp = filteredOpportunities.find((/** @type {any} */ o) => o.id === rowId);
-				if (opp) {
-					if (field !== 'name') form.append('name', opp.name || '');
-					if (field !== 'stage') form.append('stage', opp.stage || 'PROSPECTING');
+			if (multiSelectFields.includes(field)) {
+				// Send as JSON array
+				form.append(field, JSON.stringify(Array.isArray(value) ? value : []));
+			} else {
+				const apiField = fieldMapping[field];
+				if (apiField) {
+					// Convert value based on type
+					let apiValue = value;
+					if (fieldType === 'number') {
+						apiValue = parseFloat(value) || 0;
+					}
+					form.append(apiField, apiValue?.toString() || '');
 				}
+			}
 
-				const response = await fetch('?/update', { method: 'POST', body: form });
-				const result = await response.json();
+			// Need to send required fields too
+			const opp = filteredOpportunities.find((/** @type {any} */ o) => o.id === rowId);
+			if (opp) {
+				if (field !== 'name') form.append('name', opp.name || '');
+				if (field !== 'stage') form.append('stage', opp.stage || 'PROSPECTING');
+			}
 
-				if (result.type === 'success' || result.data?.success) {
-					await invalidateAll();
-				}
+			const response = await fetch('?/update', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				await invalidateAll();
 			}
 		} catch (err) {
 			console.error('Error saving field:', err);
@@ -414,8 +547,14 @@
 			form.append('stage', drawerFormData.stage || 'PROSPECTING');
 			form.append('amount', drawerFormData.amount?.toString() || '0');
 			form.append('probability', drawerFormData.probability?.toString() || '50');
+			if (drawerFormData.account) {
+				form.append('accountId', drawerFormData.account);
+			}
 			if (drawerFormData.opportunityType) {
 				form.append('opportunityType', drawerFormData.opportunityType);
+			}
+			if (drawerFormData.currency) {
+				form.append('currency', drawerFormData.currency);
 			}
 			if (drawerFormData.closedOn) {
 				form.append('closedOn', drawerFormData.closedOn);
@@ -425,6 +564,19 @@
 			}
 			if (drawerFormData.description) {
 				form.append('description', drawerFormData.description);
+			}
+			// Multi-select fields - send as JSON arrays
+			if (drawerFormData.contacts?.length > 0) {
+				form.append('contacts', JSON.stringify(drawerFormData.contacts));
+			}
+			if (drawerFormData.assignedTo?.length > 0) {
+				form.append('assignedTo', JSON.stringify(drawerFormData.assignedTo));
+			}
+			if (drawerFormData.teams?.length > 0) {
+				form.append('teams', JSON.stringify(drawerFormData.teams));
+			}
+			if (drawerFormData.tags?.length > 0) {
+				form.append('tags', JSON.stringify(drawerFormData.tags));
 			}
 
 			const response = await fetch('?/create', { method: 'POST', body: form });

@@ -26,8 +26,14 @@ export async function load({ locals, cookies }) {
 	}
 
 	try {
-		// Fetch opportunities from Django API
-		const response = await apiRequest('/opportunities/', {}, { cookies, org });
+		// Fetch opportunities and teams/users from Django API in parallel
+		const [response, teamsUsersResponse] = await Promise.all([
+			apiRequest('/opportunities/', {}, { cookies, org }),
+			apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch(() => ({
+				teams: [],
+				profiles: []
+			}))
+		]);
 
 		// Handle Django response structure
 		let opportunities = [];
@@ -55,6 +61,19 @@ export async function load({ locals, cookies }) {
 			id: tag.id,
 			name: tag.name,
 			slug: tag.slug
+		}));
+
+		// Extract users (profiles) from teams/users response
+		const users = (teamsUsersResponse.profiles || []).map((profile) => ({
+			id: profile.id,
+			name: profile.user_details?.email || profile.email || 'Unknown',
+			email: profile.user_details?.email || profile.email
+		}));
+
+		// Extract teams from teams/users response
+		const teams = (teamsUsersResponse.teams || []).map((team) => ({
+			id: team.id,
+			name: team.name
 		}));
 
 		// Transform Django opportunities with all fields
@@ -162,8 +181,8 @@ export async function load({ locals, cookies }) {
 				accounts,
 				contacts,
 				tags,
-				users: [], // Users are fetched from teams API if needed
-				teams: []
+				users,
+				teams
 			}
 		};
 	} catch (err) {

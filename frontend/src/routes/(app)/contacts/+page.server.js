@@ -44,11 +44,13 @@ export async function load({ url, locals, cookies }) {
 			queryParams.append('assigned_to', ownerId);
 		}
 
-		// Fetch contacts and owners in parallel
-		const [contactsResponse, ownersResponse] = await Promise.all([
+		// Fetch contacts, owners, and tags in parallel
+		const [contactsResponse, ownersResponse, tagsResponse] = await Promise.all([
 			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
 			// Get users for owner filter dropdown
-			apiRequest('/users/', {}, { cookies, org })
+			apiRequest('/users/', {}, { cookies, org }),
+			// Get tags for tag selection
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
 		]);
 
 		// Handle Django response format
@@ -149,6 +151,12 @@ export async function load({ url, locals, cookies }) {
 			email: user.user_details?.email || user.email
 		}));
 
+		// Transform tags list
+		const allTags = (tagsResponse.tags || tagsResponse || []).map((tag) => ({
+			id: tag.id,
+			name: tag.name
+		}));
+
 		return {
 			contacts: transformedContacts,
 			totalCount,
@@ -157,7 +165,8 @@ export async function load({ url, locals, cookies }) {
 			limit,
 			search,
 			ownerId,
-			owners
+			owners,
+			allTags
 		};
 	} catch (err) {
 		console.error('Error loading contacts from API:', err);
@@ -192,6 +201,9 @@ export const actions = {
 			const description = form.get('description')?.toString().trim() || '';
 			// Assignment
 			const ownerId = form.get('ownerId')?.toString();
+			// Tags
+			const tagsJson = form.get('tags')?.toString() || '[]';
+			const tags = JSON.parse(tagsJson);
 
 			if (!firstName || !lastName) {
 				return fail(400, { error: 'First name and last name are required.' });
@@ -213,7 +225,8 @@ export const actions = {
 				postcode: postcode || null,
 				country: country || null,
 				description: description || null,
-				assigned_to: ownerId ? [ownerId] : []
+				assigned_to: ownerId ? [ownerId] : [],
+				tags: tags
 			};
 
 			await apiRequest(
@@ -258,6 +271,9 @@ export const actions = {
 			const description = form.get('description')?.toString().trim() || '';
 			// Assignment
 			const ownerId = form.get('ownerId')?.toString();
+			// Tags
+			const tagsJson = form.get('tags')?.toString() || '[]';
+			const tags = JSON.parse(tagsJson);
 
 			if (!contactId || !firstName || !lastName) {
 				return fail(400, { error: 'Contact ID, first name, and last name are required.' });
@@ -279,7 +295,8 @@ export const actions = {
 				postcode: postcode || null,
 				country: country || null,
 				description: description || null,
-				assigned_to: ownerId ? [ownerId] : []
+				assigned_to: ownerId ? [ownerId] : [],
+				tags: tags
 			};
 
 			await apiRequest(

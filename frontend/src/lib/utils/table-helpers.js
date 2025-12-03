@@ -168,6 +168,13 @@ export const caseTypeOptions = [
 	{ value: 'Problem', label: 'Problem', color: 'bg-red-100 text-red-700' }
 ];
 
+export const casePriorityOptions = [
+	{ value: 'Low', label: 'Low', color: 'bg-green-100 text-green-700' },
+	{ value: 'Normal', label: 'Normal', color: 'bg-yellow-100 text-yellow-700' },
+	{ value: 'High', label: 'High', color: 'bg-orange-100 text-orange-700' },
+	{ value: 'Urgent', label: 'Urgent', color: 'bg-red-100 text-red-700' }
+];
+
 export const accountStatusOptions = [
 	{ value: 'ACTIVE', label: 'Active', color: 'bg-green-100 text-green-700' },
 	{ value: 'INACTIVE', label: 'Inactive', color: 'bg-gray-100 text-gray-600' },
