@@ -1,4 +1,8 @@
-from django.db.models import Q
+from datetime import date, timedelta
+
+from django.db.models import Q, Sum, Count, F, DecimalField
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 
 from rest_framework import serializers, status
@@ -10,12 +14,14 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from common import serializer, swagger_params
 from common.models import Activity
+from common.utils import STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from leads.models import Lead
 from leads.serializer import LeadSerializer
 from opportunity.models import Opportunity
 from opportunity.serializer import OpportunitySerializer
+from tasks.models import Task
 
 
 class ApiHomeView(APIView):
@@ -40,30 +46,43 @@ class ApiHomeView(APIView):
         )},
     )
     def get(self, request, format=None):
-        accounts = Account.objects.filter(is_active=True, org=request.profile.org)
-        contacts = Contact.objects.filter(org=request.profile.org)
-        leads = Lead.objects.filter(org=request.profile.org).exclude(
+        org = request.profile.org
+        profile = request.profile
+        today = date.today()
+
+        accounts = Account.objects.filter(is_active=True, org=org)
+        contacts = Contact.objects.filter(org=org)
+        leads = Lead.objects.filter(org=org).exclude(
             Q(status="converted") | Q(status="closed")
         )
-        opportunities = Opportunity.objects.filter(org=request.profile.org)
+        opportunities = Opportunity.objects.filter(org=org)
+        tasks = Task.objects.filter(org=org)
 
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        is_admin = profile.role == "ADMIN" or request.user.is_superuser
+
+        if not is_admin:
             accounts = accounts.filter(
-                Q(assigned_to=self.request.profile)
-                | Q(created_by=self.request.profile.user)
+                Q(assigned_to=profile)
+                | Q(created_by=profile.user)
             )
             contacts = contacts.filter(
-                Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile.user)
+                Q(assigned_to__id__in=[profile.id])
+                | Q(created_by=profile.user)
             )
             leads = leads.filter(
-                Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile.user)
+                Q(assigned_to__id__in=[profile.id])
+                | Q(created_by=profile.user)
             ).exclude(status="closed")
             opportunities = opportunities.filter(
-                Q(assigned_to__id__in=self.request.profile)
-                | Q(created_by=self.request.profile.user)
+                Q(assigned_to__id__in=[profile.id])
+                | Q(created_by=profile.user)
             )
+            tasks = tasks.filter(
+                Q(assigned_to__id__in=[profile.id])
+                | Q(created_by=profile.user)
+            )
+
+        # Build base context (existing)
         context = {}
         context["accounts_count"] = accounts.count()
         context["contacts_count"] = contacts.count()
@@ -73,6 +92,105 @@ class ApiHomeView(APIView):
         context["contacts"] = ContactSerializer(contacts, many=True).data
         context["leads"] = LeadSerializer(leads, many=True).data
         context["opportunities"] = OpportunitySerializer(opportunities, many=True).data
+
+        # NEW: Urgent counts for Focus Bar
+        overdue_tasks = tasks.filter(
+            status__in=["New", "In Progress"],
+            due_date__lt=today
+        ).count()
+
+        tasks_due_today = tasks.filter(
+            status__in=["New", "In Progress"],
+            due_date=today
+        ).count()
+
+        followups_today = leads.filter(
+            next_follow_up=today
+        ).count()
+
+        hot_leads = leads.filter(
+            rating="HOT",
+            status__in=["assigned", "in process"]
+        ).count()
+
+        context["urgent_counts"] = {
+            "overdue_tasks": overdue_tasks,
+            "tasks_due_today": tasks_due_today,
+            "followups_today": followups_today,
+            "hot_leads": hot_leads,
+        }
+
+        # NEW: Pipeline by stage
+        pipeline_by_stage = {}
+        for stage_code, stage_label in STAGES:
+            stage_opps = opportunities.filter(stage=stage_code)
+            stage_value = stage_opps.aggregate(
+                total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
+            )["total"]
+            pipeline_by_stage[stage_code] = {
+                "count": stage_opps.count(),
+                "value": float(stage_value or 0),
+                "label": stage_label,
+            }
+        context["pipeline_by_stage"] = pipeline_by_stage
+
+        # NEW: Revenue metrics
+        open_stages = ["PROSPECTING", "QUALIFICATION", "PROPOSAL", "NEGOTIATION"]
+        open_opps = opportunities.filter(stage__in=open_stages)
+
+        pipeline_value = open_opps.aggregate(
+            total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
+        )["total"]
+
+        # Weighted pipeline = sum of (amount * probability / 100)
+        weighted_pipeline = open_opps.aggregate(
+            total=Coalesce(
+                Sum(F("amount") * F("probability") / 100),
+                0,
+                output_field=DecimalField()
+            )
+        )["total"]
+
+        # Won this month
+        first_day_of_month = today.replace(day=1)
+        won_this_month = opportunities.filter(
+            stage="CLOSED_WON",
+            updated_at__gte=first_day_of_month
+        ).aggregate(
+            total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
+        )["total"]
+
+        # Conversion rate: leads converted / total leads
+        total_leads_all = Lead.objects.filter(org=org).count()
+        converted_leads = Lead.objects.filter(org=org, status="converted").count()
+        conversion_rate = (converted_leads / total_leads_all * 100) if total_leads_all > 0 else 0
+
+        context["revenue_metrics"] = {
+            "pipeline_value": float(pipeline_value or 0),
+            "weighted_pipeline": float(weighted_pipeline or 0),
+            "won_this_month": float(won_this_month or 0),
+            "conversion_rate": round(conversion_rate, 1),
+        }
+
+        # NEW: Hot leads list for dedicated panel
+        hot_leads_qs = leads.filter(
+            rating="HOT",
+            status__in=["assigned", "in process"]
+        ).order_by("-created_at")[:10]
+
+        context["hot_leads"] = [
+            {
+                "id": str(lead.id),
+                "first_name": lead.first_name,
+                "last_name": lead.last_name,
+                "company": lead.company_name,
+                "rating": lead.rating,
+                "next_follow_up": lead.next_follow_up.isoformat() if lead.next_follow_up else None,
+                "last_contacted": lead.last_contacted.isoformat() if lead.last_contacted else None,
+            }
+            for lead in hot_leads_qs
+        ]
+
         return Response(context, status=status.HTTP_200_OK)
 
 

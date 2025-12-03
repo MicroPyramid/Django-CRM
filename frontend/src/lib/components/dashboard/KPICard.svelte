@@ -12,6 +12,7 @@
 	 * @property {string} [trendLabel] - Label for trend (e.g., "vs last month")
 	 * @property {string} [iconBgClass] - Background class for icon container
 	 * @property {string} [iconClass] - Class for the icon
+	 * @property {string} [borderColor] - Top border color class (Notion-style)
 	 * @property {string} [class] - Additional classes
 	 */
 
@@ -24,6 +25,7 @@
 		trendLabel,
 		iconBgClass = 'bg-blue-100 dark:bg-blue-900/30',
 		iconClass = 'text-blue-600 dark:text-blue-400',
+		borderColor,
 		class: className,
 		...restProps
 	} = $props();
@@ -32,13 +34,16 @@
 	const isPositive = $derived(trend !== undefined && trend >= 0);
 </script>
 
-<Card.Root class={cn('px-5 py-4', className)} {...restProps}>
+<Card.Root
+	class={cn('px-5 py-4', borderColor && 'border-t-[3px]', borderColor, className)}
+	{...restProps}
+>
 	<div class="flex items-start justify-between gap-4">
 		<div class="flex min-w-0 flex-col gap-1">
-			<p class="text-muted-foreground truncate text-xs font-medium tracking-wider uppercase">
+			<p class="text-muted-foreground truncate text-xs font-medium uppercase tracking-wider">
 				{label}
 			</p>
-			<p class="text-foreground truncate text-2xl font-semibold">
+			<p class="text-foreground truncate text-3xl font-semibold tabular-nums">
 				{value}
 			</p>
 			{#if hasTrend}

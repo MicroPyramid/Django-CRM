@@ -126,6 +126,17 @@ export async function load({ locals, cookies }) {
 		// Count pending tasks for the user
 		const pendingTasks = upcomingTasks.length;
 
+		// Transform hot leads from new API response
+		const hotLeads = (dashboardResponse.hot_leads || []).map((lead) => ({
+			id: lead.id,
+			first_name: lead.first_name,
+			last_name: lead.last_name,
+			company: lead.company,
+			rating: lead.rating,
+			next_follow_up: lead.next_follow_up,
+			last_contacted: lead.last_contacted
+		}));
+
 		return {
 			metrics: {
 				totalLeads: dashboardResponse.leads_count || 0,
@@ -140,7 +151,22 @@ export async function load({ locals, cookies }) {
 				opportunities: recentOpportunities,
 				tasks: upcomingTasks,
 				activities: recentActivities
-			}
+			},
+			// NEW: Enhanced dashboard data
+			urgentCounts: dashboardResponse.urgent_counts || {
+				overdue_tasks: 0,
+				tasks_due_today: 0,
+				followups_today: 0,
+				hot_leads: 0
+			},
+			pipelineByStage: dashboardResponse.pipeline_by_stage || {},
+			revenueMetrics: dashboardResponse.revenue_metrics || {
+				pipeline_value: 0,
+				weighted_pipeline: 0,
+				won_this_month: 0,
+				conversion_rate: 0
+			},
+			hotLeads: hotLeads
 		};
 	} catch (error) {
 		console.error('Dashboard load error:', error);
