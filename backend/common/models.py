@@ -12,8 +12,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
-
 from common.base import BaseModel
 from common.templatetags.common_tags import (
     is_document_file_audio,
@@ -167,8 +165,8 @@ class Tags(BaseModel):
 class Profile(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="profiles")
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="profiles")
-    phone = PhoneNumberField(null=True, blank=True)
-    alternate_phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    alternate_phone = models.CharField(max_length=20, null=True, blank=True)
     address = models.ForeignKey(
         Address,
         related_name="address_users",

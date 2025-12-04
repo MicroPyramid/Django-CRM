@@ -206,11 +206,12 @@ class LoginView(APIView):
                     )
             elif profiles.exists():
                 # Use first available org
-                default_org = profiles.first().org
+                profile = profiles.first()
+                default_org = profile.org
 
-            # Generate JWT tokens with org context
+            # Generate JWT tokens with org context (include profile for role)
             if default_org:
-                token = OrgAwareRefreshToken.for_user_and_org(user, default_org)
+                token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
             else:
                 # User has no orgs - generate token without org context
                 token = RefreshToken.for_user(user)
@@ -378,8 +379,8 @@ class OrgAwareTokenRefreshView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                # Generate new tokens with same org context
-                new_token = OrgAwareRefreshToken.for_user_and_org(user, org)
+                # Generate new tokens with same org context (include profile for role)
+                new_token = OrgAwareRefreshToken.for_user_and_org(user, org, profile)
                 audit_log.token_refresh(user, org, request)
             else:
                 # No org context - standard refresh
@@ -457,8 +458,8 @@ class OrgSwitchView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Generate new tokens with the target org
-        token = OrgAwareRefreshToken.for_user_and_org(request.user, profile.org)
+        # Generate new tokens with the target org (include profile for role)
+        token = OrgAwareRefreshToken.for_user_and_org(request.user, profile.org, profile)
 
         # Audit log the org switch
         audit_log.org_switch(request.user, from_org, profile.org, request)

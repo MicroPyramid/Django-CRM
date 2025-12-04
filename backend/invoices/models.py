@@ -3,7 +3,6 @@ import datetime
 import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Account
 from common.base import BaseModel
@@ -48,7 +47,7 @@ class Invoice(BaseModel):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
-    phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
 
     amount_due = models.DecimalField(
         blank=True, null=True, max_digits=12, decimal_places=2
@@ -193,7 +192,7 @@ class InvoiceHistory(BaseModel):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
-    phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
     updated_by = models.ForeignKey(
         Profile,
         related_name="invoice_history_updated_by",

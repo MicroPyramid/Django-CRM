@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
@@ -17,7 +16,7 @@ class Contact(AssignableMixin, BaseModel):
     first_name = models.CharField(_("First name"), max_length=255)
     last_name = models.CharField(_("Last name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = PhoneNumberField(_("Phone"), null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
 
     # Professional Information
     organization = models.CharField(_("Company"), max_length=255, blank=True, null=True)

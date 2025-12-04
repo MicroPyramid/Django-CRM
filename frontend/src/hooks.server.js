@@ -15,10 +15,10 @@ import { env } from '$env/dynamic/public';
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
- * @typedef {{ org_id?: string, user_id?: string, exp?: number, iat?: number }} JWTPayload
+ * @typedef {{ org_id?: string, org_name?: string, role?: string, user_id?: string, exp?: number, iat?: number }} JWTPayload
  * @typedef {{ id: string, name: string }} OrgInfo
  * @typedef {{ org: OrgInfo, role?: string }} ProfileInfo
- * @typedef {{ organizations?: Array<{ id: string, name: string }> }} UserInfo
+ * @typedef {{ id?: string, organizations?: Array<{ id: string, name: string }> }} UserInfo
  * @typedef {{ access_token: string, refresh_token: string, current_org?: OrgInfo }} SwitchOrgResult
  */
 
@@ -54,23 +54,20 @@ function tokenHasOrgContext(token, orgId) {
 }
 
 /**
- * Verify JWT token with Django backend
+ * Verify JWT token locally by checking expiration
  * @param {string} accessToken - JWT access token
- * @returns {Promise<UserInfo|null>} User data or null if invalid
+ * @returns {JWTPayload|null} JWT payload or null if expired/invalid
  */
-async function verifyToken(accessToken) {
-	try {
-		const response = await axios.get(`${API_BASE_URL}/auth/me/`, {
-			headers: {
-				Authorization: `Bearer ${accessToken}`
-			}
-		});
+function verifyTokenLocally(accessToken) {
+	const payload = decodeJwtPayload(accessToken);
+	if (!payload) return null;
 
-		return response.data;
-	} catch (error) {
-		console.error('Token verification failed:', error);
+	// Check if token is expired
+	if (payload.exp && payload.exp * 1000 < Date.now()) {
 		return null;
 	}
+
+	return payload;
 }
 
 /**
@@ -91,25 +88,7 @@ async function refreshAccessToken(refreshToken) {
 	}
 }
 
-/**
- * Get profile for specific organization
- * @param {string} accessToken - JWT access token
- * @returns {Promise<ProfileInfo|null>} Profile data or null if invalid
- */
-async function getProfile(accessToken) {
-	try {
-		const response = await axios.get(`${API_BASE_URL}/auth/profile/`, {
-			headers: {
-				Authorization: `Bearer ${accessToken}`
-			}
-		});
-
-		return response.data;
-	} catch (error) {
-		console.error('Profile fetch failed:', error);
-		return null;
-	}
-}
+// Profile info is now embedded in JWT - no API call needed
 
 /**
  * Switch organization and get new tokens with org context
@@ -145,18 +124,18 @@ export async function handle({ event, resolve }) {
 	const refreshToken = event.cookies.get('jwt_refresh');
 	const orgId = event.cookies.get('org');
 
-	/** @type {UserInfo | null} */
-	let user = null;
+	/** @type {JWTPayload | null} */
+	let jwtPayload = null;
 
-	// Try to authenticate user
+	// Try to authenticate user (LOCAL JWT DECODE - no API call!)
 	if (accessToken) {
-		user = await verifyToken(accessToken);
+		jwtPayload = verifyTokenLocally(accessToken);
 
 		// If access token expired, try to refresh
-		if (!user && refreshToken) {
+		if (!jwtPayload && refreshToken) {
 			const newAccessToken = await refreshAccessToken(refreshToken);
 			if (newAccessToken) {
-				// Update cookie with new access token (use jwt_access for consistency with login)
+				// Update cookie with new access token
 				event.cookies.set('jwt_access', newAccessToken, {
 					path: '/',
 					httpOnly: true,
@@ -165,7 +144,7 @@ export async function handle({ event, resolve }) {
 					maxAge: 60 * 60 * 24 // 1 day
 				});
 				accessToken = newAccessToken;
-				user = await verifyToken(newAccessToken);
+				jwtPayload = verifyTokenLocally(newAccessToken);
 			} else {
 				// Refresh failed, clear cookies
 				event.cookies.delete('jwt_access', { path: '/' });
@@ -175,77 +154,59 @@ export async function handle({ event, resolve }) {
 		}
 	}
 
-	// Set user in locals
-	if (user) {
-		event.locals.user = user;
+	// Set user in locals from JWT payload (no API call needed!)
+	if (jwtPayload) {
+		// Build user object from JWT claims
+		event.locals.user = { id: jwtPayload.user_id };
 
-		// Check if org cookie is set
+		// Check if org cookie is set and token has org context
 		if (orgId) {
-			// Verify user has access to this organization
-			const userOrg = user.organizations?.find((org) => org.id === orgId);
+			const token = /** @type {string} */ (accessToken);
 
-			if (userOrg) {
-				// accessToken must be defined here since we're inside if (user) block
-				const token = /** @type {string} */ (accessToken);
-				// OPTIMIZATION: Check if token already has correct org context
-				// This avoids unnecessary API calls on every request
-				if (tokenHasOrgContext(token, orgId)) {
-					// Token already has org context, just get profile
-					const profile = await getProfile(token);
-
-					if (profile) {
-						event.locals.org = profile.org;
-						/** @type {any} */ (event.locals).profile = profile;
-						event.locals.org_name = profile.org.name;
-					} else {
-						// Profile fetch failed, clear org cookie
-						event.cookies.delete('org', { path: '/' });
-					}
-				} else {
-					// Token doesn't have org context, need to switch
-					const switchResult = await switchOrg(token, orgId);
-
-					if (switchResult) {
-						// Update cookies with new tokens that have org context
-						event.cookies.set('jwt_access', switchResult.access_token, {
-							path: '/',
-							httpOnly: true,
-							sameSite: 'lax',
-							secure: process.env.NODE_ENV === 'production',
-							maxAge: 60 * 60 * 24 // 1 day
-						});
-						event.cookies.set('jwt_refresh', switchResult.refresh_token, {
-							path: '/',
-							httpOnly: true,
-							sameSite: 'lax',
-							secure: process.env.NODE_ENV === 'production',
-							maxAge: 60 * 60 * 24 * 365 // 1 year
-						});
-
-						// Update accessToken for profile fetch
-						accessToken = switchResult.access_token;
-
-						// Get profile using the new token
-						const profile = await getProfile(accessToken);
-
-						if (profile) {
-							event.locals.org = profile.org;
-							/** @type {any} */ (event.locals).profile = profile;
-							event.locals.org_name = switchResult.current_org?.name || profile.org.name;
-						} else {
-							// Profile fetch failed, clear org cookie
-							event.cookies.delete('org', { path: '/' });
-						}
-					} else {
-						// Org switch failed, clear org cookie
-						event.cookies.delete('org', { path: '/' });
-					}
-				}
+			if (tokenHasOrgContext(token, orgId)) {
+				// Token has org context - extract org info from JWT (no API call!)
+				event.locals.org = {
+					id: jwtPayload.org_id || orgId,
+					name: jwtPayload.org_name || 'Organization'
+				};
+				/** @type {any} */ (event.locals).profile = {
+					org: event.locals.org,
+					role: jwtPayload.role || 'USER'
+				};
+				event.locals.org_name = jwtPayload.org_name || 'Organization';
 			} else {
-				// User doesn't have access to this organization, clear org cookie
-				event.cookies.delete('org', { path: '/' });
-				// Don't throw error here, just redirect
-				throw redirect(307, '/org');
+				// Token doesn't have org context, need to switch (1 API call)
+				const switchResult = await switchOrg(token, orgId);
+
+				if (switchResult) {
+					// Update cookies with new tokens that have org context
+					event.cookies.set('jwt_access', switchResult.access_token, {
+						path: '/',
+						httpOnly: true,
+						sameSite: 'lax',
+						secure: process.env.NODE_ENV === 'production',
+						maxAge: 60 * 60 * 24 // 1 day
+					});
+					event.cookies.set('jwt_refresh', switchResult.refresh_token, {
+						path: '/',
+						httpOnly: true,
+						sameSite: 'lax',
+						secure: process.env.NODE_ENV === 'production',
+						maxAge: 60 * 60 * 24 * 365 // 1 year
+					});
+
+					// Extract org info from switch result (no additional API call!)
+					event.locals.org = switchResult.current_org;
+					/** @type {any} */ (event.locals).profile = {
+						org: switchResult.current_org,
+						role: 'USER' // Will be in new JWT
+					};
+					event.locals.org_name = switchResult.current_org?.name || 'Organization';
+				} else {
+					// Org switch failed, clear org cookie and redirect
+					event.cookies.delete('org', { path: '/' });
+					throw redirect(307, '/org');
+				}
 			}
 		}
 	}
@@ -271,12 +232,12 @@ export async function handle({ event, resolve }) {
 
 	if (isAuthOnlyRoute) {
 		// Auth-only route - require user
-		if (!user) {
+		if (!jwtPayload) {
 			throw redirect(307, '/login');
 		}
 	} else if (!isPublicRoute) {
 		// Protected route - require user + org
-		if (!user) {
+		if (!jwtPayload) {
 			throw redirect(307, '/login');
 		}
 		if (!event.locals.org) {

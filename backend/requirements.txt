@@ -14,9 +14,7 @@ django_storages==1.14.6
 
 django-crum==0.7.9
 redis==7.1.0
-django-phonenumber-field==8.4.0
 arrow==1.4.0
-phonenumbers==9.0.19
 pytz==2025.2
 requests==2.32.5
 

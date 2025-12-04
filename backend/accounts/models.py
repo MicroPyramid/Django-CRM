@@ -2,7 +2,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
@@ -24,7 +23,7 @@ class Account(AssignableMixin, BaseModel):
     # Core Account Information
     name = models.CharField(_("Account Name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = PhoneNumberField(_("Phone"), null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
     website = models.URLField(_("Website"), blank=True, null=True)
 
     # Business Information

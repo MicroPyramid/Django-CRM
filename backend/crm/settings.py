@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
-    "phonenumber_field",
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",

@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
@@ -39,7 +38,7 @@ class Lead(AssignableMixin, BaseModel):
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
-    phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=50, null=True, blank=True)
     job_title = models.CharField(
         _("Job Title"), max_length=255, blank=True, null=True,
         help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
@@ -119,8 +118,3 @@ class Lead(AssignableMixin, BaseModel):
     def get_complete_address(self):
         return return_complete_address(self)
 
-    @property
-    def phone_raw_input(self):
-        if str(self.phone) == "+NoneNone":
-            return ""
-        return self.phone

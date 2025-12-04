@@ -7,4 +7,4 @@ export async function load({ locals }) {
 	};
 }
 
-export const ssr = false;
+export const ssr = true;

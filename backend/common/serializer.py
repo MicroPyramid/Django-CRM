@@ -25,31 +25,44 @@ from common.models import (
 
 class OrgAwareRefreshToken(RefreshToken):
     """
-    Custom RefreshToken that includes org_id in the token payload.
+    Custom RefreshToken that includes org context in the token payload.
 
     This ensures the org context is cryptographically signed and cannot be
     forged by the client. The middleware should validate org_id from this
     token instead of trusting the org header.
+
+    Embedded claims (to avoid extra API calls):
+    - org_id: Organization UUID
+    - org_name: Organization name (for display)
+    - role: User's role in the org (ADMIN/USER)
     """
 
     @classmethod
-    def for_user_and_org(cls, user, org):
+    def for_user_and_org(cls, user, org, profile=None):
         """
         Generate a refresh token for a user with org context.
 
         Args:
             user: User instance
             org: Org instance or org_id UUID
+            profile: Optional Profile instance for role
 
         Returns:
-            OrgAwareRefreshToken with org_id claim
+            OrgAwareRefreshToken with org claims
         """
         token = cls.for_user(user)
 
-        # Add org_id to the token payload
+        # Add org context to the token payload
         if org:
             org_id = str(org.id) if hasattr(org, "id") else str(org)
             token["org_id"] = org_id
+            # Add org_name for display (avoids /api/auth/profile call)
+            if hasattr(org, "name"):
+                token["org_name"] = org.name
+
+        # Add role if profile provided (avoids /api/auth/profile call)
+        if profile:
+            token["role"] = profile.role
 
         return token
 

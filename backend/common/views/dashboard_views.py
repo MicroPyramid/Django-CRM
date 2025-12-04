@@ -22,6 +22,7 @@ from leads.serializer import LeadSerializer
 from opportunity.models import Opportunity
 from opportunity.serializer import OpportunitySerializer
 from tasks.models import Task
+from tasks.serializer import TaskSerializer
 
 
 class ApiHomeView(APIView):
@@ -151,8 +152,9 @@ class ApiHomeView(APIView):
             )
         )["total"]
 
-        # Won this month
-        first_day_of_month = today.replace(day=1)
+        # Won this month (use timezone-aware datetime for updated_at comparison)
+        now = timezone.now()
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         won_this_month = opportunities.filter(
             stage="CLOSED_WON",
             updated_at__gte=first_day_of_month
@@ -190,6 +192,19 @@ class ApiHomeView(APIView):
             }
             for lead in hot_leads_qs
         ]
+
+        # Include tasks in dashboard response (avoid separate API call)
+        upcoming_tasks = tasks.filter(
+            status__in=["New", "In Progress"],
+            due_date__isnull=False
+        ).order_by("due_date")[:10]
+        context["tasks"] = TaskSerializer(upcoming_tasks, many=True).data
+
+        # Include recent activities (avoid separate API call)
+        activities = Activity.objects.filter(
+            org=org
+        ).select_related("user", "user__user").order_by("-created_at")[:10]
+        context["activities"] = serializer.ActivitySerializer(activities, many=True).data
 
         return Response(context, status=status.HTTP_200_OK)
 
