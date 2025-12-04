@@ -1,6 +1,4 @@
 export { default as KPICard } from './KPICard.svelte';
-export { default as StatsGrid } from './StatsGrid.svelte';
-export { default as RecentItemsCard } from './RecentItemsCard.svelte';
 export { default as ActivityFeed } from './ActivityFeed.svelte';
 export { default as FocusBar } from './FocusBar.svelte';
 export { default as MiniPipeline } from './MiniPipeline.svelte';

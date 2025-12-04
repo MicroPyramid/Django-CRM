@@ -134,7 +134,6 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                         ).first()
                         if company:
                             lead.company = company
-                    lead.created_from_site = False
                     lead.created_by = profile
                     lead.org = org
                     lead.save()

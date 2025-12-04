@@ -14,6 +14,10 @@ from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
 
 
+# Note: Removed unused serializer properties that were computed but never used by frontend:
+# - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
+
+
 class OpportunitySerializer(serializers.ModelSerializer):
     """Serializer for reading Opportunity data"""
 
@@ -25,9 +29,6 @@ class OpportunitySerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    get_team_users = ProfileSerializer(read_only=True, many=True)
-    get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
-    get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
     created_on_arrow = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
@@ -66,9 +67,6 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "is_active",
             "org",
             "created_on_arrow",
-            "get_team_users",
-            "get_team_and_assigned_users",
-            "get_assigned_users_not_in_teams",
         )
 
 

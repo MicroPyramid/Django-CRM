@@ -1,4 +1,3 @@
-import arrow
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -7,6 +6,10 @@ from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from contacts.models import Contact
+
+
+# Cleanup notes:
+# - Removed 'created_on_arrow' property from Task model (frontend computes its own timestamps)
 
 
 class Board(BaseModel):
@@ -291,10 +294,6 @@ class Task(AssignableMixin, BaseModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
 
     @property
     def parent_entity(self):

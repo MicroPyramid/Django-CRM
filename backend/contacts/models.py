@@ -1,4 +1,3 @@
-import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
@@ -70,17 +69,8 @@ class Contact(AssignableMixin, BaseModel):
         db_table = "contacts"
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=["organization"]),
             models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
         return self.first_name
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
-    @property
-    def created_on(self):
-        return self.created_at

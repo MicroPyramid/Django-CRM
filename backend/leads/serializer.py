@@ -24,10 +24,6 @@ class LeadSerializer(serializers.ModelSerializer):
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
-    converted_account = serializers.PrimaryKeyRelatedField(read_only=True)
-    converted_contact = serializers.PrimaryKeyRelatedField(read_only=True)
-    converted_opportunity = serializers.PrimaryKeyRelatedField(read_only=True)
-    conversion_date = serializers.DateTimeField(read_only=True)
 
     @extend_schema_field(str)
     def get_country(self, obj):
@@ -77,12 +73,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "created_by",
             "created_at",
             "is_active",
-            "created_from_site",
             "company_name",
-            "converted_account",
-            "converted_contact",
-            "converted_opportunity",
-            "conversion_date",
         )
 
 
@@ -104,12 +95,6 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         self.fields["last_name"].required = False
         self.fields["salutation"].required = False
         self.org = request_obj.profile.org
-
-        if self.instance:
-            if self.instance.created_from_site:
-                prev_choices = self.fields["source"]._get_choices()
-                prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
-                self.fields["source"]._set_choices(prev_choices)
 
     class Meta:
         model = Lead

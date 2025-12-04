@@ -3,7 +3,6 @@ Lead conversion service functions
 """
 
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 
 from accounts.models import Account
 from common.models import Attachments, Comment
@@ -22,7 +21,7 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
     4. Copies tags, assigned_to, teams
     5. Migrates Comments and Attachments
     6. Auto-links existing Lead.contacts to the new Account
-    7. Sets lead.converted_account, converted_contact, converted_opportunity, conversion_date
+    7. Sets lead status to "converted"
 
     Args:
         lead_obj: The Lead instance to convert
@@ -143,12 +142,8 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
         if contact:
             opportunity.contacts.add(contact)
 
-    # Update lead with converted status and references
+    # Update lead status to converted
     lead_obj.status = "converted"
-    lead_obj.converted_account = account
-    lead_obj.converted_contact = contact
-    lead_obj.converted_opportunity = opportunity
-    lead_obj.conversion_date = timezone.now()
     lead_obj.save()
 
     return account, contact, opportunity

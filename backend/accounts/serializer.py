@@ -13,6 +13,11 @@ from common.serializer import (
 from contacts.serializer import ContactSerializer
 
 
+# Note: Removed unused serializer properties that were computed but never used by frontend:
+# - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
+# - created_on_arrow (frontend computes its own humanized timestamps)
+
+
 class AccountSerializer(serializers.ModelSerializer):
     """Serializer for reading Account data"""
 
@@ -23,19 +28,11 @@ class AccountSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     account_attachment = AttachmentsSerializer(read_only=True, many=True)
-    get_team_users = ProfileSerializer(read_only=True, many=True)
-    get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
-    get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
     country = serializers.SerializerMethodField()
-    created_on_arrow = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
     def get_country(self, obj):
         return obj.get_country_display() if obj.country else None
-
-    @extend_schema_field(str)
-    def get_created_on_arrow(self, obj):
-        return obj.created_on_arrow
 
     class Meta:
         model = Account
@@ -71,10 +68,6 @@ class AccountSerializer(serializers.ModelSerializer):
             "created_at",
             "is_active",
             "org",
-            "created_on_arrow",
-            "get_team_users",
-            "get_team_and_assigned_users",
-            "get_assigned_users_not_in_teams",
         )
 
 
@@ -119,14 +112,6 @@ class EmailLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountEmailLog
         fields = ["email", "contact", "is_sent"]
-
-
-class AccountReadSerializer(serializers.ModelSerializer):
-    """Serializer for reading minimal Account data"""
-
-    class Meta:
-        model = Account
-        fields = ["id", "name", "city", "tags"]
 
 
 class AccountWriteSerializer(serializers.ModelSerializer):

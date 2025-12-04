@@ -1,7 +1,5 @@
-import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
@@ -16,6 +14,13 @@ from common.utils import (
 from contacts.models import Contact
 
 
+# Cleanup notes:
+# - Removed 'created_from_site' flag (over-engineered)
+# - Removed conversion tracking fields (converted_account, converted_contact,
+#   converted_opportunity, conversion_date) - never populated, conversion just sets status
+# - Removed 'created_on_arrow' property (frontend computes its own timestamps)
+
+
 class Lead(AssignableMixin, BaseModel):
     """
     Lead model for CRM - Streamlined for modern sales workflow
@@ -23,7 +28,10 @@ class Lead(AssignableMixin, BaseModel):
     """
 
     # Core Lead Information
-    title = models.CharField(_("Title"), max_length=255, blank=True, null=True)
+    title = models.CharField(
+        _("Title"), max_length=255, blank=True, null=True,
+        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')"
+    )
     salutation = models.CharField(
         _("Salutation"), max_length=64, blank=True, null=True,
         help_text="e.g., Mr, Mrs, Ms, Dr"
@@ -33,7 +41,8 @@ class Lead(AssignableMixin, BaseModel):
     email = models.EmailField(null=True, blank=True)
     phone = PhoneNumberField(null=True, blank=True)
     job_title = models.CharField(
-        _("Job Title"), max_length=255, blank=True, null=True
+        _("Job Title"), max_length=255, blank=True, null=True,
+        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
     )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     linkedin_url = models.URLField(
@@ -87,40 +96,9 @@ class Lead(AssignableMixin, BaseModel):
     is_active = models.BooleanField(default=True)
     tags = models.ManyToManyField(Tags, related_name="lead_tags", blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
-    created_from_site = models.BooleanField(default=False)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")
     company_name = models.CharField(
         _("Company Name"), max_length=255, blank=True, null=True
-    )
-    converted_account = models.ForeignKey(
-        "accounts.Account",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="converted_from_leads",
-        help_text="Account created when this lead was converted",
-    )
-    converted_contact = models.ForeignKey(
-        "contacts.Contact",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="converted_from_leads",
-        help_text="Contact created when this lead was converted",
-    )
-    converted_opportunity = models.ForeignKey(
-        "opportunity.Opportunity",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="converted_from_leads",
-        help_text="Opportunity created when this lead was converted",
-    )
-    conversion_date = models.DateTimeField(
-        _("Conversion Date"),
-        null=True,
-        blank=True,
-        help_text="When this lead was converted",
     )
 
     class Meta:
@@ -146,7 +124,3 @@ class Lead(AssignableMixin, BaseModel):
         if str(self.phone) == "+NoneNone":
             return ""
         return self.phone
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()

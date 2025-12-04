@@ -19,7 +19,6 @@ from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     AccountCreateSerializer,
     AccountDetailEditSwaggerSerializer,
-    AccountReadSerializer,
     AccountSerializer,
     AccountWriteSerializer,
     EmailSerializer,
@@ -57,7 +56,7 @@ from tasks.serializer import TaskSerializer
 class AccountsListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
-    serializer_class = AccountReadSerializer
+    serializer_class = AccountSerializer
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -218,7 +217,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 class AccountDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
-    serializer_class = AccountReadSerializer
+    serializer_class = AccountSerializer
 
     def get_object(self, pk):
         return get_object_or_404(Account, id=pk, org=self.request.profile.org)

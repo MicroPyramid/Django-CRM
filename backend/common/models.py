@@ -377,10 +377,6 @@ class Attachments(BaseModel):
             return self.file_type()[1]
         return None
 
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
     def clean(self):
         """
         Validate that the attachment's org matches the content object's org.
@@ -456,29 +452,6 @@ class Document(BaseModel):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
-
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
 
 
 def generate_key():
@@ -647,10 +620,6 @@ class Teams(BaseModel):
 
     def __str__(self):
         return f"{self.name}"
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
 
     def get_users(self):
         return ",".join(

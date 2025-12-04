@@ -60,8 +60,8 @@ class OrgProfileCreateView(APIView):
                 {
                     "error": True,
                     "errors": serializer.errors,
-                    "status": status.HTTP_400_BAD_REQUEST,
-                }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     @extend_schema(

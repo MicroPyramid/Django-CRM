@@ -6,6 +6,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	import {
 		LayoutDashboard,
@@ -16,6 +17,8 @@
 		CheckSquare,
 		HelpCircle,
 		ChevronRight,
+		ChevronsLeft,
+		ChevronsRight,
 		Moon,
 		Sun,
 		Monitor,
@@ -201,6 +204,24 @@
 								<span class="text-sidebar-foreground/60 truncate text-xs">CRM</span>
 							</div>
 						</a>
+					{/snippet}
+				</Sidebar.MenuButton>
+			</Sidebar.MenuItem>
+			<!-- Toggle Sidebar -->
+			<Sidebar.MenuItem>
+				<Sidebar.MenuButton
+					tooltipContent={sidebar.open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+					onclick={() => sidebar.toggle()}
+				>
+					{#snippet child({ props })}
+						<button {...props} class="flex w-full items-center">
+							{#if sidebar.open}
+								<ChevronsLeft class="size-4" />
+								<span>Collapse</span>
+							{:else}
+								<ChevronsRight class="size-4" />
+							{/if}
+						</button>
 					{/snippet}
 				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>

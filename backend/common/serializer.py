@@ -141,7 +141,7 @@ class OrgProfileCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {"name": {"required": True}}
 
     def validate_name(self, name):
-        if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", name)):
+        if bool(re.search(r"[~\!@#\$%\^&\*\(\)\+{}\":;'/\[\]]", name)):
             raise serializers.ValidationError(
                 "organization name should not contain any special characters"
             )
@@ -636,11 +636,6 @@ class ActivitySerializer(serializers.ModelSerializer):
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer()
-    created_on_arrow = serializers.SerializerMethodField()
-
-    @extend_schema_field(str)
-    def get_created_on_arrow(self, obj):
-        return obj.created_on_arrow
 
     class Meta:
         model = Teams
@@ -651,7 +646,6 @@ class TeamsSerializer(serializers.ModelSerializer):
             "users",
             "created_at",
             "created_by",
-            "created_on_arrow",
         )
 
 
@@ -685,7 +679,6 @@ class TeamCreateSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
             "created_by",
-            "created_on_arrow",
             "org",
         )
 

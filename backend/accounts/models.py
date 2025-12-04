@@ -1,4 +1,3 @@
-import arrow
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -9,6 +8,11 @@ from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES, INDCHOICES
 from contacts.models import Contact
+
+
+# Cleanup notes:
+# - Removed 'created_on_arrow' property (frontend computes its own timestamps)
+# - Removed 'contact_values' property (unused)
 
 
 class Account(AssignableMixin, BaseModel):
@@ -88,15 +92,6 @@ class Account(AssignableMixin, BaseModel):
             self.get_country_display() if self.country else None,
         ]
         return ", ".join(part for part in address_parts if part)
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
-    @property
-    def contact_values(self):
-        contacts = list(self.contacts.values_list("id", flat=True))
-        return ",".join(str(contact) for contact in contacts)
 
 
 class AccountEmail(BaseModel):
