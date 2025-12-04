@@ -117,7 +117,7 @@
 			emptyText: ''
 		},
 		{
-			key: 'contactTitle',
+			key: 'jobTitle',
 			label: 'Job Title',
 			type: 'text',
 			width: 'w-36',
@@ -152,7 +152,7 @@
 	];
 
 	// Visible columns state - default to hiding new columns
-	let visibleColumns = $state(columns.filter((c) => !['title', 'contactTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
+	let visibleColumns = $state(columns.filter((c) => !['title', 'jobTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
 
 	// Source options for leads
 	const sourceOptions = [
@@ -185,6 +185,20 @@
 			options: salutationOptions
 		},
 		{
+			key: 'firstName',
+			label: 'First Name',
+			type: 'text',
+			icon: User,
+			placeholder: 'First name'
+		},
+		{
+			key: 'lastName',
+			label: 'Last Name',
+			type: 'text',
+			icon: User,
+			placeholder: 'Last name'
+		},
+		{
 			key: 'email',
 			label: 'Email',
 			type: 'email',
@@ -199,7 +213,7 @@
 			placeholder: 'Add phone'
 		},
 		{
-			key: 'contactTitle',
+			key: 'jobTitle',
 			label: 'Job Title',
 			type: 'text',
 			icon: Briefcase,
@@ -242,6 +256,14 @@
 			type: 'select',
 			icon: Star,
 			options: leadRatingOptions
+		},
+		// Metadata
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			icon: Calendar,
+			editable: false
 		},
 		{
 			key: 'leadSource',
@@ -338,14 +360,6 @@
 			type: 'textarea',
 			icon: FileText,
 			placeholder: 'Add notes...'
-		},
-		// Metadata (read-only)
-		{
-			key: 'createdAt',
-			label: 'Created',
-			type: 'date',
-			icon: Calendar,
-			editable: false
 		},
 		// Assignment (multi-select fields - options populated dynamically)
 		{
@@ -446,11 +460,11 @@
 		lastName: '',
 		email: '',
 		phone: '',
-		contactTitle: '',
+		jobTitle: '',
 		company: '',
 		website: '',
 		linkedinUrl: '',
-		status: 'assigned',
+		status: 'ASSIGNED',
 		rating: '',
 		leadSource: '',
 		industry: '',
@@ -547,11 +561,11 @@
 			lastName: '',
 			email: '',
 			phone: '',
-			contactTitle: '',
+			jobTitle: '',
 			company: '',
 			website: '',
 			linkedinUrl: '',
-			status: 'assigned',
+			status: 'ASSIGNED',
 			rating: '',
 			leadSource: '',
 			industry: '',
@@ -696,11 +710,11 @@
 			formState.lastName = createFormData.lastName || '';
 			formState.email = createFormData.email || '';
 			formState.phone = createFormData.phone || '';
-			formState.contactTitle = createFormData.contactTitle || '';
+			formState.jobTitle = createFormData.jobTitle || '';
 			formState.company = createFormData.company || '';
 			formState.website = createFormData.website || '';
 			formState.linkedinUrl = createFormData.linkedinUrl || '';
-			formState.status = createFormData.status || 'assigned';
+			formState.status = createFormData.status || 'ASSIGNED';
 			formState.source = createFormData.leadSource || '';
 			formState.rating = createFormData.rating || '';
 			formState.industry = createFormData.industry || '';
@@ -774,7 +788,7 @@
 		phone: '',
 		company: '',
 		title: '',
-		contactTitle: '',
+		jobTitle: '',
 		website: '',
 		linkedinUrl: '',
 		// Sales Pipeline
@@ -832,7 +846,7 @@
 		formState.phone = formData.phone || '';
 		formState.company = formData.company_name || '';
 		formState.title = formData.title || '';
-		formState.contactTitle = formData.job_title || '';
+		formState.jobTitle = formData.job_title || '';
 		formState.website = formData.website || '';
 		formState.linkedinUrl = formData.linkedin_url || '';
 		// Sales Pipeline
@@ -917,12 +931,12 @@
 			lastName: lead.lastName || '',
 			email: lead.email || '',
 			phone: lead.phone || '',
-			company: typeof lead.company === 'object' ? lead.company?.id || '' : lead.company || '',
+			company: typeof lead.company === 'object' ? lead.company?.name || '' : lead.company || '',
 			title: lead.title || '',
-			contactTitle: lead.contactTitle || '',
+			jobTitle: lead.jobTitle || '',
 			website: lead.website || '',
 			linkedinUrl: lead.linkedinUrl || '',
-			status: lead.status?.toLowerCase().replace('_', ' ') || '',
+			status: lead.status || '',
 			source: lead.leadSource || '',
 			industry: lead.industry || '',
 			rating: lead.rating || '',
@@ -1152,7 +1166,7 @@
 	data={currentDrawerData}
 	columns={drawerColumnsWithOptions}
 	titleKey="title"
-	titlePlaceholder={drawerMode === 'create' ? 'New Lead' : 'Untitled Lead'}
+	titlePlaceholder={drawerMode === 'create' ? 'Lead Title' : 'Untitled Lead'}
 	headerLabel={drawerMode === 'create' ? 'New Lead' : 'Lead'}
 	mode={drawerMode}
 	loading={drawerLoading}
@@ -1241,7 +1255,7 @@
 	<input type="hidden" name="phone" value={formState.phone} />
 	<input type="hidden" name="company" value={formState.company} />
 	<input type="hidden" name="title" value={formState.title} />
-	<input type="hidden" name="contactTitle" value={formState.contactTitle} />
+	<input type="hidden" name="jobTitle" value={formState.jobTitle} />
 	<input type="hidden" name="website" value={formState.website} />
 	<input type="hidden" name="linkedinUrl" value={formState.linkedinUrl} />
 	<!-- Sales Pipeline -->
@@ -1286,7 +1300,7 @@
 	<input type="hidden" name="phone" value={formState.phone} />
 	<input type="hidden" name="company" value={formState.company} />
 	<input type="hidden" name="title" value={formState.title} />
-	<input type="hidden" name="contactTitle" value={formState.contactTitle} />
+	<input type="hidden" name="jobTitle" value={formState.jobTitle} />
 	<input type="hidden" name="website" value={formState.website} />
 	<input type="hidden" name="linkedinUrl" value={formState.linkedinUrl} />
 	<!-- Sales Pipeline -->

@@ -199,8 +199,6 @@ export const actions = {
 			const country = form.get('country')?.toString().trim() || '';
 			// Notes
 			const description = form.get('description')?.toString().trim() || '';
-			// Assignment
-			const ownerId = form.get('ownerId')?.toString();
 			// Tags
 			const tagsJson = form.get('tags')?.toString() || '[]';
 			const tags = JSON.parse(tagsJson);
@@ -225,7 +223,6 @@ export const actions = {
 				postcode: postcode || null,
 				country: country || null,
 				description: description || null,
-				assigned_to: ownerId ? [ownerId] : [],
 				tags: tags
 			};
 
@@ -241,7 +238,7 @@ export const actions = {
 			return { success: true };
 		} catch (err) {
 			console.error('Error creating contact:', err);
-			return fail(500, { error: 'Failed to create contact' });
+			return fail(400, { error: err.message || 'Failed to create contact' });
 		}
 	},
 
@@ -269,8 +266,6 @@ export const actions = {
 			const country = form.get('country')?.toString().trim() || '';
 			// Notes
 			const description = form.get('description')?.toString().trim() || '';
-			// Assignment
-			const ownerId = form.get('ownerId')?.toString();
 			// Tags
 			const tagsJson = form.get('tags')?.toString() || '[]';
 			const tags = JSON.parse(tagsJson);
@@ -295,7 +290,6 @@ export const actions = {
 				postcode: postcode || null,
 				country: country || null,
 				description: description || null,
-				assigned_to: ownerId ? [ownerId] : [],
 				tags: tags
 			};
 
@@ -336,7 +330,7 @@ export const actions = {
 			return { success: true };
 		} catch (err) {
 			console.error('Error deleting contact:', err);
-			return fail(500, { error: 'Failed to delete contact' });
+			return fail(400, { error: err.message || 'Failed to delete contact' });
 		}
 	}
 };

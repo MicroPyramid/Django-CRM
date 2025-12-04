@@ -60,7 +60,7 @@ export async function load({ cookies, locals }) {
 			lastName: lead.last_name,
 			title: lead.title,
 			salutation: lead.salutation,
-			contactTitle: lead.job_title,
+			jobTitle: lead.job_title,
 			company: lead.company_name,
 			email: lead.email,
 			phone: lead.phone,
@@ -68,7 +68,7 @@ export async function load({ cookies, locals }) {
 			linkedinUrl: lead.linkedin_url,
 
 			// Sales Pipeline
-			status: lead.status ? lead.status.toUpperCase().replace(' ', '_') : 'NEW',
+			status: lead.status ? lead.status.toUpperCase().replace(/ /g, '_') : 'ASSIGNED',
 			leadSource: lead.source,
 			industry: lead.industry,
 			rating: lead.rating,
@@ -179,14 +179,15 @@ export const actions = {
 			const lastName = form.get('lastName')?.toString().trim();
 			const email = form.get('email')?.toString().trim();
 			const phone = form.get('phone')?.toString().trim() || '';
-			const companyId = form.get('companyId')?.toString().trim() || null;
+			const company = form.get('company')?.toString().trim() || null;
 			const title = form.get('title')?.toString().trim() || '';
-			const contactTitle = form.get('contactTitle')?.toString().trim() || '';
+			const jobTitle = form.get('jobTitle')?.toString().trim() || '';
 			const website = form.get('website')?.toString().trim() || '';
 			const linkedinUrl = form.get('linkedinUrl')?.toString().trim() || '';
 
 			// Sales Pipeline
-			const statusRaw = form.get('status')?.toString().trim().toLowerCase() || '';
+			// Convert uppercase underscore format (IN_PROCESS) to Django format (in process)
+			const statusRaw = form.get('status')?.toString().trim().toLowerCase().replace(/_/g, ' ') || '';
 			const status = validStatuses.includes(statusRaw) ? statusRaw : 'assigned';
 			const sourceRaw = form.get('source')?.toString().trim().toLowerCase() || '';
 			const source = validSources.includes(sourceRaw) ? sourceRaw : null;
@@ -260,13 +261,13 @@ export const actions = {
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;
 			if (phone) leadData.phone = phone;
-			if (contactTitle) leadData.job_title = contactTitle;
+			if (jobTitle) leadData.job_title = jobTitle;
 			if (website) leadData.website = website;
 			if (linkedinUrl) leadData.linkedin_url = linkedinUrl;
 			if (industry) leadData.industry = industry;
 
 			// Only include optional fields if they have valid values
-			if (companyId) leadData.company_name = companyId;
+			if (company) leadData.company_name = company;
 			if (source) leadData.source = source;
 			if (rating) leadData.rating = rating;
 			if (opportunityAmount) leadData.opportunity_amount = parseFloat(opportunityAmount);
@@ -312,14 +313,15 @@ export const actions = {
 			const lastName = form.get('lastName')?.toString().trim();
 			const email = form.get('email')?.toString().trim();
 			const phone = form.get('phone')?.toString().trim() || '';
-			const companyId = form.get('companyId')?.toString().trim() || null;
+			const company = form.get('company')?.toString().trim() || null;
 			const title = form.get('title')?.toString().trim() || '';
-			const contactTitle = form.get('contactTitle')?.toString().trim() || '';
+			const jobTitle = form.get('jobTitle')?.toString().trim() || '';
 			const website = form.get('website')?.toString().trim() || '';
 			const linkedinUrl = form.get('linkedinUrl')?.toString().trim() || '';
 
 			// Sales Pipeline
-			const statusRaw = form.get('status')?.toString().trim().toLowerCase() || '';
+			// Convert uppercase underscore format (IN_PROCESS) to Django format (in process)
+			const statusRaw = form.get('status')?.toString().trim().toLowerCase().replace(/_/g, ' ') || '';
 			const status = validStatuses.includes(statusRaw) ? statusRaw : null;
 			const sourceRaw = form.get('source')?.toString().trim().toLowerCase() || '';
 			const source = validSources.includes(sourceRaw) ? sourceRaw : null;
@@ -391,11 +393,11 @@ export const actions = {
 			if (lastName) leadData.last_name = lastName;
 			if (email) leadData.email = email;
 			if (phone) leadData.phone = phone;
-			if (contactTitle) leadData.job_title = contactTitle;
+			if (jobTitle) leadData.job_title = jobTitle;
 			if (website) leadData.website = website;
 			if (linkedinUrl) leadData.linkedin_url = linkedinUrl;
 			if (industry) leadData.industry = industry;
-			if (companyId) leadData.company_name = companyId;
+			if (company) leadData.company_name = company;
 			if (source) leadData.source = source;
 			if (status) leadData.status = status;
 			if (rating) leadData.rating = rating;

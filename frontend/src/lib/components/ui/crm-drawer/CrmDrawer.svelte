@@ -15,6 +15,7 @@
 	 *   columns?: any[],
 	 *   titleKey?: string,
 	 *   titlePlaceholder?: string,
+	 *   titleEditable?: boolean,
 	 *   headerLabel?: string,
 	 *   onFieldChange?: (field: string, value: any) => void,
 	 *   onDelete?: () => void,
@@ -33,6 +34,7 @@
 		columns = [],
 		titleKey = 'name',
 		titlePlaceholder = 'Untitled',
+		titleEditable = true,
 		headerLabel = 'Item',
 		onFieldChange,
 		onDelete,
@@ -136,16 +138,22 @@
 				</div>
 
 				<!-- Scrollable content -->
-				<div class="flex-1 overflow-y-auto">
+				<div class="flex-1 overflow-x-hidden overflow-y-auto">
 					<!-- Title section -->
 					<div class="px-6 pb-4 pt-6">
-						<input
-							type="text"
-							value={titleValue}
-							oninput={handleTitleChange}
-							placeholder={titlePlaceholder}
-							class="w-full border-0 bg-transparent text-2xl font-semibold outline-none focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-600"
-						/>
+						{#if titleEditable}
+							<input
+								type="text"
+								value={titleValue}
+								oninput={handleTitleChange}
+								placeholder={titlePlaceholder}
+								class="w-full border-0 bg-transparent text-2xl font-semibold outline-none focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-600"
+							/>
+						{:else}
+							<h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+								{titleValue || titlePlaceholder}
+							</h2>
+						{/if}
 					</div>
 
 					<!-- Properties section -->

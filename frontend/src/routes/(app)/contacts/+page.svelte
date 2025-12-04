@@ -233,6 +233,11 @@
 		}
 	});
 
+	// Computed display name for drawer title
+	const drawerTitle = $derived(
+		`${drawerFormData.firstName || ''} ${drawerFormData.lastName || ''}`.trim() || ''
+	);
+
 	// URL sync
 	$effect(() => {
 		const viewId = $page.url.searchParams.get('view');
@@ -355,7 +360,6 @@
 		postcode: '',
 		country: '',
 		description: '',
-		ownerId: '',
 		tags: /** @type {string[]} */ ([])
 	});
 
@@ -608,10 +612,11 @@
 <CrmDrawer
 	bind:open={drawerOpen}
 	onOpenChange={handleDrawerChange}
-	data={drawerFormData}
+	data={{ ...drawerFormData, displayName: drawerTitle }}
 	columns={drawerColumns}
-	titleKey="firstName"
-	titlePlaceholder="First name"
+	titleKey="displayName"
+	titlePlaceholder="New Contact"
+	titleEditable={false}
 	headerLabel="Contact"
 	mode={drawerMode}
 	loading={drawerLoading || isSubmitting}
@@ -682,7 +687,6 @@
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="description" value={formState.description} />
-	<input type="hidden" name="ownerId" value={formState.ownerId} />
 	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
@@ -709,7 +713,6 @@
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="description" value={formState.description} />
-	<input type="hidden" name="ownerId" value={formState.ownerId} />
 	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
 </form>
 
