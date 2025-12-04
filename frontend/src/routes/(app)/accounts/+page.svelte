@@ -42,8 +42,8 @@
 
 	// Status options for select column
 	const statusOptions = [
-		{ value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-700' },
-		{ value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-600' }
+		{ value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+		{ value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }
 	];
 
 	// Industry options for drawer
@@ -468,42 +468,39 @@
 	}
 
 	/**
-	 * Handle field change from NotionDrawer
+	 * Handle field change from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	async function handleDrawerFieldChange(field, value) {
-		// Update local form data
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
 		drawerFormData = { ...drawerFormData, [field]: value };
+	}
 
-		// For view mode (editing), auto-save changes
-		if (drawerMode === 'view' && selectedAccount && !isClosed) {
-			// Convert to API format and save
-			formState.accountId = selectedAccount.id;
-			formState.name = field === 'name' ? value : drawerFormData.name || '';
-			formState.email = field === 'email' ? value : drawerFormData.email || '';
-			formState.phone = field === 'phone' ? value : drawerFormData.phone || '';
-			formState.website = field === 'website' ? value : drawerFormData.website || '';
-			formState.industry = field === 'industry' ? value : drawerFormData.industry || '';
-			formState.description = field === 'description' ? value : drawerFormData.description || '';
-			formState.address_line =
-				field === 'addressLine' ? value : drawerFormData.addressLine || '';
-			formState.city = field === 'city' ? value : drawerFormData.city || '';
-			formState.state = field === 'state' ? value : drawerFormData.state || '';
-			formState.postcode = field === 'postcode' ? value : drawerFormData.postcode || '';
-			formState.country = field === 'country' ? value : drawerFormData.country || '';
-			formState.annual_revenue =
-				field === 'annualRevenue'
-					? value?.toString() || ''
-					: drawerFormData.annualRevenue?.toString() || '';
-			formState.number_of_employees =
-				field === 'numberOfEmployees'
-					? value?.toString() || ''
-					: drawerFormData.numberOfEmployees?.toString() || '';
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedAccount || isClosed) return;
 
-			await tick();
-			updateForm.requestSubmit();
-		}
+		isSubmitting = true;
+		formState.accountId = selectedAccount.id;
+		formState.name = drawerFormData.name || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.website = drawerFormData.website || '';
+		formState.industry = drawerFormData.industry || '';
+		formState.description = drawerFormData.description || '';
+		formState.address_line = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+
+		await tick();
+		updateForm.requestSubmit();
 	}
 
 	/**
@@ -623,7 +620,7 @@
 						Columns
 						{#if visibleColumnCount < totalColumnCount}
 							<span
-								class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+								class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 							>
 								{visibleColumnCount}/{totalColumnCount}
 							</span>
@@ -724,11 +721,11 @@
 			</CrmTable>
 
 			<!-- New row button -->
-			<div class="border-t border-gray-100/60 px-4 py-2">
+			<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
 				<button
 					type="button"
 					onclick={openCreate}
-					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
 				>
 					<Plus class="h-4 w-4" />
 					New account
@@ -737,11 +734,11 @@
 		</div>
 
 		<!-- Mobile Card View -->
-		<div class="divide-y md:hidden">
+		<div class="divide-y dark:divide-gray-800 md:hidden">
 			{#each filteredAccounts as account (account.id)}
 				<button
 					type="button"
-					class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 {!account.isActive
+					class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 {!account.isActive
 						? 'opacity-60'
 						: ''}"
 					onclick={() => openAccount(account)}
@@ -754,17 +751,17 @@
 					<div class="min-w-0 flex-1">
 						<div class="flex items-start justify-between gap-2">
 							<div>
-								<p class="font-medium text-gray-900">{account.name}</p>
+								<p class="font-medium text-gray-900 dark:text-gray-100">{account.name}</p>
 								<div class="mt-1 flex items-center gap-1.5">
 									{#if account.isActive !== false}
 										<span
-											class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
+											class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
 										>
 											Active
 										</span>
 									{:else}
 										<span
-											class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
+											class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400"
 										>
 											Closed
 										</span>
@@ -772,20 +769,20 @@
 								</div>
 							</div>
 						</div>
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
 							{#if account.industry}
 								<span>{account.industry}</span>
 							{/if}
 							<div class="flex items-center gap-1">
-								<Users class="h-3.5 w-3.5 text-gray-400" />
+								<Users class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
 								<span>{account.contactCount || 0}</span>
 							</div>
 							<div class="flex items-center gap-1">
-								<Target class="h-3.5 w-3.5 text-gray-400" />
+								<Target class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
 								<span>{account.opportunityCount || 0}</span>
 							</div>
 							<div class="flex items-center gap-1">
-								<Calendar class="h-3.5 w-3.5 text-gray-400" />
+								<Calendar class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
 								<span>{formatRelativeDate(account.createdAt)}</span>
 							</div>
 						</div>
@@ -832,12 +829,12 @@
 	{#snippet activitySection()}
 		<!-- Closed account warning -->
 		{#if isClosed && drawerMode !== 'create'}
-			<div class="border-red-200 bg-red-50 mb-4 rounded-lg border p-3">
+			<div class="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 mb-4 rounded-lg border p-3">
 				<div class="flex gap-2">
-					<AlertTriangle class="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+					<AlertTriangle class="h-4 w-4 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
 					<div>
-						<p class="text-red-700 text-sm font-medium">This account is closed</p>
-						<p class="text-red-600 text-xs mt-0.5">Reopen the account to make changes</p>
+						<p class="text-red-700 dark:text-red-400 text-sm font-medium">This account is closed</p>
+						<p class="text-red-600 dark:text-red-500 text-xs mt-0.5">Reopen the account to make changes</p>
 					</div>
 				</div>
 			</div>
@@ -846,36 +843,36 @@
 		<!-- Related entity stats (view mode only) -->
 		{#if drawerMode !== 'create' && selectedAccount}
 			<div class="mb-4">
-				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">
+				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">
 					Related
 				</p>
 				<div class="grid grid-cols-3 gap-2">
-					<div class="bg-gray-50 rounded-lg p-2 text-center">
-						<div class="flex items-center justify-center gap-1 text-gray-400">
+					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<Users class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
 							{selectedAccount.contactCount || 0}
 						</p>
-						<p class="text-gray-500 text-[10px]">Contacts</p>
+						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Contacts</p>
 					</div>
-					<div class="bg-gray-50 rounded-lg p-2 text-center">
-						<div class="flex items-center justify-center gap-1 text-gray-400">
+					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<Target class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
 							{selectedAccount.opportunityCount || 0}
 						</p>
-						<p class="text-gray-500 text-[10px]">Opportunities</p>
+						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Opportunities</p>
 					</div>
-					<div class="bg-gray-50 rounded-lg p-2 text-center">
-						<div class="flex items-center justify-center gap-1 text-gray-400">
+					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<AlertTriangle class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 mt-0.5 text-lg font-semibold">
+						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
 							{selectedAccount.caseCount || 0}
 						</p>
-						<p class="text-gray-500 text-[10px]">Cases</p>
+						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Cases</p>
 					</div>
 				</div>
 			</div>
@@ -883,7 +880,7 @@
 			<!-- Quick actions (for active accounts only) -->
 			{#if !isClosed}
 				<div class="mb-4">
-					<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">
+					<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">
 						Quick Actions
 					</p>
 					<div class="flex gap-2">
@@ -901,15 +898,15 @@
 
 			<!-- Metadata -->
 			<div>
-				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 text-xs">Owner</p>
-						<p class="text-gray-900 font-medium">{selectedAccount.owner?.name || 'Unassigned'}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedAccount.owner?.name || 'Unassigned'}</p>
 					</div>
 					<div>
-						<p class="text-gray-400 text-xs">Created</p>
-						<p class="text-gray-900 font-medium">{formatRelativeDate(selectedAccount.createdAt)}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedAccount.createdAt)}</p>
 					</div>
 				</div>
 			</div>
@@ -923,9 +920,10 @@
 				{isSubmitting ? 'Creating...' : 'Create Account'}
 			</Button>
 		{:else if isClosed}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
 			<Button
 				variant="outline"
-				class="text-green-600 hover:text-green-700"
+				class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
 				onclick={handleReopen}
 				disabled={isSubmitting}
 			>
@@ -933,14 +931,18 @@
 				Reopen Account
 			</Button>
 		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
 			<Button
 				variant="ghost"
-				class="text-orange-600 hover:text-orange-700"
+				class="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
 				onclick={handleClose}
 				disabled={isSubmitting}
 			>
 				<Lock class="mr-1.5 h-4 w-4" />
 				Close Account
+			</Button>
+			<Button onclick={handleDrawerUpdate} disabled={isSubmitting || !drawerFormData.name?.trim()}>
+				{isSubmitting ? 'Saving...' : 'Save'}
 			</Button>
 		{/if}
 	{/snippet}
@@ -973,7 +975,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Account updated successfully', false)}
+	use:enhance={createEnhanceHandler('Account updated successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="accountId" value={formState.accountId} />

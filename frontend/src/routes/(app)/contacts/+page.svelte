@@ -376,38 +376,42 @@
 	}
 
 	/**
-	 * Handle field change from NotionDrawer
+	 * Handle field change from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	async function handleDrawerFieldChange(field, value) {
-		// Update local form data
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
 		drawerFormData = { ...drawerFormData, [field]: value };
+	}
 
-		// For view mode (editing), auto-save changes
-		if (drawerMode === 'view' && selectedContact) {
-			formState.contactId = selectedContact.id;
-			formState.firstName = field === 'firstName' ? value : drawerFormData.firstName || '';
-			formState.lastName = field === 'lastName' ? value : drawerFormData.lastName || '';
-			formState.email = field === 'email' ? value : drawerFormData.email || '';
-			formState.phone = field === 'phone' ? value : drawerFormData.phone || '';
-			formState.organization =
-				field === 'organization' ? value : drawerFormData.organization || '';
-			formState.title = field === 'title' ? value : drawerFormData.title || '';
-			formState.department = field === 'department' ? value : drawerFormData.department || '';
-			formState.doNotCall = field === 'doNotCall' ? value : drawerFormData.doNotCall || false;
-			formState.linkedInUrl = field === 'linkedInUrl' ? value : drawerFormData.linkedInUrl || '';
-			formState.addressLine = field === 'addressLine' ? value : drawerFormData.addressLine || '';
-			formState.city = field === 'city' ? value : drawerFormData.city || '';
-			formState.state = field === 'state' ? value : drawerFormData.state || '';
-			formState.postcode = field === 'postcode' ? value : drawerFormData.postcode || '';
-			formState.country = field === 'country' ? value : drawerFormData.country || '';
-			formState.description = field === 'description' ? value : drawerFormData.description || '';
-			formState.tags = field === 'tags' ? value : drawerFormData.tags || [];
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedContact) return;
 
-			await tick();
-			updateForm.requestSubmit();
-		}
+		isSubmitting = true;
+		formState.contactId = selectedContact.id;
+		formState.firstName = drawerFormData.firstName || '';
+		formState.lastName = drawerFormData.lastName || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.organization = drawerFormData.organization || '';
+		formState.title = drawerFormData.title || '';
+		formState.department = drawerFormData.department || '';
+		formState.doNotCall = drawerFormData.doNotCall || false;
+		formState.linkedInUrl = drawerFormData.linkedInUrl || '';
+		formState.addressLine = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.description = drawerFormData.description || '';
+		formState.tags = drawerFormData.tags || [];
+
+		await tick();
+		updateForm.requestSubmit();
 	}
 
 	/**
@@ -480,13 +484,13 @@
 	<title>Contacts - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white dark:bg-gray-950">
 	<!-- Header -->
-	<div class="border-b border-gray-200 px-6 py-4">
+	<div class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="text-2xl font-semibold text-gray-900">Contacts</h1>
-				<p class="mt-1 text-sm text-gray-500">
+				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Contacts</h1>
+				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
 					{filteredContacts.length} of {contacts.length} contacts
 				</p>
 			</div>
@@ -519,7 +523,7 @@
 								Columns
 								{#if visibleColumns.length < columns.length}
 									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 									>
 										{visibleColumns.length}/{columns.length}
 									</span>
@@ -587,11 +591,11 @@
 		</CrmTable>
 
 		<!-- Add row button at bottom -->
-		<div class="border-t border-gray-100/60 px-4 py-2">
+		<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
 			<button
 				type="button"
 				onclick={openCreate}
-				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
 			>
 				<Plus class="h-4 w-4" />
 				New contact
@@ -619,15 +623,15 @@
 		<!-- Metadata (view mode only) -->
 		{#if drawerMode !== 'create' && selectedContact}
 			<div>
-				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 text-xs">Owner</p>
-						<p class="text-gray-900 font-medium">{selectedContact.owner?.name || 'Unassigned'}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedContact.owner?.name || 'Unassigned'}</p>
 					</div>
 					<div>
-						<p class="text-gray-400 text-xs">Created</p>
-						<p class="text-gray-900 font-medium">{formatRelativeDate(selectedContact.createdAt)}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedContact.createdAt)}</p>
 					</div>
 				</div>
 			</div>
@@ -642,6 +646,14 @@
 				disabled={isSubmitting || !drawerFormData.firstName?.trim()}
 			>
 				{isSubmitting ? 'Creating...' : 'Create Contact'}
+			</Button>
+		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				onclick={handleDrawerUpdate}
+				disabled={isSubmitting || !drawerFormData.firstName?.trim()}
+			>
+				{isSubmitting ? 'Saving...' : 'Save'}
 			</Button>
 		{/if}
 	{/snippet}
@@ -678,7 +690,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Contact updated successfully', false)}
+	use:enhance={createEnhanceHandler('Contact updated successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="contactId" value={formState.contactId} />

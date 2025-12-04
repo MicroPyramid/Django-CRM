@@ -480,7 +480,7 @@
 								Columns
 								{#if columnCounts.visible < columnCounts.total}
 									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 									>
 										{columnCounts.visible}/{columnCounts.total}
 									</span>
@@ -569,13 +569,13 @@
 		{#if drawer.mode !== 'create' && drawer.selected?.comments?.length > 0}
 			<div class="space-y-3">
 				<div class="flex items-center gap-2 mb-3">
-					<Activity class="h-4 w-4 text-gray-400" />
-					<p class="text-xs font-medium tracking-wider uppercase text-gray-500">Activity</p>
+					<Activity class="h-4 w-4 text-gray-400 dark:text-gray-500" />
+					<p class="text-xs font-medium tracking-wider uppercase text-gray-500 dark:text-gray-400">Activity</p>
 				</div>
 				{#each drawer.selected.comments.slice(0, 5) as comment (comment.id)}
 					<div class="flex gap-3">
 						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-							<MessageSquare class="h-4 w-4 text-gray-400" />
+							<MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
 						</div>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm text-gray-900 dark:text-gray-100">
@@ -592,8 +592,8 @@
 			</div>
 		{:else if drawer.mode !== 'create'}
 			<div class="flex flex-col items-center justify-center py-6 text-center">
-				<MessageSquare class="h-8 w-8 text-gray-300 mb-2" />
-				<p class="text-sm text-gray-500">No activity yet</p>
+				<MessageSquare class="h-8 w-8 text-gray-300 dark:text-gray-600 mb-2" />
+				<p class="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
 			</div>
 		{/if}
 	{/snippet}

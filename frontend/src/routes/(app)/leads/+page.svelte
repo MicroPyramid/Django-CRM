@@ -137,7 +137,7 @@
 			type: 'select',
 			width: 'w-32',
 			canHide: true,
-			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700' }))
+			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
 		},
 		{
 			key: 'owner',
@@ -156,22 +156,22 @@
 
 	// Source options for leads
 	const sourceOptions = [
-		{ value: 'call', label: 'Call', color: 'bg-blue-100 text-blue-700' },
-		{ value: 'email', label: 'Email', color: 'bg-purple-100 text-purple-700' },
-		{ value: 'existing customer', label: 'Existing Customer', color: 'bg-green-100 text-green-700' },
-		{ value: 'partner', label: 'Partner', color: 'bg-orange-100 text-orange-700' },
-		{ value: 'public relations', label: 'Public Relations', color: 'bg-pink-100 text-pink-700' },
-		{ value: 'campaign', label: 'Campaign', color: 'bg-cyan-100 text-cyan-700' },
-		{ value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-700' }
+		{ value: 'call', label: 'Call', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+		{ value: 'email', label: 'Email', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+		{ value: 'existing customer', label: 'Existing Customer', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+		{ value: 'partner', label: 'Partner', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+		{ value: 'public relations', label: 'Public Relations', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
+		{ value: 'campaign', label: 'Campaign', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
+		{ value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
 	];
 
 	// Salutation options
 	const salutationOptions = [
-		{ value: 'Mr', label: 'Mr', color: 'bg-gray-100 text-gray-700' },
-		{ value: 'Mrs', label: 'Mrs', color: 'bg-gray-100 text-gray-700' },
-		{ value: 'Ms', label: 'Ms', color: 'bg-gray-100 text-gray-700' },
-		{ value: 'Dr', label: 'Dr', color: 'bg-gray-100 text-gray-700' },
-		{ value: 'Prof', label: 'Prof', color: 'bg-gray-100 text-gray-700' }
+		{ value: 'Mr', label: 'Mr', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+		{ value: 'Mrs', label: 'Mrs', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+		{ value: 'Ms', label: 'Ms', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+		{ value: 'Dr', label: 'Dr', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+		{ value: 'Prof', label: 'Prof', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
 	];
 
 	// Full drawer columns for NotionDrawer (all lead fields)
@@ -255,7 +255,7 @@
 			label: 'Industry',
 			type: 'select',
 			icon: Building2,
-			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700' }))
+			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
 		},
 		// Deal Information
 		{
@@ -329,7 +329,7 @@
 			label: 'Country',
 			type: 'select',
 			icon: Globe,
-			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700' }))
+			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
 		},
 		// Notes
 		{
@@ -609,18 +609,33 @@
 	}
 
 	/**
-	 * Handle field change from NotionDrawer
+	 * Handle field change from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	async function handleDrawerFieldChange(field, value) {
+	function handleDrawerFieldChange(field, value) {
 		if (drawerMode === 'create') {
 			// For create mode, just update the form data
 			createFormData = { ...createFormData, [field]: value };
 		} else if (drawerData) {
-			// For edit mode, save immediately
-			await handleQuickEdit(drawerData, field, value);
+			// For edit mode, just update local data - no auto-save
+			drawerData = { ...drawerData, [field]: value };
 		}
+	}
+
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !drawerData) return;
+
+		isSaving = true;
+		// Populate form state with current drawer data
+		const currentState = leadToFormState(drawerData);
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
 	}
 
 	/**
@@ -953,13 +968,17 @@
 	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
+	 * @param {boolean} shouldCloseDrawer
 	 */
-	function createEnhanceHandler(successMessage) {
+	function createEnhanceHandler(successMessage, shouldCloseDrawer = true) {
 		return () => {
 			return async ({ result }) => {
+				isSaving = false;
 				if (result.type === 'success') {
 					toast.success(successMessage);
-					closeDrawer();
+					if (shouldCloseDrawer) {
+						closeDrawer();
+					}
 					await invalidateAll();
 				} else if (result.type === 'failure') {
 					toast.error(result.data?.error || 'Operation failed');
@@ -975,13 +994,13 @@
 	<title>Leads - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white dark:bg-gray-950">
 	<!-- Notion-style Header -->
-	<div class="border-b border-gray-200 px-6 py-4">
+	<div class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="text-2xl font-semibold text-gray-900">Leads</h1>
-				<p class="mt-1 text-sm text-gray-500">{filteredLeads.length} leads</p>
+				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Leads</h1>
+				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{filteredLeads.length} leads</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<!-- Column Visibility (Notion-style) -->
@@ -993,7 +1012,7 @@
 								Columns
 								{#if visibleColumns.length < columns.length}
 									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 									>
 										{visibleColumns.length}/{columns.length}
 									</span>
@@ -1028,9 +1047,9 @@
 	<!-- Table -->
 	{#if filteredLeads.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<User class="mb-4 h-12 w-12 text-gray-300" />
-			<h3 class="text-lg font-medium text-gray-900">No leads found</h3>
-			<p class="mt-1 text-sm text-gray-500">Create your first lead to get started.</p>
+			<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
+			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first lead to get started.</p>
 			<Button onclick={openCreate} class="mt-4" size="sm">
 				<Plus class="mr-2 h-4 w-4" />
 				New Lead
@@ -1048,9 +1067,9 @@
 			>
 				{#snippet emptyState()}
 					<div class="flex flex-col items-center justify-center py-16 text-center">
-						<User class="mb-4 h-12 w-12 text-gray-300" />
-						<h3 class="text-lg font-medium text-gray-900">No leads found</h3>
-						<p class="mt-1 text-sm text-gray-500">Create your first lead to get started.</p>
+						<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
+						<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first lead to get started.</p>
 						<Button onclick={openCreate} class="mt-4" size="sm">
 							<Plus class="mr-2 h-4 w-4" />
 							New Lead
@@ -1060,11 +1079,11 @@
 			</CrmTable>
 
 			<!-- New row button -->
-			<div class="border-t border-gray-100/60 px-4 py-2">
+			<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
 				<button
 					type="button"
 					onclick={openCreate}
-					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
 				>
 					<Plus class="h-4 w-4" />
 					New
@@ -1073,19 +1092,19 @@
 		</div>
 
 		<!-- Mobile Card View -->
-		<div class="divide-y md:hidden">
+		<div class="divide-y dark:divide-gray-800 md:hidden">
 			{#each filteredLeads as lead (lead.id)}
 				<button
 					type="button"
-					class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30"
+					class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30 dark:hover:bg-gray-800/30"
 					onclick={() => openLead(lead)}
 				>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-start justify-between gap-2">
 							<div>
-								<p class="text-sm font-medium text-gray-900">{getFullName(lead)}</p>
+								<p class="text-sm font-medium text-gray-900 dark:text-gray-100">{getFullName(lead)}</p>
 								{#if lead.company}
-									<p class="text-sm text-gray-500">
+									<p class="text-sm text-gray-500 dark:text-gray-400">
 										{typeof lead.company === 'object' ? lead.company.name : lead.company}
 									</p>
 								{/if}
@@ -1099,7 +1118,7 @@
 								{getOptionLabel(lead.status, leadStatusOptions)}
 							</span>
 						</div>
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
 							{#if lead.rating}
 								<span
 									class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}"
@@ -1117,7 +1136,7 @@
 			<button
 				type="button"
 				onclick={openCreate}
-				class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+				class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
 			>
 				<Plus class="h-4 w-4" />
 				New
@@ -1144,24 +1163,24 @@
 	{#snippet activitySection()}
 		{#if drawerMode !== 'create' && drawerData?.comments?.length > 0}
 			<div class="space-y-3">
-				<div class="flex items-center gap-2 text-sm font-medium text-gray-500">
+				<div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
 					<MessageSquare class="h-4 w-4" />
 					Activity
 				</div>
 				{#each drawerData.comments.slice(0, 3) as comment (comment.id)}
 					<div class="flex gap-3">
-						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
-							<MessageSquare class="h-4 w-4 text-gray-400" />
+						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+							<MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
 						</div>
 						<div class="min-w-0 flex-1">
-							<p class="text-sm text-gray-900">
+							<p class="text-sm text-gray-900 dark:text-gray-100">
 								<span class="font-medium">{comment.author?.name || 'Unknown'}</span>
 								{' '}added a note
 							</p>
-							<p class="mt-0.5 text-xs text-gray-500">
+							<p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
 								{formatRelativeDate(comment.createdAt)}
 							</p>
-							<p class="mt-1 line-clamp-2 text-sm text-gray-600">
+							<p class="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
 								{comment.body}
 							</p>
 						</div>
@@ -1184,10 +1203,23 @@
 					Create Lead
 				{/if}
 			</Button>
-		{:else if drawerData?.status !== 'converted'}
-			<Button variant="outline" onclick={handleDrawerConvert}>
-				<ArrowRightCircle class="mr-2 h-4 w-4" />
-				Convert
+		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSaving}>
+				Cancel
+			</Button>
+			{#if drawerData?.status !== 'converted'}
+				<Button variant="outline" onclick={handleDrawerConvert} disabled={isSaving}>
+					<ArrowRightCircle class="mr-2 h-4 w-4" />
+					Convert
+				</Button>
+			{/if}
+			<Button onclick={handleDrawerUpdate} disabled={isSaving}>
+				{#if isSaving}
+					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					Saving...
+				{:else}
+					Save
+				{/if}
 			</Button>
 		{/if}
 	{/snippet}

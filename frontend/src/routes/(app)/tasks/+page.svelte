@@ -38,15 +38,15 @@
 
 	// Status and priority options with colors
 	const statusOptions = [
-		{ value: 'New', label: 'New', color: 'bg-blue-100 text-blue-700' },
-		{ value: 'In Progress', label: 'In Progress', color: 'bg-amber-100 text-amber-700' },
-		{ value: 'Completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-700' }
+		{ value: 'New', label: 'New', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+		{ value: 'In Progress', label: 'In Progress', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+		{ value: 'Completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }
 	];
 
 	const priorityOptions = [
-		{ value: 'High', label: 'High', color: 'bg-red-100 text-red-700' },
-		{ value: 'Medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
-		{ value: 'Low', label: 'Low', color: 'bg-gray-100 text-gray-600' }
+		{ value: 'High', label: 'High', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+		{ value: 'Medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+		{ value: 'Low', label: 'Low', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }
 	];
 
 	// Empty task template for create mode
@@ -621,22 +621,26 @@
 	});
 
 	/**
-	 * Handle field changes from NotionDrawer
+	 * Handle field changes from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	async function handleDrawerFieldChange(field, value) {
-		// Update drawerFormData
+	function handleDrawerFieldChange(field, value) {
+		// Update drawerFormData only - no auto-save
 		drawerFormData = { ...drawerFormData, [field]: value };
 
 		// Also update formState
 		formState = { ...formState, [field]: value };
+	}
 
-		// If in edit mode (not create), trigger auto-save
-		if (selectedTaskId) {
-			await tick();
-			updateForm.requestSubmit();
-		}
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (!selectedTaskId) return;
+
+		await tick();
+		updateForm.requestSubmit();
 	}
 
 	/**
@@ -690,7 +694,7 @@
 								Columns
 								{#if columnCounts.visible < columnCounts.total}
 									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 									>
 										{columnCounts.visible}/{columnCounts.total}
 									</span>
@@ -1008,7 +1012,7 @@
 		<!-- Task metadata (only for existing tasks) -->
 		{#if selectedTask && !isCreateMode}
 			<div class="space-y-2 text-sm">
-				<div class="mb-3 text-[13px] font-medium text-gray-500">Details</div>
+				<div class="mb-3 text-[13px] font-medium text-gray-500 dark:text-gray-400">Details</div>
 				{#if selectedTask.createdBy}
 					<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 						<User class="h-3.5 w-3.5" />
@@ -1030,6 +1034,7 @@
 			<Button variant="outline" size="sm" onclick={closeTaskSheet}>Cancel</Button>
 			<Button size="sm" onclick={handleDrawerSave}>Create Task</Button>
 		{:else if selectedTask}
+			<Button variant="outline" size="sm" onclick={closeTaskSheet}>Cancel</Button>
 			{#if isCompleted}
 				<Button variant="outline" size="sm" onclick={reopenSelectedTask}>
 					<RotateCcw class="mr-2 h-4 w-4" />
@@ -1041,6 +1046,7 @@
 					Complete
 				</Button>
 			{/if}
+			<Button size="sm" onclick={handleDrawerUpdate}>Save</Button>
 		{/if}
 	{/snippet}
 </CrmDrawer>
@@ -1072,7 +1078,7 @@
 	method="POST"
 	action="?/update"
 	bind:this={updateForm}
-	use:enhance={createEnhanceHandler('Task updated successfully')}
+	use:enhance={createEnhanceHandler('Task updated successfully', true)}
 	class="hidden"
 >
 	<input type="hidden" name="taskId" value={formState.taskId} />

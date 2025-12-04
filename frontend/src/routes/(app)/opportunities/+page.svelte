@@ -38,33 +38,33 @@
 
 	// Stage options with colors
 	const stageOptions = [
-		{ value: 'PROSPECTING', label: 'Prospecting', color: 'bg-gray-100 text-gray-700' },
-		{ value: 'QUALIFICATION', label: 'Qualification', color: 'bg-blue-100 text-blue-700' },
-		{ value: 'PROPOSAL', label: 'Proposal', color: 'bg-purple-100 text-purple-700' },
-		{ value: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 text-orange-700' },
-		{ value: 'CLOSED_WON', label: 'Won', color: 'bg-green-100 text-green-700' },
-		{ value: 'CLOSED_LOST', label: 'Lost', color: 'bg-red-100 text-red-700' }
+		{ value: 'PROSPECTING', label: 'Prospecting', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+		{ value: 'QUALIFICATION', label: 'Qualification', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+		{ value: 'PROPOSAL', label: 'Proposal', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+		{ value: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+		{ value: 'CLOSED_WON', label: 'Won', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+		{ value: 'CLOSED_LOST', label: 'Lost', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
 	];
 
 	// Type options
 	const typeOptions = OPPORTUNITY_TYPES.map((t) => ({
 		value: t.value,
 		label: t.label,
-		color: 'bg-slate-100 text-slate-700'
+		color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 	}));
 
 	// Source options
 	const sourceOptions = OPPORTUNITY_SOURCES.map((s) => ({
 		value: s.value,
 		label: s.label,
-		color: 'bg-indigo-100 text-indigo-700'
+		color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
 	}));
 
 	// Currency options
 	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
 		value: c.value,
 		label: c.label,
-		color: 'bg-amber-100 text-amber-700'
+		color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
 	}));
 
 
@@ -520,17 +520,68 @@
 	}
 
 	/**
-	 * Handle field change from NotionDrawer
+	 * Handle field change from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	async function handleDrawerFieldChange(field, value) {
-		// Update local form data
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
 		drawerFormData = { ...drawerFormData, [field]: value };
+	}
 
-		// For view mode (editing), auto-save changes
-		if (drawerMode === 'view' && selectedRowId) {
-			await saveFieldValue(selectedRowId, field, value);
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedRowId) return;
+
+		isLoading = true;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+			form.append('name', drawerFormData.name || 'Opportunity');
+			form.append('stage', drawerFormData.stage || 'PROSPECTING');
+			form.append('amount', drawerFormData.amount?.toString() || '0');
+			form.append('probability', drawerFormData.probability?.toString() || '50');
+			if (drawerFormData.account) {
+				form.append('accountId', drawerFormData.account);
+			}
+			if (drawerFormData.opportunityType) {
+				form.append('opportunityType', drawerFormData.opportunityType);
+			}
+			if (drawerFormData.currency) {
+				form.append('currency', drawerFormData.currency);
+			}
+			if (drawerFormData.closedOn) {
+				form.append('closedOn', drawerFormData.closedOn);
+			}
+			if (drawerFormData.leadSource) {
+				form.append('leadSource', drawerFormData.leadSource);
+			}
+			if (drawerFormData.description) {
+				form.append('description', drawerFormData.description);
+			}
+			// Multi-select fields - send as JSON arrays
+			form.append('contacts', JSON.stringify(drawerFormData.contacts || []));
+			form.append('assignedTo', JSON.stringify(drawerFormData.assignedTo || []));
+			form.append('teams', JSON.stringify(drawerFormData.teams || []));
+			form.append('tags', JSON.stringify(drawerFormData.tags || []));
+
+			const response = await fetch('?/update', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Opportunity updated');
+				closeDrawer();
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to update opportunity');
+			}
+		} catch (err) {
+			console.error('Update error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isLoading = false;
 		}
 	}
 
@@ -682,7 +733,7 @@
 							Columns
 							{#if visibleColumns.length < columns.length}
 								<span
-									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700"
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 								>
 									{visibleColumns.length}/{columns.length}
 								</span>
@@ -802,20 +853,20 @@
 		<!-- Account and Owner info (view mode only) -->
 		{#if drawerMode !== 'create' && selectedRow}
 			<div class="mb-4">
-				<p class="text-gray-500 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 text-xs">Account</p>
-						<p class="text-gray-900 font-medium">{selectedRow.account?.name || '-'}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Account</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.account?.name || '-'}</p>
 					</div>
 					<div>
-						<p class="text-gray-400 text-xs">Owner</p>
-						<p class="text-gray-900 font-medium">{selectedRow.owner?.name || 'Unassigned'}</p>
+						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
+						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.owner?.name || 'Unassigned'}</p>
 					</div>
 					{#if selectedRow.createdAt}
 						<div>
-							<p class="text-gray-400 text-xs">Created</p>
-							<p class="text-gray-900 font-medium">{formatRelativeDate(selectedRow.createdAt)}</p>
+							<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
+							<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedRow.createdAt)}</p>
 						</div>
 					{/if}
 				</div>
@@ -829,24 +880,30 @@
 			<Button onclick={handleDrawerSave} disabled={isLoading || !drawerFormData.name?.trim()}>
 				{isLoading ? 'Creating...' : 'Create Opportunity'}
 			</Button>
-		{:else if !isClosed}
-			<Button
-				variant="outline"
-				class="text-green-600 hover:text-green-700 hover:bg-green-50"
-				onclick={handleMarkWon}
-				disabled={isLoading}
-			>
-				<Trophy class="mr-1.5 h-4 w-4" />
-				Mark Won
-			</Button>
-			<Button
-				variant="outline"
-				class="text-red-600 hover:text-red-700 hover:bg-red-50"
-				onclick={handleMarkLost}
-				disabled={isLoading}
-			>
-				<XCircle class="mr-1.5 h-4 w-4" />
-				Mark Lost
+		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isLoading}>Cancel</Button>
+			{#if !isClosed}
+				<Button
+					variant="outline"
+					class="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
+					onclick={handleMarkWon}
+					disabled={isLoading}
+				>
+					<Trophy class="mr-1.5 h-4 w-4" />
+					Mark Won
+				</Button>
+				<Button
+					variant="outline"
+					class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+					onclick={handleMarkLost}
+					disabled={isLoading}
+				>
+					<XCircle class="mr-1.5 h-4 w-4" />
+					Mark Lost
+				</Button>
+			{/if}
+			<Button onclick={handleDrawerUpdate} disabled={isLoading || !drawerFormData.name?.trim()}>
+				{isLoading ? 'Saving...' : 'Save'}
 			</Button>
 		{/if}
 	{/snippet}
