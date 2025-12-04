@@ -320,7 +320,6 @@ export const actions = {
 			const form = await request.formData();
 			const name = form.get('title')?.toString().trim();
 			const description = form.get('description')?.toString().trim();
-			const accountId = form.get('accountId')?.toString();
 			const dueDateValue = form.get('dueDate');
 			const closedOn = dueDateValue ? dueDateValue.toString() : null;
 			const priority = form.get('priority')?.toString() || 'Normal';
@@ -353,11 +352,10 @@ export const actions = {
 				return fail(400, { error: 'Case name and ID are required.' });
 			}
 
-			// Update case via API
+			// Update case via API (account is read-only, not included)
 			const caseData = {
 				name,
 				description,
-				account: accountId || null,
 				closed_on: closedOn,
 				priority,
 				status,

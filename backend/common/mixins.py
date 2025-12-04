@@ -27,6 +27,7 @@ class UserAuditModel(models.Model):
         related_name="%(class)s_created_by",
         verbose_name="Created By",
         null=True,
+        blank=True,
     )
     updated_by = models.ForeignKey(
         "common.User",
@@ -34,6 +35,7 @@ class UserAuditModel(models.Model):
         related_name="%(class)s_updated_by",
         verbose_name="Last Modified By",
         null=True,
+        blank=True,
     )
 
     class Meta:

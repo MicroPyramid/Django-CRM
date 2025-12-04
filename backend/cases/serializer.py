@@ -55,6 +55,9 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
         self.org = request_obj.profile.org
+        # Make account read-only on updates (can only be set on creation)
+        if self.instance:
+            self.fields["account"].read_only = True
 
     def validate_name(self, name):
         if self.instance:

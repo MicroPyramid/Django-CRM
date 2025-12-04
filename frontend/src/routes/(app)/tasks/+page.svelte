@@ -23,7 +23,8 @@
 		Target,
 		Briefcase,
 		UserPlus,
-		Tag
+		Tag,
+		Contact
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -61,6 +62,7 @@
 		caseId: '',
 		leadId: '',
 		assignedTo: /** @type {string[]} */ ([]),
+		contacts: /** @type {string[]} */ ([]),
 		teams: /** @type {string[]} */ ([]),
 		tags: /** @type {string[]} */ ([])
 	};
@@ -92,6 +94,19 @@
 				if (assigned.length === 0) return null;
 				if (assigned.length === 1) return assigned[0];
 				return { name: `${assigned.length} users` };
+			}
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'contact',
+			getValue: (/** @type {any} */ row) => {
+				const contacts = row.contacts || [];
+				if (contacts.length === 0) return null;
+				if (contacts.length === 1) return contacts[0];
+				return { name: `${contacts.length} contacts` };
 			}
 		},
 		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
@@ -282,7 +297,7 @@
 		formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
 		formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
 		formState.teams = (row.teams || []).map((/** @type {any} */ t) => t.id);
-		formState.tags = (row.tags || []).map((/** @type {any} */ t) => t.id);
+		formState.tags = (row.tags || []).map((/** @type {any} */ t) => t.name);
 
 		await tick();
 		updateForm.requestSubmit();
@@ -367,7 +382,7 @@
 				assignedTo: (task.assignedTo || []).map((/** @type {any} */ a) => a.id),
 				contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
 				teams: (task.teams || []).map((/** @type {any} */ t) => t.id),
-				tags: (task.tags || []).map((/** @type {any} */ t) => t.id)
+				tags: (task.tags || []).map((/** @type {any} */ t) => t.name)
 			};
 		}
 		sheetOpen = true;
@@ -560,6 +575,11 @@
 		teams.map((/** @type {any} */ t) => ({ value: t.id, label: t.name }))
 	);
 
+	// Contact options for drawer
+	const contactOptions = $derived(
+		contacts.map((/** @type {any} */ c) => ({ value: c.id, label: c.name }))
+	);
+
 	// Opportunity options for drawer
 	const opportunityOptions = $derived([
 		{ value: '', label: 'None' },
@@ -579,21 +599,29 @@
 	]);
 
 	// Tag options for drawer
+	// Note: Django expects tag names (not IDs), so we use name as value
 	const tagOptions = $derived(
-		allTags.map((/** @type {any} */ t) => ({ value: t.id, label: t.name }))
+		allTags.map((/** @type {any} */ t) => ({ value: t.name, label: t.name }))
 	);
 
 	// Drawer columns for NotionDrawer (derived to use dynamic options)
+	// Parent entity fields (account, opportunity, case, lead) are only shown in edit mode
 	const drawerColumns = $derived([
 		{ key: 'subject', label: 'Subject', type: 'text', icon: FileText },
 		{ key: 'status', label: 'Status', type: 'select', icon: Circle, options: statusOptions },
 		{ key: 'priority', label: 'Priority', type: 'select', icon: Flag, options: priorityOptions },
 		{ key: 'dueDate', label: 'Due Date', type: 'date', icon: Calendar },
-		{ key: 'accountId', label: 'Account', type: 'select', icon: Building2, options: accountOptions },
-		{ key: 'opportunityId', label: 'Opportunity', type: 'select', icon: Target, options: opportunityOptions },
-		{ key: 'caseId', label: 'Case', type: 'select', icon: Briefcase, options: caseOptions },
-		{ key: 'leadId', label: 'Lead', type: 'select', icon: UserPlus, options: leadOptions },
+		// Only show parent entity fields in edit mode (when selectedTaskId is set)
+		...(selectedTaskId
+			? [
+					{ key: 'accountId', label: 'Account', type: 'select', icon: Building2, options: accountOptions },
+					{ key: 'opportunityId', label: 'Opportunity', type: 'select', icon: Target, options: opportunityOptions },
+					{ key: 'caseId', label: 'Case', type: 'select', icon: Briefcase, options: caseOptions },
+					{ key: 'leadId', label: 'Lead', type: 'select', icon: UserPlus, options: leadOptions }
+				]
+			: []),
 		{ key: 'assignedTo', label: 'Assigned To', type: 'multiselect', icon: User, options: userOptions },
+		{ key: 'contacts', label: 'Contacts', type: 'multiselect', icon: Contact, options: contactOptions },
 		{ key: 'teams', label: 'Teams', type: 'multiselect', icon: Users, options: teamOptions },
 		{ key: 'tags', label: 'Tags', type: 'multiselect', icon: Tag, options: tagOptions },
 		{ key: 'description', label: 'Description', type: 'textarea' }
@@ -615,6 +643,7 @@
 			caseId: formState.caseId,
 			leadId: formState.leadId,
 			assignedTo: formState.assignedTo,
+			contacts: formState.contacts,
 			teams: formState.teams,
 			tags: formState.tags
 		};

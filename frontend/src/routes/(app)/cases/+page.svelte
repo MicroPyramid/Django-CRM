@@ -125,6 +125,7 @@
 		subject: '',
 		description: '',
 		accountId: '',
+		accountName: '', // Read-only display for edit mode
 		assignedTo: /** @type {string[]} */ ([]),
 		contacts: /** @type {string[]} */ ([]),
 		teams: /** @type {string[]} */ ([]),
@@ -165,16 +166,25 @@
 	]);
 
 	// Drawer columns configuration (with icons and multiselect)
+	// Account is only editable on create, read-only on edit
 	const drawerColumns = $derived([
 		{ key: 'subject', label: 'Case Title', type: 'text' },
-		{
-			key: 'accountId',
-			label: 'Account',
-			type: 'select',
-			icon: Building2,
-			options: accountOptions,
-			emptyText: 'No account'
-		},
+		drawer.mode === 'create'
+			? {
+					key: 'accountId',
+					label: 'Account',
+					type: 'select',
+					icon: Building2,
+					options: accountOptions,
+					emptyText: 'No account'
+				}
+			: {
+					key: 'accountName',
+					label: 'Account',
+					type: 'readonly',
+					icon: Building2,
+					emptyText: 'No account'
+				},
 		{
 			key: 'caseType',
 			label: 'Type',
@@ -254,6 +264,7 @@
 					subject: '',
 					description: '',
 					accountId: '',
+					accountName: '',
 					assignedTo: [],
 					contacts: [],
 					teams: [],
@@ -269,6 +280,7 @@
 					subject: caseItem.subject || '',
 					description: caseItem.description || '',
 					accountId: caseItem.account?.id || '',
+					accountName: caseItem.account?.name || '', // Read-only display
 					assignedTo: (caseItem.assignedTo || []).map((/** @type {any} */ a) => a.id),
 					contacts: (caseItem.contacts || []).map((/** @type {any} */ c) => c.id),
 					teams: (caseItem.teams || []).map((/** @type {any} */ t) => t.id),
@@ -444,18 +456,65 @@
 		};
 	}
 
-	// NotionTable callbacks
 	/**
-	 * Handle inline cell edits (client-side only for now)
+	 * Convert case to form state for inline editing
+	 * @param {any} caseItem
+	 */
+	function caseToFormState(caseItem) {
+		return {
+			caseId: caseItem.id,
+			title: caseItem.subject || '',
+			description: caseItem.description || '',
+			accountId: caseItem.account?.id || '',
+			assignedTo: (caseItem.assignedTo || []).map((/** @type {any} */ a) => a.id),
+			contacts: (caseItem.contacts || []).map((/** @type {any} */ c) => c.id),
+			teams: (caseItem.teams || []).map((/** @type {any} */ t) => t.id),
+			tags: (caseItem.tags || []).map((/** @type {any} */ t) => t.id),
+			priority: caseItem.priority || 'Normal',
+			caseType: caseItem.caseType || '',
+			status: caseItem.status || 'New',
+			dueDate: caseItem.closedOn ? caseItem.closedOn.split('T')[0] : ''
+		};
+	}
+
+	/**
+	 * Handle inline cell edits - persists to API
+	 * @param {any} caseItem
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleQuickEdit(caseItem, field, value) {
+		// Map frontend field names to form state field names
+		const fieldMapping = {
+			subject: 'title',
+			caseType: 'caseType',
+			priority: 'priority',
+			status: 'status',
+			closedOn: 'dueDate'
+		};
+
+		// Populate form state with current case data
+		const currentState = caseToFormState(caseItem);
+
+		// Update the specific field (use mapped name if exists)
+		const formField = fieldMapping[field] || field;
+		currentState[formField] = value;
+
+		// Copy to form state
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle row change from CrmTable (inline editing)
 	 * @param {any} row
 	 * @param {string} field
 	 * @param {any} value
 	 */
-	function handleRowChange(row, field, value) {
-		const index = casesData.findIndex((/** @type {any} */ c) => c.id === row.id);
-		if (index !== -1) {
-			casesData[index] = { ...casesData[index], [field]: value };
-		}
+	async function handleRowChange(row, field, value) {
+		await handleQuickEdit(row, field, value);
 	}
 </script>
 
@@ -656,7 +715,6 @@
 	<input type="hidden" name="caseId" value={formState.caseId} />
 	<input type="hidden" name="title" value={formState.title} />
 	<input type="hidden" name="description" value={formState.description} />
-	<input type="hidden" name="accountId" value={formState.accountId} />
 	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
 	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
 	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />

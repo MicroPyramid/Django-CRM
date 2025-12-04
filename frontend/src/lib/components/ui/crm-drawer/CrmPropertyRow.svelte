@@ -256,6 +256,14 @@
 				disabled={!editable}
 				onchange={handleMultiSelectChange}
 			/>
+		{:else if type === 'readonly'}
+			<span class="px-2 py-1 text-sm text-gray-700 dark:text-gray-300">
+				{#if value}
+					{value}
+				{:else}
+					<span class="text-gray-400">{emptyText || 'Empty'}</span>
+				{/if}
+			</span>
 		{/if}
 	</div>
 </div>
