@@ -44,14 +44,8 @@ export async function load({ url, locals, cookies }) {
 			queryParams.append('assigned_to', ownerId);
 		}
 
-		// Fetch contacts, owners, and tags in parallel
-		const [contactsResponse, ownersResponse, tagsResponse] = await Promise.all([
-			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
-			// Get users for owner filter dropdown
-			apiRequest('/users/', {}, { cookies, org }),
-			// Get tags for tag selection
-			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
-		]);
+		// Only fetch contacts on initial load - dropdown options loaded on-demand when drawer opens
+		const contactsResponse = await apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Handle Django response format
 		let contacts = [];
@@ -142,21 +136,6 @@ export async function load({ url, locals, cookies }) {
 			}
 		}));
 
-		// Transform owners list
-		// Django UsersListView returns { active_users: { active_users: [...] }, inactive_users: { ... } }
-		const activeUsers = ownersResponse.active_users?.active_users || [];
-		const owners = activeUsers.map((user) => ({
-			id: user.id,
-			name: user.user_details?.email || user.email,
-			email: user.user_details?.email || user.email
-		}));
-
-		// Transform tags list
-		const allTags = (tagsResponse.tags || tagsResponse || []).map((tag) => ({
-			id: tag.id,
-			name: tag.name
-		}));
-
 		return {
 			contacts: transformedContacts,
 			totalCount,
@@ -165,8 +144,9 @@ export async function load({ url, locals, cookies }) {
 			limit,
 			search,
 			ownerId,
-			owners,
-			allTags
+			// Dropdown options are now lazy-loaded on client when drawer opens
+			owners: [],
+			allTags: []
 		};
 	} catch (err) {
 		console.error('Error loading contacts from API:', err);

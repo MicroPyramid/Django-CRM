@@ -31,28 +31,9 @@ export async function load({ locals, cookies }) {
 			order: 'desc'
 		});
 
-		// Fetch tasks, users, accounts, contacts, teams, opportunities, cases, leads, and tags in parallel
-		const [
-			tasksResponse,
-			usersResponse,
-			accountsResponse,
-			contactsResponse,
-			teamsResponse,
-			opportunitiesResponse,
-			casesResponse,
-			leadsResponse,
-			tagsResponse
-		] = await Promise.all([
-			apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org }),
-			apiRequest('/users/', {}, { cookies, org }),
-			apiRequest('/accounts/', {}, { cookies, org }),
-			apiRequest('/contacts/', {}, { cookies, org }),
-			apiRequest('/teams/', {}, { cookies, org }),
-			apiRequest('/opportunities/', {}, { cookies, org }),
-			apiRequest('/cases/', {}, { cookies, org }),
-			apiRequest('/leads/', {}, { cookies, org }),
-			apiRequest('/tags/', {}, { cookies, org })
-		]);
+		// Only fetch tasks on initial page load
+		// Dropdown options (users, accounts, contacts, etc.) are lazy-loaded client-side when drawer opens
+		const tasksResponse = await apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Handle Django response structure
 		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -146,134 +127,8 @@ export async function load({ locals, cookies }) {
 				: null
 		}));
 
-		// Transform users list
-		// Django UsersListView returns { active_users: { active_users: [...] }, ... }
-		const activeUsersList = usersResponse.active_users?.active_users || [];
-		const allUsers = activeUsersList.map((user) => ({
-			id: user.id,
-			name: user.user_details?.email || user.email
-		}));
-
-		// Transform accounts list
-		let allAccounts = [];
-		if (accountsResponse.active_accounts?.open_accounts) {
-			allAccounts = accountsResponse.active_accounts.open_accounts;
-		} else if (accountsResponse.results) {
-			allAccounts = accountsResponse.results;
-		} else if (Array.isArray(accountsResponse)) {
-			allAccounts = accountsResponse;
-		}
-
-		const transformedAccounts = allAccounts.map((account) => ({
-			id: account.id,
-			name: account.name
-		}));
-
-		// Transform contacts list
-		let allContacts = [];
-		if (contactsResponse.contact_obj_list) {
-			allContacts = contactsResponse.contact_obj_list;
-		} else if (contactsResponse.results) {
-			allContacts = contactsResponse.results;
-		} else if (Array.isArray(contactsResponse)) {
-			allContacts = contactsResponse;
-		}
-
-		const transformedContacts = allContacts.map((contact) => ({
-			id: contact.id,
-			name: contact.first_name
-				? `${contact.first_name} ${contact.last_name || ''}`.trim()
-				: contact.email || 'Unknown'
-		}));
-
-		// Transform teams list
-		let allTeamsList = [];
-		if (teamsResponse.teams) {
-			allTeamsList = teamsResponse.teams;
-		} else if (teamsResponse.results) {
-			allTeamsList = teamsResponse.results;
-		} else if (Array.isArray(teamsResponse)) {
-			allTeamsList = teamsResponse;
-		}
-
-		const allTeams = allTeamsList.map((team) => ({
-			id: team.id,
-			name: team.name
-		}));
-
-		// Transform opportunities list
-		let allOpportunitiesList = [];
-		if (opportunitiesResponse.opportunities) {
-			allOpportunitiesList = opportunitiesResponse.opportunities;
-		} else if (opportunitiesResponse.results) {
-			allOpportunitiesList = opportunitiesResponse.results;
-		} else if (Array.isArray(opportunitiesResponse)) {
-			allOpportunitiesList = opportunitiesResponse;
-		}
-
-		const allOpportunities = allOpportunitiesList.map((opp) => ({
-			id: opp.id,
-			name: opp.name
-		}));
-
-		// Transform cases list
-		let allCasesList = [];
-		if (casesResponse.cases) {
-			allCasesList = casesResponse.cases;
-		} else if (casesResponse.results) {
-			allCasesList = casesResponse.results;
-		} else if (Array.isArray(casesResponse)) {
-			allCasesList = casesResponse;
-		}
-
-		const allCases = allCasesList.map((c) => ({
-			id: c.id,
-			name: c.name
-		}));
-
-		// Transform leads list
-		let allLeadsList = [];
-		if (leadsResponse.leads) {
-			allLeadsList = leadsResponse.leads;
-		} else if (leadsResponse.results) {
-			allLeadsList = leadsResponse.results;
-		} else if (Array.isArray(leadsResponse)) {
-			allLeadsList = leadsResponse;
-		}
-
-		const allLeads = allLeadsList.map((lead) => ({
-			id: lead.id,
-			name:
-				lead.first_name || lead.last_name
-					? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
-					: lead.title || 'Lead'
-		}));
-
-		// Transform tags list
-		let allTagsList = [];
-		if (tagsResponse.tags) {
-			allTagsList = tagsResponse.tags;
-		} else if (tagsResponse.results) {
-			allTagsList = tagsResponse.results;
-		} else if (Array.isArray(tagsResponse)) {
-			allTagsList = tagsResponse;
-		}
-
-		const allTags = allTagsList.map((tag) => ({
-			id: tag.id,
-			name: tag.name
-		}));
-
 		return {
-			tasks: transformedTasks,
-			allUsers,
-			allAccounts: transformedAccounts,
-			allContacts: transformedContacts,
-			allTeams,
-			allOpportunities,
-			allCases,
-			allLeads,
-			allTags
+			tasks: transformedTasks
 		};
 	} catch (err) {
 		console.error('Error loading tasks from API:', err);

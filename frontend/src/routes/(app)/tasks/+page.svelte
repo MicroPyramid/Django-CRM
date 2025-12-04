@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { apiRequest } from '$lib/api.js';
 	import {
 		Plus,
 		ChevronLeft,
@@ -193,16 +194,170 @@
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	// Computed values
+	// Computed values - tasks come from server
 	const tasks = $derived(data.tasks || []);
-	const accounts = $derived(data.allAccounts || []);
-	const users = $derived(data.allUsers || []);
-	const contacts = $derived(data.allContacts || []);
-	const teams = $derived(data.allTeams || []);
-	const opportunities = $derived(data.allOpportunities || []);
-	const cases = $derived(data.allCases || []);
-	const leads = $derived(data.allLeads || []);
-	const allTags = $derived(data.allTags || []);
+
+	// Dropdown options state - lazy loaded when drawer opens
+	let accounts = $state(/** @type {any[]} */ ([]));
+	let users = $state(/** @type {any[]} */ ([]));
+	let contacts = $state(/** @type {any[]} */ ([]));
+	let teams = $state(/** @type {any[]} */ ([]));
+	let opportunities = $state(/** @type {any[]} */ ([]));
+	let cases = $state(/** @type {any[]} */ ([]));
+	let leads = $state(/** @type {any[]} */ ([]));
+	let allTags = $state(/** @type {any[]} */ ([]));
+
+	// Track if dropdown options have been loaded
+	let dropdownOptionsLoaded = $state(false);
+	let loadingDropdownOptions = $state(false);
+
+	/**
+	 * Lazy load dropdown options when drawer opens
+	 * Cached so subsequent opens don't re-fetch
+	 */
+	async function loadDropdownOptions() {
+		if (dropdownOptionsLoaded || loadingDropdownOptions) return;
+
+		loadingDropdownOptions = true;
+		try {
+			const [
+				usersResponse,
+				accountsResponse,
+				contactsResponse,
+				teamsResponse,
+				opportunitiesResponse,
+				casesResponse,
+				leadsResponse,
+				tagsResponse
+			] = await Promise.all([
+				apiRequest('/users/'),
+				apiRequest('/accounts/'),
+				apiRequest('/contacts/'),
+				apiRequest('/teams/'),
+				apiRequest('/opportunities/'),
+				apiRequest('/cases/'),
+				apiRequest('/leads/'),
+				apiRequest('/tags/')
+			]);
+
+			// Transform users list
+			const activeUsersList = usersResponse.active_users?.active_users || [];
+			users = activeUsersList.map((/** @type {any} */ user) => ({
+				id: user.id,
+				name: user.user_details?.email || user.email
+			}));
+
+			// Transform accounts list
+			let allAccounts = [];
+			if (accountsResponse.active_accounts?.open_accounts) {
+				allAccounts = accountsResponse.active_accounts.open_accounts;
+			} else if (accountsResponse.results) {
+				allAccounts = accountsResponse.results;
+			} else if (Array.isArray(accountsResponse)) {
+				allAccounts = accountsResponse;
+			}
+			accounts = allAccounts.map((/** @type {any} */ account) => ({
+				id: account.id,
+				name: account.name
+			}));
+
+			// Transform contacts list
+			let allContacts = [];
+			if (contactsResponse.contact_obj_list) {
+				allContacts = contactsResponse.contact_obj_list;
+			} else if (contactsResponse.results) {
+				allContacts = contactsResponse.results;
+			} else if (Array.isArray(contactsResponse)) {
+				allContacts = contactsResponse;
+			}
+			contacts = allContacts.map((/** @type {any} */ contact) => ({
+				id: contact.id,
+				name: contact.first_name
+					? `${contact.first_name} ${contact.last_name || ''}`.trim()
+					: contact.email || 'Unknown'
+			}));
+
+			// Transform teams list
+			let allTeamsList = [];
+			if (teamsResponse.teams) {
+				allTeamsList = teamsResponse.teams;
+			} else if (teamsResponse.results) {
+				allTeamsList = teamsResponse.results;
+			} else if (Array.isArray(teamsResponse)) {
+				allTeamsList = teamsResponse;
+			}
+			teams = allTeamsList.map((/** @type {any} */ team) => ({
+				id: team.id,
+				name: team.name
+			}));
+
+			// Transform opportunities list
+			let allOpportunitiesList = [];
+			if (opportunitiesResponse.opportunities) {
+				allOpportunitiesList = opportunitiesResponse.opportunities;
+			} else if (opportunitiesResponse.results) {
+				allOpportunitiesList = opportunitiesResponse.results;
+			} else if (Array.isArray(opportunitiesResponse)) {
+				allOpportunitiesList = opportunitiesResponse;
+			}
+			opportunities = allOpportunitiesList.map((/** @type {any} */ opp) => ({
+				id: opp.id,
+				name: opp.name
+			}));
+
+			// Transform cases list
+			let allCasesList = [];
+			if (casesResponse.cases) {
+				allCasesList = casesResponse.cases;
+			} else if (casesResponse.results) {
+				allCasesList = casesResponse.results;
+			} else if (Array.isArray(casesResponse)) {
+				allCasesList = casesResponse;
+			}
+			cases = allCasesList.map((/** @type {any} */ c) => ({
+				id: c.id,
+				name: c.name
+			}));
+
+			// Transform leads list
+			let allLeadsList = [];
+			if (leadsResponse.leads) {
+				allLeadsList = leadsResponse.leads;
+			} else if (leadsResponse.results) {
+				allLeadsList = leadsResponse.results;
+			} else if (Array.isArray(leadsResponse)) {
+				allLeadsList = leadsResponse;
+			}
+			leads = allLeadsList.map((/** @type {any} */ lead) => ({
+				id: lead.id,
+				name:
+					lead.first_name || lead.last_name
+						? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
+						: lead.title || 'Lead'
+			}));
+
+			// Transform tags list
+			let allTagsList = [];
+			if (tagsResponse.tags) {
+				allTagsList = tagsResponse.tags;
+			} else if (tagsResponse.results) {
+				allTagsList = tagsResponse.results;
+			} else if (Array.isArray(tagsResponse)) {
+				allTagsList = tagsResponse;
+			}
+			allTags = allTagsList.map((/** @type {any} */ tag) => ({
+				id: tag.id,
+				name: tag.name
+			}));
+
+			dropdownOptionsLoaded = true;
+		} catch (err) {
+			console.error('Error loading dropdown options:', err);
+			toast.error('Failed to load form options');
+		} finally {
+			loadingDropdownOptions = false;
+		}
+	}
 
 	// Filter/search/sort state using hook
 	const list = useListFilters({
@@ -358,6 +513,8 @@
 			tags: []
 		};
 		sheetOpen = true;
+		// Lazy load dropdown options when drawer opens
+		loadDropdownOptions();
 	}
 
 	// Row detail sheet functions
@@ -386,6 +543,8 @@
 			};
 		}
 		sheetOpen = true;
+		// Lazy load dropdown options when drawer opens
+		loadDropdownOptions();
 	}
 
 	function closeTaskSheet() {

@@ -40,16 +40,8 @@ export async function load({ url, locals, cookies }) {
 		if (account) queryParams.append('account', account);
 		// Django doesn't have direct owner name filter, we'd need to filter by assigned_to ID
 
-		// Fetch cases, users, accounts, contacts, teams, and tags in parallel
-		const [casesResponse, usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] =
-			await Promise.all([
-				apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
-				apiRequest('/users/', {}, { cookies, org }),
-				apiRequest('/accounts/', {}, { cookies, org }),
-				apiRequest('/contacts/', {}, { cookies, org }),
-				apiRequest('/teams/', {}, { cookies, org }),
-				apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
-			]);
+		// Only fetch cases on initial load - dropdown options loaded on-demand when drawer opens
+		const casesResponse = await apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Extract cases from response
 		let cases = [];
@@ -151,92 +143,18 @@ export async function load({ url, locals, cookies }) {
 			}))
 		}));
 
-		// Transform users list
-		// Django UsersListView returns { active_users: { active_users: [...] }, ... }
-		const activeUsersList = usersResponse.active_users?.active_users || [];
-		const allUsers = activeUsersList.map((user) => ({
-			id: user.id,
-			name:
-				user.user_details?.first_name && user.user_details?.last_name
-					? `${user.user_details.first_name} ${user.user_details.last_name}`
-					: user.user_details?.email || user.email
-		}));
-
-		// Transform accounts list
-		let allAccounts = [];
-		if (accountsResponse.active_accounts?.open_accounts) {
-			allAccounts = accountsResponse.active_accounts.open_accounts;
-		} else if (accountsResponse.results) {
-			allAccounts = accountsResponse.results;
-		} else if (Array.isArray(accountsResponse)) {
-			allAccounts = accountsResponse;
-		}
-
-		const transformedAccounts = allAccounts.map((account) => ({
-			id: account.id,
-			name: account.name
-		}));
-
-		// Transform contacts list
-		let allContacts = [];
-		if (contactsResponse.contact_obj_list) {
-			allContacts = contactsResponse.contact_obj_list;
-		} else if (contactsResponse.results) {
-			allContacts = contactsResponse.results;
-		} else if (Array.isArray(contactsResponse)) {
-			allContacts = contactsResponse;
-		}
-
-		const transformedContacts = allContacts.map((contact) => ({
-			id: contact.id,
-			name:
-				contact.first_name && contact.last_name
-					? `${contact.first_name} ${contact.last_name}`
-					: contact.email,
-			email: contact.email
-		}));
-
-		// Transform teams list
-		let allTeams = [];
-		if (teamsResponse.teams) {
-			allTeams = teamsResponse.teams;
-		} else if (teamsResponse.results) {
-			allTeams = teamsResponse.results;
-		} else if (Array.isArray(teamsResponse)) {
-			allTeams = teamsResponse;
-		}
-
-		const transformedTeams = allTeams.map((team) => ({
-			id: team.id,
-			name: team.name
-		}));
-
-		// Transform tags list
-		let allTags = [];
-		if (tagsResponse.tags) {
-			allTags = tagsResponse.tags;
-		} else if (tagsResponse.results) {
-			allTags = tagsResponse.results;
-		} else if (Array.isArray(tagsResponse)) {
-			allTags = tagsResponse;
-		}
-
-		const transformedTags = allTags.map((tag) => ({
-			id: tag.id,
-			name: tag.name
-		}));
-
 		// Status options from Django (matching backend CASE_TYPE choices)
 		const statusOptions = ['New', 'Assigned', 'Pending', 'Closed', 'Rejected', 'Duplicate'];
 		const caseTypeOptions = ['Question', 'Incident', 'Problem'];
 
 		return {
 			cases: transformedCases,
-			allUsers,
-			allAccounts: transformedAccounts,
-			allContacts: transformedContacts,
-			allTeams: transformedTeams,
-			allTags: transformedTags,
+			// Dropdown options are now lazy-loaded on client when drawer opens
+			allUsers: [],
+			allAccounts: [],
+			allContacts: [],
+			allTeams: [],
+			allTags: [],
 			statusOptions,
 			caseTypeOptions
 		};

@@ -43,6 +43,7 @@
 	} from '$lib/utils/table-helpers.js';
 	import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
 	import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
+	import { apiRequest } from '$lib/api.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
@@ -441,7 +442,62 @@
 
 	// Computed values
 	const leads = $derived(data.leads || []);
-	const formOptions = $derived(data.formOptions || {});
+
+	// Lazy-loaded form options (only fetched when drawer opens)
+	let formOptions = $state(/** @type {{ users: any[], teamsList: any[], contactsList: any[], tagsList: any[] }} */ ({
+		users: [],
+		teamsList: [],
+		contactsList: [],
+		tagsList: []
+	}));
+	let formOptionsLoaded = $state(false);
+	let formOptionsLoading = $state(false);
+
+	/**
+	 * Load form options for drawer (lazy-loaded on first drawer open)
+	 */
+	async function loadFormOptions() {
+		if (formOptionsLoaded || formOptionsLoading) return;
+
+		formOptionsLoading = true;
+		try {
+			const [usersResponse, teamsResponse, contactsResponse, tagsResponse] = await Promise.all([
+				apiRequest('/users/').catch(() => ({ active_users: { active_users: [] } })),
+				apiRequest('/teams/').catch(() => ({ teams: [] })),
+				apiRequest('/contacts/').catch(() => ({ contact_obj_list: [] })),
+				apiRequest('/tags/').catch(() => [])
+			]);
+
+			// Transform responses
+			const activeUsers = usersResponse?.active_users?.active_users || [];
+			const users = activeUsers.map((/** @type {any} */ u) => ({
+				value: u.id,
+				label: u.user_details?.email || u.user?.email || u.email || 'Unknown'
+			}));
+
+			const teamsList = (teamsResponse.teams || teamsResponse || []).map((/** @type {any} */ t) => ({
+				value: t.id,
+				label: t.name || 'Unknown'
+			}));
+
+			const contactsList = (contactsResponse.contact_obj_list || contactsResponse.results || contactsResponse || []).map((/** @type {any} */ c) => ({
+				value: c.id,
+				label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || 'Unknown'
+			}));
+
+			const tagsList = (Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []).map((/** @type {any} */ t) => ({
+				value: t.id,
+				label: t.name || 'Unknown'
+			}));
+
+			formOptions = { users, teamsList, contactsList, tagsList };
+			formOptionsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load form options:', err);
+		} finally {
+			formOptionsLoading = false;
+		}
+	}
 
 	// Drawer state (NotionDrawer for view/create)
 	let drawerOpen = $state(false);
@@ -508,12 +564,16 @@
 			drawerData = null;
 			drawerMode = 'create';
 			drawerOpen = true;
+			// Lazy load form options when drawer opens via URL
+			loadFormOptions();
 		} else if (viewId && leads.length > 0) {
 			const lead = leads.find((l) => l.id === viewId);
 			if (lead) {
 				drawerData = lead;
 				drawerMode = 'view';
 				drawerOpen = true;
+				// Lazy load form options when drawer opens via URL
+				loadFormOptions();
 			}
 		}
 	});
@@ -547,6 +607,8 @@
 		drawerMode = 'view';
 		drawerOpen = true;
 		updateUrl(lead.id, null);
+		// Lazy load form options when drawer opens
+		loadFormOptions();
 	}
 
 	/**
@@ -589,6 +651,8 @@
 		drawerMode = 'create';
 		drawerOpen = true;
 		updateUrl(null, 'create');
+		// Lazy load form options when drawer opens
+		loadFormOptions();
 	}
 
 	/**

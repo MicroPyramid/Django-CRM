@@ -27,15 +27,8 @@ export async function load({ cookies, locals }) {
 		// Django leads endpoint - no status filter needed
 		// Django LeadListView already separates leads into open_leads and close_leads
 		// Valid Django status values: assigned, in process, converted, recycled, closed
-		// Fetch leads and dropdown data in parallel
-		const [response, usersResponse, teamsResponse, contactsResponse, tagsResponse] =
-			await Promise.all([
-				apiRequest(`/leads/`, {}, { cookies, org }),
-				apiRequest(`/users/`, {}, { cookies, org }).catch(() => ({ active_users: { active_users: [] } })),
-				apiRequest(`/teams/`, {}, { cookies, org }).catch(() => ({ teams: [] })),
-				apiRequest(`/contacts/`, {}, { cookies, org }).catch(() => ({ contact_obj_list: [] })),
-				apiRequest(`/tags/`, {}, { cookies, org }).catch(() => [])
-			]);
+		// Only fetch leads on initial load - form options are lazy-loaded when drawer opens
+		const response = await apiRequest(`/leads/`, {}, { cookies, org });
 
 		// Handle Django response format
 		// Django returns: { open_leads: { leads_count, open_leads: [...] }, close_leads: {...}, ... }
@@ -124,37 +117,8 @@ export async function load({ cookies, locals }) {
 			attachments: lead.lead_attachment || []
 		}));
 
-		// Transform dropdown data for form options
-		// /users/ endpoint returns { active_users: { active_users: [...] }, inactive_users: { inactive_users: [...] } }
-		const activeUsers = usersResponse?.active_users?.active_users || [];
-		const users = activeUsers.map((u) => ({
-			value: u.id,
-			label: u.user_details?.email || u.user?.email || u.email || 'Unknown'
-		}));
-
-		const teamsList = (teamsResponse.teams || teamsResponse || []).map((t) => ({
-			value: t.id,
-			label: t.name || 'Unknown'
-		}));
-
-		const contactsList = (contactsResponse.contact_obj_list || contactsResponse.results || contactsResponse || []).map((c) => ({
-			value: c.id,
-			label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || 'Unknown'
-		}));
-
-		const tagsList = (Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []).map((t) => ({
-			value: t.id,
-			label: t.name || 'Unknown'
-		}));
-
 		return {
-			leads: transformedLeads,
-			formOptions: {
-				users,
-				teamsList,
-				contactsList,
-				tagsList
-			}
+			leads: transformedLeads
 		};
 	} catch (err) {
 		console.error('Error fetching leads from API:', err);

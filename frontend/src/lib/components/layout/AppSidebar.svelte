@@ -117,54 +117,63 @@
 		}
 	});
 
+	// Disable prefetch on all nav links - CRM pages load data that shouldn't be prefetched on hover
 	const navigationItems = [
 		{
 			href: '/',
 			label: 'Dashboard',
 			icon: LayoutDashboard,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/leads',
 			label: 'Leads',
 			icon: Target,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/contacts',
 			label: 'Contacts',
 			icon: Users,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/accounts',
 			label: 'Accounts',
 			icon: Building,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/opportunities',
 			label: 'Opportunities',
 			icon: Target,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/cases',
 			label: 'Cases',
 			icon: Briefcase,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/tasks',
 			label: 'Tasks',
 			icon: CheckSquare,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		},
 		{
 			href: '/support',
 			label: 'Support',
 			icon: HelpCircle,
-			type: 'link'
+			type: 'link',
+			preload: 'off'
 		}
 	];
 
@@ -241,7 +250,11 @@
 									tooltipContent={item.label}
 								>
 									{#snippet child({ props })}
-										<a href={item.href} {...props}>
+										<a
+											href={item.href}
+											{...props}
+											data-sveltekit-preload-data={item.preload || 'hover'}
+										>
 											<item.icon class="size-4" />
 											<span>{item.label}</span>
 										</a>

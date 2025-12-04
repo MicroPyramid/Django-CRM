@@ -28,6 +28,7 @@
 	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+	import { apiRequest } from '$lib/api.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'contacts-column-config';
@@ -83,8 +84,49 @@
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
 
-	// Computed values from data (moved here for drawerColumns access)
-	const allTags = $derived(data.allTags || []);
+	// Lazy-loaded dropdown options (fetched when drawer opens)
+	let loadedOwners = $state(/** @type {any[]} */ ([]));
+	let loadedTags = $state(/** @type {any[]} */ ([]));
+	let dropdownOptionsLoaded = $state(false);
+	let dropdownOptionsLoading = $state(false);
+
+	// Use lazy-loaded data
+	const allTags = $derived(loadedTags);
+
+	/**
+	 * Fetch dropdown options for the drawer (lazy load)
+	 */
+	async function loadDropdownOptions() {
+		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
+
+		dropdownOptionsLoading = true;
+		try {
+			const [ownersResponse, tagsResponse] = await Promise.all([
+				apiRequest('/users/'),
+				apiRequest('/tags/').catch(() => ({ tags: [] }))
+			]);
+
+			// Transform owners
+			const activeUsers = ownersResponse.active_users?.active_users || [];
+			loadedOwners = activeUsers.map((/** @type {any} */ user) => ({
+				id: user.id,
+				name: user.user_details?.email || user.email,
+				email: user.user_details?.email || user.email
+			}));
+
+			// Transform tags
+			loadedTags = (tagsResponse.tags || tagsResponse || []).map((/** @type {any} */ tag) => ({
+				id: tag.id,
+				name: tag.name
+			}));
+
+			dropdownOptionsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load dropdown options:', err);
+		} finally {
+			dropdownOptionsLoading = false;
+		}
+	}
 
 	// Drawer column definitions for CrmDrawer (derived to include allTags)
 	const drawerColumns = $derived([
@@ -184,10 +226,17 @@
 
 	// Computed values from data (contacts and owners)
 	const contacts = $derived(data.contacts || []);
-	const owners = $derived(data.owners || []);
+	const owners = $derived(loadedOwners);
 
 	// Drawer state (simplified - single drawer)
 	let drawerOpen = $state(false);
+
+	// Load dropdown options when drawer opens (lazy load)
+	$effect(() => {
+		if (drawerOpen && !dropdownOptionsLoaded) {
+			loadDropdownOptions();
+		}
+	});
 	/** @type {'view' | 'create'} */
 	let drawerMode = $state('view');
 	/** @type {any} */

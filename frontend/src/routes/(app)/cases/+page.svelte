@@ -29,6 +29,7 @@
 		casePriorityOptions
 	} from '$lib/utils/table-helpers.js';
 	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { apiRequest } from '$lib/api.js';
 
 	/**
 	 * @typedef {Object} ColumnDef
@@ -145,19 +146,129 @@
 
 	// Computed values
 	let casesData = $state(data.cases || []);
-	const accounts = $derived(data.allAccounts || []);
-	const users = $derived(data.allUsers || []);
-	const contacts = $derived(data.allContacts || []);
-	const teams = $derived(data.allTeams || []);
-	const tags = $derived(data.allTags || []);
+
+	// Lazy-loaded dropdown options (fetched when drawer opens)
+	let loadedUsers = $state(/** @type {any[]} */ ([]));
+	let loadedAccounts = $state(/** @type {any[]} */ ([]));
+	let loadedContacts = $state(/** @type {any[]} */ ([]));
+	let loadedTeams = $state(/** @type {any[]} */ ([]));
+	let loadedTags = $state(/** @type {any[]} */ ([]));
+	let dropdownOptionsLoaded = $state(false);
+	let dropdownOptionsLoading = $state(false);
+
+	// Use lazy-loaded data
+	const accounts = $derived(loadedAccounts);
+	const users = $derived(loadedUsers);
+	const contacts = $derived(loadedContacts);
+	const teams = $derived(loadedTeams);
+	const tags = $derived(loadedTags);
+
+	/**
+	 * Fetch dropdown options for the drawer (lazy load)
+	 */
+	async function loadDropdownOptions() {
+		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
+
+		dropdownOptionsLoading = true;
+		try {
+			const [usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] = await Promise.all([
+				apiRequest('/users/'),
+				apiRequest('/accounts/'),
+				apiRequest('/contacts/'),
+				apiRequest('/teams/'),
+				apiRequest('/tags/').catch(() => ({ tags: [] }))
+			]);
+
+			// Transform users
+			const activeUsersList = usersResponse.active_users?.active_users || [];
+			loadedUsers = activeUsersList.map((/** @type {any} */ user) => ({
+				id: user.id,
+				name: user.user_details?.first_name && user.user_details?.last_name
+					? `${user.user_details.first_name} ${user.user_details.last_name}`
+					: user.user_details?.email || user.email
+			}));
+
+			// Transform accounts
+			let allAccounts = [];
+			if (accountsResponse.active_accounts?.open_accounts) {
+				allAccounts = accountsResponse.active_accounts.open_accounts;
+			} else if (accountsResponse.results) {
+				allAccounts = accountsResponse.results;
+			} else if (Array.isArray(accountsResponse)) {
+				allAccounts = accountsResponse;
+			}
+			loadedAccounts = allAccounts.map((/** @type {any} */ account) => ({
+				id: account.id,
+				name: account.name
+			}));
+
+			// Transform contacts
+			let allContacts = [];
+			if (contactsResponse.contact_obj_list) {
+				allContacts = contactsResponse.contact_obj_list;
+			} else if (contactsResponse.results) {
+				allContacts = contactsResponse.results;
+			} else if (Array.isArray(contactsResponse)) {
+				allContacts = contactsResponse;
+			}
+			loadedContacts = allContacts.map((/** @type {any} */ contact) => ({
+				id: contact.id,
+				name: contact.first_name && contact.last_name
+					? `${contact.first_name} ${contact.last_name}`
+					: contact.email,
+				email: contact.email
+			}));
+
+			// Transform teams
+			let allTeams = [];
+			if (teamsResponse.teams) {
+				allTeams = teamsResponse.teams;
+			} else if (teamsResponse.results) {
+				allTeams = teamsResponse.results;
+			} else if (Array.isArray(teamsResponse)) {
+				allTeams = teamsResponse;
+			}
+			loadedTeams = allTeams.map((/** @type {any} */ team) => ({
+				id: team.id,
+				name: team.name
+			}));
+
+			// Transform tags
+			let allTags = [];
+			if (tagsResponse.tags) {
+				allTags = tagsResponse.tags;
+			} else if (tagsResponse.results) {
+				allTags = tagsResponse.results;
+			} else if (Array.isArray(tagsResponse)) {
+				allTags = tagsResponse;
+			}
+			loadedTags = allTags.map((/** @type {any} */ tag) => ({
+				id: tag.id,
+				name: tag.name
+			}));
+
+			dropdownOptionsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load dropdown options:', err);
+		} finally {
+			dropdownOptionsLoading = false;
+		}
+	}
+
+	// Drawer state using hook
+	const drawer = useDrawerState();
 
 	// Sync casesData when data changes
 	$effect(() => {
 		casesData = data.cases || [];
 	});
 
-	// Drawer state using hook
-	const drawer = useDrawerState();
+	// Load dropdown options when drawer opens (lazy load)
+	$effect(() => {
+		if (drawer.detailOpen && !dropdownOptionsLoaded) {
+			loadDropdownOptions();
+		}
+	});
 
 	// Account options for drawer select
 	const accountOptions = $derived([
