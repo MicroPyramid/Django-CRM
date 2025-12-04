@@ -55,6 +55,14 @@
 	/** @type {ColumnDef[]} */
 	const columns = [
 		{
+			key: 'title',
+			label: 'Title',
+			type: 'text',
+			width: 'w-48',
+			canHide: false,
+			emptyText: 'Untitled'
+		},
+		{
 			key: 'name',
 			label: 'Name',
 			type: 'text',
@@ -62,7 +70,7 @@
 			editable: false,
 			canHide: false,
 			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
-			emptyText: 'Untitled'
+			emptyText: ''
 		},
 		{
 			key: 'company',
@@ -109,14 +117,6 @@
 			editable: false
 		},
 		{
-			key: 'title',
-			label: 'Title',
-			type: 'text',
-			width: 'w-36',
-			canHide: true,
-			emptyText: ''
-		},
-		{
 			key: 'jobTitle',
 			label: 'Job Title',
 			type: 'text',
@@ -152,7 +152,7 @@
 	];
 
 	// Visible columns state - default to hiding new columns
-	let visibleColumns = $state(columns.filter((c) => !['title', 'jobTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
+	let visibleColumns = $state(columns.filter((c) => !['jobTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
 
 	// Source options for leads
 	const sourceOptions = [

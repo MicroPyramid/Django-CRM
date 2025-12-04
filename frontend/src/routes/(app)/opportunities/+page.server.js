@@ -29,10 +29,10 @@ export async function load({ locals, cookies }) {
 		// Fetch opportunities and teams/users from Django API in parallel
 		const [response, teamsUsersResponse] = await Promise.all([
 			apiRequest('/opportunities/', {}, { cookies, org }),
-			apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch(() => ({
-				teams: [],
-				profiles: []
-			}))
+			apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch((err) => {
+				console.error('Failed to fetch teams/users:', err);
+				return { teams: [], profiles: [] };
+			})
 		]);
 
 		// Handle Django response structure
@@ -81,7 +81,6 @@ export async function load({ locals, cookies }) {
 			id: opp.id,
 			name: opp.name,
 			amount: opp.amount ? Number(opp.amount) : null,
-			expectedRevenue: opp.expected_revenue ? Number(opp.expected_revenue) : null,
 			stage: opp.stage,
 			opportunityType: opp.opportunity_type,
 			currency: opp.currency,
@@ -109,22 +108,6 @@ export async function load({ locals, cookies }) {
 				name: profile.user_details?.email || profile.email || 'Unknown',
 				email: profile.user_details?.email || profile.email
 			})),
-
-			// Owner (first assigned user or created_by)
-			owner:
-				opp.assigned_to && opp.assigned_to.length > 0
-					? {
-							id: opp.assigned_to[0].id,
-							name: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email,
-							email: opp.assigned_to[0].user_details?.email || opp.assigned_to[0].email
-						}
-					: opp.created_by
-						? {
-								id: opp.created_by.id,
-								name: opp.created_by.email,
-								email: opp.created_by.email
-							}
-						: null,
 
 			// Teams
 			teams: (opp.teams || []).map((team) => ({
@@ -261,23 +244,60 @@ export const actions = {
 				return fail(400, { message: 'Missing required data' });
 			}
 
-			// Build opportunity data for Django API with all fields
-			const opportunityData = {
-				name: formData.get('name')?.toString() || '',
-				amount: formData.get('amount') ? Number(formData.get('amount')) : null,
-				probability: formData.get('probability') ? Number(formData.get('probability')) : 0,
-				stage: formData.get('stage')?.toString() || 'PROSPECTING',
-				opportunity_type: formData.get('opportunityType')?.toString() || null,
-				currency: formData.get('currency')?.toString() || null,
-				lead_source: formData.get('leadSource')?.toString() || null,
-				closed_on: formData.get('closedOn')?.toString() || null,
-				description: formData.get('description')?.toString() || '',
-				account: formData.get('accountId')?.toString() || null,
-				contacts: parseJsonArray(formData, 'contacts'),
-				assigned_to: parseJsonArray(formData, 'assignedTo'),
-				teams: parseJsonArray(formData, 'teams'),
-				tags: parseJsonArray(formData, 'tags')
-			};
+			// Build opportunity data only for fields that are present in the form
+			// This prevents overwriting existing values with nulls during inline edits
+			/** @type {Record<string, any>} */
+			const opportunityData = {};
+
+			// Simple string fields
+			if (formData.has('name')) {
+				opportunityData.name = formData.get('name')?.toString() || '';
+			}
+			if (formData.has('stage')) {
+				opportunityData.stage = formData.get('stage')?.toString() || 'PROSPECTING';
+			}
+			if (formData.has('opportunityType')) {
+				opportunityData.opportunity_type = formData.get('opportunityType')?.toString() || null;
+			}
+			if (formData.has('currency')) {
+				opportunityData.currency = formData.get('currency')?.toString() || null;
+			}
+			if (formData.has('leadSource')) {
+				opportunityData.lead_source = formData.get('leadSource')?.toString() || null;
+			}
+			if (formData.has('closedOn')) {
+				opportunityData.closed_on = formData.get('closedOn')?.toString() || null;
+			}
+			if (formData.has('description')) {
+				opportunityData.description = formData.get('description')?.toString() || '';
+			}
+			if (formData.has('accountId')) {
+				opportunityData.account = formData.get('accountId')?.toString() || null;
+			}
+
+			// Number fields
+			if (formData.has('amount')) {
+				opportunityData.amount = formData.get('amount') ? Number(formData.get('amount')) : null;
+			}
+			if (formData.has('probability')) {
+				opportunityData.probability = formData.get('probability')
+					? Number(formData.get('probability'))
+					: 0;
+			}
+
+			// Array fields (M2M relationships)
+			if (formData.has('contacts')) {
+				opportunityData.contacts = parseJsonArray(formData, 'contacts');
+			}
+			if (formData.has('assignedTo')) {
+				opportunityData.assigned_to = parseJsonArray(formData, 'assignedTo');
+			}
+			if (formData.has('teams')) {
+				opportunityData.teams = parseJsonArray(formData, 'teams');
+			}
+			if (formData.has('tags')) {
+				opportunityData.tags = parseJsonArray(formData, 'tags');
+			}
 
 			// Update via API
 			await apiRequest(

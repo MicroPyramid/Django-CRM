@@ -111,13 +111,18 @@
 		{ key: 'opportunityType', label: 'Type', type: 'select', options: typeOptions, width: 'w-32' },
 		{ key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36' },
 		{
-			key: 'owner',
-			label: 'Owner',
+			key: 'assignedTo',
+			label: 'Assigned To',
 			type: 'relation',
-			width: 'w-36',
+			width: 'w-40',
 			relationIcon: 'user',
 			editable: false,
-			getValue: (row) => row.owner?.name,
+			getValue: (row) => {
+				const users = row.assignedTo || [];
+				if (users.length === 0) return null;
+				if (users.length === 1) return users[0].name;
+				return `${users[0].name} +${users.length - 1}`;
+			},
 			emptyText: ''
 		}
 	];
@@ -450,7 +455,10 @@
 			const result = await response.json();
 
 			if (result.type === 'success' || result.data?.success) {
+				toast.success('Changes saved');
 				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to save changes');
 			}
 		} catch (err) {
 			console.error('Error saving field:', err);
@@ -859,14 +867,22 @@
 						<p class="text-gray-400 dark:text-gray-500 text-xs">Account</p>
 						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.account?.name || '-'}</p>
 					</div>
-					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.owner?.name || 'Unassigned'}</p>
-					</div>
 					{#if selectedRow.createdAt}
 						<div>
 							<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
 							<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedRow.createdAt)}</p>
+						</div>
+					{/if}
+					{#if isClosed && selectedRow.closedBy}
+						<div>
+							<p class="text-gray-400 dark:text-gray-500 text-xs">Closed By</p>
+							<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.closedBy.name || '-'}</p>
+						</div>
+					{/if}
+					{#if isClosed && selectedRow.closedOn}
+						<div>
+							<p class="text-gray-400 dark:text-gray-500 text-xs">Closed On</p>
+							<p class="text-gray-900 dark:text-gray-100 font-medium">{formatDate(selectedRow.closedOn)}</p>
 						</div>
 					{/if}
 				</div>
@@ -876,12 +892,10 @@
 
 	{#snippet footerActions()}
 		{#if drawerMode === 'create'}
-			<Button variant="outline" onclick={closeDrawer} disabled={isLoading}>Cancel</Button>
 			<Button onclick={handleDrawerSave} disabled={isLoading || !drawerFormData.name?.trim()}>
 				{isLoading ? 'Creating...' : 'Create Opportunity'}
 			</Button>
 		{:else}
-			<Button variant="outline" onclick={closeDrawer} disabled={isLoading}>Cancel</Button>
 			{#if !isClosed}
 				<Button
 					variant="outline"

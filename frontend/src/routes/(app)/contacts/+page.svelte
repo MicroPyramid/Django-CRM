@@ -380,6 +380,62 @@
 	}
 
 	/**
+	 * Convert contact to form state for quick edit
+	 * @param {any} contact
+	 */
+	function contactToFormState(contact) {
+		return {
+			contactId: contact.id,
+			firstName: contact.firstName || '',
+			lastName: contact.lastName || '',
+			email: contact.email || '',
+			phone: contact.phone || '',
+			organization: contact.organization || '',
+			title: contact.title || '',
+			department: contact.department || '',
+			doNotCall: contact.doNotCall || false,
+			linkedInUrl: contact.linkedInUrl || '',
+			addressLine: contact.addressLine || '',
+			city: contact.city || '',
+			state: contact.state || '',
+			postcode: contact.postcode || '',
+			country: contact.country || '',
+			description: contact.description || '',
+			tags: (contact.tags || []).map((/** @type {any} */ t) => t.id || t)
+		};
+	}
+
+	/**
+	 * Handle quick edit from cell (inline editing)
+	 * @param {any} contact
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleQuickEdit(contact, field, value) {
+		// Populate form state with current contact data
+		const currentState = contactToFormState(contact);
+
+		// Update the specific field
+		currentState[field] = value;
+
+		// Copy to form state
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle row change from CrmTable (inline editing)
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleRowChange(row, field, value) {
+		await handleQuickEdit(row, field, value);
+	}
+
+	/**
 	 * Handle field change from CrmDrawer - just updates local state
 	 * @param {string} field
 	 * @param {any} value
@@ -577,6 +633,7 @@
 			data={filteredContacts}
 			{columns}
 			bind:visibleColumns
+			onRowChange={handleRowChange}
 			onRowClick={(row) => openContact(row)}
 		>
 			{#snippet emptyState()}
