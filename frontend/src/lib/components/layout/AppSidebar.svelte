@@ -215,21 +215,27 @@
 						</a>
 					{/snippet}
 				</Sidebar.MenuButton>
-			</Sidebar.MenuItem>
-			<!-- Toggle Sidebar -->
-			<Sidebar.MenuItem>
-				<Sidebar.MenuButton
-					tooltipContent={sidebar.open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+				<!-- Collapse Button (visible when expanded) -->
+				<Button
 					onclick={() => sidebar.toggle()}
+					variant="outline"
+					size="icon"
+					class="absolute right-1 top-1/2 -translate-y-1/2 size-6 rounded-md border-sidebar-border bg-sidebar text-sidebar-foreground/60 shadow-sm transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-md group-data-[collapsible=icon]:hidden"
+					title="Collapse Sidebar"
+				>
+					<ChevronsLeft class="size-3.5" />
+				</Button>
+			</Sidebar.MenuItem>
+			<!-- Expand Button (visible when collapsed) -->
+			<Sidebar.MenuItem class="hidden group-data-[collapsible=icon]:block">
+				<Sidebar.MenuButton
+					onclick={() => sidebar.toggle()}
+					tooltipContent="Expand Sidebar"
+					class="flex items-center justify-center"
 				>
 					{#snippet child({ props })}
-						<button {...props} class="flex w-full items-center">
-							{#if sidebar.open}
-								<ChevronsLeft class="size-4" />
-								<span>Collapse</span>
-							{:else}
-								<ChevronsRight class="size-4" />
-							{/if}
+						<button {...props} class="flex w-full items-center justify-center">
+							<ChevronsRight class="size-4" />
 						</button>
 					{/snippet}
 				</Sidebar.MenuButton>
