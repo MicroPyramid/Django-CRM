@@ -242,7 +242,7 @@
 							{@const formattedValue = formatValue(value, column)}
 							<td class="px-4 py-3 {column.width || ''}">
 								{#if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
-									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key}
+									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key && onRowChange}
 										<input
 											type={column.type === 'email'
 												? 'email'
@@ -255,13 +255,10 @@
 											data-edit-input="{row.id}-{column.key}"
 											class="w-full rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-900 outline-none ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
 										/>
-									{:else}
+									{:else if onRowChange && column.editable !== false}
 										<button
 											type="button"
-											onclick={() =>
-												column.editable !== false
-													? startEditing(row.id, column.key)
-													: onRowClick?.(row)}
+											onclick={() => startEditing(row.id, column.key)}
 											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 dark:text-gray-100 transition-colors duration-75 hover:bg-gray-100/50 dark:hover:bg-gray-800/50"
 										>
 											{#if formattedValue}
@@ -270,9 +267,17 @@
 												<span class="text-gray-400">{column.emptyText || 'Empty'}</span>
 											{/if}
 										</button>
+									{:else}
+										<span class="text-sm text-gray-900 dark:text-gray-100">
+											{#if formattedValue}
+												{formattedValue}
+											{:else}
+												<span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+											{/if}
+										</span>
 									{/if}
 								{:else if column.type === 'date'}
-									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key}
+									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key && onRowChange}
 										<input
 											type="date"
 											bind:value={editValue}
@@ -281,13 +286,10 @@
 											data-edit-input="{row.id}-{column.key}"
 											class="w-full rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-900 outline-none ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-blue-300 shadow-sm transition-shadow duration-100"
 										/>
-									{:else}
+									{:else if onRowChange && column.editable !== false}
 										<button
 											type="button"
-											onclick={() =>
-												column.editable !== false
-													? startEditing(row.id, column.key)
-													: onRowClick?.(row)}
+											onclick={() => startEditing(row.id, column.key)}
 											class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 dark:text-gray-100 transition-colors duration-75 hover:bg-gray-100/50 dark:hover:bg-gray-800/50"
 										>
 											{#if formattedValue}
@@ -296,51 +298,82 @@
 												<span class="text-gray-400">{column.emptyText || 'Empty'}</span>
 											{/if}
 										</button>
+									{:else}
+										<span class="text-sm text-gray-900 dark:text-gray-100">
+											{#if formattedValue}
+												{formattedValue}
+											{:else}
+												<span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+											{/if}
+										</span>
 									{/if}
 								{:else if column.type === 'select' && column.options}
-									<DropdownMenu.Root>
-										<DropdownMenu.Trigger>
-											{#snippet child({ props })}
-												<button
-													{...props}
-													type="button"
-													class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-opacity hover:opacity-80 {getOptionStyle(
-														value,
-														column.options
-													)}"
-												>
-													{getOptionLabel(value, column.options)}
-													<ChevronDown class="h-3 w-3 opacity-60" />
-												</button>
-											{/snippet}
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content align="start" class="w-36">
-											{#each column.options as option (option.value)}
-												<DropdownMenu.Item
-													onclick={() => updateSelectValue(row.id, column.key, option.value)}
-													class="flex items-center gap-2"
-												>
-													<span class="h-2 w-2 rounded-full {getOptionBgColor(option.value, [option])}"></span>
-													{option.label}
-													{#if value === option.value}
-														<Check class="ml-auto h-4 w-4" />
-													{/if}
-												</DropdownMenu.Item>
-											{/each}
-										</DropdownMenu.Content>
-									</DropdownMenu.Root>
+									{#if onRowChange}
+										<DropdownMenu.Root>
+											<DropdownMenu.Trigger>
+												{#snippet child({ props })}
+													<button
+														{...props}
+														type="button"
+														class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-opacity hover:opacity-80 {getOptionStyle(
+															value,
+															column.options
+														)}"
+													>
+														{getOptionLabel(value, column.options)}
+														<ChevronDown class="h-3 w-3 opacity-60" />
+													</button>
+												{/snippet}
+											</DropdownMenu.Trigger>
+											<DropdownMenu.Content align="start" class="w-36">
+												{#each column.options as option (option.value)}
+													<DropdownMenu.Item
+														onclick={() => updateSelectValue(row.id, column.key, option.value)}
+														class="flex items-center gap-2"
+													>
+														<span class="h-2 w-2 rounded-full {getOptionBgColor(option.value, [option])}"></span>
+														{option.label}
+														{#if value === option.value}
+															<Check class="ml-auto h-4 w-4" />
+														{/if}
+													</DropdownMenu.Item>
+												{/each}
+											</DropdownMenu.Content>
+										</DropdownMenu.Root>
+									{:else}
+										<span
+											class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {getOptionStyle(
+												value,
+												column.options
+											)}"
+										>
+											{getOptionLabel(value, column.options)}
+										</span>
+									{/if}
 								{:else if column.type === 'checkbox'}
-									<button
-										type="button"
-										onclick={() => toggleCheckbox(row.id, column.key)}
-										class="flex h-5 w-5 items-center justify-center rounded border transition-colors {value
-											? 'border-blue-500 bg-blue-500'
-											: 'border-gray-300 hover:border-gray-400'}"
-									>
-										{#if value}
-											<Check class="h-3.5 w-3.5 text-white" />
-										{/if}
-									</button>
+									{#if onRowChange}
+										<button
+											type="button"
+											onclick={() => toggleCheckbox(row.id, column.key)}
+											class="flex h-5 w-5 items-center justify-center rounded border transition-colors {value
+												? 'border-blue-500 bg-blue-500'
+												: 'border-gray-300 hover:border-gray-400'}"
+										>
+											{#if value}
+												<Check class="h-3.5 w-3.5 text-white" />
+											{/if}
+										</button>
+									{:else}
+										<span
+											class="flex h-5 w-5 items-center justify-center rounded border {value
+												? 'border-blue-500 bg-blue-500'
+												: 'border-gray-300'}"
+										>
+											{#if value}
+												<Check class="h-3.5 w-3.5 text-white" />
+											{/if}
+										</span>
+									{/if}
 								{:else if column.type === 'relation'}
 									<button
 										type="button"

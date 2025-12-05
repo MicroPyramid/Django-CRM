@@ -21,7 +21,10 @@
 		Hash,
 		Lock,
 		Unlock,
-		AlertTriangle
+		AlertTriangle,
+		Tag,
+		UserPlus,
+		Contact
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -83,8 +86,8 @@
 	// Country options for drawer
 	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
 
-	// Drawer column definitions for NotionDrawer
-	const drawerColumns = [
+	// Base drawer columns (static options)
+	const baseDrawerColumns = [
 		{ key: 'name', label: 'Name', type: 'text' },
 		{
 			key: 'industry',
@@ -231,6 +234,49 @@
 	const accounts = $derived(data.accounts || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
+	// M2M options from API
+	const userOptions = $derived(
+		(data.users || []).map((u) => ({ value: u.id, label: u.email }))
+	);
+	const contactOptions = $derived(
+		(data.contacts || []).map((c) => ({ value: c.id, label: c.name }))
+	);
+	const tagOptions = $derived(
+		(data.tags || []).map((t) => ({ value: t.id, label: t.name }))
+	);
+
+	// Drawer columns with dynamic M2M options
+	const drawerColumns = $derived([
+		...baseDrawerColumns,
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: UserPlus,
+			options: userOptions,
+			placeholder: 'Select users',
+			emptyText: 'Not assigned'
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: Contact,
+			options: contactOptions,
+			placeholder: 'Link contacts',
+			emptyText: 'No contacts'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: tagOptions,
+			placeholder: 'Add tags',
+			emptyText: 'No tags'
+		}
+	]);
+
 	// Drawer state - simplified for unified drawer
 	let drawerOpen = $state(false);
 	/** @type {'view' | 'create'} */
@@ -254,7 +300,10 @@
 		postcode: '',
 		country: '',
 		annualRevenue: '',
-		numberOfEmployees: ''
+		numberOfEmployees: '',
+		assignedTo: [],
+		contacts: [],
+		tags: []
 	};
 
 	// Drawer form data - mutable copy of selectedAccount for editing
@@ -416,7 +465,10 @@
 		postcode: '',
 		country: '',
 		annual_revenue: '',
-		number_of_employees: ''
+		number_of_employees: '',
+		assigned_to: '[]',
+		contacts: '[]',
+		tags: '[]'
 	});
 
 	/**
@@ -425,46 +477,6 @@
 	 */
 	function getAccountInitials(account) {
 		return getInitials(account.name, 1);
-	}
-
-	/**
-	 * Handle row change from NotionTable (inline editing)
-	 * @param {any} row
-	 * @param {string} field
-	 * @param {any} value
-	 */
-	async function handleRowChange(row, field, value) {
-		// Handle status changes specially (activate/deactivate)
-		if (field === 'status') {
-			formState.accountId = row.id;
-			await tick();
-			if (value === 'closed') {
-				deactivateForm.requestSubmit();
-			} else {
-				activateForm.requestSubmit();
-			}
-			return;
-		}
-
-		// For other fields, submit a regular update
-		formState.accountId = row.id;
-		formState.name = field === 'name' ? value : row.name || '';
-		formState.email = row.email || '';
-		formState.phone = field === 'phone' ? value : row.phone || '';
-		formState.website = field === 'website' ? value : row.website || '';
-		formState.industry = field === 'industry' ? value : row.industry || '';
-		formState.description = row.description || '';
-		formState.address_line = row.addressLine || '';
-		formState.city = row.city || '';
-		formState.state = row.state || '';
-		formState.postcode = row.postcode || '';
-		formState.country = row.country || '';
-		formState.annual_revenue =
-			field === 'annualRevenue' ? value?.toString() || '' : row.annualRevenue?.toString() || '';
-		formState.number_of_employees = row.numberOfEmployees?.toString() || '';
-
-		await tick();
-		updateForm.requestSubmit();
 	}
 
 	/**
@@ -498,6 +510,9 @@
 		formState.country = drawerFormData.country || '';
 		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
 		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
+		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
+		formState.tags = JSON.stringify(drawerFormData.tags || []);
 
 		await tick();
 		updateForm.requestSubmit();
@@ -523,6 +538,9 @@
 		formState.country = drawerFormData.country || '';
 		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
 		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
+		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
+		formState.tags = JSON.stringify(drawerFormData.tags || []);
 
 		await tick();
 		createForm.requestSubmit();
@@ -702,7 +720,6 @@
 				data={filteredAccounts}
 				{columns}
 				bind:visibleColumns
-				onRowChange={handleRowChange}
 				onRowClick={(row) => openAccount(row)}
 			>
 				{#snippet emptyState()}
@@ -969,6 +986,9 @@
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
 	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
+	<input type="hidden" name="contacts" value={formState.contacts} />
+	<input type="hidden" name="tags" value={formState.tags} />
 </form>
 
 <form
@@ -992,6 +1012,9 @@
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
 	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
+	<input type="hidden" name="contacts" value={formState.contacts} />
+	<input type="hidden" name="tags" value={formState.tags} />
 </form>
 
 <form

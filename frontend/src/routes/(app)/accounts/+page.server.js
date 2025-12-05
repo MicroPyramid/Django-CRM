@@ -145,13 +145,35 @@ export async function load({ locals, url, cookies }) {
 						name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
 					})) || [],
 
-				// Tags
-				tags: account.tags || [],
+				// M2M field IDs for form editing
+				assignedTo: (account.assigned_to || []).map((u) => u.id),
+				contacts: (account.contacts || []).map((c) => c.id),
+				tags: (account.tags || []).map((t) => t.id),
 
-				// Teams
+				// Full M2M data for display
+				assignedToData: account.assigned_to || [],
+				contactsData: account.contacts || [],
+				tagsData: account.tags || [],
 				teams: account.teams || []
 			};
 		});
+
+		// Extract form options from Django response
+		const users = (response.users || []).map((u) => ({
+			id: u.id,
+			email: u.user__email
+		}));
+
+		const allContacts = (response.contacts || []).map((c) => ({
+			id: c.id,
+			name: c.first_name || 'Unknown'
+		}));
+
+		const allTags = (response.tags || []).map((t) => ({
+			id: t.id,
+			name: t.name,
+			slug: t.slug
+		}));
 
 		return {
 			accounts: transformedAccounts,
@@ -160,7 +182,11 @@ export async function load({ locals, url, cookies }) {
 				limit,
 				total,
 				totalPages: Math.ceil(total / limit) || 1
-			}
+			},
+			// Form options for M2M fields
+			users,
+			contacts: allContacts,
+			tags: allTags
 		};
 	} catch (err) {
 		console.error('Error fetching accounts from API:', err);
@@ -187,6 +213,26 @@ export const actions = {
 			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
 			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
 
+			// M2M fields (JSON arrays)
+			const assignedToRaw = form.get('assigned_to')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assigned_to = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assigned_to = JSON.parse(assignedToRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
 			if (!name) {
 				return fail(400, { error: 'Account name is required.' });
 			}
@@ -204,7 +250,10 @@ export const actions = {
 				postcode,
 				country,
 				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
-				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
+				assigned_to,
+				contacts,
+				tags
 			};
 
 			await apiRequest(
@@ -241,6 +290,26 @@ export const actions = {
 			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
 			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
 
+			// M2M fields (JSON arrays)
+			const assignedToRaw = form.get('assigned_to')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assigned_to = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assigned_to = JSON.parse(assignedToRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
 			if (!accountId || !name) {
 				return fail(400, { error: 'Account ID and name are required.' });
 			}
@@ -258,7 +327,10 @@ export const actions = {
 				postcode,
 				country,
 				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
-				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
+				assigned_to,
+				contacts,
+				tags
 			};
 
 			await apiRequest(

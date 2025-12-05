@@ -28,10 +28,10 @@ class AccountSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     account_attachment = AttachmentsSerializer(read_only=True, many=True)
-    country = serializers.SerializerMethodField()
+    country_display = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
-    def get_country(self, obj):
+    def get_country_display(self, obj):
         return obj.get_country_display() if obj.country else None
 
     class Meta:
@@ -53,6 +53,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "state",
             "postcode",
             "country",
+            "country_display",
             # Assignment
             "assigned_to",
             "teams",
