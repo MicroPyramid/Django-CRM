@@ -17,6 +17,7 @@ redis==7.1.0
 arrow==1.4.0
 pytz==2025.2
 requests==2.32.5
+faker==33.1.0
 
 # Production server
 gunicorn>=23.0.0
