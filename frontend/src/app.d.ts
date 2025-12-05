@@ -7,6 +7,11 @@ declare global {
 			user?: any; // You might want to replace 'any' with a more specific type for user
 			org?: any; // You might want to replace 'any' with a more specific type for org
 			org_name?: string;
+			org_settings?: {
+				default_currency?: string;
+				currency_symbol?: string;
+				default_country?: string | null;
+			};
 		}
 		// interface PageData {}
 		// interface PageState {}

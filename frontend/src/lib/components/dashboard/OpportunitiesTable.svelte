@@ -4,12 +4,14 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import { Target, ChevronRight, Calendar } from '@lucide/svelte';
+	import { formatCurrency } from '$lib/utils/formatting.js';
 
 	/**
 	 * @typedef {Object} Opportunity
 	 * @property {string} id
 	 * @property {string} name
 	 * @property {number | null} amount
+	 * @property {string} [currency] - Currency code (e.g., 'USD', 'INR')
 	 * @property {string} stage
 	 * @property {number | null} probability
 	 * @property {string} [createdAt]
@@ -33,20 +35,6 @@
 		CLOSED_WON: { label: 'Won', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
 		CLOSED_LOST: { label: 'Lost', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
 	});
-
-	/**
-	 * Format currency
-	 * @param {number | null | undefined} amount
-	 */
-	function formatCurrency(amount) {
-		if (!amount) return '$0';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
-	}
 
 	/**
 	 * Calculate days until close
@@ -115,7 +103,7 @@
 								</p>
 							</div>
 							<span class="text-foreground flex-shrink-0 text-sm font-semibold tabular-nums">
-								{formatCurrency(opp.amount)}
+								{formatCurrency(opp.amount, opp.currency || 'USD')}
 							</span>
 						</div>
 						<div class="flex items-center gap-3">

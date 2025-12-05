@@ -10,6 +10,8 @@
 		OpportunitiesTable,
 		ActivityFeed
 	} from '$lib/components/dashboard';
+	import { formatCurrency } from '$lib/utils/formatting.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -21,20 +23,14 @@
 	const revenueMetrics = $derived(data.revenueMetrics || {});
 	const hotLeads = $derived(data.hotLeads || []);
 
-	/**
-	 * Format currency values
-	 * @param {number} amount
-	 */
-	function formatCurrency(amount) {
-		if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
-		if (amount >= 1000) return '$' + Math.round(amount / 1000) + 'k';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
-	}
+	// Get org's default currency for KPI display
+	const orgCurrency = $derived($orgSettings.default_currency || 'USD');
+	const otherCurrencyCount = $derived(revenueMetrics.other_currency_count || 0);
+	const currencyNote = $derived(
+		otherCurrencyCount > 0
+			? `${orgCurrency} only (${otherCurrencyCount} in other currencies)`
+			: `${orgCurrency} only`
+	);
 </script>
 
 <svelte:head>
@@ -70,8 +66,11 @@
 
 		<!-- Pipeline Overview - Full Width -->
 		<div class="rounded-lg border bg-card p-4">
-			<h2 class="text-foreground mb-3 text-sm font-medium">Sales Pipeline</h2>
-			<MiniPipeline pipelineData={pipelineByStage} />
+			<div class="mb-3 flex items-center justify-between">
+				<h2 class="text-foreground text-sm font-medium">Sales Pipeline</h2>
+				<span class="text-muted-foreground text-[10px]">{currencyNote}</span>
+			</div>
+			<MiniPipeline pipelineData={pipelineByStage} currency={orgCurrency} />
 		</div>
 
 		<!-- Revenue Metrics + Pipeline Chart -->
@@ -80,7 +79,8 @@
 			<div class="grid grid-cols-2 gap-4">
 				<KPICard
 					label="Pipeline Value"
-					value={formatCurrency(revenueMetrics.pipeline_value || 0)}
+					value={formatCurrency(revenueMetrics.pipeline_value || 0, orgCurrency, true)}
+					subtitle={currencyNote}
 					borderColor="border-t-blue-500"
 				>
 					{#snippet icon()}
@@ -89,7 +89,8 @@
 				</KPICard>
 				<KPICard
 					label="Weighted Pipeline"
-					value={formatCurrency(revenueMetrics.weighted_pipeline || 0)}
+					value={formatCurrency(revenueMetrics.weighted_pipeline || 0, orgCurrency, true)}
+					subtitle={currencyNote}
 					borderColor="border-t-purple-500"
 					iconBgClass="bg-purple-100 dark:bg-purple-900/30"
 					iconClass="text-purple-600 dark:text-purple-400"
@@ -100,7 +101,8 @@
 				</KPICard>
 				<KPICard
 					label="Won This Month"
-					value={formatCurrency(revenueMetrics.won_this_month || 0)}
+					value={formatCurrency(revenueMetrics.won_this_month || 0, orgCurrency, true)}
+					subtitle={currencyNote}
 					borderColor="border-t-green-500"
 					iconBgClass="bg-green-100 dark:bg-green-900/30"
 					iconClass="text-green-600 dark:text-green-400"
@@ -123,7 +125,7 @@
 			</div>
 
 			<!-- Pipeline Chart -->
-			<PipelineChart pipelineData={pipelineByStage} />
+			<PipelineChart pipelineData={pipelineByStage} currency={orgCurrency} />
 		</div>
 
 		<!-- Tasks + Hot Leads -->

@@ -24,7 +24,8 @@
 		AlertTriangle,
 		Tag,
 		UserPlus,
-		Contact
+		Contact,
+		Banknote
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -34,6 +35,8 @@
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+	import { CURRENCY_CODES } from '$lib/constants/filters.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'accounts-column-config';
@@ -86,8 +89,15 @@
 	// Country options for drawer
 	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
 
-	// Base drawer columns (static options)
-	const baseDrawerColumns = [
+	// Currency options for select
+	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
+		value: c.value,
+		label: c.label,
+		color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+	}));
+
+	// Base drawer columns (using $derived for dynamic currency symbol)
+	const baseDrawerColumns = $derived([
 		{ key: 'name', label: 'Name', type: 'text' },
 		{
 			key: 'industry',
@@ -117,8 +127,15 @@
 			label: 'Revenue',
 			type: 'number',
 			icon: DollarSign,
-			prefix: '$',
 			placeholder: '0'
+		},
+		{
+			key: 'currency',
+			label: 'Currency',
+			type: 'select',
+			icon: Banknote,
+			options: currencyOptions,
+			placeholder: 'Select currency'
 		},
 		{
 			key: 'numberOfEmployees',
@@ -151,7 +168,7 @@
 			icon: FileText,
 			placeholder: 'Add notes about this account...'
 		}
-	];
+	]);
 
 	/** @type {ColumnDef[]} */
 	const columns = [
@@ -179,7 +196,7 @@
 			label: 'Revenue',
 			type: 'number',
 			width: 'w-32',
-			format: (value) => formatCurrency(value, 'USD', true)
+			format: (value, row) => formatCurrency(value, row?.currency || 'USD', true)
 		},
 		{
 			key: 'createdAt',
@@ -300,6 +317,7 @@
 		postcode: '',
 		country: '',
 		annualRevenue: '',
+		currency: '',
 		numberOfEmployees: '',
 		assignedTo: [],
 		contacts: [],
@@ -313,9 +331,9 @@
 	$effect(() => {
 		if (drawerOpen) {
 			if (drawerMode === 'create') {
-				drawerFormData = { ...emptyAccount };
+				drawerFormData = { ...emptyAccount, currency: $orgSettings.default_currency || 'USD' };
 			} else if (selectedAccount) {
-				drawerFormData = { ...selectedAccount };
+				drawerFormData = { ...selectedAccount, currency: selectedAccount.currency || $orgSettings.default_currency || 'USD' };
 			}
 		}
 	});
@@ -465,6 +483,7 @@
 		postcode: '',
 		country: '',
 		annual_revenue: '',
+		currency: '',
 		number_of_employees: '',
 		assigned_to: '[]',
 		contacts: '[]',
@@ -509,6 +528,7 @@
 		formState.postcode = drawerFormData.postcode || '';
 		formState.country = drawerFormData.country || '';
 		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.currency = drawerFormData.currency || '';
 		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
 		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
 		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
@@ -537,6 +557,7 @@
 		formState.postcode = drawerFormData.postcode || '';
 		formState.country = drawerFormData.country || '';
 		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.currency = drawerFormData.currency || '';
 		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
 		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
 		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
@@ -985,6 +1006,7 @@
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="currency" value={formState.currency} />
 	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
 	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
 	<input type="hidden" name="contacts" value={formState.contacts} />
@@ -1011,6 +1033,7 @@
 	<input type="hidden" name="postcode" value={formState.postcode} />
 	<input type="hidden" name="country" value={formState.country} />
 	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="currency" value={formState.currency} />
 	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
 	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
 	<input type="hidden" name="contacts" value={formState.contacts} />

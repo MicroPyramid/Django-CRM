@@ -122,6 +122,14 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "is_active",
         )
 
+    def create(self, validated_data):
+        # Default currency from org if not provided
+        if not validated_data.get("currency"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
+
 
 class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField()

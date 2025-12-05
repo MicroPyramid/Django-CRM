@@ -120,3 +120,20 @@ export const CURRENCY_CODES = [
 	{ value: 'BRL', label: 'BRL - Real' },
 	{ value: 'MXN', label: 'MXN - Peso' }
 ];
+
+/** @type {Record<string, string>} */
+export const CURRENCY_SYMBOLS = {
+	USD: '$',
+	EUR: '€',
+	GBP: '£',
+	INR: '₹',
+	CAD: 'CA$',
+	AUD: 'A$',
+	JPY: '¥',
+	CNY: '¥',
+	CHF: 'CHF',
+	SGD: 'S$',
+	AED: 'د.إ',
+	BRL: 'R$',
+	MXN: 'MX$'
+};

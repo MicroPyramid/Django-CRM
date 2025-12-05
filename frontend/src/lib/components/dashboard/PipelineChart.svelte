@@ -1,5 +1,6 @@
 <script>
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { formatCurrency } from '$lib/utils/formatting.js';
 
 	/**
 	 * @typedef {Object} StageData
@@ -11,10 +12,11 @@
 	/**
 	 * @typedef {Object} Props
 	 * @property {Record<string, StageData>} [pipelineData] - Pipeline data by stage
+	 * @property {string} [currency] - Currency code for formatting (default: USD)
 	 */
 
 	/** @type {Props} */
-	let { pipelineData = {} } = $props();
+	let { pipelineData = {}, currency = 'USD' } = $props();
 
 	// Only show open stages in the chart (not closed)
 	const stages = [
@@ -27,17 +29,6 @@
 	const maxValue = $derived(
 		Math.max(...stages.map((s) => pipelineData[s.id]?.value || 0), 1)
 	);
-
-	/**
-	 * Format currency values compactly
-	 * @param {number} amount
-	 */
-	function formatCurrency(amount) {
-		if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
-		if (amount >= 1000) return '$' + Math.round(amount / 1000) + 'k';
-		if (amount > 0) return '$' + Math.round(amount);
-		return '$0';
-	}
 </script>
 
 <Card.Root class="p-5">
@@ -52,7 +43,7 @@
 				<div class="space-y-1.5">
 					<div class="flex items-center justify-between text-xs">
 						<span class="text-muted-foreground">{data.label || stage.id}</span>
-						<span class="text-foreground font-medium tabular-nums">{formatCurrency(data.value)}</span>
+						<span class="text-foreground font-medium tabular-nums">{formatCurrency(data.value, currency, true)}</span>
 					</div>
 					<div class="bg-muted h-2 w-full overflow-hidden rounded-full">
 						<div
@@ -68,7 +59,9 @@
 			<span class="text-muted-foreground">Total Open Pipeline</span>
 			<span class="text-foreground font-semibold tabular-nums">
 				{formatCurrency(
-					stages.reduce((sum, s) => sum + (pipelineData[s.id]?.value || 0), 0)
+					stages.reduce((sum, s) => sum + (pipelineData[s.id]?.value || 0), 0),
+					currency,
+					true
 				)}
 			</span>
 		</div>

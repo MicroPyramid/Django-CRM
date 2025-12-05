@@ -8,6 +8,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from common.utils import CURRENCY_SYMBOLS
 from common.models import (
     Activity,
     Address,
@@ -35,6 +36,7 @@ class OrgAwareRefreshToken(RefreshToken):
     - org_id: Organization UUID
     - org_name: Organization name (for display)
     - role: User's role in the org (ADMIN/USER)
+    - org_settings: Currency and locale settings
     """
 
     @classmethod
@@ -59,6 +61,15 @@ class OrgAwareRefreshToken(RefreshToken):
             # Add org_name for display (avoids /api/auth/profile call)
             if hasattr(org, "name"):
                 token["org_name"] = org.name
+            # Add org settings for currency/locale
+            if hasattr(org, "default_currency"):
+                token["org_settings"] = {
+                    "default_currency": org.default_currency or "USD",
+                    "currency_symbol": CURRENCY_SYMBOLS.get(
+                        org.default_currency or "USD", "$"
+                    ),
+                    "default_country": org.default_country,
+                }
 
         # Add role if profile provided (avoids /api/auth/profile call)
         if profile:
@@ -71,6 +82,21 @@ class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ("id", "name", "api_key")
+
+
+class OrgSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for org settings (currency, country, locale)"""
+
+    currency_symbol = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Org
+        fields = ["id", "name", "default_currency", "default_country", "currency_symbol"]
+        read_only_fields = ["id", "currency_symbol"]
+
+    @extend_schema_field(str)
+    def get_currency_symbol(self, obj):
+        return CURRENCY_SYMBOLS.get(obj.default_currency or "USD", "$")
 
 
 class TagsSerializer(serializers.ModelSerializer):

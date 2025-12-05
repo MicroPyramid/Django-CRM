@@ -24,7 +24,8 @@
 		Monitor,
 		User,
 		LogOut,
-		ChevronsUpDown
+		ChevronsUpDown,
+		Settings
 	} from '@lucide/svelte';
 
 	/**
@@ -172,6 +173,13 @@
 			href: '/support',
 			label: 'Support',
 			icon: HelpCircle,
+			type: 'link',
+			preload: 'off'
+		},
+		{
+			href: '/settings/organization',
+			label: 'Settings',
+			icon: Settings,
 			type: 'link',
 			preload: 'off'
 		}

@@ -47,9 +47,11 @@ export async function load({ locals, cookies }) {
 			id: opp.id,
 			name: opp.name,
 			amount: opp.amount ? parseFloat(opp.amount) : null,
+			currency: opp.currency || null,
 			stage: opp.stage,
 			probability: opp.probability ? parseFloat(opp.probability) : null,
 			createdAt: opp.created_on,
+			closed_on: opp.closed_on,
 			account: opp.account
 				? {
 						name: opp.account.name

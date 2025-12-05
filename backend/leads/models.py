@@ -5,6 +5,7 @@ from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import (
     COUNTRIES,
+    CURRENCY_CODES,
     INDCHOICES,
     LEAD_SOURCE,
     LEAD_STATUS,
@@ -67,6 +68,9 @@ class Lead(AssignableMixin, BaseModel):
     )
     opportunity_amount = models.DecimalField(
         _("Deal Value"), decimal_places=2, max_digits=12, blank=True, null=True
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
     probability = models.IntegerField(
         _("Win Probability %"), default=0, blank=True, null=True

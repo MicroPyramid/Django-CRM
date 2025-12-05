@@ -66,6 +66,7 @@ export async function load({ cookies, locals }) {
 			industry: lead.industry,
 			rating: lead.rating,
 			opportunityAmount: lead.opportunity_amount,
+			currency: lead.currency || null,
 			probability: lead.probability,
 			closeDate: lead.close_date,
 
@@ -159,6 +160,7 @@ export const actions = {
 			const ratingRaw = form.get('rating')?.toString().trim().toUpperCase() || '';
 			const rating = validRatings.includes(ratingRaw) ? ratingRaw : null;
 			const opportunityAmount = form.get('opportunityAmount')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
 			const probability = form.get('probability')?.toString().trim() || null;
 			const closeDate = form.get('closeDate')?.toString().trim() || null;
 
@@ -235,6 +237,7 @@ export const actions = {
 			if (source) leadData.source = source;
 			if (rating) leadData.rating = rating;
 			if (opportunityAmount) leadData.opportunity_amount = parseFloat(opportunityAmount);
+			if (currency) leadData.currency = currency;
 			if (probability) leadData.probability = parseInt(probability);
 			if (closeDate) leadData.close_date = closeDate;
 			if (addressLine) leadData.address_line = addressLine;
@@ -293,6 +296,7 @@ export const actions = {
 			const ratingRaw = form.get('rating')?.toString().trim().toUpperCase() || '';
 			const rating = validRatings.includes(ratingRaw) ? ratingRaw : null;
 			const opportunityAmount = form.get('opportunityAmount')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
 			const probability = form.get('probability')?.toString().trim() || null;
 			const closeDate = form.get('closeDate')?.toString().trim() || null;
 
@@ -366,6 +370,7 @@ export const actions = {
 			if (status) leadData.status = status;
 			if (rating) leadData.rating = rating;
 			if (opportunityAmount) leadData.opportunity_amount = parseFloat(opportunityAmount);
+			if (currency) leadData.currency = currency;
 			if (probability) leadData.probability = parseInt(probability);
 			if (closeDate) leadData.close_date = closeDate;
 			if (addressLine) leadData.address_line = addressLine;
@@ -472,6 +477,7 @@ export const actions = {
 			if (originalLead.source) leadData.source = originalLead.source;
 			if (originalLead.rating) leadData.rating = originalLead.rating;
 			if (originalLead.opportunity_amount) leadData.opportunity_amount = originalLead.opportunity_amount;
+			if (originalLead.currency) leadData.currency = originalLead.currency;
 			if (originalLead.probability) leadData.probability = originalLead.probability;
 			if (originalLead.address_line) leadData.address_line = originalLead.address_line;
 			if (originalLead.city) leadData.city = originalLead.city;

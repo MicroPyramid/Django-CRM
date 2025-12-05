@@ -5,7 +5,7 @@ from django.utils.translation import pgettext_lazy
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
-from common.utils import COUNTRIES, INDCHOICES
+from common.utils import COUNTRIES, CURRENCY_CODES, INDCHOICES
 from contacts.models import Contact
 
 
@@ -35,6 +35,9 @@ class Account(AssignableMixin, BaseModel):
     )
     annual_revenue = models.DecimalField(
         _("Annual Revenue"), max_digits=15, decimal_places=2, blank=True, null=True
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
 
     # Address (flat fields like Lead and Contact models)

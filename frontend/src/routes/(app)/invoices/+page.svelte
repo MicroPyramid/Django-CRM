@@ -1,4 +1,6 @@
 <script>
+	import { formatCurrency } from '$lib/utils/formatting.js';
+
 	/** @type {import('./$types').PageData} - for external reference */
 	export let data;
 
@@ -15,16 +17,6 @@
 			REJECTED: 'bg-red-100 text-red-700'
 		};
 		return classes[status] || 'bg-gray-100 text-gray-700';
-	}
-
-	/**
-	 * @param {number} amount
-	 */
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD'
-		}).format(amount);
 	}
 </script>
 

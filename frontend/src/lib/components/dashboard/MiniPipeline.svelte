@@ -1,6 +1,7 @@
 <script>
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { ChevronRight } from '@lucide/svelte';
+	import { formatCurrency } from '$lib/utils/formatting.js';
 
 	/**
 	 * @typedef {Object} StageData
@@ -12,10 +13,11 @@
 	/**
 	 * @typedef {Object} Props
 	 * @property {Record<string, StageData>} [pipelineData] - Pipeline data by stage
+	 * @property {string} [currency] - Currency code for formatting (default: USD)
 	 */
 
 	/** @type {Props} */
-	let { pipelineData = {} } = $props();
+	let { pipelineData = {}, currency = 'USD' } = $props();
 
 	const stages = [
 		{ id: 'PROSPECTING', color: 'bg-gray-500' },
@@ -25,17 +27,6 @@
 		{ id: 'CLOSED_WON', color: 'bg-green-500' },
 		{ id: 'CLOSED_LOST', color: 'bg-red-500' }
 	];
-
-	/**
-	 * Format currency values compactly
-	 * @param {number} amount
-	 */
-	function formatCurrency(amount) {
-		if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
-		if (amount >= 1000) return '$' + Math.round(amount / 1000) + 'k';
-		if (amount > 0) return '$' + Math.round(amount);
-		return '$0';
-	}
 </script>
 
 <div class="overflow-x-auto">
@@ -52,7 +43,7 @@
 					<Badge variant="secondary" class="ml-auto h-5 px-1.5 text-[10px]">{data.count}</Badge>
 				</div>
 				<p class="text-foreground text-base font-semibold tabular-nums">
-					{formatCurrency(data.value)}
+					{formatCurrency(data.value, currency, true)}
 				</p>
 			</a>
 			{#if index < stages.length - 1 && index !== 3}

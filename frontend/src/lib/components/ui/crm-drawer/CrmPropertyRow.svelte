@@ -3,6 +3,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { EditableMultiSelect } from '$lib/components/ui/editable-field/index.js';
 	import { cn } from '$lib/utils.js';
+	import { formatCurrency } from '$lib/utils/formatting.js';
 
 	/**
 	 * @type {{
@@ -95,12 +96,7 @@
 		const num = typeof val === 'string' ? parseFloat(val) : val;
 		if (isNaN(num)) return emptyText || '0';
 		if (prefix === '$') {
-			return new Intl.NumberFormat('en-US', {
-				style: 'currency',
-				currency: 'USD',
-				minimumFractionDigits: 0,
-				maximumFractionDigits: 0
-			}).format(num);
+			return formatCurrency(num);
 		}
 		return prefix + num.toLocaleString();
 	}

@@ -49,6 +49,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "industry",
             "rating",
             "opportunity_amount",
+            "currency",
             "probability",
             "close_date",
             # Address
@@ -115,6 +116,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "industry",
             "rating",
             "opportunity_amount",
+            "currency",
             "probability",
             "close_date",
             # Address
@@ -131,6 +133,14 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "company_name",
             "is_active",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided and has opportunity_amount
+        if not validated_data.get("currency") and validated_data.get("opportunity_amount"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class LeadCreateSwaggerSerializer(serializers.ModelSerializer):

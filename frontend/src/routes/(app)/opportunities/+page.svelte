@@ -33,6 +33,7 @@
 		OPPORTUNITY_SOURCES,
 		CURRENCY_CODES
 	} from '$lib/constants/filters.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
 	const STORAGE_KEY = 'opportunities-crm-columns';
 
@@ -99,7 +100,7 @@
 			label: 'Amount',
 			type: 'number',
 			width: 'w-32',
-			format: (value) => formatAmount(value)
+			format: (value, row) => formatAmount(value, row?.currency)
 		},
 		{
 			key: 'probability',
@@ -212,7 +213,6 @@
 			label: 'Amount',
 			type: 'number',
 			icon: DollarSign,
-			prefix: '$',
 			placeholder: '0'
 		},
 		{
@@ -325,13 +325,15 @@
 	$effect(() => {
 		if (drawerOpen) {
 			if (drawerMode === 'create') {
-				drawerFormData = { ...emptyOpportunity };
+				drawerFormData = { ...emptyOpportunity, currency: $orgSettings.default_currency || 'USD' };
 			} else if (selectedRow) {
 				// Extract IDs for multiselect fields and account select
 				drawerFormData = {
 					...selectedRow,
 					// Account ID for select
 					account: selectedRow.account?.id || '',
+					// Currency with fallback to org default
+					currency: selectedRow.currency || $orgSettings.default_currency || 'USD',
 					// Extract IDs for multiselect fields
 					contacts: (selectedRow.contacts || []).map((/** @type {any} */ c) => c.id),
 					assignedTo: (selectedRow.assignedTo || []).map((/** @type {any} */ u) => u.id),
@@ -468,15 +470,11 @@
 
 	/**
 	 * @param {number | null} value
+	 * @param {string} [currency='USD']
 	 */
-	function formatAmount(value) {
+	function formatAmount(value, currency = 'USD') {
 		if (!value) return '-';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(value);
+		return formatCurrency(value, currency || 'USD');
 	}
 
 	/**

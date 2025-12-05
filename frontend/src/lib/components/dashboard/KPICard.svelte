@@ -7,6 +7,7 @@
 	 * @typedef {Object} Props
 	 * @property {string} label - The metric label (e.g., "Active Leads")
 	 * @property {string | number} value - The metric value
+	 * @property {string} [subtitle] - Small note below the value (e.g., "INR only")
 	 * @property {import('svelte').Snippet} [icon] - Icon snippet to display
 	 * @property {number} [trend] - Percentage change (positive or negative)
 	 * @property {string} [trendLabel] - Label for trend (e.g., "vs last month")
@@ -20,6 +21,7 @@
 	let {
 		label,
 		value,
+		subtitle,
 		icon,
 		trend,
 		trendLabel,
@@ -46,6 +48,9 @@
 			<p class="text-foreground truncate text-3xl font-semibold tabular-nums">
 				{value}
 			</p>
+			{#if subtitle}
+				<p class="text-muted-foreground text-[10px]">{subtitle}</p>
+			{/if}
 			{#if hasTrend}
 				<div class="mt-1 flex items-center gap-1">
 					{#if isPositive}

@@ -415,6 +415,22 @@ CURRENCY_CODES = (
     ("MXN", _("MXN, Peso")),
 )
 
+CURRENCY_SYMBOLS = {
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "INR": "₹",
+    "CAD": "CA$",
+    "AUD": "A$",
+    "JPY": "¥",
+    "CNY": "¥",
+    "CHF": "CHF",
+    "SGD": "S$",
+    "AED": "د.إ",
+    "BRL": "R$",
+    "MXN": "MX$",
+}
+
 
 def return_complete_address(self):
     address = ""

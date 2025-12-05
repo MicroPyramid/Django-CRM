@@ -4,6 +4,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { expandButtonClasses } from '$lib/utils/drag-drop.js';
 	import { getOptionStyle, getOptionLabel, getOptionBgColor } from '$lib/utils/table-helpers.js';
+	import { formatCurrency } from '$lib/utils/formatting.js';
 
 	/**
 	 * @typedef {Object} ColumnDef
@@ -15,7 +16,7 @@
 	 * @property {boolean} [editable=true] - Allow inline editing
 	 * @property {boolean} [canHide=true] - Allow hiding column
 	 * @property {string} [emptyText='Empty'] - Text when value is empty
-	 * @property {(value: any) => string} [format] - Custom value formatter
+	 * @property {(value: any, row?: any) => string} [format] - Custom value formatter (receives value and optional row data)
 	 * @property {(row: any) => any} [getValue] - Custom value getter for nested data
 	 * @property {string} [relationIcon] - Icon type for relation cells ('building' | 'user')
 	 */
@@ -60,26 +61,16 @@
 	 * Format value for display
 	 * @param {any} value
 	 * @param {ColumnDef} column
+	 * @param {any} [row] - The full row data (for format functions that need row context)
 	 */
-	function formatValue(value, column) {
+	function formatValue(value, column, row) {
 		if (value == null || value === '') return null;
-		if (column.format) return column.format(value);
+		if (column.format) return column.format(value, row);
 		if (column.type === 'number') return formatCurrency(value);
 		if (column.type === 'date') return formatDate(value);
 		return value;
 	}
 
-	/**
-	 * @param {number} value
-	 */
-	function formatCurrency(value) {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(value);
-	}
 
 	/**
 	 * @param {string} dateStr
@@ -239,7 +230,7 @@
 
 						{#each visibleColumnDefs as column (column.key)}
 							{@const value = getCellValue(row, column)}
-							{@const formattedValue = formatValue(value, column)}
+							{@const formattedValue = formatValue(value, column, row)}
 							<td class="px-4 py-3 {column.width || ''}">
 								{#if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
 									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key && onRowChange}

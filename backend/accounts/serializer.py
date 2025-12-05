@@ -47,6 +47,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "industry",
             "number_of_employees",
             "annual_revenue",
+            "currency",
             # Address
             "address_line",
             "city",
@@ -172,6 +173,7 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "industry",
             "number_of_employees",
             "annual_revenue",
+            "currency",
             # Address
             "address_line",
             "city",
@@ -183,6 +185,14 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             # Status
             "is_active",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided and has annual_revenue
+        if not validated_data.get("currency") and validated_data.get("annual_revenue"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class AccountDetailEditSwaggerSerializer(serializers.Serializer):

@@ -111,6 +111,7 @@ export async function load({ locals, url, cookies }) {
 
 				// Business fields
 				annualRevenue: account.annual_revenue ? parseFloat(account.annual_revenue) : null,
+				currency: account.currency || null,
 				numberOfEmployees: account.number_of_employees,
 
 				// Owner - Django returns assigned_to array
@@ -211,6 +212,7 @@ export const actions = {
 			const postcode = form.get('postcode')?.toString().trim() || null;
 			const country = form.get('country')?.toString().trim() || null;
 			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
 			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
 
 			// M2M fields (JSON arrays)
@@ -250,6 +252,7 @@ export const actions = {
 				postcode,
 				country,
 				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				currency,
 				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
 				assigned_to,
 				contacts,
@@ -288,6 +291,7 @@ export const actions = {
 			const postcode = form.get('postcode')?.toString().trim() || null;
 			const country = form.get('country')?.toString().trim() || null;
 			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
 			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
 
 			// M2M fields (JSON arrays)
@@ -327,6 +331,7 @@ export const actions = {
 				postcode,
 				country,
 				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				currency,
 				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
 				assigned_to,
 				contacts,

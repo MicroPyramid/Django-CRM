@@ -25,12 +25,14 @@
 		Tag,
 		MessageSquare,
 		Loader2,
-		ArrowRightCircle
+		ArrowRightCircle,
+		Banknote
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
+	import { CURRENCY_CODES } from '$lib/constants/filters.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
 	import { useListFilters } from '$lib/hooks';
@@ -44,6 +46,7 @@
 	import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
 	import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
 	import { apiRequest } from '$lib/api.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
@@ -175,8 +178,16 @@
 		{ value: 'Prof', label: 'Prof', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
 	];
 
+	// Currency options for select
+	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
+		value: c.value,
+		label: c.label,
+		color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+	}));
+
 	// Full drawer columns for NotionDrawer (all lead fields)
-	const drawerColumns = [
+	// Using $derived so currency symbol updates with org settings
+	const drawerColumns = $derived([
 		// Contact Information
 		{
 			key: 'salutation',
@@ -286,8 +297,15 @@
 			label: 'Deal Value',
 			type: 'number',
 			icon: DollarSign,
-			prefix: '$',
 			placeholder: '0'
+		},
+		{
+			key: 'currency',
+			label: 'Currency',
+			type: 'select',
+			icon: Banknote,
+			options: currencyOptions,
+			placeholder: 'Select currency'
 		},
 		{
 			key: 'probability',
@@ -391,7 +409,7 @@
 			icon: Tag,
 			options: []
 		}
-	];
+	]);
 
 
 	/**
@@ -783,6 +801,7 @@
 			formState.rating = createFormData.rating || '';
 			formState.industry = createFormData.industry || '';
 			formState.opportunityAmount = createFormData.opportunityAmount || '';
+			formState.currency = createFormData.currency || $orgSettings.default_currency || 'USD';
 			formState.probability = createFormData.probability || '';
 			formState.closeDate = createFormData.closeDate || '';
 			formState.lastContacted = createFormData.lastContacted || '';
@@ -861,6 +880,7 @@
 		industry: '',
 		rating: '',
 		opportunityAmount: '',
+		currency: '',
 		probability: '',
 		closeDate: '',
 		// Address
@@ -919,6 +939,7 @@
 		formState.industry = formData.industry || '';
 		formState.rating = formData.rating || '';
 		formState.opportunityAmount = formData.opportunity_amount || '';
+		formState.currency = formData.currency || $orgSettings.default_currency || 'USD';
 		formState.probability = formData.probability || '';
 		formState.closeDate = formData.close_date || '';
 		// Address
@@ -1328,6 +1349,7 @@
 	<input type="hidden" name="industry" value={formState.industry} />
 	<input type="hidden" name="rating" value={formState.rating} />
 	<input type="hidden" name="opportunityAmount" value={formState.opportunityAmount} />
+	<input type="hidden" name="currency" value={formState.currency} />
 	<input type="hidden" name="probability" value={formState.probability} />
 	<input type="hidden" name="closeDate" value={formState.closeDate} />
 	<!-- Address -->
@@ -1373,6 +1395,7 @@
 	<input type="hidden" name="industry" value={formState.industry} />
 	<input type="hidden" name="rating" value={formState.rating} />
 	<input type="hidden" name="opportunityAmount" value={formState.opportunityAmount} />
+	<input type="hidden" name="currency" value={formState.currency} />
 	<input type="hidden" name="probability" value={formState.probability} />
 	<input type="hidden" name="closeDate" value={formState.closeDate} />
 	<!-- Address -->

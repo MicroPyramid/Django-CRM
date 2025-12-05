@@ -15,7 +15,8 @@ import { env } from '$env/dynamic/public';
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
- * @typedef {{ org_id?: string, org_name?: string, role?: string, user_id?: string, exp?: number, iat?: number }} JWTPayload
+ * @typedef {{ default_currency?: string, currency_symbol?: string, default_country?: string|null }} OrgSettingsPayload
+ * @typedef {{ org_id?: string, org_name?: string, role?: string, user_id?: string, exp?: number, iat?: number, org_settings?: OrgSettingsPayload }} JWTPayload
  * @typedef {{ id: string, name: string }} OrgInfo
  * @typedef {{ org: OrgInfo, role?: string }} ProfileInfo
  * @typedef {{ id?: string, organizations?: Array<{ id: string, name: string }> }} UserInfo
@@ -174,6 +175,12 @@ export async function handle({ event, resolve }) {
 					role: jwtPayload.role || 'USER'
 				};
 				event.locals.org_name = jwtPayload.org_name || 'Organization';
+				// Extract org settings for currency/locale
+				event.locals.org_settings = jwtPayload.org_settings || {
+					default_currency: 'USD',
+					currency_symbol: '$',
+					default_country: null
+				};
 			} else {
 				// Token doesn't have org context, need to switch (1 API call)
 				const switchResult = await switchOrg(token, orgId);
@@ -202,6 +209,13 @@ export async function handle({ event, resolve }) {
 						role: 'USER' // Will be in new JWT
 					};
 					event.locals.org_name = switchResult.current_org?.name || 'Organization';
+					// Decode new token to get org_settings
+					const newPayload = decodeJwtPayload(switchResult.access_token);
+					event.locals.org_settings = newPayload?.org_settings || {
+						default_currency: 'USD',
+						currency_symbol: '$',
+						default_country: null
+					};
 				} else {
 					// Org switch failed, clear org cookie and redirect
 					event.cookies.delete('org', { path: '/' });

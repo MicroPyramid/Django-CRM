@@ -121,30 +121,42 @@ class ApiHomeView(APIView):
             "hot_leads": hot_leads,
         }
 
-        # NEW: Pipeline by stage
+        # Get org's default currency for filtering
+        org_currency = org.default_currency or "USD"
+
+        # NEW: Pipeline by stage (filtered by org's default currency)
+        # Only sum amounts that match org's currency for accurate totals
         pipeline_by_stage = {}
         for stage_code, stage_label in STAGES:
             stage_opps = opportunities.filter(stage=stage_code)
-            stage_value = stage_opps.aggregate(
+            # Filter by currency for value calculation (include null as matching org currency)
+            stage_opps_with_currency = stage_opps.filter(
+                Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
+            )
+            stage_value = stage_opps_with_currency.aggregate(
                 total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
             )["total"]
             pipeline_by_stage[stage_code] = {
-                "count": stage_opps.count(),
-                "value": float(stage_value or 0),
+                "count": stage_opps.count(),  # Count all opportunities
+                "value": float(stage_value or 0),  # Value only for matching currency
                 "label": stage_label,
             }
         context["pipeline_by_stage"] = pipeline_by_stage
 
-        # NEW: Revenue metrics
+        # NEW: Revenue metrics (filtered by org's default currency)
         open_stages = ["PROSPECTING", "QUALIFICATION", "PROPOSAL", "NEGOTIATION"]
         open_opps = opportunities.filter(stage__in=open_stages)
+        # Filter by currency for value calculations
+        open_opps_with_currency = open_opps.filter(
+            Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
+        )
 
-        pipeline_value = open_opps.aggregate(
+        pipeline_value = open_opps_with_currency.aggregate(
             total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
         )["total"]
 
         # Weighted pipeline = sum of (amount * probability / 100)
-        weighted_pipeline = open_opps.aggregate(
+        weighted_pipeline = open_opps_with_currency.aggregate(
             total=Coalesce(
                 Sum(F("amount") * F("probability") / 100),
                 0,
@@ -155,10 +167,14 @@ class ApiHomeView(APIView):
         # Won this month (use timezone-aware datetime for updated_at comparison)
         now = timezone.now()
         first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        won_this_month = opportunities.filter(
+        won_opps = opportunities.filter(
             stage="CLOSED_WON",
             updated_at__gte=first_day_of_month
-        ).aggregate(
+        )
+        won_opps_with_currency = won_opps.filter(
+            Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
+        )
+        won_this_month = won_opps_with_currency.aggregate(
             total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
         )["total"]
 
@@ -167,11 +183,18 @@ class ApiHomeView(APIView):
         converted_leads = Lead.objects.filter(org=org, status="converted").count()
         conversion_rate = (converted_leads / total_leads_all * 100) if total_leads_all > 0 else 0
 
+        # Count opportunities in other currencies (for info)
+        other_currency_count = opportunities.exclude(
+            Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
+        ).count()
+
         context["revenue_metrics"] = {
             "pipeline_value": float(pipeline_value or 0),
             "weighted_pipeline": float(weighted_pipeline or 0),
             "won_this_month": float(won_this_month or 0),
             "conversion_rate": round(conversion_rate, 1),
+            "currency": org_currency,
+            "other_currency_count": other_currency_count,
         }
 
         # NEW: Hot leads list for dedicated panel

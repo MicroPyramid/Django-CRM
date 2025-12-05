@@ -18,6 +18,7 @@ from common.views.organization_views import (
     ProfileView,
 )
 from common.views.settings_views import DomainDetailView, DomainList
+from common.views.org_settings_views import OrgSettingsView
 from common.views.tags_views import TagsDetailView, TagsListView
 from common.views.team_views import TeamsDetailView, TeamsListView
 from common.views.user_views import (
@@ -47,6 +48,7 @@ urlpatterns = [
     path("auth/google/callback/", GoogleOAuthCallbackView.as_view()),
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
+    path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
     # User management
