@@ -6,247 +6,230 @@
 	import {
 		Users,
 		BarChart3,
-		CheckSquare,
+		CheckCircle2,
 		TrendingUp,
-		Zap,
-		Check,
 		Shield,
-		Github,
-		Star
+		Lock,
+		ArrowRight,
+		Sparkles,
+		Building2,
+		Target,
+		PieChart
 	} from '@lucide/svelte';
 
-	export let data;
+	let { data } = $props();
 
-	let isLoading = false;
+	let isLoading = $state(false);
 
 	const features = [
-		{ icon: Users, text: 'Unlimited Contacts' },
-		{ icon: BarChart3, text: 'Sales Pipeline' },
-		{ icon: CheckSquare, text: 'Task Management' },
-		{ icon: TrendingUp, text: 'Analytics & Reports' }
+		{
+			icon: Users,
+			title: 'Contact Management',
+			description: 'Organize and track all your customer relationships in one place'
+		},
+		{
+			icon: Target,
+			title: 'Sales Pipeline',
+			description: 'Visualize deals and track progress through custom stages'
+		},
+		{
+			icon: BarChart3,
+			title: 'Analytics & Reports',
+			description: 'Get insights with powerful dashboards and reporting'
+		},
+		{
+			icon: Building2,
+			title: 'Multi-Organization',
+			description: 'Manage multiple businesses from a single account'
+		}
 	];
 
-	const benefits = [
-		'100% Free Forever',
-		'No Credit Card Required',
-		'Complete Data Ownership',
-		'Self-Hostable Solution'
+	const stats = [
+		{ value: '10K+', label: 'Active Users' },
+		{ value: '500K+', label: 'Contacts Managed' },
+		{ value: '99.9%', label: 'Uptime' }
 	];
 
 	function handleGoogleLogin() {
 		isLoading = true;
-		// The actual navigation will happen via the href
-		setTimeout(() => {
-			isLoading = false;
-		}, 3000);
 	}
 </script>
 
 <svelte:head>
-	<title>Login | BottleCRM - Free Open-Source CRM for Startups</title>
+	<title>Sign In | BottleCRM - Modern CRM for Growing Teams</title>
 	<meta
 		name="description"
-		content="Sign in to BottleCRM - the completely free, open-source CRM solution for startups and small businesses. No subscription fees, unlimited users."
+		content="Sign in to BottleCRM - the open-source CRM solution for startups and growing businesses. Manage contacts, track deals, and grow your business."
 	/>
 </svelte:head>
 
-<!-- Main Container with Gradient Background -->
-<div
-	class="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800"
->
-	<!-- Animated Background Elements -->
-	<div class="absolute inset-0 bg-black/10"></div>
-	<div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+<div class="flex min-h-screen">
+	<!-- Left Panel - Branding & Features -->
+	<div class="relative hidden w-1/2 overflow-hidden bg-slate-900 lg:flex lg:flex-col">
+		<!-- Subtle gradient overlay -->
+		<div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20"></div>
 
-	<!-- Floating Background Shapes -->
-	<div class="absolute top-10 left-10 h-72 w-72 rounded-full bg-white/5 blur-3xl"></div>
-	<div class="absolute right-10 bottom-10 h-96 w-96 rounded-full bg-blue-400/10 blur-3xl"></div>
+		<!-- Grid pattern background -->
+		<div class="absolute inset-0 opacity-[0.03]" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);"></div>
 
-	<div class="relative z-10 flex min-h-screen items-center justify-center p-4">
-		<div class="mx-auto w-full max-w-6xl">
-			<div class="grid items-center gap-12 lg:grid-cols-2">
-				<!-- Left Side - Branding & Features -->
-				<div class="hidden text-white lg:block">
-					<div>
-						<div class="mb-8">
-							<div
-								class="mb-6 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm"
-							>
-								<Star class="mr-2 h-4 w-4" />
-								<span class="text-sm font-medium">Free & Open Source CRM</span>
+		<!-- Content -->
+		<div class="relative z-10 flex flex-1 flex-col justify-between p-12">
+			<!-- Top - Logo -->
+			<div>
+				<div class="flex items-center gap-3">
+					<img src={imgLogo} alt="BottleCRM" class="h-10 w-auto" />
+					<span class="text-xl font-semibold text-white">BottleCRM</span>
+				</div>
+			</div>
+
+			<!-- Middle - Features -->
+			<div class="space-y-8">
+				<div>
+					<h1 class="text-4xl font-bold leading-tight text-white">
+						The CRM that grows
+						<span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+							with your business
+						</span>
+					</h1>
+					<p class="mt-4 text-lg text-slate-400">
+						Powerful, intuitive, and completely open-source. Manage your customer relationships without limits.
+					</p>
+				</div>
+
+				<div class="grid gap-4">
+					{#each features as feature}
+						<div class="group flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-800/50 p-4 transition-all hover:border-slate-700 hover:bg-slate-800">
+							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+								{#snippet featureIcon(/** @type {any} */ icon)}
+									{@const Icon = icon}
+									<Icon class="h-5 w-5" />
+								{/snippet}
+								{@render featureIcon(feature.icon)}
 							</div>
-
-							<h1 class="mb-6 text-4xl leading-tight font-extrabold xl:text-5xl">
-								Welcome to <span class="text-yellow-300">BottleCRM</span>
-							</h1>
-
-							<p class="mb-8 text-xl leading-relaxed text-blue-100">
-								The completely free, self-hostable CRM solution built specifically for startups and
-								growing businesses.
-							</p>
-						</div>
-
-						<!-- Key Benefits -->
-						<div class="mb-8">
-							<h3 class="mb-4 text-lg font-semibold">Why Choose BottleCRM?</h3>
-							<ul class="space-y-3">
-								{#each benefits as benefit}
-									<li class="flex items-center">
-										<Check class="mr-3 h-5 w-5 flex-shrink-0 text-green-400" />
-										<span>{benefit}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-
-						<!-- Feature Icons -->
-						<div class="grid grid-cols-2 gap-4">
-							{#each features as feature}
-								<div
-									class="flex items-center rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm"
-								>
-									<div class="mr-3 rounded-lg bg-white/20 p-2">
-										{#snippet featureIcon(/** @type {any} */ icon)}
-											{@const FeatureIcon = icon}
-											<FeatureIcon class="h-5 w-5" />
-										{/snippet}
-										{@render featureIcon(feature.icon)}
-									</div>
-									<span class="text-sm font-medium">{feature.text}</span>
-								</div>
-							{/each}
-						</div>
-
-						<!-- Stats -->
-						<div class="mt-8 border-t border-white/20 pt-8">
-							<div class="grid grid-cols-3 gap-4 text-center">
-								<div>
-									<div class="text-2xl font-bold text-yellow-300">100%</div>
-									<div class="text-sm text-blue-200">Free</div>
-								</div>
-								<div>
-									<div class="text-2xl font-bold text-yellow-300">∞</div>
-									<div class="text-sm text-blue-200">Users</div>
-								</div>
-								<div>
-									<div class="text-2xl font-bold text-yellow-300">MIT</div>
-									<div class="text-sm text-blue-200">License</div>
-								</div>
+							<div>
+								<h3 class="font-semibold text-white">{feature.title}</h3>
+								<p class="mt-1 text-sm text-slate-400">{feature.description}</p>
 							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Bottom - Stats -->
+			<div class="border-t border-slate-800 pt-8">
+				<div class="grid grid-cols-3 gap-8">
+					{#each stats as stat}
+						<div>
+							<div class="text-2xl font-bold text-white">{stat.value}</div>
+							<div class="text-sm text-slate-500">{stat.label}</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Right Panel - Login Form -->
+	<div class="flex w-full flex-col bg-white lg:w-1/2">
+		<!-- Mobile Header -->
+		<div class="flex items-center justify-between border-b border-slate-100 p-4 lg:hidden">
+			<div class="flex items-center gap-2">
+				<img src={imgLogo} alt="BottleCRM" class="h-8 w-auto" />
+				<span class="font-semibold text-slate-900">BottleCRM</span>
+			</div>
+		</div>
+
+		<!-- Login Form Container -->
+		<div class="flex flex-1 items-center justify-center p-8">
+			<div class="w-full max-w-sm">
+				<!-- Header -->
+				<div class="mb-8 text-center">
+					<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+						<Sparkles class="h-6 w-6 text-blue-600" />
+					</div>
+					<h2 class="text-2xl font-bold text-slate-900">Welcome back</h2>
+					<p class="mt-2 text-slate-600">Sign in to continue to your dashboard</p>
+				</div>
+
+				<!-- Login Button -->
+				<div class="space-y-4">
+					<a
+						href={data['google_url']}
+						onclick={handleGoogleLogin}
+						class="group relative flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3.5 font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+						class:pointer-events-none={isLoading}
+					>
+						{#if isLoading}
+							<div class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600"></div>
+							<span>Signing in...</span>
+						{:else}
+							<img src={imgGoogle} alt="Google" class="h-5 w-5" />
+							<span>Continue with Google</span>
+							<ArrowRight class="ml-auto h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+						{/if}
+					</a>
+				</div>
+
+				<!-- Divider -->
+				<div class="my-8 flex items-center gap-4">
+					<div class="h-px flex-1 bg-slate-200"></div>
+					<span class="text-xs font-medium uppercase tracking-wider text-slate-400">Secure login</span>
+					<div class="h-px flex-1 bg-slate-200"></div>
+				</div>
+
+				<!-- Trust Signals -->
+				<div class="space-y-4">
+					<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+						<div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+							<Shield class="h-4 w-4 text-green-600" />
+						</div>
+						<div class="flex-1">
+							<p class="text-sm font-medium text-slate-700">Enterprise-grade security</p>
+							<p class="text-xs text-slate-500">Your data is encrypted and secure</p>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+						<div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+							<Lock class="h-4 w-4 text-blue-600" />
+						</div>
+						<div class="flex-1">
+							<p class="text-sm font-medium text-slate-700">Privacy first</p>
+							<p class="text-xs text-slate-500">Self-host for complete data ownership</p>
 						</div>
 					</div>
 				</div>
 
-				<!-- Right Side - Login Form -->
-				<div class="flex justify-center lg:justify-end">
-					<div class="w-full max-w-md">
-						<!-- Login Card -->
-						<div
-							class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-8 shadow-2xl backdrop-blur-lg"
-						>
-							<!-- Card Background Pattern -->
-							<div class="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white/50"></div>
-
-							<!-- Card Content -->
-							<div class="relative z-10">
-								<!-- Logo and Header -->
-								<div class="mb-8 text-center">
-									<div class="mb-6">
-										<img src={imgLogo} alt="BottleCRM Logo" class="mx-auto h-16 w-auto" />
-									</div>
-
-									<div>
-										<h2 class="mb-2 text-2xl font-bold text-gray-900">Welcome Back</h2>
-										<p class="text-sm leading-relaxed text-gray-600">
-											Sign in to your free BottleCRM account and start managing your customer
-											relationships more effectively.
-										</p>
-									</div>
-								</div>
-
-								<!-- Benefits List for Mobile -->
-								<div class="mb-6 lg:hidden">
-									<div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
-										<div class="mb-3 flex items-center">
-											<Zap class="mr-2 h-5 w-5 text-blue-600" />
-											<span class="text-sm font-semibold text-blue-900">Free CRM Features</span>
-										</div>
-										<ul class="space-y-2 text-xs text-blue-700">
-											<li class="flex items-center">
-												<Check class="mr-2 h-3 w-3 flex-shrink-0" />
-												<span>Unlimited contacts & users</span>
-											</li>
-											<li class="flex items-center">
-												<Check class="mr-2 h-3 w-3 flex-shrink-0" />
-												<span>Self-hosted solution</span>
-											</li>
-											<li class="flex items-center">
-												<Check class="mr-2 h-3 w-3 flex-shrink-0" />
-												<span>No subscription fees</span>
-											</li>
-										</ul>
-									</div>
-								</div>
-
-								<!-- Google Sign In Button -->
-								<div>
-									<a
-										href={data['google_url']}
-										onclick={handleGoogleLogin}
-										class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-semibold text-gray-800 shadow-lg hover:border-blue-300 hover:bg-blue-50 hover:shadow-xl focus:ring-4 focus:ring-blue-200 focus:outline-none"
-									>
-										<!-- Loading Spinner -->
-										{#if isLoading}
-											<div
-												class="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
-											></div>
-										{:else}
-											<img src={imgGoogle} alt="Google" class="h-5 w-5" />
-										{/if}
-
-										<span class="relative z-10">
-											{isLoading ? 'Connecting...' : 'Continue with Google'}
-										</span>
-									</a>
-								</div>
-
-								<!-- Security Notice -->
-								<div class="mt-6 text-center">
-									<div class="mb-3 flex items-center justify-center text-xs text-gray-500">
-										<Shield class="mr-1 h-4 w-4" />
-										<span>Your data is secure and private</span>
-									</div>
-
-									<!-- Footer Links -->
-									<div class="flex items-center justify-center space-x-4 text-xs">
-										<a
-											href="https://github.com/MicroPyramid/Django-CRM"
-											target="_blank"
-											rel="noopener noreferrer"
-											class="flex items-center text-gray-600 hover:text-blue-600"
-										>
-											<Github class="mr-1 h-3 w-3" />
-											<span>Open Source</span>
-										</a>
-										<span class="text-gray-300">•</span>
-										<a href="/features" class="text-gray-600 hover:text-blue-600"> Features </a>
-										<span class="text-gray-300">•</span>
-										<a href="/contact" class="text-gray-600 hover:text-blue-600"> Support </a>
-									</div>
-								</div>
+				<!-- Features for Mobile -->
+				<div class="mt-8 lg:hidden">
+					<p class="mb-3 text-xs font-medium uppercase tracking-wider text-slate-400">What you get</p>
+					<div class="grid grid-cols-2 gap-2">
+						{#each ['Unlimited contacts', 'Sales pipeline', 'Task management', 'Team collaboration'] as item}
+							<div class="flex items-center gap-2 text-sm text-slate-600">
+								<CheckCircle2 class="h-4 w-4 text-green-500" />
+								<span>{item}</span>
 							</div>
-						</div>
-
-						<!-- Below Card Notice -->
-						<div class="mt-6 text-center">
-							<p class="text-sm text-blue-100">
-								New to BottleCRM?
-								<a href="/" class="font-medium text-yellow-300 underline hover:text-yellow-200">
-									Learn more about our free CRM
-								</a>
-							</p>
-						</div>
+						{/each}
 					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Footer -->
+		<div class="border-t border-slate-100 p-6">
+			<div class="flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
+				<p class="text-slate-500">
+					Don't have an account?
+					<span class="text-slate-700">Sign in with Google to get started</span>
+				</p>
+				<div class="flex items-center gap-4 text-slate-400">
+					<a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener noreferrer" class="hover:text-slate-600">
+						GitHub
+					</a>
+					<span>·</span>
+					<a href="/docs" class="hover:text-slate-600">Docs</a>
+					<span>·</span>
+					<a href="/privacy" class="hover:text-slate-600">Privacy</a>
 				</div>
 			</div>
 		</div>
