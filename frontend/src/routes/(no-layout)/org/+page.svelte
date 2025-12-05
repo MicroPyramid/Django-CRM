@@ -5,7 +5,7 @@
 	import { enhance } from '$app/forms';
 
 	let { data } = $props();
-	const { orgs } = data;
+	let orgs = $derived(data.orgs);
 
 	let loading = $state(false);
 	let selectedOrgId = $state(null);

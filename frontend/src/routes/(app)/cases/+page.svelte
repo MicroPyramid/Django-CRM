@@ -145,7 +145,7 @@
 	let { data } = $props();
 
 	// Computed values
-	let casesData = $state(data.cases || []);
+	let casesData = $derived(data.cases || []);
 
 	// Lazy-loaded dropdown options (fetched when drawer opens)
 	let loadedUsers = $state(/** @type {any[]} */ ([]));
@@ -257,11 +257,6 @@
 
 	// Drawer state using hook
 	const drawer = useDrawerState();
-
-	// Sync casesData when data changes
-	$effect(() => {
-		casesData = data.cases || [];
-	});
 
 	// Load dropdown options when drawer opens (lazy load)
 	$effect(() => {

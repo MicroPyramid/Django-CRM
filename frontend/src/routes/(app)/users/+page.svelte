@@ -29,10 +29,11 @@
 
 	let org = $derived(data.organization);
 	let editing = $state(false);
+	// Form state - populated by startEdit() when editing begins
 	let formOrg = $state({
-		name: data.organization?.name || '',
-		domain: data.organization?.domain || '',
-		description: data.organization?.description || ''
+		name: '',
+		domain: '',
+		description: ''
 	});
 
 	// Get logged-in user id from data

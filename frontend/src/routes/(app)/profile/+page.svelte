@@ -19,10 +19,10 @@
 	let isSubmitting = $state(false);
 	let phoneError = $state('');
 
-	// Form data state
+	// Form data state - initialized by $effect below
 	let formData = $state({
-		name: data.user.name || '',
-		phone: data.user.phone || ''
+		name: '',
+		phone: ''
 	});
 
 	// Reset form data when not editing or when data changes

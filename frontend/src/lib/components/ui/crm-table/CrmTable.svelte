@@ -34,11 +34,18 @@
 	let {
 		data = [],
 		columns = [],
-		visibleColumns = $bindable(columns.map((c) => c.key)),
+		visibleColumns = $bindable(/** @type {string[]} */ ([])),
 		onRowChange,
 		onRowClick,
 		emptyState
 	} = $props();
+
+	// Initialize visibleColumns from columns if not provided
+	$effect(() => {
+		if (visibleColumns.length === 0 && columns.length > 0) {
+			visibleColumns = columns.map((c) => c.key);
+		}
+	});
 
 	// Editing state
 	/** @type {{ rowId: string, columnKey: string } | null} */
