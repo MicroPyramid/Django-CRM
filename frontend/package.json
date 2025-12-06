@@ -16,7 +16,8 @@
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
 		"@eslint/js": "^9.39.1",
-		"@lucide/svelte": "^0.556.0",
+		"@internationalized/date": "^3.10.0",
+		"@lucide/svelte": "^0.544.0",
 		"@sveltejs/adapter-node": "^5.4.0",
 		"@sveltejs/kit": "^2.49.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",

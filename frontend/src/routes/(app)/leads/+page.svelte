@@ -201,28 +201,32 @@
 			label: 'First Name',
 			type: 'text',
 			icon: User,
-			placeholder: 'First name'
+			placeholder: 'First name',
+			essential: true
 		},
 		{
 			key: 'lastName',
 			label: 'Last Name',
 			type: 'text',
 			icon: User,
-			placeholder: 'Last name'
+			placeholder: 'Last name',
+			essential: true
 		},
 		{
 			key: 'email',
 			label: 'Email',
 			type: 'email',
 			icon: Mail,
-			placeholder: 'Add email'
+			placeholder: 'Add email',
+			essential: true
 		},
 		{
 			key: 'phone',
 			label: 'Phone',
 			type: 'text',
 			icon: Phone,
-			placeholder: 'Add phone'
+			placeholder: 'Add phone',
+			essential: true
 		},
 		{
 			key: 'jobTitle',
@@ -238,7 +242,8 @@
 			icon: Building2,
 			getValue: (/** @type {any} */ row) =>
 				typeof row.company === 'object' ? row.company?.name : row.company,
-			placeholder: 'Add company'
+			placeholder: 'Add company',
+			essential: true
 		},
 		{
 			key: 'website',
@@ -260,7 +265,8 @@
 			label: 'Status',
 			type: 'select',
 			icon: Briefcase,
-			options: leadStatusOptions
+			options: leadStatusOptions,
+			essential: true
 		},
 		{
 			key: 'rating',
@@ -275,7 +281,8 @@
 			label: 'Created',
 			type: 'date',
 			icon: Calendar,
-			editable: false
+			editable: false,
+			hideOnCreate: true
 		},
 		{
 			key: 'leadSource',
@@ -297,7 +304,8 @@
 			label: 'Deal Value',
 			type: 'number',
 			icon: DollarSign,
-			placeholder: '0'
+			placeholder: '0',
+			essential: true
 		},
 		{
 			key: 'currency',
@@ -305,7 +313,8 @@
 			type: 'select',
 			icon: Banknote,
 			options: currencyOptions,
-			placeholder: 'Select currency'
+			placeholder: 'Select currency',
+			essential: true
 		},
 		{
 			key: 'probability',
@@ -319,7 +328,8 @@
 			label: 'Close Date',
 			type: 'date',
 			icon: Calendar,
-			placeholder: 'Set date'
+			placeholder: 'Set date',
+			hideOnCreate: true
 		},
 		// Activity
 		{
@@ -327,7 +337,8 @@
 			label: 'Last Contact',
 			type: 'date',
 			icon: Calendar,
-			placeholder: 'Set date'
+			placeholder: 'Set date',
+			hideOnCreate: true
 		},
 		{
 			key: 'nextFollowUp',
@@ -370,7 +381,8 @@
 			label: 'Country',
 			type: 'select',
 			icon: Globe,
-			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
+			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' })),
+			essential: true
 		},
 		// Notes
 		{

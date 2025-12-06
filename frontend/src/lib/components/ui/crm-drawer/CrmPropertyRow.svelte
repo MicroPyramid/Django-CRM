@@ -1,9 +1,12 @@
 <script>
-	import { Check } from '@lucide/svelte';
+	import { Check, Calendar as CalendarIcon } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
+	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import { EditableMultiSelect } from '$lib/components/ui/editable-field/index.js';
 	import { cn } from '$lib/utils.js';
 	import { formatCurrency } from '$lib/utils/formatting.js';
+	import { parseDate, getLocalTimeZone } from '@internationalized/date';
 
 	/**
 	 * @type {{
@@ -71,11 +74,24 @@
 	}
 
 	/**
+	 * Parse string date to DateValue
+	 * @param {string} dateStr
+	 */
+	function parseDateValue(dateStr) {
+		if (!dateStr) return undefined;
+		try {
+			return parseDate(dateStr);
+		} catch {
+			return undefined;
+		}
+	}
+
+	/**
 	 * Format date for display
 	 * @param {string} dateStr
 	 */
-	function formatDate(dateStr) {
-		if (!dateStr) return emptyText || 'No date';
+	function formatDateDisplay(dateStr) {
+		if (!dateStr) return placeholder || 'Pick a date';
 		try {
 			const date = new Date(dateStr + 'T00:00:00');
 			return date.toLocaleDateString('en-US', {
@@ -87,6 +103,20 @@
 			return dateStr;
 		}
 	}
+
+	/**
+	 * Handle calendar date change
+	 * @param {import('@internationalized/date').DateValue | undefined} dateValue
+	 */
+	function handleCalendarChange(dateValue) {
+		if (dateValue) {
+			onchange?.(dateValue.toString());
+			datePopoverOpen = false;
+		}
+	}
+
+	// State for date popover
+	let datePopoverOpen = $state(false);
 
 	/**
 	 * Format number with optional currency
@@ -183,13 +213,26 @@
 				/>
 			</div>
 		{:else if type === 'date'}
-			<input
-				type="date"
-				{value}
-				oninput={handleInput}
-				disabled={!editable}
-				class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm outline-none transition-colors focus:bg-gray-50 dark:focus:bg-gray-800"
-			/>
+			<Popover.Root bind:open={datePopoverOpen}>
+				<Popover.Trigger disabled={!editable} class="w-full">
+					{#snippet child({ props })}
+						<button
+							{...props}
+							type="button"
+							class={cn(
+								'inline-flex w-full items-center gap-2 rounded px-2 py-0.5 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800',
+								!value && 'text-gray-400'
+							)}
+						>
+							<CalendarIcon class="h-3.5 w-3.5 shrink-0" />
+							{formatDateDisplay(value)}
+						</button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Content class="w-auto p-0" align="start">
+					<Calendar value={parseDateValue(value)} onValueChange={handleCalendarChange} />
+				</Popover.Content>
+			</Popover.Root>
 		{:else if type === 'textarea'}
 			<textarea
 				{value}
@@ -215,7 +258,7 @@
 						</button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="w-36">
+				<DropdownMenu.Content align="start" class="min-w-48">
 					{#each options as option (option.value)}
 						<DropdownMenu.Item
 							onclick={() => handleSelectChange(option.value)}

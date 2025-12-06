@@ -1,5 +1,5 @@
 <script>
-	import { X, Trash2 } from '@lucide/svelte';
+	import { X, Trash2, ChevronDown, ChevronUp } from '@lucide/svelte';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
@@ -22,6 +22,7 @@
 	 *   onClose?: () => void,
 	 *   loading?: boolean,
 	 *   mode?: 'view' | 'create',
+	 *   enableProgressiveDisclosure?: boolean,
 	 *   class?: string,
 	 *   activitySection?: import('svelte').Snippet,
 	 *   footerActions?: import('svelte').Snippet,
@@ -41,6 +42,7 @@
 		onClose,
 		loading = false,
 		mode = 'view',
+		enableProgressiveDisclosure = true,
 		class: className,
 		activitySection,
 		footerActions
@@ -94,6 +96,69 @@
 
 	// Get title value
 	const titleValue = $derived(data?.[titleKey] || '');
+
+	// Progressive disclosure state
+	let showAllFields = $state(false);
+
+	/**
+	 * Check if a field has a value
+	 * @param {any} col
+	 */
+	function fieldHasValue(col) {
+		if (!data) return false;
+		const value = getFieldValue(col);
+		if (value === null || value === undefined || value === '') return false;
+		if (Array.isArray(value) && value.length === 0) return false;
+		return true;
+	}
+
+	/**
+	 * Check if field should be visible based on progressive disclosure rules
+	 * @param {any} col
+	 */
+	function shouldShowField(col) {
+		if (!enableProgressiveDisclosure) return true;
+		if (col.essential === true) return true;
+		if (mode === 'create') return showAllFields;
+		// In view/edit mode, show fields that have values OR if "show all" is toggled
+		return fieldHasValue(col) || showAllFields;
+	}
+
+	// Filter out columns hidden in create mode
+	const availableColumns = $derived(
+		mode === 'create' ? columns.filter((col) => !col.hideOnCreate) : columns
+	);
+
+	// Split columns into essential and additional
+	const essentialColumns = $derived(
+		availableColumns.filter((col) => col.key !== titleKey && col.essential === true)
+	);
+
+	const additionalColumns = $derived(
+		availableColumns.filter((col) => col.key !== titleKey && col.essential !== true)
+	);
+
+	// Get visible additional columns based on mode
+	const visibleAdditionalColumns = $derived(additionalColumns.filter((col) => shouldShowField(col)));
+
+	// Count of hidden additional fields
+	const hiddenFieldsCount = $derived(
+		mode === 'create'
+			? (showAllFields ? 0 : additionalColumns.length)
+			: additionalColumns.filter((col) => !fieldHasValue(col) && !showAllFields).length
+	);
+
+	// Toggle show all fields
+	function toggleShowAllFields() {
+		showAllFields = !showAllFields;
+	}
+
+	// Reset show all fields when drawer closes
+	$effect(() => {
+		if (!open) {
+			showAllFields = false;
+		}
+	});
 </script>
 
 <Sheet.Root bind:open onOpenChange={(value) => onOpenChange?.(value)}>
@@ -158,8 +223,9 @@
 
 					<!-- Properties section -->
 					<div class="px-4 pb-6">
-						{#each columns as col (col.key)}
-							{#if col.key !== titleKey}
+						{#if enableProgressiveDisclosure && essentialColumns.length > 0}
+							<!-- Essential fields (always shown) -->
+							{#each essentialColumns as col (col.key)}
 								<CrmPropertyRow
 									label={col.label}
 									value={getFieldValue(col)}
@@ -172,8 +238,59 @@
 									prefix={col.prefix}
 									onchange={(value) => handleFieldChange(col.key, value)}
 								/>
+							{/each}
+
+							<!-- Progressive disclosure toggle button -->
+							{#if hiddenFieldsCount > 0 || showAllFields}
+								<button
+									type="button"
+									onclick={toggleShowAllFields}
+									class="group -mx-2 my-2 flex w-full items-center gap-2 rounded px-2 py-2 text-[13px] text-gray-500 transition-colors duration-75 hover:bg-gray-50/60 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800/40 dark:hover:text-gray-300"
+								>
+									{#if showAllFields}
+										<ChevronUp class="h-4 w-4" />
+										<span>Hide additional fields</span>
+									{:else}
+										<ChevronDown class="h-4 w-4" />
+										<span>Show {hiddenFieldsCount} more {hiddenFieldsCount === 1 ? 'field' : 'fields'}</span>
+									{/if}
+								</button>
 							{/if}
-						{/each}
+
+							<!-- Additional fields (conditionally shown) -->
+							{#each visibleAdditionalColumns as col (col.key)}
+								<CrmPropertyRow
+									label={col.label}
+									value={getFieldValue(col)}
+									type={col.type || 'text'}
+									icon={col.icon}
+									options={col.options}
+									placeholder={col.placeholder}
+									emptyText={col.emptyText}
+									editable={col.editable !== false}
+									prefix={col.prefix}
+									onchange={(value) => handleFieldChange(col.key, value)}
+								/>
+							{/each}
+						{:else}
+							<!-- Original behavior: show all fields when no essential fields defined -->
+							{#each columns as col (col.key)}
+								{#if col.key !== titleKey}
+									<CrmPropertyRow
+										label={col.label}
+										value={getFieldValue(col)}
+										type={col.type || 'text'}
+										icon={col.icon}
+										options={col.options}
+										placeholder={col.placeholder}
+										emptyText={col.emptyText}
+										editable={col.editable !== false}
+										prefix={col.prefix}
+										onchange={(value) => handleFieldChange(col.key, value)}
+									/>
+								{/if}
+							{/each}
+						{/if}
 					</div>
 
 					<!-- Activity section (optional) -->
