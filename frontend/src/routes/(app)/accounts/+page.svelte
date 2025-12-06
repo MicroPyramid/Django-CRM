@@ -364,8 +364,9 @@
 	 * Update URL with drawer state
 	 * @param {string | null} viewId
 	 * @param {string | null} action
+	 * @returns {Promise<void>}
 	 */
-	function updateUrl(viewId, action) {
+	async function updateUrl(viewId, action) {
 		const url = new URL($page.url);
 		if (viewId) {
 			url.searchParams.set('view', viewId);
@@ -377,7 +378,7 @@
 			url.searchParams.delete('view');
 			url.searchParams.delete('action');
 		}
-		goto(url.toString(), { replaceState: true, keepFocus: true });
+		await goto(url.toString(), { replaceState: true, keepFocus: true });
 	}
 
 	/**
@@ -403,10 +404,11 @@
 
 	/**
 	 * Close drawer
+	 * @returns {Promise<void>}
 	 */
-	function closeDrawer() {
+	async function closeDrawer() {
 		drawerOpen = false;
-		updateUrl(null, null);
+		await updateUrl(null, null);
 	}
 
 	/**
@@ -613,7 +615,7 @@
 				if (result.type === 'success') {
 					toast.success(successMessage);
 					if (shouldCloseDrawer) {
-						closeDrawer();
+						await closeDrawer();
 					}
 					await invalidateAll();
 				} else if (result.type === 'failure') {
