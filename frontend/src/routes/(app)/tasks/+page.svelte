@@ -43,15 +43,39 @@
 
 	// Status and priority options with colors
 	const statusOptions = [
-		{ value: 'New', label: 'New', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-		{ value: 'In Progress', label: 'In Progress', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-		{ value: 'Completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }
+		{
+			value: 'New',
+			label: 'New',
+			color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+		},
+		{
+			value: 'In Progress',
+			label: 'In Progress',
+			color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+		},
+		{
+			value: 'Completed',
+			label: 'Completed',
+			color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+		}
 	];
 
 	const priorityOptions = [
-		{ value: 'High', label: 'High', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-		{ value: 'Medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-		{ value: 'Low', label: 'Low', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }
+		{
+			value: 'High',
+			label: 'High',
+			color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+		},
+		{
+			value: 'Medium',
+			label: 'Medium',
+			color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+		},
+		{
+			value: 'Low',
+			label: 'Low',
+			color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+		}
 	];
 
 	// Empty task template for create mode
@@ -83,7 +107,8 @@
 	 */
 	function getRelatedEntity(row) {
 		if (row.lead) {
-			const leadName = row.lead.title || `${row.lead.firstName || ''} ${row.lead.lastName || ''}`.trim() || 'Lead';
+			const leadName =
+				row.lead.title || `${row.lead.firstName || ''} ${row.lead.lastName || ''}`.trim() || 'Lead';
 			return { name: `Lead: ${leadName}` };
 		}
 		if (row.opportunity) {
@@ -111,7 +136,7 @@
 		},
 		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
 		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
-		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-32' },
+		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-36' },
 		{
 			key: 'assignedTo',
 			label: 'Assigned To',
@@ -180,7 +205,14 @@
 	];
 
 	// Default visible columns (6 columns: Task, Related To, Due Date, Priority, Status, Assigned To)
-	const DEFAULT_VISIBLE_COLUMNS = ['subject', 'relatedTo', 'dueDate', 'priority', 'status', 'assignedTo'];
+	const DEFAULT_VISIBLE_COLUMNS = [
+		'subject',
+		'relatedTo',
+		'dueDate',
+		'priority',
+		'status',
+		'assignedTo'
+	];
 
 	// Column visibility state - use defaults
 	const STORAGE_KEY = 'tasks-table-columns';
@@ -418,10 +450,7 @@
 	const filters = $derived(data.filters || {});
 
 	// Status options for filter dropdown
-	const statusFilterOptions = $derived([
-		{ value: '', label: 'All Statuses' },
-		...statusOptions
-	]);
+	const statusFilterOptions = $derived([{ value: '', label: 'All Statuses' }, ...statusOptions]);
 
 	// Priority options for filter dropdown
 	const priorityFilterOptions = $derived([
@@ -447,8 +476,8 @@
 	async function updateFilters(newFilters) {
 		const url = new URL($page.url);
 		// Clear existing filter params
-		['search', 'status', 'priority', 'assigned_to', 'tags', 'due_date_gte', 'due_date_lte'].forEach((key) =>
-			url.searchParams.delete(key)
+		['search', 'status', 'priority', 'assigned_to', 'tags', 'due_date_gte', 'due_date_lte'].forEach(
+			(key) => url.searchParams.delete(key)
 		);
 		// Set new params
 		Object.entries(newFilters).forEach(([key, value]) => {
@@ -470,8 +499,12 @@
 
 	// Status counts for filter chips
 	const activeStatuses = ['New', 'In Progress'];
-	const activeTaskCount = $derived(tasks.filter((/** @type {any} */ t) => activeStatuses.includes(t.status)).length);
-	const completedCount = $derived(tasks.filter((/** @type {any} */ t) => t.status === 'Completed').length);
+	const activeTaskCount = $derived(
+		tasks.filter((/** @type {any} */ t) => activeStatuses.includes(t.status)).length
+	);
+	const completedCount = $derived(
+		tasks.filter((/** @type {any} */ t) => t.status === 'Completed').length
+	);
 
 	// Status chip filter state (client-side quick filter on top of server filters)
 	let statusChipFilter = $state('ALL');
@@ -881,14 +914,38 @@
 		// Only show parent entity fields in edit mode (when selectedTaskId is set)
 		...(selectedTaskId
 			? [
-					{ key: 'accountId', label: 'Account', type: 'select', icon: Building2, options: accountOptions },
-					{ key: 'opportunityId', label: 'Opportunity', type: 'select', icon: Target, options: opportunityOptions },
+					{
+						key: 'accountId',
+						label: 'Account',
+						type: 'select',
+						icon: Building2,
+						options: accountOptions
+					},
+					{
+						key: 'opportunityId',
+						label: 'Opportunity',
+						type: 'select',
+						icon: Target,
+						options: opportunityOptions
+					},
 					{ key: 'caseId', label: 'Case', type: 'select', icon: Briefcase, options: caseOptions },
 					{ key: 'leadId', label: 'Lead', type: 'select', icon: UserPlus, options: leadOptions }
 				]
 			: []),
-		{ key: 'assignedTo', label: 'Assigned To', type: 'multiselect', icon: User, options: userOptions },
-		{ key: 'contacts', label: 'Contacts', type: 'multiselect', icon: Contact, options: contactOptions },
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: User,
+			options: userOptions
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: Contact,
+			options: contactOptions
+		},
 		{ key: 'teams', label: 'Teams', type: 'multiselect', icon: Users, options: teamOptions },
 		{ key: 'tags', label: 'Tags', type: 'multiselect', icon: Tag, options: tagOptions },
 		{ key: 'description', label: 'Description', type: 'textarea' }
@@ -964,7 +1021,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -980,7 +1038,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'active')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'active'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'active'
 						? 'bg-blue-600 text-white dark:bg-blue-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -996,7 +1055,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'completed')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'completed'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'completed'
 						? 'bg-emerald-600 text-white dark:bg-emerald-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -1095,7 +1155,7 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -1119,7 +1179,8 @@
 			label="Due Date"
 			startDate={filters.due_date_gte}
 			endDate={filters.due_date_lte}
-			onchange={(start, end) => updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
 		/>
 	</FilterBar>
 	{#if viewMode === 'list'}
@@ -1134,24 +1195,9 @@
 				<div class="flex flex-col items-center justify-center py-16 text-center">
 					<CheckSquare class="text-muted-foreground/50 mb-4 h-12 w-12" />
 					<h3 class="text-foreground text-lg font-medium">No tasks found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new task.
-					</p>
 				</div>
 			{/snippet}
 		</CrmTable>
-		{#if localTasks.length > 0}
-			<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
-				<button
-					type="button"
-					onclick={addNewTask}
-					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-				>
-					<Plus class="h-4 w-4" />
-					New row
-				</button>
-			</div>
-		{/if}
 	{:else}
 		<!-- Calendar View -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

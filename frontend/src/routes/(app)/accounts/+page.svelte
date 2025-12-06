@@ -203,7 +203,14 @@
 	];
 
 	// Default visible columns (excludes website; status removed - using tabs instead)
-	const DEFAULT_VISIBLE_COLUMNS = ['name', 'industry', 'annualRevenue', 'numberOfEmployees', 'phone', 'createdAt'];
+	const DEFAULT_VISIBLE_COLUMNS = [
+		'name',
+		'industry',
+		'annualRevenue',
+		'numberOfEmployees',
+		'phone',
+		'createdAt'
+	];
 
 	// Column visibility state - use defaults (excludes website)
 	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
@@ -250,15 +257,11 @@
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
 	// M2M options from API
-	const userOptions = $derived(
-		(data.users || []).map((u) => ({ value: u.id, label: u.email }))
-	);
+	const userOptions = $derived((data.users || []).map((u) => ({ value: u.id, label: u.email })));
 	const contactOptions = $derived(
 		(data.contacts || []).map((c) => ({ value: c.id, label: c.name }))
 	);
-	const tagOptions = $derived(
-		(data.tags || []).map((t) => ({ value: t.id, label: t.name }))
-	);
+	const tagOptions = $derived((data.tags || []).map((t) => ({ value: t.id, label: t.name })));
 
 	// Drawer columns with dynamic M2M options
 	const drawerColumns = $derived([
@@ -331,7 +334,10 @@
 			if (drawerMode === 'create') {
 				drawerFormData = { ...emptyAccount, currency: $orgSettings.default_currency || 'USD' };
 			} else if (selectedAccount) {
-				drawerFormData = { ...selectedAccount, currency: selectedAccount.currency || $orgSettings.default_currency || 'USD' };
+				drawerFormData = {
+					...selectedAccount,
+					currency: selectedAccount.currency || $orgSettings.default_currency || 'USD'
+				};
 			}
 		}
 	});
@@ -453,8 +459,8 @@
 	async function updateFilters(newFilters) {
 		const url = new URL($page.url);
 		// Clear existing filter params (preserve view/action)
-		['search', 'industry', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
-			url.searchParams.delete(key)
+		['search', 'industry', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach(
+			(key) => url.searchParams.delete(key)
 		);
 		// Set new params
 		Object.entries(newFilters).forEach(([key, value]) => {
@@ -697,7 +703,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -713,7 +720,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'active')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'active'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'active'
 						? 'bg-emerald-600 text-white dark:bg-emerald-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -729,7 +737,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'closed')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'closed'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'closed'
 						? 'bg-gray-600 text-white dark:bg-gray-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -766,45 +775,45 @@
 
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
-			<DropdownMenu.Trigger asChild>
-				{#snippet child({ props })}
-					<Button {...props} variant="outline" size="sm" class="gap-2">
-						<Eye class="h-4 w-4" />
-						Columns
-						{#if visibleColumnCount < totalColumnCount}
-							<span
-								class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-							>
-								{visibleColumnCount}/{totalColumnCount}
-							</span>
-						{/if}
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="w-48">
-				<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-				<DropdownMenu.Separator />
-				{#each columns as column (column.key)}
-					<DropdownMenu.CheckboxItem
-						class=""
-						checked={visibleColumns.includes(column.key)}
-						onCheckedChange={() => toggleColumn(column.key)}
-						disabled={column.canHide === false}
-					>
-						{column.label}
-					</DropdownMenu.CheckboxItem>
-				{/each}
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
-		<Button onclick={openCreate} disabled={false}>
-			<Plus class="mr-2 h-4 w-4" />
-			New Account
-		</Button>
+				<DropdownMenu.Trigger asChild>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumnCount < totalColumnCount}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumnCount}/{totalColumnCount}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+			<Button onclick={openCreate} disabled={false}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Account
+			</Button>
 		</div>
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -828,7 +837,8 @@
 			label="Created"
 			startDate={filters.created_at_gte}
 			endDate={filters.created_at_lte}
-			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 		/>
 	</FilterBar>
 	<!-- Accounts Table -->
@@ -857,32 +867,13 @@
 					<div class="flex flex-col items-center justify-center py-16 text-center">
 						<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
 						<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
-						<p class="text-muted-foreground mt-1 text-sm">
-							Try adjusting your search criteria or create a new account.
-						</p>
-						<Button onclick={openCreate} class="mt-4" disabled={false}>
-							<Plus class="mr-2 h-4 w-4" />
-							Create New Account
-						</Button>
 					</div>
 				{/snippet}
 			</CrmTable>
-
-			<!-- New row button -->
-			<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
-				<button
-					type="button"
-					onclick={openCreate}
-					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-				>
-					<Plus class="h-4 w-4" />
-					New account
-				</button>
-			</div>
 		</div>
 
 		<!-- Mobile Card View -->
-		<div class="divide-y dark:divide-gray-800 md:hidden">
+		<div class="divide-y md:hidden dark:divide-gray-800">
 			{#each filteredAccounts as account (account.id)}
 				<button
 					type="button"
@@ -917,7 +908,9 @@
 								</div>
 							</div>
 						</div>
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+						<div
+							class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400"
+						>
 							{#if account.industry}
 								<span>{account.industry}</span>
 							{/if}
@@ -977,12 +970,16 @@
 	{#snippet activitySection()}
 		<!-- Closed account warning -->
 		{#if isClosed && drawerMode !== 'create'}
-			<div class="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 mb-4 rounded-lg border p-3">
+			<div
+				class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/30"
+			>
 				<div class="flex gap-2">
-					<AlertTriangle class="h-4 w-4 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
+					<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
 					<div>
-						<p class="text-red-700 dark:text-red-400 text-sm font-medium">This account is closed</p>
-						<p class="text-red-600 dark:text-red-500 text-xs mt-0.5">Reopen the account to make changes</p>
+						<p class="text-sm font-medium text-red-700 dark:text-red-400">This account is closed</p>
+						<p class="mt-0.5 text-xs text-red-600 dark:text-red-500">
+							Reopen the account to make changes
+						</p>
 					</div>
 				</div>
 			</div>
@@ -991,36 +988,38 @@
 		<!-- Related entity stats (view mode only) -->
 		{#if drawerMode !== 'create' && selectedAccount}
 			<div class="mb-4">
-				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
 					Related
 				</p>
 				<div class="grid grid-cols-3 gap-2">
-					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
 						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<Users class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
 							{selectedAccount.contactCount || 0}
 						</p>
-						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Contacts</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Contacts</p>
 					</div>
-					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
 						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<Target class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
 							{selectedAccount.opportunityCount || 0}
 						</p>
-						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Opportunities</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Opportunities</p>
 					</div>
-					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
 						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<AlertTriangle class="h-3.5 w-3.5" />
 						</div>
-						<p class="text-gray-900 dark:text-gray-100 mt-0.5 text-lg font-semibold">
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
 							{selectedAccount.caseCount || 0}
 						</p>
-						<p class="text-gray-500 dark:text-gray-400 text-[10px]">Cases</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Cases</p>
 					</div>
 				</div>
 			</div>
@@ -1028,7 +1027,9 @@
 			<!-- Quick actions (for active accounts only) -->
 			{#if !isClosed}
 				<div class="mb-4">
-					<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">
+					<p
+						class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+					>
 						Quick Actions
 					</p>
 					<div class="flex gap-2">
@@ -1046,15 +1047,23 @@
 
 			<!-- Metadata -->
 			<div>
-				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedAccount.owner?.name || 'Unassigned'}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedAccount.owner?.name || 'Unassigned'}
+						</p>
 					</div>
 					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedAccount.createdAt)}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{formatRelativeDate(selectedAccount.createdAt)}
+						</p>
 					</div>
 				</div>
 			</div>

@@ -372,7 +372,6 @@
 		if (!open) updateUrl(null, null);
 	}
 
-
 	// URL-based filter state from server
 	const filters = $derived(data.filters);
 
@@ -600,7 +599,6 @@
 		deleteForm.requestSubmit();
 	}
 
-
 	/**
 	 * Create enhance handler for form actions
 	 * @param {string} successMessage
@@ -692,7 +690,7 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -711,7 +709,8 @@
 			label="Created"
 			startDate={filters.created_at_gte}
 			endDate={filters.created_at_lte}
-			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 			class="w-56"
 		/>
 	</FilterBar>
@@ -721,13 +720,6 @@
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
 			<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
-			<p class="text-muted-foreground mt-1 text-sm">
-				Try adjusting your search criteria or create a new contact.
-			</p>
-			<Button onclick={openCreate} class="mt-4">
-				<Plus class="mr-2 h-4 w-4" />
-				Create New Contact
-			</Button>
 		</div>
 	{:else}
 		<CrmTable
@@ -741,28 +733,9 @@
 				<div class="flex flex-col items-center justify-center py-16 text-center">
 					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
 					<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new contact.
-					</p>
-					<Button onclick={openCreate} class="mt-4">
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Contact
-					</Button>
 				</div>
 			{/snippet}
 		</CrmTable>
-
-		<!-- Add row button at bottom -->
-		<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
-			<button
-				type="button"
-				onclick={openCreate}
-				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-			>
-				<Plus class="h-4 w-4" />
-				New contact
-			</button>
-		</div>
 	{/if}
 </div>
 
@@ -786,15 +759,23 @@
 		<!-- Metadata (view mode only) -->
 		{#if drawerMode !== 'create' && selectedContact}
 			<div>
-				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Owner</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedContact.owner?.name || 'Unassigned'}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedContact.owner?.name || 'Unassigned'}
+						</p>
 					</div>
 					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedContact.createdAt)}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{formatRelativeDate(selectedContact.createdAt)}
+						</p>
 					</div>
 				</div>
 			</div>

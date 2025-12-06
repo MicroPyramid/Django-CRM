@@ -208,9 +208,9 @@
 					{#if onRowClick}
 						<th class="w-8 px-1"></th>
 					{/if}
-					{#each visibleColumnDefs as column (column.key)}
+					{#each visibleColumnDefs as column, colIndex (column.key)}
 						<th
-							class="px-4 py-3 text-left text-[13px] font-normal text-gray-400 dark:text-gray-500 {column.width ||
+							class="py-3 pr-4 text-left text-[13px] font-normal text-gray-400 dark:text-gray-500 {colIndex === 0 ? 'pl-0' : 'pl-4'} {column.width ||
 								''}"
 						>
 							{column.label}
@@ -235,10 +235,10 @@
 							</td>
 						{/if}
 
-						{#each visibleColumnDefs as column (column.key)}
+						{#each visibleColumnDefs as column, colIndex (column.key)}
 							{@const value = getCellValue(row, column)}
 							{@const formattedValue = formatValue(value, column, row)}
-							<td class="px-4 py-3 {column.width || ''}">
+							<td class="py-3 pr-4 {colIndex === 0 ? 'pl-0' : 'pl-4'} {column.width || ''}">
 								{#if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
 									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key && onRowChange}
 										<input

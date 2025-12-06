@@ -42,12 +42,36 @@
 
 	// Stage options with colors
 	const stageOptions = [
-		{ value: 'PROSPECTING', label: 'Prospecting', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-		{ value: 'QUALIFICATION', label: 'Qualification', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-		{ value: 'PROPOSAL', label: 'Proposal', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-		{ value: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-		{ value: 'CLOSED_WON', label: 'Won', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-		{ value: 'CLOSED_LOST', label: 'Lost', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
+		{
+			value: 'PROSPECTING',
+			label: 'Prospecting',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'QUALIFICATION',
+			label: 'Qualification',
+			color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+		},
+		{
+			value: 'PROPOSAL',
+			label: 'Proposal',
+			color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+		},
+		{
+			value: 'NEGOTIATION',
+			label: 'Negotiation',
+			color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+		},
+		{
+			value: 'CLOSED_WON',
+			label: 'Won',
+			color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+		},
+		{
+			value: 'CLOSED_LOST',
+			label: 'Lost',
+			color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+		}
 	];
 
 	// Type options
@@ -70,7 +94,6 @@
 		label: c.label,
 		color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
 	}));
-
 
 	/**
 	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
@@ -130,7 +153,14 @@
 			canHide: true,
 			format: (value) => (value != null ? `${value}%` : '-')
 		},
-		{ key: 'opportunityType', label: 'Type', type: 'select', options: typeOptions, width: 'w-32', canHide: true }
+		{
+			key: 'opportunityType',
+			label: 'Type',
+			type: 'select',
+			options: typeOptions,
+			width: 'w-32',
+			canHide: true
+		}
 	];
 
 	// Default visible columns (excludes probability and type)
@@ -297,10 +327,7 @@
 	const filters = $derived(data.filters || {});
 
 	// Stage options for filter dropdown (includes ALL option)
-	const stageFilterOptions = $derived([
-		{ value: '', label: 'All Stages' },
-		...stageOptions
-	]);
+	const stageFilterOptions = $derived([{ value: '', label: 'All Stages' }, ...stageOptions]);
 
 	// Count active filters (excluding stage since it's handled via chips in header)
 	const activeFiltersCount = $derived.by(() => {
@@ -321,9 +348,17 @@
 	async function updateFilters(newFilters) {
 		const url = new URL($page.url);
 		// Clear existing filter params
-		['search', 'stage', 'account', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte', 'closed_on_gte', 'closed_on_lte'].forEach((key) =>
-			url.searchParams.delete(key)
-		);
+		[
+			'search',
+			'stage',
+			'account',
+			'assigned_to',
+			'tags',
+			'created_at_gte',
+			'created_at_lte',
+			'closed_on_gte',
+			'closed_on_lte'
+		].forEach((key) => url.searchParams.delete(key));
 		// Set new params
 		Object.entries(newFilters).forEach(([key, value]) => {
 			if (Array.isArray(value)) {
@@ -426,9 +461,15 @@
 	});
 
 	// Status counts for filter chips
-	const openCount = $derived(opportunities.filter((/** @type {any} */ o) => openStages.includes(o.stage)).length);
-	const wonCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_WON').length);
-	const lostCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length);
+	const openCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => openStages.includes(o.stage)).length
+	);
+	const wonCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_WON').length
+	);
+	const lostCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length
+	);
 
 	// Load column visibility from localStorage
 	onMount(() => {
@@ -796,7 +837,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -812,7 +854,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'open')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'open'
 						? 'bg-blue-600 text-white dark:bg-blue-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -828,7 +871,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'won')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'won'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'won'
 						? 'bg-emerald-600 text-white dark:bg-emerald-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -844,7 +888,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'lost')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'lost'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'lost'
 						? 'bg-red-600 text-white dark:bg-red-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -920,7 +965,7 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -938,13 +983,15 @@
 			label="Close Date"
 			startDate={filters.closed_on_gte}
 			endDate={filters.closed_on_lte}
-			onchange={(start, end) => updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
 		/>
 		<DateRangeFilter
 			label="Created"
 			startDate={filters.created_at_gte}
 			endDate={filters.created_at_lte}
-			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 		/>
 	</FilterBar>
 	<!-- Table View -->
@@ -972,29 +1019,9 @@
 				<div class="flex flex-col items-center justify-center py-16 text-center">
 					<Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
 					<h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">
-						Try adjusting your search criteria or create a new deal.
-					</p>
-					<Button onclick={addNewRow} class="mt-4" disabled={isLoading}>
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Deal
-					</Button>
 				</div>
 			{/snippet}
 		</CrmTable>
-
-		<!-- Add row button at bottom -->
-		<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
-			<button
-				type="button"
-				onclick={addNewRow}
-				disabled={isLoading}
-				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-300"
-			>
-				<Plus class="h-4 w-4" />
-				New row
-			</button>
-		</div>
 	{/if}
 </div>
 
@@ -1017,28 +1044,40 @@
 		<!-- Account and Owner info (view mode only) -->
 		{#if drawerMode !== 'create' && selectedRow}
 			<div class="mb-4">
-				<p class="text-gray-500 dark:text-gray-400 mb-2 text-xs font-medium tracking-wider uppercase">Details</p>
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
 				<div class="grid grid-cols-2 gap-3 text-sm">
 					<div>
-						<p class="text-gray-400 dark:text-gray-500 text-xs">Account</p>
-						<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.account?.name || '-'}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Account</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedRow.account?.name || '-'}
+						</p>
 					</div>
 					{#if selectedRow.createdAt}
 						<div>
-							<p class="text-gray-400 dark:text-gray-500 text-xs">Created</p>
-							<p class="text-gray-900 dark:text-gray-100 font-medium">{formatRelativeDate(selectedRow.createdAt)}</p>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{formatRelativeDate(selectedRow.createdAt)}
+							</p>
 						</div>
 					{/if}
 					{#if isClosed && selectedRow.closedBy}
 						<div>
-							<p class="text-gray-400 dark:text-gray-500 text-xs">Closed By</p>
-							<p class="text-gray-900 dark:text-gray-100 font-medium">{selectedRow.closedBy.name || '-'}</p>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Closed By</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{selectedRow.closedBy.name || '-'}
+							</p>
 						</div>
 					{/if}
 					{#if isClosed && selectedRow.closedOn}
 						<div>
-							<p class="text-gray-400 dark:text-gray-500 text-xs">Closed On</p>
-							<p class="text-gray-900 dark:text-gray-100 font-medium">{formatDate(selectedRow.closedOn)}</p>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Closed On</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{formatDate(selectedRow.closedOn)}
+							</p>
 						</div>
 					{/if}
 				</div>
@@ -1055,7 +1094,7 @@
 			{#if !isClosed}
 				<Button
 					variant="outline"
-					class="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
+					class="text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-300"
 					onclick={handleMarkWon}
 					disabled={isLoading}
 				>
@@ -1064,7 +1103,7 @@
 				</Button>
 				<Button
 					variant="outline"
-					class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+					class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
 					onclick={handleMarkLost}
 					disabled={isLoading}
 				>

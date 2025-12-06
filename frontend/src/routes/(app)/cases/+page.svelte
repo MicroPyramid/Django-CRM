@@ -60,7 +60,13 @@
 			width: 'w-40',
 			getValue: (/** @type {any} */ row) => row.account
 		},
-		{ key: 'priority', label: 'Priority', type: 'select', options: casePriorityOptions, width: 'w-28' },
+		{
+			key: 'priority',
+			label: 'Priority',
+			type: 'select',
+			options: casePriorityOptions,
+			width: 'w-28'
+		},
 		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
 		{ key: 'caseType', label: 'Type', type: 'select', options: caseTypeOptions, width: 'w-28' },
 		{
@@ -175,21 +181,23 @@
 
 		dropdownOptionsLoading = true;
 		try {
-			const [usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] = await Promise.all([
-				apiRequest('/users/'),
-				apiRequest('/accounts/'),
-				apiRequest('/contacts/'),
-				apiRequest('/teams/'),
-				apiRequest('/tags/').catch(() => ({ tags: [] }))
-			]);
+			const [usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] =
+				await Promise.all([
+					apiRequest('/users/'),
+					apiRequest('/accounts/'),
+					apiRequest('/contacts/'),
+					apiRequest('/teams/'),
+					apiRequest('/tags/').catch(() => ({ tags: [] }))
+				]);
 
 			// Transform users
 			const activeUsersList = usersResponse.active_users?.active_users || [];
 			loadedUsers = activeUsersList.map((/** @type {any} */ user) => ({
 				id: user.id,
-				name: user.user_details?.first_name && user.user_details?.last_name
-					? `${user.user_details.first_name} ${user.user_details.last_name}`
-					: user.user_details?.email || user.email
+				name:
+					user.user_details?.first_name && user.user_details?.last_name
+						? `${user.user_details.first_name} ${user.user_details.last_name}`
+						: user.user_details?.email || user.email
 			}));
 
 			// Transform accounts
@@ -217,9 +225,10 @@
 			}
 			loadedContacts = allContacts.map((/** @type {any} */ contact) => ({
 				id: contact.id,
-				name: contact.first_name && contact.last_name
-					? `${contact.first_name} ${contact.last_name}`
-					: contact.email,
+				name:
+					contact.first_name && contact.last_name
+						? `${contact.first_name} ${contact.last_name}`
+						: contact.email,
 				email: contact.email
 			}));
 
@@ -272,7 +281,11 @@
 	// Account options for drawer select
 	const accountOptions = $derived([
 		{ value: '', label: 'None', color: 'bg-gray-100 text-gray-600' },
-		...accounts.map((/** @type {any} */ a) => ({ value: a.id, label: a.name, color: 'bg-blue-100 text-blue-700' }))
+		...accounts.map((/** @type {any} */ a) => ({
+			value: a.id,
+			label: a.name,
+			color: 'bg-blue-100 text-blue-700'
+		}))
 	]);
 
 	// Drawer columns configuration (with icons and multiselect)
@@ -431,10 +444,7 @@
 	]);
 
 	// Type options for filter dropdown
-	const typeFilterOptions = $derived([
-		{ value: '', label: 'All Types' },
-		...caseTypeOptions
-	]);
+	const typeFilterOptions = $derived([{ value: '', label: 'All Types' }, ...caseTypeOptions]);
 
 	// Count active filters (excluding status since it's handled via chips in header)
 	const activeFiltersCount = $derived.by(() => {
@@ -455,9 +465,16 @@
 	async function updateFilters(newFilters) {
 		const url = new URL($page.url);
 		// Clear existing filter params
-		['search', 'status', 'priority', 'case_type', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
-			url.searchParams.delete(key)
-		);
+		[
+			'search',
+			'status',
+			'priority',
+			'case_type',
+			'assigned_to',
+			'tags',
+			'created_at_gte',
+			'created_at_lte'
+		].forEach((key) => url.searchParams.delete(key));
 		// Set new params
 		Object.entries(newFilters).forEach(([key, value]) => {
 			if (Array.isArray(value)) {
@@ -478,8 +495,12 @@
 
 	// Status counts for filter chips
 	const openStatuses = ['New', 'Open', 'Pending', 'Assigned'];
-	const openCount = $derived(casesData.filter((/** @type {any} */ c) => openStatuses.includes(c.status)).length);
-	const closedCount = $derived(casesData.filter((/** @type {any} */ c) => c.status === 'Closed').length);
+	const openCount = $derived(
+		casesData.filter((/** @type {any} */ c) => openStatuses.includes(c.status)).length
+	);
+	const closedCount = $derived(
+		casesData.filter((/** @type {any} */ c) => c.status === 'Closed').length
+	);
 
 	// Status chip filter state (client-side quick filter on top of server filters)
 	let statusChipFilter = $state('ALL');
@@ -696,7 +717,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -712,7 +734,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'open')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'open'
 						? 'bg-blue-600 text-white dark:bg-blue-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -728,7 +751,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'closed')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'closed'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'closed'
 						? 'bg-gray-600 text-white dark:bg-gray-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -803,7 +827,7 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -833,42 +857,24 @@
 			label="Created"
 			startDate={filters.created_at_gte}
 			endDate={filters.created_at_lte}
-			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 		/>
 	</FilterBar>
-		<CrmTable
-			data={filteredCases}
-			{columns}
-			bind:visibleColumns
-			onRowChange={handleRowChange}
-			onRowClick={(row) => drawer.openDetail(row)}
-		>
-			{#snippet emptyState()}
-				<div class="flex flex-col items-center justify-center py-16 text-center">
-					<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
-					<h3 class="text-foreground text-lg font-medium">No cases found</h3>
-					<p class="text-muted-foreground mt-1 text-sm">Create a new case to get started.</p>
-					<Button onclick={drawer.openCreate} class="mt-4">
-						<Plus class="mr-2 h-4 w-4" />
-						Create New Case
-					</Button>
-				</div>
-			{/snippet}
-		</CrmTable>
-
-	<!-- Add row button at bottom -->
-	{#if filteredCases.length > 0}
-		<div class="border-t border-gray-100 px-4 py-2 dark:border-gray-800">
-			<button
-				type="button"
-				onclick={drawer.openCreate}
-				class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-			>
-				<Plus class="h-4 w-4" />
-				New row
-			</button>
-		</div>
-	{/if}
+	<CrmTable
+		data={filteredCases}
+		{columns}
+		bind:visibleColumns
+		onRowChange={handleRowChange}
+		onRowClick={(row) => drawer.openDetail(row)}
+	>
+		{#snippet emptyState()}
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
+				<h3 class="text-foreground text-lg font-medium">No cases found</h3>
+			</div>
+		{/snippet}
+	</CrmTable>
 </div>
 
 <!-- Case Drawer -->
@@ -889,13 +895,17 @@
 	{#snippet activitySection()}
 		{#if drawer.mode !== 'create' && drawer.selected?.comments?.length > 0}
 			<div class="space-y-3">
-				<div class="flex items-center gap-2 mb-3">
+				<div class="mb-3 flex items-center gap-2">
 					<Activity class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-					<p class="text-xs font-medium tracking-wider uppercase text-gray-500 dark:text-gray-400">Activity</p>
+					<p class="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+						Activity
+					</p>
 				</div>
 				{#each drawer.selected.comments.slice(0, 5) as comment (comment.id)}
 					<div class="flex gap-3">
-						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+						<div
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+						>
 							<MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
 						</div>
 						<div class="min-w-0 flex-1">
@@ -903,17 +913,21 @@
 								<span class="font-medium">{comment.author?.name || 'Unknown'}</span>
 								{' '}added a note
 							</p>
-							<p class="text-xs text-gray-500 mt-0.5">
-								{new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+							<p class="mt-0.5 text-xs text-gray-500">
+								{new Date(comment.createdAt).toLocaleDateString('en-US', {
+									month: 'short',
+									day: 'numeric',
+									year: 'numeric'
+								})}
 							</p>
-							<p class="text-sm text-gray-500 mt-1 line-clamp-2">{comment.body}</p>
+							<p class="mt-1 line-clamp-2 text-sm text-gray-500">{comment.body}</p>
 						</div>
 					</div>
 				{/each}
 			</div>
 		{:else if drawer.mode !== 'create'}
 			<div class="flex flex-col items-center justify-center py-6 text-center">
-				<MessageSquare class="h-8 w-8 text-gray-300 dark:text-gray-600 mb-2" />
+				<MessageSquare class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
 				<p class="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
 			</div>
 		{/if}
@@ -922,13 +936,9 @@
 	{#snippet footerActions()}
 		{#if drawer.mode !== 'create' && drawer.selected}
 			{#if drawerFormData.status === 'Closed'}
-				<Button variant="outline" onclick={handleReopen} disabled={isSubmitting}>
-					Reopen
-				</Button>
+				<Button variant="outline" onclick={handleReopen} disabled={isSubmitting}>Reopen</Button>
 			{:else}
-				<Button variant="outline" onclick={handleClose} disabled={isSubmitting}>
-					Close Case
-				</Button>
+				<Button variant="outline" onclick={handleClose} disabled={isSubmitting}>Close Case</Button>
 			{/if}
 		{/if}
 		<Button variant="outline" onclick={() => drawer.closeAll()} disabled={isSubmitting}>

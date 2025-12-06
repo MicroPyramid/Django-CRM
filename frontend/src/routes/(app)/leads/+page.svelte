@@ -144,7 +144,10 @@
 			type: 'select',
 			width: 'w-32',
 			canHide: true,
-			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
+			options: INDUSTRIES.map((i) => ({
+				...i,
+				color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+			}))
 		},
 		{
 			key: 'owner',
@@ -164,22 +167,70 @@
 
 	// Source options for leads
 	const sourceOptions = [
-		{ value: 'call', label: 'Call', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-		{ value: 'email', label: 'Email', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-		{ value: 'existing customer', label: 'Existing Customer', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-		{ value: 'partner', label: 'Partner', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-		{ value: 'public relations', label: 'Public Relations', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
-		{ value: 'campaign', label: 'Campaign', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
-		{ value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
+		{
+			value: 'call',
+			label: 'Call',
+			color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+		},
+		{
+			value: 'email',
+			label: 'Email',
+			color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+		},
+		{
+			value: 'existing customer',
+			label: 'Existing Customer',
+			color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+		},
+		{
+			value: 'partner',
+			label: 'Partner',
+			color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+		},
+		{
+			value: 'public relations',
+			label: 'Public Relations',
+			color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
+		},
+		{
+			value: 'campaign',
+			label: 'Campaign',
+			color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400'
+		},
+		{
+			value: 'other',
+			label: 'Other',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		}
 	];
 
 	// Salutation options
 	const salutationOptions = [
-		{ value: 'Mr', label: 'Mr', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-		{ value: 'Mrs', label: 'Mrs', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-		{ value: 'Ms', label: 'Ms', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-		{ value: 'Dr', label: 'Dr', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-		{ value: 'Prof', label: 'Prof', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
+		{
+			value: 'Mr',
+			label: 'Mr',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'Mrs',
+			label: 'Mrs',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'Ms',
+			label: 'Ms',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'Dr',
+			label: 'Dr',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'Prof',
+			label: 'Prof',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		}
 	];
 
 	// Currency options for select
@@ -300,7 +351,10 @@
 			label: 'Industry',
 			type: 'select',
 			icon: Building2,
-			options: INDUSTRIES.map((i) => ({ ...i, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }))
+			options: INDUSTRIES.map((i) => ({
+				...i,
+				color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+			}))
 		},
 		// Deal Information
 		{
@@ -385,7 +439,10 @@
 			label: 'Country',
 			type: 'select',
 			icon: Globe,
-			options: COUNTRIES.map((c) => ({ ...c, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' })),
+			options: COUNTRIES.map((c) => ({
+				...c,
+				color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+			})),
 			essential: true
 		},
 		// Notes
@@ -426,7 +483,6 @@
 			options: []
 		}
 	]);
-
 
 	/**
 	 * Load column visibility from localStorage
@@ -478,12 +534,14 @@
 	const leads = $derived(data.leads || []);
 
 	// Lazy-loaded form options (only fetched when drawer opens)
-	let formOptions = $state(/** @type {{ users: any[], teamsList: any[], contactsList: any[], tagsList: any[] }} */ ({
-		users: [],
-		teamsList: [],
-		contactsList: [],
-		tagsList: []
-	}));
+	let formOptions = $state(
+		/** @type {{ users: any[], teamsList: any[], contactsList: any[], tagsList: any[] }} */ ({
+			users: [],
+			teamsList: [],
+			contactsList: [],
+			tagsList: []
+		})
+	);
 	let formOptionsLoaded = $state(false);
 	let formOptionsLoading = $state(false);
 
@@ -509,17 +567,26 @@
 				label: u.user_details?.email || u.user?.email || u.email || 'Unknown'
 			}));
 
-			const teamsList = (teamsResponse.teams || teamsResponse || []).map((/** @type {any} */ t) => ({
-				value: t.id,
-				label: t.name || 'Unknown'
-			}));
+			const teamsList = (teamsResponse.teams || teamsResponse || []).map(
+				(/** @type {any} */ t) => ({
+					value: t.id,
+					label: t.name || 'Unknown'
+				})
+			);
 
-			const contactsList = (contactsResponse.contact_obj_list || contactsResponse.results || contactsResponse || []).map((/** @type {any} */ c) => ({
+			const contactsList = (
+				contactsResponse.contact_obj_list ||
+				contactsResponse.results ||
+				contactsResponse ||
+				[]
+			).map((/** @type {any} */ c) => ({
 				value: c.id,
 				label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || 'Unknown'
 			}));
 
-			const tagsList = (Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []).map((/** @type {any} */ t) => ({
+			const tagsList = (
+				Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []
+			).map((/** @type {any} */ t) => ({
 				value: t.id,
 				label: t.name || 'Unknown'
 			}));
@@ -543,37 +610,39 @@
 	let isSaving = $state(false);
 
 	// For create mode - temporary form data
-	let createFormData = $state(/** @type {Record<string, any>} */ ({
-		title: '',
-		salutation: '',
-		firstName: '',
-		lastName: '',
-		email: '',
-		phone: '',
-		jobTitle: '',
-		company: '',
-		website: '',
-		linkedinUrl: '',
-		status: 'ASSIGNED',
-		rating: '',
-		leadSource: '',
-		industry: '',
-		opportunityAmount: '',
-		probability: '',
-		closeDate: '',
-		lastContacted: '',
-		nextFollowUp: '',
-		addressLine: '',
-		city: '',
-		state: '',
-		postcode: '',
-		country: '',
-		description: '',
-		assignedTo: [],
-		teams: [],
-		contacts: [],
-		tags: []
-	}));
+	let createFormData = $state(
+		/** @type {Record<string, any>} */ ({
+			title: '',
+			salutation: '',
+			firstName: '',
+			lastName: '',
+			email: '',
+			phone: '',
+			jobTitle: '',
+			company: '',
+			website: '',
+			linkedinUrl: '',
+			status: 'ASSIGNED',
+			rating: '',
+			leadSource: '',
+			industry: '',
+			opportunityAmount: '',
+			probability: '',
+			closeDate: '',
+			lastContacted: '',
+			nextFollowUp: '',
+			addressLine: '',
+			city: '',
+			state: '',
+			postcode: '',
+			country: '',
+			description: '',
+			assignedTo: [],
+			teams: [],
+			contacts: [],
+			tags: []
+		})
+	);
 
 	// Current drawer data (either selected lead or create form data)
 	const currentDrawerData = $derived(drawerMode === 'create' ? createFormData : drawerData);
@@ -865,9 +934,16 @@
 	async function updateFilters(newFilters) {
 		const url = new URL($page.url);
 		// Clear existing filter params (preserve view/action)
-		['search', 'status', 'source', 'rating', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach(
-			(key) => url.searchParams.delete(key)
-		);
+		[
+			'search',
+			'status',
+			'source',
+			'rating',
+			'assigned_to',
+			'tags',
+			'created_at_gte',
+			'created_at_lte'
+		].forEach((key) => url.searchParams.delete(key));
 		// Set new params
 		Object.entries(newFilters).forEach(([key, value]) => {
 			if (Array.isArray(value)) {
@@ -889,8 +965,12 @@
 	// Status counts for filter chips
 	const openStatuses = ['ASSIGNED', 'IN_PROCESS'];
 	const lostStatuses = ['CLOSED', 'RECYCLED'];
-	const openCount = $derived(leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length);
-	const lostCount = $derived(leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length);
+	const openCount = $derived(
+		leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length
+	);
+	const lostCount = $derived(
+		leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length
+	);
 
 	// Status chip filter state (quick filter from UI)
 	let statusChipFilter = $state('ALL');
@@ -1159,7 +1239,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -1175,7 +1256,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'open')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'open'
 						? 'bg-blue-600 text-white dark:bg-blue-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -1191,7 +1273,8 @@
 				<button
 					type="button"
 					onclick={() => (statusChipFilter = 'lost')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'lost'
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'lost'
 						? 'bg-red-600 text-white dark:bg-red-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
@@ -1267,7 +1350,7 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6">
+<div class="flex-1">
 	<!-- Collapsible Filter Bar -->
 	<FilterBar
 		minimal={true}
@@ -1300,7 +1383,8 @@
 			label="Created"
 			startDate={filters.created_at_gte}
 			endDate={filters.created_at_lte}
-			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 			class="w-56"
 		/>
 	</FilterBar>
@@ -1310,7 +1394,9 @@
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
 			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first lead to get started.</p>
+			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+				Create your first lead to get started.
+			</p>
 			<Button onclick={openCreate} class="mt-4" size="sm">
 				<Plus class="mr-2 h-4 w-4" />
 				New Lead
@@ -1330,30 +1416,13 @@
 					<div class="flex flex-col items-center justify-center py-16 text-center">
 						<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
 						<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first lead to get started.</p>
-						<Button onclick={openCreate} class="mt-4" size="sm">
-							<Plus class="mr-2 h-4 w-4" />
-							New Lead
-						</Button>
 					</div>
 				{/snippet}
 			</CrmTable>
-
-			<!-- New row button -->
-			<div class="border-t border-gray-100/60 dark:border-gray-800 px-4 py-2">
-				<button
-					type="button"
-					onclick={openCreate}
-					class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-				>
-					<Plus class="h-4 w-4" />
-					New
-				</button>
-			</div>
 		</div>
 
 		<!-- Mobile Card View -->
-		<div class="divide-y dark:divide-gray-800 md:hidden">
+		<div class="divide-y md:hidden dark:divide-gray-800">
 			{#each filteredLeads as lead (lead.id)}
 				<button
 					type="button"
@@ -1363,7 +1432,9 @@
 					<div class="min-w-0 flex-1">
 						<div class="flex items-start justify-between gap-2">
 							<div>
-								<p class="text-sm font-medium text-gray-900 dark:text-gray-100">{getFullName(lead)}</p>
+								<p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+									{getFullName(lead)}
+								</p>
 								{#if lead.company}
 									<p class="text-sm text-gray-500 dark:text-gray-400">
 										{typeof lead.company === 'object' ? lead.company.name : lead.company}
@@ -1379,7 +1450,9 @@
 								{getOptionLabel(lead.status, leadStatusOptions)}
 							</span>
 						</div>
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+						<div
+							class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+						>
 							{#if lead.rating}
 								<span
 									class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}"
@@ -1430,7 +1503,9 @@
 				</div>
 				{#each drawerData.comments.slice(0, 3) as comment (comment.id)}
 					<div class="flex gap-3">
-						<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+						<div
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+						>
 							<MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
 						</div>
 						<div class="min-w-0 flex-1">
@@ -1453,9 +1528,7 @@
 
 	{#snippet footerActions()}
 		{#if drawerMode === 'create'}
-			<Button variant="outline" onclick={closeDrawer}>
-				Cancel
-			</Button>
+			<Button variant="outline" onclick={closeDrawer}>Cancel</Button>
 			<Button onclick={handleCreateLead} disabled={isSaving}>
 				{#if isSaving}
 					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -1465,9 +1538,7 @@
 				{/if}
 			</Button>
 		{:else}
-			<Button variant="outline" onclick={closeDrawer} disabled={isSaving}>
-				Cancel
-			</Button>
+			<Button variant="outline" onclick={closeDrawer} disabled={isSaving}>Cancel</Button>
 			{#if drawerData?.status !== 'converted'}
 				<Button variant="outline" onclick={handleDrawerConvert} disabled={isSaving}>
 					<ArrowRightCircle class="mr-2 h-4 w-4" />
@@ -1597,4 +1668,3 @@
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />
 </form>
-
