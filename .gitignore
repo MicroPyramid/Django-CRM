@@ -59,7 +59,7 @@ logs/
 Thumbs.db
 
 openapi.json
-# .mcp.json
+.mcp.json
 CLAUDE.md
 TODO.md
 .playwright-mcp
