@@ -9,6 +9,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts import swagger_params
@@ -17,18 +19,16 @@ from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     AccountCreateSerializer,
     AccountDetailEditSwaggerSerializer,
-    AccountReadSerializer,
     AccountSerializer,
     AccountWriteSerializer,
     EmailSerializer,
     EmailWriteSerializer,
-    TagsSerailizer,
+    TagsSerializer,
 )
+from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import Attachments, Comment, Profile, Tags, Teams
-
-# from common.external_auth import CustomDualAuthentication
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -54,10 +54,9 @@ from tasks.serializer import TaskSerializer
 
 
 class AccountsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
-    serializer_class = AccountReadSerializer
+    serializer_class = AccountSerializer
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -79,6 +78,16 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(industry__icontains=params.get("industry"))
             if params.get("tags"):
                 queryset = queryset.filter(tags__in=params.get("tags")).distinct()
+            if params.getlist("assigned_to"):
+                queryset = queryset.filter(
+                    assigned_to__id__in=params.getlist("assigned_to")
+                ).distinct()
+            if params.get("search"):
+                queryset = queryset.filter(name__icontains=params.get("search"))
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
 
         context = {}
 
@@ -135,7 +144,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["industries"] = INDCHOICES
 
         tags = Tags.objects.filter(org=self.request.profile.org)
-        tags = TagsSerailizer(tags, many=True).data
+        tags = TagsSerializer(tags, many=True).data
 
         context["tags"] = tags
         users = Profile.objects.filter(
@@ -150,15 +159,20 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["status"] = ["active", "inactive"]  # Maps to is_active field
         return context
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.account_get_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_list",
+        parameters=swagger_params.account_get_params,
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_create",
         parameters=swagger_params.organization_params,
-        request=AccountWriteSerializer,
+        request=AccountCreateSerializer,
     )
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -168,42 +182,31 @@ class AccountsListView(APIView, LimitOffsetPagination):
         # Save Account
         if serializer.is_valid():
             account_object = serializer.save(org=request.profile.org)
-            if data.get("contacts"):
-                contacts_list = json.loads(data.get("contacts"))
-                contacts = Contact.objects.filter(
-                    id__in=contacts_list, org=request.profile.org
-                )
-                if contacts:
-                    account_object.contacts.add(*contacts)
-            if data.get("tags"):
-                tags = json.loads(data.get("tags"))
-                for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag)
-                    account_object.tags.add(tag_obj)
-            if data.get("teams"):
-                teams_list = json.loads(data.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
-                if teams:
-                    account_object.teams.add(*teams)
-                if data.get("assigned_to"):
-                    assigned_to_list = json.loads(data.get("assigned_to"))
-                    profiles = Profile.objects.filter(
-                        id__in=assigned_to_list, org=request.profile.org, is_active=True
-                    )
-                    if profiles:
-                        account_object.assigned_to.add(*profiles)
 
+            # Handle M2M relationships using utilities
+            handle_m2m_assignment(
+                account_object, 'contacts', data.get('contacts'),
+                Contact, request.profile.org
+            )
+            tags = get_or_create_tags(data.get('tags'), request.profile.org)
+            if tags:
+                account_object.tags.add(*tags)
+            handle_m2m_assignment(
+                account_object, 'teams', data.get('teams'),
+                Teams, request.profile.org
+            )
+            handle_m2m_assignment(
+                account_object, 'assigned_to', data.get('assigned_to'),
+                Profile, request.profile.org, extra_filters={'is_active': True}
+            )
+
+            # Handle attachment
             if self.request.FILES.get("account_attachment"):
-                attachment = Attachments()
-                attachment.created_by = request.profile.user
-                attachment.file_name = request.FILES.get("account_attachment").name
-                attachment.account = account_object
-                attachment.attachment = request.FILES.get("account_attachment")
-                attachment.save()
+                create_attachment(
+                    request.FILES.get("account_attachment"),
+                    account_object,
+                    request.profile
+                )
 
             recipients = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
@@ -211,6 +214,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Account Created Successfully"},
@@ -223,15 +227,15 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
 
 class AccountDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
-    serializer_class = AccountReadSerializer
+    permission_classes = (IsAuthenticated, HasOrgContext)
+    serializer_class = AccountSerializer
 
     def get_object(self, pk):
         return get_object_or_404(Account, id=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_update",
         parameters=swagger_params.organization_params,
         request=AccountWriteSerializer,
     )
@@ -281,11 +285,11 @@ class AccountDetailView(APIView):
             if data.get("tags"):
                 tags = json.loads(data.get("tags"))
                 for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower())
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
                     if tag_obj.exists():
                         tag_obj = tag_obj[0]
                     else:
-                        tag_obj = Tags.objects.create(name=tag)
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
                     account_object.tags.add(tag_obj)
 
             account_object.teams.clear()
@@ -308,8 +312,9 @@ class AccountDetailView(APIView):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("account_attachment").name
-                attachment.account = account_object
+                attachment.content_object = account_object
                 attachment.attachment = self.request.FILES.get("account_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             assigned_to_list = list(
@@ -319,6 +324,7 @@ class AccountDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Account Updated Successfully"},
@@ -329,7 +335,11 @@ class AccountDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_destroy",
+        parameters=swagger_params.organization_params,
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -338,7 +348,7 @@ class AccountDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile != self.object.created_by:
+            if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
@@ -352,7 +362,11 @@ class AccountDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Accounts"],
+        operation_id="accounts_retrieve",
+        parameters=swagger_params.organization_params,
+    )
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
         if self.account.org != request.profile.org:
@@ -458,6 +472,7 @@ class AccountDetailView(APIView):
 
     @extend_schema(
         tags=["Accounts"],
+        operation_id="accounts_add_comment",
         parameters=swagger_params.organization_params,
         request=AccountDetailEditSwaggerSerializer,
     )
@@ -497,8 +512,9 @@ class AccountDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("account_attachment").name
-            attachment.account = self.account_obj
+            attachment.content_object = self.account_obj
             attachment.attachment = self.request.FILES.get("account_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         account_content_type = ContentType.objects.get_for_model(Account)
@@ -521,11 +537,104 @@ class AccountDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountWriteSerializer,
+        description="Partial Account Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to an account."""
+        data = request.data
+        account_object = self.get_object(pk=pk)
+        if account_object.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile == account_object.created_by)
+                or (self.request.profile in account_object.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        serializer = AccountCreateSerializer(
+            account_object,
+            data=data,
+            request_obj=request,
+            account=True,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            account_object = serializer.save()
+
+            # Handle M2M fields if present in request
+            if "contacts" in data:
+                account_object.contacts.clear()
+                contacts_list = data.get("contacts")
+                if contacts_list:
+                    if isinstance(contacts_list, str):
+                        contacts_list = json.loads(contacts_list)
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    account_object.contacts.add(*contacts)
+
+            if "tags" in data:
+                account_object.tags.clear()
+                tags = data.get("tags")
+                if tags:
+                    if isinstance(tags, str):
+                        tags = json.loads(tags)
+                    for tag in tags:
+                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if tag_obj.exists():
+                            tag_obj = tag_obj[0]
+                        else:
+                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                        account_object.tags.add(tag_obj)
+
+            if "teams" in data:
+                account_object.teams.clear()
+                teams_list = data.get("teams")
+                if teams_list:
+                    if isinstance(teams_list, str):
+                        teams_list = json.loads(teams_list)
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    account_object.teams.add(*teams)
+
+            if "assigned_to" in data:
+                account_object.assigned_to.clear()
+                assigned_to_list = data.get("assigned_to")
+                if assigned_to_list:
+                    if isinstance(assigned_to_list, str):
+                        assigned_to_list = json.loads(assigned_to_list)
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    account_object.assigned_to.add(*profiles)
+
+            return Response(
+                {"error": False, "message": "Account Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class AccountCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountCommentEditSwaggerSerializer
 
     def get_object(self, pk):
@@ -564,6 +673,40 @@ class AccountCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    @extend_schema(
+        tags=["Accounts"],
+        parameters=swagger_params.organization_params,
+        request=AccountCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        data = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to edit this Comment",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -588,8 +731,7 @@ class AccountCommentView(APIView):
 
 class AccountAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     serializer_class = AccountDetailEditSwaggerSerializer
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
@@ -615,8 +757,7 @@ class AccountAttachmentView(APIView):
 
 
 class AccountCreateMailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Account
     serializer_class = EmailWriteSerializer
 
@@ -658,7 +799,7 @@ class AccountCreateMailView(APIView):
                         data["recipients"] = "Please enter valid recipient"
                         return Response({"error": True, "errors": data})
             if data.get("scheduled_later") != "true":
-                send_email.delay(email_obj.id)
+                send_email.delay(email_obj.id, str(request.profile.org.id))
             else:
                 email_obj.scheduled_later = True
                 email_obj.scheduled_date_time = scheduled_date_time

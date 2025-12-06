@@ -1,15 +1,15 @@
-import arrow
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
-from common.models import Org, Profile, Teams
+from common.models import Org, Profile, Tags, Teams
 from contacts.models import Contact
 
-# =============================================================================
-# Kanban Board Models (merged from boards app)
-# =============================================================================
+
+# Cleanup notes:
+# - Removed 'created_on_arrow' property from Task model (frontend computes its own timestamps)
 
 
 class Board(BaseModel):
@@ -182,18 +182,6 @@ class BoardTask(BaseModel):
             self.org_id = self.column.board.org_id
         super().save(*args, **kwargs)
 
-    def mark_complete(self):
-        """Mark task as completed"""
-        from django.utils import timezone
-
-        self.completed_at = timezone.now()
-        self.save()
-
-    def mark_incomplete(self):
-        """Mark task as incomplete"""
-        self.completed_at = None
-        self.save()
-
     @property
     def is_completed(self):
         return self.completed_at is not None
@@ -206,10 +194,6 @@ class BoardTask(BaseModel):
             return timezone.now() > self.due_date
         return False
 
-
-# =============================================================================
-# Original Task Model
-# =============================================================================
 
 
 class Task(AssignableMixin, BaseModel):
@@ -234,19 +218,33 @@ class Task(AssignableMixin, BaseModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    opportunity = models.ForeignKey(
+        "opportunity.Opportunity",
+        related_name="opportunity_tasks",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    case = models.ForeignKey(
+        "cases.Case",
+        related_name="case_tasks",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    lead = models.ForeignKey(
+        "leads.Lead",
+        related_name="lead_tasks",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
-    contacts = models.ManyToManyField(Contact, related_name="contacts_tasks")
+    contacts = models.ManyToManyField(Contact, related_name="task_contacts")
 
-    assigned_to = models.ManyToManyField(Profile, related_name="users_tasks")
-
-    # created_by = models.ForeignKey(
-    #     Profile,
-    #     related_name="task_created",
-    #     blank=True,
-    #     null=True,
-    #     on_delete=models.SET_NULL,
-    # )
+    assigned_to = models.ManyToManyField(Profile, related_name="task_assigned_users")
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
+    tags = models.ManyToManyField(Tags, related_name="task_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")
 
     class Meta:
@@ -263,6 +261,24 @@ class Task(AssignableMixin, BaseModel):
     def __str__(self):
         return f"{self.title}"
 
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+    def clean(self):
+        """Validate that task has at most one parent entity."""
+        super().clean()
+        parent_fields = ["account", "opportunity", "case", "lead"]
+        set_parents = [
+            field for field in parent_fields if getattr(self, f"{field}_id", None)
+        ]
+        if len(set_parents) > 1:
+            raise ValidationError(
+                {
+                    "account": _(
+                        "A task can only be linked to one parent entity "
+                        "(Account, Opportunity, Case, or Lead). "
+                        f"Currently linked to: {', '.join(set_parents)}"
+                    )
+                }
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

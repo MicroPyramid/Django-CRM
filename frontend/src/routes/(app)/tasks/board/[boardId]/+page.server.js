@@ -177,7 +177,7 @@ export const actions = {
 			await apiRequest(
 				`/boards/tasks/${taskId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: updateData
 				},
 				{ cookies, org }
@@ -238,7 +238,7 @@ export const actions = {
 			await apiRequest(
 				`/boards/tasks/${taskId}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: {
 						column: columnId,
 						order

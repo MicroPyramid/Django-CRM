@@ -1,5 +1,5 @@
-django==5.2.8
-celery==5.5.3
+django==5.2.9
+celery==5.6.0
 python-dotenv==1.2.1
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
@@ -8,14 +8,14 @@ drf-spectacular==0.29.0
 django-ses==4.4.0
 psycopg2-binary==2.9.11
 whitenoise==6.11.0
-sentry-sdk==2.46.0
-django_extensions==4.1
+sentry-sdk==2.47.0
 django_storages==1.14.6
 
 django-crum==0.7.9
 redis==7.1.0
-django-phonenumber-field==8.4.0
-arrow==1.4.0
-phonenumbers==9.0.19
 pytz==2025.2
 requests==2.32.5
+faker==33.1.0
+
+# Production server
+gunicorn>=23.0.0

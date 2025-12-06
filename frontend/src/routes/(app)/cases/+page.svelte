@@ -1,381 +1,1060 @@
-<script lang="ts">
+<script>
+	import { enhance } from '$app/forms';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
-	import { Briefcase, Plus, Filter, X } from '@lucide/svelte';
+	import { onMount, tick } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import {
+		Plus,
+		Briefcase,
+		Building2,
+		User,
+		Users,
+		Flag,
+		Tag,
+		Circle,
+		Calendar,
+		FileText,
+		MessageSquare,
+		Activity,
+		Loader2,
+		Eye,
+		Filter
+	} from '@lucide/svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { PageHeader } from '$lib/components/layout';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
+	import {
+		caseStatusOptions,
+		caseTypeOptions,
+		casePriorityOptions
+	} from '$lib/utils/table-helpers.js';
+	import { useDrawerState } from '$lib/hooks';
+	import { apiRequest } from '$lib/api.js';
 
-	export let data;
-	let statusFilter = '';
-	let assignedFilter = '';
-	let accountFilter = '';
+	/**
+	 * @typedef {Object} ColumnDef
+	 * @property {string} key
+	 * @property {string} label
+	 * @property {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} [type]
+	 * @property {string} [width]
+	 * @property {{ value: string, label: string, color: string }[]} [options]
+	 * @property {boolean} [editable]
+	 * @property {boolean} [canHide]
+	 * @property {string} [relationIcon]
+	 * @property {(row: any) => any} [getValue]
+	 */
 
-	// Use options from server data
-	const statusOptions = data.statusOptions;
-	const assignedOptions = data.allUsers.map((u: any) => u.name);
-	const accountOptions = data.allAccounts.map((a: any) => a.name);
+	// NotionTable column configuration - reordered for scanning priority
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{ key: 'subject', label: 'Case', type: 'text', width: 'w-[250px]', canHide: false },
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'relation',
+			relationIcon: 'building',
+			width: 'w-40',
+			getValue: (/** @type {any} */ row) => row.account
+		},
+		{
+			key: 'priority',
+			label: 'Priority',
+			type: 'select',
+			options: casePriorityOptions,
+			width: 'w-28'
+		},
+		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
+		{ key: 'caseType', label: 'Type', type: 'select', options: caseTypeOptions, width: 'w-28' },
+		{
+			key: 'owner',
+			label: 'Assigned To',
+			type: 'relation',
+			relationIcon: 'user',
+			width: 'w-36',
+			getValue: (/** @type {any} */ row) => row.owner
+		},
+		{ key: 'createdAt', label: 'Created', type: 'date', width: 'w-32', editable: false }
+	];
 
-	$: filteredCases = data.cases.filter(
-		(c: any) =>
-			(!statusFilter || c.status === statusFilter) &&
-			(!assignedFilter || c.owner?.name === assignedFilter) &&
-			(!accountFilter || c.account?.name === accountFilter)
+	// Column visibility state
+	const STORAGE_KEY = 'cases-column-config';
+	let visibleColumns = $state(columns.map((c) => c.key));
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				visibleColumns = parsed.filter((/** @type {string} */ key) =>
+					columns.some((c) => c.key === key)
+				);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
+	/**
+	 * @param {string} key
+	 */
+	function isColumnVisible(key) {
+		return visibleColumns.includes(key);
+	}
+
+	/**
+	 * @param {string} key
+	 */
+	function toggleColumn(key) {
+		const column = columns.find((c) => c.key === key);
+		// @ts-ignore
+		if (column?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
+	}
+
+	const columnCounts = $derived({
+		visible: visibleColumns.length,
+		total: columns.length
+	});
+
+	// Drawer local form state
+	let drawerFormData = $state({
+		subject: '',
+		description: '',
+		accountId: '',
+		accountName: '', // Read-only display for edit mode
+		assignedTo: /** @type {string[]} */ ([]),
+		contacts: /** @type {string[]} */ ([]),
+		teams: /** @type {string[]} */ ([]),
+		tags: /** @type {string[]} */ ([]),
+		priority: 'Normal',
+		caseType: '',
+		status: 'New',
+		closedOn: ''
+	});
+
+	// Track if drawer form has been modified
+	let isDrawerDirty = $state(false);
+	let isSubmitting = $state(false);
+
+	/** @type {{ data: any }} */
+	let { data } = $props();
+
+	// Computed values
+	let casesData = $derived(data.cases || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+
+	// Lazy-loaded dropdown options (fetched when drawer opens)
+	let loadedUsers = $state(/** @type {any[]} */ ([]));
+	let loadedAccounts = $state(/** @type {any[]} */ ([]));
+	let loadedContacts = $state(/** @type {any[]} */ ([]));
+	let loadedTeams = $state(/** @type {any[]} */ ([]));
+	let loadedTags = $state(/** @type {any[]} */ ([]));
+	let dropdownOptionsLoaded = $state(false);
+	let dropdownOptionsLoading = $state(false);
+
+	// Use lazy-loaded data
+	const accounts = $derived(loadedAccounts);
+	const users = $derived(loadedUsers);
+	const contacts = $derived(loadedContacts);
+	const teams = $derived(loadedTeams);
+	const tags = $derived(loadedTags);
+
+	/**
+	 * Fetch dropdown options for the drawer (lazy load)
+	 */
+	async function loadDropdownOptions() {
+		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
+
+		dropdownOptionsLoading = true;
+		try {
+			const [usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] =
+				await Promise.all([
+					apiRequest('/users/'),
+					apiRequest('/accounts/'),
+					apiRequest('/contacts/'),
+					apiRequest('/teams/'),
+					apiRequest('/tags/').catch(() => ({ tags: [] }))
+				]);
+
+			// Transform users
+			const activeUsersList = usersResponse.active_users?.active_users || [];
+			loadedUsers = activeUsersList.map((/** @type {any} */ user) => ({
+				id: user.id,
+				name:
+					user.user_details?.first_name && user.user_details?.last_name
+						? `${user.user_details.first_name} ${user.user_details.last_name}`
+						: user.user_details?.email || user.email
+			}));
+
+			// Transform accounts
+			let allAccounts = [];
+			if (accountsResponse.active_accounts?.open_accounts) {
+				allAccounts = accountsResponse.active_accounts.open_accounts;
+			} else if (accountsResponse.results) {
+				allAccounts = accountsResponse.results;
+			} else if (Array.isArray(accountsResponse)) {
+				allAccounts = accountsResponse;
+			}
+			loadedAccounts = allAccounts.map((/** @type {any} */ account) => ({
+				id: account.id,
+				name: account.name
+			}));
+
+			// Transform contacts
+			let allContacts = [];
+			if (contactsResponse.contact_obj_list) {
+				allContacts = contactsResponse.contact_obj_list;
+			} else if (contactsResponse.results) {
+				allContacts = contactsResponse.results;
+			} else if (Array.isArray(contactsResponse)) {
+				allContacts = contactsResponse;
+			}
+			loadedContacts = allContacts.map((/** @type {any} */ contact) => ({
+				id: contact.id,
+				name:
+					contact.first_name && contact.last_name
+						? `${contact.first_name} ${contact.last_name}`
+						: contact.email,
+				email: contact.email
+			}));
+
+			// Transform teams
+			let allTeams = [];
+			if (teamsResponse.teams) {
+				allTeams = teamsResponse.teams;
+			} else if (teamsResponse.results) {
+				allTeams = teamsResponse.results;
+			} else if (Array.isArray(teamsResponse)) {
+				allTeams = teamsResponse;
+			}
+			loadedTeams = allTeams.map((/** @type {any} */ team) => ({
+				id: team.id,
+				name: team.name
+			}));
+
+			// Transform tags
+			let allTags = [];
+			if (tagsResponse.tags) {
+				allTags = tagsResponse.tags;
+			} else if (tagsResponse.results) {
+				allTags = tagsResponse.results;
+			} else if (Array.isArray(tagsResponse)) {
+				allTags = tagsResponse;
+			}
+			loadedTags = allTags.map((/** @type {any} */ tag) => ({
+				id: tag.id,
+				name: tag.name
+			}));
+
+			dropdownOptionsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load dropdown options:', err);
+		} finally {
+			dropdownOptionsLoading = false;
+		}
+	}
+
+	// Drawer state using hook
+	const drawer = useDrawerState();
+
+	// Load dropdown options when drawer opens (lazy load)
+	$effect(() => {
+		if (drawer.detailOpen && !dropdownOptionsLoaded) {
+			loadDropdownOptions();
+		}
+	});
+
+	// Account options for drawer select
+	const accountOptions = $derived([
+		{ value: '', label: 'None', color: 'bg-gray-100 text-gray-600' },
+		...accounts.map((/** @type {any} */ a) => ({
+			value: a.id,
+			label: a.name,
+			color: 'bg-blue-100 text-blue-700'
+		}))
+	]);
+
+	// Drawer columns configuration (with icons and multiselect)
+	// Account is only editable on create, read-only on edit
+	const drawerColumns = $derived([
+		{ key: 'subject', label: 'Case Title', type: 'text' },
+		drawer.mode === 'create'
+			? {
+					key: 'accountId',
+					label: 'Account',
+					type: 'select',
+					icon: Building2,
+					options: accountOptions,
+					emptyText: 'No account'
+				}
+			: {
+					key: 'accountName',
+					label: 'Account',
+					type: 'readonly',
+					icon: Building2,
+					emptyText: 'No account'
+				},
+		{
+			key: 'caseType',
+			label: 'Type',
+			type: 'select',
+			icon: Tag,
+			options: caseTypeOptions,
+			emptyText: 'Select type'
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			icon: Circle,
+			options: caseStatusOptions
+		},
+		{
+			key: 'priority',
+			label: 'Priority',
+			type: 'select',
+			icon: Flag,
+			options: casePriorityOptions
+		},
+		{
+			key: 'description',
+			label: 'Description',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Describe the case...',
+			emptyText: 'No description'
+		},
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: User,
+			options: users.map((/** @type {any} */ u) => ({ id: u.id, name: u.name })),
+			emptyText: 'Unassigned'
+		},
+		{
+			key: 'teams',
+			label: 'Teams',
+			type: 'multiselect',
+			icon: Users,
+			options: teams.map((/** @type {any} */ t) => ({ id: t.id, name: t.name })),
+			emptyText: 'No teams'
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: User,
+			options: contacts.map((/** @type {any} */ c) => ({ id: c.id, name: c.name, email: c.email })),
+			emptyText: 'No contacts'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: tags.map((/** @type {any} */ t) => ({ id: t.id, name: t.name })),
+			emptyText: 'No tags'
+		},
+		{
+			key: 'closedOn',
+			label: 'Close Date',
+			type: 'date',
+			icon: Calendar,
+			emptyText: 'Not set'
+		}
+	]);
+
+	// Reset drawer form when case changes or drawer opens
+	$effect(() => {
+		if (drawer.detailOpen) {
+			if (drawer.mode === 'create') {
+				drawerFormData = {
+					subject: '',
+					description: '',
+					accountId: '',
+					accountName: '',
+					assignedTo: [],
+					contacts: [],
+					teams: [],
+					tags: [],
+					priority: 'Normal',
+					caseType: '',
+					status: 'New',
+					closedOn: ''
+				};
+			} else if (drawer.selected) {
+				const caseItem = drawer.selected;
+				drawerFormData = {
+					subject: caseItem.subject || '',
+					description: caseItem.description || '',
+					accountId: caseItem.account?.id || '',
+					accountName: caseItem.account?.name || '', // Read-only display
+					assignedTo: (caseItem.assignedTo || []).map((/** @type {any} */ a) => a.id),
+					contacts: (caseItem.contacts || []).map((/** @type {any} */ c) => c.id),
+					teams: (caseItem.teams || []).map((/** @type {any} */ t) => t.id),
+					tags: (caseItem.tags || []).map((/** @type {any} */ t) => t.id),
+					priority: caseItem.priority || 'Normal',
+					caseType: caseItem.caseType || '',
+					status: caseItem.status || 'New',
+					closedOn: caseItem.closedOn ? caseItem.closedOn.split('T')[0] : ''
+				};
+			}
+			isDrawerDirty = false;
+		}
+	});
+
+	/**
+	 * Handle field change from drawer
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	function handleDrawerFieldChange(field, value) {
+		drawerFormData = { ...drawerFormData, [field]: value };
+		isDrawerDirty = true;
+	}
+
+	// URL-based filter state from server
+	const filters = $derived(data.filters || {});
+
+	// Status options for filter dropdown
+	const statusFilterOptions = $derived([
+		{ value: '', label: 'All Statuses' },
+		...caseStatusOptions
+	]);
+
+	// Priority options for filter dropdown
+	const priorityFilterOptions = $derived([
+		{ value: '', label: 'All Priorities' },
+		...casePriorityOptions
+	]);
+
+	// Type options for filter dropdown
+	const typeFilterOptions = $derived([{ value: '', label: 'All Types' }, ...caseTypeOptions]);
+
+	// Count active filters (excluding status since it's handled via chips in header)
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.priority) count++;
+		if (filters.case_type) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
+	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params
+		[
+			'search',
+			'status',
+			'priority',
+			'case_type',
+			'assigned_to',
+			'tags',
+			'created_at_gte',
+			'created_at_lte'
+		].forEach((key) => url.searchParams.delete(key));
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	// Status counts for filter chips
+	const openStatuses = ['New', 'Open', 'Pending', 'Assigned'];
+	const openCount = $derived(
+		casesData.filter((/** @type {any} */ c) => openStatuses.includes(c.status)).length
+	);
+	const closedCount = $derived(
+		casesData.filter((/** @type {any} */ c) => c.status === 'Closed').length
 	);
 
-	function statusColor(status: string) {
-		return status === 'OPEN'
-			? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700'
-			: status === 'IN_PROGRESS'
-				? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700'
-				: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600';
+	// Status chip filter state (client-side quick filter on top of server filters)
+	let statusChipFilter = $state('ALL');
+
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
+
+	// Filtered cases - server already applies main filters, just apply status chip
+	const filteredCases = $derived.by(() => {
+		let filtered = casesData;
+		if (statusChipFilter === 'open') {
+			filtered = filtered.filter((/** @type {any} */ c) => openStatuses.includes(c.status));
+		} else if (statusChipFilter === 'closed') {
+			filtered = filtered.filter((/** @type {any} */ c) => c.status === 'Closed');
+		}
+		return filtered;
+	});
+
+	// Form references for server actions
+	/** @type {HTMLFormElement} */
+	let createForm;
+	/** @type {HTMLFormElement} */
+	let updateForm;
+	/** @type {HTMLFormElement} */
+	let deleteForm;
+	/** @type {HTMLFormElement} */
+	let closeForm;
+	/** @type {HTMLFormElement} */
+	let reopenForm;
+
+	// Form data state
+	let formState = $state({
+		title: '',
+		description: '',
+		accountId: '',
+		assignedTo: /** @type {string[]} */ ([]),
+		contacts: /** @type {string[]} */ ([]),
+		teams: /** @type {string[]} */ ([]),
+		tags: /** @type {string[]} */ ([]),
+		priority: 'Normal',
+		caseType: '',
+		status: 'New',
+		dueDate: '',
+		caseId: ''
+	});
+
+	/**
+	 * Handle save from drawer
+	 */
+	async function handleSave() {
+		if (!drawerFormData.subject?.trim()) {
+			toast.error('Case title is required');
+			return;
+		}
+
+		isSubmitting = true;
+
+		// Convert drawer form data to form state
+		formState.title = drawerFormData.subject || '';
+		formState.description = drawerFormData.description || '';
+		formState.accountId = drawerFormData.accountId || '';
+		formState.assignedTo = drawerFormData.assignedTo || [];
+		formState.contacts = drawerFormData.contacts || [];
+		formState.teams = drawerFormData.teams || [];
+		formState.tags = drawerFormData.tags || [];
+		formState.priority = drawerFormData.priority || 'Normal';
+		formState.caseType = drawerFormData.caseType || '';
+		formState.status = drawerFormData.status || 'New';
+		formState.dueDate = drawerFormData.closedOn || '';
+
+		await tick();
+
+		if (drawer.mode === 'edit' && drawer.selected) {
+			formState.caseId = drawer.selected.id;
+			await tick();
+			updateForm.requestSubmit();
+		} else {
+			createForm.requestSubmit();
+		}
 	}
 
-	function priorityColor(priority: string) {
-		return priority === 'Urgent'
-			? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
-			: priority === 'High'
-				? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700'
-				: priority === 'Normal'
-					? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700'
-					: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700';
+	/**
+	 * Handle case delete
+	 */
+	async function handleDelete() {
+		if (!drawer.selected) return;
+		if (!confirm(`Are you sure you want to delete "${drawer.selected.subject}"?`)) return;
+
+		formState.caseId = drawer.selected.id;
+		await tick();
+		deleteForm.requestSubmit();
 	}
 
-	function onFilterChange() {
-		const params = new URLSearchParams();
-		if (statusFilter) params.set('status', statusFilter);
-		if (assignedFilter) params.set('assigned', assignedFilter);
-		if (accountFilter) params.set('account', accountFilter);
-		goto(`/cases?${params.toString()}`);
+	/**
+	 * Handle case close
+	 */
+	async function handleClose() {
+		if (!drawer.selected) return;
+
+		formState.caseId = drawer.selected.id;
+		await tick();
+		closeForm.requestSubmit();
 	}
 
-	function clearFilters() {
-		statusFilter = '';
-		assignedFilter = '';
-		accountFilter = '';
-		onFilterChange();
+	/**
+	 * Handle case reopen
+	 */
+	async function handleReopen() {
+		if (!drawer.selected) return;
+
+		formState.caseId = drawer.selected.id;
+		await tick();
+		reopenForm.requestSubmit();
 	}
 
-	$: hasActiveFilters = statusFilter || assignedFilter || accountFilter;
+	/**
+	 * Create enhance handler for form actions
+	 * @param {string} successMessage
+	 * @param {boolean} closeDetailDrawer
+	 */
+	function createEnhanceHandler(successMessage, closeDetailDrawer = false) {
+		return () => {
+			return async ({ result }) => {
+				isSubmitting = false;
+				if (result.type === 'success') {
+					toast.success(successMessage);
+					isDrawerDirty = false;
+					if (closeDetailDrawer) {
+						drawer.closeDetail();
+					} else {
+						drawer.closeAll();
+					}
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Operation failed');
+				} else if (result.type === 'error') {
+					toast.error('An unexpected error occurred');
+				}
+			};
+		};
+	}
+
+	/**
+	 * Convert case to form state for inline editing
+	 * @param {any} caseItem
+	 */
+	function caseToFormState(caseItem) {
+		return {
+			caseId: caseItem.id,
+			title: caseItem.subject || '',
+			description: caseItem.description || '',
+			accountId: caseItem.account?.id || '',
+			assignedTo: (caseItem.assignedTo || []).map((/** @type {any} */ a) => a.id),
+			contacts: (caseItem.contacts || []).map((/** @type {any} */ c) => c.id),
+			teams: (caseItem.teams || []).map((/** @type {any} */ t) => t.id),
+			tags: (caseItem.tags || []).map((/** @type {any} */ t) => t.id),
+			priority: caseItem.priority || 'Normal',
+			caseType: caseItem.caseType || '',
+			status: caseItem.status || 'New',
+			dueDate: caseItem.closedOn ? caseItem.closedOn.split('T')[0] : ''
+		};
+	}
+
+	/**
+	 * Handle inline cell edits - persists to API
+	 * @param {any} caseItem
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleQuickEdit(caseItem, field, value) {
+		// Map frontend field names to form state field names
+		const fieldMapping = {
+			subject: 'title',
+			caseType: 'caseType',
+			priority: 'priority',
+			status: 'status',
+			closedOn: 'dueDate'
+		};
+
+		// Populate form state with current case data
+		const currentState = caseToFormState(caseItem);
+
+		// Update the specific field (use mapped name if exists)
+		const formField = fieldMapping[field] || field;
+		currentState[formField] = value;
+
+		// Copy to form state
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle row change from CrmTable (inline editing)
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleRowChange(row, field, value) {
+		await handleQuickEdit(row, field, value);
+	}
 </script>
 
-<div class="min-h-screen bg-slate-50 dark:bg-slate-900">
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-		<!-- Header -->
-		<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
-					<Briefcase class="h-6 w-6 text-blue-600 dark:text-blue-400" />
-				</div>
-				<div>
-					<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Cases</h1>
-					<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-						Manage customer support cases and issues
-					</p>
-				</div>
-			</div>
-			<a
-				href="/cases/new"
-				class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-			>
-				<Plus class="h-4 w-4" />
-				New Case
-			</a>
-		</div>
+<svelte:head>
+	<title>Cases - BottleCRM</title>
+</svelte:head>
 
-		<!-- Filters -->
-		<div
-			class="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-		>
-			<div class="mb-4 flex items-center gap-2">
-				<Filter class="h-4 w-4 text-slate-600 dark:text-slate-400" />
-				<h3 class="text-sm font-semibold text-slate-900 dark:text-white">Filters</h3>
-				{#if hasActiveFilters}
+<PageHeader title="Cases" subtitle="{filteredCases.length} of {casesData.length} cases">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
 					<span
-						class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
-						{[statusFilter, assignedFilter, accountFilter].filter(Boolean).length} active
+						{casesData.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'open')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'open'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Open
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{openCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'closed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'closed'
+						? 'bg-gray-600 text-white dark:bg-gray-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Closed
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{closedCount}
+					</span>
+				</button>
+			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
 					</span>
 				{/if}
-			</div>
+			</Button>
 
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<div>
-					<label
-						for="status"
-						class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Status</label
-					>
-					<select
-						id="status"
-						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-						bind:value={statusFilter}
-						onchange={onFilterChange}
-					>
-						<option value="">All Statuses</option>
-						{#each statusOptions as s}
-							<option value={s}>{s.replace('_', ' ')}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div>
-					<label
-						for="assigned"
-						class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300"
-						>Assigned To</label
-					>
-					<select
-						id="assigned"
-						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-						bind:value={assignedFilter}
-						onchange={onFilterChange}
-					>
-						<option value="">All Users</option>
-						{#each assignedOptions as a}
-							<option value={a}>{a}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div>
-					<label
-						for="account"
-						class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300">Account</label
-					>
-					<select
-						id="account"
-						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-						bind:value={accountFilter}
-						onchange={onFilterChange}
-					>
-						<option value="">All Accounts</option>
-						{#each accountOptions as acc}
-							<option value={acc}>{acc}</option>
-						{/each}
-					</select>
-				</div>
-
-				{#if hasActiveFilters}
-					<div class="flex items-end">
-						<button
-							class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
-							onclick={clearFilters}
-						>
-							<X class="h-4 w-4" />
-							Clear
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Cases List -->
-		<div
-			class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
-		>
-			{#if filteredCases.length}
-				<!-- Desktop Table -->
-				<div class="hidden overflow-x-auto lg:block">
-					<table class="w-full">
-						<thead
-							class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50"
-						>
-							<tr>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Case</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Account</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Assigned</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Due Date</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Priority</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Status</th
-								>
-								<th
-									class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-									>Actions</th
-								>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-							{#each filteredCases as c}
-								<tr
-									class="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/50"
-								>
-									<td class="px-6 py-4">
-										<div>
-											<a
-												href={`/cases/${c.id}`}
-												class="font-semibold text-slate-900 transition-colors duration-200 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-											>
-												{c.subject}
-											</a>
-											{#if c.description}
-												<p class="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-													{c.description}
-												</p>
-											{/if}
-										</div>
-									</td>
-									<td class="px-6 py-4">
-										<span class="text-sm text-slate-900 dark:text-white"
-											>{c.account?.name || '-'}</span
-										>
-									</td>
-									<td class="px-6 py-4">
-										<div class="flex items-center gap-2">
-											<div
-												class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
-											>
-												<span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-													{c.owner?.name?.[0] || '?'}
-												</span>
-											</div>
-											<span class="text-sm text-slate-900 dark:text-white"
-												>{c.owner?.name || 'Unassigned'}</span
-											>
-										</div>
-									</td>
-									<td class="px-6 py-4">
-										<span class="text-sm text-slate-900 dark:text-white">
-											{c.dueDate ? new Date(c.dueDate).toLocaleDateString() : '-'}
-										</span>
-									</td>
-									<td class="px-6 py-4">
-										<span
-											class={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${priorityColor(c.priority)}`}
-										>
-											{c.priority}
-										</span>
-									</td>
-									<td class="px-6 py-4">
-										<span
-											class={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor(c.status)}`}
-										>
-											{c.status.replace('_', ' ')}
-										</span>
-									</td>
-									<td class="px-6 py-4 text-right">
-										<a
-											href={`/cases/${c.id}`}
-											class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
-										>
-											View
-										</a>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-
-				<!-- Mobile Cards -->
-				<div class="divide-y divide-slate-200 lg:hidden dark:divide-slate-700">
-					{#each filteredCases as c}
-						<div
-							class="p-4 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/50"
-						>
-							<div class="mb-3 flex items-start justify-between">
-								<a
-									href={`/cases/${c.id}`}
-									class="font-semibold text-slate-900 transition-colors duration-200 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-								>
-									{c.subject}
-								</a>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if columnCounts.visible < columnCounts.total}
 								<span
-									class={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${statusColor(c.status)}`}
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
 								>
-									{c.status.replace('_', ' ')}
+									{columnCounts.visible}/{columnCounts.total}
 								</span>
-							</div>
-
-							{#if c.description}
-								<p class="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
-									{c.description}
-								</p>
 							{/if}
-
-							<div class="mb-4 grid grid-cols-2 gap-3 text-sm">
-								<div>
-									<span class="text-slate-500 dark:text-slate-400">Account:</span>
-									<span class="ml-1 text-slate-900 dark:text-white">{c.account?.name || '-'}</span>
-								</div>
-								<div>
-									<span class="text-slate-500 dark:text-slate-400">Priority:</span>
-									<span
-										class={`ml-1 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${priorityColor(c.priority)}`}
-									>
-										{c.priority}
-									</span>
-								</div>
-								<div>
-									<span class="text-slate-500 dark:text-slate-400">Assigned:</span>
-									<span class="ml-1 text-slate-900 dark:text-white"
-										>{c.owner?.name || 'Unassigned'}</span
-									>
-								</div>
-								<div>
-									<span class="text-slate-500 dark:text-slate-400">Due:</span>
-									<span class="ml-1 text-slate-900 dark:text-white">
-										{c.dueDate ? new Date(c.dueDate).toLocaleDateString() : '-'}
-									</span>
-								</div>
-							</div>
-
-							<div class="flex justify-end">
-								<a
-									href={`/cases/${c.id}`}
-									class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
-								>
-									View Details
-								</a>
-							</div>
-						</div>
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={isColumnVisible(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
 					{/each}
-				</div>
-			{:else}
-				<div class="p-12 text-center">
-					<div
-						class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700"
-					>
-						<Briefcase class="h-8 w-8 text-slate-400 dark:text-slate-500" />
-					</div>
-					<h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-white">No cases found</h3>
-					<p class="mb-6 text-slate-500 dark:text-slate-400">
-						{hasActiveFilters
-							? 'No cases match your current filters.'
-							: 'Get started by creating your first case.'}
-					</p>
-					{#if hasActiveFilters}
-						<button
-							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
-							onclick={clearFilters}
-						>
-							<X class="h-4 w-4" />
-							Clear Filters
-						</button>
-					{:else}
-						<a
-							href="/cases/new"
-							class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-						>
-							<Plus class="h-4 w-4" />
-							Create Case
-						</a>
-					{/if}
-				</div>
-			{/if}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Button onclick={drawer.openCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Case
+			</Button>
 		</div>
-	</div>
+	{/snippet}
+</PageHeader>
+
+<div class="flex-1">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
+		<SearchInput
+			value={filters.search}
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			placeholder="Search cases..."
+		/>
+		<SelectFilter
+			label="Priority"
+			options={priorityFilterOptions}
+			value={filters.priority}
+			onchange={(value) => updateFilters({ ...filters, priority: value })}
+		/>
+		<SelectFilter
+			label="Type"
+			options={typeFilterOptions}
+			value={filters.case_type}
+			onchange={(value) => updateFilters({ ...filters, case_type: value })}
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+	</FilterBar>
+	<CrmTable
+		data={filteredCases}
+		{columns}
+		bind:visibleColumns
+		onRowChange={handleRowChange}
+		onRowClick={(row) => drawer.openDetail(row)}
+	>
+		{#snippet emptyState()}
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
+				<h3 class="text-foreground text-lg font-medium">No cases found</h3>
+			</div>
+		{/snippet}
+	</CrmTable>
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
+
+<!-- Case Drawer -->
+<CrmDrawer
+	bind:open={drawer.detailOpen}
+	onOpenChange={(open) => !open && drawer.closeAll()}
+	data={drawerFormData}
+	columns={drawerColumns}
+	titleKey="subject"
+	titlePlaceholder="Case title"
+	headerLabel={drawer.mode === 'create' ? 'New Case' : 'Case'}
+	onFieldChange={handleDrawerFieldChange}
+	onDelete={handleDelete}
+	onClose={() => drawer.closeAll()}
+	loading={drawer.loading}
+	mode={drawer.mode === 'create' ? 'create' : 'view'}
+>
+	{#snippet activitySection()}
+		{#if drawer.mode !== 'create' && drawer.selected?.comments?.length > 0}
+			<div class="space-y-3">
+				<div class="mb-3 flex items-center gap-2">
+					<Activity class="h-4 w-4 text-gray-400 dark:text-gray-500" />
+					<p class="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+						Activity
+					</p>
+				</div>
+				{#each drawer.selected.comments.slice(0, 5) as comment (comment.id)}
+					<div class="flex gap-3">
+						<div
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+						>
+							<MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="text-sm text-gray-900 dark:text-gray-100">
+								<span class="font-medium">{comment.author?.name || 'Unknown'}</span>
+								{' '}added a note
+							</p>
+							<p class="mt-0.5 text-xs text-gray-500">
+								{new Date(comment.createdAt).toLocaleDateString('en-US', {
+									month: 'short',
+									day: 'numeric',
+									year: 'numeric'
+								})}
+							</p>
+							<p class="mt-1 line-clamp-2 text-sm text-gray-500">{comment.body}</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{:else if drawer.mode !== 'create'}
+			<div class="flex flex-col items-center justify-center py-6 text-center">
+				<MessageSquare class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
+				<p class="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
+			</div>
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawer.mode !== 'create' && drawer.selected}
+			{#if drawerFormData.status === 'Closed'}
+				<Button variant="outline" onclick={handleReopen} disabled={isSubmitting}>Reopen</Button>
+			{:else}
+				<Button variant="outline" onclick={handleClose} disabled={isSubmitting}>Close Case</Button>
+			{/if}
+		{/if}
+		<Button variant="outline" onclick={() => drawer.closeAll()} disabled={isSubmitting}>
+			Cancel
+		</Button>
+		{#if isDrawerDirty || drawer.mode === 'create'}
+			<Button onclick={handleSave} disabled={isSubmitting}>
+				{#if isSubmitting}
+					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					{drawer.mode === 'create' ? 'Creating...' : 'Saving...'}
+				{:else}
+					{drawer.mode === 'create' ? 'Create Case' : 'Save Changes'}
+				{/if}
+			</Button>
+		{/if}
+	{/snippet}
+</CrmDrawer>
+
+<!-- Hidden forms for server actions -->
+<form
+	method="POST"
+	action="?/create"
+	bind:this={createForm}
+	use:enhance={createEnhanceHandler('Case created successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="accountId" value={formState.accountId} />
+	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
+	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
+	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
+	<input type="hidden" name="priority" value={formState.priority} />
+	<input type="hidden" name="caseType" value={formState.caseType} />
+	<input type="hidden" name="dueDate" value={formState.dueDate} />
+</form>
+
+<form
+	method="POST"
+	action="?/update"
+	bind:this={updateForm}
+	use:enhance={createEnhanceHandler('Case updated successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="caseId" value={formState.caseId} />
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
+	<input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
+	<input type="hidden" name="teams" value={JSON.stringify(formState.teams)} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
+	<input type="hidden" name="priority" value={formState.priority} />
+	<input type="hidden" name="caseType" value={formState.caseType} />
+	<input type="hidden" name="status" value={formState.status} />
+	<input type="hidden" name="dueDate" value={formState.dueDate} />
+</form>
+
+<form
+	method="POST"
+	action="?/delete"
+	bind:this={deleteForm}
+	use:enhance={createEnhanceHandler('Case deleted successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="caseId" value={formState.caseId} />
+</form>
+
+<form
+	method="POST"
+	action="?/close"
+	bind:this={closeForm}
+	use:enhance={createEnhanceHandler('Case closed successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="caseId" value={formState.caseId} />
+</form>
+
+<form
+	method="POST"
+	action="?/reopen"
+	bind:this={reopenForm}
+	use:enhance={createEnhanceHandler('Case reopened successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="caseId" value={formState.caseId} />
+</form>

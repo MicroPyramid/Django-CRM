@@ -1,549 +1,1196 @@
 <script>
+	import { enhance } from '$app/forms';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { tick, onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import {
-		Search,
 		Plus,
-		Eye,
-		Edit,
-		Phone,
-		MapPin,
-		Calendar,
-		Users,
-		TrendingUp,
 		Building2,
+		Users,
+		Target,
+		Calendar,
+		Eye,
 		Globe,
+		Phone,
+		Mail,
 		DollarSign,
-		ChevronUp,
-		ChevronDown,
+		Briefcase,
+		MapPin,
+		FileText,
+		Hash,
+		Lock,
+		Unlock,
+		AlertTriangle,
+		Tag,
+		UserPlus,
+		Contact,
+		Banknote,
 		Filter
 	} from '@lucide/svelte';
+	import { PageHeader } from '$lib/components/layout';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
+	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
+	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+	import { CURRENCY_CODES } from '$lib/constants/filters.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
-	export let data;
-
-	let { accounts, pagination } = data;
-	let sortField = $page.url.searchParams.get('sort') || 'name';
-	let sortOrder = $page.url.searchParams.get('order') || 'asc';
-	let isLoading = false;
-	let statusFilter = $page.url.searchParams.get('status') || 'all';
-	let searchQuery = $page.url.searchParams.get('q') || '';
-	/** @type {NodeJS.Timeout | undefined} */
-	let searchTimeout;
+	// Column visibility configuration
+	const STORAGE_KEY = 'accounts-column-config';
 
 	/**
-	 * @param {string} value
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string }} ColumnDef
 	 */
-	function debounceSearch(value) {
-		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => {
-			// eslint-disable-next-line svelte/prefer-svelte-reactivity
-			const params = new URLSearchParams($page.url.searchParams);
-			if (value.trim()) {
-				params.set('q', value.trim());
-			} else {
-				params.delete('q');
+
+	// Industry options for drawer
+	const industryOptions = [
+		{ value: 'ADVERTISING', label: 'Advertising' },
+		{ value: 'AGRICULTURE', label: 'Agriculture' },
+		{ value: 'APPAREL & ACCESSORIES', label: 'Apparel & Accessories' },
+		{ value: 'AUTOMOTIVE', label: 'Automotive' },
+		{ value: 'BANKING', label: 'Banking' },
+		{ value: 'BIOTECHNOLOGY', label: 'Biotechnology' },
+		{ value: 'BUILDING MATERIALS & EQUIPMENT', label: 'Building Materials & Equipment' },
+		{ value: 'CHEMICAL', label: 'Chemical' },
+		{ value: 'COMPUTER', label: 'Computer' },
+		{ value: 'EDUCATION', label: 'Education' },
+		{ value: 'ELECTRONICS', label: 'Electronics' },
+		{ value: 'ENERGY', label: 'Energy' },
+		{ value: 'ENTERTAINMENT & LEISURE', label: 'Entertainment & Leisure' },
+		{ value: 'FINANCE', label: 'Finance' },
+		{ value: 'FOOD & BEVERAGE', label: 'Food & Beverage' },
+		{ value: 'GROCERY', label: 'Grocery' },
+		{ value: 'HEALTHCARE', label: 'Healthcare' },
+		{ value: 'INSURANCE', label: 'Insurance' },
+		{ value: 'LEGAL', label: 'Legal' },
+		{ value: 'MANUFACTURING', label: 'Manufacturing' },
+		{ value: 'PUBLISHING', label: 'Publishing' },
+		{ value: 'REAL ESTATE', label: 'Real Estate' },
+		{ value: 'SERVICE', label: 'Service' },
+		{ value: 'SOFTWARE', label: 'Software' },
+		{ value: 'SPORTS', label: 'Sports' },
+		{ value: 'TECHNOLOGY', label: 'Technology' },
+		{ value: 'TELECOMMUNICATIONS', label: 'Telecommunications' },
+		{ value: 'TELEVISION', label: 'Television' },
+		{ value: 'TRANSPORTATION', label: 'Transportation' },
+		{ value: 'VENTURE CAPITAL', label: 'Venture Capital' }
+	];
+
+	// Country options for drawer
+	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
+
+	// Currency options for select
+	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
+		value: c.value,
+		label: c.label,
+		color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+	}));
+
+	// Base drawer columns (using $derived for dynamic currency symbol)
+	const baseDrawerColumns = $derived([
+		{ key: 'name', label: 'Name', type: 'text' },
+		{
+			key: 'industry',
+			label: 'Industry',
+			type: 'select',
+			icon: Briefcase,
+			options: industryOptions,
+			placeholder: 'Select industry'
+		},
+		{
+			key: 'website',
+			label: 'Website',
+			type: 'text',
+			icon: Globe,
+			placeholder: 'https://example.com'
+		},
+		{ key: 'phone', label: 'Phone', type: 'text', icon: Phone, placeholder: '+1 (555) 000-0000' },
+		{
+			key: 'email',
+			label: 'Email',
+			type: 'email',
+			icon: Mail,
+			placeholder: 'contact@company.com'
+		},
+		{
+			key: 'annualRevenue',
+			label: 'Revenue',
+			type: 'number',
+			icon: DollarSign,
+			placeholder: '0'
+		},
+		{
+			key: 'currency',
+			label: 'Currency',
+			type: 'select',
+			icon: Banknote,
+			options: currencyOptions,
+			placeholder: 'Select currency'
+		},
+		{
+			key: 'numberOfEmployees',
+			label: 'Employees',
+			type: 'number',
+			icon: Users,
+			placeholder: '0'
+		},
+		{
+			key: 'addressLine',
+			label: 'Address',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Street address'
+		},
+		{ key: 'city', label: 'City', type: 'text', placeholder: 'City' },
+		{ key: 'state', label: 'State', type: 'text', placeholder: 'State/Province' },
+		{ key: 'postcode', label: 'Postal Code', type: 'text', placeholder: 'Postal code' },
+		{
+			key: 'country',
+			label: 'Country',
+			type: 'select',
+			options: countryOptions,
+			placeholder: 'Select country'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes about this account...'
+		}
+	]);
+
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{
+			key: 'name',
+			label: 'Account',
+			type: 'text',
+			width: 'w-60',
+			canHide: false,
+			emptyText: 'Untitled'
+		},
+		{ key: 'industry', label: 'Industry', type: 'text', width: 'w-40', emptyText: '' },
+		{
+			key: 'annualRevenue',
+			label: 'Revenue',
+			type: 'number',
+			width: 'w-32',
+			format: (value, row) => formatCurrency(value, row?.currency || 'USD', true)
+		},
+		{
+			key: 'numberOfEmployees',
+			label: 'Employees',
+			type: 'number',
+			width: 'w-28',
+			emptyText: ''
+		},
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			width: 'w-36',
+			editable: false
+		},
+		// Hidden by default
+		{ key: 'website', label: 'Website', type: 'text', width: 'w-44', canHide: true, emptyText: '' }
+	];
+
+	// Default visible columns (excludes website; status removed - using tabs instead)
+	const DEFAULT_VISIBLE_COLUMNS = [
+		'name',
+		'industry',
+		'annualRevenue',
+		'numberOfEmployees',
+		'phone',
+		'createdAt'
+	];
+
+	// Column visibility state - use defaults (excludes website)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
 			}
-			params.set('page', '1');
-			goto(`?${params.toString()}`, { keepFocus: true });
-		}, 300);
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+		}
+	});
+
+	/**
+	 * Toggle column visibility
+	 * @param {string} key
+	 */
+	function toggleColumn(key) {
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
 
-	function updateQueryParams() {
-		isLoading = true;
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('sort', sortField);
-		params.set('order', sortOrder);
-		params.set('status', statusFilter);
-		params.set('page', '1');
+	/** @type {{ data: import('./$types').PageData }} */
+	let { data } = $props();
 
-		goto(`?${params.toString()}`, { keepFocus: true });
+	// Computed values from data
+	const accounts = $derived(data.accounts || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+
+	// M2M options from API
+	const userOptions = $derived((data.users || []).map((u) => ({ value: u.id, label: u.email })));
+	const contactOptions = $derived(
+		(data.contacts || []).map((c) => ({ value: c.id, label: c.name }))
+	);
+	const tagOptions = $derived((data.tags || []).map((t) => ({ value: t.id, label: t.name })));
+
+	// Drawer columns with dynamic M2M options
+	const drawerColumns = $derived([
+		...baseDrawerColumns,
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: UserPlus,
+			options: userOptions,
+			placeholder: 'Select users',
+			emptyText: 'Not assigned'
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: Contact,
+			options: contactOptions,
+			placeholder: 'Link contacts',
+			emptyText: 'No contacts'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: tagOptions,
+			placeholder: 'Add tags',
+			emptyText: 'No tags'
+		}
+	]);
+
+	// Drawer state - simplified for unified drawer
+	let drawerOpen = $state(false);
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {any} */
+	let selectedAccount = $state(null);
+	let drawerLoading = $state(false);
+	let isSubmitting = $state(false);
+
+	// Empty account template for create mode
+	const emptyAccount = {
+		name: '',
+		industry: '',
+		website: '',
+		phone: '',
+		email: '',
+		description: '',
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		annualRevenue: '',
+		currency: '',
+		numberOfEmployees: '',
+		assignedTo: [],
+		contacts: [],
+		tags: []
+	};
+
+	// Drawer form data - mutable copy of selectedAccount for editing
+	let drawerFormData = $state({ ...emptyAccount });
+
+	// Reset form data when account changes or drawer opens
+	$effect(() => {
+		if (drawerOpen) {
+			if (drawerMode === 'create') {
+				drawerFormData = { ...emptyAccount, currency: $orgSettings.default_currency || 'USD' };
+			} else if (selectedAccount) {
+				drawerFormData = {
+					...selectedAccount,
+					currency: selectedAccount.currency || $orgSettings.default_currency || 'USD'
+				};
+			}
+		}
+	});
+
+	// Check if account is closed (inactive)
+	const isClosed = $derived(selectedAccount?.isActive === false);
+
+	// URL sync for drawer state
+	$effect(() => {
+		const viewId = $page.url.searchParams.get('view');
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create') {
+			selectedAccount = null;
+			drawerMode = 'create';
+			drawerOpen = true;
+		} else if (viewId && accounts.length > 0) {
+			const account = accounts.find((a) => a.id === viewId);
+			if (account) {
+				selectedAccount = account;
+				drawerMode = 'view';
+				drawerOpen = true;
+			}
+		}
+	});
+
+	/**
+	 * Update URL with drawer state
+	 * @param {string | null} viewId
+	 * @param {string | null} action
+	 * @returns {Promise<void>}
+	 */
+	async function updateUrl(viewId, action) {
+		const url = new URL($page.url);
+		if (viewId) {
+			url.searchParams.set('view', viewId);
+			url.searchParams.delete('action');
+		} else if (action) {
+			url.searchParams.set('action', action);
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.delete('view');
+			url.searchParams.delete('action');
+		}
+		await goto(url.toString(), { replaceState: true, keepFocus: true });
 	}
 
 	/**
+	 * Open account detail drawer
+	 * @param {any} account
+	 */
+	function openAccount(account) {
+		selectedAccount = account;
+		drawerMode = 'view';
+		drawerOpen = true;
+		updateUrl(account.id, null);
+	}
+
+	/**
+	 * Open create drawer
+	 */
+	function openCreate() {
+		selectedAccount = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+		updateUrl(null, 'create');
+	}
+
+	/**
+	 * Close drawer
+	 * @returns {Promise<void>}
+	 */
+	async function closeDrawer() {
+		drawerOpen = false;
+		await updateUrl(null, null);
+	}
+
+	/**
+	 * Handle drawer open change
+	 * @param {boolean} open
+	 */
+	function handleDrawerChange(open) {
+		drawerOpen = open;
+		if (!open) {
+			updateUrl(null, null);
+		}
+	}
+
+	// Get unique industries from accounts for filter options
+	const industries = $derived.by(() => {
+		const uniqueIndustries = [...new Set(accounts.map((a) => a.industry).filter(Boolean))];
+		return uniqueIndustries.sort();
+	});
+
+	// Industry options for filter
+	const industryFilterOptions = $derived([
+		{ value: '', label: 'All Industries' },
+		...industries.map((ind) => ({ value: ind, label: ind }))
+	]);
+
+	// URL-based filter state from server
+	const filters = $derived(data.filters);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.industry) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
+	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params (preserve view/action)
+		['search', 'industry', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach(
+			(key) => url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
 	 * @param {number} newPage
 	 */
-	function changePage(newPage) {
-		if (newPage < 1 || newPage > pagination.totalPages) return;
-
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('page', newPage.toString());
-		goto(`?${params.toString()}`, { keepFocus: true });
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
 	/**
-	 * @param {string} field
+	 * Handle limit change
+	 * @param {number} newLimit
 	 */
-	function toggleSort(field) {
-		if (sortField === field) {
-			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortField = field;
-			sortOrder = 'asc';
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	// Accounts are already filtered server-side, apply chip filter for active/closed
+	let statusChipFilter = $state('ALL');
+
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
+
+	const filteredAccounts = $derived.by(() => {
+		if (statusChipFilter === 'active') {
+			return accounts.filter((a) => a.isActive !== false);
+		} else if (statusChipFilter === 'closed') {
+			return accounts.filter((a) => a.isActive === false);
 		}
-		updateQueryParams();
+		return accounts;
+	});
+
+	// Visible column count for the toggle button
+	const visibleColumnCount = $derived(visibleColumns.length);
+	const totalColumnCount = $derived(columns.length);
+
+	// Status counts for filter chips
+	const activeCount = $derived(accounts.filter((a) => a.isActive !== false).length);
+	const closedCount = $derived(accounts.filter((a) => a.isActive === false).length);
+
+	// Form references for server actions
+	/** @type {HTMLFormElement} */
+	let createForm;
+	/** @type {HTMLFormElement} */
+	let updateForm;
+	/** @type {HTMLFormElement} */
+	let deleteForm;
+	/** @type {HTMLFormElement} */
+	let deactivateForm;
+	/** @type {HTMLFormElement} */
+	let activateForm;
+
+	// Form data state - aligned with API fields
+	let formState = $state({
+		accountId: '',
+		name: '',
+		email: '',
+		phone: '',
+		website: '',
+		industry: '',
+		description: '',
+		address_line: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		annual_revenue: '',
+		currency: '',
+		number_of_employees: '',
+		assigned_to: '[]',
+		contacts: '[]',
+		tags: '[]'
+	});
+
+	/**
+	 * Get initials for avatar
+	 * @param {any} account
+	 */
+	function getAccountInitials(account) {
+		return getInitials(account.name, 1);
 	}
 
 	/**
-	 * @param {number | null | undefined} amount
+	 * Handle field change from CrmDrawer - just updates local state
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	function formatCurrency(amount) {
-		if (!amount) return '-';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
+		drawerFormData = { ...drawerFormData, [field]: value };
 	}
 
 	/**
-	 * @param {string | Date | null | undefined} date
+	 * Handle save for view/edit mode
 	 */
-	function formatDate(date) {
-		if (!date) return '-';
-		return new Intl.DateTimeFormat('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		}).format(new Date(date));
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedAccount || isClosed) return;
+
+		isSubmitting = true;
+		formState.accountId = selectedAccount.id;
+		formState.name = drawerFormData.name || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.website = drawerFormData.website || '';
+		formState.industry = drawerFormData.industry || '';
+		formState.description = drawerFormData.description || '';
+		formState.address_line = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.currency = drawerFormData.currency || '';
+		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
+		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
+		formState.tags = JSON.stringify(drawerFormData.tags || []);
+
+		await tick();
+		updateForm.requestSubmit();
 	}
 
-	// Update data when it changes from the server
-	$: {
-		accounts = data.accounts;
-		pagination = data.pagination;
-		isLoading = false;
+	/**
+	 * Handle save for create mode
+	 */
+	async function handleDrawerSave() {
+		if (drawerMode !== 'create') return;
+
+		isSubmitting = true;
+		formState.name = drawerFormData.name || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.website = drawerFormData.website || '';
+		formState.industry = drawerFormData.industry || '';
+		formState.description = drawerFormData.description || '';
+		formState.address_line = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.annual_revenue = drawerFormData.annualRevenue?.toString() || '';
+		formState.currency = drawerFormData.currency || '';
+		formState.number_of_employees = drawerFormData.numberOfEmployees?.toString() || '';
+		formState.assigned_to = JSON.stringify(drawerFormData.assignedTo || []);
+		formState.contacts = JSON.stringify(drawerFormData.contacts || []);
+		formState.tags = JSON.stringify(drawerFormData.tags || []);
+
+		await tick();
+		createForm.requestSubmit();
+	}
+
+	/**
+	 * Handle account delete
+	 */
+	async function handleDelete() {
+		if (!selectedAccount) return;
+		if (!confirm(`Are you sure you want to delete "${selectedAccount.name}"?`)) return;
+
+		formState.accountId = selectedAccount.id;
+		await tick();
+		deleteForm.requestSubmit();
+	}
+
+	/**
+	 * Handle account close (deactivate)
+	 */
+	async function handleClose() {
+		if (!selectedAccount) return;
+
+		formState.accountId = selectedAccount.id;
+		await tick();
+		deactivateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle account reopen (activate)
+	 */
+	async function handleReopen() {
+		if (!selectedAccount) return;
+
+		formState.accountId = selectedAccount.id;
+		await tick();
+		activateForm.requestSubmit();
+	}
+
+	/**
+	 * Create enhance handler for form actions
+	 * @param {string} successMessage
+	 * @param {boolean} shouldCloseDrawer
+	 */
+	function createEnhanceHandler(successMessage, shouldCloseDrawer = false) {
+		return () => {
+			return async ({ result }) => {
+				isSubmitting = false;
+				if (result.type === 'success') {
+					toast.success(successMessage);
+					if (shouldCloseDrawer) {
+						await closeDrawer();
+					}
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Operation failed');
+				} else if (result.type === 'error') {
+					toast.error('An unexpected error occurred');
+				}
+			};
+		};
+	}
+
+	/**
+	 * Navigate to add contact
+	 */
+	function handleAddContact() {
+		if (selectedAccount) {
+			goto(`/contacts?action=create&accountId=${selectedAccount.id}`);
+		}
+	}
+
+	/**
+	 * Navigate to add opportunity
+	 */
+	function handleAddOpportunity() {
+		if (selectedAccount) {
+			goto(`/opportunities/new?accountId=${selectedAccount.id}`);
+		}
 	}
 </script>
 
-<div class="min-h-screen bg-white p-6 dark:bg-gray-900">
-	<!-- Header Section -->
-	<div class="mb-8">
-		<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-			<div>
-				<h1 class="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Accounts</h1>
-				<p class="text-gray-600 dark:text-gray-400">
-					Manage all your customer accounts and business relationships
-				</p>
-			</div>
+<svelte:head>
+	<title>Accounts - BottleCRM</title>
+</svelte:head>
 
-			<!-- Action Bar -->
-			<div class="flex flex-col gap-3 sm:flex-row">
-				<!-- Search -->
-				<div class="relative">
-					<label for="accounts-search" class="sr-only">Search accounts</label>
-					<Search
-						class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400"
-					/>
-					<input
-						type="text"
-						id="accounts-search"
-						placeholder="Search accounts..."
-						class="min-w-[250px] rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-sm text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-						bind:value={searchQuery}
-						oninput={(e) => debounceSearch(/** @type {HTMLInputElement} */ (e.target).value)}
-					/>
-				</div>
-
-				<!-- Status Filter -->
-				<div class="relative">
-					<label for="accounts-status-filter" class="sr-only">Filter accounts by status</label>
-					<Filter
-						class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400"
-					/>
-					<select
-						id="accounts-status-filter"
-						class="min-w-[120px] appearance-none rounded-lg border border-gray-300 bg-white py-2.5 pr-8 pl-10 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-						bind:value={statusFilter}
-						onchange={updateQueryParams}
+<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
-						<option value="all">All Status</option>
-						<option value="open">Open</option>
-						<option value="closed">Closed</option>
-					</select>
-				</div>
-
-				<!-- New Account Button -->
-				<a
-					href="/accounts/new"
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+						{accounts.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'active')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'active'
+						? 'bg-emerald-600 text-white dark:bg-emerald-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
-					<Plus class="h-4 w-4" />
-					New Account
-				</a>
+					Active
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
+							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{activeCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'closed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'closed'
+						? 'bg-gray-600 text-white dark:bg-gray-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Closed
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{closedCount}
+					</span>
+				</button>
 			</div>
-		</div>
-	</div>
 
-	<!-- Stats Cards -->
-	<div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-		<div
-			class="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4 dark:border-blue-800 dark:from-blue-900/20 dark:to-blue-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-blue-600 p-2">
-					<Building2 class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-blue-600 dark:text-blue-400">Total Accounts</p>
-					<p class="text-2xl font-bold text-blue-900 dark:text-blue-100">{pagination.total}</p>
-				</div>
-			</div>
-		</div>
+			<div class="bg-border mx-1 h-6 w-px"></div>
 
-		<div
-			class="rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-green-100 p-4 dark:border-green-800 dark:from-green-900/20 dark:to-green-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-green-600 p-2">
-					<TrendingUp class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-green-600 dark:text-green-400">Active</p>
-					<p class="text-2xl font-bold text-green-900 dark:text-green-100">
-						{accounts.filter((a) => a.isActive).length}
-					</p>
-				</div>
-			</div>
-		</div>
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
 
-		<div
-			class="rounded-lg border border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100 p-4 dark:border-orange-800 dark:from-orange-900/20 dark:to-orange-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-orange-600 p-2">
-					<Users class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-orange-600 dark:text-orange-400">Total Contacts</p>
-					<p class="text-2xl font-bold text-orange-900 dark:text-orange-100">
-						{accounts.reduce((sum, a) => sum + (a.contactCount || 0), 0)}
-					</p>
-				</div>
-			</div>
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumnCount < totalColumnCount}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumnCount}/{totalColumnCount}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+			<Button onclick={openCreate} disabled={false}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Account
+			</Button>
 		</div>
+	{/snippet}
+</PageHeader>
 
-		<div
-			class="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 p-4 dark:border-purple-800 dark:from-purple-900/20 dark:to-purple-800/20"
-		>
-			<div class="flex items-center gap-3">
-				<div class="rounded-lg bg-purple-600 p-2">
-					<DollarSign class="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-purple-600 dark:text-purple-400">Opportunities</p>
-					<p class="text-2xl font-bold text-purple-900 dark:text-purple-100">
-						{accounts.reduce((sum, a) => sum + (a.opportunityCount || 0), 0)}
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Accounts Table -->
-	<div
-		class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+<div class="flex-1">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
 	>
-		<div class="overflow-x-auto">
-			<table class="w-full">
-				<thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700">
-					<tr>
-						<th
-							scope="col"
-							class="cursor-pointer px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600"
-							onclick={() => toggleSort('name')}
-						>
-							<div class="flex items-center gap-2">
-								<Building2 class="h-4 w-4" />
-								Account Name
-								{#if sortField === 'name'}
-									{#if sortOrder === 'asc'}
-										<ChevronUp class="h-4 w-4" />
-									{:else}
-										<ChevronDown class="h-4 w-4" />
-									{/if}
-								{/if}
-							</div>
-						</th>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:table-cell dark:text-gray-400"
-							>Industry</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase md:table-cell dark:text-gray-400"
-							>Type</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase lg:table-cell dark:text-gray-400"
-							>Contact Info</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase xl:table-cell dark:text-gray-400"
-							>Revenue</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase md:table-cell dark:text-gray-400"
-							>Relations</th
-						>
-						<th
-							scope="col"
-							class="hidden px-6 py-4 text-left text-xs font-medium tracking-wider text-gray-500 uppercase lg:table-cell dark:text-gray-400"
-							>Created</th
-						>
-						<th
-							scope="col"
-							class="px-6 py-4 text-right text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>Actions</th
-						>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-					{#if isLoading}
-						<tr>
-							<td colspan="8" class="px-6 py-16 text-center">
-								<div class="flex flex-col items-center gap-4">
-									<div
-										class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
-									></div>
-									<p class="text-gray-500 dark:text-gray-400">Loading accounts...</p>
-								</div>
-							</td>
-						</tr>
-					{:else if accounts.length === 0}
-						<tr>
-							<td colspan="8" class="px-6 py-16 text-center">
-								<div class="flex flex-col items-center gap-4">
-									<Building2 class="h-12 w-12 text-gray-400" />
-									<div>
-										<p class="text-lg font-medium text-gray-500 dark:text-gray-400">
-											No accounts found
-										</p>
-										<p class="mt-1 text-sm text-gray-400 dark:text-gray-500">
-											Get started by creating your first account
-										</p>
-									</div>
-									<a
-										href="/accounts/new"
-										class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-									>
-										<Plus class="h-4 w-4" />
-										Create Account
-									</a>
-								</div>
-							</td>
-						</tr>
-					{:else}
-						{#each accounts as account (account.id)}
-							<tr
-								class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 {account.closedAt
-									? 'opacity-60'
-									: ''}"
-							>
-								<td class="px-6 py-4">
-									<div class="flex items-center gap-3">
-										<div class="flex-shrink-0">
-											<div
-												class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 font-semibold text-white"
-											>
-												{account.name?.[0]?.toUpperCase() || 'A'}
-											</div>
-										</div>
-										<div class="min-w-0 flex-1">
-											<a href="/accounts/{account.id}" class="group block">
-												<p
-													class="text-sm font-semibold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400"
-												>
-													{account.name}
-												</p>
-												{#if account.isActive}
-													<span
-														class="mt-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:text-green-400"
-													>
-														Active
-													</span>
-												{:else}
-													<div class="mt-1">
-														<span
-															class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/20 dark:text-red-400"
-														>
-															Closed
-														</span>
-														{#if account.closedAt}
-															<p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-																{formatDate(account.closedAt)}
-															</p>
-														{/if}
-													</div>
-												{/if}
-											</a>
-										</div>
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 sm:table-cell">
-									<span class="text-sm text-gray-600 dark:text-gray-300"
-										>{account.industry || '-'}</span
-									>
-								</td>
-								<td class="hidden px-6 py-4 md:table-cell">
-									<span
-										class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-									>
-										{account.type || 'Customer'}
-									</span>
-								</td>
-								<td class="hidden px-6 py-4 lg:table-cell">
-									<div class="space-y-1">
-										{#if account.website}
-											<div class="flex items-center gap-1 text-sm">
-												<Globe class="h-3 w-3 text-gray-400" />
-												<a
-													href={account.website.startsWith('http')
-														? account.website
-														: `https://${account.website}`}
-													target="_blank"
-													rel="noopener noreferrer"
-													class="max-w-[150px] truncate text-blue-600 hover:underline dark:text-blue-400"
-												>
-													{account.website.replace(/^https?:\/\//, '')}
-												</a>
-											</div>
-										{/if}
-										{#if account.phone}
-											<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-												<Phone class="h-3 w-3 text-gray-400" />
-												<span class="truncate">{account.phone}</span>
-											</div>
-										{/if}
-										{#if account.city || account.state}
-											<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-												<MapPin class="h-3 w-3 text-gray-400" />
-												<span class="truncate"
-													>{[account.city, account.state].filter(Boolean).join(', ')}</span
-												>
-											</div>
-										{/if}
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 xl:table-cell">
-									<div class="text-sm">
-										{#if account.annualRevenue}
-											<span class="font-medium text-gray-900 dark:text-white"
-												>{formatCurrency(account.annualRevenue)}</span
-											>
-											<p class="text-xs text-gray-500">Annual Revenue</p>
-										{:else}
-											<span class="text-gray-400">-</span>
-										{/if}
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 md:table-cell">
-									<div class="flex items-center gap-4">
-										<div class="flex items-center gap-1">
-											<Users class="h-4 w-4 text-gray-400" />
-											<span class="text-sm font-medium text-gray-900 dark:text-white"
-												>{account.contactCount || 0}</span
-											>
-										</div>
-										<div class="flex items-center gap-1">
-											<TrendingUp class="h-4 w-4 text-gray-400" />
-											<span class="text-sm font-medium text-gray-900 dark:text-white"
-												>{account.opportunityCount || 0}</span
-											>
-										</div>
-									</div>
-								</td>
-								<td class="hidden px-6 py-4 lg:table-cell">
-									<div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-										<Calendar class="h-3 w-3 text-gray-400" />
-										<span>{formatDate(account.createdAt)}</span>
-									</div>
-								</td>
-								<td class="px-6 py-4 text-right">
-									<div class="flex items-center justify-end gap-2">
-										<a
-											href="/accounts/{account.id}"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-											title="View Account"
-										>
-											<Eye class="h-4 w-4" />
-										</a>
-										<a
-											href="/opportunities/new?accountId={account.id}"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-green-600 dark:hover:bg-gray-700 dark:hover:text-green-400"
-											title="Add Opportunity"
-										>
-											<Plus class="h-4 w-4" />
-										</a>
-										<a
-											href="/accounts/{account.id}/edit"
-											class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-700 dark:hover:text-yellow-400"
-											title="Edit Account"
-										>
-											<Edit class="h-4 w-4" />
-										</a>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
+		<SearchInput
+			value={filters.search}
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			placeholder="Search accounts..."
+		/>
+		<SelectFilter
+			label="Industry"
+			options={industryFilterOptions}
+			value={filters.industry}
+			onchange={(value) => updateFilters({ ...filters, industry: value })}
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+	</FilterBar>
+	<!-- Accounts Table -->
+	{#if filteredAccounts.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
+			<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
 		</div>
-	</div>
+	{:else}
+		<!-- Desktop Table using CrmTable -->
+		<div class="hidden md:block">
+			<CrmTable
+				data={filteredAccounts}
+				{columns}
+				bind:visibleColumns
+				onRowClick={(row) => openAccount(row)}
+			>
+				{#snippet emptyState()}
+					<div class="flex flex-col items-center justify-center py-16 text-center">
+						<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
+						<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+					</div>
+				{/snippet}
+			</CrmTable>
+		</div>
 
-	<!-- Pagination -->
-	{#if pagination.totalPages > 1}
-		<div class="flex flex-col items-center justify-between gap-4 pt-6 sm:flex-row">
-			<div class="text-sm text-gray-700 dark:text-gray-300">
-				Showing <span class="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to
-				<span class="font-medium"
-					>{Math.min(pagination.page * pagination.limit, pagination.total)}</span
-				>
-				of
-				<span class="font-medium">{pagination.total}</span> accounts
-			</div>
-			<div class="flex items-center gap-2">
+		<!-- Mobile Card View -->
+		<div class="divide-y md:hidden dark:divide-gray-800">
+			{#each filteredAccounts as account (account.id)}
 				<button
-					onclick={() => changePage(1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === 1}
+					type="button"
+					class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 {!account.isActive
+						? 'opacity-60'
+						: ''}"
+					onclick={() => openAccount(account)}
 				>
-					First
+					<div
+						class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+					>
+						{getAccountInitials(account)}
+					</div>
+					<div class="min-w-0 flex-1">
+						<div class="flex items-start justify-between gap-2">
+							<div>
+								<p class="font-medium text-gray-900 dark:text-gray-100">{account.name}</p>
+								<div class="mt-1 flex items-center gap-1.5">
+									{#if account.isActive !== false}
+										<span
+											class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+										>
+											Active
+										</span>
+									{:else}
+										<span
+											class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+										>
+											Closed
+										</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+						<div
+							class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400"
+						>
+							{#if account.industry}
+								<span>{account.industry}</span>
+							{/if}
+							<div class="flex items-center gap-1">
+								<Users class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+								<span>{account.contactCount || 0}</span>
+							</div>
+							<div class="flex items-center gap-1">
+								<Target class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+								<span>{account.opportunityCount || 0}</span>
+							</div>
+							<div class="flex items-center gap-1">
+								<Calendar class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+								<span>{formatRelativeDate(account.createdAt)}</span>
+							</div>
+						</div>
+					</div>
 				</button>
-				<button
-					onclick={() => changePage(pagination.page - 1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === 1}
-				>
-					Previous
-				</button>
-				<span
-					class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-gray-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-white"
-				>
-					{pagination.page} of {pagination.totalPages}
-				</span>
-				<button
-					onclick={() => changePage(pagination.page + 1)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === pagination.totalPages}
-				>
-					Next
-				</button>
-				<button
-					onclick={() => changePage(pagination.totalPages)}
-					class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					disabled={pagination.page === pagination.totalPages}
-				>
-					Last
-				</button>
-			</div>
+			{/each}
 		</div>
 	{/if}
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
+
+<!-- Account Drawer -->
+<CrmDrawer
+	bind:open={drawerOpen}
+	onOpenChange={handleDrawerChange}
+	data={drawerFormData}
+	columns={drawerColumns}
+	titleKey="name"
+	titlePlaceholder="Account name"
+	headerLabel="Account"
+	mode={drawerMode}
+	loading={drawerLoading || isSubmitting}
+	onFieldChange={handleDrawerFieldChange}
+	onDelete={handleDelete}
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		<!-- Closed account warning -->
+		{#if isClosed && drawerMode !== 'create'}
+			<div
+				class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/30"
+			>
+				<div class="flex gap-2">
+					<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+					<div>
+						<p class="text-sm font-medium text-red-700 dark:text-red-400">This account is closed</p>
+						<p class="mt-0.5 text-xs text-red-600 dark:text-red-500">
+							Reopen the account to make changes
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Related entity stats (view mode only) -->
+		{#if drawerMode !== 'create' && selectedAccount}
+			<div class="mb-4">
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Related
+				</p>
+				<div class="grid grid-cols-3 gap-2">
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
+							<Users class="h-3.5 w-3.5" />
+						</div>
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+							{selectedAccount.contactCount || 0}
+						</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Contacts</p>
+					</div>
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
+							<Target class="h-3.5 w-3.5" />
+						</div>
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+							{selectedAccount.opportunityCount || 0}
+						</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Opportunities</p>
+					</div>
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
+							<AlertTriangle class="h-3.5 w-3.5" />
+						</div>
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+							{selectedAccount.caseCount || 0}
+						</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Cases</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Quick actions (for active accounts only) -->
+			{#if !isClosed}
+				<div class="mb-4">
+					<p
+						class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+					>
+						Quick Actions
+					</p>
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" onclick={handleAddContact} class="flex-1">
+							<Users class="mr-1.5 h-3.5 w-3.5" />
+							Add Contact
+						</Button>
+						<Button variant="outline" size="sm" onclick={handleAddOpportunity} class="flex-1">
+							<Target class="mr-1.5 h-3.5 w-3.5" />
+							Add Opportunity
+						</Button>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Metadata -->
+			<div>
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
+				<div class="grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedAccount.owner?.name || 'Unassigned'}
+						</p>
+					</div>
+					<div>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{formatRelativeDate(selectedAccount.createdAt)}
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button onclick={handleDrawerSave} disabled={isSubmitting || !drawerFormData.name?.trim()}>
+				{isSubmitting ? 'Creating...' : 'Create Account'}
+			</Button>
+		{:else if isClosed}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				variant="outline"
+				class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+				onclick={handleReopen}
+				disabled={isSubmitting}
+			>
+				<Unlock class="mr-1.5 h-4 w-4" />
+				Reopen Account
+			</Button>
+		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				variant="ghost"
+				class="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+				onclick={handleClose}
+				disabled={isSubmitting}
+			>
+				<Lock class="mr-1.5 h-4 w-4" />
+				Close Account
+			</Button>
+			<Button onclick={handleDrawerUpdate} disabled={isSubmitting || !drawerFormData.name?.trim()}>
+				{isSubmitting ? 'Saving...' : 'Save'}
+			</Button>
+		{/if}
+	{/snippet}
+</CrmDrawer>
+
+<!-- Hidden forms for server actions -->
+<form
+	method="POST"
+	action="?/create"
+	bind:this={createForm}
+	use:enhance={createEnhanceHandler('Account created successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="name" value={formState.name} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="address_line" value={formState.address_line} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="currency" value={formState.currency} />
+	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
+	<input type="hidden" name="contacts" value={formState.contacts} />
+	<input type="hidden" name="tags" value={formState.tags} />
+</form>
+
+<form
+	method="POST"
+	action="?/update"
+	bind:this={updateForm}
+	use:enhance={createEnhanceHandler('Account updated successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+	<input type="hidden" name="name" value={formState.name} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="website" value={formState.website} />
+	<input type="hidden" name="industry" value={formState.industry} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="address_line" value={formState.address_line} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="annual_revenue" value={formState.annual_revenue} />
+	<input type="hidden" name="currency" value={formState.currency} />
+	<input type="hidden" name="number_of_employees" value={formState.number_of_employees} />
+	<input type="hidden" name="assigned_to" value={formState.assigned_to} />
+	<input type="hidden" name="contacts" value={formState.contacts} />
+	<input type="hidden" name="tags" value={formState.tags} />
+</form>
+
+<form
+	method="POST"
+	action="?/delete"
+	bind:this={deleteForm}
+	use:enhance={createEnhanceHandler('Account deleted successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+</form>
+
+<form
+	method="POST"
+	action="?/deactivate"
+	bind:this={deactivateForm}
+	use:enhance={createEnhanceHandler('Account closed successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+</form>
+
+<form
+	method="POST"
+	action="?/activate"
+	bind:this={activateForm}
+	use:enhance={createEnhanceHandler('Account reopened successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="accountId" value={formState.accountId} />
+</form>

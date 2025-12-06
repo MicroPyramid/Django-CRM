@@ -4,14 +4,16 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 from common.models import Profile
+from common.tasks import set_rls_context
 from opportunity.models import Opportunity
 
 app = Celery("redis://")
 
 
 @app.task
-def send_email_to_assigned_user(recipients, opportunity_id):
-    """Send Mail To Users When they are assigned to a opportunity"""
+def send_email_to_assigned_user(recipients, opportunity_id, org_id):
+    """Send Mail To Users When they are assigned to an opportunity"""
+    set_rls_context(org_id)
     opportunity = Opportunity.objects.get(id=opportunity_id)
     created_by = opportunity.created_by
     for user in recipients:

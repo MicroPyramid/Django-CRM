@@ -262,40 +262,6 @@ def resend_activation_link_to_user(
 
 
 @app.task
-def send_email_to_reset_password(user_email):
-    """Send Mail To Users When their account is created"""
-    user = User.objects.filter(email=user_email).first()
-    context = {}
-    context["user_email"] = user_email
-    context["url"] = settings.DOMAIN_NAME
-    context["uid"] = (urlsafe_base64_encode(force_bytes(user.pk)),)
-    context["token"] = default_token_generator.make_token(user)
-    context["token"] = context["token"]
-    context["complete_url"] = context[
-        "url"
-    ] + "/auth/reset-password/{uidb64}/{token}/".format(
-        uidb64=context["uid"][0], token=context["token"]
-    )
-    subject = "Set a New Password"
-    recipients = []
-    recipients.append(user_email)
-    html_content = render_to_string(
-        "registration/password_reset_email.html", context=context
-    )
-    if recipients:
-        msg = EmailMessage(
-            subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients
-        )
-        msg.content_subtype = "html"
-        msg.send()
-
-
-# =============================================================================
-# Teams Celery Tasks (merged from teams app)
-# =============================================================================
-
-
-@app.task
 def remove_users(removed_users_list, team_id, org_id=None):
     # Set RLS context for org-scoped queries
     set_rls_context(org_id)
@@ -310,43 +276,36 @@ def remove_users(removed_users_list, team_id, org_id=None):
                 for user in users_list:
                     account.assigned_to.remove(user)
 
-            # for contacts
             contacts = team.contact_teams.all()
             for contact in contacts:
                 for user in users_list:
                     contact.assigned_to.remove(user)
 
-            # for leads
             leads = team.lead_teams.all()
             for lead in leads:
                 for user in users_list:
                     lead.assigned_to.remove(user)
 
-            # for opportunities
             opportunities = team.oppurtunity_teams.all()
             for opportunity in opportunities:
                 for user in users_list:
                     opportunity.assigned_to.remove(user)
 
-            # for cases
             cases = team.cases_teams.all()
             for case in cases:
                 for user in users_list:
                     case.assigned_to.remove(user)
 
-            # for documents
             docs = team.document_teams.all()
             for doc in docs:
                 for user in users_list:
                     doc.shared_to.remove(user)
 
-            # for tasks
             tasks = team.tasks_teams.all()
             for task in tasks:
                 for user in users_list:
                     task.assigned_to.remove(user)
 
-            # for invoices
             invoices = team.invoices_teams.all()
             for invoice in invoices:
                 for user in users_list:
@@ -362,7 +321,7 @@ def update_team_users(team_id, org_id=None):
     team = Teams.objects.filter(id=team_id).first()
     if team:
         teams_members = team.users.all()
-        # for accounts
+
         accounts = team.account_teams.all()
         for account in accounts:
             account_assigned_to_users = account.assigned_to.all()
@@ -370,7 +329,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in account_assigned_to_users:
                     account.assigned_to.add(team_member)
 
-        # for contacts
         contacts = team.contact_teams.all()
         for contact in contacts:
             contact_assigned_to_users = contact.assigned_to.all()
@@ -378,7 +336,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in contact_assigned_to_users:
                     contact.assigned_to.add(team_member)
 
-        # for leads
         leads = team.lead_teams.all()
         for lead in leads:
             lead_assigned_to_users = lead.assigned_to.all()
@@ -386,7 +343,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in lead_assigned_to_users:
                     lead.assigned_to.add(team_member)
 
-        # for opportunities
         opportunities = team.oppurtunity_teams.all()
         for opportunity in opportunities:
             opportunity_assigned_to_users = opportunity.assigned_to.all()
@@ -394,7 +350,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in opportunity_assigned_to_users:
                     opportunity.assigned_to.add(team_member)
 
-        # for cases
         cases = team.cases_teams.all()
         for case in cases:
             case_assigned_to_users = case.assigned_to.all()
@@ -402,7 +357,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in case_assigned_to_users:
                     case.assigned_to.add(team_member)
 
-        # for documents
         docs = team.document_teams.all()
         for doc in docs:
             doc_assigned_to_users = doc.shared_to.all()
@@ -410,7 +364,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in doc_assigned_to_users:
                     doc.shared_to.add(team_member)
 
-        # for tasks
         tasks = team.tasks_teams.all()
         for task in tasks:
             task_assigned_to_users = task.assigned_to.all()
@@ -418,7 +371,6 @@ def update_team_users(team_id, org_id=None):
                 if team_member not in task_assigned_to_users:
                     task.assigned_to.add(team_member)
 
-        # for invoices
         invoices = team.invoices_teams.all()
         for invoice in invoices:
             invoice_assigned_to_users = invoice.assigned_to.all()

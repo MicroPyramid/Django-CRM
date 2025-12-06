@@ -1,101 +1,377 @@
 /**
- * Tasks Main Page (Kanban Boards List) - API Version
+ * Tasks List Page - API Version
  *
  * Migrated from Prisma to Django REST API
- * Displays user's Kanban boards and allows creating new boards
+ * Django endpoint: GET /api/tasks/
  *
- * ⚠️ NOTE: This page requires Django Boards API (Phase 3 feature)
- * Django Endpoints (to be implemented):
- * - GET  /api/boards/                  - List user's boards
- * - POST /api/boards/                  - Create new board with default columns
- *
- * Until boards API is implemented, this returns empty list.
+ * Task API fields:
+ * - title, status, priority, due_date, description, account
+ * - contacts (M2M), teams (M2M), assigned_to (M2M)
+ * - created_by, created_at, updated_at
  */
 
-import { fail } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { error } from '@sveltejs/kit';
+import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ locals, cookies }) {
+export async function load({ locals, cookies, url }) {
 	const user = locals.user;
 	const org = locals.org;
 
-	try {
-		// Fetch boards from Django API (Phase 3 feature - now implemented)
-		const data = await apiRequest('/boards/', {}, { cookies, org });
+	if (!org) {
+		throw error(401, 'Organization context required');
+	}
 
-		// Transform Django response to match Prisma format
-		const boards = (data.results || []).map((board) => ({
-			id: board.id,
-			name: board.name,
-			createdAt: new Date(board.created_at),
-			ownerId: board.owner?.id || user.id,
-			// Additional fields from Django
-			isArchived: board.is_archived || false,
-			_count: {
-				columns: board.columns?.length || 0,
-				members: board.members?.length || 0
-			}
+	// Parse pagination params from URL
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '10');
+
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		status: url.searchParams.get('status') || '',
+		priority: url.searchParams.get('priority') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		due_date_gte: url.searchParams.get('due_date_gte') || '',
+		due_date_lte: url.searchParams.get('due_date_lte') || ''
+	};
+
+	try {
+		// Build query parameters for tasks
+		const queryParams = buildQueryParams({
+			sort: 'created_at',
+			order: 'desc'
+		});
+		queryParams.append('limit', limit.toString());
+		queryParams.append('offset', ((page - 1) * limit).toString());
+
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.status) queryParams.append('status', filters.status);
+		if (filters.priority) queryParams.append('priority', filters.priority);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.due_date_gte) queryParams.append('due_date__gte', filters.due_date_gte);
+		if (filters.due_date_lte) queryParams.append('due_date__lte', filters.due_date_lte);
+
+		// Only fetch tasks on initial page load
+		// Dropdown options (users, accounts, contacts, etc.) are lazy-loaded client-side when drawer opens
+		const tasksResponse = await apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org });
+
+		// Handle Django response structure
+		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
+		let tasks = [];
+		if (tasksResponse.tasks) {
+			tasks = tasksResponse.tasks;
+		} else if (Array.isArray(tasksResponse)) {
+			tasks = tasksResponse;
+		} else if (tasksResponse.results) {
+			tasks = tasksResponse.results;
+		}
+
+		// Transform Django tasks to frontend structure
+		const transformedTasks = tasks.map((task) => ({
+			id: task.id,
+			subject: task.title,
+			description: task.description,
+			status: task.status,
+			priority: task.priority,
+			dueDate: task.due_date,
+			createdAt: task.created_at,
+			updatedAt: task.updated_at,
+
+			// All assigned users (M2M)
+			assignedTo: (task.assigned_to || []).map((u) => ({
+				id: u.id,
+				name: u.user_details?.email || u.user?.email || u.email || 'Unknown'
+			})),
+
+			// Contacts (M2M)
+			contacts: (task.contacts || []).map((c) => ({
+				id: c.id,
+				name: c.first_name
+					? `${c.first_name} ${c.last_name || ''}`.trim()
+					: c.email || 'Unknown'
+			})),
+
+			// Teams (M2M)
+			teams: (task.teams || []).map((t) => ({
+				id: t.id,
+				name: t.name
+			})),
+
+			// Tags (M2M)
+			tags: (task.tags || []).map((t) => ({
+				id: t.id,
+				name: t.name
+			})),
+
+			// Account (FK)
+			account: task.account
+				? {
+						id: task.account.id || task.account,
+						name: task.account.name || task.account
+					}
+				: null,
+
+			// Opportunity (FK)
+			opportunity: task.opportunity
+				? {
+						id: task.opportunity.id || task.opportunity,
+						name: task.opportunity.name || 'Opportunity'
+					}
+				: null,
+
+			// Case (FK)
+			case_: task.case
+				? {
+						id: task.case.id || task.case,
+						name: task.case.name || 'Case'
+					}
+				: null,
+
+			// Lead (FK)
+			lead: task.lead
+				? {
+						id: task.lead.id || task.lead,
+						name:
+							task.lead.first_name || task.lead.last_name
+								? `${task.lead.first_name || ''} ${task.lead.last_name || ''}`.trim()
+								: task.lead.title || 'Lead'
+					}
+				: null,
+
+			// Created by
+			createdBy: task.created_by
+				? {
+						id: task.created_by.id,
+						name: task.created_by.email
+					}
+				: null
 		}));
 
-		return { boards };
-	} catch (err) {
-		console.error('Error loading boards:', err);
+		// Get total count from response
+		const total = tasksResponse.tasks_count || tasksResponse.count || transformedTasks.length;
 
-		// Graceful fallback if API has issues
 		return {
-			boards: [],
-			error: err.message
+			tasks: transformedTasks,
+			pagination: {
+				page,
+				limit,
+				total,
+				totalPages: Math.ceil(total / limit) || 1
+			},
+			filters
 		};
+	} catch (err) {
+		console.error('Error loading tasks from API:', err);
+		throw error(500, `Failed to load tasks: ${err.message}`);
 	}
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-	/**
-	 * Create new board with default columns
-	 */
 	create: async ({ request, locals, cookies }) => {
-		const user = locals.user;
 		const org = locals.org;
 
 		try {
-			const formData = await request.formData();
-			const name = formData.get('name')?.toString();
+			const form = await request.formData();
+			const subject = form.get('subject')?.toString().trim();
+			const description = form.get('description')?.toString().trim();
+			const status = form.get('status')?.toString() || 'New';
+			const priority = form.get('priority')?.toString() || 'Medium';
+			const dueDate = form.get('dueDate')?.toString() || null;
+			const accountId = form.get('accountId')?.toString() || null;
+			const opportunityId = form.get('opportunityId')?.toString() || null;
+			const caseId = form.get('caseId')?.toString() || null;
+			const leadId = form.get('leadId')?.toString() || null;
 
-			if (!name) {
-				return fail(400, { error: 'Board name is required' });
+			// Parse array fields (sent as JSON strings)
+			const assignedToJson = form.get('assignedTo')?.toString() || '[]';
+			const contactsJson = form.get('contacts')?.toString() || '[]';
+			const teamsJson = form.get('teams')?.toString() || '[]';
+			const tagsJson = form.get('tags')?.toString() || '[]';
+
+			const assignedTo = JSON.parse(assignedToJson);
+			const contacts = JSON.parse(contactsJson);
+			const teams = JSON.parse(teamsJson);
+			const tags = JSON.parse(tagsJson);
+
+			if (!subject) {
+				return { success: false, error: 'Subject is required' };
 			}
 
-			// Create board via Django API
-			// Django will automatically create default columns (To Do, In Progress, Done)
-			const boardData = {
-				name
-				// owner is set automatically from request.profile in Django
-				// default columns are created automatically in Django backend
+			// Transform to Django field names
+			const djangoData = {
+				title: subject,
+				description: description || null,
+				status: status,
+				priority: priority,
+				due_date: dueDate,
+				assigned_to: assignedTo,
+				contacts: contacts,
+				teams: teams,
+				tags: tags,
+				account: accountId || null,
+				opportunity: opportunityId || null,
+				case: caseId || null,
+				lead: leadId || null
 			};
 
 			await apiRequest(
-				'/boards/',
+				'/tasks/',
 				{
 					method: 'POST',
-					body: boardData
+					body: djangoData
 				},
 				{ cookies, org }
 			);
 
 			return { success: true };
 		} catch (err) {
-			console.error('Error creating board:', err);
+			console.error('Error creating task:', err);
+			return { success: false, error: 'Failed to create task' };
+		}
+	},
 
-			if (err.message.includes('404') || err.message.includes('Not Found')) {
-				return fail(404, {
-					error: 'Boards API endpoint not found',
-					details: err.message
-				});
+	update: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const taskId = form.get('taskId')?.toString();
+			const subject = form.get('subject')?.toString().trim();
+			const description = form.get('description')?.toString().trim();
+			const status = form.get('status')?.toString() || 'New';
+			const priority = form.get('priority')?.toString() || 'Medium';
+			const dueDate = form.get('dueDate')?.toString() || null;
+			const accountId = form.get('accountId')?.toString() || null;
+			const opportunityId = form.get('opportunityId')?.toString() || null;
+			const caseId = form.get('caseId')?.toString() || null;
+			const leadId = form.get('leadId')?.toString() || null;
+
+			// Parse array fields (sent as JSON strings)
+			const assignedToJson = form.get('assignedTo')?.toString() || '[]';
+			const contactsJson = form.get('contacts')?.toString() || '[]';
+			const teamsJson = form.get('teams')?.toString() || '[]';
+			const tagsJson = form.get('tags')?.toString() || '[]';
+
+			const assignedTo = JSON.parse(assignedToJson);
+			const contacts = JSON.parse(contactsJson);
+			const teams = JSON.parse(teamsJson);
+			const tags = JSON.parse(tagsJson);
+
+			if (!taskId || !subject) {
+				return { success: false, error: 'Task ID and subject are required' };
 			}
 
-			return fail(500, { error: err.message || 'Failed to create board' });
+			// Transform to Django field names
+			const djangoData = {
+				title: subject,
+				description: description || null,
+				status: status,
+				priority: priority,
+				due_date: dueDate,
+				assigned_to: assignedTo,
+				contacts: contacts,
+				teams: teams,
+				tags: tags,
+				account: accountId || null,
+				opportunity: opportunityId || null,
+				case: caseId || null,
+				lead: leadId || null
+			};
+
+			await apiRequest(
+				`/tasks/${taskId}/`,
+				{
+					method: 'PATCH',
+					body: djangoData
+				},
+				{ cookies, org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating task:', err);
+			return { success: false, error: 'Failed to update task' };
+		}
+	},
+
+	complete: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const taskId = form.get('taskId')?.toString();
+
+			if (!taskId) {
+				return { success: false, error: 'Task ID is required' };
+			}
+
+			// Update with PATCH, changing only status to Completed
+			await apiRequest(
+				`/tasks/${taskId}/`,
+				{
+					method: 'PATCH',
+					body: { status: 'Completed' }
+				},
+				{ cookies, org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error completing task:', err);
+			return { success: false, error: 'Failed to complete task' };
+		}
+	},
+
+	reopen: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const taskId = form.get('taskId')?.toString();
+
+			if (!taskId) {
+				return { success: false, error: 'Task ID is required' };
+			}
+
+			// Update with PATCH, changing only status to New
+			await apiRequest(
+				`/tasks/${taskId}/`,
+				{
+					method: 'PATCH',
+					body: { status: 'New' }
+				},
+				{ cookies, org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error reopening task:', err);
+			return { success: false, error: 'Failed to reopen task' };
+		}
+	},
+
+	delete: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const taskId = form.get('taskId')?.toString();
+
+			if (!taskId) {
+				return { success: false, error: 'Task ID is required' };
+			}
+
+			await apiRequest(`/tasks/${taskId}/`, { method: 'DELETE' }, { cookies, org });
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting task:', err);
+			return { success: false, error: 'Failed to delete task' };
 		}
 	}
 };

@@ -5,10 +5,15 @@ from cases.models import Case
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
+
+
+# Note: Removed unused serializer property:
+# - created_on_arrow (frontend computes its own humanized timestamps)
 
 
 class CaseSerializer(serializers.ModelSerializer):
@@ -17,6 +22,7 @@ class CaseSerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer(read_only=True)
     teams = TeamsSerializer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
     org = OrganizationSerializer()
 
     class Meta:
@@ -36,18 +42,22 @@ class CaseSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "assigned_to",
+            "tags",
             "org",
-            "created_on_arrow",
         )
 
 
 class CaseCreateSerializer(serializers.ModelSerializer):
-    closed_on = serializers.DateField
+    closed_on = serializers.DateField(required=False, allow_null=True)
+    org = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
         self.org = request_obj.profile.org
+        # Make account read-only on updates (can only be set on creation)
+        if self.instance:
+            self.fields["account"].read_only = True
 
     def validate_name(self, name):
         if self.instance:
@@ -69,14 +79,14 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             "name",
             "status",
             "priority",
+            "case_type",
+            "closed_on",
             "description",
-            "created_by",
-            "created_at",
             "is_active",
             "account",
             "org",
-            "created_on_arrow",
         )
+        read_only_fields = ("org",)
 
 
 class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
@@ -91,8 +101,8 @@ class CaseCreateSwaggerSerializer(serializers.ModelSerializer):
             "teams",
             "assigned_to",
             "account",
-            "case_attachment",
             "contacts",
+            "tags",
             "description",
         )
 

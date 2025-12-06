@@ -1,13 +1,17 @@
-import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
-from common.models import Org, Profile, Teams
+from common.models import Org, Profile, Tags, Teams
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
+
+
+# Cleanup notes:
+# - Removed 'created_on_arrow' property from Case and Solution (frontend computes its own timestamps)
+# - Fixed case_type default from "" to None (empty string is bad default for nullable field)
 
 
 class Case(AssignableMixin, BaseModel):
@@ -15,7 +19,7 @@ class Case(AssignableMixin, BaseModel):
     status = models.CharField(choices=STATUS_CHOICE, max_length=64)
     priority = models.CharField(choices=PRIORITY_CHOICE, max_length=64)
     case_type = models.CharField(
-        choices=CASE_TYPE, max_length=255, blank=True, null=True, default=""
+        choices=CASE_TYPE, max_length=255, blank=True, null=True, default=None
     )
     account = models.ForeignKey(
         Account,
@@ -24,16 +28,13 @@ class Case(AssignableMixin, BaseModel):
         null=True,
         related_name="accounts_cases",
     )
-    contacts = models.ManyToManyField(Contact)
-    # closed_on = models.DateTimeField()
+    contacts = models.ManyToManyField(Contact, related_name="case_contacts")
     closed_on = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     assigned_to = models.ManyToManyField(Profile, related_name="case_assigned_users")
-    # created_by = models.ForeignKey(
-    #     Profile, related_name="case_created_by", on_delete=models.SET_NULL, null=True
-    # )
     is_active = models.BooleanField(default=True)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
+    tags = models.ManyToManyField(Tags, related_name="case_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="cases")
 
     class Meta:
@@ -49,10 +50,6 @@ class Case(AssignableMixin, BaseModel):
 
     def __str__(self):
         return f"{self.name}"
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
 
 
 class Solution(BaseModel):
@@ -104,7 +101,3 @@ class Solution(BaseModel):
         """Unpublish the solution"""
         self.is_published = False
         self.save()
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()

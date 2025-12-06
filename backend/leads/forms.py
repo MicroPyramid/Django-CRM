@@ -37,9 +37,6 @@ def csv_doc_validate(document):
                     continue
                 if csv_headers[x_index] in required_headers:
                     if not cell_value:
-                        # message = 'Missing required value %s for row %s' % (
-                        #     csv_headers[x_index], y_index + 1)
-                        # return {"error": True, "message": message}
                         invalid_each[csv_headers[x_index]] = cell_value
                     else:
                         if csv_headers[x_index] == "email":
@@ -62,11 +59,9 @@ def csv_doc_validate(document):
 
 def import_document_validator(document):
     try:
-        # dialect = csv.Sniffer().sniff(document.read(1024).decode("ascii"))
         document.seek(0, 0)
         return csv_doc_validate(document)
-    except Exception as e:
-        print(e)
+    except Exception:
         return {"error": True, "message": "Not a valid CSV file"}
 
 

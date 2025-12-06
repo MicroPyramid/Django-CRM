@@ -1,656 +1,1144 @@
 <script>
-	import {
-		Search,
-		Plus,
-		Filter,
-		SortAsc,
-		MoreVertical,
-		Eye,
-		Edit,
-		Trash2,
-		DollarSign,
-		TrendingUp,
-		Users,
-		Calendar,
-		Building2,
-		User,
-		CheckCircle,
-		XCircle,
-		Clock,
-		Target,
-		X,
-		AlertTriangle
-	} from '@lucide/svelte';
-	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { onMount, tick } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import {
+		Plus,
+		Eye,
+		Building2,
+		Target,
+		DollarSign,
+		Calendar,
+		Percent,
+		User,
+		Users,
+		Briefcase,
+		Globe,
+		FileText,
+		Trophy,
+		XCircle,
+		Banknote,
+		Contact,
+		Tags,
+		Filter
+	} from '@lucide/svelte';
+	import { PageHeader } from '$lib/components/layout';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
+	import { formatCurrency, formatRelativeDate } from '$lib/utils/formatting.js';
+	import {
+		OPPORTUNITY_STAGES as stages,
+		OPPORTUNITY_TYPES,
+		OPPORTUNITY_SOURCES,
+		CURRENCY_CODES
+	} from '$lib/constants/filters.js';
+	import { orgSettings } from '$lib/stores/org.js';
 
-	/** @type {{ data: import('./$types').PageData, form?: any }} */
-	let { data, form } = $props();
+	const STORAGE_KEY = 'opportunities-crm-columns';
 
-	let searchTerm = $state('');
-	let selectedStage = $state('all');
-	let sortField = $state('createdAt');
-	let sortDirection = $state('desc');
-	let showFilters = $state(false);
-	let showDeleteModal = $state(false);
-	/** @type {any} */
-	let opportunityToDelete = $state(null);
-	let deleteLoading = $state(false);
-
-	// Stage configurations
-	const stageConfig = {
-		PROSPECTING: {
+	// Stage options with colors
+	const stageOptions = [
+		{
+			value: 'PROSPECTING',
 			label: 'Prospecting',
-			color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-			icon: Target
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
 		},
-		QUALIFICATION: {
+		{
+			value: 'QUALIFICATION',
 			label: 'Qualification',
-			color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-			icon: Search
+			color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
 		},
-		PROPOSAL: {
+		{
+			value: 'PROPOSAL',
 			label: 'Proposal',
-			color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-			icon: Edit
+			color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
 		},
-		NEGOTIATION: {
+		{
+			value: 'NEGOTIATION',
 			label: 'Negotiation',
-			color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-			icon: Users
+			color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
 		},
-		CLOSED_WON: {
-			label: 'Closed Won',
-			color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-			icon: CheckCircle
+		{
+			value: 'CLOSED_WON',
+			label: 'Won',
+			color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
 		},
-		CLOSED_LOST: {
-			label: 'Closed Lost',
-			color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-			icon: XCircle
+		{
+			value: 'CLOSED_LOST',
+			label: 'Lost',
+			color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
 		}
+	];
+
+	// Type options
+	const typeOptions = OPPORTUNITY_TYPES.map((t) => ({
+		value: t.value,
+		label: t.label,
+		color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+	}));
+
+	// Source options
+	const sourceOptions = OPPORTUNITY_SOURCES.map((s) => ({
+		value: s.value,
+		label: s.label,
+		color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+	}));
+
+	// Currency options
+	const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
+		value: c.value,
+		label: c.label,
+		color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+	}));
+
+	/**
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string }} ColumnDef
+	 */
+
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{
+			key: 'name',
+			label: 'Opportunity',
+			type: 'text',
+			width: 'w-48',
+			canHide: false,
+			emptyText: 'Untitled'
+		},
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'relation',
+			width: 'w-40',
+			relationIcon: 'building',
+			editable: false,
+			getValue: (row) => row.account?.name,
+			emptyText: ''
+		},
+		{
+			key: 'amount',
+			label: 'Amount',
+			type: 'number',
+			width: 'w-32',
+			format: (value, row) => formatAmount(value, row?.currency)
+		},
+		{ key: 'stage', label: 'Stage', type: 'select', options: stageOptions, width: 'w-32' },
+		{ key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36' },
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'relation',
+			width: 'w-40',
+			relationIcon: 'user',
+			editable: false,
+			getValue: (row) => {
+				const users = row.assignedTo || [];
+				if (users.length === 0) return null;
+				if (users.length === 1) return users[0].name;
+				return `${users[0].name} +${users.length - 1}`;
+			},
+			emptyText: ''
+		},
+		// Hidden by default
+		{
+			key: 'probability',
+			label: 'Probability',
+			type: 'number',
+			width: 'w-28',
+			canHide: true,
+			format: (value) => (value != null ? `${value}%` : '-')
+		},
+		{
+			key: 'opportunityType',
+			label: 'Type',
+			type: 'select',
+			options: typeOptions,
+			width: 'w-32',
+			canHide: true
+		}
+	];
+
+	// Default visible columns (excludes probability and type)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'account', 'amount', 'stage', 'closedOn', 'assignedTo'];
+
+	/** @type {{ data: any }} */
+	let { data } = $props();
+
+	// Options for form
+	const formOptions = $derived({
+		accounts: data.options?.accounts || [],
+		contacts: data.options?.contacts || [],
+		tags: data.options?.tags || [],
+		users: data.options?.users || [],
+		teams: data.options?.teams || []
+	});
+
+	// Account options for select field
+	const accountOptions = $derived(
+		formOptions.accounts.map((a) => ({
+			value: a.id,
+			label: a.name
+		}))
+	);
+
+	// Contact options for multiselect (uses id/name format)
+	const contactOptions = $derived(
+		formOptions.contacts.map((c) => ({
+			id: c.id,
+			name: c.name || c.email,
+			email: c.email
+		}))
+	);
+
+	// User options for assignedTo multiselect (uses id/name format)
+	const userOptions = $derived(
+		formOptions.users.map((u) => ({
+			id: u.id,
+			name: u.name || u.email,
+			email: u.email
+		}))
+	);
+
+	// Team options for teams multiselect (uses id/name format)
+	const teamOptions = $derived(
+		formOptions.teams.map((t) => ({
+			id: t.id,
+			name: t.name
+		}))
+	);
+
+	// Tag options for tags multiselect (uses id/name format)
+	const tagOptions = $derived(
+		formOptions.tags.map((t) => ({
+			id: t.id,
+			name: t.name
+		}))
+	);
+
+	// Drawer column definitions for CrmDrawer (derived since some options come from data)
+	const drawerColumns = $derived([
+		{ key: 'name', label: 'Name', type: 'text' },
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'select',
+			icon: Building2,
+			options: accountOptions,
+			placeholder: 'Select account'
+		},
+		{
+			key: 'stage',
+			label: 'Stage',
+			type: 'select',
+			icon: Target,
+			options: stageOptions
+		},
+		{
+			key: 'opportunityType',
+			label: 'Type',
+			type: 'select',
+			icon: Briefcase,
+			options: typeOptions,
+			placeholder: 'Select type'
+		},
+		{
+			key: 'amount',
+			label: 'Amount',
+			type: 'number',
+			icon: DollarSign,
+			placeholder: '0'
+		},
+		{
+			key: 'currency',
+			label: 'Currency',
+			type: 'select',
+			icon: Banknote,
+			options: currencyOptions,
+			placeholder: 'Select currency'
+		},
+		{
+			key: 'probability',
+			label: 'Probability',
+			type: 'number',
+			icon: Percent,
+			placeholder: '0'
+		},
+		{
+			key: 'closedOn',
+			label: 'Close Date',
+			type: 'date',
+			icon: Calendar
+		},
+		{
+			key: 'leadSource',
+			label: 'Lead Source',
+			type: 'select',
+			icon: Globe,
+			options: sourceOptions,
+			placeholder: 'Select source'
+		},
+		{
+			key: 'contacts',
+			label: 'Contacts',
+			type: 'multiselect',
+			icon: Contact,
+			options: contactOptions,
+			placeholder: 'Select contacts'
+		},
+		{
+			key: 'assignedTo',
+			label: 'Assigned To',
+			type: 'multiselect',
+			icon: Users,
+			options: userOptions,
+			placeholder: 'Select users'
+		},
+		{
+			key: 'teams',
+			label: 'Teams',
+			type: 'multiselect',
+			icon: Users,
+			options: teamOptions,
+			placeholder: 'Select teams'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tags,
+			options: tagOptions,
+			placeholder: 'Select tags'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes...'
+		}
+	]);
+
+	// URL-based filter state from server
+	const filters = $derived(data.filters || {});
+
+	// Stage options for filter dropdown (includes ALL option)
+	const stageFilterOptions = $derived([{ value: '', label: 'All Stages' }, ...stageOptions]);
+
+	// Count active filters (excluding stage since it's handled via chips in header)
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.account) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		if (filters.closed_on_gte || filters.closed_on_lte) count++;
+		return count;
+	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params
+		[
+			'search',
+			'stage',
+			'account',
+			'assigned_to',
+			'tags',
+			'created_at_gte',
+			'created_at_lte',
+			'closed_on_gte',
+			'closed_on_lte'
+		].forEach((key) => url.searchParams.delete(key));
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	// Column visibility state - use defaults (excludes probability and type)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+
+	// Drawer state
+	let drawerOpen = $state(false);
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {string | null} */
+	let selectedRowId = $state(null);
+	let isLoading = $state(false);
+
+	// Empty opportunity template for create mode
+	const emptyOpportunity = {
+		name: '',
+		account: '',
+		stage: 'PROSPECTING',
+		opportunityType: '',
+		amount: 0,
+		currency: '',
+		probability: 50,
+		closedOn: '',
+		leadSource: '',
+		contacts: [],
+		assignedTo: [],
+		teams: [],
+		tags: [],
+		description: ''
 	};
 
-	// Simple filtering function that we'll call explicitly
-	function getFilteredOpportunities() {
-		if (!data?.opportunities || !Array.isArray(data.opportunities)) {
-			return [];
+	// Drawer form data - mutable copy for editing
+	let drawerFormData = $state({ ...emptyOpportunity });
+
+	// Reset form data when opportunity changes or drawer opens
+	$effect(() => {
+		if (drawerOpen) {
+			if (drawerMode === 'create') {
+				drawerFormData = { ...emptyOpportunity, currency: $orgSettings.default_currency || 'USD' };
+			} else if (selectedRow) {
+				// Extract IDs for multiselect fields and account select
+				drawerFormData = {
+					...selectedRow,
+					// Account ID for select
+					account: selectedRow.account?.id || '',
+					// Currency with fallback to org default
+					currency: selectedRow.currency || $orgSettings.default_currency || 'USD',
+					// Extract IDs for multiselect fields
+					contacts: (selectedRow.contacts || []).map((/** @type {any} */ c) => c.id),
+					assignedTo: (selectedRow.assignedTo || []).map((/** @type {any} */ u) => u.id),
+					teams: (selectedRow.teams || []).map((/** @type {any} */ t) => t.id),
+					tags: (selectedRow.tags || []).map((/** @type {any} */ t) => t.id)
+				};
+			}
 		}
+	});
 
-		let filtered = [...data.opportunities];
+	// Computed values - opportunities are already filtered server-side
+	const opportunities = $derived(data.opportunities || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+	const stats = $derived(data.stats || { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 });
 
-		// Search filter
-		if (searchTerm && searchTerm.trim()) {
-			const searchLower = searchTerm.toLowerCase().trim();
-			filtered = filtered.filter((opp) => {
-				const nameMatch = opp.name?.toLowerCase().includes(searchLower);
-				const accountMatch = opp.account?.name?.toLowerCase().includes(searchLower);
-				const ownerMatch =
-					opp.owner?.name?.toLowerCase().includes(searchLower) ||
-					opp.owner?.email?.toLowerCase().includes(searchLower);
-				return nameMatch || accountMatch || ownerMatch;
-			});
-		}
+	// Status chip filter for quick filtering (client-side on top of server filters)
+	let statusChipFilter = $state('ALL');
 
-		// Stage filter
-		if (selectedStage && selectedStage !== 'all') {
-			filtered = filtered.filter((opp) => opp.stage === selectedStage);
-		}
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
 
-		return filtered;
-	}
+	// Status stages for filtering
+	const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
 
-	// Use $derived with the function
-	const filteredOpportunities = $derived(getFilteredOpportunities());
-
-	/**
-	 * @param {number | null} amount
-	 * @returns {string}
-	 */
-	function formatCurrency(amount) {
-		if (!amount) return '-';
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
-	}
-
-	/**
-	 * @param {string | Date | null} date
-	 * @returns {string}
-	 */
-	function formatDate(date) {
-		if (!date) return '-';
-		return new Date(date).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
+	// Apply only status chip filter (all other filters are server-side)
+	const filteredOpportunities = $derived.by(() => {
+		return opportunities.filter((/** @type {any} */ opp) => {
+			// Apply status chip filter
+			if (statusChipFilter === 'open') {
+				return openStages.includes(opp.stage);
+			} else if (statusChipFilter === 'won') {
+				return opp.stage === 'CLOSED_WON';
+			} else if (statusChipFilter === 'lost') {
+				return opp.stage === 'CLOSED_LOST';
+			}
+			return true;
 		});
-	}
+	});
+
+	// Status counts for filter chips
+	const openCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => openStages.includes(o.stage)).length
+	);
+	const wonCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_WON').length
+	);
+	const lostCount = $derived(
+		opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length
+	);
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
 
 	/**
-	 * @param {string} field
+	 * @param {string} key
 	 */
-	function toggleSort(field) {
-		if (sortField === field) {
-			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+	function toggleColumn(key) {
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
 		} else {
-			sortField = field;
-			sortDirection = 'asc';
+			visibleColumns = [...visibleColumns, key];
 		}
 	}
 
 	/**
-	 * @param {any} opportunity
+	 * Handle row change from NotionTable (inline editing)
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
 	 */
-	function openDeleteModal(opportunity) {
-		opportunityToDelete = opportunity;
-		showDeleteModal = true;
+	async function handleRowChange(row, field, value) {
+		const column = columns.find((c) => c.key === field);
+		await saveFieldValue(row.id, field, value, column?.type);
 	}
 
-	function closeDeleteModal() {
-		showDeleteModal = false;
-		opportunityToDelete = null;
-		deleteLoading = false;
+	/**
+	 * @param {string} rowId
+	 * @param {string} field
+	 * @param {any} value
+	 * @param {string} [fieldType]
+	 */
+	async function saveFieldValue(rowId, field, value, fieldType) {
+		try {
+			const form = new FormData();
+			form.append('opportunityId', rowId);
+
+			// Map field names to API field names
+			const fieldMapping = /** @type {Record<string, string>} */ ({
+				name: 'name',
+				account: 'accountId',
+				amount: 'amount',
+				currency: 'currency',
+				probability: 'probability',
+				stage: 'stage',
+				opportunityType: 'opportunityType',
+				closedOn: 'closedOn',
+				leadSource: 'leadSource',
+				description: 'description'
+			});
+
+			// Multi-select fields need special handling
+			const multiSelectFields = ['contacts', 'assignedTo', 'teams', 'tags'];
+
+			if (multiSelectFields.includes(field)) {
+				// Send as JSON array
+				form.append(field, JSON.stringify(Array.isArray(value) ? value : []));
+			} else {
+				const apiField = fieldMapping[field];
+				if (apiField) {
+					// Convert value based on type
+					let apiValue = value;
+					if (fieldType === 'number') {
+						apiValue = parseFloat(value) || 0;
+					}
+					form.append(apiField, apiValue?.toString() || '');
+				}
+			}
+
+			// Need to send required fields too
+			const opp = filteredOpportunities.find((/** @type {any} */ o) => o.id === rowId);
+			if (opp) {
+				if (field !== 'name') form.append('name', opp.name || '');
+				if (field !== 'stage') form.append('stage', opp.stage || 'PROSPECTING');
+			}
+
+			const response = await fetch('?/update', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Changes saved');
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to save changes');
+			}
+		} catch (err) {
+			console.error('Error saving field:', err);
+			toast.error('Failed to save changes');
+		}
 	}
+
+	/**
+	 * @param {number | null} value
+	 * @param {string} [currency='USD']
+	 */
+	function formatAmount(value, currency = 'USD') {
+		if (!value) return '-';
+		return formatCurrency(value, currency || 'USD');
+	}
+
+	/**
+	 * @param {string | null} dateStr
+	 */
+	function formatDate(dateStr) {
+		if (!dateStr) return '-';
+		const date = new Date(dateStr);
+		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	/**
+	 * @param {string} value
+	 * @param {{ value: string, label: string, color: string }[]} options
+	 */
+	function getOptionStyle(value, options) {
+		const option = options.find((o) => o.value === value);
+		return option?.color ?? 'bg-gray-100 text-gray-600';
+	}
+
+	/**
+	 * @param {string} value
+	 * @param {{ value: string, label: string, color: string }[]} options
+	 */
+	function getOptionLabel(value, options) {
+		const option = options.find((o) => o.value === value);
+		return option?.label ?? value;
+	}
+
+	// Drawer functions
+	/**
+	 * @param {string} rowId
+	 */
+	function openDrawer(rowId) {
+		selectedRowId = rowId;
+		drawerMode = 'view';
+		drawerOpen = true;
+	}
+
+	function openCreate() {
+		selectedRowId = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+	}
+
+	function closeDrawer() {
+		drawerOpen = false;
+		selectedRowId = null;
+	}
+
+	/**
+	 * Handle field change from CrmDrawer - just updates local state
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
+		drawerFormData = { ...drawerFormData, [field]: value };
+	}
+
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedRowId) return;
+
+		isLoading = true;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+			form.append('name', drawerFormData.name || 'Opportunity');
+			form.append('stage', drawerFormData.stage || 'PROSPECTING');
+			form.append('amount', drawerFormData.amount?.toString() || '0');
+			form.append('probability', drawerFormData.probability?.toString() || '50');
+			if (drawerFormData.account) {
+				form.append('accountId', drawerFormData.account);
+			}
+			if (drawerFormData.opportunityType) {
+				form.append('opportunityType', drawerFormData.opportunityType);
+			}
+			if (drawerFormData.currency) {
+				form.append('currency', drawerFormData.currency);
+			}
+			if (drawerFormData.closedOn) {
+				form.append('closedOn', drawerFormData.closedOn);
+			}
+			if (drawerFormData.leadSource) {
+				form.append('leadSource', drawerFormData.leadSource);
+			}
+			if (drawerFormData.description) {
+				form.append('description', drawerFormData.description);
+			}
+			// Multi-select fields - send as JSON arrays
+			form.append('contacts', JSON.stringify(drawerFormData.contacts || []));
+			form.append('assignedTo', JSON.stringify(drawerFormData.assignedTo || []));
+			form.append('teams', JSON.stringify(drawerFormData.teams || []));
+			form.append('tags', JSON.stringify(drawerFormData.tags || []));
+
+			const response = await fetch('?/update', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Opportunity updated');
+				closeDrawer();
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to update opportunity');
+			}
+		} catch (err) {
+			console.error('Update error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	/**
+	 * Handle save for create mode
+	 */
+	async function handleDrawerSave() {
+		if (drawerMode !== 'create') return;
+
+		isLoading = true;
+		try {
+			const form = new FormData();
+			form.append('name', drawerFormData.name || 'New Opportunity');
+			form.append('stage', drawerFormData.stage || 'PROSPECTING');
+			form.append('amount', drawerFormData.amount?.toString() || '0');
+			form.append('probability', drawerFormData.probability?.toString() || '50');
+			if (drawerFormData.account) {
+				form.append('accountId', drawerFormData.account);
+			}
+			if (drawerFormData.opportunityType) {
+				form.append('opportunityType', drawerFormData.opportunityType);
+			}
+			if (drawerFormData.currency) {
+				form.append('currency', drawerFormData.currency);
+			}
+			if (drawerFormData.closedOn) {
+				form.append('closedOn', drawerFormData.closedOn);
+			}
+			if (drawerFormData.leadSource) {
+				form.append('leadSource', drawerFormData.leadSource);
+			}
+			if (drawerFormData.description) {
+				form.append('description', drawerFormData.description);
+			}
+			// Multi-select fields - send as JSON arrays
+			if (drawerFormData.contacts?.length > 0) {
+				form.append('contacts', JSON.stringify(drawerFormData.contacts));
+			}
+			if (drawerFormData.assignedTo?.length > 0) {
+				form.append('assignedTo', JSON.stringify(drawerFormData.assignedTo));
+			}
+			if (drawerFormData.teams?.length > 0) {
+				form.append('teams', JSON.stringify(drawerFormData.teams));
+			}
+			if (drawerFormData.tags?.length > 0) {
+				form.append('tags', JSON.stringify(drawerFormData.tags));
+			}
+
+			const response = await fetch('?/create', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Opportunity created');
+				closeDrawer();
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to create opportunity');
+			}
+		} catch (err) {
+			console.error('Create error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	/**
+	 * Mark opportunity as won
+	 */
+	async function handleMarkWon() {
+		if (!selectedRowId) return;
+		await saveFieldValue(selectedRowId, 'stage', 'CLOSED_WON');
+		toast.success('Opportunity marked as won!');
+	}
+
+	/**
+	 * Mark opportunity as lost
+	 */
+	async function handleMarkLost() {
+		if (!selectedRowId) return;
+		await saveFieldValue(selectedRowId, 'stage', 'CLOSED_LOST');
+		toast.success('Opportunity marked as lost');
+	}
+
+	async function deleteSelectedRow() {
+		if (!selectedRowId) return;
+
+		isLoading = true;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+			const response = await fetch('?/delete', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Opportunity deleted');
+				closeDrawer();
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to delete opportunity');
+			}
+		} catch (err) {
+			console.error('Delete error:', err);
+			toast.error('An error occurred while deleting');
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Open create drawer for new opportunity
+	function addNewRow() {
+		openCreate();
+	}
+
+	// Get selected row data
+	const selectedRow = $derived(
+		filteredOpportunities.find((/** @type {any} */ r) => r.id === selectedRowId)
+	);
+
+	// Check if opportunity is closed (won or lost)
+	const isClosed = $derived(
+		selectedRow?.stage === 'CLOSED_WON' || selectedRow?.stage === 'CLOSED_LOST'
+	);
+	const isWon = $derived(selectedRow?.stage === 'CLOSED_WON');
+	const isLost = $derived(selectedRow?.stage === 'CLOSED_LOST');
 </script>
 
 <svelte:head>
 	<title>Opportunities - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<!-- Success/Error Messages -->
-	{#if form?.success}
-		<div class="fixed top-4 right-4 z-50 max-w-md">
-			<div
-				class="relative rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700"
-				role="alert"
-			>
-				<strong class="font-bold">Success!</strong>
-				<span class="block sm:inline">{form.message || 'Opportunity deleted successfully.'}</span>
+<PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{opportunities.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'open')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'open'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Open
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{openCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'won')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'won'
+						? 'bg-emerald-600 text-white dark:bg-emerald-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Won
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'won'
+							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{wonCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'lost')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+					'lost'
+						? 'bg-red-600 text-white dark:bg-red-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Lost
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
+							? 'bg-red-700 text-red-100 dark:bg-red-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{lostCount}
+					</span>
+				</button>
 			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
+
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumns.length < columns.length}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumns.length}/{columns.length}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Button onclick={addNewRow} disabled={isLoading}>
+				<Plus class="mr-2 h-4 w-4" />
+				New
+			</Button>
 		</div>
+	{/snippet}
+</PageHeader>
+
+<div class="flex-1">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
+		<SearchInput
+			value={filters.search}
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			placeholder="Search opportunities..."
+		/>
+		<DateRangeFilter
+			label="Close Date"
+			startDate={filters.closed_on_gte}
+			endDate={filters.closed_on_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+	</FilterBar>
+	<!-- Table View -->
+	{#if filteredOpportunities.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
+			<h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
+		</div>
+	{:else}
+		<CrmTable
+			data={filteredOpportunities}
+			{columns}
+			bind:visibleColumns
+			onRowChange={handleRowChange}
+			onRowClick={(row) => openDrawer(row.id)}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
+				</div>
+			{/snippet}
+		</CrmTable>
 	{/if}
 
-	{#if form?.message && !form?.success}
-		<div class="fixed top-4 right-4 z-50 max-w-md">
-			<div
-				class="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700"
-				role="alert"
-			>
-				<strong class="font-bold">Error!</strong>
-				<span class="block sm:inline">{form.message}</span>
-			</div>
-		</div>
-	{/if}
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
+</div>
 
-	<!-- Header -->
-	<div class="bg-white shadow dark:bg-gray-800">
-		<div class="px-4 sm:px-6 lg:px-8">
-			<div class="flex h-16 items-center justify-between">
-				<div class="flex items-center">
-					<h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Opportunities</h1>
-				</div>
-				<div class="flex items-center space-x-4">
-					<a
-						href="/opportunities/new"
-						class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:bg-blue-500 dark:hover:bg-blue-600"
-					>
-						<Plus class="mr-2 h-4 w-4" />
-						New Opportunity
-					</a>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Stats Cards -->
-	<div class="px-4 py-6 sm:px-6 lg:px-8">
-		<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-			<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<Target class="h-6 w-6 text-gray-400" />
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-									Total Opportunities
-								</dt>
-								<dd class="text-lg font-medium text-gray-900 dark:text-white">
-									{data.stats.total}
-								</dd>
-							</dl>
-						</div>
+<!-- Opportunity Drawer -->
+<CrmDrawer
+	bind:open={drawerOpen}
+	onOpenChange={(open) => !open && closeDrawer()}
+	data={drawerFormData}
+	columns={drawerColumns}
+	titleKey="name"
+	titlePlaceholder="Opportunity name"
+	headerLabel="Opportunity"
+	mode={drawerMode}
+	loading={isLoading}
+	onFieldChange={handleDrawerFieldChange}
+	onDelete={deleteSelectedRow}
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		<!-- Account and Owner info (view mode only) -->
+		{#if drawerMode !== 'create' && selectedRow}
+			<div class="mb-4">
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
+				<div class="grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Account</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedRow.account?.name || '-'}
+						</p>
 					</div>
-				</div>
-			</div>
-
-			<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<DollarSign class="h-6 w-6 text-gray-400" />
+					{#if selectedRow.createdAt}
+						<div>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{formatRelativeDate(selectedRow.createdAt)}
+							</p>
 						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-									Total Value
-								</dt>
-								<dd class="text-lg font-medium text-gray-900 dark:text-white">
-									{formatCurrency(data.stats.totalValue)}
-								</dd>
-							</dl>
+					{/if}
+					{#if isClosed && selectedRow.closedBy}
+						<div>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Closed By</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{selectedRow.closedBy.name || '-'}
+							</p>
 						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<TrendingUp class="h-6 w-6 text-green-400" />
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-									Pipeline Value
-								</dt>
-								<dd class="text-lg font-medium text-gray-900 dark:text-white">
-									{formatCurrency(data.stats.pipeline)}
-								</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<CheckCircle class="h-6 w-6 text-green-400" />
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-									Won Value
-								</dt>
-								<dd class="text-lg font-medium text-gray-900 dark:text-white">
-									{formatCurrency(data.stats.wonValue)}
-								</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Filters and Search -->
-		<div class="mb-6 rounded-lg bg-white shadow dark:bg-gray-800">
-			<div class="p-6">
-				<div class="flex flex-col gap-4 sm:flex-row">
-					<!-- Search -->
-					<div class="flex-1">
-						<div class="relative">
-							<label for="opportunities-search" class="sr-only">Search opportunities</label>
-							<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-								<Search class="h-5 w-5 text-gray-400" />
-							</div>
-							<input
-								type="text"
-								id="opportunities-search"
-								bind:value={searchTerm}
-								placeholder="Search opportunities, accounts, or owners..."
-								class="block w-full rounded-md border border-gray-300 bg-white py-2 pr-3 pl-10 leading-5 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-							/>
-						</div>
-					</div>
-
-					<!-- Stage Filter -->
-					<div class="sm:w-48">
-						<label for="opportunities-stage-filter" class="sr-only"
-							>Filter opportunities by stage</label
-						>
-						<select
-							id="opportunities-stage-filter"
-							bind:value={selectedStage}
-							class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-						>
-							<option value="all">All Stages</option>
-							{#each Object.entries(stageConfig) as [stage, config]}
-								<option value={stage}>{config.label}</option>
-							{/each}
-						</select>
-					</div>
-
-					<!-- Filter Toggle -->
-					<button
-						type="button"
-						onclick={() => (showFilters = !showFilters)}
-						class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-					>
-						<Filter class="mr-2 h-4 w-4" />
-						Filters
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<!-- Opportunities Table -->
-		<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-			<div class="min-w-full overflow-x-auto">
-				<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-					<thead class="bg-gray-50 dark:bg-gray-700">
-						<tr>
-							<th
-								class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
-								onclick={() => toggleSort('name')}
-							>
-								<div class="flex items-center space-x-1">
-									<span>Opportunity</span>
-									<SortAsc class="h-4 w-4" />
-								</div>
-							</th>
-							<th
-								class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
-								onclick={() => toggleSort('account.name')}
-							>
-								<div class="flex items-center space-x-1">
-									<span>Account</span>
-									<SortAsc class="h-4 w-4" />
-								</div>
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300"
-							>
-								Stage
-							</th>
-							<th
-								class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
-								onclick={() => toggleSort('amount')}
-							>
-								<div class="flex items-center space-x-1">
-									<span>Amount</span>
-									<SortAsc class="h-4 w-4" />
-								</div>
-							</th>
-							<th
-								class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
-								onclick={() => toggleSort('closeDate')}
-							>
-								<div class="flex items-center space-x-1">
-									<span>Close Date</span>
-									<SortAsc class="h-4 w-4" />
-								</div>
-							</th>
-							<th
-								class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600"
-								onclick={() => toggleSort('owner.name')}
-							>
-								<div class="flex items-center space-x-1">
-									<span>Owner</span>
-									<SortAsc class="h-4 w-4" />
-								</div>
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300"
-							>
-								Activities
-							</th>
-							<th class="relative px-6 py-3">
-								<span class="sr-only">Actions</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-						{#each filteredOpportunities as opportunity (opportunity.id)}
-							{@const config = stageConfig[opportunity.stage] || stageConfig.PROSPECTING}
-							<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex items-center">
-										<div>
-											<div class="text-sm font-medium text-gray-900 dark:text-white">
-												{opportunity.name || 'Unnamed Opportunity'}
-											</div>
-											{#if opportunity.type}
-												<div class="text-sm text-gray-500 dark:text-gray-400">
-													{opportunity.type}
-												</div>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex items-center">
-										<Building2 class="mr-2 h-4 w-4 text-gray-400" />
-										<div>
-											<div class="text-sm font-medium text-gray-900 dark:text-white">
-												{opportunity.account?.name || 'No Account'}
-											</div>
-											{#if opportunity.account?.type}
-												<div class="text-sm text-gray-500 dark:text-gray-400">
-													{opportunity.account.type}
-												</div>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span
-										class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {config.color}"
-									>
-										{#if config.icon}
-											{@const IconComponent = config.icon}
-											<IconComponent class="mr-1 h-3 w-3" />
-										{/if}
-										{config.label}
-									</span>
-								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-white">
-									{formatCurrency(opportunity.amount)}
-									{#if opportunity.probability}
-										<div class="text-xs text-gray-500 dark:text-gray-400">
-											{opportunity.probability}% probability
-										</div>
-									{/if}
-								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-white">
-									<div class="flex items-center">
-										<Calendar class="mr-2 h-4 w-4 text-gray-400" />
-										{formatDate(opportunity.closeDate)}
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex items-center">
-										<User class="mr-2 h-4 w-4 text-gray-400" />
-										<div class="text-sm font-medium text-gray-900 dark:text-white">
-											{opportunity.owner?.name || opportunity.owner?.email || 'No Owner'}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-									<div class="flex items-center space-x-4">
-										{#if opportunity._count?.tasks > 0}
-											<span class="flex items-center">
-												<Clock class="mr-1 h-4 w-4" />
-												{opportunity._count.tasks}
-											</span>
-										{/if}
-										{#if opportunity._count?.events > 0}
-											<span class="flex items-center">
-												<Calendar class="mr-1 h-4 w-4" />
-												{opportunity._count.events}
-											</span>
-										{/if}
-									</div>
-								</td>
-								<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-									<div class="flex items-center justify-end space-x-2">
-										<a
-											href="/opportunities/{opportunity.id}"
-											class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-											title="View"
-										>
-											<Eye class="h-4 w-4" />
-										</a>
-										<a
-											href="/opportunities/{opportunity.id}/edit"
-											class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-											title="Edit"
-										>
-											<Edit class="h-4 w-4" />
-										</a>
-										<button
-											type="button"
-											onclick={() => openDeleteModal(opportunity)}
-											class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-											title="Delete"
-										>
-											<Trash2 class="h-4 w-4" />
-										</button>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			{#if filteredOpportunities.length === 0}
-				<div class="py-12 text-center">
-					<Target class="mx-auto h-12 w-12 text-gray-400" />
-					<h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No opportunities</h3>
-					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-						{searchTerm || selectedStage !== 'all'
-							? 'No opportunities match your current filters.'
-							: 'Get started by creating a new opportunity.'}
-					</p>
-					{#if !searchTerm && selectedStage === 'all'}
-						<div class="mt-6">
-							<a
-								href="/opportunities/new"
-								class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
-							>
-								<Plus class="mr-2 h-4 w-4" />
-								New Opportunity
-							</a>
+					{/if}
+					{#if isClosed && selectedRow.closedOn}
+						<div>
+							<p class="text-xs text-gray-400 dark:text-gray-500">Closed On</p>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{formatDate(selectedRow.closedOn)}
+							</p>
 						</div>
 					{/if}
 				</div>
-			{/if}
-		</div>
-	</div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-{#if showDeleteModal && opportunityToDelete}
-	<div
-		class="bg-opacity-50 fixed inset-0 z-50 h-full w-full overflow-y-auto bg-gray-600"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="modal-title"
-		tabindex="-1"
-		onclick={closeDeleteModal}
-		onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
-	>
-		<div
-			class="relative top-20 mx-auto w-96 rounded-md border bg-white p-5 shadow-lg dark:bg-gray-800"
-			role="button"
-			tabindex="0"
-			onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
-			onclick={(e) => e.stopPropagation()}
-		>
-			<div class="mt-3">
-				<div class="mb-4 flex items-center justify-between">
-					<div class="flex items-center">
-						<div
-							class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900"
-						>
-							<AlertTriangle class="h-6 w-6 text-red-600 dark:text-red-400" />
-						</div>
-						<div class="ml-4">
-							<h3
-								id="modal-title"
-								class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
-							>
-								Delete Opportunity
-							</h3>
-						</div>
-					</div>
-					<button
-						type="button"
-						onclick={closeDeleteModal}
-						class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-					>
-						<X class="h-5 w-5" />
-					</button>
-				</div>
-
-				<div class="mt-2">
-					<p class="text-sm text-gray-500 dark:text-gray-400">
-						Are you sure you want to delete the opportunity <strong
-							>"{opportunityToDelete?.name || 'Unknown'}"</strong
-						>? This action cannot be undone and will also delete all associated tasks, events, and
-						comments.
-					</p>
-				</div>
-
-				<div class="mt-6 flex justify-end space-x-3">
-					<button
-						type="button"
-						onclick={closeDeleteModal}
-						disabled={deleteLoading}
-						class="rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-					>
-						Cancel
-					</button>
-
-					<form
-						method="POST"
-						action="?/delete"
-						use:enhance={({ formElement, formData }) => {
-							deleteLoading = true;
-
-							return async ({ result }) => {
-								deleteLoading = false;
-
-								if (result.type === 'success') {
-									closeDeleteModal();
-									// Use goto with replaceState and invalidateAll for a clean refresh
-									await goto($page.url.pathname, {
-										replaceState: true,
-										invalidateAll: true
-									});
-								} else if (result.type === 'failure') {
-									console.error('Delete failed:', result.data?.message);
-									alert(
-										'Failed to delete opportunity: ' + (result.data?.message || 'Unknown error')
-									);
-								} else if (result.type === 'error') {
-									console.error('Delete error:', result.error);
-									alert('An error occurred while deleting the opportunity.');
-								}
-							};
-						}}
-					>
-						<input type="hidden" name="opportunityId" value={opportunityToDelete?.id || ''} />
-						<button
-							type="submit"
-							disabled={deleteLoading}
-							class="rounded-md border border-transparent bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{deleteLoading ? 'Deleting...' : 'Delete'}
-						</button>
-					</form>
-				</div>
 			</div>
-		</div>
-	</div>
-{/if}
+		{/if}
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button onclick={handleDrawerSave} disabled={isLoading || !drawerFormData.name?.trim()}>
+				{isLoading ? 'Creating...' : 'Create Opportunity'}
+			</Button>
+		{:else}
+			{#if !isClosed}
+				<Button
+					variant="outline"
+					class="text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-300"
+					onclick={handleMarkWon}
+					disabled={isLoading}
+				>
+					<Trophy class="mr-1.5 h-4 w-4" />
+					Mark Won
+				</Button>
+				<Button
+					variant="outline"
+					class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+					onclick={handleMarkLost}
+					disabled={isLoading}
+				>
+					<XCircle class="mr-1.5 h-4 w-4" />
+					Mark Lost
+				</Button>
+			{/if}
+			<Button onclick={handleDrawerUpdate} disabled={isLoading || !drawerFormData.name?.trim()}>
+				{isLoading ? 'Saving...' : 'Save'}
+			</Button>
+		{/if}
+	{/snippet}
+</CrmDrawer>

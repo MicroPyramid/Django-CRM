@@ -1,18 +1,16 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
-
-# =============================================================================
-# Kanban Board Serializers (merged from boards app)
-# =============================================================================
 
 
 class BoardMemberSerializer(serializers.ModelSerializer):
@@ -54,6 +52,7 @@ class BoardColumnSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at", "board")
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return obj.tasks.count()
 
@@ -67,6 +66,7 @@ class BoardColumnListSerializer(serializers.ModelSerializer):
         model = BoardColumn
         fields = ["id", "name", "order", "color", "limit", "task_count"]
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return obj.tasks.count()
 
@@ -93,9 +93,11 @@ class BoardSerializer(serializers.ModelSerializer):
             "org",
         )
 
+    @extend_schema_field(int)
     def get_member_count(self, obj):
         return obj.members.count()
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return BoardTask.objects.filter(column__board=obj).count()
 
@@ -123,19 +125,17 @@ class BoardListSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(int)
     def get_member_count(self, obj):
         return obj.members.count()
 
+    @extend_schema_field(int)
     def get_column_count(self, obj):
         return obj.columns.count()
 
+    @extend_schema_field(int)
     def get_task_count(self, obj):
         return BoardTask.objects.filter(column__board=obj).count()
-
-
-# =============================================================================
-# Original Task Serializers
-# =============================================================================
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -143,6 +143,7 @@ class TaskSerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
     task_attachment = AttachmentsSerializer(read_only=True, many=True)
     task_comments = CommentSerializer(read_only=True, many=True)
 
@@ -154,12 +155,17 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
+            "description",
             "account",
+            "opportunity",
+            "case",
+            "lead",
             "created_by",
             "created_at",
             "contacts",
             "teams",
             "assigned_to",
+            "tags",
             "task_attachment",
             "task_comments",
         )
@@ -186,6 +192,23 @@ class TaskCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Task already exists with this title")
         return title
 
+    def validate(self, attrs):
+        """Validate that task has at most one parent entity."""
+        attrs = super().validate(attrs)
+        parent_fields = ["account", "opportunity", "case", "lead"]
+        set_parents = [field for field in parent_fields if attrs.get(field)]
+        if len(set_parents) > 1:
+            raise serializers.ValidationError(
+                {
+                    "account": (
+                        "A task can only be linked to one parent entity "
+                        f"(Account, Opportunity, Case, or Lead). "
+                        f"Currently set: {', '.join(set_parents)}"
+                    )
+                }
+            )
+        return attrs
+
     class Meta:
         model = Task
         fields = (
@@ -194,7 +217,11 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
+            "description",
             "account",
+            "opportunity",
+            "case",
+            "lead",
             "created_by",
             "created_at",
         )
@@ -217,8 +244,13 @@ class TaskCreateSwaggerSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
+            "description",
             "account",
+            "opportunity",
+            "case",
+            "lead",
             "contacts",
             "teams",
             "assigned_to",
+            "tags",
         )

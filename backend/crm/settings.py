@@ -4,24 +4,6 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
-# JWT_AUTH = {
-#     'JWT_PAYLOAD_GET_USERNAME_HANDLER':
-#     'path.to.custom_jwt_payload_handler',
-#     'JWT_PUBLIC_KEY': None,
-#     'JWT_PRIVATE_KEY': None,
-#     'JWT_ALGORITHM': 'HS256',
-#     'JWT_VERIFY': True,
-#     'JWT_VERIFY_EXPIRATION': True,
-#     'JWT_LEEWAY': 0,
-#     'JWT_EXPIRATION_DELTA': timedelta(seconds=300),
-#     'JWT_AUDIENCE': None,
-#     'JWT_ISSUER': None,
-#     'JWT_ALLOW_REFRESH': False,
-#     'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
-#     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
-#     'JWT_BEARER_FORMAT': 'Bearer'
-# }
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,10 +13,10 @@ load_dotenv()
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-
-ALLOWED_HOSTS = ["*"]
+# Security: Restrict allowed hosts - set ALLOWED_HOSTS env var in production
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -43,7 +25,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
-    "phonenumber_field",
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
@@ -70,7 +51,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "crum.CurrentRequestUserMiddleware",
-    # "common.external_auth.CustomDualAuthentication"
     "common.middleware.get_company.GetProfileAndOrg",
     "common.middleware.rls_context.RequireOrgContext",  # RLS: Enforce org context + set PostgreSQL session variable
 ]
@@ -151,7 +131,6 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 ENV_TYPE = os.environ["ENV_TYPE"]
-print(">>> ENV_TYPE", ENV_TYPE)
 if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
@@ -249,7 +228,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "common.external_auth.CustomDualAuthentication",
+        "common.external_auth.APIKeyAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
         # "rest_framework.authentication.BasicAuthentication",
     ),
@@ -266,6 +245,23 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "PREPROCESSING_HOOKS": ["common.custom_openapi.preprocessing_filter_spec"],
+    "ENUM_NAME_OVERRIDES": {
+        # Role enums
+        "ProfileRoleEnum": "common.utils.ROLES",
+        "BoardMemberRoleEnum": "tasks.models.BoardMember.ROLE_CHOICES",
+        # Priority enums
+        "TaskPriorityEnum": "tasks.models.Task.PRIORITY_CHOICES",
+        "CasePriorityEnum": "common.utils.PRIORITY_CHOICE",
+        "BoardTaskPriorityEnum": "tasks.models.BoardTask.PRIORITY_CHOICES",
+        # Status enums
+        "TaskStatusEnum": "tasks.models.Task.STATUS_CHOICES",
+        "CaseStatusEnum": "common.utils.STATUS_CHOICE",
+        "SolutionStatusEnum": "cases.models.Solution.STATUS_CHOICES",
+        "DocumentStatusEnum": "common.models.Document.DOCUMENT_STATUS_CHOICE",
+        "InvoiceStatusEnum": "invoices.models.Invoice.INVOICE_STATUS",
+        "ContactFormStatusEnum": "common.models.ContactFormSubmission.STATUS_CHOICES",
+        "LeadStatusEnum": "common.utils.LEAD_STATUS",
+    },
 }
 
 # JWT_SETTINGS = {
@@ -285,10 +281,21 @@ SWAGGER_SETTINGS = {
 }
 
 CORS_ALLOW_HEADERS = default_headers + ("org",)
-CORS_ORIGIN_ALLOW_ALL = True
-CSRF_TRUSTED_ORIGINS = ["https://*.runcode.io", "http://*"]
+# Security: CORS configuration via environment variables
+CORS_ORIGIN_ALLOW_ALL = os.environ.get("CORS_ALLOW_ALL", "False").lower() == "true"
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]
+# Security: CSRF trusted origins via environment variable
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()]
 
-SECURE_HSTS_SECONDS = 3600
+# Security: HSTS with 1 year duration (recommended minimum)
+SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -302,10 +309,11 @@ DOMAIN_NAME = os.getenv("DOMAIN_NAME")
 
 
 SIMPLE_JWT = {
-    #'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=365),
-    "ROTATE_REFRESH_TOKENS": False,
+    # Security: Reduced token lifetimes
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+    # Security: Enable token rotation to invalidate old refresh tokens
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
     "ALGORITHM": "HS256",

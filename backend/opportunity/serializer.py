@@ -1,11 +1,12 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
@@ -13,10 +14,8 @@ from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
 
 
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
+# Note: Removed unused serializer properties that were computed but never used by frontend:
+# - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
 
 
 class OpportunitySerializer(serializers.ModelSerializer):
@@ -30,10 +29,11 @@ class OpportunitySerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
-    opportunity_attachment = AttachmentsSerializer(read_only=True, many=True)
-    get_team_users = ProfileSerializer(read_only=True, many=True)
-    get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
-    get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
+    created_on_arrow = serializers.SerializerMethodField()
+
+    @extend_schema_field(str)
+    def get_created_on_arrow(self, obj):
+        return obj.created_on_arrow
 
     class Meta:
         model = Opportunity
@@ -61,17 +61,12 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "tags",
             # Notes
             "description",
-            # Related
-            "opportunity_attachment",
             # System
             "created_by",
             "created_at",
             "is_active",
             "org",
             "created_on_arrow",
-            "get_team_users",
-            "get_team_and_assigned_users",
-            "get_assigned_users_not_in_teams",
         )
 
 
@@ -123,12 +118,21 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "lead_source",
             # Notes
             "description",
+            # Status
+            "is_active",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided
+        if not validated_data.get("currency"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
     closed_on = serializers.DateField()
-    opportunity_attachment = serializers.FileField()
 
     class Meta:
         model = Opportunity
@@ -147,13 +151,11 @@ class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
             "contacts",
             "teams",
             "tags",
-            "opportunity_attachment",
         )
 
 
 class OpportunityDetailEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
-    opportunity_attachment = serializers.FileField()
 
 
 class OpportunityCommentEditSwaggerSerializer(serializers.Serializer):

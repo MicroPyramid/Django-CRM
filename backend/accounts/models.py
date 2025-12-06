@@ -1,14 +1,17 @@
-import arrow
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
-from common.utils import COUNTRIES, INDCHOICES
+from common.utils import COUNTRIES, CURRENCY_CODES, INDCHOICES
 from contacts.models import Contact
+
+
+# Cleanup notes:
+# - Removed 'created_on_arrow' property (frontend computes its own timestamps)
+# - Removed 'contact_values' property (unused)
 
 
 class Account(AssignableMixin, BaseModel):
@@ -20,7 +23,7 @@ class Account(AssignableMixin, BaseModel):
     # Core Account Information
     name = models.CharField(_("Account Name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = PhoneNumberField(_("Phone"), null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
     website = models.URLField(_("Website"), blank=True, null=True)
 
     # Business Information
@@ -32,6 +35,9 @@ class Account(AssignableMixin, BaseModel):
     )
     annual_revenue = models.DecimalField(
         _("Annual Revenue"), max_digits=15, decimal_places=2, blank=True, null=True
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
 
     # Address (flat fields like Lead and Contact models)
@@ -51,7 +57,7 @@ class Account(AssignableMixin, BaseModel):
     )
 
     # Tags
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="account_tags", blank=True)
 
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
@@ -77,26 +83,6 @@ class Account(AssignableMixin, BaseModel):
 
     def __str__(self):
         return f"{self.name}"
-
-    def get_complete_address(self):
-        """Concatenates complete address."""
-        address_parts = [
-            self.address_line,
-            self.city,
-            self.state,
-            self.postcode,
-            self.get_country_display() if self.country else None,
-        ]
-        return ", ".join(part for part in address_parts if part)
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
-    @property
-    def contact_values(self):
-        contacts = list(self.contacts.values_list("id", flat=True))
-        return ",".join(str(contact) for contact in contacts)
 
 
 class AccountEmail(BaseModel):

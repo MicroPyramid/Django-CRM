@@ -1,49 +1,27 @@
 from rest_framework import serializers
 
 from accounts.models import Account
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-from leads.models import Company, Lead
-
-
-class TagsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
-
-
-class CompanySwaggerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ("name",)
-
-
-class CompanySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ("id", "name", "org")
+from leads.models import Lead
 
 
 class LeadSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer()
-    country = serializers.SerializerMethodField()
     tags = TagsSerializer(read_only=True, many=True)
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
-
-    def get_country(self, obj):
-        return obj.get_country_display()
 
     class Meta:
         model = Lead
@@ -51,11 +29,12 @@ class LeadSerializer(serializers.ModelSerializer):
             "id",
             # Core Lead Information
             "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -64,6 +43,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "industry",
             "rating",
             "opportunity_amount",
+            "currency",
             "probability",
             "close_date",
             # Address
@@ -88,8 +68,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "created_by",
             "created_at",
             "is_active",
-            "created_from_site",
-            "company",
+            "company_name",
         )
 
 
@@ -109,25 +88,20 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             self.fields["email"].required = True
         self.fields["first_name"].required = False
         self.fields["last_name"].required = False
-        self.fields["title"].required = True
+        self.fields["salutation"].required = False
         self.org = request_obj.profile.org
-
-        if self.instance:
-            if self.instance.created_from_site:
-                prev_choices = self.fields["source"]._get_choices()
-                prev_choices = prev_choices + [("micropyramid", "Micropyramid")]
-                self.fields["source"]._set_choices(prev_choices)
 
     class Meta:
         model = Lead
         fields = (
             # Core Lead Information
             "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -136,6 +110,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "industry",
             "rating",
             "opportunity_amount",
+            "currency",
             "probability",
             "close_date",
             # Address
@@ -149,9 +124,17 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "next_follow_up",
             "description",
             # System
-            "org",
-            "company",
+            "company_name",
+            "is_active",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided and has opportunity_amount
+        if not validated_data.get("currency") and validated_data.get("opportunity_amount"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
@@ -160,11 +143,12 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
         fields = [
             # Core Lead Information
             "title",
+            "salutation",
             "first_name",
             "last_name",
             "email",
             "phone",
-            "contact_title",
+            "job_title",
             "website",
             "linkedin_url",
             # Sales Pipeline
@@ -191,8 +175,7 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
             "next_follow_up",
             "description",
             # System
-            "company",
-            "lead_attachment",
+            "company_name",
         ]
 
 

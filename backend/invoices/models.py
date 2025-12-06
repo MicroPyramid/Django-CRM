@@ -1,9 +1,8 @@
 import datetime
 
-import arrow
 from django.db import models
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
 
 from accounts.models import Account
 from common.base import BaseModel
@@ -48,7 +47,7 @@ class Invoice(BaseModel):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
-    phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
 
     amount_due = models.DecimalField(
         blank=True, null=True, max_digits=12, decimal_places=2
@@ -92,10 +91,12 @@ class Invoice(BaseModel):
         return int(date + "0001")
 
     def formatted_total_amount(self):
-        return self.currency + " " + str(self.total_amount)
+        currency = self.currency or "USD"
+        return currency + " " + str(self.total_amount)
 
     def formatted_rate(self):
-        return str(self.rate) + " " + self.currency
+        currency = self.currency or "USD"
+        return str(self.rate) + " " + currency
 
     def formatted_total_quantity(self):
         return str(self.quantity) + " " + "Hours"
@@ -126,7 +127,7 @@ class Invoice(BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"
 
     @property
     def get_team_users(self):
@@ -193,7 +194,7 @@ class InvoiceHistory(BaseModel):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
-    phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
     updated_by = models.ForeignKey(
         Profile,
         related_name="invoice_history_updated_by",
@@ -237,17 +238,19 @@ class InvoiceHistory(BaseModel):
         super().save(*args, **kwargs)
 
     def formatted_total_amount(self):
-        return self.currency + " " + str(self.total_amount)
+        currency = self.currency or "USD"
+        return currency + " " + str(self.total_amount)
 
     def formatted_rate(self):
-        return str(self.rate) + " " + self.currency
+        currency = self.currency or "USD"
+        return str(self.rate) + " " + currency
 
     def formatted_total_quantity(self):
         return str(self.quantity) + " " + "Hours"
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"
 
 
 # Phase 3: Enhanced Quotes with Line Items
@@ -260,6 +263,7 @@ class Product(BaseModel):
     description = models.TextField(blank=True, null=True)
     sku = models.CharField(max_length=100, blank=True, null=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CODES, blank=True, null=True)
     category = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="products")

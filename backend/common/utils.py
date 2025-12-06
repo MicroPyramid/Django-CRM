@@ -2,29 +2,6 @@ import pytz
 from django.utils.translation import gettext_lazy as _
 
 
-def jwt_payload_handler(user):
-    """Custom payload handler
-    Token encrypts the dictionary returned by this function, and can be
-    decoded by rest_framework_jwt.utils.jwt_decode_handler
-    """
-    return {
-        "id": user.pk,
-        # 'name': user.name,
-        "email": user.email,
-        # "role": user.role,
-        # "has_sales_access": user.has_sales_access,
-        # "has_marketing_access": user.has_marketing_access,
-        "file_prepend": user.file_prepend,
-        "username": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "is_active": user.is_active,
-        # "is_admin": user.is_admin,
-        "is_staff": user.is_staff,
-        # "date_joined"
-    }
-
-
 INDCHOICES = (
     ("ADVERTISING", "ADVERTISING"),
     ("AGRICULTURE", "AGRICULTURE"),
@@ -400,205 +377,36 @@ COUNTRIES = (
 )
 
 CURRENCY_CODES = (
-    ("AED", _("AED, Dirham")),
-    ("AFN", _("AFN, Afghani")),
-    ("ALL", _("ALL, Lek")),
-    ("AMD", _("AMD, Dram")),
-    ("ANG", _("ANG, Guilder")),
-    ("AOA", _("AOA, Kwanza")),
-    ("ARS", _("ARS, Peso")),
-    ("AUD", _("AUD, Dollar")),
-    ("AWG", _("AWG, Guilder")),
-    ("AZN", _("AZN, Manat")),
-    ("BAM", _("BAM, Marka")),
-    ("BBD", _("BBD, Dollar")),
-    ("BDT", _("BDT, Taka")),
-    ("BGN", _("BGN, Lev")),
-    ("BHD", _("BHD, Dinar")),
-    ("BIF", _("BIF, Franc")),
-    ("BMD", _("BMD, Dollar")),
-    ("BND", _("BND, Dollar")),
-    ("BOB", _("BOB, Boliviano")),
-    ("BRL", _("BRL, Real")),
-    ("BSD", _("BSD, Dollar")),
-    ("BTN", _("BTN, Ngultrum")),
-    ("BWP", _("BWP, Pula")),
-    ("BYR", _("BYR, Ruble")),
-    ("BZD", _("BZD, Dollar")),
-    ("CAD", _("CAD, Dollar")),
-    ("CDF", _("CDF, Franc")),
-    ("CHF", _("CHF, Franc")),
-    ("CLP", _("CLP, Peso")),
-    ("CNY", _("CNY, Yuan Renminbi")),
-    ("COP", _("COP, Peso")),
-    ("CRC", _("CRC, Colon")),
-    ("CUP", _("CUP, Peso")),
-    ("CVE", _("CVE, Escudo")),
-    ("CZK", _("CZK, Koruna")),
-    ("DJF", _("DJF, Franc")),
-    ("DKK", _("DKK, Krone")),
-    ("DOP", _("DOP, Peso")),
-    ("DZD", _("DZD, Dinar")),
-    ("EGP", _("EGP, Pound")),
-    ("ERN", _("ERN, Nakfa")),
-    ("ETB", _("ETB, Birr")),
+    ("USD", _("USD, Dollar")),
     ("EUR", _("EUR, Euro")),
-    ("FJD", _("FJD, Dollar")),
-    ("FKP", _("FKP, Pound")),
     ("GBP", _("GBP, Pound")),
-    ("GEL", _("GEL, Lari")),
-    ("GHS", _("GHS, Cedi")),
-    ("GIP", _("GIP, Pound")),
-    ("GMD", _("GMD, Dalasi")),
-    ("GNF", _("GNF, Franc")),
-    ("GTQ", _("GTQ, Quetzal")),
-    ("GYD", _("GYD, Dollar")),
-    ("HKD", _("HKD, Dollar")),
-    ("HNL", _("HNL, Lempira")),
-    ("HRK", _("HRK, Kuna")),
-    ("HTG", _("HTG, Gourde")),
-    ("HUF", _("HUF, Forint")),
-    ("IDR", _("IDR, Rupiah")),
-    ("ILS", _("ILS, Shekel")),
     ("INR", _("INR, Rupee")),
-    ("IQD", _("IQD, Dinar")),
-    ("IRR", _("IRR, Rial")),
-    ("ISK", _("ISK, Krona")),
-    ("JMD", _("JMD, Dollar")),
-    ("JOD", _("JOD, Dinar")),
+    ("CAD", _("CAD, Dollar")),
+    ("AUD", _("AUD, Dollar")),
     ("JPY", _("JPY, Yen")),
-    ("KES", _("KES, Shilling")),
-    ("KGS", _("KGS, Som")),
-    ("KHR", _("KHR, Riels")),
-    ("KMF", _("KMF, Franc")),
-    ("KPW", _("KPW, Won")),
-    ("KRW", _("KRW, Won")),
-    ("KWD", _("KWD, Dinar")),
-    ("KYD", _("KYD, Dollar")),
-    ("KZT", _("KZT, Tenge")),
-    ("LAK", _("LAK, Kip")),
-    ("LBP", _("LBP, Pound")),
-    ("LKR", _("LKR, Rupee")),
-    ("LRD", _("LRD, Dollar")),
-    ("LSL", _("LSL, Loti")),
-    ("LTL", _("LTL, Litas")),
-    ("LVL", _("LVL, Lat")),
-    ("LYD", _("LYD, Dinar")),
-    ("MAD", _("MAD, Dirham")),
-    ("MDL", _("MDL, Leu")),
-    ("MGA", _("MGA, Ariary")),
-    ("MKD", _("MKD, Denar")),
-    ("MMK", _("MMK, Kyat")),
-    ("MNT", _("MNT, Tugrik")),
-    ("MOP", _("MOP, Pataca")),
-    ("MRO", _("MRO, Ouguiya")),
-    ("MUR", _("MUR, Rupee")),
-    ("MVR", _("MVR, Rufiyaa")),
-    ("MWK", _("MWK, Kwacha")),
-    ("MXN", _("MXN, Peso")),
-    ("MYR", _("MYR, Ringgit")),
-    ("MZN", _("MZN, Metical")),
-    ("NAD", _("NAD, Dollar")),
-    ("NGN", _("NGN, Naira")),
-    ("NIO", _("NIO, Cordoba")),
-    ("NOK", _("NOK, Krone")),
-    ("NPR", _("NPR, Rupee")),
-    ("NZD", _("NZD, Dollar")),
-    ("OMR", _("OMR, Rial")),
-    ("PAB", _("PAB, Balboa")),
-    ("PEN", _("PEN, Sol")),
-    ("PGK", _("PGK, Kina")),
-    ("PHP", _("PHP, Peso")),
-    ("PKR", _("PKR, Rupee")),
-    ("PLN", _("PLN, Zloty")),
-    ("PYG", _("PYG, Guarani")),
-    ("QAR", _("QAR, Rial")),
-    ("RON", _("RON, Leu")),
-    ("RSD", _("RSD, Dinar")),
-    ("RUB", _("RUB, Ruble")),
-    ("RWF", _("RWF, Franc")),
-    ("SAR", _("SAR, Rial")),
-    ("SBD", _("SBD, Dollar")),
-    ("SCR", _("SCR, Rupee")),
-    ("SDG", _("SDG, Pound")),
-    ("SEK", _("SEK, Krona")),
+    ("CNY", _("CNY, Yuan")),
+    ("CHF", _("CHF, Franc")),
     ("SGD", _("SGD, Dollar")),
-    ("SHP", _("SHP, Pound")),
-    ("SLL", _("SLL, Leone")),
-    ("SOS", _("SOS, Shilling")),
-    ("SRD", _("SRD, Dollar")),
-    ("SSP", _("SSP, Pound")),
-    ("STD", _("STD, Dobra")),
-    ("SYP", _("SYP, Pound")),
-    ("SZL", _("SZL, Lilangeni")),
-    ("THB", _("THB, Baht")),
-    ("TJS", _("TJS, Somoni")),
-    ("TMT", _("TMT, Manat")),
-    ("TND", _("TND, Dinar")),
-    ("TOP", _("TOP, Paanga")),
-    ("TRY", _("TRY, Lira")),
-    ("TTD", _("TTD, Dollar")),
-    ("TWD", _("TWD, Dollar")),
-    ("TZS", _("TZS, Shilling")),
-    ("UAH", _("UAH, Hryvnia")),
-    ("UGX", _("UGX, Shilling")),
-    ("USD", _("$, Dollar")),
-    ("UYU", _("UYU, Peso")),
-    ("UZS", _("UZS, Som")),
-    ("VEF", _("VEF, Bolivar")),
-    ("VND", _("VND, Dong")),
-    ("VUV", _("VUV, Vatu")),
-    ("WST", _("WST, Tala")),
-    ("XAF", _("XAF, Franc")),
-    ("XCD", _("XCD, Dollar")),
-    ("XOF", _("XOF, Franc")),
-    ("XPF", _("XPF, Franc")),
-    ("YER", _("YER, Rial")),
-    ("ZAR", _("ZAR, Rand")),
-    ("ZMK", _("ZMK, Kwacha")),
-    ("ZWL", _("ZWL, Dollar")),
+    ("AED", _("AED, Dirham")),
+    ("BRL", _("BRL, Real")),
+    ("MXN", _("MXN, Peso")),
 )
 
-
-def return_complete_address(self):
-    address = ""
-    if self.address_line:
-        address += self.address_line
-    if self.street:
-        if address:
-            address += ", " + self.street
-        else:
-            address += self.street
-    if self.city:
-        if address:
-            address += ", " + self.city
-        else:
-            address += self.city
-    if self.state:
-        if address:
-            address += ", " + self.state
-        else:
-            address += self.state
-    if self.postcode:
-        if address:
-            address += ", " + self.postcode
-        else:
-            address += self.postcode
-    if self.country:
-        if address:
-            address += ", " + self.get_country_display()
-        else:
-            address += self.get_country_display()
-    return address
-
-
-def get_client_ip(request):
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
+CURRENCY_SYMBOLS = {
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "INR": "₹",
+    "CAD": "CA$",
+    "AUD": "A$",
+    "JPY": "¥",
+    "CNY": "¥",
+    "CHF": "CHF",
+    "SGD": "S$",
+    "AED": "د.إ",
+    "BRL": "R$",
+    "MXN": "MX$",
+}
 
 
 def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
@@ -609,21 +417,209 @@ def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
     return custom_date.astimezone(user_time_zone)
 
 
-def append_str_to(append_to: str, *args, sep=", ", **kwargs):
-    """Concatenate to a string.
-    Args:
-        append_to(str): The string to append to.
-        args(list): list of string characters to concatenate.
-        sep(str): Seperator to use between concatenated strings.
-        kwargs(dict): Mapping of variables with intended string values.
-    Returns:
-        str, joined strings seperated
+# =============================================================================
+# CRM Entity Utilities
+# =============================================================================
+
+def get_or_create_tags(tag_data, org):
     """
-    append_to = append_to or ""
-    result_list = [append_to] + list(args) + list(kwargs.values())
-    data = False
-    for item in result_list:
-        if item:
-            data = True
-            break
-    return f"{sep}".join(filter(len, result_list)) if data else ""
+    Handle tag creation/lookup for any CRM model.
+
+    Args:
+        tag_data: List of tag names or JSON string of tag names
+        org: Organization instance
+
+    Returns:
+        List of Tag objects
+    """
+    import json
+    from common.models import Tags
+
+    tags = []
+    if not tag_data:
+        return tags
+
+    # Handle JSON string input
+    if isinstance(tag_data, str):
+        try:
+            tag_data = json.loads(tag_data)
+        except json.JSONDecodeError:
+            tag_data = [tag_data]
+
+    for tag_name in tag_data:
+        if not tag_name:
+            continue
+        tag_obj, _ = Tags.objects.get_or_create(
+            slug=tag_name.lower(),
+            org=org,
+            defaults={'name': tag_name}
+        )
+        tags.append(tag_obj)
+    return tags
+
+
+def handle_m2m_assignment(instance, field_name, ids, model_class, org, extra_filters=None):
+    """
+    Handle ManyToMany field assignment with org filtering.
+
+    Args:
+        instance: Model instance with the M2M field
+        field_name: Name of the M2M field
+        ids: List of IDs or JSON string of IDs to assign
+        model_class: The related model class
+        org: Organization instance
+        extra_filters: Optional dict of additional filters (e.g., {'is_active': True})
+
+    Returns:
+        QuerySet of objects that were assigned
+    """
+    import json
+
+    field = getattr(instance, field_name)
+
+    if not ids:
+        return model_class.objects.none()
+
+    # Handle JSON string input
+    if isinstance(ids, str):
+        try:
+            ids = json.loads(ids)
+        except json.JSONDecodeError:
+            ids = [ids]
+
+    filters = {'id__in': ids, 'org': org}
+    if extra_filters:
+        filters.update(extra_filters)
+
+    objects = model_class.objects.filter(**filters)
+    if objects.exists():
+        field.add(*objects)
+    return objects
+
+
+def create_attachment(file, content_object, profile):
+    """
+    Create an attachment for any CRM content object.
+
+    Args:
+        file: The uploaded file object
+        content_object: The model instance to attach to
+        profile: The user's profile
+
+    Returns:
+        Attachments instance
+    """
+    from common.models import Attachments
+
+    attachment = Attachments()
+    attachment.created_by = profile.user
+    attachment.file_name = file.name
+    attachment.content_object = content_object
+    attachment.attachment = file
+    attachment.org = profile.org
+    attachment.save()
+    return attachment
+
+
+# =============================================================================
+# Document File Type Utilities
+# =============================================================================
+
+def is_document_file_image(ext):
+    image_ext_list = [
+        "bmp", "dds", "gif", "jpg", "jpeg", "png", "psd",
+        "pspimage", "tga", "thm", "tif", "tiff", "yuv",
+    ]
+    return ext.lower() in image_ext_list
+
+
+def is_document_file_audio(ext):
+    audio_ext_list = ["aif", "iff", "m3u", "m4a", "mid", "mp3", "mpa", "wav", "wma"]
+    return ext.lower() in audio_ext_list
+
+
+def is_document_file_video(ext):
+    video_ext_list = [
+        "3g2", "3gp", "asf", "avi", "flv", "m4v", "mov",
+        "mp4", "mpg", "rm", "srt", "swf", "vob", "wmv",
+    ]
+    return ext.lower() in video_ext_list
+
+
+def is_document_file_pdf(ext):
+    pdf_ext_list = ["indd", "pct", "pdf"]
+    return ext.lower() in pdf_ext_list
+
+
+def is_document_file_code(ext):
+    code_ext_list = [
+        "aspx", "json", "jsp", "do", "htm", "html", "ser", "php", "jad", "cfm",
+        "xml", "js", "pod", "asp", "atomsvc", "rdf", "pou", "jsf", "abs", "pl",
+        "asm", "srz", "luac", "cod", "lib", "arxml", "bas", "ejs", "fs", "hbs",
+        "s", "ss", "cms", "pyc", "vcxproj", "jse", "smali", "xla", "lxk", "pdb",
+        "src", "cs", "ipb", "ave", "mst", "vls", "rcc", "sax", "scr", "dtd",
+        "axd", "mrl", "xsl", "ino", "spr", "xsd", "cgi", "isa", "ws", "rss",
+        "dvb", "nupkg", "xlm", "v4e", "prg", "form", "bat", "mrc", "asi", "jdp",
+        "fmb", "graphml", "gcode", "aia", "py", "atp", "mzp", "o", "scs", "mm",
+        "cpp", "java", "gypi", "idb", "txml", "c", "vip", "tra", "rc", "action",
+        "vlx", "asta", "pyo", "lua", "gml", "prl", "rfs", "cpb", "sh", "rbf",
+        "gp", "phtml", "bp", "scb", "sln", "vbp", "wbf", "bdt", "mac", "rpy",
+        "eaf", "mc", "mwp", "gnt", "h", "swift", "e", "styl", "cxx", "as",
+        "liquid", "dep", "fas", "vbs", "aps", "vbe", "lss", "cmake", "resx",
+        "csb", "dpk", "pdml", "txx", "dbg", "jsa", "sxs", "sasf", "pm", "csx",
+        "r", "wml", "au3", "stm", "cls", "cc", "ins", "jsc", "dwp", "rpg",
+        "arb", "bml", "inc", "eld", "sct", "sm", "wbt", "csproj", "tcz", "html5",
+        "gbl", "cmd", "dlg", "tpl", "rbt", "xcp", "tpm", "qry", "mfa", "ptx",
+        "lsp", "pag", "ebc", "php3", "cob", "csc", "pyt", "dwt", "rb", "wsdl",
+        "lap", "textile", "sfx", "x", "a5r", "dbp", "pmp", "ipr", "fwx", "pbl",
+        "vbw", "phl", "cbl", "pas", "mom", "dbmdl", "lol", "wdl", "ppam", "plx",
+        "vb", "cgx", "lst", "lmp", "vd", "bcp", "thtml", "scpt", "isu", "mrd",
+        "perl", "dtx", "f", "wpk", "ipf", "ptl", "luca", "hx", "uvproj", "qvs",
+        "vba", "xjb", "appxupload", "ti", "svn-base", "bsc", "mak", "vcproj",
+        "dsd", "ksh", "pyw", "bxml", "mo", "irc", "gcl", "dbml", "mlv", "wsf",
+        "tcl", "dqy", "ssi", "pbxproj", "bal", "trt", "sal", "hkp", "vbi", "dob",
+        "htc", "p", "ats", "seam", "loc", "pli", "rptproj", "pxml", "pkb", "dpr",
+        "scss", "dsb", "bb", "vbproj", "ash", "rml", "nbk", "nvi", "lmv", "mw",
+        "jl", "dso", "cba", "jks", "ary", "run", "vps", "clm", "brml", "msha",
+        "mdp", "tmh", "jsx", "sdl", "ptxml", "fxl", "wmw", "dcr", "bcc", "cbp",
+        "bmo", "bsv", "less", "gss", "ctl", "rpyc", "ascx", "odc", "wiki", "obr",
+        "l", "axs", "bpr", "ppa", "rpo", "sqlproj", "smm", "dsr", "arq", "din",
+        "jml", "jsonp", "ml", "rc2", "myapp", "cla", "xme", "obj", "jsdtscope",
+        "gyp", "datasource", "cp", "rh", "lpx", "a2w", "ctp", "ulp", "nt",
+        "script", "bxl", "gs", "xslt", "mg", "pch", "mhl", "zpd", "psm1", "asz",
+        "m", "jacl", "pym", "rws", "acu", "ssq", "wxs", "coffee", "ncb", "akt",
+        "pyx", "zero", "hs", "mkb", "tru", "xul", "mfl", "sca", "sbr", "master",
+        "opv", "matlab", "sami", "agc", "slim", "tea", "m51", "mec", "asc",
+        "gch", "enml", "kst", "jade", "dfb", "ips", "rgs", "vbx", "cspkg", "ncx",
+        "brs", "wfs", "ifp", "nse", "xtx", "j", "cx", "ps1", "nas", "mk", "ccs",
+        "vrp", "lnp", "cml", "c#", "idl", "exp", "apb", "nsi", "asmx", "tdo",
+        "pjt", "fdt", "s5d", "mvba", "mf", "odl", "bzs", "jardesc", "tgml",
+        "moc", "wxi", "cpz", "fsx", "jav", "ocb", "agi", "tec", "txl", "amw",
+        "mscr", "dfd", "dpd", "pun", "f95", "vdproj", "xsc", "diff", "wxl",
+        "dgml", "airi", "kmt", "ksc", "io", "rbw", "sas", "vcp", "resources",
+        "param", "cg", "hlsl", "vssscc", "bgm", "xn", "targets", "sl", "gsc",
+        "qs", "owl", "devpak", "phps", "hdf", "pri", "nbin", "xaml", "s4e",
+        "scm", "tk", "poc", "uix", "clw", "factorypath", "s43", "awd", "htr",
+        "php2", "classpath", "pickle", "rob", "msil", "ebx", "tsq", "lml", "f90",
+        "lds", "vup", "pbi", "swt", "vap", "ig", "pdo", "frt", "fcg", "c++",
+        "xcl", "dfn", "aar", "for", "re", "twig", "ebm", "dhtml", "hc", "pro",
+        "ahk", "rule", "bsh", "jcs", "zrx", "wsdd", "csp", "drc", "appxsym",
+    ]
+    return ext.lower() in code_ext_list
+
+
+def is_document_file_text(ext):
+    text_ext_list = [
+        "doc", "docx", "log", "msg", "odt", "pages", "rtf", "tex", "txt", "wpd", "wps",
+    ]
+    return ext.lower() in text_ext_list
+
+
+def is_document_file_sheet(ext):
+    sheet_ext_list = ["csv", "xls", "xlsx", "xlsm", "xlsb", "xltx", "xltm", "xlt"]
+    return ext.lower() in sheet_ext_list
+
+
+def is_document_file_zip(ext):
+    ext_list = ["zip", "7z", "gz", "rar", "zipx", "ace", "tar"]
+    return ext.lower() in ext_list

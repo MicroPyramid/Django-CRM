@@ -20,11 +20,18 @@ export async function load({ url, locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
+
 	try {
 		const page = parseInt(url.searchParams.get('page') || '1');
-		const limit = parseInt(url.searchParams.get('limit') || '20');
-		const search = url.searchParams.get('search') || '';
-		const ownerId = url.searchParams.get('owner') || '';
+		const limit = parseInt(url.searchParams.get('limit') || '10');
 
 		// Build query parameters for Django
 		const queryParams = buildQueryParams({
@@ -34,22 +41,15 @@ export async function load({ url, locals, cookies }) {
 			order: 'desc'
 		});
 
-		// Add search filter (Django typically uses 'search' param)
-		if (search) {
-			queryParams.append('search', search);
-		}
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Add owner filter (Django uses assigned_to)
-		if (ownerId) {
-			queryParams.append('assigned_to', ownerId);
-		}
-
-		// Fetch contacts and owners in parallel
-		const [contactsResponse, ownersResponse] = await Promise.all([
-			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
-			// Get users for owner filter dropdown
-			apiRequest('/users/', {}, { cookies, org })
-		]);
+		// Only fetch contacts on initial load - dropdown options loaded on-demand when drawer opens
+		const contactsResponse = await apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org });
 
 		// Handle Django response format
 		let contacts = [];
@@ -65,16 +65,30 @@ export async function load({ url, locals, cookies }) {
 			totalCount = contacts.length;
 		}
 
-		// Transform Django contacts to match Prisma structure
+		// Transform Django contacts to match frontend structure
 		const transformedContacts = contacts.map((contact) => ({
 			id: contact.id,
+			// Core fields
 			firstName: contact.first_name,
 			lastName: contact.last_name,
 			email: contact.email,
 			phone: contact.phone,
+			// Professional info
+			organization: contact.organization,
 			title: contact.title,
 			department: contact.department,
+			// Communication preferences
+			doNotCall: contact.do_not_call || false,
+			linkedInUrl: contact.linkedin_url,
+			// Address fields
+			addressLine: contact.address_line,
+			city: contact.city,
+			state: contact.state,
+			postcode: contact.postcode,
+			country: contact.country,
+			// Notes
 			description: contact.description,
+			// Timestamps
 			createdAt: contact.created_at,
 			updatedAt: contact.updated_at,
 
@@ -94,6 +108,20 @@ export async function load({ url, locals, cookies }) {
 							}
 						: null,
 
+			// Teams
+			teams:
+				contact.teams?.map((team) => ({
+					id: team.id,
+					name: team.name
+				})) || [],
+
+			// Tags
+			tags:
+				contact.tags?.map((tag) => ({
+					id: tag.id,
+					name: tag.name
+				})) || [],
+
 			// Related accounts
 			relatedAccounts:
 				contact.accounts?.map((account) => ({
@@ -112,24 +140,18 @@ export async function load({ url, locals, cookies }) {
 			}
 		}));
 
-		// Transform owners list
-		// Django UsersListView returns { active_users: { active_users: [...] }, inactive_users: { ... } }
-		const activeUsers = ownersResponse.active_users?.active_users || [];
-		const owners = activeUsers.map((user) => ({
-			id: user.id,
-			name: user.user_details?.email || user.email,
-			email: user.user_details?.email || user.email
-		}));
-
 		return {
 			contacts: transformedContacts,
-			totalCount,
-			currentPage: page,
-			totalPages: Math.ceil(totalCount / limit),
-			limit,
-			search,
-			ownerId,
-			owners
+			pagination: {
+				page,
+				limit,
+				total: totalCount,
+				totalPages: Math.ceil(totalCount / limit) || 1
+			},
+			filters,
+			// Dropdown options are now lazy-loaded on client when drawer opens
+			owners: [],
+			allTags: []
 		};
 	} catch (err) {
 		console.error('Error loading contacts from API:', err);
@@ -139,6 +161,141 @@ export async function load({ url, locals, cookies }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+	create: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			// Core fields
+			const firstName = form.get('firstName')?.toString().trim();
+			const lastName = form.get('lastName')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || '';
+			const phone = form.get('phone')?.toString().trim() || '';
+			// Professional info
+			const organization = form.get('organization')?.toString().trim() || '';
+			const title = form.get('title')?.toString().trim() || '';
+			const department = form.get('department')?.toString().trim() || '';
+			// Communication preferences
+			const doNotCall = form.get('doNotCall') === 'true';
+			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+			// Address fields
+			const addressLine = form.get('addressLine')?.toString().trim() || '';
+			const city = form.get('city')?.toString().trim() || '';
+			const state = form.get('state')?.toString().trim() || '';
+			const postcode = form.get('postcode')?.toString().trim() || '';
+			const country = form.get('country')?.toString().trim() || '';
+			// Notes
+			const description = form.get('description')?.toString().trim() || '';
+			// Tags
+			const tagsJson = form.get('tags')?.toString() || '[]';
+			const tags = JSON.parse(tagsJson);
+
+			if (!firstName || !lastName) {
+				return fail(400, { error: 'First name and last name are required.' });
+			}
+
+			const contactData = {
+				first_name: firstName,
+				last_name: lastName,
+				email: email || null,
+				phone: phone || null,
+				organization: organization || null,
+				title: title || null,
+				department: department || null,
+				do_not_call: doNotCall,
+				linkedin_url: linkedInUrl || null,
+				address_line: addressLine || null,
+				city: city || null,
+				state: state || null,
+				postcode: postcode || null,
+				country: country || null,
+				description: description || null,
+				tags: tags
+			};
+
+			await apiRequest(
+				'/contacts/',
+				{
+					method: 'POST',
+					body: contactData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error creating contact:', err);
+			return fail(400, { error: err.message || 'Failed to create contact' });
+		}
+	},
+
+	update: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const contactId = form.get('contactId')?.toString();
+			// Core fields
+			const firstName = form.get('firstName')?.toString().trim();
+			const lastName = form.get('lastName')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || '';
+			const phone = form.get('phone')?.toString().trim() || '';
+			// Professional info
+			const organization = form.get('organization')?.toString().trim() || '';
+			const title = form.get('title')?.toString().trim() || '';
+			const department = form.get('department')?.toString().trim() || '';
+			// Communication preferences
+			const doNotCall = form.get('doNotCall') === 'true';
+			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+			// Address fields
+			const addressLine = form.get('addressLine')?.toString().trim() || '';
+			const city = form.get('city')?.toString().trim() || '';
+			const state = form.get('state')?.toString().trim() || '';
+			const postcode = form.get('postcode')?.toString().trim() || '';
+			const country = form.get('country')?.toString().trim() || '';
+			// Notes
+			const description = form.get('description')?.toString().trim() || '';
+			// Tags
+			const tagsJson = form.get('tags')?.toString() || '[]';
+			const tags = JSON.parse(tagsJson);
+
+			if (!contactId || !firstName || !lastName) {
+				return fail(400, { error: 'Contact ID, first name, and last name are required.' });
+			}
+
+			const contactData = {
+				first_name: firstName,
+				last_name: lastName,
+				email: email || null,
+				phone: phone || null,
+				organization: organization || null,
+				title: title || null,
+				department: department || null,
+				do_not_call: doNotCall,
+				linkedin_url: linkedInUrl || null,
+				address_line: addressLine || null,
+				city: city || null,
+				state: state || null,
+				postcode: postcode || null,
+				country: country || null,
+				description: description || null,
+				tags: tags
+			};
+
+			await apiRequest(
+				`/contacts/${contactId}/`,
+				{
+					method: 'PATCH',
+					body: contactData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating contact:', err);
+			// Extract the actual error message from the API response
+			const errorMessage = err.message || 'Failed to update contact';
+			return fail(400, { error: errorMessage });
+		}
+	},
+
 	delete: async ({ request, locals, cookies }) => {
 		try {
 			const data = await request.formData();
@@ -158,7 +315,7 @@ export const actions = {
 			return { success: true };
 		} catch (err) {
 			console.error('Error deleting contact:', err);
-			return fail(500, { error: 'Failed to delete contact' });
+			return fail(400, { error: err.message || 'Failed to delete contact' });
 		}
 	}
 };

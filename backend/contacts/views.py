@@ -3,18 +3,18 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment, Profile, Teams
+from common.models import Attachments, Comment, Profile, Tags, Teams
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import COUNTRIES
-
-# from common.external_auth import CustomDualAuthentication
 from contacts import swagger_params
 from contacts.models import Contact, Profile
 from contacts.serializer import *
@@ -23,8 +23,7 @@ from tasks.serializer import TaskSerializer
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
     def get_context_data(self, **kwargs):
@@ -51,6 +50,20 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     assigned_to__id__in=params.get("assigned_to")
                 ).distinct()
+            if params.get("tags"):
+                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+            if params.get("search"):
+                search = params.get("search")
+                queryset = queryset.filter(
+                    Q(first_name__icontains=search)
+                    | Q(last_name__icontains=search)
+                    | Q(email__icontains=search)
+                    | Q(phone__icontains=search)
+                )
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
 
         context = {}
         results_contact = self.paginate_queryset(
@@ -81,15 +94,43 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         return context
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.contact_list_get_params)
+    @extend_schema(
+        operation_id="contacts_list",
+        tags=["contacts"],
+        parameters=swagger_params.contact_list_get_params,
+        responses={
+            200: inline_serializer(
+                name="ContactListResponse",
+                fields={
+                    "count": serializers.IntegerField(),
+                    "results": ContactSerializer(many=True),
+                    "per_page": serializers.IntegerField(),
+                    "page_number": serializers.IntegerField(),
+                    "contacts_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "contact_obj_list": ContactSerializer(many=True),
+                },
+            )
+        },
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
+        operation_id="contacts_create",
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=CreateContactSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -101,9 +142,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Contact model uses flat address fields, no separate Address object needed
-        contact_obj = contact_serializer.save()
-        contact_obj.org = request.profile.org
-        contact_obj.save()
+        contact_obj = contact_serializer.save(org=request.profile.org)
 
         if params.get("teams"):
             teams_list = params.get("teams")
@@ -117,18 +156,32 @@ class ContactsListView(APIView, LimitOffsetPagination):
             )
             contact_obj.assigned_to.add(*profiles)
 
+        if params.get("tags"):
+            tags = params.get("tags")
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            for tag in tags:
+                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                if tag_obj.exists():
+                    tag_obj = tag_obj[0]
+                else:
+                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                contact_obj.tags.add(tag_obj)
+
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
         send_email_to_assigned_user.delay(
             recipients,
             contact_obj.id,
+            str(request.profile.org.id),
         )
 
         if request.FILES.get("contact_attachment"):
             attachment = Attachments()
             attachment.created_by = request.profile.user
             attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.contact = contact_obj
+            attachment.content_object = contact_obj
             attachment.attachment = request.FILES.get("contact_attachment")
+            attachment.org = request.profile.org
             attachment.save()
         return Response(
             {"error": False, "message": "Contact created Successfuly"},
@@ -137,17 +190,26 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
 
 class ContactDetailView(APIView):
-    # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
     def get_object(self, pk):
         return get_object_or_404(Contact, pk=pk, org=self.request.profile.org)
 
     @extend_schema(
+        operation_id="contacts_update",
         tags=["contacts"],
         parameters=swagger_params.contact_create_post_params,
         request=CreateContactSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         data = request.data
@@ -194,6 +256,19 @@ class ContactDetailView(APIView):
             )
             contact_obj.assigned_to.add(*profiles)
 
+        contact_obj.tags.clear()
+        if data.get("tags"):
+            tags = data.get("tags")
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            for tag in tags:
+                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                if tag_obj.exists():
+                    tag_obj = tag_obj[0]
+                else:
+                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                contact_obj.tags.add(tag_obj)
+
         previous_assigned_to_users = list(
             contact_obj.assigned_to.all().values_list("id", flat=True)
         )
@@ -205,20 +280,40 @@ class ContactDetailView(APIView):
         send_email_to_assigned_user.delay(
             recipients,
             contact_obj.id,
+            str(request.profile.org.id),
         )
         if request.FILES.get("contact_attachment"):
             attachment = Attachments()
             attachment.created_by = request.profile.user
             attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.contact = contact_obj
+            attachment.content_object = contact_obj
             attachment.attachment = request.FILES.get("contact_attachment")
+            attachment.org = request.profile.org
             attachment.save()
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="contacts_retrieve",
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactDetailResponse",
+                fields={
+                    "contact_obj": ContactSerializer(),
+                    "address_obj": serializers.DictField(),
+                    "comments": CommentSerializer(many=True),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "assigned_data": serializers.ListField(),
+                    "tasks": TaskSerializer(many=True),
+                    "users_mention": serializers.ListField(),
+                },
+            )
+        },
+    )
     def get(self, request, pk, format=None):
         context = {}
         contact_obj = self.get_object(pk)
@@ -299,7 +394,20 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="contacts_destroy",
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactDetailDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -310,7 +418,7 @@ class ContactDetailView(APIView):
         if (
             self.request.profile.role != "ADMIN"
             and not self.request.profile.is_admin
-            and self.request.profile != self.object.created_by
+            and self.request.profile.user != self.object.created_by
         ):
             return Response(
                 {
@@ -319,8 +427,6 @@ class ContactDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if self.object.address_id:
-            self.object.address.delete()
         self.object.delete()
         return Response(
             {"error": False, "message": "Contact Deleted Successfully."},
@@ -328,9 +434,20 @@ class ContactDetailView(APIView):
         )
 
     @extend_schema(
+        operation_id="contacts_comment_attachment",
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=ContactDetailEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentAttachmentResponse",
+                fields={
+                    "contact_obj": ContactSerializer(),
+                    "comments": CommentSerializer(many=True),
+                    "attachments": AttachmentsSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -361,8 +478,9 @@ class ContactDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("contact_attachment").name
-            attachment.contact = self.contact_obj
+            attachment.content_object = self.contact_obj
             attachment.attachment = self.request.FILES.get("contact_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         contact_content_type = ContentType.objects.get_for_model(Contact)
@@ -385,11 +503,98 @@ class ContactDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=CreateContactSerializer,
+        description="Partial Contact Update",
+        responses={
+            200: inline_serializer(
+                name="ContactPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a contact."""
+        data = request.data
+        contact_obj = self.get_object(pk=pk)
+        if contact_obj.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile == contact_obj.created_by)
+                or (self.request.profile in contact_obj.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        contact_serializer = CreateContactSerializer(
+            data=data, instance=contact_obj, request_obj=request, partial=True
+        )
+        if not contact_serializer.is_valid():
+            return Response(
+                {"error": True, "errors": contact_serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact_obj = contact_serializer.save()
+
+        # Handle M2M fields if present in request
+        if "teams" in data:
+            contact_obj.teams.clear()
+            teams_list = data.get("teams")
+            if teams_list:
+                if isinstance(teams_list, str):
+                    teams_list = json.loads(teams_list)
+                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                contact_obj.teams.add(*teams)
+
+        if "assigned_to" in data:
+            contact_obj.assigned_to.clear()
+            assigned_to_list = data.get("assigned_to")
+            if assigned_to_list:
+                if isinstance(assigned_to_list, str):
+                    assigned_to_list = json.loads(assigned_to_list)
+                profiles = Profile.objects.filter(
+                    id__in=assigned_to_list, org=request.profile.org
+                )
+                contact_obj.assigned_to.add(*profiles)
+
+        if "tags" in data:
+            contact_obj.tags.clear()
+            tags_list = data.get("tags")
+            if tags_list:
+                if isinstance(tags_list, str):
+                    tags_list = json.loads(tags_list)
+                for tag in tags_list:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    contact_obj.tags.add(tag_obj)
+
+        return Response(
+            {"error": False, "message": "Contact Updated Successfully"},
+            status=status.HTTP_200_OK,
+        )
+
 
 class ContactCommentView(APIView):
     model = Comment
-    # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -398,6 +603,15 @@ class ContactCommentView(APIView):
         tags=["contacts"],
         parameters=swagger_params.organization_params,
         request=ContactCommentEditSwaggerSerializer,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -426,7 +640,62 @@ class ContactCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        request=ContactCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+        responses={
+            200: inline_serializer(
+                name="ContactCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to edit this Comment",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -450,10 +719,21 @@ class ContactCommentView(APIView):
 
 class ContactAttachmentView(APIView):
     model = Attachments
-    # #authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["contacts"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["contacts"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="ContactAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

@@ -1,5 +1,5 @@
-import arrow
 from django.db import models
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -54,7 +54,7 @@ class Opportunity(AssignableMixin, BaseModel):
 
     # Assignment
     assigned_to = models.ManyToManyField(
-        Profile, related_name="opportunity_assigned_to"
+        Profile, related_name="opportunity_assigned_users"
     )
     teams = models.ManyToManyField(Teams, related_name="opportunity_teams")
     closed_by = models.ForeignKey(
@@ -66,7 +66,7 @@ class Opportunity(AssignableMixin, BaseModel):
     )
 
     # Tags
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="opportunity_tags", blank=True)
 
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
@@ -94,4 +94,4 @@ class Opportunity(AssignableMixin, BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"

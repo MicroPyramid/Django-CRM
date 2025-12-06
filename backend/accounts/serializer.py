@@ -1,21 +1,21 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
-from common.models import Tags
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
+    TagsSerializer,
     TeamsSerializer,
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
 
 
-class TagsSerailizer(serializers.ModelSerializer):
-    class Meta:
-        model = Tags
-        fields = ("id", "name", "slug")
+# Note: Removed unused serializer properties that were computed but never used by frontend:
+# - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
+# - created_on_arrow (frontend computes its own humanized timestamps)
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -23,17 +23,15 @@ class AccountSerializer(serializers.ModelSerializer):
 
     created_by = UserSerializer()
     org = OrganizationSerializer()
-    tags = TagsSerailizer(read_only=True, many=True)
+    tags = TagsSerializer(read_only=True, many=True)
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     account_attachment = AttachmentsSerializer(read_only=True, many=True)
-    get_team_users = ProfileSerializer(read_only=True, many=True)
-    get_team_and_assigned_users = ProfileSerializer(read_only=True, many=True)
-    get_assigned_users_not_in_teams = ProfileSerializer(read_only=True, many=True)
-    country = serializers.SerializerMethodField()
+    country_display = serializers.SerializerMethodField()
 
-    def get_country(self, obj):
+    @extend_schema_field(str)
+    def get_country_display(self, obj):
         return obj.get_country_display() if obj.country else None
 
     class Meta:
@@ -49,12 +47,14 @@ class AccountSerializer(serializers.ModelSerializer):
             "industry",
             "number_of_employees",
             "annual_revenue",
+            "currency",
             # Address
             "address_line",
             "city",
             "state",
             "postcode",
             "country",
+            "country_display",
             # Assignment
             "assigned_to",
             "teams",
@@ -70,10 +70,6 @@ class AccountSerializer(serializers.ModelSerializer):
             "created_at",
             "is_active",
             "org",
-            "created_on_arrow",
-            "get_team_users",
-            "get_team_and_assigned_users",
-            "get_assigned_users_not_in_teams",
         )
 
 
@@ -120,14 +116,8 @@ class EmailLogSerializer(serializers.ModelSerializer):
         fields = ["email", "contact", "is_sent"]
 
 
-class AccountReadSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Account
-        fields = ["name", "city", "tags"]
-
-
 class AccountWriteSerializer(serializers.ModelSerializer):
+    """Serializer for API documentation of Account write operations"""
 
     class Meta:
         model = Account
@@ -144,11 +134,6 @@ class AccountWriteSerializer(serializers.ModelSerializer):
             "state",
             "postcode",
             "country",
-            "contacts",
-            "teams",
-            "assigned_to",
-            "tags",
-            "account_attachment",
             "description",
         ]
 
@@ -188,6 +173,7 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "industry",
             "number_of_employees",
             "annual_revenue",
+            "currency",
             # Address
             "address_line",
             "city",
@@ -196,7 +182,17 @@ class AccountCreateSerializer(serializers.ModelSerializer):
             "country",
             # Notes
             "description",
+            # Status
+            "is_active",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided and has annual_revenue
+        if not validated_data.get("currency") and validated_data.get("annual_revenue"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class AccountDetailEditSwaggerSerializer(serializers.Serializer):

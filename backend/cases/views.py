@@ -2,11 +2,13 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
@@ -21,9 +23,7 @@ from cases.serializer import (
     CaseSerializer,
 )
 from cases.tasks import send_email_to_assigned_user
-from common.models import Attachments, Comment, Profile, Teams
-
-# from common.external_auth import CustomDualAuthentication
+from common.models import Attachments, Comment, Profile, Tags, Teams
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
@@ -31,8 +31,7 @@ from contacts.serializer import ContactSerializer
 
 
 class CaseListView(APIView, LimitOffsetPagination):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Case
 
     def get_context_data(self, **kwargs):
@@ -67,6 +66,20 @@ class CaseListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(priority=params.get("priority"))
             if params.get("account"):
                 queryset = queryset.filter(account=params.get("account"))
+            if params.get("case_type"):
+                queryset = queryset.filter(case_type=params.get("case_type"))
+            if params.getlist("assigned_to"):
+                queryset = queryset.filter(
+                    assigned_to__id__in=params.getlist("assigned_to")
+                ).distinct()
+            if params.get("tags"):
+                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+            if params.get("search"):
+                queryset = queryset.filter(name__icontains=params.get("search"))
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
 
         context = {}
 
@@ -93,15 +106,42 @@ class CaseListView(APIView, LimitOffsetPagination):
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         return context
 
-    @extend_schema(tags=["Cases"], parameters=swagger_params.cases_list_get_params)
+    @extend_schema(
+        operation_id="cases_list",
+        tags=["Cases"],
+        parameters=swagger_params.cases_list_get_params,
+        responses={200: inline_serializer(
+            name="CaseListResponse",
+            fields={
+                "cases_count": serializers.IntegerField(),
+                "offset": serializers.IntegerField(allow_null=True),
+                "cases": CaseSerializer(many=True),
+                "status": serializers.ListField(),
+                "priority": serializers.ListField(),
+                "type_of_case": serializers.ListField(),
+                "accounts_list": AccountSerializer(many=True),
+                "contacts_list": ContactSerializer(many=True),
+            }
+        )},
+    )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         return Response(context)
 
     @extend_schema(
+        operation_id="cases_create",
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCreateSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="CaseCreateResponse",
+            fields={
+                "error": serializers.BooleanField(),
+                "message": serializers.CharField(),
+                "id": serializers.CharField(),
+                "cases_obj": CaseSerializer(),
+            }
+        )},
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -136,18 +176,32 @@ class CaseListView(APIView, LimitOffsetPagination):
                 if profiles:
                     cases_obj.assigned_to.add(*profiles)
 
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    cases_obj.tags.add(tag_obj)
+
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.cases = cases_obj
+                attachment.content_object = cases_obj
                 attachment.attachment = self.request.FILES.get("case_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             recipients = list(cases_obj.assigned_to.all().values_list("id", flat=True))
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_obj.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {
@@ -166,17 +220,21 @@ class CaseListView(APIView, LimitOffsetPagination):
 
 
 class CaseDetailView(APIView):
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
     model = Case
 
     def get_object(self, pk):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     @extend_schema(
+        operation_id="cases_update",
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCreateSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="CaseUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -237,12 +295,26 @@ class CaseDetailView(APIView):
                 if profiles:
                     cases_object.assigned_to.add(*profiles)
 
+            cases_object.tags.clear()
+            if params.get("tags"):
+                tags = params.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                for tag in tags:
+                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                    if tag_obj.exists():
+                        tag_obj = tag_obj[0]
+                    else:
+                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                    cases_object.tags.add(tag_obj)
+
             if self.request.FILES.get("case_attachment"):
                 attachment = Attachments()
                 attachment.created_by = self.request.profile.user
                 attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.case = cases_object
+                attachment.content_object = cases_object
                 attachment.attachment = self.request.FILES.get("case_attachment")
+                attachment.org = self.request.profile.org
                 attachment.save()
 
             assigned_to_list = list(
@@ -252,6 +324,7 @@ class CaseDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},
@@ -262,7 +335,15 @@ class CaseDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="cases_destroy",
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="CaseDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if self.object.org != request.profile.org:
@@ -271,7 +352,7 @@ class CaseDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile != self.object.created_by:
+            if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
                         "error": True,
@@ -285,7 +366,21 @@ class CaseDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        operation_id="cases_retrieve",
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="CaseDetailResponse",
+            fields={
+                "cases_obj": CaseSerializer(),
+                "attachments": AttachmentsSerializer(many=True),
+                "comments": CommentSerializer(many=True),
+                "comment_permission": serializers.BooleanField(),
+                "users_mention": serializers.ListField(),
+            }
+        )},
+    )
     def get(self, request, pk, format=None):
         self.cases = self.get_object(pk=pk)
         if not self.cases:
@@ -365,9 +460,18 @@ class CaseDetailView(APIView):
         return Response(context)
 
     @extend_schema(
+        operation_id="cases_comment_attachment",
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseDetailEditSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="CaseCommentAttachmentResponse",
+            fields={
+                "cases_obj": CaseSerializer(),
+                "attachments": AttachmentsSerializer(many=True),
+                "comments": CommentSerializer(many=True),
+            }
+        )},
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -402,8 +506,9 @@ class CaseDetailView(APIView):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
             attachment.file_name = self.request.FILES.get("case_attachment").name
-            attachment.case = self.cases_obj
+            attachment.content_object = self.cases_obj
             attachment.attachment = self.request.FILES.get("case_attachment")
+            attachment.org = self.request.profile.org
             attachment.save()
 
         case_content_type = ContentType.objects.get_for_model(Case)
@@ -427,11 +532,104 @@ class CaseDetailView(APIView):
         )
         return Response(context)
 
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseCreateSwaggerSerializer,
+        description="Partial Case Update",
+        responses={200: inline_serializer(
+            name="CasePatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a case."""
+        params = request.data
+        cases_object = self.get_object(pk=pk)
+        if cases_object.org != request.profile.org:
+            return Response(
+                {"error": True, "errors": "User company does not match with header...."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            if not (
+                (self.request.profile.user == cases_object.created_by)
+                or (self.request.profile in cases_object.assigned_to.all())
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You do not have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        serializer = CaseCreateSerializer(
+            cases_object,
+            data=params,
+            request_obj=request,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            cases_object = serializer.save(
+                closed_on=params.get("closed_on") if "closed_on" in params else cases_object.closed_on,
+                case_type=params.get("case_type") if "case_type" in params else cases_object.case_type,
+            )
+
+            # Handle M2M fields if present in request
+            if "contacts" in params:
+                cases_object.contacts.clear()
+                contacts_list = params.get("contacts")
+                if contacts_list:
+                    contacts = Contact.objects.filter(
+                        id__in=contacts_list, org=request.profile.org
+                    )
+                    cases_object.contacts.add(*contacts)
+
+            if "teams" in params:
+                cases_object.teams.clear()
+                teams_list = params.get("teams")
+                if teams_list:
+                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    cases_object.teams.add(*teams)
+
+            if "assigned_to" in params:
+                cases_object.assigned_to.clear()
+                assigned_to_list = params.get("assigned_to")
+                if assigned_to_list:
+                    profiles = Profile.objects.filter(
+                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    )
+                    cases_object.assigned_to.add(*profiles)
+
+            if "tags" in params:
+                cases_object.tags.clear()
+                tags_list = params.get("tags")
+                if tags_list:
+                    if isinstance(tags_list, str):
+                        tags_list = json.loads(tags_list)
+                    for tag in tags_list:
+                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
+                        if tag_obj.exists():
+                            tag_obj = tag_obj[0]
+                        else:
+                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
+                        cases_object.tags.add(tag_obj)
+
+            return Response(
+                {"error": False, "message": "Case Updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class CaseCommentView(APIView):
     model = Comment
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -440,6 +638,10 @@ class CaseCommentView(APIView):
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCommentEditSwaggerSerializer,
+        responses={200: inline_serializer(
+            name="CaseCommentUpdateResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -469,7 +671,52 @@ class CaseCommentView(APIView):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=CaseCommentEditSwaggerSerializer,
+        description="Partial Comment Update",
+        responses={200: inline_serializer(
+            name="CaseCommentPatchResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
+    def patch(self, request, pk, format=None):
+        """Handle partial updates to a comment."""
+        params = request.data
+        obj = self.get_object(pk)
+        if (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.profile == obj.commented_by
+        ):
+            serializer = CommentSerializer(obj, data=params, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"error": False, "message": "Comment Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "error": True,
+                "errors": "You don't have permission to perform this action.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="CaseCommentDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
@@ -493,10 +740,16 @@ class CaseCommentView(APIView):
 
 class CaseAttachmentView(APIView):
     model = Attachments
-    # authentication_classes = (CustomDualAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["Cases"], parameters=swagger_params.organization_params)
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={200: inline_serializer(
+            name="CaseAttachmentDeleteResponse",
+            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
+        )},
+    )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)
         if (

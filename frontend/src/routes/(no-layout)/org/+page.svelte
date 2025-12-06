@@ -1,116 +1,135 @@
 <script>
 	import '../../../app.css';
-	import { Building, LogOut, Plus } from '@lucide/svelte';
+	import imgLogo from '$lib/assets/images/logo.png';
+	import { Building2, LogOut, Plus, ChevronRight, Users, Shield } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 
-	// Get the data from the server load function
-	export let data;
-	const { orgs } = data;
+	let { data } = $props();
+	let orgs = $derived(data.orgs);
 
-	let loading = false;
+	let loading = $state(false);
+	let selectedOrgId = $state(null);
 </script>
 
-<div class="min-h-screen bg-gray-50 p-4">
-	<div class="mx-auto max-w-6xl">
-		<!-- Header -->
-		<div class="mb-8 flex items-center justify-between">
-			<div>
-				<h1 class="mb-2 text-3xl font-bold text-gray-900">Select Organization</h1>
-				<p class="text-gray-600">Choose an organization to continue</p>
+<svelte:head>
+	<title>Select Organization | BottleCRM</title>
+</svelte:head>
+
+<div class="flex min-h-screen flex-col bg-slate-50">
+	<!-- Header -->
+	<header class="border-b border-slate-200 bg-white">
+		<div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+			<div class="flex items-center gap-3">
+				<img src={imgLogo} alt="BottleCRM" class="h-8 w-auto" />
+				<span class="text-lg font-semibold text-slate-900">BottleCRM</span>
 			</div>
 			<a
 				href="/logout"
-				class="flex items-center gap-2 rounded-lg px-4 py-2 text-gray-600 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
-				title="Logout"
+				class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
 			>
-				<LogOut class="h-5 w-5" />
-				<span class="hidden sm:inline">Logout</span>
+				<LogOut class="h-4 w-4" />
+				<span class="hidden sm:inline">Sign out</span>
 			</a>
 		</div>
+	</header>
 
-		<!-- Organizations Grid -->
-		{#if orgs.length > 0}
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each orgs as org}
-					<form
-						method="POST"
-						action="?/selectOrg"
-						use:enhance={() => {
-							loading = true;
-							return async ({ update }) => {
-								await update();
-								loading = false;
-							};
-						}}
-						class="group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-md"
-					>
-						<input type="hidden" name="org_id" value={org.id} />
-						<input type="hidden" name="org_name" value={org.name} />
-						<button
-							type="submit"
-							disabled={loading}
-							class="w-full text-left"
-							aria-label="Select {org.name} organization"
+	<!-- Main Content -->
+	<main class="flex flex-1 items-start justify-center px-6 py-12">
+		<div class="w-full max-w-2xl">
+			<!-- Page Header -->
+			<div class="mb-8 text-center">
+				<h1 class="text-2xl font-bold text-slate-900">Select an organization</h1>
+				<p class="mt-2 text-slate-600">Choose which organization you'd like to work in</p>
+			</div>
+
+			<!-- Organizations List -->
+			{#if orgs.length > 0}
+				<div class="space-y-3">
+					{#each orgs as org}
+						<form
+							method="POST"
+							action="?/selectOrg"
+							use:enhance={() => {
+								loading = true;
+								selectedOrgId = org.id;
+								return async ({ update }) => {
+									await update();
+									loading = false;
+									selectedOrgId = null;
+								};
+							}}
 						>
-							<div class="p-6">
-								<div class="mb-4 flex items-start justify-between">
-									<div class="flex items-center gap-3">
-										<div
-											class="rounded-lg bg-blue-100 p-3 transition-colors group-hover:bg-blue-200"
-										>
-											<Building class="h-6 w-6 text-blue-600" />
-										</div>
-										<div>
-											<h3
-												class="text-lg font-semibold text-gray-900 transition-colors group-hover:text-blue-600"
-											>
-												{org.name}
-											</h3>
-											<p class="text-sm text-gray-500 capitalize">
+							<input type="hidden" name="org_id" value={org.id} />
+							<input type="hidden" name="org_name" value={org.name} />
+							<button
+								type="submit"
+								disabled={loading}
+								class="group w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
+							>
+								<div class="flex items-center gap-4">
+									<!-- Org Icon -->
+									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100">
+										<Building2 class="h-6 w-6" />
+									</div>
+
+									<!-- Org Info -->
+									<div class="flex-1 min-w-0">
+										<h3 class="font-semibold text-slate-900 truncate">{org.name}</h3>
+										<div class="mt-1 flex items-center gap-3 text-sm text-slate-500">
+											<span class="inline-flex items-center gap-1 capitalize">
+												<Users class="h-3.5 w-3.5" />
 												{org.role?.toLowerCase() || 'Member'}
-											</p>
+											</span>
 										</div>
 									</div>
-								</div>
 
-								<div
-									class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-center font-medium text-white transition-colors duration-200 group-hover:bg-blue-700"
-								>
-									{loading ? 'Switching...' : 'Select Organization'}
+									<!-- Arrow / Loading -->
+									<div class="shrink-0">
+										{#if loading && selectedOrgId === org.id}
+											<div class="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600"></div>
+										{:else}
+											<ChevronRight class="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-600" />
+										{/if}
+									</div>
 								</div>
-							</div>
-						</button>
-					</form>
-				{/each}
-			</div>
-		{:else}
-			<div class="py-16 text-center">
-				<div
-					class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-200"
-				>
-					<Building class="h-8 w-8 text-gray-400" />
+							</button>
+						</form>
+					{/each}
 				</div>
-				<h3 class="mb-2 text-lg font-semibold text-gray-900">No organizations found</h3>
-				<p class="mb-6 text-gray-600">Create your first organization to get started</p>
-				<a
-					href="/org/new"
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
-				>
-					<Plus class="h-5 w-5" />
-					Create Organization
-				</a>
-			</div>
-		{/if}
 
-		<!-- Floating Action Button -->
-		{#if orgs.length > 0}
-			<a
-				href="/org/new"
-				class="fixed right-6 bottom-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl"
-				title="Create New Organization"
-			>
-				<Plus class="h-6 w-6" />
-			</a>
-		{/if}
-	</div>
+				<!-- Create New Org Link -->
+				<div class="mt-6">
+					<a
+						href="/org/new"
+						class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-sm font-medium text-slate-600 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600"
+					>
+						<Plus class="h-4 w-4" />
+						Create new organization
+					</a>
+				</div>
+			{:else}
+				<!-- Empty State -->
+				<div class="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+					<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+						<Building2 class="h-8 w-8 text-slate-400" />
+					</div>
+					<h3 class="text-lg font-semibold text-slate-900">No organizations yet</h3>
+					<p class="mt-2 text-slate-600">Create your first organization to get started with BottleCRM</p>
+					<a
+						href="/org/new"
+						class="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+					>
+						<Plus class="h-4 w-4" />
+						Create organization
+					</a>
+				</div>
+			{/if}
+
+			<!-- Trust Signal -->
+			<div class="mt-8 flex items-center justify-center gap-2 text-sm text-slate-500">
+				<Shield class="h-4 w-4" />
+				<span>Your data stays private and secure</span>
+			</div>
+		</div>
+	</main>
 </div>

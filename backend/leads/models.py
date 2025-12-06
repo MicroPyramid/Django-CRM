@@ -1,33 +1,23 @@
-import arrow
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
-from phonenumber_field.modelfields import PhoneNumberField
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import (
     COUNTRIES,
+    CURRENCY_CODES,
     INDCHOICES,
     LEAD_SOURCE,
     LEAD_STATUS,
-    return_complete_address,
 )
 from contacts.models import Contact
 
 
-class Company(BaseModel):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="companies")
-
-    class Meta:
-        verbose_name = "Company"
-        verbose_name_plural = "Companies"
-        db_table = "company"
-        ordering = ("-created_at",)
-
-    def __str__(self):
-        return f"{self.name}"
+# Cleanup notes:
+# - Removed 'created_from_site' flag (over-engineered)
+# - Removed conversion tracking fields (converted_account, converted_contact,
+#   converted_opportunity, conversion_date) - never populated, conversion just sets status
+# - Removed 'created_on_arrow' property (frontend computes its own timestamps)
 
 
 class Lead(AssignableMixin, BaseModel):
@@ -38,14 +28,20 @@ class Lead(AssignableMixin, BaseModel):
 
     # Core Lead Information
     title = models.CharField(
-        pgettext_lazy("Treatment Pronouns for the customer", "Title"), max_length=64
+        _("Title"), max_length=255, blank=True, null=True,
+        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')"
+    )
+    salutation = models.CharField(
+        _("Salutation"), max_length=64, blank=True, null=True,
+        help_text="e.g., Mr, Mrs, Ms, Dr"
     )
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
-    phone = PhoneNumberField(null=True, blank=True)
-    contact_title = models.CharField(
-        _("Job Title"), max_length=255, blank=True, null=True
+    phone = models.CharField(_("Phone"), max_length=50, null=True, blank=True)
+    job_title = models.CharField(
+        _("Job Title"), max_length=255, blank=True, null=True,
+        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
     )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     linkedin_url = models.URLField(
@@ -72,6 +68,9 @@ class Lead(AssignableMixin, BaseModel):
     opportunity_amount = models.DecimalField(
         _("Deal Value"), decimal_places=2, max_digits=12, blank=True, null=True
     )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
+    )
     probability = models.IntegerField(
         _("Win Probability %"), default=0, blank=True, null=True
     )
@@ -97,16 +96,11 @@ class Lead(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tags, related_name="lead_tags", blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
-    created_from_site = models.BooleanField(default=False)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="lead_company",
+    company_name = models.CharField(
+        _("Company Name"), max_length=255, blank=True, null=True
     )
 
     class Meta:
@@ -121,26 +115,6 @@ class Lead(AssignableMixin, BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.title}"
+        name_parts = [self.salutation, self.first_name, self.last_name]
+        return " ".join(part for part in name_parts if part) or f"Lead {self.id}"
 
-    def get_complete_address(self):
-        return return_complete_address(self)
-
-    @property
-    def phone_raw_input(self):
-        if str(self.phone) == "+NoneNone":
-            return ""
-        return self.phone
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
-    # def save(self, *args, **kwargs):
-    #     super(Lead, self).save(*args, **kwargs)
-    #     queryset = Lead.objects.all().exclude(status='converted').select_related('created_by'
-    #         ).prefetch_related('tags', 'assigned_to',)
-    #     open_leads = queryset.exclude(status='closed')
-    #     close_leads = queryset.filter(status='closed')
-    #     cache.set('admin_leads_open_queryset', open_leads, 60*60)
-    #     cache.set('admin_leads_close_queryset', close_leads, 60*60)

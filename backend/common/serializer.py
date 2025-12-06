@@ -4,9 +4,11 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from common.utils import CURRENCY_SYMBOLS
 from common.models import (
     Activity,
     Address,
@@ -16,6 +18,7 @@ from common.models import (
     Document,
     Org,
     Profile,
+    Tags,
     Teams,
     User,
 )
@@ -23,31 +26,54 @@ from common.models import (
 
 class OrgAwareRefreshToken(RefreshToken):
     """
-    Custom RefreshToken that includes org_id in the token payload.
+    Custom RefreshToken that includes org context in the token payload.
 
     This ensures the org context is cryptographically signed and cannot be
     forged by the client. The middleware should validate org_id from this
     token instead of trusting the org header.
+
+    Embedded claims (to avoid extra API calls):
+    - org_id: Organization UUID
+    - org_name: Organization name (for display)
+    - role: User's role in the org (ADMIN/USER)
+    - org_settings: Currency and locale settings
     """
 
     @classmethod
-    def for_user_and_org(cls, user, org):
+    def for_user_and_org(cls, user, org, profile=None):
         """
         Generate a refresh token for a user with org context.
 
         Args:
             user: User instance
             org: Org instance or org_id UUID
+            profile: Optional Profile instance for role
 
         Returns:
-            OrgAwareRefreshToken with org_id claim
+            OrgAwareRefreshToken with org claims
         """
         token = cls.for_user(user)
 
-        # Add org_id to the token payload
+        # Add org context to the token payload
         if org:
             org_id = str(org.id) if hasattr(org, "id") else str(org)
             token["org_id"] = org_id
+            # Add org_name for display (avoids /api/auth/profile call)
+            if hasattr(org, "name"):
+                token["org_name"] = org.name
+            # Add org settings for currency/locale
+            if hasattr(org, "default_currency"):
+                token["org_settings"] = {
+                    "default_currency": org.default_currency or "USD",
+                    "currency_symbol": CURRENCY_SYMBOLS.get(
+                        org.default_currency or "USD", "$"
+                    ),
+                    "default_country": org.default_country,
+                }
+
+        # Add role if profile provided (avoids /api/auth/profile call)
+        if profile:
+            token["role"] = profile.role
 
         return token
 
@@ -56,6 +82,27 @@ class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Org
         fields = ("id", "name", "api_key")
+
+
+class OrgSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for org settings (currency, country, locale)"""
+
+    currency_symbol = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Org
+        fields = ["id", "name", "default_currency", "default_country", "currency_symbol"]
+        read_only_fields = ["id", "currency_symbol"]
+
+    @extend_schema_field(str)
+    def get_currency_symbol(self, obj):
+        return CURRENCY_SYMBOLS.get(obj.default_currency or "USD", "$")
+
+
+class TagsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tags
+        fields = ("id", "name", "slug")
 
 
 class SocialLoginSerializer(serializers.Serializer):
@@ -133,7 +180,7 @@ class OrgProfileCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {"name": {"required": True}}
 
     def validate_name(self, name):
-        if bool(re.search(r"[~\!_.@#\$%\^&\*\ \(\)\+{}\":;'/\[\]]", name)):
+        if bool(re.search(r"[~\!@#\$%\^&\*\(\)\+{}\":;'/\[\]]", name)):
             raise serializers.ValidationError(
                 "organization name should not contain any special characters"
             )
@@ -164,11 +211,6 @@ class ShowOrganizationListSerializer(serializers.ModelSerializer):
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
-    country = serializers.SerializerMethodField()
-
-    def get_country(self, obj):
-        return obj.get_country_display()
-
     class Meta:
         model = Address
         fields = ("address_line", "street", "city", "state", "postcode", "country")
@@ -241,6 +283,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     # address = BillingAddressSerializer()
+    user_details = serializers.SerializerMethodField()
+
+    @extend_schema_field(dict)
+    def get_user_details(self, obj):
+        return obj.user_details
 
     class Meta:
         model = Profile
@@ -264,6 +311,7 @@ class AttachmentsSerializer(serializers.ModelSerializer):
     file_path = serializers.SerializerMethodField()
     content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
 
+    @extend_schema_field(str)
     def get_file_path(self, obj):
         if obj.attachment:
             return obj.attachment.url
@@ -319,6 +367,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
     org = OrganizationSerializer()
 
+    @extend_schema_field(list)
     def get_teams(self, obj):
         return obj.teams.all().values()
 
@@ -403,6 +452,7 @@ class APISettingsListSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     org = OrganizationSerializer()
 
+    @extend_schema_field(list)
     def get_tags(self, obj):
         return obj.tags.all().values()
 
@@ -536,6 +586,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "profile_pic", "is_active", "organizations"]
 
+    @extend_schema_field(list)
     def get_organizations(self, obj):
         """Get all organizations the user belongs to"""
         profiles = Profile.objects.filter(user=obj, is_active=True)
@@ -585,6 +636,7 @@ class ActivityUserSerializer(serializers.Serializer):
     name = serializers.SerializerMethodField()
     profile_pic = serializers.CharField(source="user.profile_pic", allow_null=True)
 
+    @extend_schema_field(str)
     def get_name(self, obj):
         """Get display name from email"""
         return obj.user.email.split("@")[0]
@@ -614,11 +666,6 @@ class ActivitySerializer(serializers.ModelSerializer):
         ]
 
 
-# =============================================================================
-# Teams Serializers (merged from teams app)
-# =============================================================================
-
-
 class TeamsSerializer(serializers.ModelSerializer):
     users = ProfileSerializer(read_only=True, many=True)
     created_by = UserSerializer()
@@ -632,7 +679,6 @@ class TeamsSerializer(serializers.ModelSerializer):
             "users",
             "created_at",
             "created_by",
-            "created_on_arrow",
         )
 
 
@@ -666,7 +712,6 @@ class TeamCreateSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
             "created_by",
-            "created_on_arrow",
             "org",
         )
 

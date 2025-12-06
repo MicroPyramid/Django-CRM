@@ -42,6 +42,7 @@ ORG_SCOPED_TABLES = [
     "invoice",
     # Supporting entities
     "comment",
+    "commentFiles",  # Security fix: Added for RLS protection
     "attachments",
     "document",
     "teams",
@@ -60,6 +61,9 @@ ORG_SCOPED_TABLES = [
     "account_email",
     "emailLogs",
     "invoice_history",
+    "invoice_line_item",
+    # Products
+    "product",
     # Security & Audit
     "security_audit_log",
 ]
@@ -111,10 +115,16 @@ def get_set_context_sql():
     """
     Returns SQL to set the org context.
 
+    Uses set_config with is_local=false to persist for the SESSION,
+    not just the current transaction. This is required because Django
+    uses autocommit mode by default.
+
+    The middleware must reset this after each request to prevent leakage.
+
     Usage:
         cursor.execute(get_set_context_sql(), [org_id])
     """
-    return f"SELECT set_config('{CONTEXT_VARIABLE}', %s, true)"
+    return f"SELECT set_config('{CONTEXT_VARIABLE}', %s, false)"
 
 
 def get_enable_policy_sql(table):
@@ -176,39 +186,4 @@ def get_disable_policy_sql(table):
 
         -- Disable RLS
         ALTER TABLE "{table}" DISABLE ROW LEVEL SECURITY;
-    """
-
-
-def get_update_policy_sql(table):
-    """
-    Returns SQL to update RLS policies with secure defaults.
-
-    This fixes the security issue where empty context allowed all data.
-    Uses NULLIF() to ensure no rows are returned when context is missing.
-
-    Args:
-        table: Table name
-
-    Returns:
-        SQL string to execute
-    """
-    return f"""
-        -- Drop existing policies
-        DROP POLICY IF EXISTS {ISOLATION_POLICY} ON "{table}";
-        DROP POLICY IF EXISTS {INSERT_POLICY} ON "{table}";
-
-        -- Create secure isolation policy
-        -- NULLIF returns NULL when context is empty, causing comparison to fail
-        CREATE POLICY {ISOLATION_POLICY} ON "{table}"
-            FOR ALL
-            USING (
-                org_id::text = NULLIF(current_setting('{CONTEXT_VARIABLE}', true), '')
-            );
-
-        -- Create secure insert check policy
-        CREATE POLICY {INSERT_POLICY} ON "{table}"
-            FOR INSERT
-            WITH CHECK (
-                org_id::text = NULLIF(current_setting('{CONTEXT_VARIABLE}', true), '')
-            );
     """

@@ -123,6 +123,14 @@ celery -A crm worker --loglevel=INFO
 - **ReDoc**: http://localhost:8000/api/schema/redoc/
 - **Django Admin**: http://localhost:8000/admin/
 
+### Generating Schema
+
+To generate the OpenAPI schema file:
+
+```bash
+python manage.py spectacular --file openapi.yml
+```
+
 ## Architecture
 
 ### Multi-Tenancy

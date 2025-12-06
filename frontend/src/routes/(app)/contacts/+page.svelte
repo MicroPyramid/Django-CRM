@@ -1,86 +1,649 @@
 <script>
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { tick, onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import {
-		Search,
-		Filter,
 		Plus,
-		MoreVertical,
 		Eye,
-		Edit,
-		Trash2,
-		Users,
+		User,
 		Mail,
 		Phone,
-		Building,
+		Building2,
+		Briefcase,
+		MapPin,
+		FileText,
+		Linkedin,
+		PhoneOff,
 		Calendar,
-		ChevronLeft,
-		ChevronRight,
-		User
+		Tag,
+		Filter
 	} from '@lucide/svelte';
+	import { PageHeader } from '$lib/components/layout';
+	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
+	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
+	import { goto } from '$app/navigation';
+	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+	import { apiRequest } from '$lib/api.js';
+
+	// Column visibility configuration
+	const STORAGE_KEY = 'contacts-column-config';
+
+	/**
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string }} ColumnDef
+	 */
+
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{
+			key: 'name',
+			label: 'Contact',
+			type: 'text',
+			width: 'w-48',
+			editable: false,
+			canHide: false,
+			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+			emptyText: 'Unnamed'
+		},
+		{
+			key: 'organization',
+			label: 'Company',
+			type: 'text',
+			width: 'w-40',
+			emptyText: ''
+		},
+		{ key: 'title', label: 'Title', type: 'text', width: 'w-36', emptyText: '' },
+		{ key: 'email', label: 'Email', type: 'email', width: 'w-52', emptyText: '' },
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
+		{
+			key: 'createdAt',
+			label: 'Created',
+			type: 'date',
+			width: 'w-32',
+			editable: false
+		},
+		// Hidden by default
+		{
+			key: 'owner',
+			label: 'Owner',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'user',
+			canHide: true,
+			getValue: (row) => row.owner?.name || row.owner?.email,
+			emptyText: ''
+		}
+	];
+
+	// Default visible columns (excludes owner)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'organization', 'title', 'email', 'phone', 'createdAt'];
+
+	// Country options for drawer
+	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
 
-	let searchQuery = $state(data.search || '');
-	let selectedOwner = $state(data.ownerId || '');
-	let showFilters = $state(false);
+	// Lazy-loaded dropdown options (fetched when drawer opens)
+	let loadedOwners = $state(/** @type {any[]} */ ([]));
+	let loadedTags = $state(/** @type {any[]} */ ([]));
+	let dropdownOptionsLoaded = $state(false);
+	let dropdownOptionsLoading = $state(false);
 
-	// Search functionality
-	function handleSearch() {
-		const params = new URLSearchParams($page.url.searchParams);
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		} else {
-			params.delete('search');
+	// Use lazy-loaded data
+	const allTags = $derived(loadedTags);
+
+	/**
+	 * Fetch dropdown options for the drawer (lazy load)
+	 */
+	async function loadDropdownOptions() {
+		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
+
+		dropdownOptionsLoading = true;
+		try {
+			const [ownersResponse, tagsResponse] = await Promise.all([
+				apiRequest('/users/'),
+				apiRequest('/tags/').catch(() => ({ tags: [] }))
+			]);
+
+			// Transform owners
+			const activeUsers = ownersResponse.active_users?.active_users || [];
+			loadedOwners = activeUsers.map((/** @type {any} */ user) => ({
+				id: user.id,
+				name: user.user_details?.email || user.email,
+				email: user.user_details?.email || user.email
+			}));
+
+			// Transform tags
+			loadedTags = (tagsResponse.tags || tagsResponse || []).map((/** @type {any} */ tag) => ({
+				id: tag.id,
+				name: tag.name
+			}));
+
+			dropdownOptionsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load dropdown options:', err);
+		} finally {
+			dropdownOptionsLoading = false;
 		}
-		params.set('page', '1');
-		goto(`?${params.toString()}`);
 	}
 
-	// Filter functionality
-	function applyFilters() {
-		const params = new URLSearchParams($page.url.searchParams);
-		if (selectedOwner) {
-			params.set('owner', selectedOwner);
-		} else {
-			params.delete('owner');
+	// Drawer column definitions for CrmDrawer (derived to include allTags)
+	const drawerColumns = $derived([
+		{ key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'First name' },
+		{ key: 'lastName', label: 'Last Name', type: 'text', placeholder: 'Last name' },
+		{ key: 'email', label: 'Email', type: 'email', icon: Mail, placeholder: 'email@example.com' },
+		{ key: 'phone', label: 'Phone', type: 'text', icon: Phone, placeholder: '+1 (555) 000-0000' },
+		{
+			key: 'organization',
+			label: 'Company',
+			type: 'text',
+			icon: Building2,
+			placeholder: 'Company name'
+		},
+		{ key: 'title', label: 'Job Title', type: 'text', icon: Briefcase, placeholder: 'Job title' },
+		{ key: 'department', label: 'Department', type: 'text', placeholder: 'Department' },
+		{
+			key: 'doNotCall',
+			label: 'Do Not Call',
+			type: 'checkbox',
+			icon: PhoneOff
+		},
+		{
+			key: 'linkedInUrl',
+			label: 'LinkedIn',
+			type: 'text',
+			icon: Linkedin,
+			placeholder: 'https://linkedin.com/in/...'
+		},
+		{
+			key: 'addressLine',
+			label: 'Address',
+			type: 'text',
+			icon: MapPin,
+			placeholder: 'Street address'
+		},
+		{ key: 'city', label: 'City', type: 'text', placeholder: 'City' },
+		{ key: 'state', label: 'State', type: 'text', placeholder: 'State/Province' },
+		{ key: 'postcode', label: 'Postal Code', type: 'text', placeholder: 'Postal code' },
+		{
+			key: 'country',
+			label: 'Country',
+			type: 'select',
+			options: countryOptions,
+			placeholder: 'Select country'
+		},
+		{
+			key: 'tags',
+			label: 'Tags',
+			type: 'multiselect',
+			icon: Tag,
+			options: allTags.map((/** @type {any} */ t) => ({ id: t.id, name: t.name })),
+			emptyText: 'No tags'
+		},
+		{
+			key: 'description',
+			label: 'Notes',
+			type: 'textarea',
+			icon: FileText,
+			placeholder: 'Add notes about this contact...'
 		}
-		params.set('page', '1');
-		goto(`?${params.toString()}`);
+	]);
+
+	// Column visibility state - use defaults (excludes owner)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+
+	// Load column visibility from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				visibleColumns = JSON.parse(saved);
+			} catch (e) {
+				console.error('Failed to parse saved columns:', e);
+			}
+		}
+	});
+
+	// Save column visibility when changed
+	$effect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
+	/**
+	 * @param {string} key
+	 */
+	function toggleColumn(key) {
+		const col = columns.find((c) => c.key === key);
+		if (col?.canHide === false) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
 	}
 
+	// Computed values from data (contacts and owners)
+	const contacts = $derived(data.contacts || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+	const owners = $derived(loadedOwners);
+
+	// Drawer state (simplified - single drawer)
+	let drawerOpen = $state(false);
+
+	// Load dropdown options when drawer opens (lazy load)
+	$effect(() => {
+		if (drawerOpen && !dropdownOptionsLoaded) {
+			loadDropdownOptions();
+		}
+	});
+	/** @type {'view' | 'create'} */
+	let drawerMode = $state('view');
+	/** @type {any} */
+	let selectedContact = $state(null);
+	let drawerLoading = $state(false);
+	let isSubmitting = $state(false);
+
+	// Empty contact template for create mode
+	const emptyContact = {
+		firstName: '',
+		lastName: '',
+		email: '',
+		phone: '',
+		organization: '',
+		title: '',
+		department: '',
+		doNotCall: false,
+		linkedInUrl: '',
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		description: '',
+		tags: /** @type {string[]} */ ([])
+	};
+
+	// Drawer form data - mutable copy for editing
+	let drawerFormData = $state({ ...emptyContact });
+
+	// Reset form data when contact changes or drawer opens
+	$effect(() => {
+		if (drawerOpen) {
+			if (drawerMode === 'create') {
+				drawerFormData = { ...emptyContact };
+			} else if (selectedContact) {
+				drawerFormData = {
+					...selectedContact,
+					// Extract tag IDs from tag objects
+					tags: (selectedContact.tags || []).map((/** @type {any} */ t) => t.id)
+				};
+			}
+		}
+	});
+
+	// Computed display name for drawer title
+	const drawerTitle = $derived(
+		`${drawerFormData.firstName || ''} ${drawerFormData.lastName || ''}`.trim() || ''
+	);
+
+	// URL sync
+	$effect(() => {
+		const viewId = $page.url.searchParams.get('view');
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create') {
+			selectedContact = null;
+			drawerMode = 'create';
+			drawerOpen = true;
+		} else if (viewId && contacts.length > 0) {
+			const contact = contacts.find((c) => c.id === viewId);
+			if (contact) {
+				selectedContact = contact;
+				drawerMode = 'view';
+				drawerOpen = true;
+			}
+		}
+	});
+
+	/**
+	 * Update URL
+	 * @param {string | null} viewId
+	 * @param {string | null} action
+	 * @returns {Promise<void>}
+	 */
+	async function updateUrl(viewId, action) {
+		const url = new URL($page.url);
+		if (viewId) {
+			url.searchParams.set('view', viewId);
+			url.searchParams.delete('action');
+		} else if (action) {
+			url.searchParams.set('action', action);
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.delete('view');
+			url.searchParams.delete('action');
+		}
+		await goto(url.toString(), { replaceState: true, noScroll: true });
+	}
+
+	/**
+	 * Open drawer for viewing/editing a contact
+	 * @param {any} contact
+	 */
+	function openContact(contact) {
+		selectedContact = contact;
+		drawerMode = 'view';
+		drawerOpen = true;
+		updateUrl(contact.id, null);
+	}
+
+	/**
+	 * Open drawer for creating a new contact
+	 */
+	function openCreate() {
+		selectedContact = null;
+		drawerMode = 'create';
+		drawerOpen = true;
+		updateUrl(null, 'create');
+	}
+
+	/**
+	 * Close drawer
+	 * @returns {Promise<void>}
+	 */
+	async function closeDrawer() {
+		drawerOpen = false;
+		await updateUrl(null, null);
+	}
+
+	/**
+	 * Handle drawer open change
+	 * @param {boolean} open
+	 */
+	function handleDrawerChange(open) {
+		drawerOpen = open;
+		if (!open) updateUrl(null, null);
+	}
+
+	// URL-based filter state from server
+	const filters = $derived(data.filters);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
+	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params (preserve view/action)
+		['search', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value) {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
 	function clearFilters() {
-		searchQuery = '';
-		selectedOwner = '';
-		goto('/contacts');
+		updateFilters({});
 	}
 
-	// Pagination
-	/** @param {number} pageNum */
-	function goToPage(pageNum) {
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('page', pageNum.toString());
-		goto(`?${params.toString()}`);
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
-	// Modal functions
-	/** @param {any} contact */
-	function editContact(contact) {
-		goto(`/contacts/${contact.id}/edit`);
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
-	/** @param {string | Date} dateString */
-	function formatDate(dateString) {
-		return new Date(dateString).toLocaleDateString();
+	// Contacts are already filtered server-side
+	const filteredContacts = $derived(contacts);
+
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
+
+	// Form references for server actions
+	/** @type {HTMLFormElement} */
+	let createForm;
+	/** @type {HTMLFormElement} */
+	let updateForm;
+	/** @type {HTMLFormElement} */
+	let deleteForm;
+
+	// Form data state
+	let formState = $state({
+		contactId: '',
+		firstName: '',
+		lastName: '',
+		email: '',
+		phone: '',
+		organization: '',
+		title: '',
+		department: '',
+		doNotCall: false,
+		linkedInUrl: '',
+		addressLine: '',
+		city: '',
+		state: '',
+		postcode: '',
+		country: '',
+		description: '',
+		tags: /** @type {string[]} */ ([])
+	});
+
+	/**
+	 * Get full name
+	 * @param {any} contact
+	 */
+	function getFullName(contact) {
+		return `${contact.firstName} ${contact.lastName}`.trim();
 	}
 
-	/** @param {string} phone */
-	function formatPhone(phone) {
-		if (!phone) return '';
-		// Basic phone formatting - can be enhanced
-		return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+	/**
+	 * Get initials for contact
+	 * @param {any} contact
+	 */
+	function getContactInitials(contact) {
+		return getNameInitials(contact.firstName, contact.lastName);
+	}
+
+	/**
+	 * Convert contact to form state for quick edit
+	 * @param {any} contact
+	 */
+	function contactToFormState(contact) {
+		return {
+			contactId: contact.id,
+			firstName: contact.firstName || '',
+			lastName: contact.lastName || '',
+			email: contact.email || '',
+			phone: contact.phone || '',
+			organization: contact.organization || '',
+			title: contact.title || '',
+			department: contact.department || '',
+			doNotCall: contact.doNotCall || false,
+			linkedInUrl: contact.linkedInUrl || '',
+			addressLine: contact.addressLine || '',
+			city: contact.city || '',
+			state: contact.state || '',
+			postcode: contact.postcode || '',
+			country: contact.country || '',
+			description: contact.description || '',
+			tags: (contact.tags || []).map((/** @type {any} */ t) => t.id || t)
+		};
+	}
+
+	/**
+	 * Handle quick edit from cell (inline editing)
+	 * @param {any} contact
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleQuickEdit(contact, field, value) {
+		// Populate form state with current contact data
+		const currentState = contactToFormState(contact);
+
+		// Update the specific field
+		currentState[field] = value;
+
+		// Copy to form state
+		Object.assign(formState, currentState);
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle row change from CrmTable (inline editing)
+	 * @param {any} row
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	async function handleRowChange(row, field, value) {
+		await handleQuickEdit(row, field, value);
+	}
+
+	/**
+	 * Handle field change from CrmDrawer - just updates local state
+	 * @param {string} field
+	 * @param {any} value
+	 */
+	function handleDrawerFieldChange(field, value) {
+		// Update local form data only - no auto-save
+		drawerFormData = { ...drawerFormData, [field]: value };
+	}
+
+	/**
+	 * Handle save for view/edit mode
+	 */
+	async function handleDrawerUpdate() {
+		if (drawerMode !== 'view' || !selectedContact) return;
+
+		isSubmitting = true;
+		formState.contactId = selectedContact.id;
+		formState.firstName = drawerFormData.firstName || '';
+		formState.lastName = drawerFormData.lastName || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.organization = drawerFormData.organization || '';
+		formState.title = drawerFormData.title || '';
+		formState.department = drawerFormData.department || '';
+		formState.doNotCall = drawerFormData.doNotCall || false;
+		formState.linkedInUrl = drawerFormData.linkedInUrl || '';
+		formState.addressLine = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.description = drawerFormData.description || '';
+		formState.tags = drawerFormData.tags || [];
+
+		await tick();
+		updateForm.requestSubmit();
+	}
+
+	/**
+	 * Handle save for create mode
+	 */
+	async function handleDrawerSave() {
+		if (drawerMode !== 'create') return;
+
+		isSubmitting = true;
+		formState.firstName = drawerFormData.firstName || '';
+		formState.lastName = drawerFormData.lastName || '';
+		formState.email = drawerFormData.email || '';
+		formState.phone = drawerFormData.phone || '';
+		formState.organization = drawerFormData.organization || '';
+		formState.title = drawerFormData.title || '';
+		formState.department = drawerFormData.department || '';
+		formState.doNotCall = drawerFormData.doNotCall || false;
+		formState.linkedInUrl = drawerFormData.linkedInUrl || '';
+		formState.addressLine = drawerFormData.addressLine || '';
+		formState.city = drawerFormData.city || '';
+		formState.state = drawerFormData.state || '';
+		formState.postcode = drawerFormData.postcode || '';
+		formState.country = drawerFormData.country || '';
+		formState.description = drawerFormData.description || '';
+		formState.tags = drawerFormData.tags || [];
+
+		await tick();
+		createForm.requestSubmit();
+	}
+
+	/**
+	 * Handle contact delete
+	 */
+	async function handleDelete() {
+		if (!selectedContact) return;
+		if (!confirm(`Are you sure you want to delete ${getFullName(selectedContact)}?`)) return;
+
+		formState.contactId = selectedContact.id;
+		await tick();
+		deleteForm.requestSubmit();
+	}
+
+	/**
+	 * Create enhance handler for form actions
+	 * @param {string} successMessage
+	 * @param {boolean} closeOnSuccess
+	 */
+	function createEnhanceHandler(successMessage, closeOnSuccess = true) {
+		return () => {
+			return async ({ result }) => {
+				isSubmitting = false;
+				if (result.type === 'success') {
+					toast.success(successMessage);
+					if (closeOnSuccess) {
+						await closeDrawer();
+					}
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					toast.error(result.data?.error || 'Operation failed');
+				} else if (result.type === 'error') {
+					toast.error('An unexpected error occurred');
+				}
+			};
+		};
 	}
 </script>
 
@@ -88,433 +651,248 @@
 	<title>Contacts - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-	<!-- Header -->
-	<div class="border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-		<div class="px-4 py-6 sm:px-6 lg:px-8">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div class="flex items-center gap-3">
-					<div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
-						<Users class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+<PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
+
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumns.length < columns.length}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumns.length}/{columns.length}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Button onclick={openCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Contact
+			</Button>
+		</div>
+	{/snippet}
+</PageHeader>
+
+<div class="flex-1">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
+		<SearchInput
+			value={filters.search}
+			placeholder="Search contacts..."
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			class="w-64"
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			class="w-56"
+		/>
+	</FilterBar>
+
+	<!-- Table -->
+	{#if filteredContacts.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+			<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+		</div>
+	{:else}
+		<CrmTable
+			data={filteredContacts}
+			{columns}
+			bind:visibleColumns
+			onRowChange={handleRowChange}
+			onRowClick={(row) => openContact(row)}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<User class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+				</div>
+			{/snippet}
+		</CrmTable>
+	{/if}
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
+</div>
+
+<!-- Contact Drawer -->
+<CrmDrawer
+	bind:open={drawerOpen}
+	onOpenChange={handleDrawerChange}
+	data={{ ...drawerFormData, displayName: drawerTitle }}
+	columns={drawerColumns}
+	titleKey="displayName"
+	titlePlaceholder="New Contact"
+	titleEditable={false}
+	headerLabel="Contact"
+	mode={drawerMode}
+	loading={drawerLoading || isSubmitting}
+	onFieldChange={handleDrawerFieldChange}
+	onDelete={handleDelete}
+	onClose={closeDrawer}
+>
+	{#snippet activitySection()}
+		<!-- Metadata (view mode only) -->
+		{#if drawerMode !== 'create' && selectedContact}
+			<div>
+				<p
+					class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+				>
+					Details
+				</p>
+				<div class="grid grid-cols-2 gap-3 text-sm">
+					<div>
+						<p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{selectedContact.owner?.name || 'Unassigned'}
+						</p>
 					</div>
 					<div>
-						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Contacts</h1>
-						<p class="text-sm text-gray-500 dark:text-gray-400">
-							{data.totalCount} total contacts
+						<p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{formatRelativeDate(selectedContact.createdAt)}
 						</p>
 					</div>
 				</div>
-				<div class="flex items-center gap-3">
-					<button
-						onclick={() => (showFilters = !showFilters)}
-						class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-					>
-						<Filter class="h-4 w-4" />
-						Filters
-					</button>
-					<a
-						href="/contacts/new"
-						class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					>
-						<Plus class="h-4 w-4" />
-						Add Contact
-					</a>
-				</div>
 			</div>
-
-			<!-- Search Bar -->
-			<div class="mt-6">
-				<div class="relative">
-					<Search
-						class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400"
-					/>
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search contacts by name, email, phone, title..."
-						onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-						class="w-full rounded-lg border border-gray-300 bg-white py-3 pr-4 pl-10 text-gray-900 placeholder-gray-500 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-					/>
-					{#if searchQuery}
-						<button
-							onclick={() => {
-								searchQuery = '';
-								handleSearch();
-							}}
-							class="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-						>
-							×
-						</button>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Filters Panel -->
-			{#if showFilters}
-				<div
-					class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700"
-				>
-					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-						<div>
-							<label
-								for="ownerSelect"
-								class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Owner
-							</label>
-							<select
-								id="ownerSelect"
-								bind:value={selectedOwner}
-								class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-							>
-								<option value="">All owners</option>
-								{#each data.owners as owner}
-									<option value={owner.id}>{owner.name || owner.email}</option>
-								{/each}
-							</select>
-						</div>
-					</div>
-					<div class="mt-4 flex gap-2">
-						<button
-							onclick={applyFilters}
-							class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-						>
-							Apply Filters
-						</button>
-						<button
-							onclick={clearFilters}
-							class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-						>
-							Clear
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Contacts List -->
-	<div class="px-4 py-6 sm:px-6 lg:px-8">
-		{#if data.contacts.length === 0}
-			<div class="py-12 text-center">
-				<Users class="mx-auto h-12 w-12 text-gray-400" />
-				<h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No contacts found</h3>
-				<p class="mt-2 text-gray-500 dark:text-gray-400">
-					{data.search
-						? 'Try adjusting your search criteria.'
-						: 'Get started by creating your first contact.'}
-				</p>
-				{#if !data.search}
-					<a
-						href="/contacts/new"
-						class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-					>
-						<Plus class="h-4 w-4" />
-						Add Contact
-					</a>
-				{/if}
-			</div>
-		{:else}
-			<!-- Desktop Table View -->
-			<div
-				class="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm lg:block dark:border-gray-700 dark:bg-gray-800"
-			>
-				<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-					<thead class="bg-gray-50 dark:bg-gray-700">
-						<tr>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Contact
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Title & Department
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Contact Info
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Owner
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Activity
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
-							>
-								Created
-							</th>
-							<th class="relative px-6 py-3">
-								<span class="sr-only">Actions</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-						{#each data.contacts as contact}
-							<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex items-center">
-										<div class="h-10 w-10 flex-shrink-0">
-											<div
-												class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900"
-											>
-												<User class="h-5 w-5 text-blue-600 dark:text-blue-400" />
-											</div>
-										</div>
-										<div class="ml-4">
-											<div class="text-sm font-medium text-gray-900 dark:text-white">
-												<button
-													onclick={() => goto(`/contacts/${contact.id}`)}
-													class="text-left hover:text-blue-600 hover:underline dark:hover:text-blue-400"
-												>
-													{contact.firstName}
-													{contact.lastName}
-												</button>
-											</div>
-											{#if contact.relatedAccounts.length > 0}
-												<div
-													class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
-												>
-													<Building class="h-3 w-3" />
-													{contact.relatedAccounts[0].account.name}
-												</div>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-gray-900 dark:text-white">{contact.title || '—'}</div>
-									<div class="text-sm text-gray-500 dark:text-gray-400">
-										{contact.department || '—'}
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									{#if contact.email}
-										<div class="flex items-center gap-1 text-sm text-gray-900 dark:text-white">
-											<Mail class="h-3 w-3" />
-											{contact.email}
-										</div>
-									{/if}
-									{#if contact.phone}
-										<div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-											<Phone class="h-3 w-3" />
-											{formatPhone(contact.phone)}
-										</div>
-									{/if}
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm text-gray-900 dark:text-white">
-										{contact.owner.name || contact.owner.email}
-									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex gap-2 text-xs">
-										{#if contact._count.tasks > 0}
-											<span
-												class="rounded bg-blue-100 px-2 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-											>
-												{contact._count.tasks} tasks
-											</span>
-										{/if}
-										{#if contact._count.opportunities > 0}
-											<span
-												class="rounded bg-green-100 px-2 py-1 text-green-800 dark:bg-green-900 dark:text-green-200"
-											>
-												{contact._count.opportunities} opps
-											</span>
-										{/if}
-									</div>
-								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-									<div class="flex items-center gap-1">
-										<Calendar class="h-3 w-3" />
-										{formatDate(contact.createdAt)}
-									</div>
-								</td>
-								<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-									<div class="flex items-center justify-end gap-2">
-										<button
-											onclick={() => goto(`/contacts/${contact.id}`)}
-											class="rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-											title="View contact"
-										>
-											<Eye class="h-4 w-4" />
-										</button>
-										<button
-											onclick={() => editContact(contact)}
-											class="rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-green-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-green-400"
-											title="Edit contact"
-										>
-											<Edit class="h-4 w-4" />
-										</button>
-										<form method="POST" action="?/delete" use:enhance class="inline">
-											<input type="hidden" name="contactId" value={contact.id} />
-											<button
-												type="submit"
-												class="rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-red-400"
-												title="Delete contact"
-												onclick={(e) => {
-													if (!confirm('Are you sure you want to delete this contact?')) {
-														e.preventDefault();
-													}
-												}}
-											>
-												<Trash2 class="h-4 w-4" />
-											</button>
-										</form>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			<!-- Mobile Card View -->
-			<div class="space-y-4 lg:hidden">
-				{#each data.contacts as contact}
-					<div
-						class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-					>
-						<div class="flex items-start justify-between">
-							<button
-								onclick={() => goto(`/contacts/${contact.id}`)}
-								class="flex items-center space-x-3 text-left hover:opacity-75"
-							>
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900"
-								>
-									<User class="h-5 w-5 text-blue-600 dark:text-blue-400" />
-								</div>
-								<div>
-									<h3
-										class="text-sm font-medium text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-									>
-										{contact.firstName}
-										{contact.lastName}
-									</h3>
-									<p class="text-sm text-gray-500 dark:text-gray-400">
-										{contact.title || 'No title'}
-									</p>
-								</div>
-							</button>
-							<button
-								onclick={() => goto(`/contacts/${contact.id}`)}
-								class="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-							>
-								<Eye class="h-4 w-4" />
-							</button>
-						</div>
-
-						<div class="mt-3 space-y-2">
-							{#if contact.email}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<Mail class="h-4 w-4" />
-									{contact.email}
-								</div>
-							{/if}
-							{#if contact.phone}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<Phone class="h-4 w-4" />
-									{formatPhone(contact.phone)}
-								</div>
-							{/if}
-							{#if contact.relatedAccounts.length > 0}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<Building class="h-4 w-4" />
-									{contact.relatedAccounts[0].account.name}
-								</div>
-							{/if}
-						</div>
-
-						<div class="mt-3 flex items-center justify-between">
-							<div class="flex gap-2">
-								{#if contact._count.tasks > 0}
-									<span
-										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-									>
-										{contact._count.tasks} tasks
-									</span>
-								{/if}
-								{#if contact._count.opportunities > 0}
-									<span
-										class="rounded bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900 dark:text-green-200"
-									>
-										{contact._count.opportunities} opps
-									</span>
-								{/if}
-							</div>
-							<div class="flex gap-2">
-								<button
-									onclick={() => goto(`/contacts/${contact.id}`)}
-									class="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-								>
-									<Eye class="h-4 w-4" />
-								</button>
-								<button
-									onclick={() => editContact(contact)}
-									class="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
-								>
-									<Edit class="h-4 w-4" />
-								</button>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-
-			<!-- Pagination -->
-			{#if data.totalPages > 1}
-				<div class="mt-6 flex items-center justify-between">
-					<div class="text-sm text-gray-700 dark:text-gray-300">
-						Showing {(data.currentPage - 1) * data.limit + 1} to {Math.min(
-							data.currentPage * data.limit,
-							data.totalCount
-						)} of {data.totalCount} contacts
-					</div>
-					<div class="flex items-center gap-2">
-						<button
-							onclick={() => goToPage(data.currentPage - 1)}
-							disabled={data.currentPage === 1}
-							class="p-2 text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
-						>
-							<ChevronLeft class="h-4 w-4" />
-						</button>
-
-						{#each Array.from({ length: Math.min(5, data.totalPages) }, (_, i) => {
-							const start = Math.max(1, data.currentPage - 2);
-							return start + i;
-						}) as pageNum}
-							{#if pageNum <= data.totalPages}
-								<button
-									onclick={() => goToPage(pageNum)}
-									class="px-3 py-1 text-sm {pageNum === data.currentPage
-										? 'bg-blue-600 text-white'
-										: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'} rounded"
-								>
-									{pageNum}
-								</button>
-							{/if}
-						{/each}
-
-						<button
-							onclick={() => goToPage(data.currentPage + 1)}
-							disabled={data.currentPage === data.totalPages}
-							class="p-2 text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:text-white"
-						>
-							<ChevronRight class="h-4 w-4" />
-						</button>
-					</div>
-				</div>
-			{/if}
 		{/if}
-	</div>
-</div>
+	{/snippet}
+
+	{#snippet footerActions()}
+		{#if drawerMode === 'create'}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				onclick={handleDrawerSave}
+				disabled={isSubmitting || !drawerFormData.firstName?.trim()}
+			>
+				{isSubmitting ? 'Creating...' : 'Create Contact'}
+			</Button>
+		{:else}
+			<Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
+			<Button
+				onclick={handleDrawerUpdate}
+				disabled={isSubmitting || !drawerFormData.firstName?.trim()}
+			>
+				{isSubmitting ? 'Saving...' : 'Save'}
+			</Button>
+		{/if}
+	{/snippet}
+</CrmDrawer>
+
+<!-- Hidden forms for server actions -->
+<form
+	method="POST"
+	action="?/create"
+	bind:this={createForm}
+	use:enhance={createEnhanceHandler('Contact created successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="firstName" value={formState.firstName} />
+	<input type="hidden" name="lastName" value={formState.lastName} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="organization" value={formState.organization} />
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="department" value={formState.department} />
+	<input type="hidden" name="doNotCall" value={formState.doNotCall} />
+	<input type="hidden" name="linkedInUrl" value={formState.linkedInUrl} />
+	<input type="hidden" name="addressLine" value={formState.addressLine} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
+</form>
+
+<form
+	method="POST"
+	action="?/update"
+	bind:this={updateForm}
+	use:enhance={createEnhanceHandler('Contact updated successfully', true)}
+	class="hidden"
+>
+	<input type="hidden" name="contactId" value={formState.contactId} />
+	<input type="hidden" name="firstName" value={formState.firstName} />
+	<input type="hidden" name="lastName" value={formState.lastName} />
+	<input type="hidden" name="email" value={formState.email} />
+	<input type="hidden" name="phone" value={formState.phone} />
+	<input type="hidden" name="organization" value={formState.organization} />
+	<input type="hidden" name="title" value={formState.title} />
+	<input type="hidden" name="department" value={formState.department} />
+	<input type="hidden" name="doNotCall" value={formState.doNotCall} />
+	<input type="hidden" name="linkedInUrl" value={formState.linkedInUrl} />
+	<input type="hidden" name="addressLine" value={formState.addressLine} />
+	<input type="hidden" name="city" value={formState.city} />
+	<input type="hidden" name="state" value={formState.state} />
+	<input type="hidden" name="postcode" value={formState.postcode} />
+	<input type="hidden" name="country" value={formState.country} />
+	<input type="hidden" name="description" value={formState.description} />
+	<input type="hidden" name="tags" value={JSON.stringify(formState.tags)} />
+</form>
+
+<form
+	method="POST"
+	action="?/delete"
+	bind:this={deleteForm}
+	use:enhance={createEnhanceHandler('Contact deleted successfully')}
+	class="hidden"
+>
+	<input type="hidden" name="contactId" value={formState.contactId} />
+</form>

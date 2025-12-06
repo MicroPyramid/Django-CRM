@@ -57,3 +57,9 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+openapi.json
+.mcp.json
+CLAUDE.md
+TODO.md
+.playwright-mcp

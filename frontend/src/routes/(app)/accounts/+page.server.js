@@ -10,7 +10,7 @@
  * Django endpoint: GET /api/accounts/
  */
 
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -21,7 +21,17 @@ export async function load({ locals, url, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
-	// Extract URL parameters (same as Prisma version)
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		industry: url.searchParams.get('industry') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
+
+	// Extract URL parameters
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '10');
 	const sort = url.searchParams.get('sort') || 'name';
@@ -37,16 +47,13 @@ export async function load({ locals, url, cookies }) {
 			order
 		});
 
-		// Add filters
-		const nameFilter = url.searchParams.get('name');
-		const cityFilter = url.searchParams.get('city');
-		const industryFilter = url.searchParams.get('industry');
-		const tagsFilter = url.searchParams.get('tags');
-
-		if (nameFilter) queryParams.append('name', nameFilter);
-		if (cityFilter) queryParams.append('city', cityFilter);
-		if (industryFilter) queryParams.append('industry', industryFilter);
-		if (tagsFilter) queryParams.append('tags', tagsFilter);
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.industry) queryParams.append('industry', filters.industry);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
 		// Make API request
 		const response = await apiRequest(`/accounts/?${queryParams.toString()}`, {}, { cookies, org });
@@ -58,13 +65,18 @@ export async function load({ locals, url, cookies }) {
 
 		if (response.active_accounts && response.closed_accounts) {
 			// Django endpoint returns separate lists
-			if (status === 'open' || !status) {
-				accounts = response.active_accounts.open_accounts || [];
-				total = accounts.length; // Django doesn't provide count in this format
+			const activeAccounts = response.active_accounts.open_accounts || [];
+			const closedAccounts = response.closed_accounts.close_accounts || [];
+
+			if (status === 'open') {
+				accounts = activeAccounts;
 			} else if (status === 'closed') {
-				accounts = response.closed_accounts.close_accounts || [];
-				total = accounts.length;
+				accounts = closedAccounts;
+			} else {
+				// No filter - show all accounts (both active and closed)
+				accounts = [...activeAccounts, ...closedAccounts];
 			}
+			total = accounts.length;
 		} else if (response.results) {
 			// Standard Django pagination response
 			accounts = response.results;
@@ -93,17 +105,21 @@ export async function load({ locals, url, cookies }) {
 				website: account.website,
 				industry: account.industry,
 				description: account.description,
-				isActive: account.status === 'open' || account.is_active === true,
+				isActive: account.is_active === true,
 				createdAt: account.created_at,
 				updatedAt: account.updated_at || account.created_at,
 
-				// Address fields (Django uses separate fields)
-				billingAddressLine: account.billing_address_line,
-				billingStreet: account.billing_street,
-				billingCity: account.billing_city,
-				billingState: account.billing_state,
-				billingPostcode: account.billing_postcode,
-				billingCountry: account.billing_country,
+				// Address fields (matching API field names)
+				addressLine: account.address_line,
+				city: account.city,
+				state: account.state,
+				postcode: account.postcode,
+				country: account.country,
+
+				// Business fields
+				annualRevenue: account.annual_revenue ? parseFloat(account.annual_revenue) : null,
+				currency: account.currency || null,
+				numberOfEmployees: account.number_of_employees,
 
 				// Owner - Django returns assigned_to array
 				owner:
@@ -137,10 +153,35 @@ export async function load({ locals, url, cookies }) {
 						name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
 					})) || [],
 
-				// Tags
-				tags: account.tags || []
+				// M2M field IDs for form editing
+				assignedTo: (account.assigned_to || []).map((u) => u.id),
+				contacts: (account.contacts || []).map((c) => c.id),
+				tags: (account.tags || []).map((t) => t.id),
+
+				// Full M2M data for display
+				assignedToData: account.assigned_to || [],
+				contactsData: account.contacts || [],
+				tagsData: account.tags || [],
+				teams: account.teams || []
 			};
 		});
+
+		// Extract form options from Django response
+		const users = (response.users || []).map((u) => ({
+			id: u.id,
+			email: u.user__email
+		}));
+
+		const allContacts = (response.contacts || []).map((c) => ({
+			id: c.id,
+			name: c.first_name || 'Unknown'
+		}));
+
+		const allTags = (response.tags || []).map((t) => ({
+			id: t.id,
+			name: t.name,
+			slug: t.slug
+		}));
 
 		return {
 			accounts: transformedAccounts,
@@ -149,10 +190,249 @@ export async function load({ locals, url, cookies }) {
 				limit,
 				total,
 				totalPages: Math.ceil(total / limit) || 1
-			}
+			},
+			filters,
+			// Form options for M2M fields
+			users,
+			contacts: allContacts,
+			tags: allTags
 		};
 	} catch (err) {
 		console.error('Error fetching accounts from API:', err);
 		throw error(500, `Failed to fetch accounts: ${err.message}`);
 	}
 }
+
+/** @type {import('./$types').Actions} */
+export const actions = {
+	create: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const name = form.get('name')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || null;
+			const phone = form.get('phone')?.toString().trim() || null;
+			const website = form.get('website')?.toString().trim() || null;
+			const industry = form.get('industry')?.toString().trim() || null;
+			const description = form.get('description')?.toString().trim() || null;
+			const address_line = form.get('address_line')?.toString().trim() || null;
+			const city = form.get('city')?.toString().trim() || null;
+			const state = form.get('state')?.toString().trim() || null;
+			const postcode = form.get('postcode')?.toString().trim() || null;
+			const country = form.get('country')?.toString().trim() || null;
+			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
+			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
+
+			// M2M fields (JSON arrays)
+			const assignedToRaw = form.get('assigned_to')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assigned_to = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assigned_to = JSON.parse(assignedToRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
+			if (!name) {
+				return fail(400, { error: 'Account name is required.' });
+			}
+
+			const accountData = {
+				name,
+				email,
+				phone,
+				website,
+				industry,
+				description,
+				address_line,
+				city,
+				state,
+				postcode,
+				country,
+				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				currency,
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
+				assigned_to,
+				contacts,
+				tags
+			};
+
+			await apiRequest(
+				'/accounts/',
+				{
+					method: 'POST',
+					body: accountData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error creating account:', err);
+			return fail(500, { error: 'Failed to create account' });
+		}
+	},
+
+	update: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+			const name = form.get('name')?.toString().trim();
+			const email = form.get('email')?.toString().trim() || null;
+			const phone = form.get('phone')?.toString().trim() || null;
+			const website = form.get('website')?.toString().trim() || null;
+			const industry = form.get('industry')?.toString().trim() || null;
+			const description = form.get('description')?.toString().trim() || null;
+			const address_line = form.get('address_line')?.toString().trim() || null;
+			const city = form.get('city')?.toString().trim() || null;
+			const state = form.get('state')?.toString().trim() || null;
+			const postcode = form.get('postcode')?.toString().trim() || null;
+			const country = form.get('country')?.toString().trim() || null;
+			const annual_revenue = form.get('annual_revenue')?.toString().trim() || null;
+			const currency = form.get('currency')?.toString().trim() || null;
+			const number_of_employees = form.get('number_of_employees')?.toString().trim() || null;
+
+			// M2M fields (JSON arrays)
+			const assignedToRaw = form.get('assigned_to')?.toString() || '[]';
+			const contactsRaw = form.get('contacts')?.toString() || '[]';
+			const tagsRaw = form.get('tags')?.toString() || '[]';
+
+			/** @type {string[]} */
+			let assigned_to = [];
+			/** @type {string[]} */
+			let contacts = [];
+			/** @type {string[]} */
+			let tags = [];
+
+			try {
+				assigned_to = JSON.parse(assignedToRaw);
+				contacts = JSON.parse(contactsRaw);
+				tags = JSON.parse(tagsRaw);
+			} catch (e) {
+				// If parsing fails, use empty arrays
+			}
+
+			if (!accountId || !name) {
+				return fail(400, { error: 'Account ID and name are required.' });
+			}
+
+			const accountData = {
+				name,
+				email,
+				phone,
+				website,
+				industry,
+				description,
+				address_line,
+				city,
+				state,
+				postcode,
+				country,
+				annual_revenue: annual_revenue ? parseFloat(annual_revenue) : null,
+				currency,
+				number_of_employees: number_of_employees ? parseInt(number_of_employees, 10) : null,
+				assigned_to,
+				contacts,
+				tags
+			};
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PATCH',
+					body: accountData
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating account:', err);
+			return fail(500, { error: 'Failed to update account' });
+		}
+	},
+
+	deactivate: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PATCH',
+					body: { is_active: false }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error deactivating account:', err);
+			return fail(500, { error: 'Failed to deactivate account' });
+		}
+	},
+
+	activate: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'PATCH',
+					body: { is_active: true }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error activating account:', err);
+			return fail(500, { error: 'Failed to activate account' });
+		}
+	},
+
+	delete: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const accountId = form.get('accountId')?.toString();
+
+			if (!accountId) {
+				return fail(400, { error: 'Account ID is required.' });
+			}
+
+			await apiRequest(
+				`/accounts/${accountId}/`,
+				{
+					method: 'DELETE'
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting account:', err);
+			return fail(500, { error: 'Failed to delete account' });
+		}
+	}
+};

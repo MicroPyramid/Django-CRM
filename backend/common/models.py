@@ -4,18 +4,19 @@ import os
 import time
 import uuid
 
-import arrow
 from django.contrib.auth.models import AbstractBaseUser, AbstractUser, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
-
 from common.base import BaseModel
-from common.templatetags.common_tags import (
+from common.utils import (
+    COUNTRIES,
+    CURRENCY_CODES,
+    ROLES,
     is_document_file_audio,
     is_document_file_code,
     is_document_file_image,
@@ -25,14 +26,8 @@ from common.templatetags.common_tags import (
     is_document_file_video,
     is_document_file_zip,
 )
-from common.utils import COUNTRIES, ROLES
 
 from .manager import UserManager
-
-
-def img_url(self, filename):
-    hash_ = int(time.time())
-    return "%s/%s/%s" % ("profile_pics", hash_, filename)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -59,11 +54,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
-
-    # def save(self, *args, **kwargs):
-    #     """by default the expiration time is set to 2 hours"""
-    #     self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-    #     super().save(*args, **kwargs)
 
 
 class Address(BaseModel):
@@ -92,37 +82,6 @@ class Address(BaseModel):
     def __str__(self):
         return self.city if self.city else ""
 
-    def get_complete_address(self):
-        address = ""
-        if self.address_line:
-            address += self.address_line
-        if self.street:
-            if address:
-                address += ", " + self.street
-            else:
-                address += self.street
-        if self.city:
-            if address:
-                address += ", " + self.city
-            else:
-                address += self.city
-        if self.state:
-            if address:
-                address += ", " + self.state
-            else:
-                address += self.state
-        if self.postcode:
-            if address:
-                address += ", " + self.postcode
-            else:
-                address += self.postcode
-        if self.country:
-            if address:
-                address += ", " + self.get_country_display()
-            else:
-                address += self.get_country_display()
-        return address
-
 
 def generate_unique_key():
     return str(uuid.uuid4())
@@ -132,9 +91,14 @@ class Org(BaseModel):
     name = models.CharField(max_length=100, blank=True, null=True)
     api_key = models.TextField(default=generate_unique_key, unique=True, editable=False)
     is_active = models.BooleanField(default=True)
-    # address = models.TextField(blank=True, null=True)
-    # user_limit = models.IntegerField(default=5)
-    # country = models.CharField(max_length=3, choices=COUNTRIES, blank=True, null=True)
+
+    # Locale settings
+    default_currency = models.CharField(
+        max_length=3, choices=CURRENCY_CODES, default="USD"
+    )
+    default_country = models.CharField(
+        max_length=2, choices=COUNTRIES, blank=True, null=True
+    )
 
     class Meta:
         verbose_name = "Organization"
@@ -172,57 +136,11 @@ class Tags(BaseModel):
         super().save(*args, **kwargs)
 
 
-# class User(AbstractBaseUser, PermissionsMixin):
-#     email = models.EmailField(_("email address"), blank=True, unique=True)
-#     profile_pic = models.FileField(
-#         max_length=1000, upload_to=img_url, null=True, blank=True
-#     )
-#     activation_key = models.CharField(max_length=150, null=True, blank=True)
-#     key_expires = models.DateTimeField(null=True, blank=True)
-
-
-#     USERNAME_FIELD = "email"
-#     REQUIRED_FIELDS = ["username"]
-
-#     objects = UserManager()
-
-#     def get_short_name(self):
-#         return self.username
-
-#     def documents(self):
-#         return self.document_uploaded.all()
-
-#     def get_full_name(self):
-#         full_name = None
-#         if self.first_name or self.last_name:
-#             full_name = self.first_name + " " + self.last_name
-#         elif self.username:
-#             full_name = self.username
-#         else:
-#             full_name = self.email
-#         return full_name
-
-#     @property
-#     def created_on_arrow(self):
-#         return arrow.get(self.date_joined).humanize()
-
-#     class Meta:
-#         ordering = ["-is_active"]
-
-#     def __str__(self):
-#         return self.email
-
-#     def save(self, *args, **kwargs):
-#         """by default the expiration time is set to 2 hours"""
-#         self.key_expires = timezone.now() + datetime.timedelta(hours=2)
-#         super().save(*args, **kwargs)
-
-
 class Profile(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="profiles")
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="profiles")
-    phone = PhoneNumberField(null=True, blank=True)
-    alternate_phone = PhoneNumberField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    alternate_phone = models.CharField(max_length=20, null=True, blank=True)
     address = models.ForeignKey(
         Address,
         related_name="address_users",
@@ -299,13 +217,6 @@ class Comment(BaseModel):
     def __str__(self):
         return f"{self.comment}"
 
-    def get_files(self):
-        return CommentFiles.objects.filter(comment_id=self)
-
-    @property
-    def commented_on_arrow(self):
-        return arrow.get(self.commented_on).humanize()
-
     def clean(self):
         """
         Validate that the comment's org matches the content object's org.
@@ -329,9 +240,22 @@ class Comment(BaseModel):
 
 
 class CommentFiles(BaseModel):
+    """
+    File attachments for comments.
+    Security: org field added for RLS protection and org-level isolation.
+    """
+
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     comment_file = models.FileField(
         "File", upload_to="CommentFiles", null=True, blank=True
+    )
+    # Security fix: Add org field for RLS protection
+    org = models.ForeignKey(
+        "Org",
+        on_delete=models.CASCADE,
+        related_name="comment_files",
+        null=True,  # Temporarily nullable for migration
+        blank=True,
     )
 
     class Meta:
@@ -343,11 +267,11 @@ class CommentFiles(BaseModel):
     def __str__(self):
         return f"{self.comment.comment}"
 
-    def get_file_name(self):
-        if self.comment_file:
-            return self.comment_file.path.split("/")[-1]
-
-        return None
+    def save(self, *args, **kwargs):
+        # Auto-populate org from parent comment if not set
+        if not self.org_id and self.comment_id:
+            self.org_id = self.comment.org_id
+        super().save(*args, **kwargs)
 
 
 class Attachments(BaseModel):
@@ -406,15 +330,6 @@ class Attachments(BaseModel):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
-
-    def get_file_type_display(self):
-        if self.attachment:
-            return self.file_type()[1]
-        return None
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
 
     def clean(self):
         """
@@ -492,37 +407,16 @@ class Document(BaseModel):
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
 
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.shared_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))
-
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
 
 def generate_key():
-    return binascii.hexlify(os.urandom(8)).decode()
+    # Security: Increased from 8 bytes (64 bits) to 32 bytes (256 bits)
+    return binascii.hexlify(os.urandom(32)).decode()
 
 
 class APISettings(BaseModel):
     title = models.TextField()
-    apikey = models.CharField(max_length=16, blank=True)
+    # Security: Increased max_length to accommodate 32-byte keys (64 hex chars)
+    apikey = models.CharField(max_length=64, blank=True)
     website = models.URLField(max_length=255, null=True)
     lead_assigned_to = models.ManyToManyField(
         Profile, related_name="lead_assignee_users"
@@ -591,13 +485,6 @@ class SessionToken(BaseModel):
         self.revoked_at = timezone.now()
         self.save()
 
-    @property
-    def is_expired(self):
-        """Check if token is expired"""
-        from django.utils import timezone
-
-        return timezone.now() > self.expires_at
-
     @classmethod
     def cleanup_expired(cls):
         """Remove expired tokens (call via cron/celery)"""
@@ -663,12 +550,7 @@ class Activity(BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
-
-# =============================================================================
-# Teams Model (merged from teams app)
-# =============================================================================
+        return timesince(self.created_at) + " ago"
 
 
 class Teams(BaseModel):
@@ -686,19 +568,10 @@ class Teams(BaseModel):
     def __str__(self):
         return f"{self.name}"
 
-    @property
-    def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
-
     def get_users(self):
         return ",".join(
             [str(_id) for _id in list(self.users.values_list("id", flat=True))]
         )
-
-
-# =============================================================================
-# Contact Form Submission (for public website)
-# =============================================================================
 
 
 class ContactFormSubmission(BaseModel):
@@ -758,19 +631,6 @@ class ContactFormSubmission(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.email} ({self.reason})"
-
-    def mark_as_read(self):
-        """Mark submission as read"""
-        if self.status == "new":
-            self.status = "read"
-            self.save()
-
-    def mark_as_replied(self, user):
-        """Mark submission as replied"""
-        self.status = "replied"
-        self.replied_by = user
-        self.replied_at = timezone.now()
-        self.save()
 
 
 # Import SecurityAuditLog so Django discovers it for migrations

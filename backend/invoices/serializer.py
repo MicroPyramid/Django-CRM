@@ -128,6 +128,14 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "org",
         )
 
+    def create(self, validated_data):
+        # Default currency from org if not provided
+        if not validated_data.get("currency"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
+
 
 class InvoiceSwaggerSerailizer(serializers.ModelSerializer):
 
@@ -179,6 +187,14 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_by",
             "org",
         )
+
+    def create(self, validated_data):
+        # Default currency from org if not provided and has price
+        if not validated_data.get("currency") and validated_data.get("price"):
+            request = self.context.get("request")
+            if request and hasattr(request, "profile") and request.profile.org:
+                validated_data["currency"] = request.profile.org.default_currency
+        return super().create(validated_data)
 
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
