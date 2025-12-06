@@ -15,7 +15,7 @@ import { error, fail } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ cookies, locals }) {
+export async function load({ url, cookies, locals }) {
 	const user = locals.user;
 	const org = locals.org;
 
@@ -23,12 +23,33 @@ export async function load({ cookies, locals }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		status: url.searchParams.get('status') || '',
+		source: url.searchParams.get('source') || '',
+		rating: url.searchParams.get('rating') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
+
+	// Build query params for API
+	const queryParams = new URLSearchParams();
+	if (filters.search) queryParams.append('search', filters.search);
+	if (filters.status) queryParams.append('status', filters.status.toLowerCase().replace(/_/g, ' '));
+	if (filters.source) queryParams.append('source', filters.source.toLowerCase());
+	if (filters.rating) queryParams.append('rating', filters.rating);
+	filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+	filters.tags.forEach((id) => queryParams.append('tags', id));
+	if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+	if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
+
 	try {
-		// Django leads endpoint - no status filter needed
-		// Django LeadListView already separates leads into open_leads and close_leads
-		// Valid Django status values: assigned, in process, converted, recycled, closed
-		// Only fetch leads on initial load - form options are lazy-loaded when drawer opens
-		const response = await apiRequest(`/leads/`, {}, { cookies, org });
+		// Django leads endpoint with filter params
+		const queryString = queryParams.toString();
+		const response = await apiRequest(`/leads/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org });
 
 		// Handle Django response format
 		// Django returns: { open_leads: { leads_count, open_leads: [...] }, close_leads: {...}, ... }
@@ -119,7 +140,31 @@ export async function load({ cookies, locals }) {
 		}));
 
 		return {
-			leads: transformedLeads
+			leads: transformedLeads,
+			filters,
+			filterOptions: {
+				statuses: [
+					{ value: 'ASSIGNED', label: 'Assigned' },
+					{ value: 'IN_PROCESS', label: 'In Process' },
+					{ value: 'CONVERTED', label: 'Converted' },
+					{ value: 'RECYCLED', label: 'Recycled' },
+					{ value: 'CLOSED', label: 'Closed' }
+				],
+				sources: [
+					{ value: 'call', label: 'Call' },
+					{ value: 'email', label: 'Email' },
+					{ value: 'existing customer', label: 'Existing Customer' },
+					{ value: 'partner', label: 'Partner' },
+					{ value: 'public relations', label: 'Public Relations' },
+					{ value: 'campaign', label: 'Campaign' },
+					{ value: 'other', label: 'Other' }
+				],
+				ratings: [
+					{ value: 'HOT', label: 'Hot' },
+					{ value: 'WARM', label: 'Warm' },
+					{ value: 'COLD', label: 'Cold' }
+				]
+			}
 		};
 	} catch (err) {
 		console.error('Error fetching leads from API:', err);

@@ -74,6 +74,24 @@ class LeadListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(city__icontains=params.get("city"))
             if params.get("email"):
                 queryset = queryset.filter(email__icontains=params.get("email"))
+            if params.get("rating"):
+                queryset = queryset.filter(rating=params.get("rating"))
+            if params.get("search"):
+                search = params.get("search")
+                queryset = queryset.filter(
+                    Q(first_name__icontains=search)
+                    | Q(last_name__icontains=search)
+                    | Q(company_name__icontains=search)
+                    | Q(email__icontains=search)
+                )
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+            if params.get("close_date__gte"):
+                queryset = queryset.filter(close_date__gte=params.get("close_date__gte"))
+            if params.get("close_date__lte"):
+                queryset = queryset.filter(close_date__lte=params.get("close_date__lte"))
         context = {}
         queryset_open = queryset.exclude(status="closed")
         results_leads_open = self.paginate_queryset(

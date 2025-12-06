@@ -14,7 +14,7 @@ import { error } from '@sveltejs/kit';
 import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ locals, cookies }) {
+export async function load({ locals, cookies, url }) {
 	const user = locals.user;
 	const org = locals.org;
 
@@ -22,14 +22,34 @@ export async function load({ locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		status: url.searchParams.get('status') || '',
+		priority: url.searchParams.get('priority') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		due_date_gte: url.searchParams.get('due_date_gte') || '',
+		due_date_lte: url.searchParams.get('due_date_lte') || ''
+	};
+
 	try {
 		// Build query parameters for tasks
 		const queryParams = buildQueryParams({
 			page: 1,
-			limit: 1000, // Get all tasks without pagination
+			limit: 1000,
 			sort: 'created_at',
 			order: 'desc'
 		});
+
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.status) queryParams.append('status', filters.status);
+		if (filters.priority) queryParams.append('priority', filters.priority);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.due_date_gte) queryParams.append('due_date__gte', filters.due_date_gte);
+		if (filters.due_date_lte) queryParams.append('due_date__lte', filters.due_date_lte);
 
 		// Only fetch tasks on initial page load
 		// Dropdown options (users, accounts, contacts, etc.) are lazy-loaded client-side when drawer opens
@@ -128,7 +148,8 @@ export async function load({ locals, cookies }) {
 		}));
 
 		return {
-			tasks: transformedTasks
+			tasks: transformedTasks,
+			filters
 		};
 	} catch (err) {
 		console.error('Error loading tasks from API:', err);

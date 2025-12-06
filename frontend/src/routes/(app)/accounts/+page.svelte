@@ -27,13 +27,13 @@
 		Contact,
 		Banknote
 	} from '@lucide/svelte';
-	import { PageHeader, FilterPopover } from '$lib/components/layout';
+	import { PageHeader } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
-	import { useListFilters } from '$lib/hooks';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
 	import { CURRENCY_CODES } from '$lib/constants/filters.js';
 	import { orgSettings } from '$lib/stores/org.js';
@@ -419,38 +419,70 @@
 		}
 	}
 
-	// Get unique industries from accounts for filter
+	// Get unique industries from accounts for filter options
 	const industries = $derived.by(() => {
 		const uniqueIndustries = [...new Set(accounts.map((a) => a.industry).filter(Boolean))];
 		return uniqueIndustries.sort();
 	});
 
-	// Filter/search/sort state
-	const list = useListFilters({
-		searchFields: ['name', 'industry', 'website', 'phone'],
-		filters: [
-			{
-				key: 'statusFilter',
-				defaultValue: 'ALL',
-				match: (item, value) =>
-					value === 'ALL' ||
-					(value === 'active' && item.isActive !== false) ||
-					(value === 'closed' && item.isActive === false)
-			},
-			{
-				key: 'industryFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.industry === value
-			}
-		],
-		defaultSortColumn: 'createdAt',
-		defaultSortDirection: 'desc'
+	// Industry options for filter
+	const industryFilterOptions = $derived([
+		{ value: '', label: 'All Industries' },
+		...industries.map((ind) => ({ value: ind, label: ind }))
+	]);
+
+	// URL-based filter state from server
+	const filters = $derived(data.filters);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.industry) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
 	});
 
-	// Filtered and sorted accounts
-	const filteredAccounts = $derived(list.filterAndSort(accounts));
-	// Only count industry filter for popover badge (status is visible via chips)
-	const activeFiltersCount = $derived(list.filters.industryFilter !== 'ALL' ? 1 : 0);
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params (preserve view/action)
+		['search', 'industry', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
+	// Accounts are already filtered server-side, apply chip filter for active/closed
+	let statusChipFilter = $state('ALL');
+	const filteredAccounts = $derived.by(() => {
+		if (statusChipFilter === 'active') {
+			return accounts.filter((a) => a.isActive !== false);
+		} else if (statusChipFilter === 'closed') {
+			return accounts.filter((a) => a.isActive === false);
+		}
+		return accounts;
+	});
 
 	// Visible column count for the toggle button
 	const visibleColumnCount = $derived(visibleColumns.length);
@@ -659,15 +691,14 @@
 			<div class="flex gap-1">
 				<button
 					type="button"
-					onclick={() => (list.filters.statusFilter = 'ALL')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
-						.filters.statusFilter === 'ALL'
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
 						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
 					All
 					<span
-						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'ALL'
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
 							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
 							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
@@ -676,15 +707,14 @@
 				</button>
 				<button
 					type="button"
-					onclick={() => (list.filters.statusFilter = 'active')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
-						.filters.statusFilter === 'active'
+					onclick={() => (statusChipFilter = 'active')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'active'
 						? 'bg-emerald-600 text-white dark:bg-emerald-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
 					Active
 					<span
-						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'active'
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
 							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
 							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
@@ -693,15 +723,14 @@
 				</button>
 				<button
 					type="button"
-					onclick={() => (list.filters.statusFilter = 'closed')}
-					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
-						.filters.statusFilter === 'closed'
+					onclick={() => (statusChipFilter = 'closed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'closed'
 						? 'bg-gray-600 text-white dark:bg-gray-500'
 						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
 					Closed
 					<span
-						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'closed'
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
 							? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
 							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
@@ -744,25 +773,6 @@
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
-		<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-			{#snippet children()}
-				<div class="space-y-3">
-					<div>
-						<label for="industry-filter" class="mb-1.5 block text-sm font-medium">Industry</label>
-						<select
-							id="industry-filter"
-							bind:value={list.filters.industryFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="ALL">All Industries</option>
-							{#each industries as industry}
-								<option value={industry}>{industry}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
-			{/snippet}
-		</FilterPopover>
 		<Button onclick={openCreate} disabled={false}>
 			<Plus class="mr-2 h-4 w-4" />
 			New Account
@@ -770,6 +780,27 @@
 		</div>
 	{/snippet}
 </PageHeader>
+
+<!-- Filter Bar -->
+<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+	<SearchInput
+		value={filters.search}
+		onchange={(value) => updateFilters({ ...filters, search: value })}
+		placeholder="Search accounts..."
+	/>
+	<SelectFilter
+		label="Industry"
+		options={industryFilterOptions}
+		value={filters.industry}
+		onchange={(value) => updateFilters({ ...filters, industry: value })}
+	/>
+	<DateRangeFilter
+		label="Created"
+		startDate={filters.created_at_gte}
+		endDate={filters.created_at_lte}
+		onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+	/>
+</FilterBar>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Accounts Table -->

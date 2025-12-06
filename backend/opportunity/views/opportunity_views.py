@@ -69,6 +69,24 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 )
             if params.get("tags"):
                 queryset = queryset.filter(tags__in=params.get("tags")).distinct()
+            if params.getlist("assigned_to"):
+                queryset = queryset.filter(
+                    assigned_to__id__in=params.getlist("assigned_to")
+                ).distinct()
+            if params.get("search"):
+                queryset = queryset.filter(name__icontains=params.get("search"))
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+            if params.get("closed_on__gte"):
+                queryset = queryset.filter(closed_on__gte=params.get("closed_on__gte"))
+            if params.get("closed_on__lte"):
+                queryset = queryset.filter(closed_on__lte=params.get("closed_on__lte"))
+            if params.get("amount__gte"):
+                queryset = queryset.filter(amount__gte=params.get("amount__gte"))
+            if params.get("amount__lte"):
+                queryset = queryset.filter(amount__lte=params.get("amount__lte"))
 
         context = {}
         results_opportunities = self.paginate_queryset(

@@ -21,7 +21,17 @@ export async function load({ locals, url, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
-	// Extract URL parameters (same as Prisma version)
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		industry: url.searchParams.get('industry') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
+
+	// Extract URL parameters
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '10');
 	const sort = url.searchParams.get('sort') || 'name';
@@ -37,16 +47,13 @@ export async function load({ locals, url, cookies }) {
 			order
 		});
 
-		// Add filters
-		const nameFilter = url.searchParams.get('name');
-		const cityFilter = url.searchParams.get('city');
-		const industryFilter = url.searchParams.get('industry');
-		const tagsFilter = url.searchParams.get('tags');
-
-		if (nameFilter) queryParams.append('name', nameFilter);
-		if (cityFilter) queryParams.append('city', cityFilter);
-		if (industryFilter) queryParams.append('industry', industryFilter);
-		if (tagsFilter) queryParams.append('tags', tagsFilter);
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.industry) queryParams.append('industry', filters.industry);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
 		// Make API request
 		const response = await apiRequest(`/accounts/?${queryParams.toString()}`, {}, { cookies, org });
@@ -184,6 +191,7 @@ export async function load({ locals, url, cookies }) {
 				total,
 				totalPages: Math.ceil(total / limit) || 1
 			},
+			filters,
 			// Form options for M2M fields
 			users,
 			contacts: allContacts,

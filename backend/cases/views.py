@@ -66,6 +66,20 @@ class CaseListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(priority=params.get("priority"))
             if params.get("account"):
                 queryset = queryset.filter(account=params.get("account"))
+            if params.get("case_type"):
+                queryset = queryset.filter(case_type=params.get("case_type"))
+            if params.getlist("assigned_to"):
+                queryset = queryset.filter(
+                    assigned_to__id__in=params.getlist("assigned_to")
+                ).distinct()
+            if params.get("tags"):
+                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+            if params.get("search"):
+                queryset = queryset.filter(name__icontains=params.get("search"))
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
 
         context = {}
 

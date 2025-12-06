@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { apiRequest } from '$lib/api.js';
@@ -28,14 +29,14 @@
 		Contact,
 		Link2
 	} from '@lucide/svelte';
-	import { PageHeader, FilterPopover } from '$lib/components/layout';
+	import { PageHeader } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
 	import { cn } from '$lib/utils.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
-	import { useListFilters } from '$lib/hooks';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
 
@@ -412,36 +413,72 @@
 		}
 	}
 
-	// Filter/search/sort state using hook
-	const list = useListFilters({
-		searchFields: ['subject', 'description', 'account.name'],
-		filters: [
-			{
-				key: 'statusFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.status === value
-			},
-			{
-				key: 'priorityFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.priority === value
-			}
-		],
-		defaultSortColumn: 'dueDate',
-		defaultSortDirection: 'asc'
+	// URL-based filter state from server
+	const filters = $derived(data.filters || {});
+
+	// Status options for filter dropdown
+	const statusFilterOptions = $derived([
+		{ value: '', label: 'All Statuses' },
+		...statusOptions
+	]);
+
+	// Priority options for filter dropdown
+	const priorityFilterOptions = $derived([
+		{ value: '', label: 'All Priorities' },
+		...priorityOptions
+	]);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.status) count++;
+		if (filters.priority) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.due_date_gte || filters.due_date_lte) count++;
+		return count;
 	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params
+		['search', 'status', 'priority', 'assigned_to', 'tags', 'due_date_gte', 'due_date_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
 
 	// Status counts for filter chips
 	const activeStatuses = ['New', 'In Progress'];
 	const activeTaskCount = $derived(tasks.filter((/** @type {any} */ t) => activeStatuses.includes(t.status)).length);
 	const completedCount = $derived(tasks.filter((/** @type {any} */ t) => t.status === 'Completed').length);
 
-	// Status chip filter state
+	// Status chip filter state (client-side quick filter on top of server filters)
 	let statusChipFilter = $state('ALL');
 
-	// Filtered tasks (including chip filter)
+	// Filtered tasks - server already applies main filters, just apply status chip
 	const filteredTasks = $derived.by(() => {
-		let filtered = list.filterAndSort(tasks);
+		let filtered = tasks;
 		if (statusChipFilter === 'active') {
 			filtered = filtered.filter((/** @type {any} */ t) => activeStatuses.includes(t.status));
 		} else if (statusChipFilter === 'completed') {
@@ -449,7 +486,6 @@
 		}
 		return filtered;
 	});
-	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
 	// Local data for optimistic updates
 	let localTasks = $state(/** @type {any[]} */ ([]));
@@ -1030,37 +1066,6 @@
 				</DropdownMenu.Root>
 			{/if}
 
-			<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-				{#snippet children()}
-					<div class="space-y-3">
-						<div>
-							<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
-							<select
-								id="status-filter"
-								bind:value={list.filters.statusFilter}
-								class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-							>
-								{#each statuses as status}
-									<option value={status.value}>{status.label}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label for="priority-filter" class="mb-1.5 block text-sm font-medium">Priority</label>
-							<select
-								id="priority-filter"
-								bind:value={list.filters.priorityFilter}
-								class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-							>
-								{#each priorities as priority}
-									<option value={priority.value}>{priority.label}</option>
-								{/each}
-							</select>
-						</div>
-					</div>
-				{/snippet}
-			</FilterPopover>
-
 			<Button onclick={addNewTask}>
 				<Plus class="mr-2 h-4 w-4" />
 				New Task
@@ -1068,6 +1073,33 @@
 		</div>
 	{/snippet}
 </PageHeader>
+
+<!-- Filter Bar -->
+<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+	<SearchInput
+		value={filters.search}
+		onchange={(value) => updateFilters({ ...filters, search: value })}
+		placeholder="Search tasks..."
+	/>
+	<SelectFilter
+		label="Status"
+		options={statusFilterOptions}
+		value={filters.status}
+		onchange={(value) => updateFilters({ ...filters, status: value })}
+	/>
+	<SelectFilter
+		label="Priority"
+		options={priorityFilterOptions}
+		value={filters.priority}
+		onchange={(value) => updateFilters({ ...filters, priority: value })}
+	/>
+	<DateRangeFilter
+		label="Due Date"
+		startDate={filters.due_date_gte}
+		endDate={filters.due_date_lte}
+		onchange={(start, end) => updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
+	/>
+</FilterBar>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	{#if viewMode === 'list'}

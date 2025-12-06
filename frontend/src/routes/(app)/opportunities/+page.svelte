@@ -1,5 +1,6 @@
 <script>
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -21,11 +22,12 @@
 		Contact,
 		Tags
 	} from '@lucide/svelte';
-	import { PageHeader, FilterPopover } from '$lib/components/layout';
+	import { PageHeader } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
 	import { formatCurrency, formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
 		OPPORTUNITY_STAGES as stages,
@@ -290,9 +292,55 @@
 		}
 	]);
 
-	// State
-	let searchQuery = $state('');
-	let stageFilter = $state('ALL');
+	// URL-based filter state from server
+	const filters = $derived(data.filters || {});
+
+	// Stage options for filter dropdown (includes ALL option)
+	const stageFilterOptions = $derived([
+		{ value: '', label: 'All Stages' },
+		...stageOptions
+	]);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.stage) count++;
+		if (filters.account) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		if (filters.closed_on_gte || filters.closed_on_lte) count++;
+		return count;
+	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params
+		['search', 'stage', 'account', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte', 'closed_on_gte', 'closed_on_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
 
 	// Column visibility state - use defaults (excludes probability and type)
 	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
@@ -349,40 +397,35 @@
 		}
 	});
 
-	// Computed values
+	// Computed values - opportunities are already filtered server-side
 	const opportunities = $derived(data.opportunities || []);
 	const stats = $derived(data.stats || { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 });
 
+	// Status chip filter for quick filtering (client-side on top of server filters)
+	let statusChipFilter = $state('ALL');
+
+	// Status stages for filtering
+	const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
+
+	// Apply only status chip filter (all other filters are server-side)
 	const filteredOpportunities = $derived.by(() => {
 		return opportunities.filter((/** @type {any} */ opp) => {
-			const matchesSearch =
-				searchQuery === '' ||
-				opp.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				opp.account?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-			const matchesStage = stageFilter === 'ALL' || opp.stage === stageFilter;
 			// Apply status chip filter
-			let matchesStatusChip = true;
 			if (statusChipFilter === 'open') {
-				matchesStatusChip = openStages.includes(opp.stage);
+				return openStages.includes(opp.stage);
 			} else if (statusChipFilter === 'won') {
-				matchesStatusChip = opp.stage === 'CLOSED_WON';
+				return opp.stage === 'CLOSED_WON';
 			} else if (statusChipFilter === 'lost') {
-				matchesStatusChip = opp.stage === 'CLOSED_LOST';
+				return opp.stage === 'CLOSED_LOST';
 			}
-			return matchesSearch && matchesStage && matchesStatusChip;
+			return true;
 		});
 	});
 
 	// Status counts for filter chips
-	const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
 	const openCount = $derived(opportunities.filter((/** @type {any} */ o) => openStages.includes(o.stage)).length);
 	const wonCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_WON').length);
 	const lostCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length);
-
-	// Status filter for chips (separate from stage dropdown)
-	let statusChipFilter = $state('ALL');
-
-	const activeFiltersCount = $derived(stageFilter !== 'ALL' ? 1 : 0);
 
 	// Load column visibility from localStorage
 	onMount(() => {
@@ -720,14 +763,6 @@
 		}
 	}
 
-	/**
-	 * Clear all filters
-	 */
-	function clearFilters() {
-		searchQuery = '';
-		stageFilter = 'ALL';
-	}
-
 	// Open create drawer for new opportunity
 	function addNewRow() {
 		openCreate();
@@ -856,23 +891,6 @@
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 
-			<FilterPopover activeCount={activeFiltersCount} onClear={clearFilters}>
-				{#snippet children()}
-					<div>
-						<label for="stage-filter" class="mb-1.5 block text-sm font-medium">Stage</label>
-						<select
-							id="stage-filter"
-							bind:value={stageFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							{#each stages as stage}
-								<option value={stage.value}>{stage.label}</option>
-							{/each}
-						</select>
-					</div>
-				{/snippet}
-			</FilterPopover>
-
 			<Button onclick={addNewRow} disabled={isLoading}>
 				<Plus class="mr-2 h-4 w-4" />
 				New
@@ -880,6 +898,33 @@
 		</div>
 	{/snippet}
 </PageHeader>
+
+<!-- Filter Bar -->
+<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+	<SearchInput
+		value={filters.search}
+		onchange={(value) => updateFilters({ ...filters, search: value })}
+		placeholder="Search opportunities..."
+	/>
+	<SelectFilter
+		label="Stage"
+		options={stageFilterOptions}
+		value={filters.stage}
+		onchange={(value) => updateFilters({ ...filters, stage: value })}
+	/>
+	<DateRangeFilter
+		label="Close Date"
+		startDate={filters.closed_on_gte}
+		endDate={filters.closed_on_lte}
+		onchange={(start, end) => updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
+	/>
+	<DateRangeFilter
+		label="Created"
+		startDate={filters.created_at_gte}
+		endDate={filters.created_at_lte}
+		onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+	/>
+</FilterBar>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Table View -->

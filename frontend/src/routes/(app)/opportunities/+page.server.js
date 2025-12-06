@@ -6,10 +6,10 @@
  */
 
 import { error, fail } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ locals, cookies }) {
+export async function load({ locals, cookies, url }) {
 	const userId = locals.user?.id;
 	const org = locals.org;
 
@@ -17,7 +17,8 @@ export async function load({ locals, cookies }) {
 		return {
 			opportunities: [],
 			stats: { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 },
-			options: { accounts: [], contacts: [], users: [], teams: [], tags: [] }
+			options: { accounts: [], contacts: [], users: [], teams: [], tags: [] },
+			filters: {}
 		};
 	}
 
@@ -25,10 +26,39 @@ export async function load({ locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		stage: url.searchParams.get('stage') || '',
+		account: url.searchParams.get('account') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || '',
+		closed_on_gte: url.searchParams.get('closed_on_gte') || '',
+		closed_on_lte: url.searchParams.get('closed_on_lte') || ''
+	};
+
 	try {
+		// Build query parameters for Django API
+		const queryParams = buildQueryParams({});
+
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.stage) queryParams.append('stage', filters.stage);
+		if (filters.account) queryParams.append('account', filters.account);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
+		if (filters.closed_on_gte) queryParams.append('closed_on__gte', filters.closed_on_gte);
+		if (filters.closed_on_lte) queryParams.append('closed_on__lte', filters.closed_on_lte);
+
+		const queryString = queryParams.toString();
+
 		// Fetch opportunities and teams/users from Django API in parallel
 		const [response, teamsUsersResponse] = await Promise.all([
-			apiRequest('/opportunities/', {}, { cookies, org }),
+			apiRequest(`/opportunities/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
 			apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch((err) => {
 				console.error('Failed to fetch teams/users:', err);
 				return { teams: [], profiles: [] };
@@ -166,7 +196,8 @@ export async function load({ locals, cookies }) {
 				tags,
 				users,
 				teams
-			}
+			},
+			filters
 		};
 	} catch (err) {
 		console.error('Error loading opportunities from API:', err);

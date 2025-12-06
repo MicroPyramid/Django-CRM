@@ -19,13 +19,13 @@
 		Calendar,
 		Tag
 	} from '@lucide/svelte';
-	import { PageHeader, FilterPopover } from '$lib/components/layout';
+	import { PageHeader } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, DateRangeFilter } from '$lib/components/ui/filter';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
-	import { useListFilters } from '$lib/hooks';
 	import { goto } from '$app/navigation';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
 	import { apiRequest } from '$lib/api.js';
@@ -372,23 +372,49 @@
 	}
 
 
-	// Filter/search/sort state
-	const list = useListFilters({
-		searchFields: ['firstName', 'lastName', 'email', 'phone', 'title', 'organization'],
-		filters: [
-			{
-				key: 'ownerFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.owner?.id === value
-			}
-		],
-		defaultSortColumn: 'createdAt',
-		defaultSortDirection: 'desc'
+	// URL-based filter state from server
+	const filters = $derived(data.filters);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
 	});
 
-	// Filtered and sorted contacts
-	const filteredContacts = $derived(list.filterAndSort(contacts));
-	const activeFiltersCount = $derived(list.getActiveFilterCount());
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params (preserve view/action)
+		['search', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value) {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
+	// Contacts are already filtered server-side
+	const filteredContacts = $derived(contacts);
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -603,25 +629,6 @@
 <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
-			<!-- Filter Popover -->
-			<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-				{#snippet children()}
-					<div>
-						<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
-						<select
-							id="owner-filter"
-							bind:value={list.filters.ownerFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="ALL">All Owners</option>
-							{#each owners as owner}
-								<option value={owner.id}>{owner.name || owner.email}</option>
-							{/each}
-						</select>
-					</div>
-				{/snippet}
-			</FilterPopover>
-
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
@@ -664,6 +671,23 @@
 </PageHeader>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
+	<!-- Filter Bar -->
+	<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+		<SearchInput
+			value={filters.search}
+			placeholder="Search contacts..."
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			class="w-64"
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			class="w-56"
+		/>
+	</FilterBar>
+
 	<!-- Table -->
 	{#if filteredContacts.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">

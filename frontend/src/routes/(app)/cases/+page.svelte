@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -24,12 +25,13 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
 	import {
 		caseStatusOptions,
 		caseTypeOptions,
 		casePriorityOptions
 	} from '$lib/utils/table-helpers.js';
-	import { useDrawerState, useListFilters } from '$lib/hooks';
+	import { useDrawerState } from '$lib/hooks';
 	import { apiRequest } from '$lib/api.js';
 
 	/**
@@ -412,41 +414,79 @@
 		isDrawerDirty = true;
 	}
 
-	// Filter/search/sort state using hook
-	const list = useListFilters({
-		searchFields: ['subject', 'description', 'account.name'],
-		filters: [
-			{
-				key: 'statusFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.status === value
-			},
-			{
-				key: 'priorityFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.priority === value
-			},
-			{
-				key: 'accountFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.account?.id === value
-			}
-		],
-		defaultSortColumn: 'createdAt',
-		defaultSortDirection: 'desc'
+	// URL-based filter state from server
+	const filters = $derived(data.filters || {});
+
+	// Status options for filter dropdown
+	const statusFilterOptions = $derived([
+		{ value: '', label: 'All Statuses' },
+		...caseStatusOptions
+	]);
+
+	// Priority options for filter dropdown
+	const priorityFilterOptions = $derived([
+		{ value: '', label: 'All Priorities' },
+		...casePriorityOptions
+	]);
+
+	// Type options for filter dropdown
+	const typeFilterOptions = $derived([
+		{ value: '', label: 'All Types' },
+		...caseTypeOptions
+	]);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.status) count++;
+		if (filters.priority) count++;
+		if (filters.case_type) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
 	});
 
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params
+		['search', 'status', 'priority', 'case_type', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach((key) =>
+			url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
+
 	// Status counts for filter chips
-	const openStatuses = ['New', 'Open', 'Pending'];
+	const openStatuses = ['New', 'Open', 'Pending', 'Assigned'];
 	const openCount = $derived(casesData.filter((/** @type {any} */ c) => openStatuses.includes(c.status)).length);
 	const closedCount = $derived(casesData.filter((/** @type {any} */ c) => c.status === 'Closed').length);
 
-	// Status chip filter state
+	// Status chip filter state (client-side quick filter on top of server filters)
 	let statusChipFilter = $state('ALL');
 
-	// Filtered and sorted cases (including chip filter)
+	// Filtered cases - server already applies main filters, just apply status chip
 	const filteredCases = $derived.by(() => {
-		let filtered = list.filterAndSort(casesData);
+		let filtered = casesData;
 		if (statusChipFilter === 'open') {
 			filtered = filtered.filter((/** @type {any} */ c) => openStatuses.includes(c.status));
 		} else if (statusChipFilter === 'closed') {
@@ -740,6 +780,39 @@
 		</div>
 	{/snippet}
 </PageHeader>
+
+<!-- Filter Bar -->
+<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+	<SearchInput
+		value={filters.search}
+		onchange={(value) => updateFilters({ ...filters, search: value })}
+		placeholder="Search cases..."
+	/>
+	<SelectFilter
+		label="Status"
+		options={statusFilterOptions}
+		value={filters.status}
+		onchange={(value) => updateFilters({ ...filters, status: value })}
+	/>
+	<SelectFilter
+		label="Priority"
+		options={priorityFilterOptions}
+		value={filters.priority}
+		onchange={(value) => updateFilters({ ...filters, priority: value })}
+	/>
+	<SelectFilter
+		label="Type"
+		options={typeFilterOptions}
+		value={filters.case_type}
+		onchange={(value) => updateFilters({ ...filters, case_type: value })}
+	/>
+	<DateRangeFilter
+		label="Created"
+		startDate={filters.created_at_gte}
+		endDate={filters.created_at_lte}
+		onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+	/>
+</FilterBar>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
 		<CrmTable

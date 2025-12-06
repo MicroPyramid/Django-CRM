@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -29,14 +29,13 @@
 		Banknote
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { PageHeader } from '$lib/components/layout';
 	import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
 	import { CURRENCY_CODES } from '$lib/constants/filters.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
-	import { useListFilters } from '$lib/hooks';
 	import {
 		leadStatusOptions,
 		leadRatingOptions,
@@ -842,29 +841,50 @@
 		}
 	}
 
-	// Filter/search/sort state
-	const list = useListFilters({
-		searchFields: ['firstName', 'lastName', 'company', 'email'],
-		filters: [
-			{
-				key: 'statusFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.status === value
-			},
-			{
-				key: 'sourceFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.leadSource === value
-			},
-			{
-				key: 'ratingFilter',
-				defaultValue: 'ALL',
-				match: (item, value) => value === 'ALL' || item.rating === value
-			}
-		],
-		defaultSortColumn: 'createdAt',
-		defaultSortDirection: 'desc'
+	// URL-based filter state from server
+	const filters = $derived(data.filters);
+	const filterOptions = $derived(data.filterOptions);
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.status) count++;
+		if (filters.source) count++;
+		if (filters.rating) count++;
+		if (filters.assigned_to?.length > 0) count++;
+		if (filters.tags?.length > 0) count++;
+		if (filters.created_at_gte || filters.created_at_lte) count++;
+		return count;
 	});
+
+	/**
+	 * Update URL with new filters
+	 * @param {Record<string, any>} newFilters
+	 */
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+		// Clear existing filter params (preserve view/action)
+		['search', 'status', 'source', 'rating', 'assigned_to', 'tags', 'created_at_gte', 'created_at_lte'].forEach(
+			(key) => url.searchParams.delete(key)
+		);
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value && value !== 'ALL') {
+				url.searchParams.set(key, value);
+			}
+		});
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Clear all filters
+	 */
+	function clearFilters() {
+		updateFilters({});
+	}
 
 	// Status counts for filter chips
 	const openStatuses = ['ASSIGNED', 'IN_PROCESS'];
@@ -872,12 +892,12 @@
 	const openCount = $derived(leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length);
 	const lostCount = $derived(leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length);
 
-	// Status chip filter state
+	// Status chip filter state (quick filter from UI)
 	let statusChipFilter = $state('ALL');
 
-	// Filtered and sorted leads (including chip filter)
+	// Leads are already filtered server-side, just apply chip filter if active
 	const filteredLeads = $derived.by(() => {
-		let filtered = list.filterAndSort(leads);
+		let filtered = leads;
 		if (statusChipFilter === 'open') {
 			filtered = filtered.filter((/** @type {any} */ l) => openStatuses.includes(l.status));
 		} else if (statusChipFilter === 'lost') {
@@ -1227,6 +1247,44 @@
 </PageHeader>
 
 <div class="flex-1 space-y-4 p-4 md:p-6">
+	<!-- Filter Bar -->
+	<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+		<SearchInput
+			value={filters.search}
+			placeholder="Search leads..."
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			class="w-64"
+		/>
+		<SelectFilter
+			label="Status"
+			options={filterOptions.statuses}
+			value={filters.status || 'ALL'}
+			onchange={(value) => updateFilters({ ...filters, status: value })}
+			class="w-36"
+		/>
+		<SelectFilter
+			label="Source"
+			options={filterOptions.sources}
+			value={filters.source || 'ALL'}
+			onchange={(value) => updateFilters({ ...filters, source: value })}
+			class="w-40"
+		/>
+		<SelectFilter
+			label="Rating"
+			options={filterOptions.ratings}
+			value={filters.rating || 'ALL'}
+			onchange={(value) => updateFilters({ ...filters, rating: value })}
+			class="w-32"
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+			class="w-56"
+		/>
+	</FilterBar>
+
 	<!-- Table -->
 	{#if filteredLeads.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">

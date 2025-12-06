@@ -221,7 +221,7 @@
 					onclick={() => sidebar.toggle()}
 					variant="outline"
 					size="icon"
-					class="absolute right-1 top-1/2 -translate-y-1/2 size-6 rounded-md border-sidebar-border bg-sidebar text-sidebar-foreground/60 shadow-sm transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-md group-data-[collapsible=icon]:hidden"
+					class="border-sidebar-border bg-sidebar text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground absolute top-1/2 right-1 size-6 -translate-y-1/2 rounded-md shadow-sm transition-all group-data-[collapsible=icon]:hidden hover:shadow-md"
 					title="Collapse Sidebar"
 				>
 					<ChevronsLeft class="size-3.5" />
@@ -246,7 +246,6 @@
 
 	<Sidebar.Content>
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Navigation</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#each navigationItems as item}
@@ -397,7 +396,11 @@
 								<Building class="mr-2 size-4" />
 								<span>Organizations</span>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item class="" inset={false} onclick={() => navigateTo('/settings/organization')}>
+							<DropdownMenu.Item
+								class=""
+								inset={false}
+								onclick={() => navigateTo('/settings/organization')}
+							>
 								<Settings class="mr-2 size-4" />
 								<span>Settings</span>
 							</DropdownMenu.Item>

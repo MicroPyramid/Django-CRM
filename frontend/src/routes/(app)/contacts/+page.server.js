@@ -20,11 +20,18 @@ export async function load({ url, locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
+
 	try {
 		const page = parseInt(url.searchParams.get('page') || '1');
 		const limit = parseInt(url.searchParams.get('limit') || '20');
-		const search = url.searchParams.get('search') || '';
-		const ownerId = url.searchParams.get('owner') || '';
 
 		// Build query parameters for Django
 		const queryParams = buildQueryParams({
@@ -34,15 +41,12 @@ export async function load({ url, locals, cookies }) {
 			order: 'desc'
 		});
 
-		// Add search filter (Django typically uses 'search' param)
-		if (search) {
-			queryParams.append('search', search);
-		}
-
-		// Add owner filter (Django uses assigned_to)
-		if (ownerId) {
-			queryParams.append('assigned_to', ownerId);
-		}
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
 		// Only fetch contacts on initial load - dropdown options loaded on-demand when drawer opens
 		const contactsResponse = await apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org });
@@ -142,8 +146,7 @@ export async function load({ url, locals, cookies }) {
 			currentPage: page,
 			totalPages: Math.ceil(totalCount / limit),
 			limit,
-			search,
-			ownerId,
+			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			owners: [],
 			allTags: []

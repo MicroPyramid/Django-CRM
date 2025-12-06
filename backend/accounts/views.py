@@ -78,6 +78,16 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(industry__icontains=params.get("industry"))
             if params.get("tags"):
                 queryset = queryset.filter(tags__in=params.get("tags")).distinct()
+            if params.getlist("assigned_to"):
+                queryset = queryset.filter(
+                    assigned_to__id__in=params.getlist("assigned_to")
+                ).distinct()
+            if params.get("search"):
+                queryset = queryset.filter(name__icontains=params.get("search"))
+            if params.get("created_at__gte"):
+                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+            if params.get("created_at__lte"):
+                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
 
         context = {}
 

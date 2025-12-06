@@ -21,24 +21,36 @@ export async function load({ url, locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
-	try {
-		// Get filters from query params
-		const status = url.searchParams.get('status') || undefined;
-		const assigned = url.searchParams.get('assigned') || undefined;
-		const account = url.searchParams.get('account') || undefined;
+	// Parse filter params from URL
+	const filters = {
+		search: url.searchParams.get('search') || '',
+		status: url.searchParams.get('status') || '',
+		priority: url.searchParams.get('priority') || '',
+		case_type: url.searchParams.get('case_type') || '',
+		assigned_to: url.searchParams.getAll('assigned_to'),
+		tags: url.searchParams.getAll('tags'),
+		created_at_gte: url.searchParams.get('created_at_gte') || '',
+		created_at_lte: url.searchParams.get('created_at_lte') || ''
+	};
 
+	try {
 		// Build query parameters
 		const queryParams = buildQueryParams({
 			page: 1,
-			limit: 1000, // Django doesn't paginate list by default
+			limit: 1000,
 			sort: 'created_at',
 			order: 'desc'
 		});
 
-		// Add filters
-		if (status) queryParams.append('status', status);
-		if (account) queryParams.append('account', account);
-		// Django doesn't have direct owner name filter, we'd need to filter by assigned_to ID
+		// Add filter params
+		if (filters.search) queryParams.append('search', filters.search);
+		if (filters.status) queryParams.append('status', filters.status);
+		if (filters.priority) queryParams.append('priority', filters.priority);
+		if (filters.case_type) queryParams.append('case_type', filters.case_type);
+		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+		filters.tags.forEach((id) => queryParams.append('tags', id));
+		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
 		// Only fetch cases on initial load - dropdown options loaded on-demand when drawer opens
 		const casesResponse = await apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org });
@@ -149,6 +161,7 @@ export async function load({ url, locals, cookies }) {
 
 		return {
 			cases: transformedCases,
+			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			allUsers: [],
 			allAccounts: [],
