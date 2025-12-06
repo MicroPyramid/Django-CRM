@@ -201,6 +201,7 @@ class CaseListView(APIView, LimitOffsetPagination):
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_obj.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {
@@ -323,6 +324,7 @@ class CaseDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 cases_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},

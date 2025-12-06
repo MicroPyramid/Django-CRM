@@ -12,11 +12,12 @@ class TestSendMailOnInvoiceCreationTask(InvoiceCreateTest, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_send_mail_on_invoice_creation_task(self):
-        task = send_email.apply((self.invoice.id, [self.user.id, self.user1.id]))
+        org_id = str(self.invoice.org.id)
+        task = send_email.apply((self.invoice.id, [self.user.id, self.user1.id], org_id))
         self.assertEqual("SUCCESS", task.state)
 
-        task = send_invoice_email.apply((self.invoice.id,))
+        task = send_invoice_email.apply((self.invoice.id, org_id))
         self.assertEqual("SUCCESS", task.state)
 
-        task = send_invoice_email_cancel.apply((self.invoice.id,))
+        task = send_invoice_email_cancel.apply((self.invoice.id, org_id))
         self.assertEqual("SUCCESS", task.state)

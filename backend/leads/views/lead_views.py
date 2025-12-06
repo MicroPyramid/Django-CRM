@@ -222,6 +222,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
+                str(request.profile.org.id),
             )
 
             if request.FILES.get("lead_attachment"):
@@ -255,6 +256,7 @@ class LeadListView(APIView, LimitOffsetPagination):
                     send_email_to_assigned_user.delay(
                         assigned_to_list,
                         lead_obj.id,
+                        str(request.profile.org.id),
                     )
                 return Response(
                     {
@@ -549,6 +551,7 @@ class LeadDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 lead_obj.id,
+                str(request.profile.org.id),
             )
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
@@ -590,6 +593,7 @@ class LeadDetailView(APIView):
                     send_email_to_assigned_user.delay(
                         assigned_to_list,
                         lead_obj.id,
+                        str(request.profile.org.id),
                     )
 
                 return Response(

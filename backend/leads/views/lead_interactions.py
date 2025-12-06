@@ -270,7 +270,7 @@ class CreateLeadFromSite(APIView):
             lead.assigned_to.add(user)
             # Send Email to Assigned Users
             site_address = request.scheme + "://" + request.META["HTTP_HOST"]
-            send_lead_assigned_emails.delay(lead.id, [user.id], site_address)
+            send_lead_assigned_emails.delay(lead.id, [user.id], site_address, str(api_setting.org.id))
             # Create Contact
             try:
                 contact = Contact.objects.create(

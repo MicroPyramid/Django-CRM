@@ -4,14 +4,16 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 from common.models import Profile
+from common.tasks import set_rls_context
 from contacts.models import Contact
 
 app = Celery("redis://")
 
 
 @app.task
-def send_email_to_assigned_user(recipients, contact_id):
+def send_email_to_assigned_user(recipients, contact_id, org_id):
     """Send Mail To Users When they are assigned to a contact"""
+    set_rls_context(org_id)
     contact = Contact.objects.get(id=contact_id)
     created_by = contact.created_by
     for profile_id in recipients:

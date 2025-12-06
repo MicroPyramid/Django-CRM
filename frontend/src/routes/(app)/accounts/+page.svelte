@@ -868,13 +868,6 @@
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
 			<h3 class="text-foreground text-lg font-medium">No accounts found</h3>
-			<p class="text-muted-foreground mt-1 text-sm">
-				Try adjusting your search criteria or create a new account.
-			</p>
-			<Button onclick={openCreate} class="mt-4" disabled={false}>
-				<Plus class="mr-2 h-4 w-4" />
-				Create New Account
-			</Button>
 		</div>
 	{:else}
 		<!-- Desktop Table using CrmTable -->

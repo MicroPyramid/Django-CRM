@@ -6,7 +6,6 @@
 	 * @type {{
 	 *   value?: string,
 	 *   placeholder?: string,
-	 *   debounceMs?: number,
 	 *   class?: string,
 	 *   onchange?: (value: string) => void,
 	 *   [key: string]: any
@@ -15,18 +14,19 @@
 	let {
 		value = $bindable(''),
 		placeholder = 'Search...',
-		debounceMs = 300,
 		class: className,
 		onchange,
 		...restProps
 	} = $props();
 
+	/** @type {HTMLInputElement | undefined} */
+	let inputEl = $state();
 	let inputValue = $state(value);
-	let timeoutId = $state(/** @type {ReturnType<typeof setTimeout> | null} */ (null));
+	let isFocused = $state(false);
 
-	// Sync external value changes to internal state
+	// Sync external value changes to internal state only when not focused
 	$effect(() => {
-		if (value !== inputValue) {
+		if (!isFocused && value !== inputValue) {
 			inputValue = value;
 		}
 	});
@@ -37,15 +37,27 @@
 	function handleInput(e) {
 		const target = /** @type {HTMLInputElement} */ (e.target);
 		inputValue = target.value;
+	}
 
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-		}
+	function handleFocus() {
+		isFocused = true;
+	}
 
-		timeoutId = setTimeout(() => {
+	function handleBlur() {
+		isFocused = false;
+		if (inputValue !== value) {
 			value = inputValue;
 			onchange?.(inputValue);
-		}, debounceMs);
+		}
+	}
+
+	/**
+	 * @param {KeyboardEvent} e
+	 */
+	function handleKeydown(e) {
+		if (e.key === 'Enter') {
+			inputEl?.blur();
+		}
 	}
 
 	function handleClear() {
@@ -58,9 +70,13 @@
 <div class={cn('relative', className)} {...restProps}>
 	<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 	<input
+		bind:this={inputEl}
 		type="text"
 		value={inputValue}
 		oninput={handleInput}
+		onfocus={handleFocus}
+		onblur={handleBlur}
+		onkeydown={handleKeydown}
 		{placeholder}
 		class="border-input bg-background placeholder:text-muted-foreground flex h-9 w-full rounded-md border pl-9 pr-9 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
 	/>

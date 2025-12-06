@@ -253,15 +253,16 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                             invoice_obj.delete()
                             data["assigned_to"] = "Please enter valid user"
                             return Response({"error": True}, data)
-            create_invoice_history(invoice_obj.id, request.user.id, [])
+            create_invoice_history(invoice_obj.id, request.user.id, [], str(request.profile.org.id))
             assigned_to_list = list(
                 invoice_obj.assigned_to.all().values_list("id", flat=True)
             )
 
             recipients = assigned_to_list
             send_email.delay(
-                recipients,
                 invoice_obj.id,
+                recipients,
+                str(request.profile.org.id),
                 domain=settings.DOMAIN_NAME,
                 protocol=self.request.scheme,
             )
@@ -410,8 +411,9 @@ class InvoiceDetailView(APIView):
             )
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
             send_email.delay(
-                recipients,
                 invoice_obj.id,
+                recipients,
+                str(request.profile.org.id),
                 domain=settings.DOMAIN_NAME,
                 protocol=self.request.scheme,
             )

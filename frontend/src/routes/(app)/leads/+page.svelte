@@ -61,12 +61,20 @@
 	/** @type {ColumnDef[]} */
 	const columns = [
 		{
+			key: 'title',
+			label: 'Title',
+			type: 'text',
+			width: 'w-[200px]',
+			canHide: false,
+			emptyText: 'Untitled'
+		},
+		{
 			key: 'name',
 			label: 'Name',
 			type: 'text',
-			width: 'w-[200px]',
+			width: 'w-[180px]',
 			editable: false,
-			canHide: false,
+			canHide: true,
 			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
 			emptyText: ''
 		},
@@ -108,14 +116,6 @@
 			editable: false
 		},
 		// Hidden by default
-		{
-			key: 'title',
-			label: 'Title',
-			type: 'text',
-			width: 'w-48',
-			canHide: true,
-			emptyText: 'Untitled'
-		},
 		{
 			key: 'phone',
 			label: 'Phone',
@@ -162,8 +162,16 @@
 		}
 	];
 
-	// Default visible columns (6 columns: Name, Company, Email, Status, Rating, Created)
-	const DEFAULT_VISIBLE_COLUMNS = ['name', 'company', 'email', 'status', 'rating', 'createdAt'];
+	// Default visible columns (7 columns: Title, Name, Company, Email, Status, Rating, Created)
+	const DEFAULT_VISIBLE_COLUMNS = [
+		'title',
+		'name',
+		'company',
+		'email',
+		'status',
+		'rating',
+		'createdAt'
+	];
 	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Source options for leads
@@ -1417,13 +1425,6 @@
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
 			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-			<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-				Create your first lead to get started.
-			</p>
-			<Button onclick={openCreate} class="mt-4" size="sm">
-				<Plus class="mr-2 h-4 w-4" />
-				New Lead
-			</Button>
 		</div>
 	{:else}
 		<!-- Desktop Table using CrmTable -->

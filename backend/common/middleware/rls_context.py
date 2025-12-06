@@ -65,9 +65,10 @@ class SetOrgContext:
 
         try:
             with connection.cursor() as cursor:
-                # Set the session variable
+                # Set the session variable (is_local=false for session scope)
+                # Required because Django uses autocommit mode by default
                 cursor.execute(
-                    "SELECT set_config('app.current_org', %s, true)", [org_id]
+                    "SELECT set_config('app.current_org', %s, false)", [org_id]
                 )
                 logger.debug(f"Set RLS context: app.current_org = {org_id}")
 
@@ -78,10 +79,11 @@ class SetOrgContext:
     def _reset_org_context(self):
         """
         Reset the PostgreSQL session variable after request.
+        Critical to prevent context leakage between requests on pooled connections.
         """
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT set_config('app.current_org', '', true)")
+                cursor.execute("SELECT set_config('app.current_org', '', false)")
         except Exception:
             pass
 
@@ -153,7 +155,7 @@ class RequireOrgContext:
         return any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS)
 
     def _set_org_context(self, request):
-        """Set PostgreSQL session variable."""
+        """Set PostgreSQL session variable (session scope for autocommit mode)."""
         if not hasattr(request, "org") or request.org is None:
             return
 
@@ -162,16 +164,16 @@ class RequireOrgContext:
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT set_config('app.current_org', %s, true)", [org_id]
+                    "SELECT set_config('app.current_org', %s, false)", [org_id]
                 )
         except Exception as e:
             logger.warning(f"Failed to set RLS context: {e}")
 
     def _reset_org_context(self):
-        """Reset PostgreSQL session variable."""
+        """Reset PostgreSQL session variable after request."""
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT set_config('app.current_org', '', true)")
+                cursor.execute("SELECT set_config('app.current_org', '', false)")
         except Exception:
             pass
 

@@ -224,6 +224,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
             send_email_to_assigned_user.delay(
                 recipients,
                 opportunity_obj.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Opportunity Created Successfully"},
@@ -346,6 +347,7 @@ class OpportunityDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 opportunity_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Opportunity Updated Successfully"},

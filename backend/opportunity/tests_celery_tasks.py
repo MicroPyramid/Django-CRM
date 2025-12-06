@@ -12,6 +12,7 @@ class TestCeleryTasks(OpportunityModel, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_celery_tasks(self):
+        org_id = str(self.opportunity.org.id)
         task = send_email_to_assigned_user.apply(
             (
                 [
@@ -19,6 +20,7 @@ class TestCeleryTasks(OpportunityModel, TestCase):
                     self.user1.id,
                 ],
                 self.opportunity.id,
+                org_id,
             ),
         )
         self.assertEqual("SUCCESS", task.state)

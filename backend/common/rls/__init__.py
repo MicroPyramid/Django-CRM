@@ -61,6 +61,9 @@ ORG_SCOPED_TABLES = [
     "account_email",
     "emailLogs",
     "invoice_history",
+    "invoice_line_item",
+    # Products
+    "product",
     # Security & Audit
     "security_audit_log",
 ]
@@ -112,10 +115,16 @@ def get_set_context_sql():
     """
     Returns SQL to set the org context.
 
+    Uses set_config with is_local=false to persist for the SESSION,
+    not just the current transaction. This is required because Django
+    uses autocommit mode by default.
+
+    The middleware must reset this after each request to prevent leakage.
+
     Usage:
         cursor.execute(get_set_context_sql(), [org_id])
     """
-    return f"SELECT set_config('{CONTEXT_VARIABLE}', %s, true)"
+    return f"SELECT set_config('{CONTEXT_VARIABLE}', %s, false)"
 
 
 def get_enable_policy_sql(table):

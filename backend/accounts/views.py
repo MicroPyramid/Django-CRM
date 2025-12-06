@@ -214,6 +214,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Account Created Successfully"},
@@ -323,6 +324,7 @@ class AccountDetailView(APIView):
             send_email_to_assigned_user.delay(
                 recipients,
                 account_object.id,
+                str(request.profile.org.id),
             )
             return Response(
                 {"error": False, "message": "Account Updated Successfully"},
@@ -797,7 +799,7 @@ class AccountCreateMailView(APIView):
                         data["recipients"] = "Please enter valid recipient"
                         return Response({"error": True, "errors": data})
             if data.get("scheduled_later") != "true":
-                send_email.delay(email_obj.id)
+                send_email.delay(email_obj.id, str(request.profile.org.id))
             else:
                 email_obj.scheduled_later = True
                 email_obj.scheduled_date_time = scheduled_date_time

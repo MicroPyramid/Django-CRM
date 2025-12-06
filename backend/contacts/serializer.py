@@ -1,4 +1,3 @@
-from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.serializer import (
@@ -22,11 +21,6 @@ class ContactSerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contact_attachment = AttachmentsSerializer(read_only=True, many=True)
     org = OrganizationSerializer()
-    country = serializers.SerializerMethodField()
-
-    @extend_schema_field(str)
-    def get_country(self, obj):
-        return obj.get_country_display()
 
     class Meta:
         model = Contact

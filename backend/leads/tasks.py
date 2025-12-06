@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 
 from accounts.models import Account
 from common.models import Org, Profile
+from common.tasks import set_rls_context
 from leads.models import Lead
 
 app = Celery("redis://")
@@ -46,7 +47,8 @@ def send_email(
 
 
 @app.task
-def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
+def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_id):
+    set_rls_context(org_id)
     lead_instance = Lead.objects.filter(
         ~Q(status="converted"), pk=lead_id, is_active=True
     ).first()
@@ -76,8 +78,9 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address):
 
 
 @app.task
-def send_email_to_assigned_user(recipients, lead_id, source=""):
+def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
     """Send Mail To Users When they are assigned to a lead"""
+    set_rls_context(org_id)
     lead = Lead.objects.get(id=lead_id)
     created_by = lead.created_by
     for user in recipients:
@@ -105,6 +108,7 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.
     """
+    set_rls_context(company_id)
     email_regex = r"^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$"
     profile = Profile.objects.get(id=user_id)
     org = Org.objects.filter(id=company_id).first()
@@ -142,9 +146,11 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
 
 
 @app.task
-def update_leads_cache():
+def update_leads_cache(org_id):
+    """Update leads cache for a specific organization."""
+    set_rls_context(org_id)
     queryset = (
-        Lead.objects.all()
+        Lead.objects.filter(org_id=org_id)
         .exclude(status="converted")
         .select_related("created_by")
         .prefetch_related(
@@ -154,5 +160,6 @@ def update_leads_cache():
     )
     open_leads = queryset.exclude(status="closed")
     close_leads = queryset.filter(status="closed")
-    cache.set("admin_leads_open_queryset", open_leads, 60 * 60)
-    cache.set("admin_leads_close_queryset", close_leads, 60 * 60)
+    cache_key_prefix = f"org_{org_id}_"
+    cache.set(f"{cache_key_prefix}leads_open_queryset", open_leads, 60 * 60)
+    cache.set(f"{cache_key_prefix}leads_close_queryset", close_leads, 60 * 60)

@@ -5,14 +5,18 @@ from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
 from common.models import User
+from common.tasks import set_rls_context
 from invoices.models import Invoice, InvoiceHistory
 
 app = Celery("redis://")
 
 
 @app.task
-def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="http"):
+def send_email(invoice_id, recipients, org_id, domain="demo.django-crm.io", protocol="http"):
+    set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
+    if not invoice:
+        return
     created_by = invoice.created_by
     for user in recipients:
         recipients_list = []
@@ -68,7 +72,8 @@ def send_email(invoice_id, recipients, domain="demo.django-crm.io", protocol="ht
 
 
 @app.task
-def send_invoice_email(invoice_id, domain="demo.django-crm.io", protocol="http"):
+def send_invoice_email(invoice_id, org_id, domain="demo.django-crm.io", protocol="http"):
+    set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
         subject = "CRM Invoice : {0}".format(invoice.invoice_title)
@@ -88,7 +93,8 @@ def send_invoice_email(invoice_id, domain="demo.django-crm.io", protocol="http")
 
 
 @app.task
-def send_invoice_email_cancel(invoice_id, domain="demo.django-crm.io", protocol="http"):
+def send_invoice_email_cancel(invoice_id, org_id, domain="demo.django-crm.io", protocol="http"):
+    set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if invoice:
         subject = "CRM Invoice : {0}".format(invoice.invoice_title)
@@ -108,10 +114,12 @@ def send_invoice_email_cancel(invoice_id, domain="demo.django-crm.io", protocol=
 
 
 @app.task
-def create_invoice_history(original_invoice_id, updated_by_user_id, changed_fields):
-    """original_invoice_id, updated_by_user_id, changed_fields"""
+def create_invoice_history(original_invoice_id, updated_by_user_id, changed_fields, org_id):
+    """original_invoice_id, updated_by_user_id, changed_fields, org_id"""
+    set_rls_context(org_id)
     original_invoice = Invoice.objects.filter(id=original_invoice_id).first()
-    created_by = original_invoice.created_by
+    if not original_invoice:
+        return
     updated_by_user = User.objects.get(id=updated_by_user_id)
     changed_data = [(" ".join(field.split("_")).title()) for field in changed_fields]
     if len(changed_data) > 1:
@@ -125,27 +133,28 @@ def create_invoice_history(original_invoice_id, updated_by_user_id, changed_fiel
 
     if original_invoice.invoice_history.count() == 0:
         changed_data = "Invoice Created."
-    if original_invoice:
-        invoice_history = InvoiceHistory()
-        invoice_history.invoice = original_invoice
-        invoice_history.invoice_title = original_invoice.invoice_title
-        invoice_history.invoice_number = original_invoice.invoice_number
-        invoice_history.from_address = original_invoice.from_address
-        invoice_history.to_address = original_invoice.to_address
-        invoice_history.name = original_invoice.name
-        invoice_history.email = original_invoice.email
-        invoice_history.quantity = original_invoice.quantity
-        invoice_history.rate = original_invoice.rate
-        invoice_history.total_amount = original_invoice.total_amount
-        invoice_history.currency = original_invoice.currency
-        invoice_history.phone = original_invoice.phone
-        invoice_history.updated_by = updated_by_user
-        invoice_history.created_by = original_invoice.created_by
-        invoice_history.amount_due = original_invoice.amount_due
-        invoice_history.amount_paid = original_invoice.amount_paid
-        invoice_history.is_email_sent = original_invoice.is_email_sent
-        invoice_history.status = original_invoice.status
-        invoice_history.details = changed_data
-        invoice_history.due_date = original_invoice.due_date
-        invoice_history.save()
-        invoice_history.assigned_to.set(original_invoice.assigned_to.all())
+
+    invoice_history = InvoiceHistory()
+    invoice_history.invoice = original_invoice
+    invoice_history.invoice_title = original_invoice.invoice_title
+    invoice_history.invoice_number = original_invoice.invoice_number
+    invoice_history.from_address = original_invoice.from_address
+    invoice_history.to_address = original_invoice.to_address
+    invoice_history.name = original_invoice.name
+    invoice_history.email = original_invoice.email
+    invoice_history.quantity = original_invoice.quantity
+    invoice_history.rate = original_invoice.rate
+    invoice_history.total_amount = original_invoice.total_amount
+    invoice_history.currency = original_invoice.currency
+    invoice_history.phone = original_invoice.phone
+    invoice_history.updated_by = updated_by_user
+    invoice_history.created_by = original_invoice.created_by
+    invoice_history.amount_due = original_invoice.amount_due
+    invoice_history.amount_paid = original_invoice.amount_paid
+    invoice_history.is_email_sent = original_invoice.is_email_sent
+    invoice_history.status = original_invoice.status
+    invoice_history.details = changed_data
+    invoice_history.due_date = original_invoice.due_date
+    invoice_history.org = original_invoice.org
+    invoice_history.save()
+    invoice_history.assigned_to.set(original_invoice.assigned_to.all())

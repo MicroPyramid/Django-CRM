@@ -1022,13 +1022,6 @@
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
 			<h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
-			<p class="text-muted-foreground mt-1 text-sm">
-				Try adjusting your search criteria or create a new deal.
-			</p>
-			<Button onclick={addNewRow} class="mt-4" disabled={isLoading}>
-				<Plus class="mr-2 h-4 w-4" />
-				Create New Deal
-			</Button>
 		</div>
 	{:else}
 		<CrmTable

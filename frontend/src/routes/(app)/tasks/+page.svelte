@@ -583,9 +583,13 @@
 		priority: 'Medium',
 		dueDate: '',
 		accountId: '',
+		accountName: '',
 		opportunityId: '',
+		opportunityName: '',
 		caseId: '',
+		caseName: '',
 		leadId: '',
+		leadName: '',
 		assignedTo: /** @type {string[]} */ ([]),
 		contacts: /** @type {string[]} */ ([]),
 		teams: /** @type {string[]} */ ([]),
@@ -668,9 +672,13 @@
 			priority: 'Medium',
 			dueDate: '',
 			accountId: '',
+			accountName: '',
 			opportunityId: '',
+			opportunityName: '',
 			caseId: '',
+			caseName: '',
 			leadId: '',
+			leadName: '',
 			assignedTo: [],
 			contacts: [],
 			teams: [],
@@ -697,9 +705,13 @@
 				priority: task.priority || 'Medium',
 				dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
 				accountId: task.account?.id || '',
+				accountName: task.account?.name || '',
 				opportunityId: task.opportunity?.id || '',
+				opportunityName: task.opportunity?.name || '',
 				caseId: task.case_?.id || '',
+				caseName: task.case_?.name || '',
 				leadId: task.lead?.id || '',
+				leadName: task.lead?.name || '',
 				assignedTo: (task.assignedTo || []).map((/** @type {any} */ a) => a.id),
 				contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
 				teams: (task.teams || []).map((/** @type {any} */ t) => t.id),
@@ -934,26 +946,23 @@
 		{ key: 'status', label: 'Status', type: 'select', icon: Circle, options: statusOptions },
 		{ key: 'priority', label: 'Priority', type: 'select', icon: Flag, options: priorityOptions },
 		{ key: 'dueDate', label: 'Due Date', type: 'date', icon: Calendar },
-		// Only show parent entity fields in edit mode (when selectedTaskId is set)
+		// Only show the parent entity field if one exists (read-only, only one can be associated)
 		...(selectedTaskId
-			? [
-					{
-						key: 'accountId',
-						label: 'Account',
-						type: 'select',
-						icon: Building2,
-						options: accountOptions
-					},
-					{
-						key: 'opportunityId',
-						label: 'Opportunity',
-						type: 'select',
-						icon: Target,
-						options: opportunityOptions
-					},
-					{ key: 'caseId', label: 'Case', type: 'select', icon: Briefcase, options: caseOptions },
-					{ key: 'leadId', label: 'Lead', type: 'select', icon: UserPlus, options: leadOptions }
-				]
+			? (() => {
+					const task = localTasks.find((t) => t.id === selectedTaskId);
+					if (!task) return [];
+					if (task.account)
+						return [{ key: 'accountName', label: 'Account', type: 'readonly', icon: Building2 }];
+					if (task.lead)
+						return [{ key: 'leadName', label: 'Lead', type: 'readonly', icon: UserPlus }];
+					if (task.opportunity)
+						return [
+							{ key: 'opportunityName', label: 'Opportunity', type: 'readonly', icon: Target }
+						];
+					if (task.case_)
+						return [{ key: 'caseName', label: 'Case', type: 'readonly', icon: Briefcase }];
+					return [];
+				})()
 			: []),
 		{
 			key: 'assignedTo',
@@ -986,9 +995,13 @@
 			priority: formState.priority,
 			dueDate: formState.dueDate,
 			accountId: formState.accountId,
+			accountName: formState.accountName,
 			opportunityId: formState.opportunityId,
+			opportunityName: formState.opportunityName,
 			caseId: formState.caseId,
+			caseName: formState.caseName,
 			leadId: formState.leadId,
+			leadName: formState.leadName,
 			assignedTo: formState.assignedTo,
 			contacts: formState.contacts,
 			teams: formState.teams,

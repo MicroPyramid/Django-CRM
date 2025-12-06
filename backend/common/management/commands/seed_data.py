@@ -11,13 +11,14 @@ import random
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from crum import impersonate
 from faker import Faker
 
 from common.models import Org, Profile, Tags, Teams, User
+from common.rls import get_set_context_sql
 from common.utils import (
     CASE_TYPE,
     COUNTRIES,
@@ -286,11 +287,18 @@ class Command(BaseCommand):
             self.stats["users"] += 1
         return user
 
+    def set_rls_context(self, org_id):
+        """Set the RLS context for database operations."""
+        with connection.cursor() as cursor:
+            cursor.execute(get_set_context_sql(), [str(org_id)])
+
     def seed_all(self, options):
         """Main seeding orchestration."""
         for i in range(options["orgs"]):
             self.stdout.write(f"\n--- Organization {i + 1}/{options['orgs']} ---")
             org = self.create_org()
+            # Set RLS context for this org before creating org-scoped data
+            self.set_rls_context(org.id)
             profiles = self.create_profiles(
                 org, options["users_per_org"], options["password"]
             )

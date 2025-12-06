@@ -211,12 +211,6 @@ class ShowOrganizationListSerializer(serializers.ModelSerializer):
 
 
 class BillingAddressSerializer(serializers.ModelSerializer):
-    country = serializers.SerializerMethodField()
-
-    @extend_schema_field(str)
-    def get_country(self, obj):
-        return obj.get_country_display()
-
     class Meta:
         model = Address
         fields = ("address_line", "street", "city", "state", "postcode", "country")

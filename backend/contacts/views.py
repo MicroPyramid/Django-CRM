@@ -172,6 +172,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
         send_email_to_assigned_user.delay(
             recipients,
             contact_obj.id,
+            str(request.profile.org.id),
         )
 
         if request.FILES.get("contact_attachment"):
@@ -279,6 +280,7 @@ class ContactDetailView(APIView):
         send_email_to_assigned_user.delay(
             recipients,
             contact_obj.id,
+            str(request.profile.org.id),
         )
         if request.FILES.get("contact_attachment"):
             attachment = Attachments()
