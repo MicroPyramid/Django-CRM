@@ -25,7 +25,8 @@
 		Briefcase,
 		UserPlus,
 		Tag,
-		Contact
+		Contact,
+		Link2
 	} from '@lucide/svelte';
 	import { PageHeader, FilterPopover } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -73,17 +74,42 @@
 	 * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
 	 */
 
+	/**
+	 * Get the related entity display for a task
+	 * @param {any} row
+	 * @returns {{ name: string } | null}
+	 */
+	function getRelatedEntity(row) {
+		if (row.lead) {
+			const leadName = row.lead.title || `${row.lead.firstName || ''} ${row.lead.lastName || ''}`.trim() || 'Lead';
+			return { name: `Lead: ${leadName}` };
+		}
+		if (row.opportunity) {
+			return { name: `Opp: ${row.opportunity.name || 'Opportunity'}` };
+		}
+		if (row.case_) {
+			return { name: `Case: ${row.case_.subject || row.case_.name || 'Case'}` };
+		}
+		if (row.account) {
+			return { name: `Account: ${row.account.name || 'Account'}` };
+		}
+		return null;
+	}
+
 	/** @type {TaskColumn[]} */
 	const taskColumns = [
 		{ key: 'subject', label: 'Task', type: 'text', width: 'w-64', canHide: false },
 		{
-			key: 'account',
-			label: 'Account',
+			key: 'relatedTo',
+			label: 'Related To',
 			type: 'relation',
-			width: 'w-40',
-			relationIcon: 'building',
-			getValue: (/** @type {any} */ row) => row.account
+			width: 'w-48',
+			relationIcon: 'link',
+			getValue: getRelatedEntity
 		},
+		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
+		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
+		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-32' },
 		{
 			key: 'assignedTo',
 			label: 'Assigned To',
@@ -97,12 +123,23 @@
 				return { name: `${assigned.length} users` };
 			}
 		},
+		// Hidden by default
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'relation',
+			width: 'w-40',
+			relationIcon: 'building',
+			canHide: true,
+			getValue: (/** @type {any} */ row) => row.account
+		},
 		{
 			key: 'contacts',
 			label: 'Contacts',
 			type: 'relation',
 			width: 'w-36',
 			relationIcon: 'contact',
+			canHide: true,
 			getValue: (/** @type {any} */ row) => {
 				const contacts = row.contacts || [];
 				if (contacts.length === 0) return null;
@@ -110,15 +147,13 @@
 				return { name: `${contacts.length} contacts` };
 			}
 		},
-		{ key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
-		{ key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-32' },
-		{ key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
 		{
 			key: 'teams',
 			label: 'Teams',
 			type: 'relation',
 			width: 'w-36',
 			relationIcon: 'users',
+			canHide: true,
 			getValue: (/** @type {any} */ row) => {
 				const teams = row.teams || [];
 				if (teams.length === 0) return null;
@@ -132,6 +167,7 @@
 			type: 'relation',
 			width: 'w-32',
 			relationIcon: 'tag',
+			canHide: true,
 			getValue: (/** @type {any} */ row) => {
 				const tags = row.tags || [];
 				if (tags.length === 0) return null;
@@ -141,9 +177,12 @@
 		}
 	];
 
-	// Column visibility state
+	// Default visible columns (6 columns: Task, Related To, Due Date, Priority, Status, Assigned To)
+	const DEFAULT_VISIBLE_COLUMNS = ['subject', 'relatedTo', 'dueDate', 'priority', 'status', 'assignedTo'];
+
+	// Column visibility state - use defaults
 	const STORAGE_KEY = 'tasks-table-columns';
-	let visibleColumns = $state(taskColumns.map((c) => c.key));
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Load column visibility from localStorage
 	onMount(() => {
@@ -392,8 +431,24 @@
 		defaultSortDirection: 'asc'
 	});
 
-	// Filtered tasks
-	const filteredTasks = $derived(list.filterAndSort(tasks));
+	// Status counts for filter chips
+	const activeStatuses = ['New', 'In Progress'];
+	const activeTaskCount = $derived(tasks.filter((/** @type {any} */ t) => activeStatuses.includes(t.status)).length);
+	const completedCount = $derived(tasks.filter((/** @type {any} */ t) => t.status === 'Completed').length);
+
+	// Status chip filter state
+	let statusChipFilter = $state('ALL');
+
+	// Filtered tasks (including chip filter)
+	const filteredTasks = $derived.by(() => {
+		let filtered = list.filterAndSort(tasks);
+		if (statusChipFilter === 'active') {
+			filtered = filtered.filter((/** @type {any} */ t) => activeStatuses.includes(t.status));
+		} else if (statusChipFilter === 'completed') {
+			filtered = filtered.filter((/** @type {any} */ t) => t.status === 'Completed');
+		}
+		return filtered;
+	});
 	const activeFiltersCount = $derived(list.getActiveFilterCount());
 
 	// Local data for optimistic updates
@@ -865,6 +920,60 @@
 <PageHeader title="Tasks" subtitle="{filteredTasks.length} of {tasks.length} tasks">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{tasks.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'active')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'active'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Active
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{activeTaskCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'completed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'completed'
+						? 'bg-emerald-600 text-white dark:bg-emerald-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Completed
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'completed'
+							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{completedCount}
+					</span>
+				</button>
+			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
 			<!-- View Toggle -->
 			<div class="border-input bg-background inline-flex rounded-lg border p-1">
 				<Button

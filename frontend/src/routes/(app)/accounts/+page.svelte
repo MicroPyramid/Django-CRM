@@ -46,12 +46,6 @@
 	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string }} ColumnDef
 	 */
 
-	// Status options for select column
-	const statusOptions = [
-		{ value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-		{ value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }
-	];
-
 	// Industry options for drawer
 	const industryOptions = [
 		{ value: 'ADVERTISING', label: 'Advertising' },
@@ -180,17 +174,7 @@
 			canHide: false,
 			emptyText: 'Untitled'
 		},
-		{
-			key: 'status',
-			label: 'Status',
-			type: 'select',
-			width: 'w-28',
-			options: statusOptions,
-			getValue: (row) => (row.isActive !== false ? 'active' : 'closed')
-		},
 		{ key: 'industry', label: 'Industry', type: 'text', width: 'w-40', emptyText: '' },
-		{ key: 'website', label: 'Website', type: 'text', width: 'w-44', emptyText: '' },
-		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
 		{
 			key: 'annualRevenue',
 			label: 'Revenue',
@@ -199,16 +183,29 @@
 			format: (value, row) => formatCurrency(value, row?.currency || 'USD', true)
 		},
 		{
+			key: 'numberOfEmployees',
+			label: 'Employees',
+			type: 'number',
+			width: 'w-28',
+			emptyText: ''
+		},
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
+		{
 			key: 'createdAt',
 			label: 'Created',
 			type: 'date',
 			width: 'w-36',
 			editable: false
-		}
+		},
+		// Hidden by default
+		{ key: 'website', label: 'Website', type: 'text', width: 'w-44', canHide: true, emptyText: '' }
 	];
 
-	// Column visibility state - simple array of visible keys
-	let visibleColumns = $state(columns.map((c) => c.key));
+	// Default visible columns (excludes website; status removed - using tabs instead)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'industry', 'annualRevenue', 'numberOfEmployees', 'phone', 'createdAt'];
+
+	// Column visibility state - use defaults (excludes website)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Load column visibility from localStorage
 	onMount(() => {
@@ -452,11 +449,16 @@
 
 	// Filtered and sorted accounts
 	const filteredAccounts = $derived(list.filterAndSort(accounts));
-	const activeFiltersCount = $derived(list.getActiveFilterCount());
+	// Only count industry filter for popover badge (status is visible via chips)
+	const activeFiltersCount = $derived(list.filters.industryFilter !== 'ALL' ? 1 : 0);
 
 	// Visible column count for the toggle button
 	const visibleColumnCount = $derived(visibleColumns.length);
 	const totalColumnCount = $derived(columns.length);
+
+	// Status counts for filter chips
+	const activeCount = $derived(accounts.filter((a) => a.isActive !== false).length);
+	const closedCount = $derived(accounts.filter((a) => a.isActive === false).length);
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -652,8 +654,66 @@
 
 <PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
 	{#snippet actions()}
-		<!-- Column Visibility Dropdown -->
-		<DropdownMenu.Root>
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (list.filters.statusFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
+						.filters.statusFilter === 'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{accounts.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (list.filters.statusFilter = 'active')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
+						.filters.statusFilter === 'active'
+						? 'bg-emerald-600 text-white dark:bg-emerald-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Active
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'active'
+							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{activeCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (list.filters.statusFilter = 'closed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {list
+						.filters.statusFilter === 'closed'
+						? 'bg-gray-600 text-white dark:bg-gray-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Closed
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {list.filters.statusFilter === 'closed'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{closedCount}
+					</span>
+				</button>
+			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild>
 				{#snippet child({ props })}
 					<Button {...props} variant="outline" size="sm" class="gap-2">
@@ -688,18 +748,6 @@
 			{#snippet children()}
 				<div class="space-y-3">
 					<div>
-						<label for="status-filter" class="mb-1.5 block text-sm font-medium">Status</label>
-						<select
-							id="status-filter"
-							bind:value={list.filters.statusFilter}
-							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="ALL">All Status</option>
-							<option value="active">Active</option>
-							<option value="closed">Closed</option>
-						</select>
-					</div>
-					<div>
 						<label for="industry-filter" class="mb-1.5 block text-sm font-medium">Industry</label>
 						<select
 							id="industry-filter"
@@ -719,6 +767,7 @@
 			<Plus class="mr-2 h-4 w-4" />
 			New Account
 		</Button>
+		</div>
 	{/snippet}
 </PageHeader>
 

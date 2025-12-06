@@ -31,6 +31,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { PageHeader } from '$lib/components/layout';
 	import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
 	import { CURRENCY_CODES } from '$lib/constants/filters.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -59,14 +60,6 @@
 	/** @type {ColumnDef[]} */
 	const columns = [
 		{
-			key: 'title',
-			label: 'Title',
-			type: 'text',
-			width: 'w-48',
-			canHide: false,
-			emptyText: 'Untitled'
-		},
-		{
 			key: 'name',
 			label: 'Name',
 			type: 'text',
@@ -93,11 +86,11 @@
 			emptyText: ''
 		},
 		{
-			key: 'phone',
-			label: 'Phone',
-			type: 'text',
+			key: 'status',
+			label: 'Status',
+			type: 'select',
 			width: 'w-36',
-			emptyText: ''
+			options: leadStatusOptions
 		},
 		{
 			key: 'rating',
@@ -107,18 +100,28 @@
 			options: leadRatingOptions
 		},
 		{
-			key: 'status',
-			label: 'Status',
-			type: 'select',
-			width: 'w-28',
-			options: leadStatusOptions
-		},
-		{
 			key: 'createdAt',
 			label: 'Created',
 			type: 'date',
 			width: 'w-36',
 			editable: false
+		},
+		// Hidden by default
+		{
+			key: 'title',
+			label: 'Title',
+			type: 'text',
+			width: 'w-48',
+			canHide: true,
+			emptyText: 'Untitled'
+		},
+		{
+			key: 'phone',
+			label: 'Phone',
+			type: 'text',
+			width: 'w-36',
+			canHide: true,
+			emptyText: ''
 		},
 		{
 			key: 'jobTitle',
@@ -155,8 +158,9 @@
 		}
 	];
 
-	// Visible columns state - default to hiding new columns
-	let visibleColumns = $state(columns.filter((c) => !['jobTitle', 'leadSource', 'industry', 'owner'].includes(c.key)).map((c) => c.key));
+	// Default visible columns (6 columns: Name, Company, Email, Status, Rating, Created)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'company', 'email', 'status', 'rating', 'createdAt'];
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Source options for leads
 	const sourceOptions = [
@@ -862,8 +866,25 @@
 		defaultSortDirection: 'desc'
 	});
 
-	// Filtered and sorted leads
-	const filteredLeads = $derived(list.filterAndSort(leads));
+	// Status counts for filter chips
+	const openStatuses = ['ASSIGNED', 'IN_PROCESS'];
+	const lostStatuses = ['CLOSED', 'RECYCLED'];
+	const openCount = $derived(leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length);
+	const lostCount = $derived(leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length);
+
+	// Status chip filter state
+	let statusChipFilter = $state('ALL');
+
+	// Filtered and sorted leads (including chip filter)
+	const filteredLeads = $derived.by(() => {
+		let filtered = list.filterAndSort(leads);
+		if (statusChipFilter === 'open') {
+			filtered = filtered.filter((/** @type {any} */ l) => openStatuses.includes(l.status));
+		} else if (statusChipFilter === 'lost') {
+			filtered = filtered.filter((/** @type {any} */ l) => lostStatuses.includes(l.status));
+		}
+		return filtered;
+	});
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -1107,56 +1128,105 @@
 	<title>Leads - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white dark:bg-gray-950">
-	<!-- Notion-style Header -->
-	<div class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Leads</h1>
-				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{filteredLeads.length} leads</p>
+<PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{leads.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'open')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Open
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{openCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'lost')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'lost'
+						? 'bg-red-600 text-white dark:bg-red-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Lost
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
+							? 'bg-red-700 text-red-100 dark:bg-red-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{lostCount}
+					</span>
+				</button>
 			</div>
-			<div class="flex items-center gap-2">
-				<!-- Column Visibility (Notion-style) -->
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger asChild>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline" size="sm" class="gap-2">
-								<Eye class="h-4 w-4" />
-								Columns
-								{#if visibleColumns.length < columns.length}
-									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-									>
-										{visibleColumns.length}/{columns.length}
-									</span>
-								{/if}
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-48">
-						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						{#each columns as column (column.key)}
-							<DropdownMenu.CheckboxItem
-								class=""
-								checked={visibleColumns.includes(column.key)}
-								disabled={column.canHide === false}
-								onCheckedChange={() => toggleColumn(column.key)}
-							>
-								{column.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
 
-				<Button size="sm" class="gap-2" onclick={openCreate}>
-					<Plus class="h-4 w-4" />
-					New
-				</Button>
-			</div>
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
+			<!-- Column Visibility -->
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumns.length < columns.length}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumns.length}/{columns.length}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							disabled={column.canHide === false}
+							onCheckedChange={() => toggleColumn(column.key)}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Button onclick={openCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Lead
+			</Button>
 		</div>
-	</div>
+	{/snippet}
+</PageHeader>
 
+<div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Table -->
 	{#if filteredLeads.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">

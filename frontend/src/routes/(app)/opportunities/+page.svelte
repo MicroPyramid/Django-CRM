@@ -94,7 +94,6 @@
 			getValue: (row) => row.account?.name,
 			emptyText: ''
 		},
-		{ key: 'stage', label: 'Stage', type: 'select', options: stageOptions, width: 'w-32' },
 		{
 			key: 'amount',
 			label: 'Amount',
@@ -102,14 +101,7 @@
 			width: 'w-32',
 			format: (value, row) => formatAmount(value, row?.currency)
 		},
-		{
-			key: 'probability',
-			label: 'Probability',
-			type: 'number',
-			width: 'w-28',
-			format: (value) => (value != null ? `${value}%` : '-')
-		},
-		{ key: 'opportunityType', label: 'Type', type: 'select', options: typeOptions, width: 'w-32' },
+		{ key: 'stage', label: 'Stage', type: 'select', options: stageOptions, width: 'w-32' },
 		{ key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36' },
 		{
 			key: 'assignedTo',
@@ -125,8 +117,21 @@
 				return `${users[0].name} +${users.length - 1}`;
 			},
 			emptyText: ''
-		}
+		},
+		// Hidden by default
+		{
+			key: 'probability',
+			label: 'Probability',
+			type: 'number',
+			width: 'w-28',
+			canHide: true,
+			format: (value) => (value != null ? `${value}%` : '-')
+		},
+		{ key: 'opportunityType', label: 'Type', type: 'select', options: typeOptions, width: 'w-32', canHide: true }
 	];
+
+	// Default visible columns (excludes probability and type)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'account', 'amount', 'stage', 'closedOn', 'assignedTo'];
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -289,8 +294,8 @@
 	let searchQuery = $state('');
 	let stageFilter = $state('ALL');
 
-	// Column visibility state - all visible by default
-	let visibleColumns = $state(columns.map((c) => c.key));
+	// Column visibility state - use defaults (excludes probability and type)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Drawer state
 	let drawerOpen = $state(false);
@@ -355,9 +360,27 @@
 				opp.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				opp.account?.name?.toLowerCase().includes(searchQuery.toLowerCase());
 			const matchesStage = stageFilter === 'ALL' || opp.stage === stageFilter;
-			return matchesSearch && matchesStage;
+			// Apply status chip filter
+			let matchesStatusChip = true;
+			if (statusChipFilter === 'open') {
+				matchesStatusChip = openStages.includes(opp.stage);
+			} else if (statusChipFilter === 'won') {
+				matchesStatusChip = opp.stage === 'CLOSED_WON';
+			} else if (statusChipFilter === 'lost') {
+				matchesStatusChip = opp.stage === 'CLOSED_LOST';
+			}
+			return matchesSearch && matchesStage && matchesStatusChip;
 		});
 	});
+
+	// Status counts for filter chips
+	const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
+	const openCount = $derived(opportunities.filter((/** @type {any} */ o) => openStages.includes(o.stage)).length);
+	const wonCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_WON').length);
+	const lostCount = $derived(opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length);
+
+	// Status filter for chips (separate from stage dropdown)
+	let statusChipFilter = $state('ALL');
 
 	const activeFiltersCount = $derived(stageFilter !== 'ALL' ? 1 : 0);
 
@@ -730,6 +753,76 @@
 <PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{opportunities.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'open')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Open
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{openCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'won')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'won'
+						? 'bg-emerald-600 text-white dark:bg-emerald-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Won
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'won'
+							? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{wonCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'lost')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'lost'
+						? 'bg-red-600 text-white dark:bg-red-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Lost
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
+							? 'bg-red-700 text-red-100 dark:bg-red-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{lostCount}
+					</span>
+				</button>
+			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild>

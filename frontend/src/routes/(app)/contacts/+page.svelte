@@ -50,9 +50,6 @@
 			getValue: (row) => `${row.firstName || ''} ${row.lastName || ''}`.trim(),
 			emptyText: 'Unnamed'
 		},
-		{ key: 'title', label: 'Title', type: 'text', width: 'w-36', emptyText: 'Empty' },
-		{ key: 'email', label: 'Email', type: 'email', width: 'w-52', emptyText: '' },
-		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
 		{
 			key: 'organization',
 			label: 'Company',
@@ -60,23 +57,31 @@
 			width: 'w-40',
 			emptyText: ''
 		},
-		{
-			key: 'owner',
-			label: 'Owner',
-			type: 'relation',
-			width: 'w-36',
-			relationIcon: 'user',
-			getValue: (row) => row.owner?.name || row.owner?.email,
-			emptyText: ''
-		},
+		{ key: 'title', label: 'Title', type: 'text', width: 'w-36', emptyText: '' },
+		{ key: 'email', label: 'Email', type: 'email', width: 'w-52', emptyText: '' },
+		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
 		{
 			key: 'createdAt',
 			label: 'Created',
 			type: 'date',
 			width: 'w-32',
 			editable: false
+		},
+		// Hidden by default
+		{
+			key: 'owner',
+			label: 'Owner',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'user',
+			canHide: true,
+			getValue: (row) => row.owner?.name || row.owner?.email,
+			emptyText: ''
 		}
 	];
+
+	// Default visible columns (excludes owner)
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'organization', 'title', 'email', 'phone', 'createdAt'];
 
 	// Country options for drawer
 	const countryOptions = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
@@ -190,8 +195,8 @@
 		}
 	]);
 
-	// Column visibility state
-	let visibleColumns = $state(columns.map((c) => c.key));
+	// Column visibility state - use defaults (excludes owner)
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
 	// Load column visibility from localStorage
 	onMount(() => {
@@ -595,77 +600,70 @@
 	<title>Contacts - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white dark:bg-gray-950">
-	<!-- Header -->
-	<div class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Contacts</h1>
-				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-					{filteredContacts.length} of {contacts.length} contacts
-				</p>
-			</div>
-			<div class="flex items-center gap-2">
-				<!-- Filter Popover -->
-				<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
-					{#snippet children()}
-						<div>
-							<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
-							<select
-								id="owner-filter"
-								bind:value={list.filters.ownerFilter}
-								class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-							>
-								<option value="ALL">All Owners</option>
-								{#each owners as owner}
-									<option value={owner.id}>{owner.name || owner.email}</option>
-								{/each}
-							</select>
-						</div>
+<PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Filter Popover -->
+			<FilterPopover activeCount={activeFiltersCount} onClear={list.clearFilters}>
+				{#snippet children()}
+					<div>
+						<label for="owner-filter" class="mb-1.5 block text-sm font-medium">Owner</label>
+						<select
+							id="owner-filter"
+							bind:value={list.filters.ownerFilter}
+							class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+						>
+							<option value="ALL">All Owners</option>
+							{#each owners as owner}
+								<option value={owner.id}>{owner.name || owner.email}</option>
+							{/each}
+						</select>
+					</div>
+				{/snippet}
+			</FilterPopover>
+
+			<!-- Column Visibility Dropdown -->
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if visibleColumns.length < columns.length}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{visibleColumns.length}/{columns.length}
+								</span>
+							{/if}
+						</Button>
 					{/snippet}
-				</FilterPopover>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={visibleColumns.includes(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 
-				<!-- Column Visibility Dropdown -->
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline" size="sm" class="gap-2">
-								<Eye class="h-4 w-4" />
-								Columns
-								{#if visibleColumns.length < columns.length}
-									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-									>
-										{visibleColumns.length}/{columns.length}
-									</span>
-								{/if}
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-48">
-						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						{#each columns as column (column.key)}
-							<DropdownMenu.CheckboxItem
-								class=""
-								checked={visibleColumns.includes(column.key)}
-								onCheckedChange={() => toggleColumn(column.key)}
-								disabled={column.canHide === false}
-							>
-								{column.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-
-				<Button size="sm" class="gap-2" onclick={openCreate}>
-					<Plus class="h-4 w-4" />
-					New
-				</Button>
-			</div>
+			<Button onclick={openCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Contact
+			</Button>
 		</div>
-	</div>
+	{/snippet}
+</PageHeader>
 
+<div class="flex-1 space-y-4 p-4 md:p-6">
 	<!-- Table -->
 	{#if filteredContacts.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">

@@ -20,6 +20,7 @@
 		Eye
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { PageHeader } from '$lib/components/layout';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -44,7 +45,7 @@
 	 * @property {(row: any) => any} [getValue]
 	 */
 
-	// NotionTable column configuration
+	// NotionTable column configuration - reordered for scanning priority
 	/** @type {ColumnDef[]} */
 	const columns = [
 		{ key: 'subject', label: 'Case', type: 'text', width: 'w-[250px]', canHide: false },
@@ -56,6 +57,8 @@
 			width: 'w-40',
 			getValue: (/** @type {any} */ row) => row.account
 		},
+		{ key: 'priority', label: 'Priority', type: 'select', options: casePriorityOptions, width: 'w-28' },
+		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
 		{ key: 'caseType', label: 'Type', type: 'select', options: caseTypeOptions, width: 'w-28' },
 		{
 			key: 'owner',
@@ -65,8 +68,6 @@
 			width: 'w-36',
 			getValue: (/** @type {any} */ row) => row.owner
 		},
-		{ key: 'priority', label: 'Priority', type: 'select', options: casePriorityOptions, width: 'w-28' },
-		{ key: 'status', label: 'Status', type: 'select', options: caseStatusOptions, width: 'w-28' },
 		{ key: 'createdAt', label: 'Created', type: 'date', width: 'w-32', editable: false }
 	];
 
@@ -435,8 +436,24 @@
 		defaultSortDirection: 'desc'
 	});
 
-	// Filtered and sorted cases
-	const filteredCases = $derived(list.filterAndSort(casesData));
+	// Status counts for filter chips
+	const openStatuses = ['New', 'Open', 'Pending'];
+	const openCount = $derived(casesData.filter((/** @type {any} */ c) => openStatuses.includes(c.status)).length);
+	const closedCount = $derived(casesData.filter((/** @type {any} */ c) => c.status === 'Closed').length);
+
+	// Status chip filter state
+	let statusChipFilter = $state('ALL');
+
+	// Filtered and sorted cases (including chip filter)
+	const filteredCases = $derived.by(() => {
+		let filtered = list.filterAndSort(casesData);
+		if (statusChipFilter === 'open') {
+			filtered = filtered.filter((/** @type {any} */ c) => openStatuses.includes(c.status));
+		} else if (statusChipFilter === 'closed') {
+			filtered = filtered.filter((/** @type {any} */ c) => c.status === 'Closed');
+		}
+		return filtered;
+	});
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -628,57 +645,103 @@
 	<title>Cases - BottleCRM</title>
 </svelte:head>
 
-<div class="min-h-screen rounded-lg border border-border/40 bg-white dark:bg-gray-950">
-	<!-- Header -->
-	<div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
-		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Cases</h1>
-				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{filteredCases.length} items</p>
+<PageHeader title="Cases" subtitle="{filteredCases.length} of {casesData.length} cases">
+	{#snippet actions()}
+		<div class="flex items-center gap-2">
+			<!-- Status Filter Chips -->
+			<div class="flex gap-1">
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'ALL')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'ALL'
+						? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					All
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{casesData.length}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'open')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'open'
+						? 'bg-blue-600 text-white dark:bg-blue-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Open
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+							? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{openCount}
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => (statusChipFilter = 'closed')}
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter === 'closed'
+						? 'bg-gray-600 text-white dark:bg-gray-500'
+						: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+				>
+					Closed
+					<span
+						class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
+							? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+					>
+						{closedCount}
+					</span>
+				</button>
 			</div>
-			<div class="flex items-center gap-2">
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline" size="sm" class="gap-2">
-								<Eye class="h-4 w-4" />
-								Columns
-								{#if columnCounts.visible < columnCounts.total}
-									<span
-										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-									>
-										{columnCounts.visible}/{columnCounts.total}
-									</span>
-								{/if}
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-48">
-						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						{#each columns as column (column.key)}
-							<DropdownMenu.CheckboxItem
-								class=""
-								checked={isColumnVisible(column.key)}
-								onCheckedChange={() => toggleColumn(column.key)}
-								disabled={column.canHide === false}
-							>
-								{column.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
 
-				<Button size="sm" class="gap-2" onclick={drawer.openCreate}>
-					<Plus class="h-4 w-4" />
-					New
-				</Button>
-			</div>
+			<div class="bg-border mx-1 h-6 w-px"></div>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="gap-2">
+							<Eye class="h-4 w-4" />
+							Columns
+							{#if columnCounts.visible < columnCounts.total}
+								<span
+									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+								>
+									{columnCounts.visible}/{columnCounts.total}
+								</span>
+							{/if}
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					{#each columns as column (column.key)}
+						<DropdownMenu.CheckboxItem
+							class=""
+							checked={isColumnVisible(column.key)}
+							onCheckedChange={() => toggleColumn(column.key)}
+							disabled={column.canHide === false}
+						>
+							{column.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Button onclick={drawer.openCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				New Case
+			</Button>
 		</div>
-	</div>
+	{/snippet}
+</PageHeader>
 
-	<!-- Table -->
-	<div class="overflow-x-auto">
+<div class="flex-1 space-y-4 p-4 md:p-6">
 		<CrmTable
 			data={filteredCases}
 			{columns}
@@ -698,7 +761,6 @@
 				</div>
 			{/snippet}
 		</CrmTable>
-	</div>
 
 	<!-- Add row button at bottom -->
 	{#if filteredCases.length > 0}
