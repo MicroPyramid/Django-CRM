@@ -218,11 +218,11 @@ export const actions = {
 			}
 
 			// Update user role via Django API
-			// Django endpoint: PUT /api/user/{id}/
+			// Django endpoint: PATCH /api/user/{id}/ (partial update)
 			await apiRequest(
 				`/user/${user_id}/`,
 				{
-					method: 'PUT',
+					method: 'PATCH',
 					body: JSON.stringify({ role })
 				},
 				{ cookies, org }
@@ -259,23 +259,54 @@ export const actions = {
 			}
 
 			// Remove user via Django API (soft delete - set is_active=False)
-			// Django endpoint: PUT /api/user/{id}/status/
+			// Django endpoint: POST /api/user/{id}/status/
 			await apiRequest(
 				`/user/${user_id}/status/`,
 				{
 					method: 'POST',
-					body: JSON.stringify({ is_active: false })
+					body: JSON.stringify({ status: 'Inactive' })
 				},
 				{ cookies, org }
 			);
 
-			return { success: true };
+			return { success: true, action: 'remove_user' };
 		} catch (err) {
 			console.error('Error removing user:', err);
 			if (err.message.includes('at least one admin')) {
 				return fail(400, { error: 'Organization must have at least one admin' });
 			}
 			return fail(500, { error: err.message || 'Failed to remove user' });
+		}
+	},
+
+	/**
+	 * Activate user (restore inactive user)
+	 */
+	activate_user: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const formData = await request.formData();
+			const user_id = formData.get('user_id')?.toString();
+
+			if (!user_id) {
+				return fail(400, { error: 'User is required' });
+			}
+
+			// Activate user via Django API (set is_active=True)
+			await apiRequest(
+				`/user/${user_id}/status/`,
+				{
+					method: 'POST',
+					body: JSON.stringify({ status: 'Active' })
+				},
+				{ cookies, org }
+			);
+
+			return { success: true, action: 'activate_user' };
+		} catch (err) {
+			console.error('Error activating user:', err);
+			return fail(500, { error: err.message || 'Failed to activate user' });
 		}
 	},
 

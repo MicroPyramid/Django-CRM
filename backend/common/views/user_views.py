@@ -204,7 +204,8 @@ class UserDetailView(APIView):
 
     def get_object(self, pk):
         # Security fix: Filter by org to prevent cross-org enumeration
-        return get_object_or_404(Profile, pk=pk, org=self.request.profile.org)
+        # Lookup by user ID since frontend sends user.id, not profile.id
+        return get_object_or_404(Profile, user__id=pk, org=self.request.profile.org)
 
     @extend_schema(
         tags=["users"],
@@ -429,7 +430,8 @@ class UserStatusView(APIView):
             )
         params = request.data
         profiles = Profile.objects.filter(org=request.profile.org)
-        profile = profiles.get(id=pk)
+        # Lookup by user ID since frontend sends user.id, not profile.id
+        profile = profiles.get(user__id=pk)
 
         if params.get("status"):
             user_status = params.get("status")
