@@ -220,16 +220,8 @@
 
 		loadingDropdownOptions = true;
 		try {
-			const [
-				usersResponse,
-				accountsResponse,
-				contactsResponse,
-				teamsResponse,
-				opportunitiesResponse,
-				casesResponse,
-				leadsResponse,
-				tagsResponse
-			] = await Promise.all([
+			// Use Promise.allSettled so partial failures don't break the whole form
+			const results = await Promise.allSettled([
 				apiRequest('/users/'),
 				apiRequest('/accounts/'),
 				apiRequest('/contacts/'),
@@ -239,6 +231,28 @@
 				apiRequest('/leads/'),
 				apiRequest('/tags/')
 			]);
+
+			/**
+			 * Safely get result value or empty object
+			 * @param {PromiseSettledResult<any>} result
+			 * @param {string} name
+			 */
+			function getResult(result, name) {
+				if (result.status === 'fulfilled') {
+					return result.value;
+				}
+				console.warn(`Failed to load ${name}:`, result.reason);
+				return {};
+			}
+
+			const usersResponse = getResult(results[0], 'users');
+			const accountsResponse = getResult(results[1], 'accounts');
+			const contactsResponse = getResult(results[2], 'contacts');
+			const teamsResponse = getResult(results[3], 'teams');
+			const opportunitiesResponse = getResult(results[4], 'opportunities');
+			const casesResponse = getResult(results[5], 'cases');
+			const leadsResponse = getResult(results[6], 'leads');
+			const tagsResponse = getResult(results[7], 'tags');
 
 			// Transform users list
 			const activeUsersList = usersResponse.active_users?.active_users || [];

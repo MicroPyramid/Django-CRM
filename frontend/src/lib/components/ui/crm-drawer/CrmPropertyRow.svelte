@@ -235,13 +235,12 @@
 			</Popover.Root>
 		{:else if type === 'textarea'}
 			<textarea
-				{value}
 				oninput={handleInput}
 				{placeholder}
 				disabled={!editable}
 				rows={2}
 				class="w-full rounded border-0 bg-transparent px-2 py-1 text-sm outline-none transition-colors focus:bg-gray-50 dark:focus:bg-gray-800 placeholder:text-gray-400 resize-none"
-			></textarea>
+			>{value || ''}</textarea>
 		{:else if type === 'select'}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger disabled={!editable}>

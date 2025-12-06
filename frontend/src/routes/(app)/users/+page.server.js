@@ -1,5 +1,5 @@
 /**
- * Users Management Page - API Version
+ * Users & Teams Management Page - API Version
  *
  * Migrated from Prisma to Django REST API
  * Allows organization admins to:
@@ -7,7 +7,8 @@
  * - Add users to the organization by email
  * - Change user roles (ADMIN/USER)
  * - Remove users from the organization
- * - Update organization details
+ * - Create, edit, delete teams
+ * - Assign users to teams
  *
  * Django Endpoints:
  * - GET    /api/users/                  - List organization users
@@ -15,6 +16,10 @@
  * - GET    /api/user/{id}/              - Get user details
  * - PUT    /api/user/{id}/              - Update user/profile
  * - DELETE /api/user/{id}/              - Deactivate user (soft delete)
+ * - GET    /api/teams/                  - List teams
+ * - POST   /api/teams/                  - Create team
+ * - PUT    /api/teams/{id}/             - Update team
+ * - DELETE /api/teams/{id}/             - Delete team
  */
 
 import { error, fail } from '@sveltejs/kit';
@@ -57,12 +62,15 @@ export async function load({ locals, cookies }) {
 	const user = locals.user;
 
 	try {
-		// Fetch users list (returns active and inactive users)
-		const data = await apiRequest('/users/', {}, { cookies, org });
+		// Fetch users and teams in parallel
+		const [usersData, teamsData] = await Promise.all([
+			apiRequest('/users/', {}, { cookies, org }),
+			apiRequest('/teams/', {}, { cookies, org }).catch(() => ({ teams: [] }))
+		]);
 
 		// Django returns: { active_users: {...}, inactive_users: {...}, roles: [...] }
-		const activeUsers = data.active_users?.active_users || [];
-		const inactiveUsers = data.inactive_users?.inactive_users || [];
+		const activeUsers = usersData.active_users?.active_users || [];
+		const inactiveUsers = usersData.inactive_users?.inactive_users || [];
 
 		// Check if current user is admin
 		// Django returns user_details with id and email
@@ -80,10 +88,10 @@ export async function load({ locals, cookies }) {
 			};
 		}
 
-		// Combine active and inactive users, transform to match Prisma format
+		// Combine active and inactive users, transform to match expected format
 		const allUsers = [
 			...activeUsers.map((profile) => ({
-				userId: profile.user_details?.id || profile.id,
+				odId: profile.user_details?.id || profile.id,
 				organizationId: org.id,
 				role: profile.role,
 				user: {
@@ -95,7 +103,7 @@ export async function load({ locals, cookies }) {
 				profile
 			})),
 			...inactiveUsers.map((profile) => ({
-				userId: profile.user_details?.id || profile.id,
+				odId: profile.user_details?.id || profile.id,
 				organizationId: org.id,
 				role: profile.role,
 				user: {
@@ -108,6 +116,12 @@ export async function load({ locals, cookies }) {
 			}))
 		];
 
+		// Transform teams - extract user IDs for form pre-population
+		const teams = (teamsData.teams || []).map((team) => ({
+			...team,
+			userIds: (team.users || []).map((u) => u.id)
+		}));
+
 		return {
 			organization: {
 				id: org.id,
@@ -116,6 +130,7 @@ export async function load({ locals, cookies }) {
 				description: org.description || ''
 			},
 			users: allUsers,
+			teams,
 			user: { id: user.id }
 		};
 	} catch (err) {
@@ -130,39 +145,6 @@ export async function load({ locals, cookies }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-	/**
-	 * Update organization details
-	 */
-	update: async ({ request, locals, cookies }) => {
-		const org = locals.org;
-		const user = locals.user;
-
-		try {
-			// Check if user is admin (done in API, but double-check client-side)
-			const formData = await request.formData();
-			const name = formData.get('name')?.toString().trim();
-
-			if (!name) {
-				return fail(400, { error: 'Name is required' });
-			}
-
-			// Update organization via Django API
-			await apiRequest(
-				`/org/${org.id}/`,
-				{
-					method: 'PUT',
-					body: JSON.stringify({ name })
-				},
-				{ cookies, org }
-			);
-
-			return { success: true };
-		} catch (err) {
-			console.error('Error updating organization:', err);
-			return fail(500, { error: err.message || 'Failed to update organization' });
-		}
-	},
-
 	/**
 	 * Add user to organization by email
 	 */
@@ -294,6 +276,122 @@ export const actions = {
 				return fail(400, { error: 'Organization must have at least one admin' });
 			}
 			return fail(500, { error: err.message || 'Failed to remove user' });
+		}
+	},
+
+	/**
+	 * Create a new team
+	 */
+	create_team: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const formData = await request.formData();
+			const name = formData.get('name')?.toString().trim();
+			const description = formData.get('description')?.toString().trim() || '';
+			const users = formData.getAll('users').map((u) => u.toString());
+
+			if (!name) {
+				return fail(400, { error: 'Team name is required' });
+			}
+
+			// Create team via Django API
+			await apiRequest(
+				'/teams/',
+				{
+					method: 'POST',
+					body: JSON.stringify({
+						name,
+						description,
+						assign_users: true,
+						users
+					})
+				},
+				{ cookies, org }
+			);
+
+			return { success: true, action: 'create_team' };
+		} catch (err) {
+			console.error('Error creating team:', err);
+			if (err.message.includes('already exists')) {
+				return fail(400, { error: 'A team with this name already exists' });
+			}
+			return fail(500, { error: err.message || 'Failed to create team' });
+		}
+	},
+
+	/**
+	 * Update an existing team
+	 */
+	update_team: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const formData = await request.formData();
+			const teamId = formData.get('team_id')?.toString();
+			const name = formData.get('name')?.toString().trim();
+			const description = formData.get('description')?.toString().trim() || '';
+			const users = formData.getAll('users').map((u) => u.toString());
+
+			if (!teamId) {
+				return fail(400, { error: 'Team ID is required' });
+			}
+
+			if (!name) {
+				return fail(400, { error: 'Team name is required' });
+			}
+
+			// Update team via Django API
+			await apiRequest(
+				`/teams/${teamId}/`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({
+						name,
+						description,
+						assign_users: users
+					})
+				},
+				{ cookies, org }
+			);
+
+			return { success: true, action: 'update_team' };
+		} catch (err) {
+			console.error('Error updating team:', err);
+			if (err.message.includes('already exists')) {
+				return fail(400, { error: 'A team with this name already exists' });
+			}
+			return fail(500, { error: err.message || 'Failed to update team' });
+		}
+	},
+
+	/**
+	 * Delete a team
+	 */
+	delete_team: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const formData = await request.formData();
+			const teamId = formData.get('team_id')?.toString();
+
+			if (!teamId) {
+				return fail(400, { error: 'Team ID is required' });
+			}
+
+			// Delete team via Django API
+			await apiRequest(
+				`/teams/${teamId}/`,
+				{
+					method: 'DELETE'
+				},
+				{ cookies, org }
+			);
+
+			return { success: true, action: 'delete_team' };
+		} catch (err) {
+			console.error('Error deleting team:', err);
+			return fail(500, { error: err.message || 'Failed to delete team' });
 		}
 	}
 };

@@ -21,6 +21,8 @@ export const actions = {
 
 		const data = {
 			name: formData.get('name'),
+			domain: formData.get('domain') || null,
+			description: formData.get('description') || null,
 			default_currency: formData.get('default_currency'),
 			default_country: formData.get('default_country') || null
 		};

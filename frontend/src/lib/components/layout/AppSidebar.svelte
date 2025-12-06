@@ -175,13 +175,6 @@
 			icon: HelpCircle,
 			type: 'link',
 			preload: 'off'
-		},
-		{
-			href: '/settings/organization',
-			label: 'Settings',
-			icon: Settings,
-			type: 'link',
-			preload: 'off'
 		}
 	];
 
@@ -398,11 +391,15 @@
 							</DropdownMenu.Item>
 							<DropdownMenu.Item class="" inset={false} onclick={() => navigateTo('/users')}>
 								<Users class="mr-2 size-4" />
-								<span>Users</span>
+								<span>Users & Teams</span>
 							</DropdownMenu.Item>
 							<DropdownMenu.Item class="" inset={false} onclick={() => navigateTo('/org')}>
 								<Building class="mr-2 size-4" />
 								<span>Organizations</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item class="" inset={false} onclick={() => navigateTo('/settings/organization')}>
+								<Settings class="mr-2 size-4" />
+								<span>Settings</span>
 							</DropdownMenu.Item>
 						</DropdownMenu.Group>
 						<DropdownMenu.Separator class="" />

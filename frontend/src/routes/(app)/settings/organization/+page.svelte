@@ -42,12 +42,16 @@
 
 	// Form state - initialized from settings via $effect
 	let formName = $state('');
+	let formDomain = $state('');
+	let formDescription = $state('');
 	let formCurrency = $state('USD');
 	let formCountry = $state('');
 
 	// Update form state when settings change
 	$effect(() => {
 		formName = settings.name || '';
+		formDomain = settings.domain || '';
+		formDescription = settings.description || '';
 		formCurrency = settings.default_currency || 'USD';
 		formCountry = settings.default_country || '';
 	});
@@ -97,15 +101,42 @@
 				<Card.Description class="">Basic information about your organization</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-4">
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="grid gap-2">
+						<Label class="" for="name">Organization Name</Label>
+						<Input
+							id="name"
+							name="name"
+							type="text"
+							bind:value={formName}
+							placeholder="Enter organization name"
+						/>
+					</div>
+					<div class="grid gap-2">
+						<Label class="" for="domain">Domain</Label>
+						<div class="relative">
+							<Globe class="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+							<Input
+								id="domain"
+								name="domain"
+								type="text"
+								bind:value={formDomain}
+								placeholder="yourcompany.com"
+								class="pl-10"
+							/>
+						</div>
+					</div>
+				</div>
 				<div class="grid gap-2">
-					<Label class="" for="name">Organization Name</Label>
-					<Input
-						id="name"
-						name="name"
-						type="text"
-						bind:value={formName}
-						placeholder="Enter organization name"
-					/>
+					<Label class="" for="description">Description</Label>
+					<textarea
+						id="description"
+						name="description"
+						rows="3"
+						bind:value={formDescription}
+						placeholder="Describe your organization..."
+						class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					></textarea>
 				</div>
 			</Card.Content>
 		</Card.Root>
