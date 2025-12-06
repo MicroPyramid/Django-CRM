@@ -4,16 +4,19 @@ import os
 import time
 import uuid
 
-import arrow
 from django.contrib.auth.models import AbstractBaseUser, AbstractUser, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from common.base import BaseModel
-from common.templatetags.common_tags import (
+from common.utils import (
+    COUNTRIES,
+    CURRENCY_CODES,
+    ROLES,
     is_document_file_audio,
     is_document_file_code,
     is_document_file_image,
@@ -23,14 +26,8 @@ from common.templatetags.common_tags import (
     is_document_file_video,
     is_document_file_zip,
 )
-from common.utils import COUNTRIES, CURRENCY_CODES, ROLES
 
 from .manager import UserManager
-
-
-def img_url(self, filename):
-    hash_ = int(time.time())
-    return "%s/%s/%s" % ("profile_pics", hash_, filename)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -84,37 +81,6 @@ class Address(BaseModel):
 
     def __str__(self):
         return self.city if self.city else ""
-
-    def get_complete_address(self):
-        address = ""
-        if self.address_line:
-            address += self.address_line
-        if self.street:
-            if address:
-                address += ", " + self.street
-            else:
-                address += self.street
-        if self.city:
-            if address:
-                address += ", " + self.city
-            else:
-                address += self.city
-        if self.state:
-            if address:
-                address += ", " + self.state
-            else:
-                address += self.state
-        if self.postcode:
-            if address:
-                address += ", " + self.postcode
-            else:
-                address += self.postcode
-        if self.country:
-            if address:
-                address += ", " + self.get_country_display()
-            else:
-                address += self.get_country_display()
-        return address
 
 
 def generate_unique_key():
@@ -251,13 +217,6 @@ class Comment(BaseModel):
     def __str__(self):
         return f"{self.comment}"
 
-    def get_files(self):
-        return CommentFiles.objects.filter(comment_id=self)
-
-    @property
-    def commented_on_arrow(self):
-        return arrow.get(self.commented_on).humanize()
-
     def clean(self):
         """
         Validate that the comment's org matches the content object's org.
@@ -307,12 +266,6 @@ class CommentFiles(BaseModel):
 
     def __str__(self):
         return f"{self.comment.comment}"
-
-    def get_file_name(self):
-        if self.comment_file:
-            return self.comment_file.path.split("/")[-1]
-
-        return None
 
     def save(self, *args, **kwargs):
         # Auto-populate org from parent comment if not set
@@ -377,11 +330,6 @@ class Attachments(BaseModel):
                 return ("zip", "fa fa-file-archive")
             return ("file", "fa fa-file")
         return ("file", "fa fa-file")
-
-    def get_file_type_display(self):
-        if self.attachment:
-            return self.file_type()[1]
-        return None
 
     def clean(self):
         """
@@ -537,13 +485,6 @@ class SessionToken(BaseModel):
         self.revoked_at = timezone.now()
         self.save()
 
-    @property
-    def is_expired(self):
-        """Check if token is expired"""
-        from django.utils import timezone
-
-        return timezone.now() > self.expires_at
-
     @classmethod
     def cleanup_expired(cls):
         """Remove expired tokens (call via cron/celery)"""
@@ -609,7 +550,7 @@ class Activity(BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"
 
 
 class Teams(BaseModel):
@@ -690,19 +631,6 @@ class ContactFormSubmission(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.email} ({self.reason})"
-
-    def mark_as_read(self):
-        """Mark submission as read"""
-        if self.status == "new":
-            self.status = "read"
-            self.save()
-
-    def mark_as_replied(self, user):
-        """Mark submission as replied"""
-        self.status = "replied"
-        self.replied_by = user
-        self.replied_at = timezone.now()
-        self.save()
 
 
 # Import SecurityAuditLog so Django discovers it for migrations

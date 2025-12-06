@@ -2,29 +2,6 @@ import pytz
 from django.utils.translation import gettext_lazy as _
 
 
-def jwt_payload_handler(user):
-    """Custom payload handler
-    Token encrypts the dictionary returned by this function, and can be
-    decoded by rest_framework_jwt.utils.jwt_decode_handler
-    """
-    return {
-        "id": user.pk,
-        # 'name': user.name,
-        "email": user.email,
-        # "role": user.role,
-        # "has_sales_access": user.has_sales_access,
-        # "has_marketing_access": user.has_marketing_access,
-        "file_prepend": user.file_prepend,
-        "username": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "is_active": user.is_active,
-        # "is_admin": user.is_admin,
-        "is_staff": user.is_staff,
-        # "date_joined"
-    }
-
-
 INDCHOICES = (
     ("ADVERTISING", "ADVERTISING"),
     ("AGRICULTURE", "AGRICULTURE"),
@@ -432,73 +409,12 @@ CURRENCY_SYMBOLS = {
 }
 
 
-def return_complete_address(self):
-    address = ""
-    if self.address_line:
-        address += self.address_line
-    if self.street:
-        if address:
-            address += ", " + self.street
-        else:
-            address += self.street
-    if self.city:
-        if address:
-            address += ", " + self.city
-        else:
-            address += self.city
-    if self.state:
-        if address:
-            address += ", " + self.state
-        else:
-            address += self.state
-    if self.postcode:
-        if address:
-            address += ", " + self.postcode
-        else:
-            address += self.postcode
-    if self.country:
-        if address:
-            address += ", " + self.get_country_display()
-        else:
-            address += self.get_country_display()
-    return address
-
-
-def get_client_ip(request):
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
-
-
 def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
     user_time_zone = pytz.timezone(custom_timezone)
     if to_utc:
         custom_date = user_time_zone.localize(custom_date.replace(tzinfo=None))
         user_time_zone = pytz.UTC
     return custom_date.astimezone(user_time_zone)
-
-
-def append_str_to(append_to: str, *args, sep=", ", **kwargs):
-    """Concatenate to a string.
-    Args:
-        append_to(str): The string to append to.
-        args(list): list of string characters to concatenate.
-        sep(str): Seperator to use between concatenated strings.
-        kwargs(dict): Mapping of variables with intended string values.
-    Returns:
-        str, joined strings seperated
-    """
-    append_to = append_to or ""
-    result_list = [append_to] + list(args) + list(kwargs.values())
-    data = False
-    for item in result_list:
-        if item:
-            data = True
-            break
-    return f"{sep}".join(filter(len, result_list)) if data else ""
 
 
 # =============================================================================
@@ -603,3 +519,107 @@ def create_attachment(file, content_object, profile):
     attachment.org = profile.org
     attachment.save()
     return attachment
+
+
+# =============================================================================
+# Document File Type Utilities
+# =============================================================================
+
+def is_document_file_image(ext):
+    image_ext_list = [
+        "bmp", "dds", "gif", "jpg", "jpeg", "png", "psd",
+        "pspimage", "tga", "thm", "tif", "tiff", "yuv",
+    ]
+    return ext.lower() in image_ext_list
+
+
+def is_document_file_audio(ext):
+    audio_ext_list = ["aif", "iff", "m3u", "m4a", "mid", "mp3", "mpa", "wav", "wma"]
+    return ext.lower() in audio_ext_list
+
+
+def is_document_file_video(ext):
+    video_ext_list = [
+        "3g2", "3gp", "asf", "avi", "flv", "m4v", "mov",
+        "mp4", "mpg", "rm", "srt", "swf", "vob", "wmv",
+    ]
+    return ext.lower() in video_ext_list
+
+
+def is_document_file_pdf(ext):
+    pdf_ext_list = ["indd", "pct", "pdf"]
+    return ext.lower() in pdf_ext_list
+
+
+def is_document_file_code(ext):
+    code_ext_list = [
+        "aspx", "json", "jsp", "do", "htm", "html", "ser", "php", "jad", "cfm",
+        "xml", "js", "pod", "asp", "atomsvc", "rdf", "pou", "jsf", "abs", "pl",
+        "asm", "srz", "luac", "cod", "lib", "arxml", "bas", "ejs", "fs", "hbs",
+        "s", "ss", "cms", "pyc", "vcxproj", "jse", "smali", "xla", "lxk", "pdb",
+        "src", "cs", "ipb", "ave", "mst", "vls", "rcc", "sax", "scr", "dtd",
+        "axd", "mrl", "xsl", "ino", "spr", "xsd", "cgi", "isa", "ws", "rss",
+        "dvb", "nupkg", "xlm", "v4e", "prg", "form", "bat", "mrc", "asi", "jdp",
+        "fmb", "graphml", "gcode", "aia", "py", "atp", "mzp", "o", "scs", "mm",
+        "cpp", "java", "gypi", "idb", "txml", "c", "vip", "tra", "rc", "action",
+        "vlx", "asta", "pyo", "lua", "gml", "prl", "rfs", "cpb", "sh", "rbf",
+        "gp", "phtml", "bp", "scb", "sln", "vbp", "wbf", "bdt", "mac", "rpy",
+        "eaf", "mc", "mwp", "gnt", "h", "swift", "e", "styl", "cxx", "as",
+        "liquid", "dep", "fas", "vbs", "aps", "vbe", "lss", "cmake", "resx",
+        "csb", "dpk", "pdml", "txx", "dbg", "jsa", "sxs", "sasf", "pm", "csx",
+        "r", "wml", "au3", "stm", "cls", "cc", "ins", "jsc", "dwp", "rpg",
+        "arb", "bml", "inc", "eld", "sct", "sm", "wbt", "csproj", "tcz", "html5",
+        "gbl", "cmd", "dlg", "tpl", "rbt", "xcp", "tpm", "qry", "mfa", "ptx",
+        "lsp", "pag", "ebc", "php3", "cob", "csc", "pyt", "dwt", "rb", "wsdl",
+        "lap", "textile", "sfx", "x", "a5r", "dbp", "pmp", "ipr", "fwx", "pbl",
+        "vbw", "phl", "cbl", "pas", "mom", "dbmdl", "lol", "wdl", "ppam", "plx",
+        "vb", "cgx", "lst", "lmp", "vd", "bcp", "thtml", "scpt", "isu", "mrd",
+        "perl", "dtx", "f", "wpk", "ipf", "ptl", "luca", "hx", "uvproj", "qvs",
+        "vba", "xjb", "appxupload", "ti", "svn-base", "bsc", "mak", "vcproj",
+        "dsd", "ksh", "pyw", "bxml", "mo", "irc", "gcl", "dbml", "mlv", "wsf",
+        "tcl", "dqy", "ssi", "pbxproj", "bal", "trt", "sal", "hkp", "vbi", "dob",
+        "htc", "p", "ats", "seam", "loc", "pli", "rptproj", "pxml", "pkb", "dpr",
+        "scss", "dsb", "bb", "vbproj", "ash", "rml", "nbk", "nvi", "lmv", "mw",
+        "jl", "dso", "cba", "jks", "ary", "run", "vps", "clm", "brml", "msha",
+        "mdp", "tmh", "jsx", "sdl", "ptxml", "fxl", "wmw", "dcr", "bcc", "cbp",
+        "bmo", "bsv", "less", "gss", "ctl", "rpyc", "ascx", "odc", "wiki", "obr",
+        "l", "axs", "bpr", "ppa", "rpo", "sqlproj", "smm", "dsr", "arq", "din",
+        "jml", "jsonp", "ml", "rc2", "myapp", "cla", "xme", "obj", "jsdtscope",
+        "gyp", "datasource", "cp", "rh", "lpx", "a2w", "ctp", "ulp", "nt",
+        "script", "bxl", "gs", "xslt", "mg", "pch", "mhl", "zpd", "psm1", "asz",
+        "m", "jacl", "pym", "rws", "acu", "ssq", "wxs", "coffee", "ncb", "akt",
+        "pyx", "zero", "hs", "mkb", "tru", "xul", "mfl", "sca", "sbr", "master",
+        "opv", "matlab", "sami", "agc", "slim", "tea", "m51", "mec", "asc",
+        "gch", "enml", "kst", "jade", "dfb", "ips", "rgs", "vbx", "cspkg", "ncx",
+        "brs", "wfs", "ifp", "nse", "xtx", "j", "cx", "ps1", "nas", "mk", "ccs",
+        "vrp", "lnp", "cml", "c#", "idl", "exp", "apb", "nsi", "asmx", "tdo",
+        "pjt", "fdt", "s5d", "mvba", "mf", "odl", "bzs", "jardesc", "tgml",
+        "moc", "wxi", "cpz", "fsx", "jav", "ocb", "agi", "tec", "txl", "amw",
+        "mscr", "dfd", "dpd", "pun", "f95", "vdproj", "xsc", "diff", "wxl",
+        "dgml", "airi", "kmt", "ksc", "io", "rbw", "sas", "vcp", "resources",
+        "param", "cg", "hlsl", "vssscc", "bgm", "xn", "targets", "sl", "gsc",
+        "qs", "owl", "devpak", "phps", "hdf", "pri", "nbin", "xaml", "s4e",
+        "scm", "tk", "poc", "uix", "clw", "factorypath", "s43", "awd", "htr",
+        "php2", "classpath", "pickle", "rob", "msil", "ebx", "tsq", "lml", "f90",
+        "lds", "vup", "pbi", "swt", "vap", "ig", "pdo", "frt", "fcg", "c++",
+        "xcl", "dfn", "aar", "for", "re", "twig", "ebm", "dhtml", "hc", "pro",
+        "ahk", "rule", "bsh", "jcs", "zrx", "wsdd", "csp", "drc", "appxsym",
+    ]
+    return ext.lower() in code_ext_list
+
+
+def is_document_file_text(ext):
+    text_ext_list = [
+        "doc", "docx", "log", "msg", "odt", "pages", "rtf", "tex", "txt", "wpd", "wps",
+    ]
+    return ext.lower() in text_ext_list
+
+
+def is_document_file_sheet(ext):
+    sheet_ext_list = ["csv", "xls", "xlsx", "xlsm", "xlsb", "xltx", "xltm", "xlt"]
+    return ext.lower() in sheet_ext_list
+
+
+def is_document_file_zip(ext):
+    ext_list = ["zip", "7z", "gz", "rar", "zipx", "ace", "tar"]
+    return ext.lower() in ext_list

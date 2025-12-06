@@ -1,6 +1,3 @@
-from datetime import datetime
-
-import pytz
 from celery import Celery
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -10,7 +7,6 @@ from django.template.loader import render_to_string
 from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Profile
 from common.tasks import set_rls_context
-from common.utils import convert_to_custom_timezone
 
 app = Celery("redis://")
 
@@ -91,22 +87,3 @@ def send_email_to_assigned_user(recipients, account_id, org_id):
             msg.send()
 
 
-@app.task
-def send_scheduled_emails(org_id):
-    set_rls_context(org_id)
-    email_objs = AccountEmail.objects.filter(scheduled_later=True, org_id=org_id)
-    for each in email_objs:
-        scheduled_date_time = each.scheduled_date_time
-
-        sent_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        sent_time = datetime.strptime(sent_time, "%Y-%m-%d %H:%M")
-        local_tz = pytz.timezone(settings.TIME_ZONE)
-        sent_time = local_tz.localize(sent_time)
-        sent_time = convert_to_custom_timezone(sent_time, each.timezone, to_utc=True)
-
-        if (
-            str(each.scheduled_date_time.date()) == str(sent_time.date())
-            and str(scheduled_date_time.hour) == str(sent_time.hour)
-            and str(scheduled_date_time.minute) == str(sent_time.minute)
-        ):
-            send_email.delay(each.id, org_id)

@@ -84,17 +84,6 @@ class Account(AssignableMixin, BaseModel):
     def __str__(self):
         return f"{self.name}"
 
-    def get_complete_address(self):
-        """Concatenates complete address."""
-        address_parts = [
-            self.address_line,
-            self.city,
-            self.state,
-            self.postcode,
-            self.get_country_display() if self.country else None,
-        ]
-        return ", ".join(part for part in address_parts if part)
-
 
 class AccountEmail(BaseModel):
     from_account = models.ForeignKey(

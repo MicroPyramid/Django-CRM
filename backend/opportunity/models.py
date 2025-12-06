@@ -1,5 +1,5 @@
-import arrow
 from django.db import models
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -94,4 +94,4 @@ class Opportunity(AssignableMixin, BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"

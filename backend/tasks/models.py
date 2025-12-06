@@ -182,18 +182,6 @@ class BoardTask(BaseModel):
             self.org_id = self.column.board.org_id
         super().save(*args, **kwargs)
 
-    def mark_complete(self):
-        """Mark task as completed"""
-        from django.utils import timezone
-
-        self.completed_at = timezone.now()
-        self.save()
-
-    def mark_incomplete(self):
-        """Mark task as incomplete"""
-        self.completed_at = None
-        self.save()
-
     @property
     def is_completed(self):
         return self.completed_at is not None
@@ -294,16 +282,3 @@ class Task(AssignableMixin, BaseModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-
-    @property
-    def parent_entity(self):
-        """Returns the parent entity if any is set."""
-        if self.account:
-            return ("account", self.account)
-        if self.opportunity:
-            return ("opportunity", self.opportunity)
-        if self.case:
-            return ("case", self.case)
-        if self.lead:
-            return ("lead", self.lead)
-        return None

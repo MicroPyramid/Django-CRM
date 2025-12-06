@@ -9,7 +9,6 @@ from common.utils import (
     INDCHOICES,
     LEAD_SOURCE,
     LEAD_STATUS,
-    return_complete_address,
 )
 from contacts.models import Contact
 
@@ -118,7 +117,4 @@ class Lead(AssignableMixin, BaseModel):
     def __str__(self):
         name_parts = [self.salutation, self.first_name, self.last_name]
         return " ".join(part for part in name_parts if part) or f"Lead {self.id}"
-
-    def get_complete_address(self):
-        return return_complete_address(self)
 

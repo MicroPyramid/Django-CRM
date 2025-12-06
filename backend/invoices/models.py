@@ -1,7 +1,7 @@
 import datetime
 
-import arrow
 from django.db import models
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
@@ -127,7 +127,7 @@ class Invoice(BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"
 
     @property
     def get_team_users(self):
@@ -250,7 +250,7 @@ class InvoiceHistory(BaseModel):
 
     @property
     def created_on_arrow(self):
-        return arrow.get(self.created_at).humanize()
+        return timesince(self.created_at) + " ago"
 
 
 # Phase 3: Enhanced Quotes with Line Items

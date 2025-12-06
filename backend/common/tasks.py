@@ -262,35 +262,6 @@ def resend_activation_link_to_user(
 
 
 @app.task
-def send_email_to_reset_password(user_email):
-    """Send Mail To Users When their account is created"""
-    user = User.objects.filter(email=user_email).first()
-    context = {}
-    context["user_email"] = user_email
-    context["url"] = settings.DOMAIN_NAME
-    context["uid"] = (urlsafe_base64_encode(force_bytes(user.pk)),)
-    context["token"] = default_token_generator.make_token(user)
-    context["token"] = context["token"]
-    context["complete_url"] = context[
-        "url"
-    ] + "/auth/reset-password/{uidb64}/{token}/".format(
-        uidb64=context["uid"][0], token=context["token"]
-    )
-    subject = "Set a New Password"
-    recipients = []
-    recipients.append(user_email)
-    html_content = render_to_string(
-        "registration/password_reset_email.html", context=context
-    )
-    if recipients:
-        msg = EmailMessage(
-            subject, html_content, from_email=settings.DEFAULT_FROM_EMAIL, to=recipients
-        )
-        msg.content_subtype = "html"
-        msg.send()
-
-
-@app.task
 def remove_users(removed_users_list, team_id, org_id=None):
     # Set RLS context for org-scoped queries
     set_rls_context(org_id)

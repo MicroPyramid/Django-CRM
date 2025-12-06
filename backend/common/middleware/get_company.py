@@ -15,12 +15,6 @@ from common.models import Org, Profile, User
 logger = logging.getLogger(__name__)
 
 
-def get_actual_value(request):
-    if request.user is None:
-        return None
-    return request.user
-
-
 class GetProfileAndOrg(object):
     """
     Middleware to extract and validate organization context from JWT tokens.
