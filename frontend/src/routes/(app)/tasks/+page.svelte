@@ -36,6 +36,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
 	import { cn } from '$lib/utils.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
@@ -269,6 +270,7 @@
 
 	// Computed values - tasks come from server
 	const tasks = $derived(data.tasks || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
 	// Dropdown options state - lazy loaded when drawer opens
 	let accounts = $state(/** @type {any[]} */ ([]));
@@ -495,6 +497,27 @@
 	 */
 	function clearFilters() {
 		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
 	// Status counts for filter chips
@@ -1401,6 +1424,15 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
 
 <!-- Task Detail Drawer -->

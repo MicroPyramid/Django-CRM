@@ -34,6 +34,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
 	import { CURRENCY_CODES } from '$lib/constants/filters.js';
@@ -478,6 +479,27 @@
 	 */
 	function clearFilters() {
 		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
 	// Accounts are already filtered server-side, apply chip filter for active/closed
@@ -934,22 +956,13 @@
 	{/if}
 
 	<!-- Pagination -->
-	{#if pagination.totalPages > 1}
-		<div class="flex items-center justify-between">
-			<p class="text-muted-foreground text-sm">
-				Showing {filteredAccounts.length} of {pagination.total} accounts
-			</p>
-			<div class="flex items-center gap-2">
-				<Button variant="outline" size="sm" disabled={pagination.page === 1}>Previous</Button>
-				<span class="text-sm">
-					Page {pagination.page} of {pagination.totalPages}
-				</span>
-				<Button variant="outline" size="sm" disabled={pagination.page === pagination.totalPages}>
-					Next
-				</Button>
-			</div>
-		</div>
-	{/if}
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
 
 <!-- Account Drawer -->

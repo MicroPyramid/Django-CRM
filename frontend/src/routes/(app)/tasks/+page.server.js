@@ -22,6 +22,10 @@ export async function load({ locals, cookies, url }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse pagination params from URL
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '10');
+
 	// Parse filter params from URL
 	const filters = {
 		search: url.searchParams.get('search') || '',
@@ -36,11 +40,11 @@ export async function load({ locals, cookies, url }) {
 	try {
 		// Build query parameters for tasks
 		const queryParams = buildQueryParams({
-			page: 1,
-			limit: 1000,
 			sort: 'created_at',
 			order: 'desc'
 		});
+		queryParams.append('limit', limit.toString());
+		queryParams.append('offset', ((page - 1) * limit).toString());
 
 		// Add filter params
 		if (filters.search) queryParams.append('search', filters.search);
@@ -147,8 +151,17 @@ export async function load({ locals, cookies, url }) {
 				: null
 		}));
 
+		// Get total count from response
+		const total = tasksResponse.tasks_count || tasksResponse.count || transformedTasks.length;
+
 		return {
 			tasks: transformedTasks,
+			pagination: {
+				page,
+				limit,
+				total,
+				totalPages: Math.ceil(total / limit) || 1
+			},
 			filters
 		};
 	} catch (err) {

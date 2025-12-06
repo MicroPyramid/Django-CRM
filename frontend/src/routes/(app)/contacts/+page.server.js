@@ -31,7 +31,7 @@ export async function load({ url, locals, cookies }) {
 
 	try {
 		const page = parseInt(url.searchParams.get('page') || '1');
-		const limit = parseInt(url.searchParams.get('limit') || '20');
+		const limit = parseInt(url.searchParams.get('limit') || '10');
 
 		// Build query parameters for Django
 		const queryParams = buildQueryParams({
@@ -142,10 +142,12 @@ export async function load({ url, locals, cookies }) {
 
 		return {
 			contacts: transformedContacts,
-			totalCount,
-			currentPage: page,
-			totalPages: Math.ceil(totalCount / limit),
-			limit,
+			pagination: {
+				page,
+				limit,
+				total: totalCount,
+				totalPages: Math.ceil(totalCount / limit) || 1
+			},
 			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			owners: [],

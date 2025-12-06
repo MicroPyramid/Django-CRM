@@ -23,6 +23,10 @@ export async function load({ url, cookies, locals }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse pagination params from URL
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '10');
+
 	// Parse filter params from URL
 	const filters = {
 		search: url.searchParams.get('search') || '',
@@ -37,6 +41,8 @@ export async function load({ url, cookies, locals }) {
 
 	// Build query params for API
 	const queryParams = new URLSearchParams();
+	queryParams.append('limit', limit.toString());
+	queryParams.append('offset', ((page - 1) * limit).toString());
 	if (filters.search) queryParams.append('search', filters.search);
 	if (filters.status) queryParams.append('status', filters.status.toLowerCase().replace(/_/g, ' '));
 	if (filters.source) queryParams.append('source', filters.source.toLowerCase());
@@ -139,8 +145,17 @@ export async function load({ url, cookies, locals }) {
 			attachments: lead.lead_attachment || []
 		}));
 
+		// Get total count from response
+		const total = response.open_leads?.leads_count || response.count || transformedLeads.length;
+
 		return {
 			leads: transformedLeads,
+			pagination: {
+				page,
+				limit,
+				total,
+				totalPages: Math.ceil(total / limit) || 1
+			},
 			filters,
 			filterOptions: {
 				statuses: [

@@ -29,6 +29,7 @@
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
 	import { formatCurrency, formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
 		OPPORTUNITY_STAGES as stages,
@@ -377,6 +378,27 @@
 		updateFilters({});
 	}
 
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
 	// Column visibility state - use defaults (excludes probability and type)
 	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
@@ -434,6 +456,7 @@
 
 	// Computed values - opportunities are already filtered server-side
 	const opportunities = $derived(data.opportunities || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 	const stats = $derived(data.stats || { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 });
 
 	// Status chip filter for quick filtering (client-side on top of server filters)
@@ -1023,6 +1046,15 @@
 			{/snippet}
 		</CrmTable>
 	{/if}
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
 
 <!-- Opportunity Drawer -->

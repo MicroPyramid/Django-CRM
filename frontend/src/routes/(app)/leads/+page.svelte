@@ -31,6 +31,7 @@
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { PageHeader } from '$lib/components/layout';
 	import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
@@ -532,6 +533,7 @@
 
 	// Computed values
 	const leads = $derived(data.leads || []);
+	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
 	// Lazy-loaded form options (only fetched when drawer opens)
 	let formOptions = $state(
@@ -960,6 +962,27 @@
 	 */
 	function clearFilters() {
 		updateFilters({});
+	}
+
+	/**
+	 * Handle page change
+	 * @param {number} newPage
+	 */
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle limit change
+	 * @param {number} newLimit
+	 */
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1'); // Reset to first page
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
 
 	// Status counts for filter chips
@@ -1477,6 +1500,15 @@
 			</button>
 		</div>
 	{/if}
+
+	<!-- Pagination -->
+	<Pagination
+		page={pagination.page}
+		limit={pagination.limit}
+		total={pagination.total}
+		onPageChange={handlePageChange}
+		onLimitChange={handleLimitChange}
+	/>
 </div>
 
 <!-- Lead Drawer -->

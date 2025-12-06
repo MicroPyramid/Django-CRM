@@ -21,6 +21,10 @@ export async function load({ url, locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse pagination params from URL
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '10');
+
 	// Parse filter params from URL
 	const filters = {
 		search: url.searchParams.get('search') || '',
@@ -36,11 +40,11 @@ export async function load({ url, locals, cookies }) {
 	try {
 		// Build query parameters
 		const queryParams = buildQueryParams({
-			page: 1,
-			limit: 1000,
 			sort: 'created_at',
 			order: 'desc'
 		});
+		queryParams.append('limit', limit.toString());
+		queryParams.append('offset', ((page - 1) * limit).toString());
 
 		// Add filter params
 		if (filters.search) queryParams.append('search', filters.search);
@@ -159,8 +163,17 @@ export async function load({ url, locals, cookies }) {
 		const statusOptions = ['New', 'Assigned', 'Pending', 'Closed', 'Rejected', 'Duplicate'];
 		const caseTypeOptions = ['Question', 'Incident', 'Problem'];
 
+		// Get total count from response
+		const total = casesResponse.cases_count || casesResponse.count || transformedCases.length;
+
 		return {
 			cases: transformedCases,
+			pagination: {
+				page,
+				limit,
+				total,
+				totalPages: Math.ceil(total / limit) || 1
+			},
 			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			allUsers: [],
