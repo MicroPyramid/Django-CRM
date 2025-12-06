@@ -17,7 +17,8 @@
 		Linkedin,
 		PhoneOff,
 		Calendar,
-		Tag
+		Tag,
+		Filter
 	} from '@lucide/svelte';
 	import { PageHeader } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -416,6 +417,9 @@
 	// Contacts are already filtered server-side
 	const filteredContacts = $derived(contacts);
 
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
+
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
 	let createForm;
@@ -629,6 +633,24 @@
 <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
+
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
@@ -670,9 +692,15 @@
 	{/snippet}
 </PageHeader>
 
-<div class="flex-1 space-y-4 p-4 md:p-6">
-	<!-- Filter Bar -->
-	<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
+<div class="flex-1 p-4 md:p-6">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
 		<SearchInput
 			value={filters.search}
 			placeholder="Search contacts..."

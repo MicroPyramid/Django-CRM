@@ -25,7 +25,8 @@
 		Tag,
 		UserPlus,
 		Contact,
-		Banknote
+		Banknote,
+		Filter
 	} from '@lucide/svelte';
 	import { PageHeader } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -475,6 +476,10 @@
 
 	// Accounts are already filtered server-side, apply chip filter for active/closed
 	let statusChipFilter = $state('ALL');
+
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
+
 	const filteredAccounts = $derived.by(() => {
 		if (statusChipFilter === 'active') {
 			return accounts.filter((a) => a.isActive !== false);
@@ -741,6 +746,24 @@
 
 			<div class="bg-border mx-1 h-6 w-px"></div>
 
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
+
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild>
@@ -781,28 +804,33 @@
 	{/snippet}
 </PageHeader>
 
-<!-- Filter Bar -->
-<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
-	<SearchInput
-		value={filters.search}
-		onchange={(value) => updateFilters({ ...filters, search: value })}
-		placeholder="Search accounts..."
-	/>
-	<SelectFilter
-		label="Industry"
-		options={industryFilterOptions}
-		value={filters.industry}
-		onchange={(value) => updateFilters({ ...filters, industry: value })}
-	/>
-	<DateRangeFilter
-		label="Created"
-		startDate={filters.created_at_gte}
-		endDate={filters.created_at_lte}
-		onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-	/>
-</FilterBar>
-
-<div class="flex-1 space-y-4 p-4 md:p-6">
+<div class="flex-1 p-4 md:p-6">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
+		<SearchInput
+			value={filters.search}
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			placeholder="Search accounts..."
+		/>
+		<SelectFilter
+			label="Industry"
+			options={industryFilterOptions}
+			value={filters.industry}
+			onchange={(value) => updateFilters({ ...filters, industry: value })}
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+	</FilterBar>
 	<!-- Accounts Table -->
 	{#if filteredAccounts.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">

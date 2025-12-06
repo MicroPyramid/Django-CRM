@@ -20,7 +20,8 @@
 		XCircle,
 		Banknote,
 		Contact,
-		Tags
+		Tags,
+		Filter
 	} from '@lucide/svelte';
 	import { PageHeader } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -301,11 +302,10 @@
 		...stageOptions
 	]);
 
-	// Count active filters
+	// Count active filters (excluding stage since it's handled via chips in header)
 	const activeFiltersCount = $derived.by(() => {
 		let count = 0;
 		if (filters.search) count++;
-		if (filters.stage) count++;
 		if (filters.account) count++;
 		if (filters.assigned_to?.length > 0) count++;
 		if (filters.tags?.length > 0) count++;
@@ -403,6 +403,9 @@
 
 	// Status chip filter for quick filtering (client-side on top of server filters)
 	let statusChipFilter = $state('ALL');
+
+	// Filter panel expansion state
+	let filtersExpanded = $state(false);
 
 	// Status stages for filtering
 	const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
@@ -858,6 +861,24 @@
 
 			<div class="bg-border mx-1 h-6 w-px"></div>
 
+			<!-- Filter Toggle Button -->
+			<Button
+				variant={filtersExpanded ? 'secondary' : 'outline'}
+				size="sm"
+				class="gap-2"
+				onclick={() => (filtersExpanded = !filtersExpanded)}
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if activeFiltersCount > 0}
+					<span
+						class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+					>
+						{activeFiltersCount}
+					</span>
+				{/if}
+			</Button>
+
 			<!-- Column Visibility Dropdown -->
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild>
@@ -899,34 +920,33 @@
 	{/snippet}
 </PageHeader>
 
-<!-- Filter Bar -->
-<FilterBar activeCount={activeFiltersCount} onClear={clearFilters}>
-	<SearchInput
-		value={filters.search}
-		onchange={(value) => updateFilters({ ...filters, search: value })}
-		placeholder="Search opportunities..."
-	/>
-	<SelectFilter
-		label="Stage"
-		options={stageFilterOptions}
-		value={filters.stage}
-		onchange={(value) => updateFilters({ ...filters, stage: value })}
-	/>
-	<DateRangeFilter
-		label="Close Date"
-		startDate={filters.closed_on_gte}
-		endDate={filters.closed_on_lte}
-		onchange={(start, end) => updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
-	/>
-	<DateRangeFilter
-		label="Created"
-		startDate={filters.created_at_gte}
-		endDate={filters.created_at_lte}
-		onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-	/>
-</FilterBar>
-
-<div class="flex-1 space-y-4 p-4 md:p-6">
+<div class="flex-1 p-4 md:p-6">
+	<!-- Collapsible Filter Bar -->
+	<FilterBar
+		minimal={true}
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+		class="pb-4"
+	>
+		<SearchInput
+			value={filters.search}
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+			placeholder="Search opportunities..."
+		/>
+		<DateRangeFilter
+			label="Close Date"
+			startDate={filters.closed_on_gte}
+			endDate={filters.closed_on_lte}
+			onchange={(start, end) => updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
+		/>
+		<DateRangeFilter
+			label="Created"
+			startDate={filters.created_at_gte}
+			endDate={filters.created_at_lte}
+			onchange={(start, end) => updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+	</FilterBar>
 	<!-- Table View -->
 	{#if filteredOpportunities.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
