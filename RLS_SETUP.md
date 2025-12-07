@@ -52,19 +52,21 @@ SELECT usename, usesuper FROM pg_user WHERE usename = 'crm_user';
 -- Grant connection rights
 GRANT CONNECT ON DATABASE bottlecrm TO crm_user;
 
--- Grant schema usage
-GRANT USAGE ON SCHEMA public TO crm_user;
+-- Grant schema privileges (required for migrations to create/alter tables)
+GRANT ALL ON SCHEMA public TO crm_user;
 
 -- Grant table permissions (SELECT, INSERT, UPDATE, DELETE)
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO crm_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO crm_user;
 
 -- Grant sequence permissions (for auto-increment fields)
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO crm_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO crm_user;
 
 -- Grant default privileges for future tables
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO crm_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO crm_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO crm_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO crm_user;
 ```
+
+> **Note:** Granting schema/table privileges does NOT weaken RLS. These control DDL operations (CREATE/ALTER/DROP), while RLS controls row-level access. Only `BYPASSRLS` attribute or superuser status bypasses RLS.
 
 ---
 

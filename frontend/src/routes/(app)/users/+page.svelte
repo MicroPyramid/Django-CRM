@@ -434,15 +434,11 @@
 													{:else}
 														<!-- Active user: show Deactivate button -->
 														<AlertDialog.Root>
-															<AlertDialog.Trigger>
-																<Button
-																	variant="ghost"
-																	size="icon"
-																	class="text-destructive hover:bg-destructive/10 h-8 w-8"
-																	title="Deactivate user"
-																>
-																	<Trash2 class="h-4 w-4" />
-																</Button>
+															<AlertDialog.Trigger
+																class="text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-md"
+																title="Deactivate user"
+															>
+																<Trash2 class="h-4 w-4" />
 															</AlertDialog.Trigger>
 															<AlertDialog.Content>
 																<AlertDialog.Header>

@@ -75,14 +75,10 @@
 					<Pencil class="h-4 w-4" />
 				</Button>
 				<AlertDialog.Root>
-					<AlertDialog.Trigger>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="text-destructive hover:bg-destructive/10 h-8 w-8"
-						>
-							<Trash2 class="h-4 w-4" />
-						</Button>
+					<AlertDialog.Trigger
+						class="text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-md"
+					>
+						<Trash2 class="h-4 w-4" />
 					</AlertDialog.Trigger>
 					<AlertDialog.Content>
 						<AlertDialog.Header>
