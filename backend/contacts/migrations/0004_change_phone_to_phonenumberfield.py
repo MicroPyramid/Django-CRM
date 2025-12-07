@@ -1,7 +1,6 @@
-# Migration to change Contact.phone from CharField to PhoneNumberField
+# Migration to change Contact.phone field
 
-import phonenumber_field.modelfields
-from django.db import migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -14,11 +13,10 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="contact",
             name="phone",
-            field=phonenumber_field.modelfields.PhoneNumberField(
+            field=models.CharField(
                 blank=True,
-                max_length=128,
+                max_length=20,
                 null=True,
-                region=None,
                 verbose_name="Phone",
             ),
         ),

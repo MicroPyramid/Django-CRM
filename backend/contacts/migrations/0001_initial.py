@@ -3,7 +3,6 @@
 import uuid
 
 import django.db.models.deletion
-import phonenumber_field.modelfields
 from django.conf import settings
 from django.db import migrations, models
 
@@ -58,11 +57,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "phone",
-                    phonenumber_field.modelfields.PhoneNumberField(
+                    models.CharField(
                         blank=True,
-                        max_length=128,
+                        max_length=20,
                         null=True,
-                        region=None,
                         verbose_name="Phone",
                     ),
                 ),
