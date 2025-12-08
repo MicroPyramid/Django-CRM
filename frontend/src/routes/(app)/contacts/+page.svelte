@@ -30,7 +30,7 @@
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { goto } from '$app/navigation';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
-	import { apiRequest } from '$lib/api.js';
+	import { browser } from '$app/environment';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'contacts-column-config';
@@ -97,6 +97,14 @@
 	let dropdownOptionsLoaded = $state(false);
 	let dropdownOptionsLoading = $state(false);
 
+	// Account from URL param (for quick action from account page)
+	let accountFromUrl = $state(false);
+	let accountName = $state('');
+	let accountId = $state('');
+
+	// Server-provided accounts for quick action lookup
+	const accounts = $derived(data.accounts || []);
+
 	// Use lazy-loaded data
 	const allTags = $derived(loadedTags);
 
@@ -104,10 +112,12 @@
 	 * Fetch dropdown options for the drawer (lazy load)
 	 */
 	async function loadDropdownOptions() {
-		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
+		if (!browser || dropdownOptionsLoaded || dropdownOptionsLoading) return;
 
 		dropdownOptionsLoading = true;
 		try {
+			// Dynamic import to avoid SSR fetch warning
+			const { apiRequest } = await import('$lib/api.js');
 			const [ownersResponse, tagsResponse] = await Promise.all([
 				apiRequest('/users/'),
 				apiRequest('/tags/').catch(() => ({ tags: [] }))
@@ -135,8 +145,46 @@
 		}
 	}
 
-	// Drawer column definitions for CrmDrawer (derived to include allTags)
+	/**
+	 * Lookup account name from server-provided accounts list
+	 * @param {string} id
+	 */
+	function fetchAccountName(id) {
+		const account = accounts.find((a) => a.id === id);
+		if (account) {
+			accountName = account.name;
+		} else {
+			accountName = 'Unknown Account';
+		}
+	}
+
+	/**
+	 * Clear URL params for accountId and action
+	 */
+	function clearUrlParams() {
+		const url = new URL($page.url);
+		url.searchParams.delete('action');
+		url.searchParams.delete('accountId');
+		goto(url.pathname, { replaceState: true, invalidateAll: true });
+		accountFromUrl = false;
+		accountName = '';
+		accountId = '';
+	}
+
+	// Drawer column definitions for CrmDrawer (derived to include allTags and account field)
 	const drawerColumns = $derived([
+		// Show account field as readonly when coming from account page
+		...(accountFromUrl
+			? [
+					{
+						key: 'accountDisplay',
+						label: 'Account',
+						type: 'readonly',
+						icon: Building2,
+						getValue: () => accountName || 'Loading...'
+					}
+				]
+			: []),
 		{ key: 'firstName', label: 'First Name', type: 'text', icon: User, placeholder: 'First name' },
 		{ key: 'lastName', label: 'Last Name', type: 'text', placeholder: 'Last name' },
 		{ key: 'email', label: 'Email', type: 'email', icon: Mail, placeholder: 'email@example.com' },
@@ -299,8 +347,16 @@
 	$effect(() => {
 		const viewId = $page.url.searchParams.get('view');
 		const action = $page.url.searchParams.get('action');
+		const accountIdParam = $page.url.searchParams.get('accountId');
 
-		if (action === 'create') {
+		if (action === 'create' && !drawerOpen) {
+			// Handle account pre-fill from URL BEFORE opening drawer
+			if (accountIdParam) {
+				accountId = accountIdParam;
+				accountFromUrl = true;
+				fetchAccountName(accountIdParam);
+			}
+
 			selectedContact = null;
 			drawerMode = 'create';
 			drawerOpen = true;
@@ -362,7 +418,12 @@
 	 */
 	async function closeDrawer() {
 		drawerOpen = false;
-		await updateUrl(null, null);
+		// Clear account URL params if they were set
+		if (accountFromUrl) {
+			clearUrlParams();
+		} else {
+			await updateUrl(null, null);
+		}
 	}
 
 	/**
@@ -371,7 +432,13 @@
 	 */
 	function handleDrawerChange(open) {
 		drawerOpen = open;
-		if (!open) updateUrl(null, null);
+		if (!open) {
+			if (accountFromUrl) {
+				clearUrlParams();
+			} else {
+				updateUrl(null, null);
+			}
+		}
 	}
 
 	// URL-based filter state from server
@@ -453,6 +520,7 @@
 	// Form data state
 	let formState = $state({
 		contactId: '',
+		accountId: '',
 		firstName: '',
 		lastName: '',
 		email: '',
@@ -589,6 +657,7 @@
 		if (drawerMode !== 'create') return;
 
 		isSubmitting = true;
+		formState.accountId = accountFromUrl ? accountId : '';
 		formState.firstName = drawerFormData.firstName || '';
 		formState.lastName = drawerFormData.lastName || '';
 		formState.email = drawerFormData.email || '';
@@ -843,6 +912,7 @@
 	use:enhance={createEnhanceHandler('Contact created successfully')}
 	class="hidden"
 >
+	<input type="hidden" name="accountId" value={formState.accountId} />
 	<input type="hidden" name="firstName" value={formState.firstName} />
 	<input type="hidden" name="lastName" value={formState.lastName} />
 	<input type="hidden" name="email" value={formState.email} />

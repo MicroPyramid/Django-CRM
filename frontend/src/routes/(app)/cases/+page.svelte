@@ -34,7 +34,11 @@
 		casePriorityOptions
 	} from '$lib/utils/table-helpers.js';
 	import { useDrawerState } from '$lib/hooks';
-	import { apiRequest } from '$lib/api.js';
+
+	// Account from URL param (for quick action from account page)
+	let accountFromUrl = $state(false);
+	let accountName = $state('');
+	let accountIdFromUrl = $state('');
 
 	/**
 	 * @typedef {Object} ColumnDef
@@ -159,124 +163,62 @@
 	let casesData = $derived(data.cases || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
-	// Lazy-loaded dropdown options (fetched when drawer opens)
-	let loadedUsers = $state(/** @type {any[]} */ ([]));
-	let loadedAccounts = $state(/** @type {any[]} */ ([]));
-	let loadedContacts = $state(/** @type {any[]} */ ([]));
-	let loadedTeams = $state(/** @type {any[]} */ ([]));
-	let loadedTags = $state(/** @type {any[]} */ ([]));
-	let dropdownOptionsLoaded = $state(false);
-	let dropdownOptionsLoading = $state(false);
-
-	// Use lazy-loaded data
-	const accounts = $derived(loadedAccounts);
-	const users = $derived(loadedUsers);
-	const contacts = $derived(loadedContacts);
-	const teams = $derived(loadedTeams);
-	const tags = $derived(loadedTags);
+	// Dropdown options from server (loaded with page data)
+	const formOptions = $derived(data.formOptions || {});
+	const accounts = $derived(formOptions.accounts || []);
+	const users = $derived(formOptions.users || []);
+	const contacts = $derived(formOptions.contacts || []);
+	const teams = $derived(formOptions.teams || []);
+	const tags = $derived(formOptions.tags || []);
 
 	/**
-	 * Fetch dropdown options for the drawer (lazy load)
+	 * Get account name from server-provided accounts list
+	 * @param {string} id
 	 */
-	async function loadDropdownOptions() {
-		if (dropdownOptionsLoaded || dropdownOptionsLoading) return;
-
-		dropdownOptionsLoading = true;
-		try {
-			const [usersResponse, accountsResponse, contactsResponse, teamsResponse, tagsResponse] =
-				await Promise.all([
-					apiRequest('/users/'),
-					apiRequest('/accounts/'),
-					apiRequest('/contacts/'),
-					apiRequest('/teams/'),
-					apiRequest('/tags/').catch(() => ({ tags: [] }))
-				]);
-
-			// Transform users
-			const activeUsersList = usersResponse.active_users?.active_users || [];
-			loadedUsers = activeUsersList.map((/** @type {any} */ user) => ({
-				id: user.id,
-				name:
-					user.user_details?.first_name && user.user_details?.last_name
-						? `${user.user_details.first_name} ${user.user_details.last_name}`
-						: user.user_details?.email || user.email
-			}));
-
-			// Transform accounts
-			let allAccounts = [];
-			if (accountsResponse.active_accounts?.open_accounts) {
-				allAccounts = accountsResponse.active_accounts.open_accounts;
-			} else if (accountsResponse.results) {
-				allAccounts = accountsResponse.results;
-			} else if (Array.isArray(accountsResponse)) {
-				allAccounts = accountsResponse;
-			}
-			loadedAccounts = allAccounts.map((/** @type {any} */ account) => ({
-				id: account.id,
-				name: account.name
-			}));
-
-			// Transform contacts
-			let allContacts = [];
-			if (contactsResponse.contact_obj_list) {
-				allContacts = contactsResponse.contact_obj_list;
-			} else if (contactsResponse.results) {
-				allContacts = contactsResponse.results;
-			} else if (Array.isArray(contactsResponse)) {
-				allContacts = contactsResponse;
-			}
-			loadedContacts = allContacts.map((/** @type {any} */ contact) => ({
-				id: contact.id,
-				name:
-					contact.first_name && contact.last_name
-						? `${contact.first_name} ${contact.last_name}`
-						: contact.email,
-				email: contact.email
-			}));
-
-			// Transform teams
-			let allTeams = [];
-			if (teamsResponse.teams) {
-				allTeams = teamsResponse.teams;
-			} else if (teamsResponse.results) {
-				allTeams = teamsResponse.results;
-			} else if (Array.isArray(teamsResponse)) {
-				allTeams = teamsResponse;
-			}
-			loadedTeams = allTeams.map((/** @type {any} */ team) => ({
-				id: team.id,
-				name: team.name
-			}));
-
-			// Transform tags
-			let allTags = [];
-			if (tagsResponse.tags) {
-				allTags = tagsResponse.tags;
-			} else if (tagsResponse.results) {
-				allTags = tagsResponse.results;
-			} else if (Array.isArray(tagsResponse)) {
-				allTags = tagsResponse;
-			}
-			loadedTags = allTags.map((/** @type {any} */ tag) => ({
-				id: tag.id,
-				name: tag.name
-			}));
-
-			dropdownOptionsLoaded = true;
-		} catch (err) {
-			console.error('Failed to load dropdown options:', err);
-		} finally {
-			dropdownOptionsLoading = false;
+	function fetchAccountName(id) {
+		const account = accounts.find((a) => a.id === id);
+		if (account) {
+			accountName = account.name;
+		} else {
+			accountName = 'Unknown Account';
 		}
+	}
+
+	/**
+	 * Clear URL params for accountId and action
+	 */
+	function clearUrlParams() {
+		const url = new URL($page.url);
+		url.searchParams.delete('action');
+		url.searchParams.delete('accountId');
+		goto(url.pathname, { replaceState: true, invalidateAll: true });
+		accountFromUrl = false;
+		accountName = '';
+		accountIdFromUrl = '';
 	}
 
 	// Drawer state using hook
 	const drawer = useDrawerState();
 
-	// Load dropdown options when drawer opens (lazy load)
+	// URL sync for accountId and action params (quick action from account page)
 	$effect(() => {
-		if (drawer.detailOpen && !dropdownOptionsLoaded) {
-			loadDropdownOptions();
+		const action = $page.url.searchParams.get('action');
+		const accountIdParam = $page.url.searchParams.get('accountId');
+
+		if (action === 'create' && !drawer.detailOpen) {
+			// Handle account pre-fill from URL BEFORE opening drawer
+			if (accountIdParam) {
+				accountIdFromUrl = accountIdParam;
+				accountFromUrl = true;
+				fetchAccountName(accountIdParam);
+			}
+
+			drawer.openCreate();
+
+			// Set account in form data after drawer opens
+			if (accountIdParam) {
+				drawerFormData.accountId = accountIdParam;
+			}
 		}
 	});
 
@@ -291,10 +233,11 @@
 	]);
 
 	// Drawer columns configuration (with icons and multiselect)
-	// Account is only editable on create, read-only on edit
+	// Account is only editable on create (and not when pre-filled from URL), read-only on edit
 	const drawerColumns = $derived([
 		{ key: 'subject', label: 'Case Title', type: 'text' },
-		drawer.mode === 'create'
+		// Account field: readonly when pre-filled from URL or in edit mode
+		drawer.mode === 'create' && !accountFromUrl
 			? {
 					key: 'accountId',
 					label: 'Account',
@@ -303,13 +246,21 @@
 					options: accountOptions,
 					emptyText: 'No account'
 				}
-			: {
-					key: 'accountName',
-					label: 'Account',
-					type: 'readonly',
-					icon: Building2,
-					emptyText: 'No account'
-				},
+			: accountFromUrl
+				? {
+						key: 'accountDisplay',
+						label: 'Account',
+						type: 'readonly',
+						icon: Building2,
+						getValue: () => accountName || 'Loading...'
+					}
+				: {
+						key: 'accountName',
+						label: 'Account',
+						type: 'readonly',
+						icon: Building2,
+						emptyText: 'No account'
+					},
 		{
 			key: 'caseType',
 			label: 'Type',
@@ -388,7 +339,7 @@
 				drawerFormData = {
 					subject: '',
 					description: '',
-					accountId: '',
+					accountId: accountIdFromUrl || '', // Preserve account from URL if present
 					accountName: '',
 					assignedTo: [],
 					contacts: [],
@@ -656,6 +607,10 @@
 					} else {
 						drawer.closeAll();
 					}
+					// Clear account URL params if they were set
+					if (accountFromUrl) {
+						clearUrlParams();
+					}
 					await invalidateAll();
 				} else if (result.type === 'failure') {
 					toast.error(result.data?.error || 'Operation failed');
@@ -912,7 +867,14 @@
 <!-- Case Drawer -->
 <CrmDrawer
 	bind:open={drawer.detailOpen}
-	onOpenChange={(open) => !open && drawer.closeAll()}
+	onOpenChange={(open) => {
+		if (!open) {
+			drawer.closeAll();
+			if (accountFromUrl) {
+				clearUrlParams();
+			}
+		}
+	}}
 	data={drawerFormData}
 	columns={drawerColumns}
 	titleKey="subject"

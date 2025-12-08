@@ -515,9 +515,32 @@ class Command(BaseCommand):
         sources = [c[0] for c in LEAD_SOURCE]
         ratings = ["HOT", "WARM", "COLD"]
 
+        # Lead title templates for realistic data
+        lead_title_templates = [
+            "Enterprise Deal",
+            "Website Inquiry",
+            "Demo Request",
+            "Partnership Opportunity",
+            "Inbound Lead",
+            "Referral Opportunity",
+            "Trade Show Contact",
+            "Product Inquiry",
+            "Upgrade Opportunity",
+            "Expansion Deal",
+            "New Business Inquiry",
+            "Consultation Request",
+        ]
+
         for _ in range(count):
             status = self._weighted_choice(self.LEAD_STATUS_WEIGHTS)
+            # Generate a title - either from templates or using faker
+            if random.random() > 0.3:
+                title = random.choice(lead_title_templates)
+            else:
+                title = f"{self.fake.catch_phrase()} Opportunity"
+
             lead = Lead.objects.create(
+                title=title,
                 first_name=self.fake.first_name(),
                 last_name=self.fake.last_name(),
                 email=self.fake.company_email(),

@@ -27,7 +27,8 @@
 		children
 	} = $props();
 
-	let internalExpanded = $state(defaultExpanded);
+	// Use a function to capture initial value (avoids Svelte warning about prop reference)
+	let internalExpanded = $state((() => defaultExpanded)());
 
 	// Use external expanded if provided, otherwise use internal state
 	const isExpanded = $derived(externalExpanded !== undefined ? externalExpanded : internalExpanded);

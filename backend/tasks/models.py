@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
@@ -251,7 +252,7 @@ class Task(AssignableMixin, BaseModel):
         verbose_name = "Task"
         verbose_name_plural = "Tasks"
         db_table = "task"
-        ordering = ("-due_date",)
+        ordering = ("-created_at",)
         indexes = [
             models.Index(fields=["status"]),
             models.Index(fields=["due_date"]),
@@ -282,3 +283,19 @@ class Task(AssignableMixin, BaseModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+    @property
+    def is_overdue(self) -> bool:
+        """Check if task is overdue (past due date and not completed)."""
+        if self.status == "Completed":
+            return False
+        if self.due_date:
+            return timezone.now().date() > self.due_date
+        return False
+
+    @property
+    def days_until_due(self) -> int | None:
+        """Return days until due (negative if overdue). None if no due date."""
+        if not self.due_date:
+            return None
+        return (self.due_date - timezone.now().date()).days

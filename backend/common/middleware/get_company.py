@@ -137,5 +137,5 @@ class GetProfileAndOrg(object):
             logger.debug(f"Set org context from API key: org={organization.id}")
 
         except Org.DoesNotExist:
-            logger.warning(f"Invalid API key attempted: {api_key[:8]}...")
+            logger.warning("Invalid API key attempted")
             raise AuthenticationFailed("Invalid API Key")

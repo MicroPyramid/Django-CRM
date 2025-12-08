@@ -41,6 +41,11 @@
 
 	const STORAGE_KEY = 'opportunities-crm-columns';
 
+	// Account from URL param (for quick action from account page)
+	let accountFromUrl = $state(false);
+	let accountName = $state('');
+	let accountIdFromUrl = $state('');
+
 	// Stage options with colors
 	const stageOptions = [
 		{
@@ -221,17 +226,52 @@
 		}))
 	);
 
+	/**
+	 * Lookup account name from server-provided accounts list
+	 * @param {string} id
+	 */
+	function fetchAccountName(id) {
+		const account = formOptions.accounts.find((a) => a.id === id);
+		if (account) {
+			accountName = account.name;
+		} else {
+			accountName = 'Unknown Account';
+		}
+	}
+
+	/**
+	 * Clear URL params for accountId and action
+	 */
+	function clearUrlParams() {
+		const url = new URL($page.url);
+		url.searchParams.delete('action');
+		url.searchParams.delete('accountId');
+		goto(url.pathname, { replaceState: true, invalidateAll: true });
+		accountFromUrl = false;
+		accountName = '';
+		accountIdFromUrl = '';
+	}
+
 	// Drawer column definitions for CrmDrawer (derived since some options come from data)
 	const drawerColumns = $derived([
 		{ key: 'name', label: 'Name', type: 'text' },
-		{
-			key: 'account',
-			label: 'Account',
-			type: 'select',
-			icon: Building2,
-			options: accountOptions,
-			placeholder: 'Select account'
-		},
+		// Account field: readonly when pre-filled from URL, select otherwise
+		accountFromUrl
+			? {
+					key: 'account',
+					label: 'Account',
+					type: 'readonly',
+					icon: Building2,
+					getValue: () => accountName || 'Loading...'
+				}
+			: {
+					key: 'account',
+					label: 'Account',
+					type: 'select',
+					icon: Building2,
+					options: accountOptions,
+					placeholder: 'Select account'
+				},
 		{
 			key: 'stage',
 			label: 'Stage',
@@ -435,7 +475,11 @@
 	$effect(() => {
 		if (drawerOpen) {
 			if (drawerMode === 'create') {
-				drawerFormData = { ...emptyOpportunity, currency: $orgSettings.default_currency || 'USD' };
+				drawerFormData = {
+					...emptyOpportunity,
+					currency: $orgSettings.default_currency || 'USD',
+					account: accountIdFromUrl || '' // Preserve account from URL if present
+				};
 			} else if (selectedRow) {
 				// Extract IDs for multiselect fields and account select
 				drawerFormData = {
@@ -509,6 +553,28 @@
 	// Save column visibility when changed
 	$effect(() => {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+	});
+
+	// URL sync for accountId and action params (quick action from account page)
+	$effect(() => {
+		const action = $page.url.searchParams.get('action');
+		const accountIdParam = $page.url.searchParams.get('accountId');
+
+		if (action === 'create' && !drawerOpen) {
+			// Handle account pre-fill from URL BEFORE opening drawer
+			if (accountIdParam) {
+				accountIdFromUrl = accountIdParam;
+				accountFromUrl = true;
+				fetchAccountName(accountIdParam);
+			}
+
+			openCreate();
+
+			// Set account in form data after drawer opens
+			if (accountIdParam) {
+				drawerFormData.account = accountIdParam;
+			}
+		}
 	});
 
 	/**
@@ -656,6 +722,10 @@
 	function closeDrawer() {
 		drawerOpen = false;
 		selectedRowId = null;
+		// Clear account URL params if they were set
+		if (accountFromUrl) {
+			clearUrlParams();
+		}
 	}
 
 	/**
@@ -737,8 +807,10 @@
 			form.append('stage', drawerFormData.stage || 'PROSPECTING');
 			form.append('amount', drawerFormData.amount?.toString() || '0');
 			form.append('probability', drawerFormData.probability?.toString() || '50');
-			if (drawerFormData.account) {
-				form.append('accountId', drawerFormData.account);
+			// Use drawerFormData.account or fall back to accountIdFromUrl
+			const accountId = drawerFormData.account || accountIdFromUrl;
+			if (accountId) {
+				form.append('accountId', accountId);
 			}
 			if (drawerFormData.opportunityType) {
 				form.append('opportunityType', drawerFormData.opportunityType);

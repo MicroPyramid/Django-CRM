@@ -47,7 +47,7 @@
 	} from '$lib/utils/table-helpers.js';
 	import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
 	import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
-	import { apiRequest } from '$lib/api.js';
+	import { browser } from '$app/environment';
 	import { orgSettings } from '$lib/stores/org.js';
 
 	// Column visibility configuration
@@ -559,10 +559,11 @@
 	 * Load form options for drawer (lazy-loaded on first drawer open)
 	 */
 	async function loadFormOptions() {
-		if (formOptionsLoaded || formOptionsLoading) return;
+		if (!browser || formOptionsLoaded || formOptionsLoading) return;
 
 		formOptionsLoading = true;
 		try {
+			const { apiRequest } = await import('$lib/api.js');
 			const [usersResponse, teamsResponse, contactsResponse, tagsResponse] = await Promise.all([
 				apiRequest('/users/').catch(() => ({ active_users: { active_users: [] } })),
 				apiRequest('/teams/').catch(() => ({ teams: [] })),

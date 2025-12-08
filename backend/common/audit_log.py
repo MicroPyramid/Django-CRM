@@ -152,13 +152,13 @@ class AuditLogger:
 
         # Log to Python logger
         log_level = logging.INFO if success else logging.WARNING
-        user_email = user.email if user else "anonymous"
-        org_name = org.name if org else "none"
+        user_id = str(user.id) if user else "anonymous"
+        org_id = str(org.id) if org else "none"
 
         logger.log(
             log_level,
-            f"{event_type} | user={user_email} | org={org_name} | "
-            f"ip={request_info.get('ip_address')} | {description}",
+            f"{event_type} | user_id={user_id} | org_id={org_id} | "
+            f"ip={request_info.get('ip_address')} | success={success}",
         )
 
     def login_success(self, user, org, request=None):

@@ -29,10 +29,28 @@ class AccountSerializer(serializers.ModelSerializer):
     teams = TeamsSerializer(read_only=True, many=True)
     account_attachment = AttachmentsSerializer(read_only=True, many=True)
     country_display = serializers.SerializerMethodField()
+    cases = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+    opportunities = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
     def get_country_display(self, obj):
         return obj.get_country_display() if obj.country else None
+
+    @extend_schema_field(list)
+    def get_cases(self, obj):
+        """Return cases linked to this account"""
+        return [{"id": str(c.id), "name": c.name} for c in obj.accounts_cases.all()]
+
+    @extend_schema_field(list)
+    def get_tasks(self, obj):
+        """Return tasks linked to this account"""
+        return [{"id": str(t.id), "title": t.title} for t in obj.accounts_tasks.all()]
+
+    @extend_schema_field(list)
+    def get_opportunities(self, obj):
+        """Return opportunities linked to this account"""
+        return [{"id": str(o.id), "name": o.name, "stage": o.stage, "amount": str(o.amount) if o.amount else "0"} for o in obj.opportunities.all()]
 
     class Meta:
         model = Account
@@ -65,6 +83,9 @@ class AccountSerializer(serializers.ModelSerializer):
             "description",
             # Related
             "account_attachment",
+            "cases",
+            "tasks",
+            "opportunities",
             # System
             "created_by",
             "created_at",

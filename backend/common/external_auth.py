@@ -46,7 +46,7 @@ class APIKeyAuthentication(BaseAuthentication):
             return (profile.user, None)
 
         except Org.DoesNotExist:
-            logger.warning(f"Invalid API key attempted: {api_key[:8]}...")
+            logger.warning("Invalid API key attempted")
             raise AuthenticationFailed("Invalid API Key")
 
 

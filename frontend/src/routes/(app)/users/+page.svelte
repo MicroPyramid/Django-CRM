@@ -12,7 +12,8 @@
 		Check,
 		X,
 		Trash2,
-		AlertCircle
+		AlertCircle,
+		UserCheck
 	} from '@lucide/svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -91,6 +92,10 @@
 				editingTeam = null;
 			} else if (form.action === 'delete_team') {
 				toast.success('Team deleted successfully');
+			} else if (form.action === 'remove_user') {
+				toast.success('User deactivated');
+			} else if (form.action === 'activate_user') {
+				toast.success('User activated');
 			}
 			invalidateAll();
 		} else if (form?.error) {
@@ -165,6 +170,46 @@
 		input.type = 'hidden';
 		input.name = 'team_id';
 		input.value = teamId;
+		form.appendChild(input);
+
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	/**
+	 * Handle user removal from organization
+	 * @param {string} userId
+	 */
+	function handleRemoveUser(userId) {
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/remove_user';
+		form.style.display = 'none';
+
+		const input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'user_id';
+		input.value = userId;
+		form.appendChild(input);
+
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	/**
+	 * Handle user activation (restore inactive user)
+	 * @param {string} userId
+	 */
+	function handleActivateUser(userId) {
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/activate_user';
+		form.style.display = 'none';
+
+		const input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'user_id';
+		input.value = userId;
 		form.appendChild(input);
 
 		document.body.appendChild(form);
@@ -375,31 +420,42 @@
 												<Table.Cell>
 													{#if user.isSelf}
 														<span class="text-muted-foreground">-</span>
+													{:else if !user.isActive}
+														<!-- Inactive user: show Activate button -->
+														<Button
+															variant="ghost"
+															size="icon"
+															class="text-green-600 hover:bg-green-100 h-8 w-8"
+															onclick={() => handleActivateUser(user.id)}
+															title="Activate user"
+														>
+															<UserCheck class="h-4 w-4" />
+														</Button>
 													{:else}
+														<!-- Active user: show Deactivate button -->
 														<AlertDialog.Root>
-															<AlertDialog.Trigger>
-																<Button
-																	variant="ghost"
-																	size="icon"
-																	class="text-destructive hover:bg-destructive/10 h-8 w-8"
-																>
-																	<Trash2 class="h-4 w-4" />
-																</Button>
+															<AlertDialog.Trigger
+																class="text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-md"
+																title="Deactivate user"
+															>
+																<Trash2 class="h-4 w-4" />
 															</AlertDialog.Trigger>
 															<AlertDialog.Content>
 																<AlertDialog.Header>
-																	<AlertDialog.Title>Remove Team Member</AlertDialog.Title>
+																	<AlertDialog.Title>Deactivate Team Member</AlertDialog.Title>
 																	<AlertDialog.Description>
-																		Are you sure you want to remove <strong>{user.name}</strong> from
-																		the organization? This action cannot be undone.
+																		Are you sure you want to deactivate <strong>{user.name}</strong>?
+																		They will no longer be able to access the organization.
 																	</AlertDialog.Description>
 																</AlertDialog.Header>
 																<AlertDialog.Footer>
 																	<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-																	<form method="POST" action="?/remove_user" class="inline">
-																		<input type="hidden" name="user_id" value={user.id} />
-																		<Button type="submit" variant="destructive">Remove</Button>
-																	</form>
+																	<Button
+																		variant="destructive"
+																		onclick={() => handleRemoveUser(user.id)}
+																	>
+																		Deactivate
+																	</Button>
 																</AlertDialog.Footer>
 															</AlertDialog.Content>
 														</AlertDialog.Root>
