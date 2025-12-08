@@ -1,4 +1,8 @@
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -37,6 +41,22 @@ class Case(AssignableMixin, BaseModel):
     tags = models.ManyToManyField(Tags, related_name="case_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="cases")
 
+    # SLA Tracking Fields
+    first_response_at = models.DateTimeField(
+        _("First Response At"), blank=True, null=True
+    )
+    resolved_at = models.DateTimeField(_("Resolved At"), blank=True, null=True)
+    sla_first_response_hours = models.PositiveIntegerField(
+        _("First Response SLA (hours)"),
+        default=4,
+        help_text="Target hours for first response",
+    )
+    sla_resolution_hours = models.PositiveIntegerField(
+        _("Resolution SLA (hours)"),
+        default=24,
+        help_text="Target hours for resolution",
+    )
+
     class Meta:
         verbose_name = "Case"
         verbose_name_plural = "Cases"
@@ -50,6 +70,69 @@ class Case(AssignableMixin, BaseModel):
 
     def __str__(self):
         return f"{self.name}"
+
+    def clean(self):
+        """Validate case data."""
+        super().clean()
+        errors = {}
+
+        # Closed date required when status is Closed
+        if self.status == "Closed" and not self.closed_on:
+            errors["closed_on"] = _("Closed date is required when closing a case")
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        """Auto-set SLA values based on priority for new cases."""
+        from .workflow import DEFAULT_FIRST_RESPONSE_SLA, DEFAULT_RESOLUTION_SLA
+
+        # Set default SLA based on priority for new cases
+        if not self.pk:
+            if self.sla_first_response_hours == 4:  # Default value
+                self.sla_first_response_hours = DEFAULT_FIRST_RESPONSE_SLA.get(
+                    self.priority, 4
+                )
+            if self.sla_resolution_hours == 24:  # Default value
+                self.sla_resolution_hours = DEFAULT_RESOLUTION_SLA.get(
+                    self.priority, 24
+                )
+
+        super().save(*args, **kwargs)
+
+    @property
+    def is_sla_first_response_breached(self) -> bool:
+        """Check if first response SLA has been breached."""
+        if self.first_response_at:
+            return False
+        if not self.created_at:
+            return False
+        deadline = self.created_at + timedelta(hours=self.sla_first_response_hours)
+        return timezone.now() > deadline
+
+    @property
+    def is_sla_resolution_breached(self) -> bool:
+        """Check if resolution SLA has been breached."""
+        if self.resolved_at:
+            return False
+        if not self.created_at:
+            return False
+        deadline = self.created_at + timedelta(hours=self.sla_resolution_hours)
+        return timezone.now() > deadline
+
+    @property
+    def first_response_sla_deadline(self):
+        """Return the deadline for first response."""
+        if self.created_at:
+            return self.created_at + timedelta(hours=self.sla_first_response_hours)
+        return None
+
+    @property
+    def resolution_sla_deadline(self):
+        """Return the deadline for resolution."""
+        if self.created_at:
+            return self.created_at + timedelta(hours=self.sla_resolution_hours)
+        return None
 
 
 class Solution(BaseModel):

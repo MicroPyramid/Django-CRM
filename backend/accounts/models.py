@@ -1,11 +1,14 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES, CURRENCY_CODES, INDCHOICES
+from common.validators import flexible_phone_validator
 from contacts.models import Contact
 
 
@@ -23,7 +26,13 @@ class Account(AssignableMixin, BaseModel):
     # Core Account Information
     name = models.CharField(_("Account Name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
+    phone = models.CharField(
+        _("Phone"),
+        max_length=25,
+        null=True,
+        blank=True,
+        validators=[flexible_phone_validator],
+    )
     website = models.URLField(_("Website"), blank=True, null=True)
 
     # Business Information
@@ -79,6 +88,19 @@ class Account(AssignableMixin, BaseModel):
             models.Index(fields=["name"]),
             models.Index(fields=["industry"]),
             models.Index(fields=["org", "-created_at"]),
+        ]
+        constraints = [
+            # Case-insensitive unique account name per organization
+            models.UniqueConstraint(
+                Lower("name"),
+                "org",
+                name="unique_account_name_per_org",
+            ),
+            # Annual revenue must be non-negative
+            models.CheckConstraint(
+                check=Q(annual_revenue__gte=0) | Q(annual_revenue__isnull=True),
+                name="account_revenue_non_negative",
+            ),
         ]
 
     def __str__(self):

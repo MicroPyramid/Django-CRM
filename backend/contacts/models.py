@@ -1,9 +1,12 @@
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES
+from common.validators import flexible_phone_validator
 
 
 class Contact(AssignableMixin, BaseModel):
@@ -16,7 +19,13 @@ class Contact(AssignableMixin, BaseModel):
     first_name = models.CharField(_("First name"), max_length=255)
     last_name = models.CharField(_("Last name"), max_length=255)
     email = models.EmailField(_("Email"), blank=True, null=True)
-    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
+    phone = models.CharField(
+        _("Phone"),
+        max_length=25,
+        null=True,
+        blank=True,
+        validators=[flexible_phone_validator],
+    )
 
     # Professional Information
     organization = models.CharField(_("Company"), max_length=255, blank=True, null=True)
@@ -69,6 +78,15 @@ class Contact(AssignableMixin, BaseModel):
         ordering = ("-created_at",)
         indexes = [
             models.Index(fields=["org", "-created_at"]),
+        ]
+        constraints = [
+            # Case-insensitive unique email per organization (when email is not null)
+            models.UniqueConstraint(
+                Lower("email"),
+                "org",
+                name="unique_contact_email_per_org",
+                condition=Q(email__isnull=False) & ~Q(email=""),
+            ),
         ]
 
     def __str__(self):

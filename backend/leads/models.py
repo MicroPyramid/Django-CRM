@@ -1,4 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.base import AssignableMixin, BaseModel
@@ -10,6 +14,7 @@ from common.utils import (
     LEAD_SOURCE,
     LEAD_STATUS,
 )
+from common.validators import flexible_phone_validator
 from contacts.models import Contact
 
 
@@ -38,7 +43,13 @@ class Lead(AssignableMixin, BaseModel):
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
     email = models.EmailField(null=True, blank=True)
-    phone = models.CharField(_("Phone"), max_length=50, null=True, blank=True)
+    phone = models.CharField(
+        _("Phone"),
+        max_length=25,
+        null=True,
+        blank=True,
+        validators=[flexible_phone_validator],
+    )
     job_title = models.CharField(
         _("Job Title"), max_length=255, blank=True, null=True,
         help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
@@ -113,8 +124,69 @@ class Lead(AssignableMixin, BaseModel):
             models.Index(fields=["source"]),
             models.Index(fields=["org", "-created_at"]),
         ]
+        constraints = [
+            # Case-insensitive unique email per organization (when email is not null)
+            models.UniqueConstraint(
+                Lower("email"),
+                "org",
+                name="unique_lead_email_per_org",
+                condition=Q(email__isnull=False) & ~Q(email=""),
+            ),
+            # Probability must be 0-100
+            models.CheckConstraint(
+                check=Q(probability__gte=0) & Q(probability__lte=100),
+                name="lead_probability_range",
+            ),
+            # Opportunity amount must be non-negative
+            models.CheckConstraint(
+                check=Q(opportunity_amount__gte=0) | Q(opportunity_amount__isnull=True),
+                name="lead_amount_non_negative",
+            ),
+        ]
 
     def __str__(self):
         name_parts = [self.salutation, self.first_name, self.last_name]
         return " ".join(part for part in name_parts if part) or f"Lead {self.id}"
+
+    def clean(self):
+        """Validate lead data."""
+        super().clean()
+        errors = {}
+
+        # Email required for conversion (need contact info to create Contact)
+        if self.status == "converted" and not self.email:
+            errors["email"] = _("Email is required to convert lead")
+
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def days_since_last_contact(self) -> int:
+        """Return the number of days since last contact or creation."""
+        if self.last_contacted:
+            return (timezone.now().date() - self.last_contacted).days
+        if self.created_at:
+            return (timezone.now().date() - self.created_at.date()).days
+        return 0
+
+    @property
+    def is_stale(self) -> bool:
+        """Check if lead is stale (>30 days without contact and not closed/converted)."""
+        if self.status in ["converted", "closed"]:
+            return False
+        return self.days_since_last_contact > 30
+
+    @property
+    def days_until_follow_up(self) -> int | None:
+        """Return the number of days until next follow-up (negative if overdue)."""
+        if not self.next_follow_up:
+            return None
+        return (self.next_follow_up - timezone.now().date()).days
+
+    @property
+    def is_follow_up_overdue(self) -> bool:
+        """Check if follow-up date has passed."""
+        if not self.next_follow_up:
+            return False
+        return timezone.now().date() > self.next_follow_up
 

@@ -221,7 +221,23 @@
 			<tbody>
 				{#each data as row (row.id)}
 					<tr
-						class="group transition-all duration-100 ease-out hover:bg-gray-50/30 dark:hover:bg-gray-900/30"
+						class="group transition-all duration-100 ease-out hover:bg-gray-50/30 dark:hover:bg-gray-900/30 {onRowClick
+							? 'cursor-pointer'
+							: ''}"
+						onclick={(e) => {
+							if (!onRowClick) return;
+							// Don't trigger row click if clicking on interactive elements
+							const target = /** @type {HTMLElement} */ (e.target);
+							if (
+								target.closest('button') ||
+								target.closest('input') ||
+								target.closest('[data-dropdown-trigger]') ||
+								target.closest('[role="menu"]')
+							) {
+								return;
+							}
+							onRowClick(row);
+						}}
 					>
 						{#if onRowClick}
 							<td class="w-8 px-1 py-3">

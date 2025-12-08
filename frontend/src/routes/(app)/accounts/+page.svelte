@@ -185,13 +185,6 @@
 			width: 'w-32',
 			format: (value, row) => formatCurrency(value, row?.currency || 'USD', true)
 		},
-		{
-			key: 'numberOfEmployees',
-			label: 'Employees',
-			type: 'number',
-			width: 'w-28',
-			emptyText: ''
-		},
 		{ key: 'phone', label: 'Phone', type: 'text', width: 'w-36', emptyText: '' },
 		{
 			key: 'createdAt',
@@ -205,14 +198,7 @@
 	];
 
 	// Default visible columns (excludes website; status removed - using tabs instead)
-	const DEFAULT_VISIBLE_COLUMNS = [
-		'name',
-		'industry',
-		'annualRevenue',
-		'numberOfEmployees',
-		'phone',
-		'createdAt'
-	];
+	const DEFAULT_VISIBLE_COLUMNS = ['name', 'industry', 'annualRevenue', 'phone', 'createdAt'];
 
 	// Column visibility state - use defaults (excludes website)
 	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);

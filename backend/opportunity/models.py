@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -88,6 +90,18 @@ class Opportunity(AssignableMixin, BaseModel):
             models.Index(fields=["stage"]),
             models.Index(fields=["org", "-created_at"]),
         ]
+        constraints = [
+            # Probability must be 0-100
+            models.CheckConstraint(
+                check=Q(probability__gte=0) & Q(probability__lte=100),
+                name="opportunity_probability_range",
+            ),
+            # Amount must be non-negative
+            models.CheckConstraint(
+                check=Q(amount__gte=0) | Q(amount__isnull=True),
+                name="opportunity_amount_non_negative",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name}"
@@ -95,3 +109,31 @@ class Opportunity(AssignableMixin, BaseModel):
     @property
     def created_on_arrow(self):
         return timesince(self.created_at) + " ago"
+
+    def clean(self):
+        """Validate opportunity data."""
+        super().clean()
+        errors = {}
+
+        # Closed date required for closed stages
+        if self.stage in ["CLOSED_WON", "CLOSED_LOST"] and not self.closed_on:
+            errors["closed_on"] = _(
+                "Close date is required when stage is Closed Won/Lost"
+            )
+
+        # Amount required for closed won
+        if self.stage == "CLOSED_WON" and not self.amount:
+            errors["amount"] = _("Amount is required for Closed Won opportunities")
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        """Auto-set probability based on stage if not manually set."""
+        from .workflow import STAGE_PROBABILITIES
+
+        # Auto-set probability based on stage (only if probability is default/0)
+        if self.probability == 0 or self.probability is None:
+            self.probability = STAGE_PROBABILITIES.get(self.stage, 0)
+
+        super().save(*args, **kwargs)
