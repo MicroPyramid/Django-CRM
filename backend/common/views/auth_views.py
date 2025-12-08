@@ -392,8 +392,8 @@ class OrgAwareTokenRefreshView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        except TokenError as e:
-            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except TokenError:
+            return Response({"error": "Invalid or expired token"}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
             return Response(
                 {"error": "User not found"}, status=status.HTTP_401_UNAUTHORIZED
