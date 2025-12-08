@@ -112,6 +112,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["active_accounts"] = {
             "offset": offset,
             "open_accounts": accounts_active,
+            "open_accounts_count": queryset_active.count(),
         }
 
         # Inactive accounts
@@ -136,6 +137,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["closed_accounts"] = {
             "offset": offset,
             "close_accounts": accounts_inactive,
+            "close_accounts_count": queryset_inactive.count(),
         }
         context["teams"] = TeamsSerializer(
             Teams.objects.filter(org=self.request.profile.org), many=True

@@ -48,14 +48,21 @@ export async function load({ url, locals, cookies }) {
 		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
 		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Only fetch contacts on initial load - dropdown options loaded on-demand when drawer opens
-		const contactsResponse = await apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org });
+		// Fetch contacts and accounts in parallel (accounts needed for quick action prefill)
+		const [contactsResponse, accountsRes] = await Promise.all([
+			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
+			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({}))
+		]);
 
 		// Handle Django response format
 		let contacts = [];
 		let totalCount = 0;
 
-		if (contactsResponse.results) {
+		if (contactsResponse.contact_obj_list) {
+			// Django custom response format
+			contacts = contactsResponse.contact_obj_list;
+			totalCount = contactsResponse.contacts_count || contacts.length;
+		} else if (contactsResponse.results) {
 			// Standard Django pagination
 			contacts = contactsResponse.results;
 			totalCount = contactsResponse.count || 0;
@@ -140,6 +147,17 @@ export async function load({ url, locals, cookies }) {
 			}
 		}));
 
+		// Transform accounts for dropdown/lookup
+		let accountsList = [];
+		if (accountsRes.active_accounts?.open_accounts) {
+			accountsList = accountsRes.active_accounts.open_accounts;
+		} else if (accountsRes.results) {
+			accountsList = accountsRes.results;
+		} else if (Array.isArray(accountsRes)) {
+			accountsList = accountsRes;
+		}
+		const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
+
 		return {
 			contacts: transformedContacts,
 			pagination: {
@@ -151,7 +169,9 @@ export async function load({ url, locals, cookies }) {
 			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			owners: [],
-			allTags: []
+			allTags: [],
+			// Accounts for quick action prefill lookup
+			accounts
 		};
 	} catch (err) {
 		console.error('Error loading contacts from API:', err);
@@ -164,6 +184,8 @@ export const actions = {
 	create: async ({ request, locals, cookies }) => {
 		try {
 			const form = await request.formData();
+			// Account link (from quick action)
+			const accountId = form.get('accountId')?.toString().trim() || null;
 			// Core fields
 			const firstName = form.get('firstName')?.toString().trim();
 			const lastName = form.get('lastName')?.toString().trim();
@@ -208,7 +230,8 @@ export const actions = {
 				postcode: postcode || null,
 				country: country || null,
 				description: description || null,
-				tags: tags
+				tags: tags,
+				account: accountId
 			};
 
 			await apiRequest(

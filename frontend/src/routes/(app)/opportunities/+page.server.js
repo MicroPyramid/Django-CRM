@@ -194,7 +194,7 @@ export async function load({ locals, cookies, url }) {
 		};
 
 		// Get total count from response
-		const total = response.opportunity_count || response.count || transformedOpportunities.length;
+		const total = response.opportunities_count || response.count || transformedOpportunities.length;
 
 		return {
 			opportunities: transformedOpportunities,

@@ -55,9 +55,18 @@ export async function load({ locals, cookies, url }) {
 		if (filters.due_date_gte) queryParams.append('due_date__gte', filters.due_date_gte);
 		if (filters.due_date_lte) queryParams.append('due_date__lte', filters.due_date_lte);
 
-		// Only fetch tasks on initial page load
-		// Dropdown options (users, accounts, contacts, etc.) are lazy-loaded client-side when drawer opens
-		const tasksResponse = await apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org });
+		// Fetch tasks and dropdown options in parallel
+		const [tasksResponse, usersRes, accountsRes, contactsRes, teamsRes, opportunitiesRes, casesRes, leadsRes, tagsRes] = await Promise.all([
+			apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org }),
+			apiRequest('/users/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/teams/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/opportunities/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/cases/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/leads/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({}))
+		]);
 
 		// Handle Django response structure
 		// Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -69,6 +78,38 @@ export async function load({ locals, cookies, url }) {
 		} else if (tasksResponse.results) {
 			tasks = tasksResponse.results;
 		}
+
+		// Transform accounts first (needed for task account name lookup)
+		let accountsList = [];
+		if (accountsRes.active_accounts?.open_accounts) {
+			accountsList = accountsRes.active_accounts.open_accounts;
+		} else if (accountsRes.results) {
+			accountsList = accountsRes.results;
+		} else if (Array.isArray(accountsRes)) {
+			accountsList = accountsRes;
+		}
+		const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
+
+		// Transform cases, opportunities, leads early (needed for task field name lookups)
+		const cases = (casesRes.cases || casesRes.results || []).map((c) => ({ id: c.id, name: c.name }));
+		const opportunities = (opportunitiesRes.opportunities || opportunitiesRes.results || []).map((o) => ({ id: o.id, name: o.name }));
+		const leads = (leadsRes.leads || leadsRes.results || []).map((l) => ({
+			id: l.id,
+			name: l.first_name || l.last_name ? `${l.first_name || ''} ${l.last_name || ''}`.trim() : l.title || 'Lead'
+		}));
+
+		// Helper to look up related entity name from list
+		const getRelatedName = (data, list, fallback) => {
+			if (!data) return null;
+			// If it's an object with name, use it
+			if (typeof data === 'object' && data.name) {
+				return { id: data.id, name: data.name };
+			}
+			// If it's just an ID (string), look up from list
+			const id = typeof data === 'object' ? data.id : data;
+			const found = list.find((item) => item.id === id);
+			return { id, name: found?.name || fallback };
+		};
 
 		// Transform Django tasks to frontend structure
 		const transformedTasks = tasks.map((task) => ({
@@ -107,40 +148,17 @@ export async function load({ locals, cookies, url }) {
 				name: t.name
 			})),
 
-			// Account (FK)
-			account: task.account
-				? {
-						id: task.account.id || task.account,
-						name: task.account.name || task.account
-					}
-				: null,
+			// Account (FK) - lookup name from accounts list if needed
+			account: getRelatedName(task.account, accounts, 'Unknown Account'),
 
-			// Opportunity (FK)
-			opportunity: task.opportunity
-				? {
-						id: task.opportunity.id || task.opportunity,
-						name: task.opportunity.name || 'Opportunity'
-					}
-				: null,
+			// Opportunity (FK) - lookup name from opportunities list if needed
+			opportunity: getRelatedName(task.opportunity, opportunities, 'Unknown Opportunity'),
 
-			// Case (FK)
-			case_: task.case
-				? {
-						id: task.case.id || task.case,
-						name: task.case.name || 'Case'
-					}
-				: null,
+			// Case (FK) - lookup name from cases list if needed
+			case_: getRelatedName(task.case, cases, 'Unknown Case'),
 
-			// Lead (FK)
-			lead: task.lead
-				? {
-						id: task.lead.id || task.lead,
-						name:
-							task.lead.first_name || task.lead.last_name
-								? `${task.lead.first_name || ''} ${task.lead.last_name || ''}`.trim()
-								: task.lead.title || 'Lead'
-					}
-				: null,
+			// Lead (FK) - lookup name from leads list if needed
+			lead: getRelatedName(task.lead, leads, 'Unknown Lead'),
 
 			// Created by
 			createdBy: task.created_by
@@ -154,6 +172,33 @@ export async function load({ locals, cookies, url }) {
 		// Get total count from response
 		const total = tasksResponse.tasks_count || tasksResponse.count || transformedTasks.length;
 
+		// Transform dropdown options
+		const users = (usersRes.active_users?.active_users || []).map((u) => ({
+			id: u.id,
+			name: u.user_details?.email || u.email
+		}));
+
+		// accounts already transformed above for task account name lookup
+
+		let contactsList = [];
+		if (contactsRes.contact_obj_list) {
+			contactsList = contactsRes.contact_obj_list;
+		} else if (contactsRes.results) {
+			contactsList = contactsRes.results;
+		} else if (Array.isArray(contactsRes)) {
+			contactsList = contactsRes;
+		}
+		const contacts = contactsList.map((c) => ({
+			id: c.id,
+			name: c.first_name ? `${c.first_name} ${c.last_name || ''}`.trim() : c.email || 'Unknown'
+		}));
+
+		const teams = (teamsRes.teams || teamsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+
+		// opportunities, cases, leads already transformed above for task field name lookups
+
+		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+
 		return {
 			tasks: transformedTasks,
 			pagination: {
@@ -162,7 +207,18 @@ export async function load({ locals, cookies, url }) {
 				total,
 				totalPages: Math.ceil(total / limit) || 1
 			},
-			filters
+			filters,
+			// Dropdown options for drawer form
+			formOptions: {
+				users,
+				accounts,
+				contacts,
+				teams,
+				opportunities,
+				cases,
+				leads,
+				tags
+			}
 		};
 	} catch (err) {
 		console.error('Error loading tasks from API:', err);

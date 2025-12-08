@@ -26,7 +26,8 @@
 		UserPlus,
 		Contact,
 		Banknote,
-		Filter
+		Filter,
+		CheckSquare
 	} from '@lucide/svelte';
 	import { PageHeader } from '$lib/components/layout';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -708,7 +709,25 @@
 	 */
 	function handleAddOpportunity() {
 		if (selectedAccount) {
-			goto(`/opportunities/new?accountId=${selectedAccount.id}`);
+			goto(`/opportunities?action=create&accountId=${selectedAccount.id}`);
+		}
+	}
+
+	/**
+	 * Navigate to add case
+	 */
+	function handleAddCase() {
+		if (selectedAccount) {
+			goto(`/cases?action=create&accountId=${selectedAccount.id}`);
+		}
+	}
+
+	/**
+	 * Navigate to add task
+	 */
+	function handleAddTask() {
+		if (selectedAccount) {
+			goto(`/tasks?action=create&accountId=${selectedAccount.id}`);
 		}
 	}
 </script>
@@ -999,7 +1018,7 @@
 				>
 					Related
 				</p>
-				<div class="grid grid-cols-3 gap-2">
+				<div class="grid grid-cols-4 gap-2">
 					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
 						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
 							<Users class="h-3.5 w-3.5" />
@@ -1027,6 +1046,15 @@
 						</p>
 						<p class="text-[10px] text-gray-500 dark:text-gray-400">Cases</p>
 					</div>
+					<div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
+						<div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
+							<CheckSquare class="h-3.5 w-3.5" />
+						</div>
+						<p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+							{selectedAccount.taskCount || 0}
+						</p>
+						<p class="text-[10px] text-gray-500 dark:text-gray-400">Tasks</p>
+					</div>
 				</div>
 			</div>
 
@@ -1046,6 +1074,16 @@
 						<Button variant="outline" size="sm" onclick={handleAddOpportunity} class="flex-1">
 							<Target class="mr-1.5 h-3.5 w-3.5" />
 							Add Opportunity
+						</Button>
+					</div>
+					<div class="mt-2 flex gap-2">
+						<Button variant="outline" size="sm" onclick={handleAddCase} class="flex-1">
+							<AlertTriangle class="mr-1.5 h-3.5 w-3.5" />
+							Add Case
+						</Button>
+						<Button variant="outline" size="sm" onclick={handleAddTask} class="flex-1">
+							<CheckSquare class="mr-1.5 h-3.5 w-3.5" />
+							Add Task
 						</Button>
 					</div>
 				</div>

@@ -67,16 +67,20 @@ export async function load({ locals, url, cookies }) {
 			// Django endpoint returns separate lists
 			const activeAccounts = response.active_accounts.open_accounts || [];
 			const closedAccounts = response.closed_accounts.close_accounts || [];
+			const activeCount = response.active_accounts.open_accounts_count || activeAccounts.length;
+			const closedCount = response.closed_accounts.close_accounts_count || closedAccounts.length;
 
 			if (status === 'open') {
 				accounts = activeAccounts;
+				total = activeCount;
 			} else if (status === 'closed') {
 				accounts = closedAccounts;
+				total = closedCount;
 			} else {
 				// No filter - show all accounts (both active and closed)
 				accounts = [...activeAccounts, ...closedAccounts];
+				total = activeCount + closedCount;
 			}
-			total = accounts.length;
 		} else if (response.results) {
 			// Standard Django pagination response
 			accounts = response.results;
@@ -89,6 +93,7 @@ export async function load({ locals, url, cookies }) {
 			const opportunityCount = account.opportunities?.length || 0;
 			const contactCount = account.contacts?.length || 0;
 			const taskCount = account.tasks?.length || 0;
+			const caseCount = account.cases?.length || 0;
 
 			const openOpportunities =
 				account.opportunities?.filter((opp) => !['CLOSED_WON', 'CLOSED_LOST'].includes(opp.stage))
@@ -143,6 +148,7 @@ export async function load({ locals, url, cookies }) {
 				opportunityCount,
 				contactCount,
 				taskCount,
+				caseCount,
 				openOpportunities,
 				totalOpportunityValue,
 

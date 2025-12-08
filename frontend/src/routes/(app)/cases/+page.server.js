@@ -56,8 +56,15 @@ export async function load({ url, locals, cookies }) {
 		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
 		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Only fetch cases on initial load - dropdown options loaded on-demand when drawer opens
-		const casesResponse = await apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org });
+		// Fetch cases and dropdown options in parallel
+		const [casesResponse, accountsRes, usersRes, contactsRes, teamsRes, tagsRes] = await Promise.all([
+			apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
+			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/users/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/teams/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({}))
+		]);
 
 		// Extract cases from response
 		let cases = [];
@@ -166,6 +173,48 @@ export async function load({ url, locals, cookies }) {
 		// Get total count from response
 		const total = casesResponse.cases_count || casesResponse.count || transformedCases.length;
 
+		// Transform accounts for dropdown/lookup
+		let accountsList = [];
+		if (accountsRes.active_accounts?.open_accounts) {
+			accountsList = accountsRes.active_accounts.open_accounts;
+		} else if (accountsRes.results) {
+			accountsList = accountsRes.results;
+		} else if (Array.isArray(accountsRes)) {
+			accountsList = accountsRes;
+		}
+		const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
+
+		// Transform users
+		const users = (usersRes.active_users?.active_users || []).map((u) => ({
+			id: u.id,
+			name: u.user_details?.first_name && u.user_details?.last_name
+				? `${u.user_details.first_name} ${u.user_details.last_name}`
+				: u.user_details?.email || u.email
+		}));
+
+		// Transform contacts
+		let contactsList = [];
+		if (contactsRes.contact_obj_list) {
+			contactsList = contactsRes.contact_obj_list;
+		} else if (contactsRes.results) {
+			contactsList = contactsRes.results;
+		} else if (Array.isArray(contactsRes)) {
+			contactsList = contactsRes;
+		}
+		const contacts = contactsList.map((c) => ({
+			id: c.id,
+			name: c.first_name && c.last_name
+				? `${c.first_name} ${c.last_name}`
+				: c.email,
+			email: c.email
+		}));
+
+		// Transform teams
+		const teams = (teamsRes.teams || teamsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+
+		// Transform tags
+		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+
 		return {
 			cases: transformedCases,
 			pagination: {
@@ -175,14 +224,16 @@ export async function load({ url, locals, cookies }) {
 				totalPages: Math.ceil(total / limit) || 1
 			},
 			filters,
-			// Dropdown options are now lazy-loaded on client when drawer opens
-			allUsers: [],
-			allAccounts: [],
-			allContacts: [],
-			allTeams: [],
-			allTags: [],
 			statusOptions,
-			caseTypeOptions
+			caseTypeOptions,
+			// Dropdown options loaded server-side
+			formOptions: {
+				accounts,
+				users,
+				contacts,
+				teams,
+				tags
+			}
 		};
 	} catch (err) {
 		console.error('Error loading cases from API:', err);

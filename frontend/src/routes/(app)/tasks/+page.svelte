@@ -4,7 +4,6 @@
 	import { page } from '$app/stores';
 	import { onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { apiRequest } from '$lib/api.js';
 	import {
 		Plus,
 		ChevronLeft,
@@ -41,6 +40,11 @@
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { formatRelativeDate } from '$lib/utils/formatting.js';
+
+	// Account from URL param (for quick action from account page)
+	let accountFromUrl = $state(false);
+	let accountNameFromUrl = $state('');
+	let accountIdFromUrl = $state('');
 
 	// Status and priority options with colors
 	const statusOptions = [
@@ -272,180 +276,44 @@
 	const tasks = $derived(data.tasks || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
 
-	// Dropdown options state - lazy loaded when drawer opens
-	let accounts = $state(/** @type {any[]} */ ([]));
-	let users = $state(/** @type {any[]} */ ([]));
-	let contacts = $state(/** @type {any[]} */ ([]));
-	let teams = $state(/** @type {any[]} */ ([]));
-	let opportunities = $state(/** @type {any[]} */ ([]));
-	let cases = $state(/** @type {any[]} */ ([]));
-	let leads = $state(/** @type {any[]} */ ([]));
-	let allTags = $state(/** @type {any[]} */ ([]));
+	// Dropdown options from server (loaded with page data)
+	const formOptions = $derived(data.formOptions || {});
+	const accounts = $derived(formOptions.accounts || []);
+	const users = $derived(formOptions.users || []);
+	const contacts = $derived(formOptions.contacts || []);
+	const teams = $derived(formOptions.teams || []);
+	const opportunities = $derived(formOptions.opportunities || []);
+	const cases = $derived(formOptions.cases || []);
+	const leads = $derived(formOptions.leads || []);
+	const allTags = $derived(formOptions.tags || []);
 
-	// Track if dropdown options have been loaded
-	let dropdownOptionsLoaded = $state(false);
-	let loadingDropdownOptions = $state(false);
+	// Dropdown options are now loaded server-side with page data
+	// No lazy loading needed
 
 	/**
-	 * Lazy load dropdown options when drawer opens
-	 * Cached so subsequent opens don't re-fetch
+	 * Get account name from server-provided accounts list
+	 * @param {string} id
 	 */
-	async function loadDropdownOptions() {
-		if (dropdownOptionsLoaded || loadingDropdownOptions) return;
-
-		loadingDropdownOptions = true;
-		try {
-			// Use Promise.allSettled so partial failures don't break the whole form
-			const results = await Promise.allSettled([
-				apiRequest('/users/'),
-				apiRequest('/accounts/'),
-				apiRequest('/contacts/'),
-				apiRequest('/teams/'),
-				apiRequest('/opportunities/'),
-				apiRequest('/cases/'),
-				apiRequest('/leads/'),
-				apiRequest('/tags/')
-			]);
-
-			/**
-			 * Safely get result value or empty object
-			 * @param {PromiseSettledResult<any>} result
-			 * @param {string} name
-			 */
-			function getResult(result, name) {
-				if (result.status === 'fulfilled') {
-					return result.value;
-				}
-				console.warn(`Failed to load ${name}:`, result.reason);
-				return {};
-			}
-
-			const usersResponse = getResult(results[0], 'users');
-			const accountsResponse = getResult(results[1], 'accounts');
-			const contactsResponse = getResult(results[2], 'contacts');
-			const teamsResponse = getResult(results[3], 'teams');
-			const opportunitiesResponse = getResult(results[4], 'opportunities');
-			const casesResponse = getResult(results[5], 'cases');
-			const leadsResponse = getResult(results[6], 'leads');
-			const tagsResponse = getResult(results[7], 'tags');
-
-			// Transform users list
-			const activeUsersList = usersResponse.active_users?.active_users || [];
-			users = activeUsersList.map((/** @type {any} */ user) => ({
-				id: user.id,
-				name: user.user_details?.email || user.email
-			}));
-
-			// Transform accounts list
-			let allAccounts = [];
-			if (accountsResponse.active_accounts?.open_accounts) {
-				allAccounts = accountsResponse.active_accounts.open_accounts;
-			} else if (accountsResponse.results) {
-				allAccounts = accountsResponse.results;
-			} else if (Array.isArray(accountsResponse)) {
-				allAccounts = accountsResponse;
-			}
-			accounts = allAccounts.map((/** @type {any} */ account) => ({
-				id: account.id,
-				name: account.name
-			}));
-
-			// Transform contacts list
-			let allContacts = [];
-			if (contactsResponse.contact_obj_list) {
-				allContacts = contactsResponse.contact_obj_list;
-			} else if (contactsResponse.results) {
-				allContacts = contactsResponse.results;
-			} else if (Array.isArray(contactsResponse)) {
-				allContacts = contactsResponse;
-			}
-			contacts = allContacts.map((/** @type {any} */ contact) => ({
-				id: contact.id,
-				name: contact.first_name
-					? `${contact.first_name} ${contact.last_name || ''}`.trim()
-					: contact.email || 'Unknown'
-			}));
-
-			// Transform teams list
-			let allTeamsList = [];
-			if (teamsResponse.teams) {
-				allTeamsList = teamsResponse.teams;
-			} else if (teamsResponse.results) {
-				allTeamsList = teamsResponse.results;
-			} else if (Array.isArray(teamsResponse)) {
-				allTeamsList = teamsResponse;
-			}
-			teams = allTeamsList.map((/** @type {any} */ team) => ({
-				id: team.id,
-				name: team.name
-			}));
-
-			// Transform opportunities list
-			let allOpportunitiesList = [];
-			if (opportunitiesResponse.opportunities) {
-				allOpportunitiesList = opportunitiesResponse.opportunities;
-			} else if (opportunitiesResponse.results) {
-				allOpportunitiesList = opportunitiesResponse.results;
-			} else if (Array.isArray(opportunitiesResponse)) {
-				allOpportunitiesList = opportunitiesResponse;
-			}
-			opportunities = allOpportunitiesList.map((/** @type {any} */ opp) => ({
-				id: opp.id,
-				name: opp.name
-			}));
-
-			// Transform cases list
-			let allCasesList = [];
-			if (casesResponse.cases) {
-				allCasesList = casesResponse.cases;
-			} else if (casesResponse.results) {
-				allCasesList = casesResponse.results;
-			} else if (Array.isArray(casesResponse)) {
-				allCasesList = casesResponse;
-			}
-			cases = allCasesList.map((/** @type {any} */ c) => ({
-				id: c.id,
-				name: c.name
-			}));
-
-			// Transform leads list
-			let allLeadsList = [];
-			if (leadsResponse.leads) {
-				allLeadsList = leadsResponse.leads;
-			} else if (leadsResponse.results) {
-				allLeadsList = leadsResponse.results;
-			} else if (Array.isArray(leadsResponse)) {
-				allLeadsList = leadsResponse;
-			}
-			leads = allLeadsList.map((/** @type {any} */ lead) => ({
-				id: lead.id,
-				name:
-					lead.first_name || lead.last_name
-						? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
-						: lead.title || 'Lead'
-			}));
-
-			// Transform tags list
-			let allTagsList = [];
-			if (tagsResponse.tags) {
-				allTagsList = tagsResponse.tags;
-			} else if (tagsResponse.results) {
-				allTagsList = tagsResponse.results;
-			} else if (Array.isArray(tagsResponse)) {
-				allTagsList = tagsResponse;
-			}
-			allTags = allTagsList.map((/** @type {any} */ tag) => ({
-				id: tag.id,
-				name: tag.name
-			}));
-
-			dropdownOptionsLoaded = true;
-		} catch (err) {
-			console.error('Error loading dropdown options:', err);
-			toast.error('Failed to load form options');
-		} finally {
-			loadingDropdownOptions = false;
+	function fetchAccountName(id) {
+		const account = accounts.find((a) => a.id === id);
+		if (account) {
+			accountNameFromUrl = account.name;
+		} else {
+			accountNameFromUrl = 'Unknown Account';
 		}
+	}
+
+	/**
+	 * Clear URL params for accountId and action
+	 */
+	function clearUrlParams() {
+		const url = new URL($page.url);
+		url.searchParams.delete('action');
+		url.searchParams.delete('accountId');
+		goto(url.pathname, { replaceState: true, invalidateAll: true });
+		accountFromUrl = false;
+		accountNameFromUrl = '';
+		accountIdFromUrl = '';
 	}
 
 	// URL-based filter state from server
@@ -662,6 +530,14 @@
 	}
 
 	async function addNewTask() {
+		// Check for account pre-fill from URL params
+		const accountIdParam = $page.url.searchParams.get('accountId');
+		if (accountIdParam && !accountFromUrl) {
+			accountIdFromUrl = accountIdParam;
+			accountFromUrl = true;
+			fetchAccountName(accountIdParam);
+		}
+
 		// Open the sheet for creating a new task
 		selectedTaskId = null;
 		formState = {
@@ -671,8 +547,8 @@
 			status: 'New',
 			priority: 'Medium',
 			dueDate: '',
-			accountId: '',
-			accountName: '',
+			accountId: accountIdFromUrl || '',
+			accountName: accountNameFromUrl || '',
 			opportunityId: '',
 			opportunityName: '',
 			caseId: '',
@@ -685,9 +561,16 @@
 			tags: []
 		};
 		sheetOpen = true;
-		// Lazy load dropdown options when drawer opens
-		loadDropdownOptions();
 	}
+
+	// URL sync for action param (quick action from account page)
+	$effect(() => {
+		const action = $page.url.searchParams.get('action');
+
+		if (action === 'create' && !sheetOpen) {
+			addNewTask();
+		}
+	});
 
 	// Row detail sheet functions
 	/**
@@ -719,13 +602,15 @@
 			};
 		}
 		sheetOpen = true;
-		// Lazy load dropdown options when drawer opens
-		loadDropdownOptions();
 	}
 
 	function closeTaskSheet() {
 		sheetOpen = false;
 		selectedTaskId = null;
+		// Clear account URL params if they were set
+		if (accountFromUrl) {
+			clearUrlParams();
+		}
 	}
 
 	async function deleteSelectedTask() {
@@ -941,12 +826,16 @@
 
 	// Drawer columns for NotionDrawer (derived to use dynamic options)
 	// Parent entity fields (account, opportunity, case, lead) are only shown in edit mode
+	// Exception: when creating from account quick action, show account as readonly and hide other parent fields
 	const drawerColumns = $derived([
 		{ key: 'subject', label: 'Subject', type: 'text', icon: FileText },
 		{ key: 'status', label: 'Status', type: 'select', icon: Circle, options: statusOptions },
 		{ key: 'priority', label: 'Priority', type: 'select', icon: Flag, options: priorityOptions },
 		{ key: 'dueDate', label: 'Due Date', type: 'date', icon: Calendar },
-		// Only show the parent entity field if one exists (read-only, only one can be associated)
+		// Parent entity field handling:
+		// - In edit mode: show readonly for the existing parent entity
+		// - In create mode with accountFromUrl: show account as readonly only
+		// - In create mode without accountFromUrl: show nothing (parent fields not available in create)
 		...(selectedTaskId
 			? (() => {
 					const task = localTasks.find((t) => t.id === selectedTaskId);
@@ -963,7 +852,17 @@
 						return [{ key: 'caseName', label: 'Case', type: 'readonly', icon: Briefcase }];
 					return [];
 				})()
-			: []),
+			: accountFromUrl
+				? [
+						{
+							key: 'accountDisplay',
+							label: 'Account',
+							type: 'readonly',
+							icon: Building2,
+							getValue: () => accountNameFromUrl || 'Loading...'
+						}
+					]
+				: []),
 		{
 			key: 'assignedTo',
 			label: 'Assigned To',
