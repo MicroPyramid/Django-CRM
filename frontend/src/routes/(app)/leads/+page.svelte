@@ -1,5 +1,5 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { enhance, deserialize } from '$app/forms';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { tick, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -49,6 +49,8 @@
 	import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
 	import { browser } from '$app/environment';
 	import { orgSettings } from '$lib/stores/org.js';
+	import { ViewToggle } from '$lib/components/ui/view-toggle';
+	import { LeadKanban } from '$lib/components/ui/lead-kanban';
 
 	// Column visibility configuration
 	const STORAGE_KEY = 'leads-column-config';
@@ -542,6 +544,13 @@
 	// Computed values
 	const leads = $derived(data.leads || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+	const viewMode = $derived(data.viewMode || 'table');
+	const kanbanData = $derived(data.kanbanData || null);
+
+	// Total lead count - use kanban data when in kanban mode for accurate count
+	const totalLeadCount = $derived(
+		viewMode === 'kanban' && kanbanData ? kanbanData.total_leads : pagination.total
+	);
 
 	// Lazy-loaded form options (only fetched when drawer opens)
 	let formOptions = $state(
@@ -556,48 +565,33 @@
 	let formOptionsLoading = $state(false);
 
 	/**
-	 * Load form options for drawer (lazy-loaded on first drawer open)
+	 * Load form options for drawer - uses pre-loaded server data
 	 */
-	async function loadFormOptions() {
-		if (!browser || formOptionsLoaded || formOptionsLoading) return;
+	function loadFormOptions() {
+		if (formOptionsLoaded || formOptionsLoading) return;
 
 		formOptionsLoading = true;
 		try {
-			const { apiRequest } = await import('$lib/api.js');
-			const [usersResponse, teamsResponse, contactsResponse, tagsResponse] = await Promise.all([
-				apiRequest('/users/').catch(() => ({ active_users: { active_users: [] } })),
-				apiRequest('/teams/').catch(() => ({ teams: [] })),
-				apiRequest('/contacts/').catch(() => ({ contact_obj_list: [] })),
-				apiRequest('/tags/').catch(() => [])
-			]);
+			// Use pre-loaded data from server (avoids client-side auth issues)
+			const serverFormOptions = data.formOptions || { users: [], teams: [], contacts: [] };
 
-			// Transform responses
-			const activeUsers = usersResponse?.active_users?.active_users || [];
-			const users = activeUsers.map((/** @type {any} */ u) => ({
+			const users = serverFormOptions.users.map((/** @type {any} */ u) => ({
 				value: u.id,
-				label: u.user_details?.email || u.user?.email || u.email || 'Unknown'
+				label: u.email || u.name || 'Unknown'
 			}));
 
-			const teamsList = (teamsResponse.teams || teamsResponse || []).map(
-				(/** @type {any} */ t) => ({
-					value: t.id,
-					label: t.name || 'Unknown'
-				})
-			);
+			const teamsList = serverFormOptions.teams.map((/** @type {any} */ t) => ({
+				value: t.id,
+				label: t.name || 'Unknown'
+			}));
 
-			const contactsList = (
-				contactsResponse.contact_obj_list ||
-				contactsResponse.results ||
-				contactsResponse ||
-				[]
-			).map((/** @type {any} */ c) => ({
+			const contactsList = serverFormOptions.contacts.map((/** @type {any} */ c) => ({
 				value: c.id,
-				label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || 'Unknown'
+				label: c.name || c.email || 'Unknown'
 			}));
 
-			const tagsList = (
-				Array.isArray(tagsResponse) ? tagsResponse : tagsResponse.results || []
-			).map((/** @type {any} */ t) => ({
+			// Tags are already loaded in the page data
+			const tagsList = (data.tags || []).map((/** @type {any} */ t) => ({
 				value: t.id,
 				label: t.name || 'Unknown'
 			}));
@@ -714,16 +708,124 @@
 	}
 
 	/**
+	 * Transform API lead data (snake_case) to frontend format (camelCase)
+	 * @param {any} lead - Raw lead data from API
+	 * @returns {any} Transformed lead data
+	 */
+	function transformLeadData(lead) {
+		return {
+			id: lead.id,
+			firstName: lead.first_name,
+			lastName: lead.last_name,
+			title: lead.title,
+			salutation: lead.salutation,
+			jobTitle: lead.job_title,
+			company: lead.company_name,
+			email: lead.email,
+			phone: lead.phone,
+			website: lead.website,
+			linkedinUrl: lead.linkedin_url,
+			status: lead.status ? lead.status.toUpperCase().replace(/ /g, '_') : 'ASSIGNED',
+			leadSource: lead.source,
+			industry: lead.industry,
+			rating: lead.rating,
+			opportunityAmount: lead.opportunity_amount,
+			currency: lead.currency || null,
+			probability: lead.probability,
+			closeDate: lead.close_date,
+			addressLine: lead.address_line,
+			city: lead.city,
+			state: lead.state,
+			postcode: lead.postcode,
+			country: lead.country,
+			lastContacted: lead.last_contacted,
+			nextFollowUp: lead.next_follow_up,
+			description: lead.description,
+			isConverted: lead.status === 'converted',
+			isActive: lead.is_active,
+			createdAt: lead.created_at,
+			updatedAt: lead.updated_at || lead.created_at,
+			owner: lead.assigned_to?.[0]
+				? {
+						id: lead.assigned_to[0].id,
+						name: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email || 'Unknown',
+						email: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email
+					}
+				: lead.created_by
+					? { id: lead.created_by.id, name: lead.created_by.email, email: lead.created_by.email }
+					: null,
+			assignedTo: (lead.assigned_to || []).map((/** @type {any} */ u) => u.id),
+			teams: (lead.teams || []).map((/** @type {any} */ t) => t.id),
+			contacts: (lead.contacts || []).map((/** @type {any} */ c) => c.id),
+			tags: (lead.tags || []).map((/** @type {any} */ t) => t.id),
+			comments: lead.lead_comments || [],
+			attachments: lead.lead_attachment || []
+		};
+	}
+
+	/**
 	 * Open drawer for viewing/editing a lead
 	 * @param {any} lead
+	 * @param {boolean} [fromKanban=false] - Whether the lead data is from kanban (needs full fetch)
 	 */
-	function openLead(lead) {
-		drawerData = lead;
+	async function openLead(lead, fromKanban = false) {
 		drawerMode = 'view';
 		drawerOpen = true;
 		updateUrl(lead.id, null);
-		// Lazy load form options when drawer opens
+		// Load form options (uses pre-loaded server data)
 		loadFormOptions();
+
+		// If from kanban, we need to fetch full lead data since kanban cards have minimal data
+		if (fromKanban) {
+			drawerLoading = true;
+			try {
+				// Use server action to fetch lead (avoids client-side auth issues)
+				const formData = new FormData();
+				formData.append('leadId', lead.id);
+
+				const response = await fetch('?/getLead', {
+					method: 'POST',
+					body: formData
+				});
+
+				const responseText = await response.text();
+				const result = deserialize(responseText);
+
+				// SvelteKit form actions return { type: 'success'|'failure'|'error', data: {...} }
+				if (result.type === 'success' && result.data?.lead) {
+					drawerData = result.data.lead;
+				} else if (result.type === 'failure') {
+					console.error('Server action failed:', result.data);
+					throw new Error(result.data?.error || 'Failed to fetch lead');
+				} else if (result.type === 'error') {
+					console.error('Server action error:', result.error);
+					throw new Error(result.error?.message || 'Failed to fetch lead');
+				} else {
+					// Handle unexpected response format
+					console.warn('Unexpected response format:', result);
+					throw new Error('Failed to fetch lead');
+				}
+			} catch (err) {
+				console.error('Failed to fetch lead details:', err);
+				toast.error('Failed to load lead details');
+				// Fall back to what we have (minimal kanban data transformed)
+				drawerData = {
+					id: lead.id,
+					title: lead.title || lead.full_name,
+					company: lead.company_name,
+					email: lead.email,
+					rating: lead.rating,
+					opportunityAmount: lead.opportunity_amount,
+					currency: lead.currency,
+					status: lead.status ? lead.status.toUpperCase().replace(/ /g, '_') : 'ASSIGNED'
+				};
+			} finally {
+				drawerLoading = false;
+			}
+		} else {
+			// Lead data is already in the correct format (from table view)
+			drawerData = lead;
+		}
 	}
 
 	/**
@@ -778,6 +880,37 @@
 		drawerOpen = false;
 		drawerData = null;
 		await updateUrl(null, null);
+	}
+
+	/**
+	 * Change view mode (table/kanban)
+	 * @param {'table' | 'kanban'} mode
+	 */
+	async function setViewMode(mode) {
+		const url = new URL($page.url);
+		url.searchParams.set('viewMode', mode);
+		// Reset to first page when switching views
+		url.searchParams.set('page', '1');
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle kanban status change (drag-drop)
+	 * @param {string} leadId
+	 * @param {string} newStatus
+	 * @param {string} _columnId
+	 */
+	async function handleKanbanStatusChange(leadId, newStatus, _columnId) {
+		// Convert column ID (status) to proper format
+		// Column IDs are: "assigned", "in process", "recycled", "closed"
+		const status = newStatus;
+
+		// Populate form and submit
+		kanbanFormState.leadId = leadId;
+		kanbanFormState.status = status;
+
+		await tick();
+		updateStatusForm.requestSubmit();
 	}
 
 	/**
@@ -997,12 +1130,26 @@
 	// Status counts for filter chips
 	const openStatuses = ['ASSIGNED', 'IN_PROCESS'];
 	const lostStatuses = ['CLOSED', 'RECYCLED'];
-	const openCount = $derived(
-		leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length
-	);
-	const lostCount = $derived(
-		leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length
-	);
+	const openStatusIds = ['assigned', 'in process'];
+	const lostStatusIds = ['closed', 'recycled'];
+
+	// Calculate counts from kanban data or table data depending on view mode
+	const openCount = $derived.by(() => {
+		if (viewMode === 'kanban' && kanbanData?.columns) {
+			return kanbanData.columns
+				.filter((/** @type {any} */ c) => openStatusIds.includes(c.id))
+				.reduce((/** @type {number} */ sum, /** @type {any} */ c) => sum + c.lead_count, 0);
+		}
+		return leads.filter((/** @type {any} */ l) => openStatuses.includes(l.status)).length;
+	});
+	const lostCount = $derived.by(() => {
+		if (viewMode === 'kanban' && kanbanData?.columns) {
+			return kanbanData.columns
+				.filter((/** @type {any} */ c) => lostStatusIds.includes(c.id))
+				.reduce((/** @type {number} */ sum, /** @type {any} */ c) => sum + c.lead_count, 0);
+		}
+		return leads.filter((/** @type {any} */ l) => lostStatuses.includes(l.status)).length;
+	});
 
 	// Status chip filter state (quick filter from UI)
 	let statusChipFilter = $state('ALL');
@@ -1030,6 +1177,14 @@
 	let deleteForm;
 	/** @type {HTMLFormElement} */
 	let convertForm;
+	/** @type {HTMLFormElement} */
+	let updateStatusForm;
+
+	// Kanban form state (for drag-drop status updates)
+	let kanbanFormState = $state({
+		leadId: '',
+		status: ''
+	});
 	// Form data state
 	let formState = $state({
 		leadId: '',
@@ -1263,9 +1418,14 @@
 	<title>Leads - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Leads" subtitle="{filteredLeads.length} of {leads.length} leads">
+<PageHeader title="Leads" subtitle="{viewMode === 'kanban' ? totalLeadCount : filteredLeads.length} of {totalLeadCount} leads">
 	{#snippet actions()}
 		<div class="flex items-center gap-2">
+			<!-- View Toggle -->
+			<ViewToggle view={viewMode} onchange={setViewMode} />
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
 			<!-- Status Filter Chips -->
 			<div class="flex gap-1">
 				<button
@@ -1282,7 +1442,7 @@
 							? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
 							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 					>
-						{leads.length}
+						{totalLeadCount}
 					</span>
 				</button>
 				<button
@@ -1341,38 +1501,40 @@
 				{/if}
 			</Button>
 
-			<!-- Column Visibility -->
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger asChild>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="gap-2">
-							<Eye class="h-4 w-4" />
-							Columns
-							{#if visibleColumns.length < columns.length}
-								<span
-									class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-								>
-									{visibleColumns.length}/{columns.length}
-								</span>
-							{/if}
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-48">
-					<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-					<DropdownMenu.Separator />
-					{#each columns as column (column.key)}
-						<DropdownMenu.CheckboxItem
-							class=""
-							checked={visibleColumns.includes(column.key)}
-							disabled={column.canHide === false}
-							onCheckedChange={() => toggleColumn(column.key)}
-						>
-							{column.label}
-						</DropdownMenu.CheckboxItem>
-					{/each}
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+			<!-- Column Visibility (only for table view) -->
+			{#if viewMode === 'table'}
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger asChild>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Eye class="h-4 w-4" />
+								Columns
+								{#if visibleColumns.length < columns.length}
+									<span
+										class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+									>
+										{visibleColumns.length}/{columns.length}
+									</span>
+								{/if}
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each columns as column (column.key)}
+							<DropdownMenu.CheckboxItem
+								class=""
+								checked={visibleColumns.includes(column.key)}
+								disabled={column.canHide === false}
+								onCheckedChange={() => toggleColumn(column.key)}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			{/if}
 
 			<Button onclick={openCreate}>
 				<Plus class="mr-2 h-4 w-4" />
@@ -1426,96 +1588,106 @@
 		/>
 	</FilterBar>
 
-	<!-- Table -->
-	{#if filteredLeads.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
-			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-		</div>
+	<!-- Content: Table or Kanban -->
+	{#if viewMode === 'kanban'}
+		<!-- Kanban View -->
+		<LeadKanban
+			data={kanbanData}
+			onStatusChange={handleKanbanStatusChange}
+			onCardClick={(lead) => openLead(lead, true)}
+		/>
 	{:else}
-		<!-- Desktop Table using CrmTable -->
-		<div class="hidden md:block">
-			<CrmTable
-				data={filteredLeads}
-				{columns}
-				bind:visibleColumns
-				onRowChange={handleRowChange}
-				onRowClick={(row) => openLead(row)}
-			>
-				{#snippet emptyState()}
-					<div class="flex flex-col items-center justify-center py-16 text-center">
-						<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
-						<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
-					</div>
-				{/snippet}
-			</CrmTable>
-		</div>
+		<!-- Table View -->
+		{#if filteredLeads.length === 0}
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
+				<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+			</div>
+		{:else}
+			<!-- Desktop Table using CrmTable -->
+			<div class="hidden md:block">
+				<CrmTable
+					data={filteredLeads}
+					{columns}
+					bind:visibleColumns
+					onRowChange={handleRowChange}
+					onRowClick={(row) => openLead(row)}
+				>
+					{#snippet emptyState()}
+						<div class="flex flex-col items-center justify-center py-16 text-center">
+							<User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
+							<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+						</div>
+					{/snippet}
+				</CrmTable>
+			</div>
 
-		<!-- Mobile Card View -->
-		<div class="divide-y md:hidden dark:divide-gray-800">
-			{#each filteredLeads as lead (lead.id)}
+			<!-- Mobile Card View -->
+			<div class="divide-y md:hidden dark:divide-gray-800">
+				{#each filteredLeads as lead (lead.id)}
+					<button
+						type="button"
+						class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30 dark:hover:bg-gray-800/30"
+						onclick={() => openLead(lead)}
+					>
+						<div class="min-w-0 flex-1">
+							<div class="flex items-start justify-between gap-2">
+								<div>
+									<p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+										{getFullName(lead)}
+									</p>
+									{#if lead.company}
+										<p class="text-sm text-gray-500 dark:text-gray-400">
+											{typeof lead.company === 'object' ? lead.company.name : lead.company}
+										</p>
+									{/if}
+								</div>
+								<span
+									class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {getOptionStyle(
+										lead.status,
+										leadStatusOptions
+									)}"
+								>
+									{getOptionLabel(lead.status, leadStatusOptions)}
+								</span>
+							</div>
+							<div
+								class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+							>
+								{#if lead.rating}
+									<span
+										class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}"
+									>
+										{getOptionLabel(lead.rating, leadRatingOptions)}
+									</span>
+								{/if}
+								<span>{formatRelativeDate(lead.createdAt)}</span>
+							</div>
+						</div>
+					</button>
+				{/each}
+
+				<!-- Mobile new row button -->
 				<button
 					type="button"
-					class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30 dark:hover:bg-gray-800/30"
-					onclick={() => openLead(lead)}
+					onclick={openCreate}
+					class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
 				>
-					<div class="min-w-0 flex-1">
-						<div class="flex items-start justify-between gap-2">
-							<div>
-								<p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-									{getFullName(lead)}
-								</p>
-								{#if lead.company}
-									<p class="text-sm text-gray-500 dark:text-gray-400">
-										{typeof lead.company === 'object' ? lead.company.name : lead.company}
-									</p>
-								{/if}
-							</div>
-							<span
-								class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium {getOptionStyle(
-									lead.status,
-									leadStatusOptions
-								)}"
-							>
-								{getOptionLabel(lead.status, leadStatusOptions)}
-							</span>
-						</div>
-						<div
-							class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
-						>
-							{#if lead.rating}
-								<span
-									class="rounded-full px-2 py-0.5 {getOptionStyle(lead.rating, leadRatingOptions)}"
-								>
-									{getOptionLabel(lead.rating, leadRatingOptions)}
-								</span>
-							{/if}
-							<span>{formatRelativeDate(lead.createdAt)}</span>
-						</div>
-					</div>
+					<Plus class="h-4 w-4" />
+					New
 				</button>
-			{/each}
+			</div>
+		{/if}
 
-			<!-- Mobile new row button -->
-			<button
-				type="button"
-				onclick={openCreate}
-				class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-			>
-				<Plus class="h-4 w-4" />
-				New
-			</button>
-		</div>
+		<!-- Pagination (only for table view) -->
+		<Pagination
+			page={pagination.page}
+			limit={pagination.limit}
+			total={pagination.total}
+			onPageChange={handlePageChange}
+			onLimitChange={handleLimitChange}
+		/>
 	{/if}
-
-	<!-- Pagination -->
-	<Pagination
-		page={pagination.page}
-		limit={pagination.limit}
-		total={pagination.total}
-		onPageChange={handlePageChange}
-		onLimitChange={handleLimitChange}
-	/>
 </div>
 
 <!-- Lead Drawer -->
@@ -1706,4 +1878,15 @@
 	class="hidden"
 >
 	<input type="hidden" name="leadId" value={formState.leadId} />
+</form>
+
+<form
+	method="POST"
+	action="?/updateStatus"
+	bind:this={updateStatusForm}
+	use:enhance={createEnhanceHandler('Lead status updated successfully', false)}
+	class="hidden"
+>
+	<input type="hidden" name="leadId" bind:value={kanbanFormState.leadId} />
+	<input type="hidden" name="status" bind:value={kanbanFormState.status} />
 </form>

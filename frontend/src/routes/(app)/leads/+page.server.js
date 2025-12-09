@@ -23,6 +23,9 @@ export async function load({ url, cookies, locals }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse view mode from URL
+	const viewMode = url.searchParams.get('viewMode') || 'table';
+
 	// Parse pagination params from URL
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -53,11 +56,30 @@ export async function load({ url, cookies, locals }) {
 	if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
 	try {
+		// Build kanban query params (without pagination for kanban view)
+		const kanbanQueryParams = new URLSearchParams();
+		if (filters.search) kanbanQueryParams.append('search', filters.search);
+		if (filters.source) kanbanQueryParams.append('source', filters.source.toLowerCase());
+		if (filters.rating) kanbanQueryParams.append('rating', filters.rating);
+		filters.assigned_to.forEach((id) => kanbanQueryParams.append('assigned_to', id));
+		if (filters.created_at_gte) kanbanQueryParams.append('created_at__gte', filters.created_at_gte);
+		if (filters.created_at_lte) kanbanQueryParams.append('created_at__lte', filters.created_at_lte);
+
 		// Django leads endpoint with filter params
 		const queryString = queryParams.toString();
-		const [response, tagsResponse] = await Promise.all([
+		const kanbanQueryString = kanbanQueryParams.toString();
+
+		// Fetch data based on view mode + form options for drawer
+		const [response, tagsResponse, kanbanResponse, usersResponse, teamsResponse, contactsResponse] = await Promise.all([
 			apiRequest(`/leads/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
-			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] })),
+			viewMode === 'kanban'
+				? apiRequest(`/leads/kanban/${kanbanQueryString ? `?${kanbanQueryString}` : ''}`, {}, { cookies, org }).catch(() => null)
+				: Promise.resolve(null),
+			// Form options for drawer (preload server-side to avoid client-side auth issues)
+			apiRequest('/users/', {}, { cookies, org }).catch(() => ({ active_users: { active_users: [] } })),
+			apiRequest('/teams/', {}, { cookies, org }).catch(() => ({ teams: [] })),
+			apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({ contact_obj_list: [] }))
 		]);
 
 		// Handle Django response format
@@ -158,6 +180,11 @@ export async function load({ url, cookies, locals }) {
 			color: t.color || 'blue'
 		}));
 
+		// Extract form options from responses
+		const users = usersResponse?.active_users?.active_users || usersResponse?.users || [];
+		const teams = teamsResponse?.teams || [];
+		const contacts = contactsResponse?.contact_obj_list || contactsResponse?.results || [];
+
 		return {
 			leads: transformedLeads,
 			tags,
@@ -168,6 +195,8 @@ export async function load({ url, cookies, locals }) {
 				totalPages: Math.ceil(total / limit) || 1
 			},
 			filters,
+			viewMode,
+			kanbanData: kanbanResponse,
 			filterOptions: {
 				statuses: [
 					{ value: 'ASSIGNED', label: 'Assigned' },
@@ -190,6 +219,23 @@ export async function load({ url, cookies, locals }) {
 					{ value: 'WARM', label: 'Warm' },
 					{ value: 'COLD', label: 'Cold' }
 				]
+			},
+			// Pre-loaded form options for drawer (avoids client-side auth issues)
+			formOptions: {
+				users: users.map((/** @type {any} */ u) => ({
+					id: u.id,
+					email: u.user?.email || u.email,
+					name: u.user?.email || u.email
+				})),
+				teams: teams.map((/** @type {any} */ t) => ({
+					id: t.id,
+					name: t.name
+				})),
+				contacts: contacts.map((/** @type {any} */ c) => ({
+					id: c.id,
+					name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email,
+					email: c.email
+				}))
 			}
 		};
 	} catch (err) {
@@ -569,6 +615,132 @@ export const actions = {
 		} catch (err) {
 			console.error('Error duplicating lead:', err);
 			return fail(500, { error: 'Failed to duplicate lead' });
+		}
+	},
+
+	/**
+	 * Update lead status (used for kanban drag-drop)
+	 */
+	updateStatus: async ({ request, locals, cookies }) => {
+		// Valid Django status choices
+		const validStatuses = ['assigned', 'in process', 'converted', 'recycled', 'closed'];
+
+		try {
+			const form = await request.formData();
+			const leadId = form.get('leadId')?.toString();
+			const statusRaw = form.get('status')?.toString().trim().toLowerCase().replace(/_/g, ' ') || '';
+			const status = validStatuses.includes(statusRaw) ? statusRaw : null;
+
+			if (!leadId) {
+				return fail(400, { error: 'Lead ID is required.' });
+			}
+
+			if (!status) {
+				return fail(400, { error: 'Valid status is required.' });
+			}
+
+			await apiRequest(
+				`/leads/${leadId}/move/`,
+				{
+					method: 'PATCH',
+					body: { status }
+				},
+				{ cookies, org: locals.org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating lead status:', err);
+			return fail(500, { error: 'Failed to update lead status' });
+		}
+	},
+
+	/**
+	 * Get single lead details (for kanban card click)
+	 */
+	getLead: async ({ request, locals, cookies }) => {
+		try {
+			const form = await request.formData();
+			const leadId = form.get('leadId')?.toString();
+
+			if (!leadId) {
+				return fail(400, { error: 'Lead ID is required.' });
+			}
+
+			const response = await apiRequest(
+				`/leads/${leadId}/`,
+				{ method: 'GET' },
+				{ cookies, org: locals.org }
+			);
+
+			// Django API returns { lead_obj: {...}, attachments: [...], comments: [...], ... }
+			const lead = response.lead_obj;
+
+			// Handle status - could be string, object, or null
+			let statusValue = 'ASSIGNED';
+			if (lead.status) {
+				if (typeof lead.status === 'string') {
+					statusValue = lead.status.toUpperCase().replace(/ /g, '_');
+				} else if (typeof lead.status === 'object' && lead.status.value) {
+					// Handle case where status is an object like { value: 'assigned', label: 'Assigned' }
+					statusValue = String(lead.status.value).toUpperCase().replace(/ /g, '_');
+				} else if (typeof lead.status === 'object' && lead.status.name) {
+					statusValue = String(lead.status.name).toUpperCase().replace(/ /g, '_');
+				}
+			}
+
+			// Transform to frontend format
+			const transformedLead = {
+				id: lead.id,
+				firstName: lead.first_name,
+				lastName: lead.last_name,
+				title: lead.title,
+				salutation: lead.salutation,
+				jobTitle: lead.job_title,
+				company: lead.company_name,
+				email: lead.email,
+				phone: lead.phone,
+				website: lead.website,
+				linkedinUrl: lead.linkedin_url,
+				status: statusValue,
+				leadSource: lead.source,
+				industry: lead.industry,
+				rating: lead.rating,
+				opportunityAmount: lead.opportunity_amount,
+				currency: lead.currency || null,
+				probability: lead.probability,
+				closeDate: lead.close_date,
+				addressLine: lead.address_line,
+				city: lead.city,
+				state: lead.state,
+				postcode: lead.postcode,
+				country: lead.country,
+				lastContacted: lead.last_contacted,
+				nextFollowUp: lead.next_follow_up,
+				description: lead.description,
+				isConverted: statusValue === 'CONVERTED',
+				isActive: lead.is_active,
+				createdAt: lead.created_at,
+				updatedAt: lead.updated_at || lead.created_at,
+				owner: lead.assigned_to && lead.assigned_to.length > 0
+					? {
+							id: lead.assigned_to[0].id,
+							name: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email || 'Unknown',
+							email: lead.assigned_to[0].user?.email || lead.assigned_to[0].user_details?.email
+						}
+					: null,
+				assignedTo: (lead.assigned_to || []).map((/** @type {any} */ u) => u.id),
+				teams: (lead.teams || []).map((/** @type {any} */ t) => t.id),
+				contacts: (lead.contacts || []).map((/** @type {any} */ c) => c.id),
+				tags: (lead.tags || []).map((/** @type {any} */ t) => t.id),
+				comments: lead.lead_comments || [],
+				attachments: lead.lead_attachment || []
+			};
+
+			return { success: true, lead: transformedLead };
+		} catch (err) {
+			console.error('Error fetching lead:', err);
+			return fail(500, { error: 'Failed to fetch lead' });
 		}
 	}
 };
