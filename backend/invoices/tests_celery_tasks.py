@@ -13,7 +13,9 @@ class TestSendMailOnInvoiceCreationTask(InvoiceCreateTest, TestCase):
     )
     def test_send_mail_on_invoice_creation_task(self):
         org_id = str(self.invoice.org.id)
-        task = send_email.apply((self.invoice.id, [self.user.id, self.user1.id], org_id))
+        task = send_email.apply(
+            (self.invoice.id, [self.user.id, self.user1.id], org_id)
+        )
         self.assertEqual("SUCCESS", task.state)
 
         task = send_invoice_email.apply((self.invoice.id, org_id))

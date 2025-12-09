@@ -13,25 +13,23 @@ def cleanup_duplicate_account_names(apps, schema_editor):
     Find duplicate account names (case-insensitive) within each org
     and append a numeric suffix to make them unique.
     """
-    Account = apps.get_model('accounts', 'Account')
+    Account = apps.get_model("accounts", "Account")
 
     # Find duplicates: group by lower(name) + org, having count > 1
     duplicates = (
-        Account.objects
-        .annotate(name_lower=Lower('name'))
-        .values('name_lower', 'org_id')
-        .annotate(count=Count('id'))
+        Account.objects.annotate(name_lower=Lower("name"))
+        .values("name_lower", "org_id")
+        .annotate(count=Count("id"))
         .filter(count__gt=1)
     )
 
     for dup in duplicates:
         # Get all accounts with this name in this org, ordered by created_at
         accounts = list(
-            Account.objects
-            .filter(org_id=dup['org_id'])
-            .annotate(name_lower=Lower('name'))
-            .filter(name_lower=dup['name_lower'])
-            .order_by('created_at')
+            Account.objects.filter(org_id=dup["org_id"])
+            .annotate(name_lower=Lower("name"))
+            .filter(name_lower=dup["name_lower"])
+            .order_by("created_at")
         )
 
         # Keep the first one (oldest), rename the rest
@@ -40,17 +38,19 @@ def cleanup_duplicate_account_names(apps, schema_editor):
             new_name = f"{account.name} ({i})"
             # Ensure the new name is also unique
             counter = i
-            while Account.objects.filter(org_id=account.org_id, name__iexact=new_name).exists():
+            while Account.objects.filter(
+                org_id=account.org_id, name__iexact=new_name
+            ).exists():
                 counter += 1
                 new_name = f"{original_name} ({counter})"
             account.name = new_name
-            account.save(update_fields=['name'])
+            account.save(update_fields=["name"])
             print(f"  Renamed duplicate account: '{original_name}' -> '{new_name}'")
 
 
 def cleanup_negative_revenue(apps, schema_editor):
     """Set negative annual_revenue values to NULL."""
-    Account = apps.get_model('accounts', 'Account')
+    Account = apps.get_model("accounts", "Account")
     updated = Account.objects.filter(annual_revenue__lt=0).update(annual_revenue=None)
     if updated:
         print(f"  Set {updated} negative annual_revenue values to NULL")
@@ -62,7 +62,6 @@ def reverse_noop(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0005_add_currency_fields"),
         ("common", "0008_enable_rls_product_invoice_line_item"),

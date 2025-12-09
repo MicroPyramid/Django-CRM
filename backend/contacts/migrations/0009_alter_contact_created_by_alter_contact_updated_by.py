@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contacts", "0008_change_phone_to_charfield"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

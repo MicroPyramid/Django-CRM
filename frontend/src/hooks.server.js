@@ -29,18 +29,18 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
  * @returns {JWTPayload|null} Decoded payload or null if invalid
  */
 function decodeJwtPayload(token) {
-	try {
-		const parts = token.split('.');
-		if (parts.length !== 3) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
 
-		const payload = parts[1];
-		// Handle base64url encoding
-		const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-		const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-		return /** @type {JWTPayload} */ (JSON.parse(jsonPayload));
-	} catch (error) {
-		return null;
-	}
+    const payload = parts[1];
+    // Handle base64url encoding
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
+    return /** @type {JWTPayload} */ (JSON.parse(jsonPayload));
+  } catch (error) {
+    return null;
+  }
 }
 
 /**
@@ -50,8 +50,8 @@ function decodeJwtPayload(token) {
  * @returns {boolean} True if token has the org context
  */
 function tokenHasOrgContext(token, orgId) {
-	const payload = decodeJwtPayload(token);
-	return Boolean(payload && payload.org_id === orgId);
+  const payload = decodeJwtPayload(token);
+  return Boolean(payload && payload.org_id === orgId);
 }
 
 /**
@@ -60,15 +60,15 @@ function tokenHasOrgContext(token, orgId) {
  * @returns {JWTPayload|null} JWT payload or null if expired/invalid
  */
 function verifyTokenLocally(accessToken) {
-	const payload = decodeJwtPayload(accessToken);
-	if (!payload) return null;
+  const payload = decodeJwtPayload(accessToken);
+  if (!payload) return null;
 
-	// Check if token is expired
-	if (payload.exp && payload.exp * 1000 < Date.now()) {
-		return null;
-	}
+  // Check if token is expired
+  if (payload.exp && payload.exp * 1000 < Date.now()) {
+    return null;
+  }
 
-	return payload;
+  return payload;
 }
 
 /**
@@ -77,16 +77,16 @@ function verifyTokenLocally(accessToken) {
  * @returns {Promise<string|null>} New access token or null if refresh failed
  */
 async function refreshAccessToken(refreshToken) {
-	try {
-		const response = await axios.post(`${API_BASE_URL}/auth/refresh-token/`, {
-			refresh: refreshToken
-		});
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh-token/`, {
+      refresh: refreshToken
+    });
 
-		return response.data.access;
-	} catch (error) {
-		console.error('Token refresh failed:', error);
-		return null;
-	}
+    return response.data.access;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    return null;
+  }
 }
 
 // Profile info is now embedded in JWT - no API call needed
@@ -98,166 +98,166 @@ async function refreshAccessToken(refreshToken) {
  * @returns {Promise<SwitchOrgResult|null>} New tokens and org data or null if failed
  */
 async function switchOrg(accessToken, orgId) {
-	try {
-		const response = await axios.post(
-			`${API_BASE_URL}/auth/switch-org/`,
-			{ org_id: orgId },
-			{
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					'Content-Type': 'application/json'
-				}
-			}
-		);
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/auth/switch-org/`,
+      { org_id: orgId },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-		return response.data;
-	} catch (error) {
-		console.error('Org switch failed:', error);
-		return null;
-	}
+    return response.data;
+  } catch (error) {
+    console.error('Org switch failed:', error);
+    return null;
+  }
 }
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	// Get tokens from cookies
-	/** @type {string | undefined} */
-	let accessToken = event.cookies.get('jwt_access');
-	const refreshToken = event.cookies.get('jwt_refresh');
-	const orgId = event.cookies.get('org');
+  // Get tokens from cookies
+  /** @type {string | undefined} */
+  let accessToken = event.cookies.get('jwt_access');
+  const refreshToken = event.cookies.get('jwt_refresh');
+  const orgId = event.cookies.get('org');
 
-	/** @type {JWTPayload | null} */
-	let jwtPayload = null;
+  /** @type {JWTPayload | null} */
+  let jwtPayload = null;
 
-	// Try to authenticate user (LOCAL JWT DECODE - no API call!)
-	if (accessToken) {
-		jwtPayload = verifyTokenLocally(accessToken);
+  // Try to authenticate user (LOCAL JWT DECODE - no API call!)
+  if (accessToken) {
+    jwtPayload = verifyTokenLocally(accessToken);
 
-		// If access token expired, try to refresh
-		if (!jwtPayload && refreshToken) {
-			const newAccessToken = await refreshAccessToken(refreshToken);
-			if (newAccessToken) {
-				// Update cookie with new access token
-				event.cookies.set('jwt_access', newAccessToken, {
-					path: '/',
-					httpOnly: true,
-					sameSite: 'lax',
-					secure: process.env.NODE_ENV === 'production',
-					maxAge: 60 * 60 * 24 // 1 day
-				});
-				accessToken = newAccessToken;
-				jwtPayload = verifyTokenLocally(newAccessToken);
-			} else {
-				// Refresh failed, clear cookies
-				event.cookies.delete('jwt_access', { path: '/' });
-				event.cookies.delete('jwt_refresh', { path: '/' });
-				event.cookies.delete('org', { path: '/' });
-			}
-		}
-	}
+    // If access token expired, try to refresh
+    if (!jwtPayload && refreshToken) {
+      const newAccessToken = await refreshAccessToken(refreshToken);
+      if (newAccessToken) {
+        // Update cookie with new access token
+        event.cookies.set('jwt_access', newAccessToken, {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 60 * 60 * 24 // 1 day
+        });
+        accessToken = newAccessToken;
+        jwtPayload = verifyTokenLocally(newAccessToken);
+      } else {
+        // Refresh failed, clear cookies
+        event.cookies.delete('jwt_access', { path: '/' });
+        event.cookies.delete('jwt_refresh', { path: '/' });
+        event.cookies.delete('org', { path: '/' });
+      }
+    }
+  }
 
-	// Set user in locals from JWT payload (no API call needed!)
-	if (jwtPayload) {
-		// Build user object from JWT claims
-		event.locals.user = { id: jwtPayload.user_id };
+  // Set user in locals from JWT payload (no API call needed!)
+  if (jwtPayload) {
+    // Build user object from JWT claims
+    event.locals.user = { id: jwtPayload.user_id };
 
-		// Check if org cookie is set and token has org context
-		if (orgId) {
-			const token = /** @type {string} */ (accessToken);
+    // Check if org cookie is set and token has org context
+    if (orgId) {
+      const token = /** @type {string} */ (accessToken);
 
-			if (tokenHasOrgContext(token, orgId)) {
-				// Token has org context - extract org info from JWT (no API call!)
-				event.locals.org = {
-					id: jwtPayload.org_id || orgId,
-					name: jwtPayload.org_name || 'Organization'
-				};
-				/** @type {any} */ (event.locals).profile = {
-					org: event.locals.org,
-					role: jwtPayload.role || 'USER'
-				};
-				event.locals.org_name = jwtPayload.org_name || 'Organization';
-				// Extract org settings for currency/locale
-				event.locals.org_settings = jwtPayload.org_settings || {
-					default_currency: 'USD',
-					currency_symbol: '$',
-					default_country: null
-				};
-			} else {
-				// Token doesn't have org context, need to switch (1 API call)
-				const switchResult = await switchOrg(token, orgId);
+      if (tokenHasOrgContext(token, orgId)) {
+        // Token has org context - extract org info from JWT (no API call!)
+        event.locals.org = {
+          id: jwtPayload.org_id || orgId,
+          name: jwtPayload.org_name || 'Organization'
+        };
+        /** @type {any} */ (event.locals).profile = {
+          org: event.locals.org,
+          role: jwtPayload.role || 'USER'
+        };
+        event.locals.org_name = jwtPayload.org_name || 'Organization';
+        // Extract org settings for currency/locale
+        event.locals.org_settings = jwtPayload.org_settings || {
+          default_currency: 'USD',
+          currency_symbol: '$',
+          default_country: null
+        };
+      } else {
+        // Token doesn't have org context, need to switch (1 API call)
+        const switchResult = await switchOrg(token, orgId);
 
-				if (switchResult) {
-					// Update cookies with new tokens that have org context
-					event.cookies.set('jwt_access', switchResult.access_token, {
-						path: '/',
-						httpOnly: true,
-						sameSite: 'lax',
-						secure: process.env.NODE_ENV === 'production',
-						maxAge: 60 * 60 * 24 // 1 day
-					});
-					event.cookies.set('jwt_refresh', switchResult.refresh_token, {
-						path: '/',
-						httpOnly: true,
-						sameSite: 'lax',
-						secure: process.env.NODE_ENV === 'production',
-						maxAge: 60 * 60 * 24 * 365 // 1 year
-					});
+        if (switchResult) {
+          // Update cookies with new tokens that have org context
+          event.cookies.set('jwt_access', switchResult.access_token, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 // 1 day
+          });
+          event.cookies.set('jwt_refresh', switchResult.refresh_token, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 365 // 1 year
+          });
 
-					// Extract org info from switch result (no additional API call!)
-					event.locals.org = switchResult.current_org;
-					/** @type {any} */ (event.locals).profile = {
-						org: switchResult.current_org,
-						role: 'USER' // Will be in new JWT
-					};
-					event.locals.org_name = switchResult.current_org?.name || 'Organization';
-					// Decode new token to get org_settings
-					const newPayload = decodeJwtPayload(switchResult.access_token);
-					event.locals.org_settings = newPayload?.org_settings || {
-						default_currency: 'USD',
-						currency_symbol: '$',
-						default_country: null
-					};
-				} else {
-					// Org switch failed, clear org cookie and redirect
-					event.cookies.delete('org', { path: '/' });
-					throw redirect(307, '/org');
-				}
-			}
-		}
-	}
+          // Extract org info from switch result (no additional API call!)
+          event.locals.org = switchResult.current_org;
+          /** @type {any} */ (event.locals).profile = {
+            org: switchResult.current_org,
+            role: 'USER' // Will be in new JWT
+          };
+          event.locals.org_name = switchResult.current_org?.name || 'Organization';
+          // Decode new token to get org_settings
+          const newPayload = decodeJwtPayload(switchResult.access_token);
+          event.locals.org_settings = newPayload?.org_settings || {
+            default_currency: 'USD',
+            currency_symbol: '$',
+            default_country: null
+          };
+        } else {
+          // Org switch failed, clear org cookie and redirect
+          event.cookies.delete('org', { path: '/' });
+          throw redirect(307, '/org');
+        }
+      }
+    }
+  }
 
-	// Route protection
-	const pathname = event.url.pathname;
+  // Route protection
+  const pathname = event.url.pathname;
 
-	// Define public routes (no auth required)
-	const PUBLIC_ROUTES = ['/login', '/logout', '/bounce'];
+  // Define public routes (no auth required)
+  const PUBLIC_ROUTES = ['/login', '/logout', '/bounce'];
 
-	// Define semi-protected routes (auth required, but no org)
-	const AUTH_ONLY_ROUTES = ['/org'];
+  // Define semi-protected routes (auth required, but no org)
+  const AUTH_ONLY_ROUTES = ['/org'];
 
-	// Check if public route
-	const isPublicRoute = PUBLIC_ROUTES.some(
-		(route) => pathname === route || pathname.startsWith(route + '/')
-	);
+  // Check if public route
+  const isPublicRoute = PUBLIC_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
 
-	// Check if auth-only route
-	const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(
-		(route) => pathname === route || pathname.startsWith(route + '/')
-	);
+  // Check if auth-only route
+  const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
 
-	if (isAuthOnlyRoute) {
-		// Auth-only route - require user
-		if (!jwtPayload) {
-			throw redirect(307, '/login');
-		}
-	} else if (!isPublicRoute) {
-		// Protected route - require user + org
-		if (!jwtPayload) {
-			throw redirect(307, '/login');
-		}
-		if (!event.locals.org) {
-			throw redirect(307, '/org');
-		}
-	}
+  if (isAuthOnlyRoute) {
+    // Auth-only route - require user
+    if (!jwtPayload) {
+      throw redirect(307, '/login');
+    }
+  } else if (!isPublicRoute) {
+    // Protected route - require user + org
+    if (!jwtPayload) {
+      throw redirect(307, '/login');
+    }
+    if (!event.locals.org) {
+      throw redirect(307, '/org');
+    }
+  }
 
-	return resolve(event);
+  return resolve(event);
 }

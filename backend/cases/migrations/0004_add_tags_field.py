@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("cases", "0003_fix_contacts_related_name"),
         ("common", "0002_enable_rls"),

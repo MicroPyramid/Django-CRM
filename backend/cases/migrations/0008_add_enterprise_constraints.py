@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("cases", "0007_alter_case_created_by_alter_case_updated_by_and_more"),
     ]

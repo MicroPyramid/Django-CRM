@@ -144,9 +144,7 @@ class Product(BaseModel):
     name = models.CharField(_("Product Name"), max_length=255)
     description = models.TextField(_("Description"), blank=True, null=True)
     sku = models.CharField(_("SKU"), max_length=100, blank=True, null=True)
-    price = models.DecimalField(
-        _("Price"), max_digits=12, decimal_places=2, default=0
-    )
+    price = models.DecimalField(_("Price"), max_digits=12, decimal_places=2, default=0)
     currency = models.CharField(
         _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
     )
@@ -340,9 +338,7 @@ class Invoice(AssignableMixin, BaseModel):
     billing_period = models.CharField(
         _("Billing Period"), max_length=100, blank=True, null=True
     )
-    po_number = models.CharField(
-        _("PO Number"), max_length=100, blank=True, null=True
-    )
+    po_number = models.CharField(_("PO Number"), max_length=100, blank=True, null=True)
 
     # Assignment
     assigned_to = models.ManyToManyField(Profile, related_name="invoice_assigned_to")
@@ -409,8 +405,7 @@ class Invoice(AssignableMixin, BaseModel):
                 .select_for_update()
                 .annotate(
                     seq_num=Cast(
-                        Substr("invoice_number", prefix_len + 1),
-                        IntegerField()
+                        Substr("invoice_number", prefix_len + 1), IntegerField()
                     )
                 )
                 .aggregate(max_seq=Max("seq_num"))
@@ -447,7 +442,9 @@ class Invoice(AssignableMixin, BaseModel):
 
         # Calculate discount
         if self.discount_type == "PERCENTAGE":
-            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+            self.discount_amount = self.subtotal * (
+                self.discount_value / Decimal("100")
+            )
         else:
             self.discount_amount = self.discount_value
 
@@ -564,7 +561,9 @@ class InvoiceLineItem(BaseModel):
 
         # Calculate discount
         if self.discount_type == "PERCENTAGE":
-            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+            self.discount_amount = self.subtotal * (
+                self.discount_value / Decimal("100")
+            )
         else:
             self.discount_amount = self.discount_value
 
@@ -648,7 +647,9 @@ class Payment(BaseModel):
     def update_invoice_payment(self, invoice=None):
         """Update the invoice's amount_paid and status"""
         invoice = invoice or self.invoice
-        total_paid = invoice.payments.aggregate(total=models.Sum("amount"))["total"] or 0
+        total_paid = (
+            invoice.payments.aggregate(total=models.Sum("amount"))["total"] or 0
+        )
         invoice.amount_paid = total_paid
         invoice.amount_due = invoice.total_amount - total_paid
 
@@ -674,9 +675,7 @@ class Estimate(AssignableMixin, BaseModel):
     """Estimates/Quotes - can be converted to Invoice"""
 
     # Core Info
-    estimate_number = models.CharField(
-        _("Estimate Number"), max_length=50, unique=True
-    )
+    estimate_number = models.CharField(_("Estimate Number"), max_length=50, unique=True)
     title = models.CharField(_("Title"), max_length=100)
     status = models.CharField(
         _("Status"), max_length=20, choices=ESTIMATE_STATUS, default="Draft"
@@ -836,8 +835,7 @@ class Estimate(AssignableMixin, BaseModel):
                 .select_for_update()
                 .annotate(
                     seq_num=Cast(
-                        Substr("estimate_number", prefix_len + 1),
-                        IntegerField()
+                        Substr("estimate_number", prefix_len + 1), IntegerField()
                     )
                 )
                 .aggregate(max_seq=Max("seq_num"))
@@ -854,7 +852,9 @@ class Estimate(AssignableMixin, BaseModel):
         self.subtotal = sum(item.subtotal for item in line_items)
 
         if self.discount_type == "PERCENTAGE":
-            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+            self.discount_amount = self.subtotal * (
+                self.discount_value / Decimal("100")
+            )
         else:
             self.discount_amount = self.discount_value
 
@@ -939,7 +939,9 @@ class EstimateLineItem(BaseModel):
         self.subtotal = self.quantity * self.unit_price
 
         if self.discount_type == "PERCENTAGE":
-            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+            self.discount_amount = self.subtotal * (
+                self.discount_value / Decimal("100")
+            )
         else:
             self.discount_amount = self.discount_value
 
@@ -1001,7 +1003,9 @@ class RecurringInvoice(AssignableMixin, BaseModel):
     )
     start_date = models.DateField(_("Start Date"), default=datetime.date.today)
     end_date = models.DateField(_("End Date"), null=True, blank=True)
-    next_generation_date = models.DateField(_("Next Generation Date"), default=datetime.date.today)
+    next_generation_date = models.DateField(
+        _("Next Generation Date"), default=datetime.date.today
+    )
 
     # Settings
     payment_terms = models.CharField(
@@ -1034,9 +1038,7 @@ class RecurringInvoice(AssignableMixin, BaseModel):
     terms = models.TextField(_("Terms & Conditions"), blank=True)
 
     # Statistics
-    invoices_generated = models.PositiveIntegerField(
-        _("Invoices Generated"), default=0
-    )
+    invoices_generated = models.PositiveIntegerField(_("Invoices Generated"), default=0)
 
     # Assignment
     assigned_to = models.ManyToManyField(

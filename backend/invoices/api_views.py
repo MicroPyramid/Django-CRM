@@ -77,14 +77,17 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         org = self.request.profile.org
         role = self.request.profile.role
 
-        queryset = self.model.objects.filter(org=org).select_related(
-            "account", "contact", "opportunity", "created_by"
-        ).prefetch_related("line_items", "payments", "assigned_to")
+        queryset = (
+            self.model.objects.filter(org=org)
+            .select_related("account", "contact", "opportunity", "created_by")
+            .prefetch_related("line_items", "payments", "assigned_to")
+        )
 
         # Non-admin users can only see their own or assigned invoices
         if role != "ADMIN" and not self.request.user.is_superuser:
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
 
         return queryset
@@ -140,7 +143,13 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
         # Sorting
         sort = params.get("sort", "-created_at")
-        if sort.lstrip("-") in ["created_at", "due_date", "issue_date", "total_amount", "status"]:
+        if sort.lstrip("-") in [
+            "created_at",
+            "due_date",
+            "issue_date",
+            "total_amount",
+            "status",
+        ]:
             queryset = queryset.order_by(sort)
 
         return queryset
@@ -339,9 +348,7 @@ class InvoiceSendView(APIView):
             protocol=request.scheme,
         )
 
-        return Response(
-            {"error": False, "message": "Invoice sent successfully"}
-        )
+        return Response({"error": False, "message": "Invoice sent successfully"})
 
 
 class InvoiceMarkPaidView(APIView):
@@ -701,9 +708,7 @@ class PaymentListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Payments"], operation_id="payments_list")
     def get(self, request, invoice_id):
-        invoice = Invoice.objects.filter(
-            id=invoice_id, org=request.profile.org
-        ).first()
+        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
         if not invoice:
             return Response(
                 {"error": True, "message": "Invoice not found"},
@@ -715,9 +720,7 @@ class PaymentListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Payments"], operation_id="payments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(
-            id=invoice_id, org=request.profile.org
-        ).first()
+        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
         if not invoice:
             return Response(
                 {"error": True, "message": "Invoice not found"},
@@ -750,9 +753,13 @@ class PaymentDetailView(APIView):
 
     @extend_schema(tags=["Payments"], operation_id="payments_destroy")
     def delete(self, request, invoice_id, pk):
-        payment = Payment.objects.filter(
-            id=pk, invoice_id=invoice_id, org=request.profile.org
-        ).select_related("invoice").first()
+        payment = (
+            Payment.objects.filter(
+                id=pk, invoice_id=invoice_id, org=request.profile.org
+            )
+            .select_related("invoice")
+            .first()
+        )
         if not payment:
             return Response(
                 {"error": True, "message": "Payment not found"},
@@ -1214,9 +1221,11 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_list")
     def get(self, request):
-        queryset = RecurringInvoice.objects.filter(
-            org=request.profile.org
-        ).select_related("account", "contact").order_by("-created_at")
+        queryset = (
+            RecurringInvoice.objects.filter(org=request.profile.org)
+            .select_related("account", "contact")
+            .order_by("-created_at")
+        )
 
         # Apply filters
         if request.query_params.get("is_active"):
@@ -1363,9 +1372,9 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_list")
     def get(self, request):
-        queryset = InvoiceTemplate.objects.filter(
-            org=request.profile.org
-        ).order_by("-is_default", "name")
+        queryset = InvoiceTemplate.objects.filter(org=request.profile.org).order_by(
+            "-is_default", "name"
+        )
 
         results = self.paginate_queryset(queryset, request, view=self)
         return Response(
@@ -1474,9 +1483,7 @@ class InvoiceCommentView(APIView):
 
     @extend_schema(tags=["Invoice Comments"], operation_id="comments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(
-            id=invoice_id, org=request.profile.org
-        ).first()
+        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
         if not invoice:
             return Response(
                 {"error": True, "message": "Invoice not found"},
@@ -1575,9 +1582,7 @@ class InvoiceAttachmentView(APIView):
 
     @extend_schema(tags=["Invoice Attachments"], operation_id="attachments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(
-            id=invoice_id, org=request.profile.org
-        ).first()
+        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
         if not invoice:
             return Response(
                 {"error": True, "message": "Invoice not found"},
@@ -1617,9 +1622,7 @@ class InvoiceAttachmentDetailView(APIView):
 
     @extend_schema(tags=["Invoice Attachments"], operation_id="attachments_destroy")
     def delete(self, request, pk):
-        attachment = Attachments.objects.filter(
-            id=pk, org=request.profile.org
-        ).first()
+        attachment = Attachments.objects.filter(id=pk, org=request.profile.org).first()
         if not attachment:
             return Response(
                 {"error": True, "message": "Attachment not found"},
@@ -1661,9 +1664,7 @@ class InvoiceDashboardView(APIView):
 
         # Status counts
         status_counts = (
-            all_invoices.values("status")
-            .annotate(count=Count("id"))
-            .order_by("status")
+            all_invoices.values("status").annotate(count=Count("id")).order_by("status")
         )
 
         # Financial summary
@@ -1679,14 +1680,18 @@ class InvoiceDashboardView(APIView):
             due_date__lt=today,
         )
         overdue_count = overdue_invoices.count()
-        overdue_amount = overdue_invoices.aggregate(total=Sum("amount_due"))["total"] or 0
+        overdue_amount = (
+            overdue_invoices.aggregate(total=Sum("amount_due"))["total"] or 0
+        )
 
         # Recent activity (last 30 days)
         recent_invoices = all_invoices.filter(created_at__gte=thirty_days_ago)
         recent_paid = all_invoices.filter(paid_at__gte=thirty_days_ago)
 
         recent_revenue = recent_paid.aggregate(total=Sum("amount_paid"))["total"] or 0
-        recent_invoiced = recent_invoices.aggregate(total=Sum("total_amount"))["total"] or 0
+        recent_invoiced = (
+            recent_invoices.aggregate(total=Sum("total_amount"))["total"] or 0
+        )
 
         # Estimates summary
         all_estimates = Estimate.objects.filter(org=org)
@@ -1694,31 +1699,33 @@ class InvoiceDashboardView(APIView):
         estimates_accepted = all_estimates.filter(status="Accepted").count()
         estimates_declined = all_estimates.filter(status="Declined").count()
 
-        return Response({
-            "summary": {
-                "total_invoiced": str(totals["total_invoiced"] or 0),
-                "total_paid": str(totals["total_paid"] or 0),
-                "total_due": str(totals["total_due"] or 0),
-            },
-            "status_counts": {
-                item["status"]: item["count"] for item in status_counts
-            },
-            "overdue": {
-                "count": overdue_count,
-                "amount": str(overdue_amount),
-            },
-            "recent_activity": {
-                "revenue_30d": str(recent_revenue),
-                "invoiced_30d": str(recent_invoiced),
-                "invoices_created_30d": recent_invoices.count(),
-                "invoices_paid_30d": recent_paid.count(),
-            },
-            "estimates": {
-                "pending": estimates_pending,
-                "accepted": estimates_accepted,
-                "declined": estimates_declined,
-            },
-        })
+        return Response(
+            {
+                "summary": {
+                    "total_invoiced": str(totals["total_invoiced"] or 0),
+                    "total_paid": str(totals["total_paid"] or 0),
+                    "total_due": str(totals["total_due"] or 0),
+                },
+                "status_counts": {
+                    item["status"]: item["count"] for item in status_counts
+                },
+                "overdue": {
+                    "count": overdue_count,
+                    "amount": str(overdue_amount),
+                },
+                "recent_activity": {
+                    "revenue_30d": str(recent_revenue),
+                    "invoiced_30d": str(recent_invoiced),
+                    "invoices_created_30d": recent_invoices.count(),
+                    "invoices_paid_30d": recent_paid.count(),
+                },
+                "estimates": {
+                    "pending": estimates_pending,
+                    "accepted": estimates_accepted,
+                    "declined": estimates_declined,
+                },
+            }
+        )
 
 
 class RevenueReportView(APIView):
@@ -1755,41 +1762,59 @@ class RevenueReportView(APIView):
         # Group revenue
         if group_by == "day":
             from django.db.models.functions import TruncDay
-            grouped = paid_invoices.annotate(
-                period=TruncDay("paid_at")
-            ).values("period").annotate(
-                revenue=Sum("amount_paid"),
-                count=Count("id"),
-            ).order_by("period")
+
+            grouped = (
+                paid_invoices.annotate(period=TruncDay("paid_at"))
+                .values("period")
+                .annotate(
+                    revenue=Sum("amount_paid"),
+                    count=Count("id"),
+                )
+                .order_by("period")
+            )
         elif group_by == "week":
             from django.db.models.functions import TruncWeek
-            grouped = paid_invoices.annotate(
-                period=TruncWeek("paid_at")
-            ).values("period").annotate(
-                revenue=Sum("amount_paid"),
-                count=Count("id"),
-            ).order_by("period")
+
+            grouped = (
+                paid_invoices.annotate(period=TruncWeek("paid_at"))
+                .values("period")
+                .annotate(
+                    revenue=Sum("amount_paid"),
+                    count=Count("id"),
+                )
+                .order_by("period")
+            )
         elif group_by == "year":
             from django.db.models.functions import TruncYear
-            grouped = paid_invoices.annotate(
-                period=TruncYear("paid_at")
-            ).values("period").annotate(
-                revenue=Sum("amount_paid"),
-                count=Count("id"),
-            ).order_by("period")
+
+            grouped = (
+                paid_invoices.annotate(period=TruncYear("paid_at"))
+                .values("period")
+                .annotate(
+                    revenue=Sum("amount_paid"),
+                    count=Count("id"),
+                )
+                .order_by("period")
+            )
         else:  # month (default)
             from django.db.models.functions import TruncMonth
-            grouped = paid_invoices.annotate(
-                period=TruncMonth("paid_at")
-            ).values("period").annotate(
-                revenue=Sum("amount_paid"),
-                count=Count("id"),
-            ).order_by("period")
+
+            grouped = (
+                paid_invoices.annotate(period=TruncMonth("paid_at"))
+                .values("period")
+                .annotate(
+                    revenue=Sum("amount_paid"),
+                    count=Count("id"),
+                )
+                .order_by("period")
+            )
 
         # Format results
         data = [
             {
-                "period": item["period"].strftime("%Y-%m-%d") if item["period"] else None,
+                "period": item["period"].strftime("%Y-%m-%d")
+                if item["period"]
+                else None,
                 "revenue": str(item["revenue"] or 0),
                 "count": item["count"],
             }
@@ -1802,16 +1827,18 @@ class RevenueReportView(APIView):
             count=Count("id"),
         )
 
-        return Response({
-            "start_date": str(start_date),
-            "end_date": str(end_date),
-            "group_by": group_by,
-            "data": data,
-            "total": {
-                "revenue": str(total["revenue"] or 0),
-                "count": total["count"],
-            },
-        })
+        return Response(
+            {
+                "start_date": str(start_date),
+                "end_date": str(end_date),
+                "group_by": group_by,
+                "data": data,
+                "total": {
+                    "revenue": str(total["revenue"] or 0),
+                    "count": total["count"],
+                },
+            }
+        )
 
 
 class AgingReportView(APIView):
@@ -1868,23 +1895,29 @@ class AgingReportView(APIView):
                         "client_name": inv.client_name,
                         "due_date": str(inv.due_date) if inv.due_date else None,
                         "amount_due": str(inv.amount_due),
-                        "days_overdue": (today - inv.due_date).days if inv.due_date else 0,
+                        "days_overdue": (today - inv.due_date).days
+                        if inv.due_date
+                        else 0,
                     }
                     for inv in invoices[:10]  # Limit to 10 per category
                 ],
             }
 
-        return Response({
-            "current": summarize(current),
-            "1_30_days": summarize(days_1_30),
-            "31_60_days": summarize(days_31_60),
-            "61_90_days": summarize(days_61_90),
-            "over_90_days": summarize(over_90),
-            "total": {
-                "count": unpaid_invoices.count(),
-                "amount": str(sum((inv.amount_due or Decimal("0")) for inv in unpaid_invoices)),
-            },
-        })
+        return Response(
+            {
+                "current": summarize(current),
+                "1_30_days": summarize(days_1_30),
+                "31_60_days": summarize(days_31_60),
+                "61_90_days": summarize(days_61_90),
+                "over_90_days": summarize(over_90),
+                "total": {
+                    "count": unpaid_invoices.count(),
+                    "amount": str(
+                        sum((inv.amount_due or Decimal("0")) for inv in unpaid_invoices)
+                    ),
+                },
+            }
+        )
 
 
 # =============================================================================
@@ -1917,9 +1950,11 @@ class InvoiceFromOpportunityView(APIView):
         org = request.profile.org
 
         # Get the opportunity
-        opportunity = Opportunity.objects.filter(
-            id=opportunity_id, org=org
-        ).prefetch_related("line_items", "contacts").first()
+        opportunity = (
+            Opportunity.objects.filter(id=opportunity_id, org=org)
+            .prefetch_related("line_items", "contacts")
+            .first()
+        )
 
         if not opportunity:
             return Response(
@@ -1934,14 +1969,20 @@ class InvoiceFromOpportunityView(APIView):
                 or (request.profile in opportunity.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "message": "You do not have permission to create invoice from this opportunity"},
+                    {
+                        "error": True,
+                        "message": "You do not have permission to create invoice from this opportunity",
+                    },
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
         # Verify opportunity is CLOSED_WON
         if opportunity.stage != "CLOSED_WON":
             return Response(
-                {"error": True, "message": "Invoice can only be created from CLOSED_WON opportunities"},
+                {
+                    "error": True,
+                    "message": "Invoice can only be created from CLOSED_WON opportunities",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1949,14 +1990,20 @@ class InvoiceFromOpportunityView(APIView):
         line_items = opportunity.line_items.all()
         if not line_items.exists():
             return Response(
-                {"error": True, "message": "Opportunity has no products/line items to invoice"},
+                {
+                    "error": True,
+                    "message": "Opportunity has no products/line items to invoice",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Check if opportunity has an account
         if not opportunity.account:
             return Response(
-                {"error": True, "message": "Opportunity must have an account to create an invoice"},
+                {
+                    "error": True,
+                    "message": "Opportunity must have an account to create an invoice",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1966,19 +2013,26 @@ class InvoiceFromOpportunityView(APIView):
 
         if not primary_contact:
             return Response(
-                {"error": True, "message": "Opportunity must have at least one contact to create an invoice"},
+                {
+                    "error": True,
+                    "message": "Opportunity must have at least one contact to create an invoice",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         with transaction.atomic():
             # Generate invoice number
-            last_invoice = Invoice.objects.filter(org=org).order_by("-created_at").first()
+            last_invoice = (
+                Invoice.objects.filter(org=org).order_by("-created_at").first()
+            )
             if last_invoice and last_invoice.invoice_number:
                 try:
                     last_num = int(last_invoice.invoice_number.replace("INV-", ""))
                     new_number = f"INV-{last_num + 1:06d}"
                 except ValueError:
-                    new_number = f"INV-{Invoice.objects.filter(org=org).count() + 1:06d}"
+                    new_number = (
+                        f"INV-{Invoice.objects.filter(org=org).count() + 1:06d}"
+                    )
             else:
                 new_number = "INV-000001"
 

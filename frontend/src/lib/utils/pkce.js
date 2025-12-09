@@ -8,9 +8,9 @@
  * @returns {string} Random code verifier string
  */
 export function generateCodeVerifier() {
-	const array = new Uint8Array(32);
-	crypto.getRandomValues(array);
-	return base64URLEncode(array);
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return base64URLEncode(array);
 }
 
 /**
@@ -19,10 +19,10 @@ export function generateCodeVerifier() {
  * @returns {Promise<string>} Code challenge
  */
 export async function generateCodeChallenge(verifier) {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(verifier);
-	const digest = await crypto.subtle.digest('SHA-256', data);
-	return base64URLEncode(new Uint8Array(digest));
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return base64URLEncode(new Uint8Array(digest));
 }
 
 /**
@@ -30,9 +30,9 @@ export async function generateCodeChallenge(verifier) {
  * @returns {string} Random state string
  */
 export function generateState() {
-	const array = new Uint8Array(16);
-	crypto.getRandomValues(array);
-	return base64URLEncode(array);
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return base64URLEncode(array);
 }
 
 /**
@@ -41,8 +41,8 @@ export function generateState() {
  * @returns {string} Base64 URL encoded string
  */
 function base64URLEncode(buffer) {
-	return btoa(String.fromCharCode(...buffer))
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
+  return btoa(String.fromCharCode(...buffer))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }

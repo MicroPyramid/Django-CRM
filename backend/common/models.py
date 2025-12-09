@@ -402,7 +402,6 @@ def document_path(self, filename):
 
 
 class Document(BaseModel):
-
     DOCUMENT_STATUS_CHOICE = (("active", "active"), ("inactive", "inactive"))
 
     title = models.TextField(blank=True, null=True)

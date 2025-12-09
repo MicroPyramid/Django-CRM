@@ -1,9 +1,9 @@
 <script>
-	import { onMount } from 'svelte';
+  import { onMount } from 'svelte';
 
-	onMount(() => {
-		setTimeout(() => {
-			window.location.href = '/org';
-		});
-	});
+  onMount(() => {
+    setTimeout(() => {
+      window.location.href = '/org';
+    });
+  });
 </script>

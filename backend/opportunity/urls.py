@@ -8,7 +8,10 @@ from opportunity.views.opportunity_interactions import (
     OpportunityAttachmentView,
     OpportunityCommentView,
 )
-from opportunity.views.opportunity_views import OpportunityDetailView, OpportunityListView
+from opportunity.views.opportunity_views import (
+    OpportunityDetailView,
+    OpportunityListView,
+)
 
 app_name = "api_opportunities"
 

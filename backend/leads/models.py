@@ -33,12 +33,18 @@ class Lead(AssignableMixin, BaseModel):
 
     # Core Lead Information
     title = models.CharField(
-        _("Title"), max_length=255, blank=True, null=True,
-        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')"
+        _("Title"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')",
     )
     salutation = models.CharField(
-        _("Salutation"), max_length=64, blank=True, null=True,
-        help_text="e.g., Mr, Mrs, Ms, Dr"
+        _("Salutation"),
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="e.g., Mr, Mrs, Ms, Dr",
     )
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
@@ -51,8 +57,11 @@ class Lead(AssignableMixin, BaseModel):
         validators=[flexible_phone_validator],
     )
     job_title = models.CharField(
-        _("Job Title"), max_length=255, blank=True, null=True,
-        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
+        _("Job Title"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')",
     )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     linkedin_url = models.URLField(
@@ -114,6 +123,23 @@ class Lead(AssignableMixin, BaseModel):
         _("Company Name"), max_length=255, blank=True, null=True
     )
 
+    # Kanban/Pipeline support
+    stage = models.ForeignKey(
+        "LeadStage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leads",
+        help_text="Current pipeline stage (null = use status-based kanban)",
+    )
+    kanban_order = models.DecimalField(
+        _("Kanban Order"),
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        help_text="Order within the kanban column for drag-drop",
+    )
+
     class Meta:
         verbose_name = "Lead"
         verbose_name_plural = "Leads"
@@ -123,6 +149,8 @@ class Lead(AssignableMixin, BaseModel):
             models.Index(fields=["status"]),
             models.Index(fields=["source"]),
             models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["stage", "kanban_order"]),
+            models.Index(fields=["status", "kanban_order"]),
         ]
         constraints = [
             # Case-insensitive unique email per organization (when email is not null)
@@ -190,3 +218,106 @@ class Lead(AssignableMixin, BaseModel):
             return False
         return timezone.now().date() > self.next_follow_up
 
+
+class LeadPipeline(BaseModel):
+    """
+    Custom pipeline for organizing leads into stages (Kanban columns).
+    Each organization can have multiple pipelines (e.g., Inbound, Outbound, Enterprise).
+    """
+
+    name = models.CharField(_("Pipeline Name"), max_length=255)
+    description = models.TextField(_("Description"), blank=True, null=True)
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="lead_pipelines"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        help_text="If true, new leads without explicit pipeline go here",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Lead Pipeline"
+        verbose_name_plural = "Lead Pipelines"
+        db_table = "lead_pipeline"
+        ordering = ("-is_default", "name")
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+        ]
+        constraints = [
+            # Only one default pipeline per org
+            models.UniqueConstraint(
+                fields=["org"],
+                condition=models.Q(is_default=True),
+                name="unique_default_pipeline_per_org",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.org.name})"
+
+
+class LeadStage(BaseModel):
+    """
+    Stage within a Lead Pipeline (Kanban column).
+    """
+
+    STAGE_TYPE_CHOICES = [
+        ("open", "Open"),  # Active stages (assigned, in process)
+        ("won", "Won"),  # Converted/closed-won
+        ("lost", "Lost"),  # Recycled/closed-lost
+    ]
+
+    pipeline = models.ForeignKey(
+        LeadPipeline, on_delete=models.CASCADE, related_name="stages"
+    )
+    name = models.CharField(_("Stage Name"), max_length=100)
+    order = models.PositiveIntegerField(default=0)
+    color = models.CharField(max_length=7, default="#6B7280")  # Hex color
+
+    # Business logic fields
+    stage_type = models.CharField(
+        max_length=10, choices=STAGE_TYPE_CHOICES, default="open"
+    )
+    maps_to_status = models.CharField(
+        _("Maps to Status"),
+        max_length=255,
+        blank=True,
+        null=True,
+        choices=LEAD_STATUS,
+        help_text="When lead enters this stage, also update Lead.status",
+    )
+    win_probability = models.IntegerField(
+        _("Default Win Probability %"),
+        default=0,
+        help_text="Default probability when lead enters this stage",
+    )
+
+    # Kanban features
+    wip_limit = models.PositiveIntegerField(
+        _("WIP Limit"),
+        null=True,
+        blank=True,
+        help_text="Maximum leads allowed in this stage (null = unlimited)",
+    )
+
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="lead_stages")
+
+    class Meta:
+        verbose_name = "Lead Stage"
+        verbose_name_plural = "Lead Stages"
+        db_table = "lead_stage"
+        ordering = ("order",)
+        unique_together = ("pipeline", "name")
+        indexes = [
+            models.Index(fields=["org", "order"]),
+            models.Index(fields=["pipeline", "order"]),
+        ]
+
+    def __str__(self):
+        return f"{self.pipeline.name} - {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.pipeline_id:
+            self.org_id = self.pipeline.org_id
+        super().save(*args, **kwargs)

@@ -2,7 +2,12 @@ from rest_framework import serializers
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.serializer import OrganizationSerializer, ProfileSerializer, TeamsSerializer, UserSerializer
+from common.serializer import (
+    OrganizationSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+    UserSerializer,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from invoices.models import (
@@ -389,8 +394,12 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     # CRM Integration fields - accept IDs for writing
     account_id = serializers.UUIDField(write_only=True, required=True)
     contact_id = serializers.UUIDField(write_only=True, required=True)
-    opportunity_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-    template_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    opportunity_id = serializers.UUIDField(
+        write_only=True, required=False, allow_null=True
+    )
+    template_id = serializers.UUIDField(
+        write_only=True, required=False, allow_null=True
+    )
 
     # Line items for bulk creation
     line_items = InvoiceLineItemCreateSerializer(many=True, required=False)
@@ -498,9 +507,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             contact = Contact.objects.filter(id=contact_id, org=self.org).first()
             if contact and contact.account_id and contact.account_id != account_id:
                 raise serializers.ValidationError(
-                    {
-                        "contact_id": f"Contact does not belong to the selected account"
-                    }
+                    {"contact_id": f"Contact does not belong to the selected account"}
                 )
         return data
 
@@ -519,7 +526,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                 invoice=invoice,
                 org=self.org,
                 order=item_data.get("order", idx),
-                **{k: v for k, v in item_data.items() if k != "order"}
+                **{k: v for k, v in item_data.items() if k != "order"},
             )
 
         # Recalculate totals
@@ -544,7 +551,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                     invoice=instance,
                     org=self.org or instance.org,
                     order=item_data.get("order", idx),
-                    **{k: v for k, v in item_data.items() if k != "order"}
+                    **{k: v for k, v in item_data.items() if k != "order"},
                 )
 
         instance.recalculate_totals()
@@ -671,7 +678,9 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
 
     account_id = serializers.UUIDField(write_only=True, required=True)
     contact_id = serializers.UUIDField(write_only=True, required=True)
-    opportunity_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    opportunity_id = serializers.UUIDField(
+        write_only=True, required=False, allow_null=True
+    )
 
     class Meta:
         model = Estimate
@@ -819,7 +828,9 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
 
     account_id = serializers.UUIDField(write_only=True, required=True)
     contact_id = serializers.UUIDField(write_only=True, required=True)
-    opportunity_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    opportunity_id = serializers.UUIDField(
+        write_only=True, required=False, allow_null=True
+    )
 
     class Meta:
         model = RecurringInvoice

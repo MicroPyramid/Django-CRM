@@ -13,36 +13,34 @@ def cleanup_duplicate_contact_emails(apps, schema_editor):
     Find duplicate contact emails (case-insensitive) within each org
     and clear email on duplicates (keep oldest).
     """
-    Contact = apps.get_model('contacts', 'Contact')
+    Contact = apps.get_model("contacts", "Contact")
 
     # Find duplicates: group by lower(email) + org, having count > 1
     duplicates = (
-        Contact.objects
-        .exclude(email__isnull=True)
-        .exclude(email='')
-        .annotate(email_lower=Lower('email'))
-        .values('email_lower', 'org_id')
-        .annotate(count=Count('id'))
+        Contact.objects.exclude(email__isnull=True)
+        .exclude(email="")
+        .annotate(email_lower=Lower("email"))
+        .values("email_lower", "org_id")
+        .annotate(count=Count("id"))
         .filter(count__gt=1)
     )
 
     for dup in duplicates:
         # Get all contacts with this email in this org, ordered by created_at
         contacts = list(
-            Contact.objects
-            .filter(org_id=dup['org_id'])
+            Contact.objects.filter(org_id=dup["org_id"])
             .exclude(email__isnull=True)
-            .exclude(email='')
-            .annotate(email_lower=Lower('email'))
-            .filter(email_lower=dup['email_lower'])
-            .order_by('created_at')
+            .exclude(email="")
+            .annotate(email_lower=Lower("email"))
+            .filter(email_lower=dup["email_lower"])
+            .order_by("created_at")
         )
 
         # Keep the first one (oldest), clear email on the rest
         for contact in contacts[1:]:
             old_email = contact.email
             contact.email = None
-            contact.save(update_fields=['email'])
+            contact.save(update_fields=["email"])
             print(f"  Cleared duplicate email on contact {contact.id}: '{old_email}'")
 
 
@@ -52,7 +50,6 @@ def reverse_noop(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0006_add_enterprise_constraints"),
         ("common", "0008_enable_rls_product_invoice_line_item"),

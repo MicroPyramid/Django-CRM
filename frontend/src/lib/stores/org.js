@@ -9,9 +9,9 @@ import { writable } from 'svelte/store';
 
 /** @type {import('svelte/store').Writable<OrgSettings>} */
 export const orgSettings = writable({
-	default_currency: 'USD',
-	currency_symbol: '$',
-	default_country: null
+  default_currency: 'USD',
+  currency_symbol: '$',
+  default_country: null
 });
 
 /**
@@ -19,9 +19,9 @@ export const orgSettings = writable({
  * @param {Partial<OrgSettings>} settings
  */
 export function initOrgSettings(settings) {
-	orgSettings.set({
-		default_currency: settings.default_currency || 'USD',
-		currency_symbol: settings.currency_symbol || '$',
-		default_country: settings.default_country || null
-	});
+  orgSettings.set({
+    default_currency: settings.default_currency || 'USD',
+    currency_symbol: settings.currency_symbol || '$',
+    default_country: settings.default_country || null
+  });
 }

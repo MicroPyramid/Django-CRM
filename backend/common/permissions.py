@@ -75,5 +75,3 @@ class IsSuperAdmin(permissions.BasePermission):
 
         # Check for super admin email domain
         return request.user.email.endswith("@micropyramid.com")
-
-

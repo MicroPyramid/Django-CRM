@@ -112,7 +112,9 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
 
     # Create Opportunity if requested and lead has opportunity data
     opportunity = None
-    if create_opportunity and (lead_obj.opportunity_amount or lead_obj.first_name or lead_obj.company_name):
+    if create_opportunity and (
+        lead_obj.opportunity_amount or lead_obj.first_name or lead_obj.company_name
+    ):
         # Construct opportunity name from available lead data
         opp_name_parts = []
         if lead_obj.company_name:
@@ -120,7 +122,11 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
         if lead_obj.first_name or lead_obj.last_name:
             name = " ".join(filter(None, [lead_obj.first_name, lead_obj.last_name]))
             opp_name_parts.append(name)
-        opp_name = " - ".join(opp_name_parts) if opp_name_parts else f"Opportunity {lead_obj.id}"
+        opp_name = (
+            " - ".join(opp_name_parts)
+            if opp_name_parts
+            else f"Opportunity {lead_obj.id}"
+        )
 
         opportunity = Opportunity.objects.create(
             name=opp_name,

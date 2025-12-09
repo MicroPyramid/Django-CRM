@@ -66,7 +66,7 @@ class OrgProfileCreateView(APIView):
 
     @extend_schema(
         operation_id="org_list",
-        description="Just Pass the token, will return ORG list, associated with user"
+        description="Just Pass the token, will return ORG list, associated with user",
     )
     def get(self, request, format=None):
         """
@@ -210,7 +210,8 @@ class OrgUpdateView(APIView):
 
     @extend_schema(
         operation_id="org_retrieve",
-        description="Get organization details", responses={200: OrganizationSerializer}
+        description="Get organization details",
+        responses={200: OrganizationSerializer},
     )
     def get(self, request, pk, format=None):
         # Check if user has access to this organization
@@ -247,10 +248,11 @@ class ProfileView(APIView):
     @extend_schema(
         tags=["profile"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="ProfileViewResponse",
-            fields={"user_obj": ProfileSerializer()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="ProfileViewResponse", fields={"user_obj": ProfileSerializer()}
+            )
+        },
     )
     def get(self, request, format=None):
         # profile=Profile.objects.get(user=request.user)
@@ -263,12 +265,17 @@ class ProfileView(APIView):
         parameters=swagger_params.organization_params,
         request=inline_serializer(
             name="ProfilePatchRequest",
-            fields={"phone": serializers.CharField(required=False)}
+            fields={"phone": serializers.CharField(required=False)},
         ),
-        responses={200: inline_serializer(
-            name="ProfilePatchUpdateResponse",
-            fields={"message": serializers.CharField(), "user_obj": ProfileSerializer()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="ProfilePatchUpdateResponse",
+                fields={
+                    "message": serializers.CharField(),
+                    "user_obj": ProfileSerializer(),
+                },
+            )
+        },
     )
     def patch(self, request, format=None):
         profile = request.profile

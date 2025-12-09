@@ -26,25 +26,26 @@ from tasks.serializer import TaskSerializer
 
 
 class ApiHomeView(APIView):
-
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         tags=["home"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="ApiHomeResponse",
-            fields={
-                "accounts_count": serializers.IntegerField(),
-                "contacts_count": serializers.IntegerField(),
-                "leads_count": serializers.IntegerField(),
-                "opportunities_count": serializers.IntegerField(),
-                "accounts": AccountSerializer(many=True),
-                "contacts": ContactSerializer(many=True),
-                "leads": LeadSerializer(many=True),
-                "opportunities": OpportunitySerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="ApiHomeResponse",
+                fields={
+                    "accounts_count": serializers.IntegerField(),
+                    "contacts_count": serializers.IntegerField(),
+                    "leads_count": serializers.IntegerField(),
+                    "opportunities_count": serializers.IntegerField(),
+                    "accounts": AccountSerializer(many=True),
+                    "contacts": ContactSerializer(many=True),
+                    "leads": LeadSerializer(many=True),
+                    "opportunities": OpportunitySerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, request, format=None):
         org = request.profile.org
@@ -63,24 +64,19 @@ class ApiHomeView(APIView):
 
         if not is_admin:
             accounts = accounts.filter(
-                Q(assigned_to=profile)
-                | Q(created_by=profile.user)
+                Q(assigned_to=profile) | Q(created_by=profile.user)
             )
             contacts = contacts.filter(
-                Q(assigned_to__id__in=[profile.id])
-                | Q(created_by=profile.user)
+                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
             )
             leads = leads.filter(
-                Q(assigned_to__id__in=[profile.id])
-                | Q(created_by=profile.user)
+                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
             ).exclude(status="closed")
             opportunities = opportunities.filter(
-                Q(assigned_to__id__in=[profile.id])
-                | Q(created_by=profile.user)
+                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
             )
             tasks = tasks.filter(
-                Q(assigned_to__id__in=[profile.id])
-                | Q(created_by=profile.user)
+                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
             )
 
         # Build base context (existing)
@@ -96,22 +92,17 @@ class ApiHomeView(APIView):
 
         # NEW: Urgent counts for Focus Bar
         overdue_tasks = tasks.filter(
-            status__in=["New", "In Progress"],
-            due_date__lt=today
+            status__in=["New", "In Progress"], due_date__lt=today
         ).count()
 
         tasks_due_today = tasks.filter(
-            status__in=["New", "In Progress"],
-            due_date=today
+            status__in=["New", "In Progress"], due_date=today
         ).count()
 
-        followups_today = leads.filter(
-            next_follow_up=today
-        ).count()
+        followups_today = leads.filter(next_follow_up=today).count()
 
         hot_leads = leads.filter(
-            rating="HOT",
-            status__in=["assigned", "in process"]
+            rating="HOT", status__in=["assigned", "in process"]
         ).count()
 
         context["urgent_counts"] = {
@@ -160,16 +151,17 @@ class ApiHomeView(APIView):
             total=Coalesce(
                 Sum(F("amount") * F("probability") / 100),
                 0,
-                output_field=DecimalField()
+                output_field=DecimalField(),
             )
         )["total"]
 
         # Won this month (use timezone-aware datetime for updated_at comparison)
         now = timezone.now()
-        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        first_day_of_month = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         won_opps = opportunities.filter(
-            stage="CLOSED_WON",
-            updated_at__gte=first_day_of_month
+            stage="CLOSED_WON", updated_at__gte=first_day_of_month
         )
         won_opps_with_currency = won_opps.filter(
             Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
@@ -181,7 +173,9 @@ class ApiHomeView(APIView):
         # Conversion rate: leads converted / total leads
         total_leads_all = Lead.objects.filter(org=org).count()
         converted_leads = Lead.objects.filter(org=org, status="converted").count()
-        conversion_rate = (converted_leads / total_leads_all * 100) if total_leads_all > 0 else 0
+        conversion_rate = (
+            (converted_leads / total_leads_all * 100) if total_leads_all > 0 else 0
+        )
 
         # Count opportunities in other currencies (for info)
         other_currency_count = opportunities.exclude(
@@ -199,8 +193,7 @@ class ApiHomeView(APIView):
 
         # NEW: Hot leads list for dedicated panel
         hot_leads_qs = leads.filter(
-            rating="HOT",
-            status__in=["assigned", "in process"]
+            rating="HOT", status__in=["assigned", "in process"]
         ).order_by("-created_at")[:10]
 
         context["hot_leads"] = [
@@ -210,24 +203,31 @@ class ApiHomeView(APIView):
                 "last_name": lead.last_name,
                 "company": lead.company_name,
                 "rating": lead.rating,
-                "next_follow_up": lead.next_follow_up.isoformat() if lead.next_follow_up else None,
-                "last_contacted": lead.last_contacted.isoformat() if lead.last_contacted else None,
+                "next_follow_up": lead.next_follow_up.isoformat()
+                if lead.next_follow_up
+                else None,
+                "last_contacted": lead.last_contacted.isoformat()
+                if lead.last_contacted
+                else None,
             }
             for lead in hot_leads_qs
         ]
 
         # Include tasks in dashboard response (avoid separate API call)
         upcoming_tasks = tasks.filter(
-            status__in=["New", "In Progress"],
-            due_date__isnull=False
+            status__in=["New", "In Progress"], due_date__isnull=False
         ).order_by("due_date")[:10]
         context["tasks"] = TaskSerializer(upcoming_tasks, many=True).data
 
         # Include recent activities (avoid separate API call)
-        activities = Activity.objects.filter(
-            org=org
-        ).select_related("user", "user__user").order_by("-created_at")[:10]
-        context["activities"] = serializer.ActivitySerializer(activities, many=True).data
+        activities = (
+            Activity.objects.filter(org=org)
+            .select_related("user", "user__user")
+            .order_by("-created_at")[:10]
+        )
+        context["activities"] = serializer.ActivitySerializer(
+            activities, many=True
+        ).data
 
         return Response(context, status=status.HTTP_200_OK)
 

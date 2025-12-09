@@ -19,11 +19,11 @@
  * @returns {DragState}
  */
 export function createDragState() {
-	return {
-		draggedId: null,
-		dragOverId: null,
-		dropPosition: null
-	};
+  return {
+    draggedId: null,
+    dragOverId: null,
+    dropPosition: null
+  };
 }
 
 /**
@@ -32,10 +32,10 @@ export function createDragState() {
  * @returns {DropPosition}
  */
 export function calculateDropPosition(event) {
-	const target = /** @type {HTMLElement} */ (event.currentTarget);
-	const rect = target.getBoundingClientRect();
-	const midpoint = rect.top + rect.height / 2;
-	return event.clientY < midpoint ? 'before' : 'after';
+  const target = /** @type {HTMLElement} */ (event.currentTarget);
+  const rect = target.getBoundingClientRect();
+  const midpoint = rect.top + rect.height / 2;
+  return event.clientY < midpoint ? 'before' : 'after';
 }
 
 /**
@@ -49,30 +49,30 @@ export function calculateDropPosition(event) {
  * @returns {T[]} Reordered array
  */
 export function reorderItems(items, draggedId, targetId, position, getId) {
-	if (!draggedId || !targetId || draggedId === targetId || !position) {
-		return items;
-	}
+  if (!draggedId || !targetId || draggedId === targetId || !position) {
+    return items;
+  }
 
-	const draggedIndex = items.findIndex((item) => getId(item) === draggedId);
-	const targetIndex = items.findIndex((item) => getId(item) === targetId);
+  const draggedIndex = items.findIndex((item) => getId(item) === draggedId);
+  const targetIndex = items.findIndex((item) => getId(item) === targetId);
 
-	if (draggedIndex === -1 || targetIndex === -1) {
-		return items;
-	}
+  if (draggedIndex === -1 || targetIndex === -1) {
+    return items;
+  }
 
-	const newItems = [...items];
-	const [draggedItem] = newItems.splice(draggedIndex, 1);
+  const newItems = [...items];
+  const [draggedItem] = newItems.splice(draggedIndex, 1);
 
-	// Calculate insert position
-	let insertIndex;
-	if (position === 'after') {
-		insertIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-	} else {
-		insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
-	}
+  // Calculate insert position
+  let insertIndex;
+  if (position === 'after') {
+    insertIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
+  } else {
+    insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+  }
 
-	newItems.splice(insertIndex, 0, draggedItem);
-	return newItems;
+  newItems.splice(insertIndex, 0, draggedItem);
+  return newItems;
 }
 
 /**
@@ -81,23 +81,23 @@ export function reorderItems(items, draggedId, targetId, position, getId) {
  * @param {string} itemId - ID of the item being dragged
  */
 export function handleDragStart(event, itemId) {
-	if (event.dataTransfer) {
-		event.dataTransfer.effectAllowed = 'move';
-		event.dataTransfer.setData('text/plain', itemId);
-	}
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', itemId);
+  }
 }
 
 /**
  * Drag handle styles that show on row hover
  */
 export const dragHandleClasses =
-	'flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 transition-all cursor-grab active:cursor-grabbing';
+  'flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-40 hover:!opacity-70 hover:bg-gray-200 transition-all cursor-grab active:cursor-grabbing';
 
 /**
  * Expand button styles that show on row hover
  */
 export const expandButtonClasses =
-	'flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all duration-75';
+  'flex items-center justify-center w-6 h-6 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all duration-75';
 
 /**
  * Drop indicator line styles

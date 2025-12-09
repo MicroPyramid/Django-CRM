@@ -49,7 +49,6 @@ def disable_rls_on_commentfiles(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0003_add_org_to_commentfiles"),
     ]

@@ -9,19 +9,19 @@ const Root = SheetPrimitive.Root;
 const Portal = SheetPrimitive.Portal;
 
 export {
-	Root,
-	Portal,
-	Overlay,
-	Content,
-	Header,
-	Title,
-	Description,
-	//
-	Root as Sheet,
-	Portal as SheetPortal,
-	Overlay as SheetOverlay,
-	Content as SheetContent,
-	Header as SheetHeader,
-	Title as SheetTitle,
-	Description as SheetDescription
+  Root,
+  Portal,
+  Overlay,
+  Content,
+  Header,
+  Title,
+  Description,
+  //
+  Root as Sheet,
+  Portal as SheetPortal,
+  Overlay as SheetOverlay,
+  Content as SheetContent,
+  Header as SheetHeader,
+  Title as SheetTitle,
+  Description as SheetDescription
 };

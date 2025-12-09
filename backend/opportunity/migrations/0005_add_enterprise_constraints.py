@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 def cleanup_invalid_probability(apps, schema_editor):
     """Fix probability values outside 0-100 range."""
-    Opportunity = apps.get_model('opportunity', 'Opportunity')
+    Opportunity = apps.get_model("opportunity", "Opportunity")
 
     # Set negative probabilities to 0
     updated = Opportunity.objects.filter(probability__lt=0).update(probability=0)
@@ -21,7 +21,7 @@ def cleanup_invalid_probability(apps, schema_editor):
 
 def cleanup_negative_amounts(apps, schema_editor):
     """Set negative amount values to NULL."""
-    Opportunity = apps.get_model('opportunity', 'Opportunity')
+    Opportunity = apps.get_model("opportunity", "Opportunity")
     updated = Opportunity.objects.filter(amount__lt=0).update(amount=None)
     if updated:
         print(f"  Set {updated} negative amount values to NULL")
@@ -33,7 +33,6 @@ def reverse_noop(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0006_add_enterprise_constraints"),
         ("common", "0008_enable_rls_product_invoice_line_item"),

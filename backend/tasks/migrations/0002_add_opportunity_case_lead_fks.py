@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("cases", "0002_initial"),
         ("leads", "0002_add_converted_account_fk"),

@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -238,9 +237,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "phone",
-                    models.CharField(
-                        blank=True, max_length=20, null=True
-                    ),
+                    models.CharField(blank=True, max_length=20, null=True),
                 ),
                 (
                     "amount_due",
@@ -630,9 +627,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "phone",
-                    models.CharField(
-                        blank=True, max_length=20, null=True
-                    ),
+                    models.CharField(blank=True, max_length=20, null=True),
                 ),
                 (
                     "amount_due",

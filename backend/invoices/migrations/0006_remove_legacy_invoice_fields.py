@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("invoices", "0005_add_billing_period_po_number_and_lineitem_name"),
     ]

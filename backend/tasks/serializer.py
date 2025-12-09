@@ -10,7 +10,15 @@ from common.serializer import (
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
+from tasks.models import (
+    Board,
+    BoardColumn,
+    BoardMember,
+    BoardTask,
+    Task,
+    TaskPipeline,
+    TaskStage,
+)
 
 
 class BoardMemberSerializer(serializers.ModelSerializer):
@@ -254,3 +262,162 @@ class TaskCreateSwaggerSerializer(serializers.ModelSerializer):
             "assigned_to",
             "tags",
         )
+
+
+# ============================================================================
+# Kanban Serializers
+# ============================================================================
+
+
+class TaskStageSerializer(serializers.ModelSerializer):
+    """Serializer for task stages."""
+
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskStage
+        fields = [
+            "id",
+            "name",
+            "order",
+            "color",
+            "stage_type",
+            "maps_to_status",
+            "wip_limit",
+            "task_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ("id", "created_at", "updated_at", "org")
+
+    @extend_schema_field(int)
+    def get_task_count(self, obj):
+        return obj.tasks.count()
+
+
+class TaskPipelineSerializer(serializers.ModelSerializer):
+    """Serializer for task pipelines with nested stages."""
+
+    stages = TaskStageSerializer(many=True, read_only=True)
+    stage_count = serializers.SerializerMethodField()
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskPipeline
+        fields = [
+            "id",
+            "name",
+            "description",
+            "is_default",
+            "is_active",
+            "stages",
+            "stage_count",
+            "task_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ("id", "created_at", "updated_at", "org")
+
+    @extend_schema_field(int)
+    def get_stage_count(self, obj):
+        return obj.stages.count()
+
+    @extend_schema_field(int)
+    def get_task_count(self, obj):
+        return Task.objects.filter(stage__pipeline=obj).count()
+
+
+class TaskPipelineListSerializer(serializers.ModelSerializer):
+    """Simplified pipeline serializer for lists."""
+
+    stage_count = serializers.SerializerMethodField()
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskPipeline
+        fields = [
+            "id",
+            "name",
+            "description",
+            "is_default",
+            "is_active",
+            "stage_count",
+            "task_count",
+            "created_at",
+        ]
+
+    @extend_schema_field(int)
+    def get_stage_count(self, obj):
+        return obj.stages.count()
+
+    @extend_schema_field(int)
+    def get_task_count(self, obj):
+        return Task.objects.filter(stage__pipeline=obj).count()
+
+
+class RelatedEntitySerializer(serializers.Serializer):
+    """Minimal serializer for related entities on kanban cards."""
+
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
+class TaskKanbanCardSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for kanban cards (minimal fields for performance)."""
+
+    assigned_to = ProfileSerializer(read_only=True, many=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    related_entity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "title",
+            "status",
+            "priority",
+            "due_date",
+            "is_overdue",
+            "stage",
+            "kanban_order",
+            "assigned_to",
+            "related_entity",
+            "created_at",
+        ]
+
+    @extend_schema_field(RelatedEntitySerializer(allow_null=True))
+    def get_related_entity(self, obj):
+        """Return the related entity (account, lead, opportunity, or case) if any."""
+        if obj.account_id:
+            return {"id": obj.account_id, "name": obj.account.name, "type": "account"}
+        if obj.lead_id:
+            return {"id": obj.lead_id, "name": str(obj.lead), "type": "lead"}
+        if obj.opportunity_id:
+            return {
+                "id": obj.opportunity_id,
+                "name": obj.opportunity.name,
+                "type": "opportunity",
+            }
+        if obj.case_id:
+            return {"id": obj.case_id, "name": obj.case.name, "type": "case"}
+        return None
+
+
+class TaskMoveSerializer(serializers.Serializer):
+    """Serializer for moving tasks in kanban."""
+
+    stage_id = serializers.UUIDField(required=False, allow_null=True)
+    status = serializers.ChoiceField(choices=Task.STATUS_CHOICES, required=False)
+    kanban_order = serializers.DecimalField(
+        max_digits=15, decimal_places=6, required=False
+    )
+    above_task_id = serializers.UUIDField(required=False, allow_null=True)
+    below_task_id = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        # Must provide either stage_id or status
+        if not attrs.get("stage_id") and not attrs.get("status"):
+            raise serializers.ValidationError(
+                "Either stage_id or status must be provided"
+            )
+        return attrs

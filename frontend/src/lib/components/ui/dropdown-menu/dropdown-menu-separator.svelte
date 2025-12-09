@@ -1,20 +1,20 @@
 <script>
-	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-	import { cn } from '$lib/utils.js';
+  import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+  import { cn } from '$lib/utils.js';
 
-	/**
-	 * @type {{
-	 *   ref?: HTMLElement | null,
-	 *   class?: string,
-	 *   [key: string]: any
-	 * }}
-	 */
-	let { ref = $bindable(null), class: className, ...restProps } = $props();
+  /**
+   * @type {{
+   *   ref?: HTMLElement | null,
+   *   class?: string,
+   *   [key: string]: any
+   * }}
+   */
+  let { ref = $bindable(null), class: className, ...restProps } = $props();
 </script>
 
 <DropdownMenuPrimitive.Separator
-	bind:ref
-	data-slot="dropdown-menu-separator"
-	class={cn('bg-border -mx-1 my-1 h-px', className)}
-	{...restProps}
+  bind:ref
+  data-slot="dropdown-menu-separator"
+  class={cn('bg-border -mx-1 my-1 h-px', className)}
+  {...restProps}
 />

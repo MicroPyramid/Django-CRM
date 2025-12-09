@@ -14,7 +14,9 @@ app = Celery("redis://")
 
 
 @app.task
-def send_email(task_id, recipients, org_id, domain="demo.django-crm.io", protocol="http"):
+def send_email(
+    task_id, recipients, org_id, domain="demo.django-crm.io", protocol="http"
+):
     set_rls_context(org_id)
     task = Task.objects.filter(id=task_id).first()
     created_by = task.created_by

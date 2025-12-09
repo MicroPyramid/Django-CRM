@@ -1,6 +1,7 @@
 """
 Common validators for CRM models.
 """
+
 import re
 
 from django.core.validators import RegexValidator
@@ -19,7 +20,9 @@ e164_phone_validator = RegexValidator(
 # Examples: +1 (202) 555-1234, 202-555-1234, +44 20 7123 4567
 flexible_phone_validator = RegexValidator(
     regex=r"^[\d\s\-\(\)\+\.]{7,25}$",
-    message=_("Enter a valid phone number (7-25 characters, digits and separators only)"),
+    message=_(
+        "Enter a valid phone number (7-25 characters, digits and separators only)"
+    ),
 )
 
 

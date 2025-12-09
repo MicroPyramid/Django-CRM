@@ -1,23 +1,23 @@
 <script>
-	import { cn } from '$lib/utils.js';
+  import { cn } from '$lib/utils.js';
 
-	/**
-	 * @type {{
-	 *   ref?: HTMLElement | null,
-	 *   class?: string,
-	 *   children?: import('svelte').Snippet,
-	 *   [key: string]: any
-	 * }}
-	 */
-	let { ref = $bindable(null), class: className, children, ...restProps } = $props();
+  /**
+   * @type {{
+   *   ref?: HTMLElement | null,
+   *   class?: string,
+   *   children?: import('svelte').Snippet,
+   *   [key: string]: any
+   * }}
+   */
+  let { ref = $bindable(null), class: className, children, ...restProps } = $props();
 </script>
 
 <div
-	bind:this={ref}
-	data-slot="sidebar-header"
-	data-sidebar="header"
-	class={cn('flex flex-col gap-2 p-2', className)}
-	{...restProps}
+  bind:this={ref}
+  data-slot="sidebar-header"
+  data-sidebar="header"
+  class={cn('flex flex-col gap-2 p-2', className)}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </div>

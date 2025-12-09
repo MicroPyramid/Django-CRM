@@ -1,12 +1,12 @@
 <script>
-	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+  import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 
-	let { ref = $bindable(null), value = $bindable(), ...restProps } = $props();
+  let { ref = $bindable(null), value = $bindable(), ...restProps } = $props();
 </script>
 
 <DropdownMenuPrimitive.CheckboxGroup
-	bind:ref
-	bind:value
-	data-slot="dropdown-menu-checkbox-group"
-	{...restProps}
+  bind:ref
+  bind:value
+  data-slot="dropdown-menu-checkbox-group"
+  {...restProps}
 />

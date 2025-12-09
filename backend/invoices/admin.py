@@ -58,7 +58,14 @@ class InvoiceAdmin(admin.ModelAdmin):
         "client_email",
         "account__name",
     )
-    raw_id_fields = ("created_by", "org", "account", "contact", "opportunity", "template")
+    raw_id_fields = (
+        "created_by",
+        "org",
+        "account",
+        "contact",
+        "opportunity",
+        "template",
+    )
     filter_horizontal = ("assigned_to", "teams")
     inlines = [InvoiceLineItemInline, PaymentInline]
     date_hierarchy = "created_at"

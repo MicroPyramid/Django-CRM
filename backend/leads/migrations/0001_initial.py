@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -119,9 +118,7 @@ class Migration(migrations.Migration):
                 ("email", models.EmailField(blank=True, max_length=254, null=True)),
                 (
                     "phone",
-                    models.CharField(
-                        blank=True, max_length=50, null=True
-                    ),
+                    models.CharField(blank=True, max_length=50, null=True),
                 ),
                 (
                     "contact_title",

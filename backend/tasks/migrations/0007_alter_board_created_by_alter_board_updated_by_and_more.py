@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0006_alter_task_assigned_to"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

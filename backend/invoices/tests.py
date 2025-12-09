@@ -329,7 +329,6 @@ class InvoiceEditTestCase(InvoiceCreateTest, TestCase):
 
 class InvoiceSendMailTestCase(InvoiceCreateTest, TestCase):
     def test_invoices_send_mail(self):
-
         self.client.login(email="joeInvoice@example.com", password="password")
         response = self.client.get(
             reverse("invoices:invoice_send_mail", args=(self.invoice_1.id,))
@@ -345,7 +344,6 @@ class InvoiceSendMailTestCase(InvoiceCreateTest, TestCase):
 
 class InvoiceChangeStatusPaidTestCase(InvoiceCreateTest, TestCase):
     def test_invoices_change_status_to_paid(self):
-
         self.client.login(email="joeInvoice@example.com", password="password")
         response = self.client.get(
             reverse("invoices:invoice_change_status_paid", args=(self.invoice_1.id,))
@@ -361,7 +359,6 @@ class InvoiceChangeStatusPaidTestCase(InvoiceCreateTest, TestCase):
 
 class InvoiceChangeStatusCancelledTestCase(InvoiceCreateTest, TestCase):
     def test_invoices_change_status_to_cancelled(self):
-
         self.client.login(email="joeInvoice@example.com", password="password")
         response = self.client.get(
             reverse(
@@ -381,7 +378,6 @@ class InvoiceChangeStatusCancelledTestCase(InvoiceCreateTest, TestCase):
 
 class InvoiceDownloadTestCase(InvoiceCreateTest, TestCase):
     def test_invoices_download(self):
-
         self.client.login(email="joeInvoice@example.com", password="password")
         response = self.client.get(
             reverse("invoices:invoice_download", args=(self.invoice.id,))
@@ -397,7 +393,6 @@ class InvoiceDownloadTestCase(InvoiceCreateTest, TestCase):
 
 class AddCommentTestCase(InvoiceCreateTest, TestCase):
     def test_invoice_add_comment(self):
-
         self.client.login(email="johnDoeInvoice@example.com", password="password")
         data = {
             "comment": "",
@@ -420,7 +415,6 @@ class AddCommentTestCase(InvoiceCreateTest, TestCase):
 
 class UpdateCommentTestCase(InvoiceCreateTest, TestCase):
     def test_invoice_update_comment(self):
-
         self.client.login(email="johnDoeInvoice@example.com", password="password")
         data = {
             "commentid": self.comment.id,
@@ -445,7 +439,6 @@ class UpdateCommentTestCase(InvoiceCreateTest, TestCase):
 
 class DeleteCommentTestCase(InvoiceCreateTest, TestCase):
     def test_invoice_delete_comment(self):
-
         data = {
             "comment_id": self.comment.id,
         }
@@ -460,7 +453,6 @@ class DeleteCommentTestCase(InvoiceCreateTest, TestCase):
 
 class AddAttachmentTestCase(InvoiceCreateTest, TestCase):
     def test_invoice_add_attachment(self):
-
         data = {
             "attachment": SimpleUploadedFile(
                 "file_name.txt", bytes("file contents.", "utf-8")
@@ -483,7 +475,6 @@ class AddAttachmentTestCase(InvoiceCreateTest, TestCase):
 
 class DeleteAttachmentTestCase(InvoiceCreateTest, TestCase):
     def test_invoice_delete_attachment(self):
-
         data = {
             "attachment_id": self.attachment.id,
         }
@@ -498,7 +489,6 @@ class DeleteAttachmentTestCase(InvoiceCreateTest, TestCase):
 
 class InvoiceDeleteTestCase(InvoiceCreateTest, TestCase):
     def test_invoices_delete(self):
-
         self.client.login(email="joeInvoice@example.com", password="password")
         response = self.client.get(
             reverse("invoices:invoice_delete", args=(self.invoice_1.id,))

@@ -25,9 +25,7 @@ class OpportunityLineItemListView(APIView):
 
     def get_opportunity(self, pk):
         """Get opportunity and verify access"""
-        return Opportunity.objects.filter(
-            id=pk, org=self.request.profile.org
-        ).first()
+        return Opportunity.objects.filter(id=pk, org=self.request.profile.org).first()
 
     def check_opportunity_access(self, opportunity):
         """Check if user has access to the opportunity"""
@@ -42,7 +40,10 @@ class OpportunityLineItemListView(APIView):
                 or (self.request.profile in opportunity.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "message": "You do not have permission to access this opportunity"},
+                    {
+                        "error": True,
+                        "message": "You do not have permission to access this opportunity",
+                    },
                     status=status.HTTP_403_FORBIDDEN,
                 )
         return None
@@ -56,7 +57,9 @@ class OpportunityLineItemListView(APIView):
                 fields={
                     "line_items": OpportunityLineItemSerializer(many=True),
                     "products": ProductSerializer(many=True),
-                    "opportunity_amount": serializers.DecimalField(max_digits=12, decimal_places=2),
+                    "opportunity_amount": serializers.DecimalField(
+                        max_digits=12, decimal_places=2
+                    ),
                     "opportunity_amount_source": serializers.CharField(),
                 },
             )
@@ -78,12 +81,14 @@ class OpportunityLineItemListView(APIView):
             org=request.profile.org, is_active=True
         ).order_by("name")
 
-        return Response({
-            "line_items": OpportunityLineItemSerializer(line_items, many=True).data,
-            "products": ProductSerializer(products, many=True).data,
-            "opportunity_amount": opportunity.amount,
-            "opportunity_amount_source": opportunity.amount_source,
-        })
+        return Response(
+            {
+                "line_items": OpportunityLineItemSerializer(line_items, many=True).data,
+                "products": ProductSerializer(products, many=True).data,
+                "opportunity_amount": opportunity.amount,
+                "opportunity_amount_source": opportunity.amount_source,
+            }
+        )
 
     @extend_schema(
         operation_id="opportunity_line_items_create",
@@ -96,7 +101,9 @@ class OpportunityLineItemListView(APIView):
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
                     "line_item": OpportunityLineItemSerializer(),
-                    "opportunity_amount": serializers.DecimalField(max_digits=12, decimal_places=2),
+                    "opportunity_amount": serializers.DecimalField(
+                        max_digits=12, decimal_places=2
+                    ),
                 },
             )
         },
@@ -143,9 +150,7 @@ class OpportunityLineItemDetailView(APIView):
 
     def get_opportunity(self, pk):
         """Get opportunity and verify access"""
-        return Opportunity.objects.filter(
-            id=pk, org=self.request.profile.org
-        ).first()
+        return Opportunity.objects.filter(id=pk, org=self.request.profile.org).first()
 
     def get_line_item(self, opportunity, line_item_id):
         """Get line item"""
@@ -168,7 +173,10 @@ class OpportunityLineItemDetailView(APIView):
                 or (self.request.profile in opportunity.assigned_to.all())
             ):
                 return Response(
-                    {"error": True, "message": "You do not have permission to access this opportunity"},
+                    {
+                        "error": True,
+                        "message": "You do not have permission to access this opportunity",
+                    },
                     status=status.HTTP_403_FORBIDDEN,
                 )
         return None
@@ -205,7 +213,9 @@ class OpportunityLineItemDetailView(APIView):
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
                     "line_item": OpportunityLineItemSerializer(),
-                    "opportunity_amount": serializers.DecimalField(max_digits=12, decimal_places=2),
+                    "opportunity_amount": serializers.DecimalField(
+                        max_digits=12, decimal_places=2
+                    ),
                 },
             )
         },
@@ -254,7 +264,9 @@ class OpportunityLineItemDetailView(APIView):
                 fields={
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
-                    "opportunity_amount": serializers.DecimalField(max_digits=12, decimal_places=2),
+                    "opportunity_amount": serializers.DecimalField(
+                        max_digits=12, decimal_places=2
+                    ),
                 },
             )
         },

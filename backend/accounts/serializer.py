@@ -50,7 +50,15 @@ class AccountSerializer(serializers.ModelSerializer):
     @extend_schema_field(list)
     def get_opportunities(self, obj):
         """Return opportunities linked to this account"""
-        return [{"id": str(o.id), "name": o.name, "stage": o.stage, "amount": str(o.amount) if o.amount else "0"} for o in obj.opportunities.all()]
+        return [
+            {
+                "id": str(o.id),
+                "name": o.name,
+                "stage": o.stage,
+                "amount": str(o.amount) if o.amount else "0",
+            }
+            for o in obj.opportunities.all()
+        ]
 
     class Meta:
         model = Account
