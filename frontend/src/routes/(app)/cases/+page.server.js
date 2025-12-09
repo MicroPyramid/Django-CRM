@@ -21,6 +21,9 @@ export async function load({ url, locals, cookies }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse view mode (list or kanban)
+	const viewMode = url.searchParams.get('view') || 'list';
+
 	// Parse pagination params from URL
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -56,9 +59,19 @@ export async function load({ url, locals, cookies }) {
 		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
 		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Fetch cases and dropdown options in parallel
-		const [casesResponse, accountsRes, usersRes, contactsRes, teamsRes, tagsRes] = await Promise.all([
+		// Build kanban query params (reuse filter params)
+		const kanbanQueryParams = new URLSearchParams();
+		if (filters.search) kanbanQueryParams.append('search', filters.search);
+		if (filters.priority) kanbanQueryParams.append('priority', filters.priority);
+		if (filters.case_type) kanbanQueryParams.append('case_type', filters.case_type);
+		filters.assigned_to.forEach((id) => kanbanQueryParams.append('assigned_to', id));
+
+		// Fetch cases, kanban data, and dropdown options in parallel
+		const [casesResponse, kanbanResponse, accountsRes, usersRes, contactsRes, teamsRes, tagsRes] = await Promise.all([
 			apiRequest(`/cases/?${queryParams.toString()}`, {}, { cookies, org }),
+			viewMode === 'kanban'
+				? apiRequest(`/cases/kanban/${kanbanQueryParams.toString() ? '?' + kanbanQueryParams.toString() : ''}`, {}, { cookies, org })
+				: Promise.resolve(null),
 			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
 			apiRequest('/users/', {}, { cookies, org }).catch(() => ({})),
 			apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
@@ -224,6 +237,8 @@ export async function load({ url, locals, cookies }) {
 				totalPages: Math.ceil(total / limit) || 1
 			},
 			filters,
+			viewMode,
+			kanbanData: kanbanResponse,
 			statusOptions,
 			caseTypeOptions,
 			// Dropdown options loaded server-side
@@ -470,6 +485,41 @@ export const actions = {
 		} catch (err) {
 			console.error('Error creating comment:', err);
 			return fail(500, { error: 'Failed to create comment' });
+		}
+	},
+
+	moveCase: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const caseId = form.get('caseId')?.toString();
+			const status = form.get('status')?.toString();
+			const stageId = form.get('stageId')?.toString() || null;
+			const aboveCaseId = form.get('aboveCaseId')?.toString() || null;
+			const belowCaseId = form.get('belowCaseId')?.toString() || null;
+
+			if (!caseId) {
+				return fail(400, { error: 'Case ID is required' });
+			}
+
+			/** @type {Record<string, unknown>} */
+			const moveData = {};
+			if (status) moveData.status = status;
+			if (stageId) moveData.stage_id = stageId;
+			if (aboveCaseId) moveData.above_case_id = aboveCaseId;
+			if (belowCaseId) moveData.below_case_id = belowCaseId;
+
+			await apiRequest(
+				`/cases/${caseId}/move/`,
+				{ method: 'PATCH', body: moveData },
+				{ cookies, org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error moving case:', err);
+			return fail(500, { error: 'Failed to move case' });
 		}
 	}
 };

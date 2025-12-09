@@ -19,8 +19,11 @@
 		Activity,
 		Loader2,
 		Eye,
-		Filter
+		Filter,
+		List,
+		Columns
 	} from '@lucide/svelte';
+	import { CaseKanban } from '$lib/components/ui/case-kanban';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { PageHeader } from '$lib/components/layout';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -162,6 +165,20 @@
 	// Computed values
 	let casesData = $derived(data.cases || []);
 	const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
+
+	// View mode (list or kanban)
+	/** @type {'list' | 'kanban'} */
+	let viewMode = $state('list');
+
+	// Sync viewMode when data changes
+	$effect(() => {
+		if (data.viewMode) {
+			viewMode = data.viewMode;
+		}
+	});
+
+	// Kanban data from server
+	const kanbanData = $derived(data.kanbanData);
 
 	// Dropdown options from server (loaded with page data)
 	const formOptions = $derived(data.formOptions || {});
@@ -506,6 +523,17 @@
 	let closeForm;
 	/** @type {HTMLFormElement} */
 	let reopenForm;
+	/** @type {HTMLFormElement} */
+	let moveCaseForm;
+
+	// Kanban form state for drag-drop
+	let kanbanFormState = $state({
+		caseId: '',
+		status: '',
+		stageId: '',
+		aboveCaseId: '',
+		belowCaseId: ''
+	});
 
 	// Form data state
 	let formState = $state({
@@ -683,6 +711,70 @@
 	async function handleRowChange(row, field, value) {
 		await handleQuickEdit(row, field, value);
 	}
+
+	/**
+	 * Handle view mode change
+	 * @param {'list' | 'kanban'} mode
+	 */
+	async function updateViewMode(mode) {
+		viewMode = mode;
+		const url = new URL($page.url);
+		if (mode === 'list') {
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.set('view', mode);
+		}
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle kanban status change (drag-drop)
+	 * @param {string} caseId
+	 * @param {string} targetColumnId
+	 * @param {string} _columnId
+	 */
+	async function handleKanbanStatusChange(caseId, targetColumnId, _columnId) {
+		kanbanFormState.caseId = caseId;
+		kanbanFormState.aboveCaseId = '';
+		kanbanFormState.belowCaseId = '';
+
+		// Determine mode from kanban data
+		// In status-based mode, column.id is a status value (e.g., "New", "Assigned")
+		// In pipeline-based mode, column.id is a stage UUID
+		if (kanbanData?.mode === 'pipeline') {
+			kanbanFormState.status = '';
+			kanbanFormState.stageId = targetColumnId;
+		} else {
+			kanbanFormState.status = targetColumnId;
+			kanbanFormState.stageId = '';
+		}
+
+		await tick();
+		moveCaseForm.requestSubmit();
+	}
+
+	/**
+	 * Handle kanban card click (open drawer)
+	 * @param {any} caseItem
+	 */
+	function handleKanbanCardClick(caseItem) {
+		// Find full case data and open drawer
+		const fullCase = casesData.find((c) => c.id === caseItem.id);
+		if (fullCase) {
+			drawer.openDetail(fullCase);
+		} else {
+			// Use kanban card data directly
+			drawer.openDetail({
+				id: caseItem.id,
+				subject: caseItem.name,
+				status: caseItem.status,
+				priority: caseItem.priority,
+				caseType: caseItem.case_type,
+				account: caseItem.account_name ? { name: caseItem.account_name } : null,
+				assignedTo: caseItem.assigned_to || []
+			});
+		}
+	}
 </script>
 
 <svelte:head>
@@ -745,6 +837,30 @@
 						{closedCount}
 					</span>
 				</button>
+			</div>
+
+			<div class="bg-border mx-1 h-6 w-px"></div>
+
+			<!-- View Mode Toggle -->
+			<div class="border-input bg-background inline-flex rounded-lg border p-1">
+				<Button
+					variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+					size="sm"
+					onclick={() => updateViewMode('list')}
+					class="h-8 px-3"
+				>
+					<List class="mr-1.5 h-4 w-4" />
+					List
+				</Button>
+				<Button
+					variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+					size="sm"
+					onclick={() => updateViewMode('kanban')}
+					class="h-8 px-3"
+				>
+					<Columns class="mr-1.5 h-4 w-4" />
+					Board
+				</Button>
 			</div>
 
 			<div class="bg-border mx-1 h-6 w-px"></div>
@@ -846,29 +962,39 @@
 			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
-	<CrmTable
-		data={filteredCases}
-		{columns}
-		bind:visibleColumns
-		onRowChange={handleRowChange}
-		onRowClick={(row) => drawer.openDetail(row)}
-	>
-		{#snippet emptyState()}
-			<div class="flex flex-col items-center justify-center py-16 text-center">
-				<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
-				<h3 class="text-foreground text-lg font-medium">No cases found</h3>
-			</div>
-		{/snippet}
-	</CrmTable>
 
-	<!-- Pagination -->
-	<Pagination
-		page={pagination.page}
-		limit={pagination.limit}
-		total={pagination.total}
-		onPageChange={handlePageChange}
-		onLimitChange={handleLimitChange}
-	/>
+	{#if viewMode === 'list'}
+		<CrmTable
+			data={filteredCases}
+			{columns}
+			bind:visibleColumns
+			onRowChange={handleRowChange}
+			onRowClick={(row) => drawer.openDetail(row)}
+		>
+			{#snippet emptyState()}
+				<div class="flex flex-col items-center justify-center py-16 text-center">
+					<Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
+					<h3 class="text-foreground text-lg font-medium">No cases found</h3>
+				</div>
+			{/snippet}
+		</CrmTable>
+
+		<!-- Pagination (only for list view) -->
+		<Pagination
+			page={pagination.page}
+			limit={pagination.limit}
+			total={pagination.total}
+			onPageChange={handlePageChange}
+			onLimitChange={handleLimitChange}
+		/>
+	{:else}
+		<CaseKanban
+			data={kanbanData}
+			loading={false}
+			onStatusChange={handleKanbanStatusChange}
+			onCardClick={handleKanbanCardClick}
+		/>
+	{/if}
 </div>
 
 <!-- Case Drawer -->
@@ -1026,4 +1152,18 @@
 	class="hidden"
 >
 	<input type="hidden" name="caseId" value={formState.caseId} />
+</form>
+
+<form
+	method="POST"
+	action="?/moveCase"
+	bind:this={moveCaseForm}
+	use:enhance={createEnhanceHandler('Case moved successfully', false)}
+	class="hidden"
+>
+	<input type="hidden" name="caseId" value={kanbanFormState.caseId} />
+	<input type="hidden" name="status" value={kanbanFormState.status} />
+	<input type="hidden" name="stageId" value={kanbanFormState.stageId} />
+	<input type="hidden" name="aboveCaseId" value={kanbanFormState.aboveCaseId} />
+	<input type="hidden" name="belowCaseId" value={kanbanFormState.belowCaseId} />
 </form>
