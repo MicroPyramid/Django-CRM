@@ -13,36 +13,34 @@ def cleanup_duplicate_lead_emails(apps, schema_editor):
     Find duplicate lead emails (case-insensitive) within each org
     and clear email on duplicates (keep oldest).
     """
-    Lead = apps.get_model('leads', 'Lead')
+    Lead = apps.get_model("leads", "Lead")
 
     # Find duplicates: group by lower(email) + org, having count > 1
     duplicates = (
-        Lead.objects
-        .exclude(email__isnull=True)
-        .exclude(email='')
-        .annotate(email_lower=Lower('email'))
-        .values('email_lower', 'org_id')
-        .annotate(count=Count('id'))
+        Lead.objects.exclude(email__isnull=True)
+        .exclude(email="")
+        .annotate(email_lower=Lower("email"))
+        .values("email_lower", "org_id")
+        .annotate(count=Count("id"))
         .filter(count__gt=1)
     )
 
     for dup in duplicates:
         # Get all leads with this email in this org, ordered by created_at
         leads = list(
-            Lead.objects
-            .filter(org_id=dup['org_id'])
+            Lead.objects.filter(org_id=dup["org_id"])
             .exclude(email__isnull=True)
-            .exclude(email='')
-            .annotate(email_lower=Lower('email'))
-            .filter(email_lower=dup['email_lower'])
-            .order_by('created_at')
+            .exclude(email="")
+            .annotate(email_lower=Lower("email"))
+            .filter(email_lower=dup["email_lower"])
+            .order_by("created_at")
         )
 
         # Keep the first one (oldest), clear email on the rest
         for lead in leads[1:]:
             old_email = lead.email
             lead.email = None
-            lead.save(update_fields=['email'])
+            lead.save(update_fields=["email"])
             print(f"  Cleared duplicate email on lead {lead.id}: '{old_email}'")
 
 
@@ -51,22 +49,24 @@ def cleanup_long_phone_numbers(apps, schema_editor):
     Truncate phone numbers longer than 25 characters.
     Phone field max_length is being reduced from 50 to 25.
     """
-    Lead = apps.get_model('leads', 'Lead')
+    Lead = apps.get_model("leads", "Lead")
 
-    long_phones = Lead.objects.annotate(
-        phone_len=Length('phone')
-    ).filter(phone_len__gt=25)
+    long_phones = Lead.objects.annotate(phone_len=Length("phone")).filter(
+        phone_len__gt=25
+    )
 
     for lead in long_phones:
         old_phone = lead.phone
         lead.phone = lead.phone[:25] if lead.phone else None
-        lead.save(update_fields=['phone'])
-        print(f"  Truncated long phone on lead {lead.id}: '{old_phone}' -> '{lead.phone}'")
+        lead.save(update_fields=["phone"])
+        print(
+            f"  Truncated long phone on lead {lead.id}: '{old_phone}' -> '{lead.phone}'"
+        )
 
 
 def cleanup_invalid_probability(apps, schema_editor):
     """Fix probability values outside 0-100 range."""
-    Lead = apps.get_model('leads', 'Lead')
+    Lead = apps.get_model("leads", "Lead")
 
     # Set negative probabilities to 0
     updated = Lead.objects.filter(probability__lt=0).update(probability=0)
@@ -81,8 +81,10 @@ def cleanup_invalid_probability(apps, schema_editor):
 
 def cleanup_negative_amounts(apps, schema_editor):
     """Set negative opportunity_amount values to NULL."""
-    Lead = apps.get_model('leads', 'Lead')
-    updated = Lead.objects.filter(opportunity_amount__lt=0).update(opportunity_amount=None)
+    Lead = apps.get_model("leads", "Lead")
+    updated = Lead.objects.filter(opportunity_amount__lt=0).update(
+        opportunity_amount=None
+    )
     if updated:
         print(f"  Set {updated} negative opportunity_amount values to NULL")
 
@@ -93,7 +95,6 @@ def reverse_noop(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0008_enable_rls_product_invoice_line_item"),
         ("contacts", "0010_add_enterprise_constraints"),

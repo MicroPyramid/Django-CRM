@@ -30,10 +30,22 @@ urlpatterns = [
     path("", TaskListView.as_view()),
     # Kanban endpoints (must be before <str:pk>/ to avoid conflicts)
     path("kanban/", TaskKanbanView.as_view(), name="task_kanban"),
-    path("pipelines/", TaskPipelineListCreateView.as_view(), name="pipeline_list_create"),
-    path("pipelines/<str:pk>/", TaskPipelineDetailView.as_view(), name="pipeline_detail"),
-    path("pipelines/<str:pipeline_pk>/stages/", TaskStageCreateView.as_view(), name="stage_create"),
-    path("pipelines/<str:pipeline_pk>/stages/reorder/", TaskStageReorderView.as_view(), name="stage_reorder"),
+    path(
+        "pipelines/", TaskPipelineListCreateView.as_view(), name="pipeline_list_create"
+    ),
+    path(
+        "pipelines/<str:pk>/", TaskPipelineDetailView.as_view(), name="pipeline_detail"
+    ),
+    path(
+        "pipelines/<str:pipeline_pk>/stages/",
+        TaskStageCreateView.as_view(),
+        name="stage_create",
+    ),
+    path(
+        "pipelines/<str:pipeline_pk>/stages/reorder/",
+        TaskStageReorderView.as_view(),
+        name="stage_reorder",
+    ),
     path("stages/<str:pk>/", TaskStageDetailView.as_view(), name="stage_detail"),
     # Task detail and move endpoints
     path("<str:pk>/", TaskDetailView.as_view()),

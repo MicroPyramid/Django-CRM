@@ -10,7 +10,15 @@ from common.serializer import (
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task, TaskPipeline, TaskStage
+from tasks.models import (
+    Board,
+    BoardColumn,
+    BoardMember,
+    BoardTask,
+    Task,
+    TaskPipeline,
+    TaskStage,
+)
 
 
 class BoardMemberSerializer(serializers.ModelSerializer):
@@ -385,7 +393,11 @@ class TaskKanbanCardSerializer(serializers.ModelSerializer):
         if obj.lead_id:
             return {"id": obj.lead_id, "name": str(obj.lead), "type": "lead"}
         if obj.opportunity_id:
-            return {"id": obj.opportunity_id, "name": obj.opportunity.name, "type": "opportunity"}
+            return {
+                "id": obj.opportunity_id,
+                "name": obj.opportunity.name,
+                "type": "opportunity",
+            }
         if obj.case_id:
             return {"id": obj.case_id, "name": obj.case.name, "type": "case"}
         return None

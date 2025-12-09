@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('invoices', '0006_remove_legacy_invoice_fields'),
+        ("invoices", "0006_remove_legacy_invoice_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoice',
-            name='cancelled_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Cancelled At'),
+            model_name="invoice",
+            name="cancelled_at",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Cancelled At"
+            ),
         ),
     ]

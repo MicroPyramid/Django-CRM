@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0002_enable_rls"),
         ("contacts", "0005_rename_linked_in_url_to_linkedin_url"),

@@ -3,7 +3,12 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -51,7 +56,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
                     assigned_to__id__in=params.get("assigned_to")
                 ).distinct()
             if params.get("tags"):
-                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+                queryset = queryset.filter(
+                    tags__id__in=params.getlist("tags")
+                ).distinct()
             if params.get("search"):
                 search = params.get("search")
                 queryset = queryset.filter(
@@ -61,9 +68,13 @@ class ContactsListView(APIView, LimitOffsetPagination):
                     | Q(phone__icontains=search)
                 )
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
 
         context = {}
         results_contact = self.paginate_queryset(
@@ -160,7 +171,9 @@ class ContactsListView(APIView, LimitOffsetPagination):
             tags = params.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
-            tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+            tag_objs = Tags.objects.filter(
+                id__in=tags, org=request.profile.org, is_active=True
+            )
             contact_obj.tags.add(*tag_objs)
 
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
@@ -256,7 +269,9 @@ class ContactDetailView(APIView):
             tags = data.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
-            tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+            tag_objs = Tags.objects.filter(
+                id__in=tags, org=request.profile.org, is_active=True
+            )
             contact_obj.tags.add(*tag_objs)
 
         previous_assigned_to_users = list(
@@ -514,7 +529,10 @@ class ContactDetailView(APIView):
         contact_obj = self.get_object(pk=pk)
         if contact_obj.org != request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -568,7 +586,9 @@ class ContactDetailView(APIView):
             if tags_list:
                 if isinstance(tags_list, str):
                     tags_list = json.loads(tags_list)
-                tag_objs = Tags.objects.filter(id__in=tags_list, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags_list, org=request.profile.org, is_active=True
+                )
                 contact_obj.tags.add(*tag_objs)
 
         return Response(

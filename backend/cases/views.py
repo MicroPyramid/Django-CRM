@@ -2,7 +2,12 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -73,13 +78,19 @@ class CaseListView(APIView, LimitOffsetPagination):
                     assigned_to__id__in=params.getlist("assigned_to")
                 ).distinct()
             if params.get("tags"):
-                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+                queryset = queryset.filter(
+                    tags__id__in=params.getlist("tags")
+                ).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
 
         context = {}
 
@@ -110,19 +121,21 @@ class CaseListView(APIView, LimitOffsetPagination):
         operation_id="cases_list",
         tags=["Cases"],
         parameters=swagger_params.cases_list_get_params,
-        responses={200: inline_serializer(
-            name="CaseListResponse",
-            fields={
-                "cases_count": serializers.IntegerField(),
-                "offset": serializers.IntegerField(allow_null=True),
-                "cases": CaseSerializer(many=True),
-                "status": serializers.ListField(),
-                "priority": serializers.ListField(),
-                "type_of_case": serializers.ListField(),
-                "accounts_list": AccountSerializer(many=True),
-                "contacts_list": ContactSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseListResponse",
+                fields={
+                    "cases_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "cases": CaseSerializer(many=True),
+                    "status": serializers.ListField(),
+                    "priority": serializers.ListField(),
+                    "type_of_case": serializers.ListField(),
+                    "accounts_list": AccountSerializer(many=True),
+                    "contacts_list": ContactSerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
@@ -133,15 +146,17 @@ class CaseListView(APIView, LimitOffsetPagination):
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCreateSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="CaseCreateResponse",
-            fields={
-                "error": serializers.BooleanField(),
-                "message": serializers.CharField(),
-                "id": serializers.CharField(),
-                "cases_obj": CaseSerializer(),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                    "id": serializers.CharField(),
+                    "cases_obj": CaseSerializer(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -180,7 +195,9 @@ class CaseListView(APIView, LimitOffsetPagination):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 cases_obj.tags.add(*tag_objs)
 
             if self.request.FILES.get("case_attachment"):
@@ -226,10 +243,15 @@ class CaseDetailView(APIView):
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCreateSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="CaseUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -295,7 +317,9 @@ class CaseDetailView(APIView):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 cases_object.tags.add(*tag_objs)
 
             if self.request.FILES.get("case_attachment"):
@@ -329,10 +353,15 @@ class CaseDetailView(APIView):
         operation_id="cases_destroy",
         tags=["Cases"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="CaseDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -360,16 +389,18 @@ class CaseDetailView(APIView):
         operation_id="cases_retrieve",
         tags=["Cases"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="CaseDetailResponse",
-            fields={
-                "cases_obj": CaseSerializer(),
-                "attachments": AttachmentsSerializer(many=True),
-                "comments": CommentSerializer(many=True),
-                "comment_permission": serializers.BooleanField(),
-                "users_mention": serializers.ListField(),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseDetailResponse",
+                fields={
+                    "cases_obj": CaseSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                    "comment_permission": serializers.BooleanField(),
+                    "users_mention": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, pk, format=None):
         self.cases = self.get_object(pk=pk)
@@ -454,14 +485,16 @@ class CaseDetailView(APIView):
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseDetailEditSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="CaseCommentAttachmentResponse",
-            fields={
-                "cases_obj": CaseSerializer(),
-                "attachments": AttachmentsSerializer(many=True),
-                "comments": CommentSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseCommentAttachmentResponse",
+                fields={
+                    "cases_obj": CaseSerializer(),
+                    "attachments": AttachmentsSerializer(many=True),
+                    "comments": CommentSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, **kwargs):
         params = request.data
@@ -527,10 +560,15 @@ class CaseDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=CaseCreateSwaggerSerializer,
         description="Partial Case Update",
-        responses={200: inline_serializer(
-            name="CasePatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CasePatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a case."""
@@ -538,7 +576,10 @@ class CaseDetailView(APIView):
         cases_object = self.get_object(pk=pk)
         if cases_object.org != request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -563,8 +604,12 @@ class CaseDetailView(APIView):
 
         if serializer.is_valid():
             cases_object = serializer.save(
-                closed_on=params.get("closed_on") if "closed_on" in params else cases_object.closed_on,
-                case_type=params.get("case_type") if "case_type" in params else cases_object.case_type,
+                closed_on=params.get("closed_on")
+                if "closed_on" in params
+                else cases_object.closed_on,
+                case_type=params.get("case_type")
+                if "case_type" in params
+                else cases_object.case_type,
             )
 
             # Handle M2M fields if present in request
@@ -581,7 +626,9 @@ class CaseDetailView(APIView):
                 cases_object.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.profile.org
+                    )
                     cases_object.teams.add(*teams)
 
             if "assigned_to" in params:
@@ -599,7 +646,9 @@ class CaseDetailView(APIView):
                 if tags_list:
                     if isinstance(tags_list, str):
                         tags_list = json.loads(tags_list)
-                    tag_objs = Tags.objects.filter(id__in=tags_list, org=request.profile.org, is_active=True)
+                    tag_objs = Tags.objects.filter(
+                        id__in=tags_list, org=request.profile.org, is_active=True
+                    )
                     cases_object.tags.add(*tag_objs)
 
             return Response(
@@ -623,10 +672,15 @@ class CaseCommentView(APIView):
         tags=["Cases"],
         parameters=swagger_params.organization_params,
         request=CaseCommentEditSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="CaseCommentUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseCommentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -661,10 +715,15 @@ class CaseCommentView(APIView):
         parameters=swagger_params.organization_params,
         request=CaseCommentEditSwaggerSerializer,
         description="Partial Comment Update",
-        responses={200: inline_serializer(
-            name="CaseCommentPatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseCommentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a comment."""
@@ -697,10 +756,15 @@ class CaseCommentView(APIView):
     @extend_schema(
         tags=["Cases"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="CaseCommentDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseCommentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -730,10 +794,15 @@ class CaseAttachmentView(APIView):
     @extend_schema(
         tags=["Cases"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="CaseAttachmentDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="CaseAttachmentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         self.object = self.model.objects.get(pk=pk)

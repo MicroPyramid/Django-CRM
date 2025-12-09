@@ -21,9 +21,9 @@ const GOOGLE_SCOPES = ['openid', 'email', 'profile'].join(' ');
 
 // Cookie configuration
 const COOKIE_OPTIONS = {
-	path: '/',
-	httpOnly: true,
-	sameSite: 'lax'
+  path: '/',
+  httpOnly: true,
+  sameSite: 'lax'
 };
 
 /**
@@ -32,42 +32,42 @@ const COOKIE_OPTIONS = {
  * @returns {object} Cookie options with secure flag for production
  */
 function getCookieOptions(maxAge) {
-	return {
-		...COOKIE_OPTIONS,
-		secure: env.NODE_ENV === 'production',
-		maxAge
-	};
+  return {
+    ...COOKIE_OPTIONS,
+    secure: env.NODE_ENV === 'production',
+    maxAge
+  };
 }
 
 /** @type {import('@sveltejs/kit').ServerLoad} */
 export async function load({ url, cookies }) {
-	const code = url.searchParams.get('code');
-	const returnedState = url.searchParams.get('state');
-	const error = url.searchParams.get('error');
-	const errorDescription = url.searchParams.get('error_description');
+  const code = url.searchParams.get('code');
+  const returnedState = url.searchParams.get('state');
+  const error = url.searchParams.get('error');
+  const errorDescription = url.searchParams.get('error_description');
 
-	// Handle OAuth error returned from Google
-	if (error) {
-		console.error('Google OAuth error:', error, errorDescription);
-		return {
-			google_url: null,
-			error: errorDescription || `OAuth error: ${error}`
-		};
-	}
+  // Handle OAuth error returned from Google
+  if (error) {
+    console.error('Google OAuth error:', error, errorDescription);
+    return {
+      google_url: null,
+      error: errorDescription || `OAuth error: ${error}`
+    };
+  }
 
-	// Handle OAuth callback with authorization code
-	if (code) {
-		return handleOAuthCallback(code, returnedState, cookies);
-	}
+  // Handle OAuth callback with authorization code
+  if (code) {
+    return handleOAuthCallback(code, returnedState, cookies);
+  }
 
-	// Check if user is already authenticated
-	const jwtAccess = cookies.get('jwt_access');
-	if (jwtAccess) {
-		throw redirect(307, '/org');
-	}
+  // Check if user is already authenticated
+  const jwtAccess = cookies.get('jwt_access');
+  if (jwtAccess) {
+    throw redirect(307, '/org');
+  }
 
-	// Generate OAuth parameters and return login URL
-	return await generateOAuthUrl(cookies);
+  // Generate OAuth parameters and return login URL
+  return await generateOAuthUrl(cookies);
 }
 
 /**
@@ -77,74 +77,74 @@ export async function load({ url, cookies }) {
  * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies
  */
 async function handleOAuthCallback(code, returnedState, cookies) {
-	// Retrieve and immediately clear OAuth cookies (one-time use)
-	const savedState = cookies.get('oauth_state');
-	const codeVerifier = cookies.get('oauth_code_verifier');
+  // Retrieve and immediately clear OAuth cookies (one-time use)
+  const savedState = cookies.get('oauth_state');
+  const codeVerifier = cookies.get('oauth_code_verifier');
 
-	// Clear OAuth cookies regardless of outcome
-	cookies.delete('oauth_state', { path: '/' });
-	cookies.delete('oauth_code_verifier', { path: '/' });
+  // Clear OAuth cookies regardless of outcome
+  cookies.delete('oauth_state', { path: '/' });
+  cookies.delete('oauth_code_verifier', { path: '/' });
 
-	// Validate state parameter (CSRF protection)
-	if (!savedState || savedState !== returnedState) {
-		console.error('OAuth state mismatch - possible CSRF attack');
-		console.error('Expected:', savedState?.substring(0, 10) + '...');
-		console.error('Received:', returnedState?.substring(0, 10) + '...');
-		throw redirect(307, '/login?error=state_mismatch');
-	}
+  // Validate state parameter (CSRF protection)
+  if (!savedState || savedState !== returnedState) {
+    console.error('OAuth state mismatch - possible CSRF attack');
+    console.error('Expected:', savedState?.substring(0, 10) + '...');
+    console.error('Received:', returnedState?.substring(0, 10) + '...');
+    throw redirect(307, '/login?error=state_mismatch');
+  }
 
-	// Validate code verifier exists
-	if (!codeVerifier) {
-		console.error('Missing PKCE code verifier - session may have expired');
-		throw redirect(307, '/login?error=session_expired');
-	}
+  // Validate code verifier exists
+  if (!codeVerifier) {
+    console.error('Missing PKCE code verifier - session may have expired');
+    throw redirect(307, '/login?error=session_expired');
+  }
 
-	const redirect_uri = env.GOOGLE_LOGIN_DOMAIN + '/login';
+  const redirect_uri = env.GOOGLE_LOGIN_DOMAIN + '/login';
 
-	try {
-		// Exchange code for tokens via Django backend
-		// The backend handles the actual token exchange with Google using the client secret
-		const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
-		console.log('Using API URL:', apiUrl);
-		const response = await axios.post(
-			`${apiUrl}/api/auth/google/callback/`,
-			{
-				code,
-				code_verifier: codeVerifier,
-				redirect_uri
-			},
-			{
-				headers: { 'Content-Type': 'application/json' },
-				timeout: 30000
-			}
-		);
+  try {
+    // Exchange code for tokens via Django backend
+    // The backend handles the actual token exchange with Google using the client secret
+    const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
+    console.log('Using API URL:', apiUrl);
+    const response = await axios.post(
+      `${apiUrl}/api/auth/google/callback/`,
+      {
+        code,
+        code_verifier: codeVerifier,
+        redirect_uri
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      }
+    );
 
-		const { access_token, refresh_token, user } = response.data;
+    const { access_token, refresh_token, user } = response.data;
 
-		// Store JWT tokens in secure httpOnly cookies
-		cookies.set('jwt_access', access_token, getCookieOptions(60 * 60 * 24)); // 1 day
-		cookies.set('jwt_refresh', refresh_token, getCookieOptions(60 * 60 * 24 * 365)); // 1 year
-	} catch (error) {
-		console.error('OAuth token exchange failed - Full error:', error);
-		console.error('Response data:', error.response?.data);
-		console.error('Response status:', error.response?.status);
-		const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+    // Store JWT tokens in secure httpOnly cookies
+    cookies.set('jwt_access', access_token, getCookieOptions(60 * 60 * 24)); // 1 day
+    cookies.set('jwt_refresh', refresh_token, getCookieOptions(60 * 60 * 24 * 365)); // 1 year
+  } catch (error) {
+    console.error('OAuth token exchange failed - Full error:', error);
+    console.error('Response data:', error.response?.data);
+    console.error('Response status:', error.response?.status);
+    const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
-		// Provide user-friendly error messages
-		let userError = 'auth_failed';
-		const errStr = String(errorMessage);
-		if (errStr.includes('code_verifier')) {
-			userError = 'pkce_failed';
-		} else if (errStr.includes('expired')) {
-			userError = 'code_expired';
-		}
-		console.error('Final error message:', errorMessage);
+    // Provide user-friendly error messages
+    let userError = 'auth_failed';
+    const errStr = String(errorMessage);
+    if (errStr.includes('code_verifier')) {
+      userError = 'pkce_failed';
+    } else if (errStr.includes('expired')) {
+      userError = 'code_expired';
+    }
+    console.error('Final error message:', errorMessage);
 
-		throw redirect(307, `/login?error=${userError}`);
-	}
+    throw redirect(307, `/login?error=${userError}`);
+  }
 
-	// Success - redirect to organization selection
-	throw redirect(307, '/org');
+  // Success - redirect to organization selection
+  throw redirect(307, '/org');
 }
 
 /**
@@ -153,36 +153,36 @@ async function handleOAuthCallback(code, returnedState, cookies) {
  * @returns {Promise<object>} Object containing the Google OAuth URL
  */
 async function generateOAuthUrl(cookies) {
-	// Generate PKCE parameters
-	const codeVerifier = generateCodeVerifier();
-	const codeChallenge = await generateCodeChallenge(codeVerifier);
+  // Generate PKCE parameters
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-	// Generate cryptographically random state for CSRF protection
-	const state = generateState();
+  // Generate cryptographically random state for CSRF protection
+  const state = generateState();
 
-	// Store PKCE verifier and state in secure httpOnly cookies
-	// These expire in 10 minutes - should be plenty for OAuth flow
-	const oauthCookieMaxAge = 60 * 10; // 10 minutes
+  // Store PKCE verifier and state in secure httpOnly cookies
+  // These expire in 10 minutes - should be plenty for OAuth flow
+  const oauthCookieMaxAge = 60 * 10; // 10 minutes
 
-	cookies.set('oauth_code_verifier', codeVerifier, getCookieOptions(oauthCookieMaxAge));
-	cookies.set('oauth_state', state, getCookieOptions(oauthCookieMaxAge));
+  cookies.set('oauth_code_verifier', codeVerifier, getCookieOptions(oauthCookieMaxAge));
+  cookies.set('oauth_state', state, getCookieOptions(oauthCookieMaxAge));
 
-	// Build Google OAuth URL with all required parameters
-	const redirect_uri = env.GOOGLE_LOGIN_DOMAIN + '/login';
+  // Build Google OAuth URL with all required parameters
+  const redirect_uri = env.GOOGLE_LOGIN_DOMAIN + '/login';
 
-	const params = new URLSearchParams({
-		client_id: env.GOOGLE_CLIENT_ID,
-		redirect_uri,
-		response_type: 'code',
-		scope: GOOGLE_SCOPES,
-		state,
-		code_challenge: codeChallenge,
-		code_challenge_method: 'S256',
-		access_type: 'offline', // Request refresh token
-		prompt: 'consent' // Always show consent screen (required for refresh token)
-	});
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri,
+    response_type: 'code',
+    scope: GOOGLE_SCOPES,
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+    access_type: 'offline', // Request refresh token
+    prompt: 'consent' // Always show consent screen (required for refresh token)
+  });
 
-	const google_login_url = `${GOOGLE_AUTH_URL}?${params.toString()}`;
+  const google_login_url = `${GOOGLE_AUTH_URL}?${params.toString()}`;
 
-	return { google_url: google_login_url };
+  return { google_url: google_login_url };
 }

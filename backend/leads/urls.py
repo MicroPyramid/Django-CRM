@@ -32,8 +32,12 @@ urlpatterns = [
     # Kanban endpoints
     path("kanban/", LeadKanbanView.as_view(), name="lead_kanban"),
     # Pipeline management
-    path("pipelines/", LeadPipelineListCreateView.as_view(), name="pipeline_list_create"),
-    path("pipelines/<str:pk>/", LeadPipelineDetailView.as_view(), name="pipeline_detail"),
+    path(
+        "pipelines/", LeadPipelineListCreateView.as_view(), name="pipeline_list_create"
+    ),
+    path(
+        "pipelines/<str:pk>/", LeadPipelineDetailView.as_view(), name="pipeline_detail"
+    ),
     path(
         "pipelines/<str:pipeline_pk>/stages/",
         LeadStageCreateView.as_view(),

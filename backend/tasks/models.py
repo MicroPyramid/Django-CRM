@@ -196,7 +196,6 @@ class BoardTask(BaseModel):
         return False
 
 
-
 class TaskPipeline(BaseModel):
     """
     Custom pipeline for organizing tasks into stages (Kanban columns).
@@ -273,9 +272,7 @@ class TaskStage(BaseModel):
         help_text="Maximum tasks allowed in this stage (null = unlimited)",
     )
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="task_stages"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="task_stages")
 
     class Meta:
         verbose_name = "Task Stage"
@@ -298,7 +295,6 @@ class TaskStage(BaseModel):
 
 
 class Task(AssignableMixin, BaseModel):
-
     STATUS_CHOICES = (
         ("New", "New"),
         ("In Progress", "In Progress"),

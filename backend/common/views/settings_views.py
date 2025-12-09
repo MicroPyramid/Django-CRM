@@ -24,14 +24,16 @@ class DomainList(APIView):
         tags=["Settings"],
         operation_id="api_settings_list",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="DomainListResponse",
-            fields={
-                "error": serializers.BooleanField(),
-                "api_settings": APISettingsListSerializer(many=True),
-                "users": ProfileSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="DomainListResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "api_settings": APISettingsListSerializer(many=True),
+                    "users": ProfileSerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         api_settings = APISettings.objects.filter(org=request.profile.org)
@@ -52,10 +54,15 @@ class DomainList(APIView):
         operation_id="api_settings_create",
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
-        responses={201: inline_serializer(
-            name="DomainCreateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            201: inline_serializer(
+                name="DomainCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -97,10 +104,15 @@ class DomainDetailView(APIView):
         tags=["Settings"],
         operation_id="api_settings_retrieve",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="DomainDetailResponse",
-            fields={"error": serializers.BooleanField(), "domain": APISettingsListSerializer()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DomainDetailResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "domain": APISettingsListSerializer(),
+                },
+            )
+        },
     )
     def get(self, request, pk, format=None):
         api_setting = self.get_object(pk)
@@ -114,10 +126,15 @@ class DomainDetailView(APIView):
         operation_id="api_settings_update",
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="DomainUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DomainUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, **kwargs):
         api_setting = self.get_object(pk)
@@ -153,16 +170,23 @@ class DomainDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=APISettingsSwaggerSerializer,
         description="Partial API Settings Update",
-        responses={200: inline_serializer(
-            name="DomainPatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DomainPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, **kwargs):
         """Handle partial updates to API settings."""
         api_setting = self.get_object(pk)
         params = request.data
-        serializer = APISettingsSerializer(data=params, instance=api_setting, partial=True)
+        serializer = APISettingsSerializer(
+            data=params, instance=api_setting, partial=True
+        )
         if serializer.is_valid():
             api_setting = serializer.save()
             return Response(
@@ -178,10 +202,15 @@ class DomainDetailView(APIView):
         tags=["Settings"],
         operation_id="api_settings_destroy",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="DomainDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DomainDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, **kwargs):
         api_setting = self.get_object(pk)

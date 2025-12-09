@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contacts", "0004_change_phone_to_phonenumberfield"),
     ]

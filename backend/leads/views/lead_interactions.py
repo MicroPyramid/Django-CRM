@@ -255,7 +255,9 @@ class CreateLeadFromSite(APIView):
             # user = User.objects.filter(is_admin=True, is_active=True).first()
             user = api_setting.created_by
             lead = Lead.objects.create(
-                salutation=params.get("title"),  # 'title' param maps to salutation for backwards compatibility
+                salutation=params.get(
+                    "title"
+                ),  # 'title' param maps to salutation for backwards compatibility
                 first_name=params.get("first_name"),
                 last_name=params.get("last_name"),
                 status="assigned",
@@ -270,7 +272,9 @@ class CreateLeadFromSite(APIView):
             lead.assigned_to.add(user)
             # Send Email to Assigned Users
             site_address = request.scheme + "://" + request.META["HTTP_HOST"]
-            send_lead_assigned_emails.delay(lead.id, [user.id], site_address, str(api_setting.org.id))
+            send_lead_assigned_emails.delay(
+                lead.id, [user.id], site_address, str(api_setting.org.id)
+            )
             # Create Contact
             try:
                 contact = Contact.objects.create(

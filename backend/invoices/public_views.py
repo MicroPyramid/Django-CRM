@@ -313,7 +313,10 @@ class PublicEstimateAcceptView(APIView):
 
         if estimate.status not in ["Sent", "Viewed"]:
             return Response(
-                {"error": True, "message": "Estimate cannot be accepted in current state"},
+                {
+                    "error": True,
+                    "message": "Estimate cannot be accepted in current state",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -321,9 +324,7 @@ class PublicEstimateAcceptView(APIView):
         estimate.accepted_at = timezone.now()
         estimate.save()
 
-        return Response(
-            {"error": False, "message": "Estimate accepted successfully"}
-        )
+        return Response({"error": False, "message": "Estimate accepted successfully"})
 
 
 class PublicEstimateDeclineView(APIView):
@@ -349,7 +350,10 @@ class PublicEstimateDeclineView(APIView):
 
         if estimate.status not in ["Sent", "Viewed"]:
             return Response(
-                {"error": True, "message": "Estimate cannot be declined in current state"},
+                {
+                    "error": True,
+                    "message": "Estimate cannot be declined in current state",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -357,6 +361,4 @@ class PublicEstimateDeclineView(APIView):
         estimate.declined_at = timezone.now()
         estimate.save()
 
-        return Response(
-            {"error": False, "message": "Estimate declined"}
-        )
+        return Response({"error": False, "message": "Estimate declined"})

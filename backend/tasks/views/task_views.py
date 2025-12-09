@@ -70,7 +70,9 @@ class TaskListView(APIView, LimitOffsetPagination):
                     assigned_to__id__in=params.getlist("assigned_to")
                 ).distinct()
             if params.get("tags"):
-                queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+                queryset = queryset.filter(
+                    tags__id__in=params.getlist("tags")
+                ).distinct()
             if params.get("search"):
                 queryset = queryset.filter(title__icontains=params.get("search"))
             if params.get("due_date__gte"):
@@ -78,9 +80,13 @@ class TaskListView(APIView, LimitOffsetPagination):
             if params.get("due_date__lte"):
                 queryset = queryset.filter(due_date__lte=params.get("due_date__lte"))
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
             if params.get("account"):
                 queryset = queryset.filter(account_id=params.get("account"))
             if params.get("opportunity"):
@@ -183,7 +189,9 @@ class TaskListView(APIView, LimitOffsetPagination):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 task_obj.tags.add(*tag_objs)
 
             # Handle new FK relationships with org validation
@@ -312,7 +320,9 @@ class TaskDetailView(APIView):
         context["users_excluding_team"] = ProfileSerializer(
             users_excluding_team, many=True
         ).data
-        context["teams"] = TeamsSerializer(Teams.objects.filter(org=self.request.profile.org), many=True).data
+        context["teams"] = TeamsSerializer(
+            Teams.objects.filter(org=self.request.profile.org), many=True
+        ).data
         return context
 
     @extend_schema(
@@ -464,7 +474,9 @@ class TaskDetailView(APIView):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 task_obj.tags.add(*tag_objs)
 
             # Handle FK relationships with org validation
@@ -564,7 +576,9 @@ class TaskDetailView(APIView):
                 task_obj.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.profile.org
+                    )
                     task_obj.teams.add(*teams)
 
             if "assigned_to" in params:
@@ -582,7 +596,9 @@ class TaskDetailView(APIView):
                 if tags_list:
                     if isinstance(tags_list, str):
                         tags_list = json.loads(tags_list)
-                    tag_objs = Tags.objects.filter(id__in=tags_list, org=request.profile.org, is_active=True)
+                    tag_objs = Tags.objects.filter(
+                        id__in=tags_list, org=request.profile.org, is_active=True
+                    )
                     task_obj.tags.add(*tag_objs)
 
             # Handle FK relationships with org validation

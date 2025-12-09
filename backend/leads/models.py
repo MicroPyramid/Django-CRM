@@ -33,12 +33,18 @@ class Lead(AssignableMixin, BaseModel):
 
     # Core Lead Information
     title = models.CharField(
-        _("Title"), max_length=255, blank=True, null=True,
-        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')"
+        _("Title"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Lead name/subject (e.g., 'Enterprise Deal', 'Website Inquiry')",
     )
     salutation = models.CharField(
-        _("Salutation"), max_length=64, blank=True, null=True,
-        help_text="e.g., Mr, Mrs, Ms, Dr"
+        _("Salutation"),
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="e.g., Mr, Mrs, Ms, Dr",
     )
     first_name = models.CharField(_("First name"), null=True, max_length=255)
     last_name = models.CharField(_("Last name"), null=True, max_length=255)
@@ -51,8 +57,11 @@ class Lead(AssignableMixin, BaseModel):
         validators=[flexible_phone_validator],
     )
     job_title = models.CharField(
-        _("Job Title"), max_length=255, blank=True, null=True,
-        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')"
+        _("Job Title"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Person's job title (e.g., 'VP of Sales', 'CTO')",
     )
     website = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     linkedin_url = models.URLField(
@@ -292,9 +301,7 @@ class LeadStage(BaseModel):
         help_text="Maximum leads allowed in this stage (null = unlimited)",
     )
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="lead_stages"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="lead_stages")
 
     class Meta:
         verbose_name = "Lead Stage"
@@ -314,4 +321,3 @@ class LeadStage(BaseModel):
         if not self.org_id and self.pipeline_id:
             self.org_id = self.pipeline.org_id
         super().save(*args, **kwargs)
-

@@ -82,21 +82,73 @@ class InvoiceSeeder:
 
     # Product templates with realistic pricing
     PRODUCT_TEMPLATES = [
-        {"name": "Consulting - Senior", "category": "Consulting Services", "price_range": (150, 350)},
-        {"name": "Consulting - Standard", "category": "Consulting Services", "price_range": (75, 150)},
-        {"name": "Implementation Services", "category": "Implementation", "price_range": (5000, 25000)},
-        {"name": "Training Session (Full Day)", "category": "Training", "price_range": (1500, 3500)},
-        {"name": "Training Session (Half Day)", "category": "Training", "price_range": (800, 1800)},
-        {"name": "Enterprise License", "category": "Software License", "price_range": (10000, 50000)},
-        {"name": "Professional License", "category": "Software License", "price_range": (1000, 5000)},
-        {"name": "Team License (per seat)", "category": "Software License", "price_range": (50, 200)},
-        {"name": "Annual Support Plan", "category": "Support", "price_range": (2000, 10000)},
-        {"name": "Monthly Subscription", "category": "Subscription", "price_range": (99, 499)},
+        {
+            "name": "Consulting - Senior",
+            "category": "Consulting Services",
+            "price_range": (150, 350),
+        },
+        {
+            "name": "Consulting - Standard",
+            "category": "Consulting Services",
+            "price_range": (75, 150),
+        },
+        {
+            "name": "Implementation Services",
+            "category": "Implementation",
+            "price_range": (5000, 25000),
+        },
+        {
+            "name": "Training Session (Full Day)",
+            "category": "Training",
+            "price_range": (1500, 3500),
+        },
+        {
+            "name": "Training Session (Half Day)",
+            "category": "Training",
+            "price_range": (800, 1800),
+        },
+        {
+            "name": "Enterprise License",
+            "category": "Software License",
+            "price_range": (10000, 50000),
+        },
+        {
+            "name": "Professional License",
+            "category": "Software License",
+            "price_range": (1000, 5000),
+        },
+        {
+            "name": "Team License (per seat)",
+            "category": "Software License",
+            "price_range": (50, 200),
+        },
+        {
+            "name": "Annual Support Plan",
+            "category": "Support",
+            "price_range": (2000, 10000),
+        },
+        {
+            "name": "Monthly Subscription",
+            "category": "Subscription",
+            "price_range": (99, 499),
+        },
         {"name": "Premium Support", "category": "Support", "price_range": (500, 2000)},
-        {"name": "Custom Development (per hour)", "category": "Custom Development", "price_range": (100, 250)},
-        {"name": "API Integration", "category": "Integration", "price_range": (3000, 15000)},
+        {
+            "name": "Custom Development (per hour)",
+            "category": "Custom Development",
+            "price_range": (100, 250),
+        },
+        {
+            "name": "API Integration",
+            "category": "Integration",
+            "price_range": (3000, 15000),
+        },
         {"name": "Hardware Setup", "category": "Hardware", "price_range": (500, 2500)},
-        {"name": "Maintenance (Monthly)", "category": "Maintenance", "price_range": (200, 1000)},
+        {
+            "name": "Maintenance (Monthly)",
+            "category": "Maintenance",
+            "price_range": (200, 1000),
+        },
     ]
 
     # Invoice template configurations
@@ -158,9 +210,9 @@ class InvoiceSeeder:
     def _generate_invoice_date(self):
         """Generate realistic invoice dates weighted toward recent months."""
         days_ago_weights = {
-            (0, 30): 35,    # Last month: 35%
-            (31, 60): 25,   # 1-2 months ago: 25%
-            (61, 90): 20,   # 2-3 months ago: 20%
+            (0, 30): 35,  # Last month: 35%
+            (31, 60): 25,  # 1-2 months ago: 25%
+            (61, 90): 20,  # 2-3 months ago: 20%
             (91, 120): 10,  # 3-4 months ago: 10%
             (121, 150): 6,  # 4-5 months ago: 6%
             (151, 180): 4,  # 5-6 months ago: 4%
@@ -195,8 +247,7 @@ class InvoiceSeeder:
 
         # Use product templates first
         templates_to_use = random.sample(
-            self.PRODUCT_TEMPLATES,
-            min(count, len(self.PRODUCT_TEMPLATES))
+            self.PRODUCT_TEMPLATES, min(count, len(self.PRODUCT_TEMPLATES))
         )
 
         for i, template in enumerate(templates_to_use):
@@ -247,7 +298,7 @@ class InvoiceSeeder:
         from invoices.models import InvoiceTemplate
 
         templates = []
-        configs_to_use = self.TEMPLATE_CONFIGS[:min(count, len(self.TEMPLATE_CONFIGS))]
+        configs_to_use = self.TEMPLATE_CONFIGS[: min(count, len(self.TEMPLATE_CONFIGS))]
 
         for config in configs_to_use:
             template = InvoiceTemplate.objects.create(
@@ -266,7 +317,18 @@ class InvoiceSeeder:
         self.stdout.write(f"  Created {len(templates)} invoice templates")
         return templates
 
-    def create_invoices(self, org, profiles, teams, products, templates, accounts, contacts, opportunities, count):
+    def create_invoices(
+        self,
+        org,
+        profiles,
+        teams,
+        products,
+        templates,
+        accounts,
+        contacts,
+        opportunities,
+        count,
+    ):
         """
         Create invoices with line items.
 
@@ -299,8 +361,14 @@ class InvoiceSeeder:
             # Select account and contact
             account = random.choice(accounts)
             # Prefer contacts linked to this account
-            account_contacts = list(account.contacts.all()) if hasattr(account, 'contacts') else []
-            contact = random.choice(account_contacts) if account_contacts else random.choice(contacts)
+            account_contacts = (
+                list(account.contacts.all()) if hasattr(account, "contacts") else []
+            )
+            contact = (
+                random.choice(account_contacts)
+                if account_contacts
+                else random.choice(contacts)
+            )
 
             # Determine status
             status = self._weighted_choice(self.INVOICE_STATUS_WEIGHTS)
@@ -313,7 +381,11 @@ class InvoiceSeeder:
             if won_opps and random.random() < 0.3:
                 # Try to find an opp for this account
                 account_opps = [o for o in won_opps if o.account_id == account.id]
-                opportunity = random.choice(account_opps) if account_opps else random.choice(won_opps)
+                opportunity = (
+                    random.choice(account_opps)
+                    if account_opps
+                    else random.choice(won_opps)
+                )
 
             payment_terms = self._weighted_choice(self.PAYMENT_TERMS_WEIGHTS)
             tax_rate = Decimal(str(random.choice([0, 7.5, 8.25, 10, 12, 20])))
@@ -335,15 +407,19 @@ class InvoiceSeeder:
                 client_postcode=contact.postcode or "",
                 client_country=contact.country or "",
                 # Billing from org (could be from org company profile)
-                billing_address_line=getattr(org, 'address_line', '') or "",
-                billing_city=getattr(org, 'city', '') or "",
-                billing_state=getattr(org, 'state', '') or "",
-                billing_postcode=getattr(org, 'postcode', '') or "",
-                billing_country=getattr(org, 'billing_country', '') or "",
+                billing_address_line=getattr(org, "address_line", "") or "",
+                billing_city=getattr(org, "city", "") or "",
+                billing_state=getattr(org, "state", "") or "",
+                billing_postcode=getattr(org, "postcode", "") or "",
+                billing_country=getattr(org, "billing_country", "") or "",
                 # Financial
                 currency=org.default_currency,
-                discount_type=random.choice(["PERCENTAGE", "FIXED", ""]) if random.random() > 0.6 else "",
-                discount_value=Decimal(str(random.choice([0, 5, 10, 15]))) if random.random() > 0.6 else Decimal("0"),
+                discount_type=random.choice(["PERCENTAGE", "FIXED", ""])
+                if random.random() > 0.6
+                else "",
+                discount_value=Decimal(str(random.choice([0, 5, 10, 15])))
+                if random.random() > 0.6
+                else Decimal("0"),
                 tax_rate=tax_rate,
                 # Dates
                 issue_date=issue_date,
@@ -361,9 +437,13 @@ class InvoiceSeeder:
                     datetime.datetime.combine(issue_date, datetime.time(10, 0))
                 )
             if status in ["Viewed", "Paid", "Partially_Paid", "Overdue"]:
-                invoice.viewed_at = invoice.sent_at + datetime.timedelta(days=random.randint(1, 5))
+                invoice.viewed_at = invoice.sent_at + datetime.timedelta(
+                    days=random.randint(1, 5)
+                )
             if status == "Paid":
-                invoice.paid_at = invoice.viewed_at + datetime.timedelta(days=random.randint(1, 15))
+                invoice.paid_at = invoice.viewed_at + datetime.timedelta(
+                    days=random.randint(1, 15)
+                )
 
             # Save invoice (this auto-generates public_token and calculates due_date)
             invoice.save()
@@ -371,7 +451,11 @@ class InvoiceSeeder:
             # Create 2-5 line items
             num_items = random.randint(2, 5)
             for order in range(num_items):
-                product = random.choice(products) if products and random.random() > 0.3 else None
+                product = (
+                    random.choice(products)
+                    if products and random.random() > 0.3
+                    else None
+                )
 
                 if product:
                     name = product.name
@@ -389,7 +473,9 @@ class InvoiceSeeder:
                     description=description[:500],
                     quantity=Decimal(str(random.choice([1, 1, 1, 2, 3, 5, 10]))),
                     unit_price=unit_price,
-                    discount_type="" if random.random() > 0.2 else random.choice(["PERCENTAGE", "FIXED"]),
+                    discount_type=""
+                    if random.random() > 0.2
+                    else random.choice(["PERCENTAGE", "FIXED"]),
                     discount_value=Decimal("0"),
                     tax_rate=tax_rate if random.random() > 0.3 else Decimal("0"),
                     order=order,
@@ -427,15 +513,21 @@ class InvoiceSeeder:
 
         # Only create payments for certain invoice statuses
         payable_invoices = [
-            inv for inv in invoices
+            inv
+            for inv in invoices
             if inv.status in ["Paid", "Partially_Paid", "Sent", "Viewed", "Overdue"]
         ]
 
         for invoice in payable_invoices:
             if invoice.status == "Paid":
                 # Full payment
-                payment_date = invoice.paid_at.date() if invoice.paid_at else (
-                    invoice.issue_date + datetime.timedelta(days=random.randint(5, 30))
+                payment_date = (
+                    invoice.paid_at.date()
+                    if invoice.paid_at
+                    else (
+                        invoice.issue_date
+                        + datetime.timedelta(days=random.randint(5, 30))
+                    )
                 )
                 payment = Payment.objects.create(
                     invoice=invoice,
@@ -453,7 +545,9 @@ class InvoiceSeeder:
                 # Partial payment (30-70% of total)
                 partial_percent = random.uniform(0.3, 0.7)
                 payment_amount = invoice.total_amount * Decimal(str(partial_percent))
-                payment_date = invoice.issue_date + datetime.timedelta(days=random.randint(5, 20))
+                payment_date = invoice.issue_date + datetime.timedelta(
+                    days=random.randint(5, 20)
+                )
 
                 payment = Payment.objects.create(
                     invoice=invoice,
@@ -469,8 +563,12 @@ class InvoiceSeeder:
 
             elif random.random() < 0.3:  # 30% chance of payment on other statuses
                 # Some random payments
-                payment_amount = invoice.total_amount * Decimal(str(random.uniform(0.2, 0.5)))
-                payment_date = invoice.issue_date + datetime.timedelta(days=random.randint(10, 45))
+                payment_amount = invoice.total_amount * Decimal(
+                    str(random.uniform(0.2, 0.5))
+                )
+                payment_date = invoice.issue_date + datetime.timedelta(
+                    days=random.randint(10, 45)
+                )
 
                 payment = Payment.objects.create(
                     invoice=invoice,
@@ -487,7 +585,9 @@ class InvoiceSeeder:
         self.stdout.write(f"  Created {len(payments)} payments")
         return payments
 
-    def create_estimates(self, org, profiles, teams, products, accounts, contacts, count):
+    def create_estimates(
+        self, org, profiles, teams, products, accounts, contacts, count
+    ):
         """
         Create estimates with line items.
 
@@ -512,8 +612,14 @@ class InvoiceSeeder:
             date_str = issue_date.strftime("%Y%m%d")
 
             account = random.choice(accounts)
-            account_contacts = list(account.contacts.all()) if hasattr(account, 'contacts') else []
-            contact = random.choice(account_contacts) if account_contacts else random.choice(contacts)
+            account_contacts = (
+                list(account.contacts.all()) if hasattr(account, "contacts") else []
+            )
+            contact = (
+                random.choice(account_contacts)
+                if account_contacts
+                else random.choice(contacts)
+            )
 
             status = self._weighted_choice(self.ESTIMATE_STATUS_WEIGHTS)
 
@@ -537,7 +643,9 @@ class InvoiceSeeder:
                 client_postcode=contact.postcode or "",
                 client_country=contact.country or "",
                 currency=org.default_currency,
-                discount_type=random.choice(["PERCENTAGE", "FIXED", ""]) if random.random() > 0.7 else "",
+                discount_type=random.choice(["PERCENTAGE", "FIXED", ""])
+                if random.random() > 0.7
+                else "",
                 discount_value=Decimal("0"),
                 tax_rate=tax_rate,
                 issue_date=issue_date,
@@ -553,18 +661,28 @@ class InvoiceSeeder:
                     datetime.datetime.combine(issue_date, datetime.time(10, 0))
                 )
             if status in ["Viewed", "Accepted", "Declined"]:
-                estimate.viewed_at = estimate.sent_at + datetime.timedelta(days=random.randint(1, 5))
+                estimate.viewed_at = estimate.sent_at + datetime.timedelta(
+                    days=random.randint(1, 5)
+                )
             if status == "Accepted":
-                estimate.accepted_at = estimate.viewed_at + datetime.timedelta(days=random.randint(1, 10))
+                estimate.accepted_at = estimate.viewed_at + datetime.timedelta(
+                    days=random.randint(1, 10)
+                )
             if status == "Declined":
-                estimate.declined_at = estimate.viewed_at + datetime.timedelta(days=random.randint(1, 10))
+                estimate.declined_at = estimate.viewed_at + datetime.timedelta(
+                    days=random.randint(1, 10)
+                )
 
             estimate.save()
 
             # Create 2-4 line items
             num_items = random.randint(2, 4)
             for order in range(num_items):
-                product = random.choice(products) if products and random.random() > 0.3 else None
+                product = (
+                    random.choice(products)
+                    if products and random.random() > 0.3
+                    else None
+                )
 
                 if product:
                     name = product.name
@@ -599,7 +717,9 @@ class InvoiceSeeder:
         self.stdout.write(f"  Created {len(estimates)} estimates with line items")
         return estimates
 
-    def create_recurring_invoices(self, org, profiles, teams, products, accounts, contacts, count):
+    def create_recurring_invoices(
+        self, org, profiles, teams, products, accounts, contacts, count
+    ):
         """
         Create recurring invoice templates.
 
@@ -621,8 +741,14 @@ class InvoiceSeeder:
 
         for i in range(count):
             account = random.choice(accounts)
-            account_contacts = list(account.contacts.all()) if hasattr(account, 'contacts') else []
-            contact = random.choice(account_contacts) if account_contacts else random.choice(contacts)
+            account_contacts = (
+                list(account.contacts.all()) if hasattr(account, "contacts") else []
+            )
+            contact = (
+                random.choice(account_contacts)
+                if account_contacts
+                else random.choice(contacts)
+            )
 
             frequency = self._weighted_choice(self.RECURRING_FREQUENCY_WEIGHTS)
             start_date = self.fake.date_between(start_date="-60d", end_date="+30d")
@@ -630,7 +756,9 @@ class InvoiceSeeder:
             # Some recurring invoices have end dates
             end_date = None
             if random.random() > 0.6:
-                end_date = start_date + datetime.timedelta(days=random.randint(180, 730))
+                end_date = start_date + datetime.timedelta(
+                    days=random.randint(180, 730)
+                )
 
             tax_rate = Decimal(str(random.choice([0, 8, 10, 12])))
 
@@ -653,7 +781,9 @@ class InvoiceSeeder:
                 discount_value=Decimal("0"),
                 tax_rate=tax_rate,
                 notes="Auto-generated recurring invoice",
-                invoices_generated=random.randint(0, 12) if start_date < timezone.now().date() else 0,
+                invoices_generated=random.randint(0, 12)
+                if start_date < timezone.now().date()
+                else 0,
                 org=org,
             )
             rec.save()

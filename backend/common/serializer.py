@@ -132,7 +132,15 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
-        fields = ("id", "name", "slug", "color", "description", "is_active", "created_at")
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "color",
+            "description",
+            "is_active",
+            "created_at",
+        )
         read_only_fields = ("id", "slug", "created_at")
 
 
@@ -261,7 +269,6 @@ class BillingAddressSerializer(serializers.ModelSerializer):
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = (
@@ -306,7 +313,6 @@ class CreateProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = ["id", "email", "profile_pic"]
@@ -549,7 +555,6 @@ class UserCreateSwaggerSerializer(serializers.Serializer):
 
 
 class UserUpdateStatusSwaggerSerializer(serializers.Serializer):
-
     STATUS_CHOICES = ["Active", "Inactive"]
 
     status = serializers.ChoiceField(choices=STATUS_CHOICES, required=True)
@@ -714,7 +719,6 @@ class TeamsSerializer(serializers.ModelSerializer):
 
 
 class TeamCreateSerializer(serializers.ModelSerializer):
-
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
@@ -748,7 +752,6 @@ class TeamCreateSerializer(serializers.ModelSerializer):
 
 
 class TeamswaggerCreateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Teams
         fields = (

@@ -121,16 +121,18 @@ class DocumentListView(APIView, LimitOffsetPagination):
         tags=["documents"],
         operation_id="documents_list",
         parameters=swagger_params.document_get_params,
-        responses={200: inline_serializer(
-            name="DocumentListResponse",
-            fields={
-                "search": serializers.BooleanField(),
-                "documents_active": serializers.DictField(),
-                "documents_inactive": serializers.DictField(),
-                "users": ProfileSerializer(many=True),
-                "status_choices": serializers.ListField(),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="DocumentListResponse",
+                fields={
+                    "search": serializers.BooleanField(),
+                    "documents_active": serializers.DictField(),
+                    "documents_inactive": serializers.DictField(),
+                    "users": ProfileSerializer(many=True),
+                    "status_choices": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
@@ -141,10 +143,15 @@ class DocumentListView(APIView, LimitOffsetPagination):
         operation_id="documents_create",
         parameters=swagger_params.organization_params,
         request=DocumentCreateSwaggerSerializer,
-        responses={201: inline_serializer(
-            name="DocumentCreateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            201: inline_serializer(
+                name="DocumentCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         params = request.data
@@ -189,14 +196,16 @@ class DocumentDetailView(APIView):
         tags=["documents"],
         operation_id="documents_retrieve",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="DocumentDetailResponse",
-            fields={
-                "doc_obj": DocumentSerializer(),
-                "file_type_code": serializers.CharField(),
-                "users": ProfileSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="DocumentDetailResponse",
+                fields={
+                    "doc_obj": DocumentSerializer(),
+                    "file_type_code": serializers.CharField(),
+                    "users": ProfileSerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, request, pk, format=None):
         # get_object_or_404 now handles org filtering - returns 404 if not found/wrong org
@@ -232,10 +241,15 @@ class DocumentDetailView(APIView):
         tags=["documents"],
         operation_id="documents_destroy",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="DocumentDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DocumentDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         document = self.get_object(pk)
@@ -272,10 +286,15 @@ class DocumentDetailView(APIView):
         operation_id="documents_update",
         parameters=swagger_params.organization_params,
         request=DocumentEditSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="DocumentUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DocumentUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         self.object = self.get_object(pk)
@@ -340,10 +359,15 @@ class DocumentDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=DocumentEditSwaggerSerializer,
         description="Partial Document Update",
-        responses={200: inline_serializer(
-            name="DocumentPatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="DocumentPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a document."""
@@ -356,7 +380,10 @@ class DocumentDetailView(APIView):
             )
         if self.object.org != self.request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:

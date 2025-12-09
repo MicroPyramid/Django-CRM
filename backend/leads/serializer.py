@@ -134,7 +134,9 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Default currency from org if not provided and has opportunity_amount
-        if not validated_data.get("currency") and validated_data.get("opportunity_amount"):
+        if not validated_data.get("currency") and validated_data.get(
+            "opportunity_amount"
+        ):
             request = self.context.get("request")
             if request and hasattr(request, "profile") and request.profile.org:
                 validated_data["currency"] = request.profile.org.default_currency

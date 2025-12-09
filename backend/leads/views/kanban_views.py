@@ -178,9 +178,7 @@ class LeadKanbanView(APIView):
 
         columns = []
         for stage in pipeline.stages.all().order_by("order"):
-            leads = queryset.filter(stage=stage).order_by(
-                "kanban_order", "-created_at"
-            )
+            leads = queryset.filter(stage=stage).order_by("kanban_order", "-created_at")
 
             columns.append(
                 {

@@ -281,9 +281,7 @@ class CaseStage(BaseModel):
         help_text="Maximum cases allowed in this stage (null = unlimited)",
     )
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="case_stages"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="case_stages")
 
     class Meta:
         verbose_name = "Case Stage"

@@ -16,7 +16,9 @@ def reverse_migrate_company_name_to_company(apps, schema_editor):
     Lead = apps.get_model("leads", "Lead")
     Company = apps.get_model("leads", "Company")
 
-    for lead in Lead.objects.filter(company_name__isnull=False).exclude(company_name=""):
+    for lead in Lead.objects.filter(company_name__isnull=False).exclude(
+        company_name=""
+    ):
         company, _ = Company.objects.get_or_create(
             name=lead.company_name,
             org=lead.org,
@@ -26,7 +28,6 @@ def reverse_migrate_company_name_to_company(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("leads", "0003_add_full_conversion_fields"),
     ]

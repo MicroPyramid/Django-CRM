@@ -31,7 +31,6 @@ from opportunity.tasks import send_email_to_assigned_user
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
-
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
 
@@ -76,9 +75,13 @@ class OpportunityListView(APIView, LimitOffsetPagination):
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
             if params.get("closed_on__gte"):
                 queryset = queryset.filter(closed_on__gte=params.get("closed_on__gte"))
             if params.get("closed_on__lte"):
@@ -181,7 +184,9 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if params.get("tags"):
                 tags = params.get("tags")
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 opportunity_obj.tags.add(*tag_objs)
 
             if params.get("stage"):
@@ -297,7 +302,9 @@ class OpportunityDetailView(APIView):
             opportunity_object.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 opportunity_object.tags.add(*tag_objs)
 
             if params.get("stage"):
@@ -581,7 +588,10 @@ class OpportunityDetailView(APIView):
         opportunity_object = self.get_object(pk=pk)
         if opportunity_object.org != request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
@@ -606,7 +616,9 @@ class OpportunityDetailView(APIView):
 
         if serializer.is_valid():
             opportunity_object = serializer.save(
-                closed_on=params.get("closed_on") if "closed_on" in params else opportunity_object.closed_on
+                closed_on=params.get("closed_on")
+                if "closed_on" in params
+                else opportunity_object.closed_on
             )
 
             # Handle M2M fields if present in request
@@ -623,14 +635,18 @@ class OpportunityDetailView(APIView):
                 opportunity_object.tags.clear()
                 tags = params.get("tags")
                 if tags:
-                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    tag_objs = Tags.objects.filter(
+                        id__in=tags, org=request.profile.org, is_active=True
+                    )
                     opportunity_object.tags.add(*tag_objs)
 
             if "teams" in params:
                 opportunity_object.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.profile.org
+                    )
                     opportunity_object.teams.add(*teams)
 
             if "assigned_to" in params:

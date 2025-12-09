@@ -7,7 +7,7 @@ const MOBILE_BREAKPOINT = 768;
  * Uses Svelte 5's MediaQuery to reactively check the viewport width.
  */
 export class IsMobile extends MediaQuery {
-	constructor() {
-		super(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-	}
+  constructor() {
+    super(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+  }
 }

@@ -85,5 +85,3 @@ def send_email_to_assigned_user(recipients, account_id, org_id):
             msg = EmailMessage(subject, html_content, to=recipients_list)
             msg.content_subtype = "html"
             msg.send()
-
-

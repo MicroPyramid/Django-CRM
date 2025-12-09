@@ -9,6 +9,6 @@ import { redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load() {
-	// Redirect to tasks list page - calendar is now integrated there
-	throw redirect(302, '/tasks');
+  // Redirect to tasks list page - calendar is now integrated there
+  throw redirect(302, '/tasks');
 }

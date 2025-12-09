@@ -59,7 +59,9 @@ class LeadListView(APIView, LimitOffsetPagination):
                     & Q(last_name__icontains=params.get("name"))
                 )
             if params.get("salutation"):
-                queryset = queryset.filter(salutation__icontains=params.get("salutation"))
+                queryset = queryset.filter(
+                    salutation__icontains=params.get("salutation")
+                )
             if params.get("source"):
                 queryset = queryset.filter(source=params.get("source"))
             if params.getlist("assigned_to"):
@@ -85,13 +87,21 @@ class LeadListView(APIView, LimitOffsetPagination):
                     | Q(email__icontains=search)
                 )
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
             if params.get("close_date__gte"):
-                queryset = queryset.filter(close_date__gte=params.get("close_date__gte"))
+                queryset = queryset.filter(
+                    close_date__gte=params.get("close_date__gte")
+                )
             if params.get("close_date__lte"):
-                queryset = queryset.filter(close_date__lte=params.get("close_date__lte"))
+                queryset = queryset.filter(
+                    close_date__lte=params.get("close_date__lte")
+                )
         context = {}
         queryset_open = queryset.exclude(status="closed")
         results_leads_open = self.paginate_queryset(
@@ -189,8 +199,12 @@ class LeadListView(APIView, LimitOffsetPagination):
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
                     "account_id": serializers.CharField(required=False),
-                    "contact_id": serializers.CharField(required=False, allow_null=True),
-                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                    "contact_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
+                    "opportunity_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
                 },
             )
         },
@@ -204,7 +218,9 @@ class LeadListView(APIView, LimitOffsetPagination):
             )
             if data.get("tags", None):
                 tags = data.get("tags")
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 lead_obj.tags.add(*tag_objs)
 
             if data.get("contacts", None):
@@ -244,7 +260,9 @@ class LeadListView(APIView, LimitOffsetPagination):
             if data.get("status") == "converted":
                 from leads.services import convert_lead_to_account
 
-                account, contact, opportunity = convert_lead_to_account(lead_obj, request)
+                account, contact, opportunity = convert_lead_to_account(
+                    lead_obj, request
+                )
 
                 if data.get("assigned_to", None):
                     assigned_to_list = data.getlist("assigned_to")
@@ -501,8 +519,12 @@ class LeadDetailView(APIView):
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
                     "account_id": serializers.CharField(required=False),
-                    "contact_id": serializers.CharField(required=False, allow_null=True),
-                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                    "contact_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
+                    "opportunity_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
                 },
             )
         },
@@ -531,7 +553,9 @@ class LeadDetailView(APIView):
             lead_obj.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 lead_obj.tags.add(*tag_objs)
 
             assigned_to_list = list(
@@ -576,7 +600,9 @@ class LeadDetailView(APIView):
             if params.get("status") == "converted":
                 from leads.services import convert_lead_to_account
 
-                account, contact, opportunity = convert_lead_to_account(lead_obj, request)
+                account, contact, opportunity = convert_lead_to_account(
+                    lead_obj, request
+                )
 
                 if params.get("assigned_to"):
                     assigned_to_list = params.get("assigned_to")
@@ -617,8 +643,12 @@ class LeadDetailView(APIView):
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
                     "account_id": serializers.CharField(required=False),
-                    "contact_id": serializers.CharField(required=False, allow_null=True),
-                    "opportunity_id": serializers.CharField(required=False, allow_null=True),
+                    "contact_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
+                    "opportunity_id": serializers.CharField(
+                        required=False, allow_null=True
+                    ),
                 },
             )
         },
@@ -654,7 +684,9 @@ class LeadDetailView(APIView):
         if params.get("status") == "converted" or params.get("is_converted"):
             from leads.services import convert_lead_to_account
 
-            account, contact, opportunity = convert_lead_to_account(self.lead_obj, request)
+            account, contact, opportunity = convert_lead_to_account(
+                self.lead_obj, request
+            )
 
             return Response(
                 {
@@ -682,7 +714,9 @@ class LeadDetailView(APIView):
                 lead_obj.tags.clear()
                 tags = params.get("tags")
                 if tags:
-                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    tag_objs = Tags.objects.filter(
+                        id__in=tags, org=request.profile.org, is_active=True
+                    )
                     lead_obj.tags.add(*tag_objs)
 
             if "contacts" in params:
@@ -698,7 +732,9 @@ class LeadDetailView(APIView):
                 lead_obj.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.profile.org
+                    )
                     lead_obj.teams.add(*teams)
 
             if "assigned_to" in params:

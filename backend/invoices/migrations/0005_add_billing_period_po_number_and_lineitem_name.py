@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("invoices", "0004_estimate_estimatelineitem_invoicetemplate_payment_and_more"),
     ]

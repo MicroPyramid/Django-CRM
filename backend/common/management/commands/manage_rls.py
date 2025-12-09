@@ -109,7 +109,9 @@ class Command(BaseCommand):
 
         with connection.cursor() as cursor:
             # Find orgs that have leads (need to check each org since RLS is active)
-            cursor.execute("SELECT id FROM organization ORDER BY created_at DESC LIMIT 50")
+            cursor.execute(
+                "SELECT id FROM organization ORDER BY created_at DESC LIMIT 50"
+            )
             all_orgs = cursor.fetchall()
 
             orgs_with_leads = []
@@ -127,14 +129,20 @@ class Command(BaseCommand):
                 orgs = cursor.fetchall()
                 if len(orgs) < 2:
                     self.stdout.write(
-                        self.style.WARNING("Need at least 2 orgs to test RLS. Skipping.")
+                        self.style.WARNING(
+                            "Need at least 2 orgs to test RLS. Skipping."
+                        )
                     )
                     return
                 org_a = str(orgs[0][0])
                 org_b = str(orgs[1][0])
             else:
                 org_a = orgs_with_leads[0]
-                org_b = orgs_with_leads[1] if len(orgs_with_leads) > 1 else str(all_orgs[0][0])
+                org_b = (
+                    orgs_with_leads[1]
+                    if len(orgs_with_leads) > 1
+                    else str(all_orgs[0][0])
+                )
 
             # Test with org_a context
             cursor.execute(set_context_sql, [org_a])

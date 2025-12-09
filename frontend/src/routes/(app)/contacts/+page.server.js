@@ -14,339 +14,339 @@ import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ url, locals, cookies }) {
-	const org = locals.org;
+  const org = locals.org;
 
-	if (!org) {
-		throw error(401, 'Organization context required');
-	}
+  if (!org) {
+    throw error(401, 'Organization context required');
+  }
 
-	// Parse filter params from URL
-	const filters = {
-		search: url.searchParams.get('search') || '',
-		assigned_to: url.searchParams.getAll('assigned_to'),
-		tags: url.searchParams.getAll('tags'),
-		created_at_gte: url.searchParams.get('created_at_gte') || '',
-		created_at_lte: url.searchParams.get('created_at_lte') || ''
-	};
+  // Parse filter params from URL
+  const filters = {
+    search: url.searchParams.get('search') || '',
+    assigned_to: url.searchParams.getAll('assigned_to'),
+    tags: url.searchParams.getAll('tags'),
+    created_at_gte: url.searchParams.get('created_at_gte') || '',
+    created_at_lte: url.searchParams.get('created_at_lte') || ''
+  };
 
-	try {
-		const page = parseInt(url.searchParams.get('page') || '1');
-		const limit = parseInt(url.searchParams.get('limit') || '10');
+  try {
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
 
-		// Build query parameters for Django
-		const queryParams = buildQueryParams({
-			page,
-			limit,
-			sort: 'created_at',
-			order: 'desc'
-		});
+    // Build query parameters for Django
+    const queryParams = buildQueryParams({
+      page,
+      limit,
+      sort: 'created_at',
+      order: 'desc'
+    });
 
-		// Add filter params
-		if (filters.search) queryParams.append('search', filters.search);
-		filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
-		filters.tags.forEach((id) => queryParams.append('tags', id));
-		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
-		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
+    // Add filter params
+    if (filters.search) queryParams.append('search', filters.search);
+    filters.assigned_to.forEach((id) => queryParams.append('assigned_to', id));
+    filters.tags.forEach((id) => queryParams.append('tags', id));
+    if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
+    if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Fetch contacts, accounts, and tags in parallel
-		const [contactsResponse, accountsRes, tagsResponse] = await Promise.all([
-			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
-			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
-			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
-		]);
+    // Fetch contacts, accounts, and tags in parallel
+    const [contactsResponse, accountsRes, tagsResponse] = await Promise.all([
+      apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
+      apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+      apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
+    ]);
 
-		// Handle Django response format
-		let contacts = [];
-		let totalCount = 0;
+    // Handle Django response format
+    let contacts = [];
+    let totalCount = 0;
 
-		if (contactsResponse.contact_obj_list) {
-			// Django custom response format
-			contacts = contactsResponse.contact_obj_list;
-			totalCount = contactsResponse.contacts_count || contacts.length;
-		} else if (contactsResponse.results) {
-			// Standard Django pagination
-			contacts = contactsResponse.results;
-			totalCount = contactsResponse.count || 0;
-		} else if (Array.isArray(contactsResponse)) {
-			// Direct array response
-			contacts = contactsResponse;
-			totalCount = contacts.length;
-		}
+    if (contactsResponse.contact_obj_list) {
+      // Django custom response format
+      contacts = contactsResponse.contact_obj_list;
+      totalCount = contactsResponse.contacts_count || contacts.length;
+    } else if (contactsResponse.results) {
+      // Standard Django pagination
+      contacts = contactsResponse.results;
+      totalCount = contactsResponse.count || 0;
+    } else if (Array.isArray(contactsResponse)) {
+      // Direct array response
+      contacts = contactsResponse;
+      totalCount = contacts.length;
+    }
 
-		// Transform Django contacts to match frontend structure
-		const transformedContacts = contacts.map((contact) => ({
-			id: contact.id,
-			// Core fields
-			firstName: contact.first_name,
-			lastName: contact.last_name,
-			email: contact.email,
-			phone: contact.phone,
-			// Professional info
-			organization: contact.organization,
-			title: contact.title,
-			department: contact.department,
-			// Communication preferences
-			doNotCall: contact.do_not_call || false,
-			linkedInUrl: contact.linkedin_url,
-			// Address fields
-			addressLine: contact.address_line,
-			city: contact.city,
-			state: contact.state,
-			postcode: contact.postcode,
-			country: contact.country,
-			// Notes
-			description: contact.description,
-			// Timestamps
-			createdAt: contact.created_at,
-			updatedAt: contact.updated_at,
+    // Transform Django contacts to match frontend structure
+    const transformedContacts = contacts.map((contact) => ({
+      id: contact.id,
+      // Core fields
+      firstName: contact.first_name,
+      lastName: contact.last_name,
+      email: contact.email,
+      phone: contact.phone,
+      // Professional info
+      organization: contact.organization,
+      title: contact.title,
+      department: contact.department,
+      // Communication preferences
+      doNotCall: contact.do_not_call || false,
+      linkedInUrl: contact.linkedin_url,
+      // Address fields
+      addressLine: contact.address_line,
+      city: contact.city,
+      state: contact.state,
+      postcode: contact.postcode,
+      country: contact.country,
+      // Notes
+      description: contact.description,
+      // Timestamps
+      createdAt: contact.created_at,
+      updatedAt: contact.updated_at,
 
-			// Owner info - Django returns assigned_to array
-			owner:
-				contact.assigned_to && contact.assigned_to.length > 0
-					? {
-							id: contact.assigned_to[0].id,
-							name: contact.assigned_to[0].user_details?.email || 'Unknown',
-							email: contact.assigned_to[0].user_details?.email
-						}
-					: contact.created_by
-						? {
-								id: contact.created_by.id,
-								name: contact.created_by.email,
-								email: contact.created_by.email
-							}
-						: null,
+      // Owner info - Django returns assigned_to array
+      owner:
+        contact.assigned_to && contact.assigned_to.length > 0
+          ? {
+              id: contact.assigned_to[0].id,
+              name: contact.assigned_to[0].user_details?.email || 'Unknown',
+              email: contact.assigned_to[0].user_details?.email
+            }
+          : contact.created_by
+            ? {
+                id: contact.created_by.id,
+                name: contact.created_by.email,
+                email: contact.created_by.email
+              }
+            : null,
 
-			// Teams
-			teams:
-				contact.teams?.map((team) => ({
-					id: team.id,
-					name: team.name
-				})) || [],
+      // Teams
+      teams:
+        contact.teams?.map((team) => ({
+          id: team.id,
+          name: team.name
+        })) || [],
 
-			// Tags
-			tags:
-				contact.tags?.map((tag) => ({
-					id: tag.id,
-					name: tag.name
-				})) || [],
+      // Tags
+      tags:
+        contact.tags?.map((tag) => ({
+          id: tag.id,
+          name: tag.name
+        })) || [],
 
-			// Related accounts
-			relatedAccounts:
-				contact.accounts?.map((account) => ({
-					account: {
-						id: account.id,
-						name: account.name
-					}
-				})) || [],
+      // Related accounts
+      relatedAccounts:
+        contact.accounts?.map((account) => ({
+          account: {
+            id: account.id,
+            name: account.name
+          }
+        })) || [],
 
-			// Counts - Django may not provide _count, use 0 as default
-			_count: {
-				tasks: contact.task_count || 0,
-				events: contact.event_count || 0,
-				opportunities: contact.opportunity_count || 0,
-				cases: contact.case_count || 0
-			}
-		}));
+      // Counts - Django may not provide _count, use 0 as default
+      _count: {
+        tasks: contact.task_count || 0,
+        events: contact.event_count || 0,
+        opportunities: contact.opportunity_count || 0,
+        cases: contact.case_count || 0
+      }
+    }));
 
-		// Transform accounts for dropdown/lookup
-		let accountsList = [];
-		if (accountsRes.active_accounts?.open_accounts) {
-			accountsList = accountsRes.active_accounts.open_accounts;
-		} else if (accountsRes.results) {
-			accountsList = accountsRes.results;
-		} else if (Array.isArray(accountsRes)) {
-			accountsList = accountsRes;
-		}
-		const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
+    // Transform accounts for dropdown/lookup
+    let accountsList = [];
+    if (accountsRes.active_accounts?.open_accounts) {
+      accountsList = accountsRes.active_accounts.open_accounts;
+    } else if (accountsRes.results) {
+      accountsList = accountsRes.results;
+    } else if (Array.isArray(accountsRes)) {
+      accountsList = accountsRes;
+    }
+    const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
 
-		// Transform tags for filter
-		const allTags = (tagsResponse.tags || []).map((/** @type {any} */ tag) => ({
-			id: tag.id,
-			name: tag.name,
-			color: tag.color || 'blue'
-		}));
+    // Transform tags for filter
+    const allTags = (tagsResponse.tags || []).map((/** @type {any} */ tag) => ({
+      id: tag.id,
+      name: tag.name,
+      color: tag.color || 'blue'
+    }));
 
-		return {
-			contacts: transformedContacts,
-			pagination: {
-				page,
-				limit,
-				total: totalCount,
-				totalPages: Math.ceil(totalCount / limit) || 1
-			},
-			filters,
-			// Dropdown options are now lazy-loaded on client when drawer opens
-			owners: [],
-			allTags,
-			// Accounts for quick action prefill lookup
-			accounts
-		};
-	} catch (err) {
-		console.error('Error loading contacts from API:', err);
-		throw error(500, `Failed to load contacts: ${err.message}`);
-	}
+    return {
+      contacts: transformedContacts,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit) || 1
+      },
+      filters,
+      // Dropdown options are now lazy-loaded on client when drawer opens
+      owners: [],
+      allTags,
+      // Accounts for quick action prefill lookup
+      accounts
+    };
+  } catch (err) {
+    console.error('Error loading contacts from API:', err);
+    throw error(500, `Failed to load contacts: ${err.message}`);
+  }
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-	create: async ({ request, locals, cookies }) => {
-		try {
-			const form = await request.formData();
-			// Account link (from quick action)
-			const accountId = form.get('accountId')?.toString().trim() || null;
-			// Core fields
-			const firstName = form.get('firstName')?.toString().trim();
-			const lastName = form.get('lastName')?.toString().trim();
-			const email = form.get('email')?.toString().trim() || '';
-			const phone = form.get('phone')?.toString().trim() || '';
-			// Professional info
-			const organization = form.get('organization')?.toString().trim() || '';
-			const title = form.get('title')?.toString().trim() || '';
-			const department = form.get('department')?.toString().trim() || '';
-			// Communication preferences
-			const doNotCall = form.get('doNotCall') === 'true';
-			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
-			// Address fields
-			const addressLine = form.get('addressLine')?.toString().trim() || '';
-			const city = form.get('city')?.toString().trim() || '';
-			const state = form.get('state')?.toString().trim() || '';
-			const postcode = form.get('postcode')?.toString().trim() || '';
-			const country = form.get('country')?.toString().trim() || '';
-			// Notes
-			const description = form.get('description')?.toString().trim() || '';
-			// Tags
-			const tagsJson = form.get('tags')?.toString() || '[]';
-			const tags = JSON.parse(tagsJson);
+  create: async ({ request, locals, cookies }) => {
+    try {
+      const form = await request.formData();
+      // Account link (from quick action)
+      const accountId = form.get('accountId')?.toString().trim() || null;
+      // Core fields
+      const firstName = form.get('firstName')?.toString().trim();
+      const lastName = form.get('lastName')?.toString().trim();
+      const email = form.get('email')?.toString().trim() || '';
+      const phone = form.get('phone')?.toString().trim() || '';
+      // Professional info
+      const organization = form.get('organization')?.toString().trim() || '';
+      const title = form.get('title')?.toString().trim() || '';
+      const department = form.get('department')?.toString().trim() || '';
+      // Communication preferences
+      const doNotCall = form.get('doNotCall') === 'true';
+      const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+      // Address fields
+      const addressLine = form.get('addressLine')?.toString().trim() || '';
+      const city = form.get('city')?.toString().trim() || '';
+      const state = form.get('state')?.toString().trim() || '';
+      const postcode = form.get('postcode')?.toString().trim() || '';
+      const country = form.get('country')?.toString().trim() || '';
+      // Notes
+      const description = form.get('description')?.toString().trim() || '';
+      // Tags
+      const tagsJson = form.get('tags')?.toString() || '[]';
+      const tags = JSON.parse(tagsJson);
 
-			if (!firstName || !lastName) {
-				return fail(400, { error: 'First name and last name are required.' });
-			}
+      if (!firstName || !lastName) {
+        return fail(400, { error: 'First name and last name are required.' });
+      }
 
-			const contactData = {
-				first_name: firstName,
-				last_name: lastName,
-				email: email || null,
-				phone: phone || null,
-				organization: organization || null,
-				title: title || null,
-				department: department || null,
-				do_not_call: doNotCall,
-				linkedin_url: linkedInUrl || null,
-				address_line: addressLine || null,
-				city: city || null,
-				state: state || null,
-				postcode: postcode || null,
-				country: country || null,
-				description: description || null,
-				tags: tags,
-				account: accountId
-			};
+      const contactData = {
+        first_name: firstName,
+        last_name: lastName,
+        email: email || null,
+        phone: phone || null,
+        organization: organization || null,
+        title: title || null,
+        department: department || null,
+        do_not_call: doNotCall,
+        linkedin_url: linkedInUrl || null,
+        address_line: addressLine || null,
+        city: city || null,
+        state: state || null,
+        postcode: postcode || null,
+        country: country || null,
+        description: description || null,
+        tags: tags,
+        account: accountId
+      };
 
-			await apiRequest(
-				'/contacts/',
-				{
-					method: 'POST',
-					body: contactData
-				},
-				{ cookies, org: locals.org }
-			);
+      await apiRequest(
+        '/contacts/',
+        {
+          method: 'POST',
+          body: contactData
+        },
+        { cookies, org: locals.org }
+      );
 
-			return { success: true };
-		} catch (err) {
-			console.error('Error creating contact:', err);
-			return fail(400, { error: err.message || 'Failed to create contact' });
-		}
-	},
+      return { success: true };
+    } catch (err) {
+      console.error('Error creating contact:', err);
+      return fail(400, { error: err.message || 'Failed to create contact' });
+    }
+  },
 
-	update: async ({ request, locals, cookies }) => {
-		try {
-			const form = await request.formData();
-			const contactId = form.get('contactId')?.toString();
-			// Core fields
-			const firstName = form.get('firstName')?.toString().trim();
-			const lastName = form.get('lastName')?.toString().trim();
-			const email = form.get('email')?.toString().trim() || '';
-			const phone = form.get('phone')?.toString().trim() || '';
-			// Professional info
-			const organization = form.get('organization')?.toString().trim() || '';
-			const title = form.get('title')?.toString().trim() || '';
-			const department = form.get('department')?.toString().trim() || '';
-			// Communication preferences
-			const doNotCall = form.get('doNotCall') === 'true';
-			const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
-			// Address fields
-			const addressLine = form.get('addressLine')?.toString().trim() || '';
-			const city = form.get('city')?.toString().trim() || '';
-			const state = form.get('state')?.toString().trim() || '';
-			const postcode = form.get('postcode')?.toString().trim() || '';
-			const country = form.get('country')?.toString().trim() || '';
-			// Notes
-			const description = form.get('description')?.toString().trim() || '';
-			// Tags
-			const tagsJson = form.get('tags')?.toString() || '[]';
-			const tags = JSON.parse(tagsJson);
+  update: async ({ request, locals, cookies }) => {
+    try {
+      const form = await request.formData();
+      const contactId = form.get('contactId')?.toString();
+      // Core fields
+      const firstName = form.get('firstName')?.toString().trim();
+      const lastName = form.get('lastName')?.toString().trim();
+      const email = form.get('email')?.toString().trim() || '';
+      const phone = form.get('phone')?.toString().trim() || '';
+      // Professional info
+      const organization = form.get('organization')?.toString().trim() || '';
+      const title = form.get('title')?.toString().trim() || '';
+      const department = form.get('department')?.toString().trim() || '';
+      // Communication preferences
+      const doNotCall = form.get('doNotCall') === 'true';
+      const linkedInUrl = form.get('linkedInUrl')?.toString().trim() || '';
+      // Address fields
+      const addressLine = form.get('addressLine')?.toString().trim() || '';
+      const city = form.get('city')?.toString().trim() || '';
+      const state = form.get('state')?.toString().trim() || '';
+      const postcode = form.get('postcode')?.toString().trim() || '';
+      const country = form.get('country')?.toString().trim() || '';
+      // Notes
+      const description = form.get('description')?.toString().trim() || '';
+      // Tags
+      const tagsJson = form.get('tags')?.toString() || '[]';
+      const tags = JSON.parse(tagsJson);
 
-			if (!contactId || !firstName || !lastName) {
-				return fail(400, { error: 'Contact ID, first name, and last name are required.' });
-			}
+      if (!contactId || !firstName || !lastName) {
+        return fail(400, { error: 'Contact ID, first name, and last name are required.' });
+      }
 
-			const contactData = {
-				first_name: firstName,
-				last_name: lastName,
-				email: email || null,
-				phone: phone || null,
-				organization: organization || null,
-				title: title || null,
-				department: department || null,
-				do_not_call: doNotCall,
-				linkedin_url: linkedInUrl || null,
-				address_line: addressLine || null,
-				city: city || null,
-				state: state || null,
-				postcode: postcode || null,
-				country: country || null,
-				description: description || null,
-				tags: tags
-			};
+      const contactData = {
+        first_name: firstName,
+        last_name: lastName,
+        email: email || null,
+        phone: phone || null,
+        organization: organization || null,
+        title: title || null,
+        department: department || null,
+        do_not_call: doNotCall,
+        linkedin_url: linkedInUrl || null,
+        address_line: addressLine || null,
+        city: city || null,
+        state: state || null,
+        postcode: postcode || null,
+        country: country || null,
+        description: description || null,
+        tags: tags
+      };
 
-			await apiRequest(
-				`/contacts/${contactId}/`,
-				{
-					method: 'PATCH',
-					body: contactData
-				},
-				{ cookies, org: locals.org }
-			);
+      await apiRequest(
+        `/contacts/${contactId}/`,
+        {
+          method: 'PATCH',
+          body: contactData
+        },
+        { cookies, org: locals.org }
+      );
 
-			return { success: true };
-		} catch (err) {
-			console.error('Error updating contact:', err);
-			// Extract the actual error message from the API response
-			const errorMessage = err.message || 'Failed to update contact';
-			return fail(400, { error: errorMessage });
-		}
-	},
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating contact:', err);
+      // Extract the actual error message from the API response
+      const errorMessage = err.message || 'Failed to update contact';
+      return fail(400, { error: errorMessage });
+    }
+  },
 
-	delete: async ({ request, locals, cookies }) => {
-		try {
-			const data = await request.formData();
-			const contactId = data.get('contactId')?.toString();
+  delete: async ({ request, locals, cookies }) => {
+    try {
+      const data = await request.formData();
+      const contactId = data.get('contactId')?.toString();
 
-			if (!contactId) {
-				return fail(400, { error: 'Contact ID is required' });
-			}
+      if (!contactId) {
+        return fail(400, { error: 'Contact ID is required' });
+      }
 
-			// Delete via API
-			await apiRequest(
-				`/contacts/${contactId}/`,
-				{ method: 'DELETE' },
-				{ cookies, org: locals.org }
-			);
+      // Delete via API
+      await apiRequest(
+        `/contacts/${contactId}/`,
+        { method: 'DELETE' },
+        { cookies, org: locals.org }
+      );
 
-			return { success: true };
-		} catch (err) {
-			console.error('Error deleting contact:', err);
-			return fail(400, { error: err.message || 'Failed to delete contact' });
-		}
-	}
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting contact:', err);
+      return fail(400, { error: err.message || 'Failed to delete contact' });
+    }
+  }
 };

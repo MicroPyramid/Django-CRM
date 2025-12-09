@@ -35,16 +35,18 @@ class GoogleOAuthCallbackView(APIView):
                 "code": serializers.CharField(),
                 "code_verifier": serializers.CharField(),
                 "redirect_uri": serializers.CharField(),
-            }
+            },
         ),
-        responses={200: inline_serializer(
-            name="GoogleOAuthResponse",
-            fields={
-                "access_token": serializers.CharField(),
-                "refresh_token": serializers.CharField(),
-                "user": serializers.DictField(),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="GoogleOAuthResponse",
+                fields={
+                    "access_token": serializers.CharField(),
+                    "refresh_token": serializers.CharField(),
+                    "user": serializers.DictField(),
+                },
+            )
+        },
     )
     def post(self, request):
         import base64
@@ -133,11 +135,13 @@ class GoogleOAuthCallbackView(APIView):
         # Generate JWT tokens
         token = RefreshToken.for_user(user)
 
-        return Response({
-            "access_token": str(token.access_token),
-            "refresh_token": str(token),
-            "user": {"id": str(user.id), "email": user.email},
-        })
+        return Response(
+            {
+                "access_token": str(token.access_token),
+                "refresh_token": str(token),
+                "user": {"id": str(user.id), "email": user.email},
+            }
+        )
 
 
 class LoginView(APIView):
@@ -211,7 +215,9 @@ class LoginView(APIView):
 
             # Generate JWT tokens with org context (include profile for role)
             if default_org:
-                token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
+                token = OrgAwareRefreshToken.for_user_and_org(
+                    user, default_org, profile
+                )
             else:
                 # User has no orgs - generate token without org context
                 token = RefreshToken.for_user(user)
@@ -317,9 +323,7 @@ class OrgAwareTokenRefreshView(APIView):
         description="Refresh access token with org membership validation",
         request=inline_serializer(
             name="OrgAwareTokenRefreshRequest",
-            fields={
-                "refresh": serializers.CharField(help_text="Refresh token")
-            },
+            fields={"refresh": serializers.CharField(help_text="Refresh token")},
         ),
         responses={
             200: inline_serializer(
@@ -393,7 +397,10 @@ class OrgAwareTokenRefreshView(APIView):
             )
 
         except TokenError:
-            return Response({"error": "Invalid or expired token"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "Invalid or expired token"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         except User.DoesNotExist:
             return Response(
                 {"error": "User not found"}, status=status.HTTP_401_UNAUTHORIZED
@@ -459,7 +466,9 @@ class OrgSwitchView(APIView):
             )
 
         # Generate new tokens with the target org (include profile for role)
-        token = OrgAwareRefreshToken.for_user_and_org(request.user, profile.org, profile)
+        token = OrgAwareRefreshToken.for_user_and_org(
+            request.user, profile.org, profile
+        )
 
         # Audit log the org switch
         audit_log.org_switch(request.user, from_org, profile.org, request)

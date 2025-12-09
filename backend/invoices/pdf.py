@@ -349,6 +349,7 @@ def generate_invoice_pdf(invoice, include_payments=True):
     template = invoice.template
     if not template:
         from invoices.models import InvoiceTemplate
+
         template = InvoiceTemplate.objects.filter(
             org=invoice.org, is_default=True
         ).first()
@@ -357,26 +358,32 @@ def generate_invoice_pdf(invoice, include_payments=True):
     line_items = []
     for item in invoice.line_items.all().order_by("order"):
         # Use name field if present, otherwise fall back to description
-        line_items.append({
-            "name": item.name if item.name else item.description,
-            "description": item.description if item.name else "",  # Show description as subtitle if name is set
-            "quantity": item.quantity,
-            "unit_price": format_currency(item.unit_price, invoice.currency),
-            "tax_rate": item.tax_rate,
-            "total": format_currency(item.total, invoice.currency),
-        })
+        line_items.append(
+            {
+                "name": item.name if item.name else item.description,
+                "description": item.description
+                if item.name
+                else "",  # Show description as subtitle if name is set
+                "quantity": item.quantity,
+                "unit_price": format_currency(item.unit_price, invoice.currency),
+                "tax_rate": item.tax_rate,
+                "total": format_currency(item.total, invoice.currency),
+            }
+        )
 
     # Pre-format payments
     payments = []
     if include_payments:
         for payment in invoice.payments.all().order_by("-payment_date"):
-            payments.append({
-                "payment_date": payment.payment_date,
-                "payment_method": payment.payment_method,
-                "get_payment_method_display": payment.get_payment_method_display(),
-                "reference_number": payment.reference_number,
-                "amount": format_currency(payment.amount, invoice.currency),
-            })
+            payments.append(
+                {
+                    "payment_date": payment.payment_date,
+                    "payment_method": payment.payment_method,
+                    "get_payment_method_display": payment.get_payment_method_display(),
+                    "reference_number": payment.reference_number,
+                    "amount": format_currency(payment.amount, invoice.currency),
+                }
+            )
 
     # Prepare context with pre-formatted currency values
     context = {
@@ -442,22 +449,25 @@ def generate_estimate_pdf(estimate):
 
     # Get the org's default template for styling
     from invoices.models import InvoiceTemplate
-    template = InvoiceTemplate.objects.filter(
-        org=estimate.org, is_default=True
-    ).first()
+
+    template = InvoiceTemplate.objects.filter(org=estimate.org, is_default=True).first()
 
     # Pre-format line items with currency
     line_items = []
     for item in estimate.line_items.all().order_by("order"):
         # Use name field if present, otherwise fall back to description
-        line_items.append({
-            "name": item.name if item.name else item.description,
-            "description": item.description if item.name else "",  # Show description as subtitle if name is set
-            "quantity": item.quantity,
-            "unit_price": format_currency(item.unit_price, estimate.currency),
-            "tax_rate": item.tax_rate,
-            "total": format_currency(item.total, estimate.currency),
-        })
+        line_items.append(
+            {
+                "name": item.name if item.name else item.description,
+                "description": item.description
+                if item.name
+                else "",  # Show description as subtitle if name is set
+                "quantity": item.quantity,
+                "unit_price": format_currency(item.unit_price, estimate.currency),
+                "tax_rate": item.tax_rate,
+                "total": format_currency(item.total, estimate.currency),
+            }
+        )
 
     # Prepare context with pre-formatted currency values
     context = {
@@ -516,7 +526,9 @@ def render_invoice_template(template_html, context):
         "{{invoice.issue_date}}": str(invoice.issue_date) if invoice.issue_date else "",
         "{{invoice.due_date}}": str(invoice.due_date) if invoice.due_date else "",
         "{{invoice.subtotal}}": format_currency(invoice.subtotal, currency),
-        "{{invoice.discount_amount}}": format_currency(invoice.discount_amount, currency),
+        "{{invoice.discount_amount}}": format_currency(
+            invoice.discount_amount, currency
+        ),
         "{{invoice.tax_amount}}": format_currency(invoice.tax_amount, currency),
         "{{invoice.total_amount}}": format_currency(invoice.total_amount, currency),
         "{{invoice.amount_paid}}": format_currency(invoice.amount_paid, currency),
@@ -528,10 +540,16 @@ def render_invoice_template(template_html, context):
 
     # Address fields
     address_fields = [
-        "billing_address_line", "billing_city", "billing_state",
-        "billing_postcode", "billing_country",
-        "client_address_line", "client_city", "client_state",
-        "client_postcode", "client_country",
+        "billing_address_line",
+        "billing_city",
+        "billing_state",
+        "billing_postcode",
+        "billing_country",
+        "client_address_line",
+        "client_city",
+        "client_state",
+        "client_postcode",
+        "client_country",
     ]
     for field in address_fields:
         replacements[f"{{{{invoice.{field}}}}}"] = getattr(invoice, field, "") or ""

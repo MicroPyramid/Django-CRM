@@ -314,7 +314,9 @@ class Command(BaseCommand):
         Teams.objects.all().delete()
         Tags.objects.all().delete()
 
-        self.stdout.write("  Cleared: Tasks, Cases, Opportunities, Leads, Accounts, Contacts, Teams, Tags")
+        self.stdout.write(
+            "  Cleared: Tasks, Cases, Opportunities, Leads, Accounts, Contacts, Teams, Tags"
+        )
 
     def get_or_create_admin(self, email, password):
         """Get existing user or create new admin user."""
@@ -366,16 +368,28 @@ class Command(BaseCommand):
 
             # Invoice entities
             invoices = self.invoice_seeder.create_invoices(
-                org, profiles, teams, products, templates,
-                accounts, contacts, opportunities, options["invoices"]
+                org,
+                profiles,
+                teams,
+                products,
+                templates,
+                accounts,
+                contacts,
+                opportunities,
+                options["invoices"],
             )
             self.invoice_seeder.create_payments(org, invoices)
             self.invoice_seeder.create_estimates(
                 org, profiles, teams, products, accounts, contacts, options["estimates"]
             )
             self.invoice_seeder.create_recurring_invoices(
-                org, profiles, teams, products, accounts, contacts,
-                options["recurring_invoices"]
+                org,
+                profiles,
+                teams,
+                products,
+                accounts,
+                contacts,
+                options["recurring_invoices"],
             )
 
             cases = self.create_cases(
@@ -454,7 +468,9 @@ class Command(BaseCommand):
             profiles.append(profile)
             self.stats["profiles"] += 1
 
-        self.stdout.write(f"  Created {len(profiles)} profiles (1 admin, {user_count} users)")
+        self.stdout.write(
+            f"  Created {len(profiles)} profiles (1 admin, {user_count} users)"
+        )
         return profiles
 
     def create_teams(self, org, profiles, count):
@@ -542,9 +558,7 @@ class Command(BaseCommand):
                 number_of_employees=random.choice(
                     [10, 50, 100, 250, 500, 1000, 5000, 10000]
                 ),
-                annual_revenue=Decimal(
-                    str(random.randint(100000, 10000000))
-                ),
+                annual_revenue=Decimal(str(random.randint(100000, 10000000))),
                 currency=org.default_currency,
                 address_line=self.fake.street_address(),
                 city=self.fake.city(),
@@ -617,9 +631,9 @@ class Command(BaseCommand):
                 opportunity_amount=Decimal(str(random.randint(5000, 500000))),
                 currency=org.default_currency,
                 probability=random.randint(10, 90),
-                close_date=self.fake.date_between(
-                    start_date="today", end_date="+90d"
-                ) if random.random() > 0.3 else None,
+                close_date=self.fake.date_between(start_date="today", end_date="+90d")
+                if random.random() > 0.3
+                else None,
                 address_line=self.fake.street_address(),
                 city=self.fake.city(),
                 state=self.fake.state_abbr(),
@@ -664,11 +678,9 @@ class Command(BaseCommand):
                 amount=Decimal(str(random.randint(10000, 1000000))),
                 currency=org.default_currency,
                 probability=self._stage_to_probability(stage),
-                closed_on=self.fake.date_between(
-                    start_date="today", end_date="+120d"
-                ) if stage not in ["CLOSED_WON", "CLOSED_LOST"] else self.fake.date_between(
-                    start_date="-30d", end_date="today"
-                ),
+                closed_on=self.fake.date_between(start_date="today", end_date="+120d")
+                if stage not in ["CLOSED_WON", "CLOSED_LOST"]
+                else self.fake.date_between(start_date="-30d", end_date="today"),
                 lead_source=random.choice(sources),
                 description=self.fake.paragraph() if random.random() > 0.5 else None,
                 org=org,
@@ -710,9 +722,9 @@ class Command(BaseCommand):
                 priority=random.choice(priorities),
                 case_type=random.choice(case_types),
                 account=account,
-                closed_on=self.fake.date_between(
-                    start_date="-30d", end_date="today"
-                ) if status == "Closed" else None,
+                closed_on=self.fake.date_between(start_date="-30d", end_date="today")
+                if status == "Closed"
+                else None,
                 description=self.fake.paragraph(),
                 org=org,
             )
@@ -763,11 +775,9 @@ class Command(BaseCommand):
                 "title": self.fake.sentence(nb_words=5)[:200],
                 "status": status,
                 "priority": random.choice(priorities),
-                "due_date": self.fake.date_between(
-                    start_date="today", end_date="+30d"
-                ) if status != "Completed" else self.fake.date_between(
-                    start_date="-14d", end_date="today"
-                ),
+                "due_date": self.fake.date_between(start_date="today", end_date="+30d")
+                if status != "Completed"
+                else self.fake.date_between(start_date="-14d", end_date="today"),
                 "description": self.fake.paragraph() if random.random() > 0.5 else None,
                 "org": org,
             }

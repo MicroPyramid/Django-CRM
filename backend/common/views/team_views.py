@@ -55,16 +55,18 @@ class TeamsListView(APIView, LimitOffsetPagination):
         tags=["Teams"],
         operation_id="teams_list",
         parameters=swagger_params.teams_list_get_params,
-        responses={200: inline_serializer(
-            name="TeamsListResponse",
-            fields={
-                "per_page": serializers.IntegerField(),
-                "page_number": serializers.ListField(),
-                "teams_count": serializers.IntegerField(),
-                "offset": serializers.IntegerField(allow_null=True),
-                "teams": TeamsSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamsListResponse",
+                fields={
+                    "per_page": serializers.IntegerField(),
+                    "page_number": serializers.ListField(),
+                    "teams_count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                    "teams": TeamsSerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -83,10 +85,15 @@ class TeamsListView(APIView, LimitOffsetPagination):
         operation_id="teams_create",
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="TeamCreateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -130,10 +137,11 @@ class TeamsDetailView(APIView):
         tags=["Teams"],
         operation_id="teams_retrieve",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="TeamDetailResponse",
-            fields={"team": TeamsSerializer()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamDetailResponse", fields={"team": TeamsSerializer()}
+            )
+        },
     )
     def get(self, request, pk, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -154,10 +162,15 @@ class TeamsDetailView(APIView):
         operation_id="teams_update",
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="TeamUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, *args, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -206,10 +219,15 @@ class TeamsDetailView(APIView):
         request=TeamswaggerCreateSerializer,
         parameters=swagger_params.organization_params,
         description="Partial Team Update",
-        responses={200: inline_serializer(
-            name="TeamPatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, *args, **kwargs):
         """Handle partial updates to a team."""
@@ -241,10 +259,15 @@ class TeamsDetailView(APIView):
         tags=["Teams"],
         operation_id="teams_destroy",
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="TeamDeleteResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamDeleteResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def delete(self, request, pk, **kwargs):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:

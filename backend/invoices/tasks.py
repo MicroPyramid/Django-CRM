@@ -67,13 +67,17 @@ def send_email(invoice_id, recipients, org_id, domain="localhost", protocol="htt
             msg.content_subtype = "html"
             try:
                 msg.send()
-                logger.info(f"Sent assignment email for invoice {invoice_id} to {profile.user.email}")
+                logger.info(
+                    f"Sent assignment email for invoice {invoice_id} to {profile.user.email}"
+                )
             except Exception as e:
                 logger.error(f"Failed to send email: {e}")
 
 
 @shared_task
-def send_invoice_to_client(invoice_id, org_id, domain="localhost", protocol="http", include_pdf=True):
+def send_invoice_to_client(
+    invoice_id, org_id, domain="localhost", protocol="http", include_pdf=True
+):
     """
     Send invoice to client via email with optional PDF attachment.
 
@@ -109,7 +113,9 @@ def send_invoice_to_client(invoice_id, org_id, domain="localhost", protocol="htt
         "public_url": public_url,
         "org": invoice.org,
     }
-    html_content = render_to_string("invoices/emails/invoice_to_client.html", context=context)
+    html_content = render_to_string(
+        "invoices/emails/invoice_to_client.html", context=context
+    )
 
     msg = EmailMessage(
         subject=subject,
@@ -163,10 +169,15 @@ def create_invoice_history(invoice_id, updated_by_user_id, changed_fields, org_i
 
     # Format changed fields message
     if changed_fields:
-        changed_data = [(" ".join(field.split("_")).title()) for field in changed_fields]
+        changed_data = [
+            (" ".join(field.split("_")).title()) for field in changed_fields
+        ]
         if len(changed_data) > 1:
             changed_data = (
-                ", ".join(changed_data[:-1]) + " and " + changed_data[-1] + " have changed."
+                ", ".join(changed_data[:-1])
+                + " and "
+                + changed_data[-1]
+                + " have changed."
             )
         elif len(changed_data) == 1:
             changed_data = changed_data[0] + " has changed."
@@ -220,7 +231,9 @@ def generate_recurring_invoices():
         if recurring.end_date and recurring.end_date < today:
             recurring.is_active = False
             recurring.save()
-            logger.info(f"Deactivated recurring invoice {recurring.id} - end date reached")
+            logger.info(
+                f"Deactivated recurring invoice {recurring.id} - end date reached"
+            )
             continue
 
         # Set RLS context for this org
@@ -279,11 +292,15 @@ def generate_recurring_invoices():
                     str(invoice.id),
                     str(recurring.org.id),
                     domain=getattr(settings, "DOMAIN_NAME", "localhost"),
-                    protocol="https" if getattr(settings, "USE_HTTPS", False) else "http",
+                    protocol="https"
+                    if getattr(settings, "USE_HTTPS", False)
+                    else "http",
                 )
 
         except Exception as e:
-            logger.error(f"Failed to generate invoice from recurring {recurring.id}: {e}")
+            logger.error(
+                f"Failed to generate invoice from recurring {recurring.id}: {e}"
+            )
 
     logger.info("Finished recurring invoice generation")
 
@@ -354,9 +371,13 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
         "invoice": invoice,
         "public_url": public_url,
         "org": invoice.org,
-        "days_overdue": (timezone.now().date() - invoice.due_date).days if invoice.due_date else 0,
+        "days_overdue": (timezone.now().date() - invoice.due_date).days
+        if invoice.due_date
+        else 0,
     }
-    html_content = render_to_string("invoices/emails/payment_reminder.html", context=context)
+    html_content = render_to_string(
+        "invoices/emails/payment_reminder.html", context=context
+    )
 
     msg = EmailMessage(
         subject=subject,
@@ -387,10 +408,14 @@ def process_payment_reminders():
     today = timezone.now().date()
 
     # Get invoices with reminders enabled
-    invoices = Invoice.objects.filter(
-        reminder_enabled=True,
-        status__in=["Sent", "Viewed", "Partially_Paid", "Overdue"],
-    ).exclude(client_email__isnull=True).exclude(client_email="")
+    invoices = (
+        Invoice.objects.filter(
+            reminder_enabled=True,
+            status__in=["Sent", "Viewed", "Partially_Paid", "Overdue"],
+        )
+        .exclude(client_email__isnull=True)
+        .exclude(client_email="")
+    )
 
     for invoice in invoices:
         set_rls_context(str(invoice.org.id))
@@ -408,20 +433,28 @@ def process_payment_reminders():
 
         # Before due date reminder
         if days_until_due is not None and days_until_due > 0:
-            if invoice.reminder_days_before and days_until_due <= invoice.reminder_days_before:
+            if (
+                invoice.reminder_days_before
+                and days_until_due <= invoice.reminder_days_before
+            ):
                 # Check if we haven't sent a reminder recently
                 if not invoice.last_reminder_sent or (
-                    (today - invoice.last_reminder_sent.date()).days >= reminder_interval_days
+                    (today - invoice.last_reminder_sent.date()).days
+                    >= reminder_interval_days
                 ):
                     should_send = True
 
         # After due date reminder
         elif days_until_due is not None and days_until_due < 0:
             days_overdue = abs(days_until_due)
-            if invoice.reminder_days_after and days_overdue >= invoice.reminder_days_after:
+            if (
+                invoice.reminder_days_after
+                and days_overdue >= invoice.reminder_days_after
+            ):
                 # Check reminder frequency
                 if not invoice.last_reminder_sent or (
-                    (today - invoice.last_reminder_sent.date()).days >= reminder_interval_days
+                    (today - invoice.last_reminder_sent.date()).days
+                    >= reminder_interval_days
                 ):
                     should_send = True
 
@@ -465,7 +498,9 @@ def check_expired_estimates():
 
 
 @shared_task
-def send_estimate_to_client(estimate_id, org_id, domain="localhost", protocol="http", include_pdf=True):
+def send_estimate_to_client(
+    estimate_id, org_id, domain="localhost", protocol="http", include_pdf=True
+):
     """
     Send estimate to client via email with optional PDF attachment.
 
@@ -500,7 +535,9 @@ def send_estimate_to_client(estimate_id, org_id, domain="localhost", protocol="h
         "public_url": public_url,
         "org": estimate.org,
     }
-    html_content = render_to_string("invoices/emails/estimate_to_client.html", context=context)
+    html_content = render_to_string(
+        "invoices/emails/estimate_to_client.html", context=context
+    )
 
     msg = EmailMessage(
         subject=subject,

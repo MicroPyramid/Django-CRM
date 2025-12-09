@@ -4,6 +4,7 @@ Duplicate detection service for CRM entities.
 Provides methods to find potential duplicate records based on
 email, phone, name, and other identifying fields.
 """
+
 import re
 from typing import TYPE_CHECKING
 
@@ -206,9 +207,9 @@ class DuplicateDetector:
             # Also check for partial matches on first word (for company variations)
             first_word = name.split()[0] if name else ""
             if len(first_word) >= 3:
-                partial_matches = base_qs.filter(
-                    name__istartswith=first_word
-                ).exclude(name__iexact=name)
+                partial_matches = base_qs.filter(name__istartswith=first_word).exclude(
+                    name__iexact=name
+                )
                 for account in partial_matches:
                     if account not in duplicates:
                         duplicates.append(account)

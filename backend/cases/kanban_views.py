@@ -534,9 +534,7 @@ class CaseStageCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        stage = serializer.save(
-            pipeline=pipeline, org=org, created_by=request.user
-        )
+        stage = serializer.save(pipeline=pipeline, org=org, created_by=request.user)
         return Response(CaseStageSerializer(stage).data, status=status.HTTP_201_CREATED)
 
 

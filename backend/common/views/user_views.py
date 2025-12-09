@@ -32,19 +32,20 @@ from opportunity.serializer import OpportunitySerializer
 
 
 class GetTeamsAndUsersView(APIView):
-
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         tags=["users"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="TeamsAndUsersResponse",
-            fields={
-                "teams": TeamsSerializer(many=True),
-                "profiles": ProfileSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="TeamsAndUsersResponse",
+                fields={
+                    "teams": TeamsSerializer(many=True),
+                    "profiles": ProfileSerializer(many=True),
+                },
+            )
+        },
     )
     def get(self, request, *args, **kwargs):
         data = {}
@@ -60,17 +61,21 @@ class GetTeamsAndUsersView(APIView):
 
 
 class UsersListView(APIView, LimitOffsetPagination):
-
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         tags=["users"],
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
-        responses={201: inline_serializer(
-            name="UserCreateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            201: inline_serializer(
+                name="UserCreateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def post(self, request, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
@@ -120,16 +125,18 @@ class UsersListView(APIView, LimitOffsetPagination):
     @extend_schema(
         tags=["users"],
         parameters=swagger_params.user_list_params,
-        responses={200: inline_serializer(
-            name="UsersListResponse",
-            fields={
-                "active_users": serializers.DictField(),
-                "inactive_users": serializers.DictField(),
-                "admin_email": serializers.CharField(),
-                "roles": serializers.ListField(),
-                "status": serializers.ListField(),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="UsersListResponse",
+                fields={
+                    "active_users": serializers.DictField(),
+                    "inactive_users": serializers.DictField(),
+                    "admin_email": serializers.CharField(),
+                    "roles": serializers.ListField(),
+                    "status": serializers.ListField(),
+                },
+            )
+        },
     )
     def get(self, request, format=None):
         # Check if profile exists and user has permission
@@ -210,10 +217,15 @@ class UserDetailView(APIView):
     @extend_schema(
         tags=["users"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="UserDetailResponse",
-            fields={"error": serializers.BooleanField(), "data": serializers.DictField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="UserDetailResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "data": serializers.DictField(),
+                },
+            )
+        },
     )
     def get(self, request, pk, format=None):
         profile_obj = self.get_object(pk)
@@ -258,10 +270,15 @@ class UserDetailView(APIView):
         tags=["users"],
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="UserUpdateResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="UserUpdateResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def put(self, request, pk, format=None):
         params = request.data
@@ -321,10 +338,15 @@ class UserDetailView(APIView):
         parameters=swagger_params.organization_params,
         request=UserCreateSwaggerSerializer,
         description="Partial User Update",
-        responses={200: inline_serializer(
-            name="UserPatchResponse",
-            fields={"error": serializers.BooleanField(), "message": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="UserPatchResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                },
+            )
+        },
     )
     def patch(self, request, pk, format=None):
         """Handle partial updates to a user."""
@@ -342,7 +364,10 @@ class UserDetailView(APIView):
 
         if profile.org != request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -377,10 +402,11 @@ class UserDetailView(APIView):
     @extend_schema(
         tags=["users"],
         parameters=swagger_params.organization_params,
-        responses={200: inline_serializer(
-            name="UserDeleteResponse",
-            fields={"status": serializers.CharField()}
-        )},
+        responses={
+            200: inline_serializer(
+                name="UserDeleteResponse", fields={"status": serializers.CharField()}
+            )
+        },
     )
     def delete(self, request, pk, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -411,13 +437,15 @@ class UserStatusView(APIView):
         description="User Status View",
         parameters=swagger_params.organization_params,
         request=UserUpdateStatusSwaggerSerializer,
-        responses={200: inline_serializer(
-            name="UserStatusResponse",
-            fields={
-                "active_profiles": ProfileSerializer(many=True),
-                "inactive_profiles": ProfileSerializer(many=True),
-            }
-        )},
+        responses={
+            200: inline_serializer(
+                name="UserStatusResponse",
+                fields={
+                    "active_profiles": ProfileSerializer(many=True),
+                    "inactive_profiles": ProfileSerializer(many=True),
+                },
+            )
+        },
     )
     def post(self, request, pk, format=None):
         if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:

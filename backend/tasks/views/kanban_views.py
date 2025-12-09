@@ -111,7 +111,9 @@ class TaskKanbanView(APIView):
         # Base queryset with filters
         queryset = (
             Task.objects.filter(org=org)
-            .select_related("created_by", "stage", "account", "lead", "opportunity", "case")
+            .select_related(
+                "created_by", "stage", "account", "lead", "opportunity", "case"
+            )
             .prefetch_related("assigned_to", "tags")
         )
 
@@ -212,9 +214,7 @@ class TaskKanbanView(APIView):
 
         columns = []
         for stage in pipeline.stages.all().order_by("order"):
-            tasks = queryset.filter(stage=stage).order_by(
-                "kanban_order", "-created_at"
-            )
+            tasks = queryset.filter(stage=stage).order_by("kanban_order", "-created_at")
 
             columns.append(
                 {

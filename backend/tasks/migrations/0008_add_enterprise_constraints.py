@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0007_alter_board_created_by_alter_board_updated_by_and_more"),
     ]

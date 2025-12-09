@@ -6,7 +6,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0001_initial"),
         ("invoices", "0004_estimate_estimatelineitem_invoicetemplate_payment_and_more"),
@@ -19,7 +18,10 @@ class Migration(migrations.Migration):
             model_name="opportunity",
             name="amount_source",
             field=models.CharField(
-                choices=[("MANUAL", "Manual"), ("CALCULATED", "Calculated from Products")],
+                choices=[
+                    ("MANUAL", "Manual"),
+                    ("CALCULATED", "Calculated from Products"),
+                ],
                 default="MANUAL",
                 max_length=20,
                 verbose_name="Amount Source",
@@ -96,7 +98,10 @@ class Migration(migrations.Migration):
                     "discount_type",
                     models.CharField(
                         blank=True,
-                        choices=[("PERCENTAGE", "Percentage (%)"), ("FIXED", "Fixed Amount")],
+                        choices=[
+                            ("PERCENTAGE", "Percentage (%)"),
+                            ("FIXED", "Fixed Amount"),
+                        ],
                         max_length=20,
                         verbose_name="Discount Type",
                     ),

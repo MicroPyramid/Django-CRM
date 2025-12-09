@@ -85,9 +85,13 @@ class AccountsListView(APIView, LimitOffsetPagination):
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
             if params.get("created_at__gte"):
-                queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
+                queryset = queryset.filter(
+                    created_at__gte=params.get("created_at__gte")
+                )
             if params.get("created_at__lte"):
-                queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+                queryset = queryset.filter(
+                    created_at__lte=params.get("created_at__lte")
+                )
 
         context = {}
 
@@ -187,19 +191,25 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
             # Handle M2M relationships using utilities
             handle_m2m_assignment(
-                account_object, 'contacts', data.get('contacts'),
-                Contact, request.profile.org
+                account_object,
+                "contacts",
+                data.get("contacts"),
+                Contact,
+                request.profile.org,
             )
-            tags = get_or_create_tags(data.get('tags'), request.profile.org)
+            tags = get_or_create_tags(data.get("tags"), request.profile.org)
             if tags:
                 account_object.tags.add(*tags)
             handle_m2m_assignment(
-                account_object, 'teams', data.get('teams'),
-                Teams, request.profile.org
+                account_object, "teams", data.get("teams"), Teams, request.profile.org
             )
             handle_m2m_assignment(
-                account_object, 'assigned_to', data.get('assigned_to'),
-                Profile, request.profile.org, extra_filters={'is_active': True}
+                account_object,
+                "assigned_to",
+                data.get("assigned_to"),
+                Profile,
+                request.profile.org,
+                extra_filters={"is_active": True},
             )
 
             # Handle attachment
@@ -207,7 +217,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 create_attachment(
                     request.FILES.get("account_attachment"),
                     account_object,
-                    request.profile
+                    request.profile,
                 )
 
             recipients = list(
@@ -286,7 +296,9 @@ class AccountDetailView(APIView):
             account_object.tags.clear()
             if data.get("tags"):
                 tags = json.loads(data.get("tags"))
-                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                tag_objs = Tags.objects.filter(
+                    id__in=tags, org=request.profile.org, is_active=True
+                )
                 account_object.tags.add(*tag_objs)
 
             account_object.teams.clear()
@@ -546,7 +558,10 @@ class AccountDetailView(APIView):
         account_object = self.get_object(pk=pk)
         if account_object.org != request.profile.org:
             return Response(
-                {"error": True, "errors": "User company does not match with header...."},
+                {
+                    "error": True,
+                    "errors": "User company does not match with header....",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -591,7 +606,9 @@ class AccountDetailView(APIView):
                 if tags:
                     if isinstance(tags, str):
                         tags = json.loads(tags)
-                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    tag_objs = Tags.objects.filter(
+                        id__in=tags, org=request.profile.org, is_active=True
+                    )
                     account_object.tags.add(*tag_objs)
 
             if "teams" in data:
@@ -600,7 +617,9 @@ class AccountDetailView(APIView):
                 if teams_list:
                     if isinstance(teams_list, str):
                         teams_list = json.loads(teams_list)
-                    teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                    teams = Teams.objects.filter(
+                        id__in=teams_list, org=request.profile.org
+                    )
                     account_object.teams.add(*teams)
 
             if "assigned_to" in data:
