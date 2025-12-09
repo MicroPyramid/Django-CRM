@@ -16,6 +16,11 @@ redis==7.1.0
 pytz==2025.2
 requests==2.32.5
 faker==33.1.0
+python-dateutil>=2.8.0
+
+# PDF Generation
+weasyprint>=60.0
+cairocffi>=1.6.0
 
 # Production server
 gunicorn>=23.0.0

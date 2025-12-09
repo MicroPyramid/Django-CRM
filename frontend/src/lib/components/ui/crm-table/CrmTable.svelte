@@ -28,7 +28,8 @@
 	 *   visibleColumns?: string[],
 	 *   onRowChange?: (row: any, field: string, value: any) => void,
 	 *   onRowClick?: (row: any) => void,
-	 *   emptyState?: import('svelte').Snippet
+	 *   emptyState?: import('svelte').Snippet,
+	 *   cellContent?: import('svelte').Snippet<[any, ColumnDef]>
 	 * }}
 	 */
 	let {
@@ -37,7 +38,8 @@
 		visibleColumns = $bindable(/** @type {string[]} */ ([])),
 		onRowChange,
 		onRowClick,
-		emptyState
+		emptyState,
+		cellContent
 	} = $props();
 
 	// Initialize visibleColumns from columns if not provided
@@ -255,7 +257,9 @@
 							{@const value = getCellValue(row, column)}
 							{@const formattedValue = formatValue(value, column, row)}
 							<td class="py-3 pr-4 {colIndex === 0 ? 'pl-0' : 'pl-4'} {column.width || ''}">
-								{#if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
+								{#if cellContent}
+									{@render cellContent(row, column)}
+								{:else if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
 									{#if editingCell?.rowId === row.id && editingCell?.columnKey === column.key && onRowChange}
 										<input
 											type={column.type === 'email'

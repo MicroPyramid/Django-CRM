@@ -62,6 +62,12 @@ ORG_SCOPED_TABLES = [
     "emailLogs",
     "invoice_history",
     "invoice_line_item",
+    "invoice_template",
+    "payment",
+    "estimate",
+    "estimate_line_item",
+    "recurring_invoice",
+    "recurring_invoice_line_item",
     # Products
     "product",
     # Security & Audit

@@ -197,7 +197,8 @@ export async function load({ locals, cookies, url }) {
 
 		// opportunities, cases, leads already transformed above for task field name lookups
 
-		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+		// Transform tags (include color for TagFilter)
+		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name, color: t.color || 'blue' }));
 
 		return {
 			tasks: transformedTasks,

@@ -36,19 +36,39 @@ export function formatRelativeDate(date) {
 
 /**
  * Format a number as currency
- * @param {number | null | undefined} amount - Amount to format
- * @param {string} [currency='USD'] - Currency code
+ * @param {number | string | null | undefined} amount - Amount to format
+ * @param {string} [currency='USD'] - Currency code (ISO 4217)
  * @param {boolean} [compact=false] - Use compact notation (e.g., $1.2M)
  * @returns {string} Formatted currency string or '-' if no amount
  */
 export function formatCurrency(amount, currency = 'USD', compact = false) {
 	if (amount === null || amount === undefined) return '-';
-	return new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency,
-		notation: compact ? 'compact' : 'standard',
-		maximumFractionDigits: compact ? 1 : 2
-	}).format(amount);
+
+	// Convert to number if string
+	const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+	// Handle NaN or invalid numbers
+	if (isNaN(numAmount)) return '-';
+
+	// Ensure valid currency code (fallback to USD)
+	const currencyCode = currency && currency.length === 3 ? currency : 'USD';
+
+	try {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: currencyCode,
+			notation: compact ? 'compact' : 'standard',
+			maximumFractionDigits: compact ? 1 : 2
+		}).format(numAmount);
+	} catch {
+		// Fallback if currency code is invalid
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD',
+			notation: compact ? 'compact' : 'standard',
+			maximumFractionDigits: compact ? 1 : 2
+		}).format(numAmount);
+	}
 }
 
 /**

@@ -21,15 +21,21 @@
 		Banknote,
 		Contact,
 		Tags,
-		Filter
+		Filter,
+		Package,
+		Trash2,
+		Receipt
 	} from '@lucide/svelte';
 	import { PageHeader } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
 	import { CrmTable } from '$lib/components/ui/crm-table';
-	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { formatCurrency, formatRelativeDate } from '$lib/utils/formatting.js';
 	import {
 		OPPORTUNITY_STAGES as stages,
@@ -181,8 +187,19 @@
 		contacts: data.options?.contacts || [],
 		tags: data.options?.tags || [],
 		users: data.options?.users || [],
-		teams: data.options?.teams || []
+		teams: data.options?.teams || [],
+		products: data.options?.products || []
 	});
+
+	// Product options for line items dropdown
+	const productOptions = $derived(
+		formOptions.products.map((p) => ({
+			value: p.id,
+			label: p.name,
+			price: p.price,
+			sku: p.sku
+		}))
+	);
 
 	// Account options for select field
 	const accountOptions = $derived(
@@ -918,6 +935,144 @@
 	);
 	const isWon = $derived(selectedRow?.stage === 'CLOSED_WON');
 	const isLost = $derived(selectedRow?.stage === 'CLOSED_LOST');
+
+	// Line items from selected row
+	const lineItems = $derived(selectedRow?.lineItems || []);
+	const hasLineItems = $derived(lineItems.length > 0);
+	const canCreateInvoice = $derived(isWon && hasLineItems);
+
+	// New line item form state
+	let newLineItemProductId = $state('');
+	let newLineItemQty = $state(1);
+	let newLineItemPrice = $state(0);
+	let isAddingLineItem = $state(false);
+	let isDeletingLineItem = $state(''); // Holds the ID of the line item being deleted
+	let createInvoiceDialogOpen = $state(false);
+	let productSearchQuery = $state('');
+
+	// Filter products based on search query
+	const filteredProductOptions = $derived.by(() => {
+		if (!productSearchQuery.trim()) {
+			return productOptions;
+		}
+		const query = productSearchQuery.toLowerCase();
+		return productOptions.filter(
+			(p) =>
+				p.label.toLowerCase().includes(query) ||
+				(p.sku && p.sku.toLowerCase().includes(query))
+		);
+	});
+
+	/**
+	 * Handle product selection for new line item
+	 * @param {string} productId
+	 */
+	function handleProductSelect(productId) {
+		newLineItemProductId = productId;
+		const product = formOptions.products.find((p) => p.id === productId);
+		if (product) {
+			newLineItemPrice = product.price || 0;
+		}
+	}
+
+	/**
+	 * Add a new line item
+	 */
+	async function addLineItem() {
+		if (!selectedRowId || !newLineItemProductId) return;
+
+		isAddingLineItem = true;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+			form.append('productId', newLineItemProductId);
+			form.append('quantity', newLineItemQty.toString());
+			form.append('unitPrice', newLineItemPrice.toString());
+
+			const response = await fetch('?/addLineItem', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Product added');
+				// Reset form
+				newLineItemProductId = '';
+				newLineItemQty = 1;
+				newLineItemPrice = 0;
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to add product');
+			}
+		} catch (err) {
+			console.error('Add line item error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isAddingLineItem = false;
+		}
+	}
+
+	/**
+	 * Delete a line item
+	 * @param {string} lineItemId
+	 */
+	async function deleteLineItem(lineItemId) {
+		if (!selectedRowId || isDeletingLineItem) return;
+
+		isDeletingLineItem = lineItemId;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+			form.append('lineItemId', lineItemId);
+
+			const response = await fetch('?/deleteLineItem', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Product removed');
+				await invalidateAll();
+			} else {
+				toast.error(result.data?.message || 'Failed to remove product');
+			}
+		} catch (err) {
+			console.error('Delete line item error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isDeletingLineItem = '';
+		}
+	}
+
+	/**
+	 * Create invoice from opportunity (called after confirmation)
+	 */
+	async function confirmCreateInvoice() {
+		if (!selectedRowId || !canCreateInvoice) return;
+
+		createInvoiceDialogOpen = false;
+		isLoading = true;
+		try {
+			const form = new FormData();
+			form.append('opportunityId', selectedRowId);
+
+			const response = await fetch('?/createInvoice', { method: 'POST', body: form });
+			const result = await response.json();
+
+			if (result.type === 'success' || result.data?.success) {
+				toast.success('Invoice created');
+				// Navigate to the new invoice
+				if (result.data?.invoiceId) {
+					goto(`/invoices/${result.data.invoiceId}`);
+				} else {
+					goto('/invoices');
+				}
+			} else {
+				toast.error(result.data?.message || 'Failed to create invoice');
+			}
+		} catch (err) {
+			console.error('Create invoice error:', err);
+			toast.error('An error occurred');
+		} finally {
+			isLoading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -1088,6 +1243,11 @@
 			onchange={(start, end) =>
 				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 		/>
+		<TagFilter
+			tags={data.options?.tags || []}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
+		/>
 	</FilterBar>
 	<!-- Table View -->
 	{#if filteredOpportunities.length === 0}
@@ -1179,6 +1339,137 @@
 					{/if}
 				</div>
 			</div>
+
+			<!-- Products Section -->
+			<div class="mt-6 border-t pt-4 dark:border-gray-700">
+				<div class="mb-3 flex items-center justify-between">
+					<p
+						class="flex items-center gap-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+					>
+						<Package class="h-4 w-4" />
+						Products
+					</p>
+					{#if hasLineItems}
+						<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+							Total: {formatCurrency(selectedRow.lineItemsTotal || 0, selectedRow.currency || 'USD')}
+						</span>
+					{/if}
+				</div>
+
+				<!-- Existing line items -->
+				{#if hasLineItems}
+					<div class="mb-4 space-y-2">
+						{#each lineItems as item (item.id)}
+							<div
+								class="flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+							>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+										{item.productName || item.name || 'Custom Item'}
+									</p>
+									<p class="text-xs text-gray-500 dark:text-gray-400">
+										{item.quantity} x {formatCurrency(item.unitPrice, selectedRow.currency || 'USD')}
+										= {formatCurrency(item.total, selectedRow.currency || 'USD')}
+									</p>
+								</div>
+								{#if !isClosed}
+									<button
+										type="button"
+										class="ml-2 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed dark:hover:bg-gray-700 dark:hover:text-red-400"
+										onclick={() => deleteLineItem(item.id)}
+										disabled={isDeletingLineItem === item.id}
+									>
+										{#if isDeletingLineItem === item.id}
+											<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+											</svg>
+										{:else}
+											<Trash2 class="h-4 w-4" />
+										{/if}
+									</button>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+						No products added yet.
+					</p>
+				{/if}
+
+				<!-- Add product form (only if not closed) -->
+				{#if !isClosed}
+					<div class="space-y-3 rounded-lg border bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+						<p class="text-xs font-medium text-gray-600 dark:text-gray-400">Add Product</p>
+						<div class="grid grid-cols-1 gap-2">
+							<Select.Root
+								type="single"
+								value={newLineItemProductId}
+								onValueChange={(v) => {
+									if (v) handleProductSelect(v);
+									productSearchQuery = '';
+								}}
+								onOpenChange={(open) => {
+									if (!open) productSearchQuery = '';
+								}}
+							>
+								<Select.Trigger class="w-full">
+									{productOptions.find(p => p.value === newLineItemProductId)?.label || 'Select product...'}
+								</Select.Trigger>
+								<Select.Content class="max-h-60">
+									<div class="sticky top-0 bg-white p-2 dark:bg-gray-800">
+										<Input
+											type="text"
+											placeholder="Search products..."
+											bind:value={productSearchQuery}
+											class="h-8 text-sm"
+											onclick={(e) => e.stopPropagation()}
+											onkeydown={(e) => e.stopPropagation()}
+										/>
+									</div>
+									{#if filteredProductOptions.length === 0}
+										<div class="px-3 py-2 text-sm text-gray-500">No products found</div>
+									{:else}
+										{#each filteredProductOptions as product (product.value)}
+											<Select.Item value={product.value}>
+												{product.label}
+												{#if product.sku}
+													<span class="ml-1 text-xs text-gray-400">({product.sku})</span>
+												{/if}
+											</Select.Item>
+										{/each}
+									{/if}
+								</Select.Content>
+							</Select.Root>
+							<div class="flex gap-2">
+								<Input
+									type="number"
+									placeholder="Qty"
+									bind:value={newLineItemQty}
+									min="1"
+									class="w-20"
+								/>
+								<Input
+									type="number"
+									placeholder="Price"
+									bind:value={newLineItemPrice}
+									min="0"
+									step="0.01"
+									class="flex-1"
+								/>
+								<Button
+									size="sm"
+									onclick={addLineItem}
+									disabled={isAddingLineItem || !newLineItemProductId}
+								>
+									<Plus class="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
 		{/if}
 	{/snippet}
 
@@ -1207,6 +1498,37 @@
 					<XCircle class="mr-1.5 h-4 w-4" />
 					Mark Lost
 				</Button>
+			{/if}
+			{#if canCreateInvoice}
+				<AlertDialog.Root bind:open={createInvoiceDialogOpen}>
+					<AlertDialog.Trigger asChild>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								class="text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
+								disabled={isLoading}
+							>
+								<Receipt class="mr-1.5 h-4 w-4" />
+								Create Invoice
+							</Button>
+						{/snippet}
+					</AlertDialog.Trigger>
+					<AlertDialog.Content>
+						<AlertDialog.Header>
+							<AlertDialog.Title>Create Invoice</AlertDialog.Title>
+							<AlertDialog.Description>
+								This will create a new invoice from this opportunity with {lineItems.length} product{lineItems.length === 1 ? '' : 's'} totaling {formatCurrency(selectedRow?.lineItemsTotal || 0, selectedRow?.currency || 'USD')}.
+							</AlertDialog.Description>
+						</AlertDialog.Header>
+						<AlertDialog.Footer>
+							<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+							<AlertDialog.Action onclick={confirmCreateInvoice}>
+								Create Invoice
+							</AlertDialog.Action>
+						</AlertDialog.Footer>
+					</AlertDialog.Content>
+				</AlertDialog.Root>
 			{/if}
 			<Button onclick={handleDrawerUpdate} disabled={isLoading || !drawerFormData.name?.trim()}>
 				{isLoading ? 'Saving...' : 'Save'}

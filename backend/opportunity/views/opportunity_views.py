@@ -112,7 +112,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["accounts_list"] = AccountSerializer(accounts, many=True).data
         context["contacts_list"] = ContactSerializer(contacts, many=True).data
         context["tags"] = TagsSerializer(
-            Tags.objects.filter(org=self.request.profile.org), many=True
+            Tags.objects.filter(org=self.request.profile.org, is_active=True), many=True
         ).data
         context["stage"] = STAGES
         context["lead_source"] = SOURCES
@@ -181,13 +181,8 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
             if params.get("tags"):
                 tags = params.get("tags")
-                for tag in tags:
-                    obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if obj_tag.exists():
-                        obj_tag = obj_tag[0]
-                    else:
-                        obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
-                    opportunity_obj.tags.add(obj_tag)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                opportunity_obj.tags.add(*tag_objs)
 
             if params.get("stage"):
                 stage = params.get("stage")
@@ -302,13 +297,8 @@ class OpportunityDetailView(APIView):
             opportunity_object.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
-                for tag in tags:
-                    obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if obj_tag.exists():
-                        obj_tag = obj_tag[0]
-                    else:
-                        obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
-                    opportunity_object.tags.add(obj_tag)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                opportunity_object.tags.add(*tag_objs)
 
             if params.get("stage"):
                 stage = params.get("stage")
@@ -633,13 +623,8 @@ class OpportunityDetailView(APIView):
                 opportunity_object.tags.clear()
                 tags = params.get("tags")
                 if tags:
-                    for tag in tags:
-                        obj_tag = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                        if obj_tag.exists():
-                            obj_tag = obj_tag[0]
-                        else:
-                            obj_tag = Tags.objects.create(name=tag, org=request.profile.org)
-                        opportunity_object.tags.add(obj_tag)
+                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    opportunity_object.tags.add(*tag_objs)
 
             if "teams" in params:
                 opportunity_object.teams.clear()

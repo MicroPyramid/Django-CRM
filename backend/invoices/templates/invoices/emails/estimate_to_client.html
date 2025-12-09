@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3B82F6; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9fafb; }
+        .details { background: white; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .details-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .total { font-size: 18px; font-weight: bold; color: #3B82F6; }
+        .button { display: inline-block; padding: 12px 24px; background: #3B82F6; color: white; text-decoration: none; border-radius: 6px; }
+        .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Estimate from {{ org.name }}</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ estimate.client_name }},</p>
+            <p>Please find attached your estimate <strong>#{{ estimate.estimate_number }}</strong>.</p>
+
+            <div class="details">
+                <div class="details-row">
+                    <span>Estimate Number:</span>
+                    <span>#{{ estimate.estimate_number }}</span>
+                </div>
+                {% if estimate.title %}
+                <div class="details-row">
+                    <span>Description:</span>
+                    <span>{{ estimate.title }}</span>
+                </div>
+                {% endif %}
+                <div class="details-row">
+                    <span>Date:</span>
+                    <span>{{ estimate.issue_date|date:"F d, Y" }}</span>
+                </div>
+                {% if estimate.expiry_date %}
+                <div class="details-row">
+                    <span>Valid Until:</span>
+                    <span>{{ estimate.expiry_date|date:"F d, Y" }}</span>
+                </div>
+                {% endif %}
+                <div class="details-row total">
+                    <span>Total:</span>
+                    <span>{{ estimate.currency }} {{ estimate.total_amount }}</span>
+                </div>
+            </div>
+
+            {% if public_url %}
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{ public_url }}" class="button">View Estimate Online</a>
+            </p>
+            {% endif %}
+
+            <p>If you have any questions or would like to proceed with this estimate, please don't hesitate to contact us.</p>
+            <p>Thank you for considering our services!</p>
+        </div>
+        <div class="footer">
+            <p>{{ org.name }}</p>
+        </div>
+    </div>
+</body>
+</html>

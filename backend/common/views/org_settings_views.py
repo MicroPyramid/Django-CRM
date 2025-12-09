@@ -19,7 +19,7 @@ class OrgSettingsView(APIView):
     def get(self, request):
         """Get current organization settings."""
         org = request.profile.org
-        serializer = OrgSettingsSerializer(org)
+        serializer = OrgSettingsSerializer(org, context={"request": request})
         return Response(serializer.data)
 
     def patch(self, request):
@@ -31,7 +31,9 @@ class OrgSettingsView(APIView):
             )
 
         org = request.profile.org
-        serializer = OrgSettingsSerializer(org, data=request.data, partial=True)
+        serializer = OrgSettingsSerializer(
+            org, data=request.data, partial=True, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

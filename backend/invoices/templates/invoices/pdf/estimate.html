@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Estimate {{ estimate.estimate_number }}</title>
+</head>
+<body>
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                {% if org.logo %}
+                <img src="{{ org.logo.url }}" alt="{{ org.name }}" class="logo">
+                {% else %}
+                <div class="company-name">{{ org.name }}</div>
+                {% endif %}
+            </div>
+            <div class="invoice-title">
+                <h1>Estimate</h1>
+                <div class="invoice-number">#{{ estimate.estimate_number }}</div>
+            </div>
+        </div>
+
+        <!-- Addresses -->
+        <div class="addresses">
+            <div class="address-block from-address">
+                <h3>From</h3>
+                <p class="company-name">{{ org.name }}</p>
+                {% if org.address_line %}
+                <p>{{ org.address_line }}</p>
+                {% endif %}
+                {% if org.city or org.state or org.postcode %}
+                <p>
+                    {% if org.city %}{{ org.city }}{% endif %}{% if org.state %}, {{ org.state }}{% endif %}
+                    {% if org.postcode %}{{ org.postcode }}{% endif %}
+                </p>
+                {% endif %}
+                {% if org.country %}
+                <p>{{ org.country }}</p>
+                {% endif %}
+            </div>
+            <div class="address-block to-address">
+                <h3>Prepared For</h3>
+                <p class="company-name">{{ estimate.client_name }}</p>
+                {% if estimate.client_email %}
+                <p>{{ estimate.client_email }}</p>
+                {% endif %}
+                {% if estimate.client_phone %}
+                <p>{{ estimate.client_phone }}</p>
+                {% endif %}
+                {% if estimate.client_address_line %}
+                <p>{{ estimate.client_address_line }}</p>
+                {% endif %}
+                {% if estimate.client_city or estimate.client_state or estimate.client_postcode %}
+                <p>
+                    {% if estimate.client_city %}{{ estimate.client_city }}{% endif %}{% if estimate.client_state %}, {{ estimate.client_state }}{% endif %}
+                    {% if estimate.client_postcode %}{{ estimate.client_postcode }}{% endif %}
+                </p>
+                {% endif %}
+                {% if estimate.client_country %}
+                <p>{{ estimate.client_country }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estimate Details -->
+        <div class="invoice-details">
+            <div class="details-row">
+                <span class="details-label">Estimate Date:</span>
+                <span class="details-value">{{ estimate.issue_date|date:"F d, Y" }}</span>
+            </div>
+            {% if estimate.expiry_date %}
+            <div class="details-row">
+                <span class="details-label">Valid Until:</span>
+                <span class="details-value">
+                    {{ estimate.expiry_date|date:"F d, Y" }}
+                    {% if is_expired %}<span style="color: #dc2626;"> (Expired)</span>{% endif %}
+                </span>
+            </div>
+            {% endif %}
+            {% if estimate.title %}
+            <div class="details-row">
+                <span class="details-label">Reference:</span>
+                <span class="details-value">{{ estimate.title }}</span>
+            </div>
+            {% endif %}
+            <div class="details-row">
+                <span class="details-label">Status:</span>
+                <span class="details-value">
+                    <span class="status-badge {{ status_class }}">{{ estimate.status }}</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <table class="line-items">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Description</th>
+                    <th style="width: 15%">Quantity</th>
+                    <th style="width: 15%">Unit Price</th>
+                    <th style="width: 15%">Tax</th>
+                    <th style="width: 15%">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in line_items %}
+                <tr>
+                    <td class="item-description">
+                        <strong>{{ item.name }}</strong>
+                        {% if item.description %}
+                        <br><small>{{ item.description }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price }}</td>
+                    <td>{% if item.tax_rate %}{{ item.tax_rate }}%{% else %}-{% endif %}</td>
+                    <td>{{ item.total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px;">No line items</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="totals-section">
+            <div class="totals-table">
+                <div class="totals-row">
+                    <span class="totals-label">Subtotal</span>
+                    <span class="totals-value">{{ subtotal }}</span>
+                </div>
+                {% if estimate.discount_amount and estimate.discount_amount > 0 %}
+                <div class="totals-row">
+                    <span class="totals-label">
+                        Discount
+                        {% if estimate.discount_type == 'PERCENTAGE' %}({{ estimate.discount_value }}%){% endif %}
+                    </span>
+                    <span class="totals-value">-{{ discount_amount }}</span>
+                </div>
+                {% endif %}
+                {% if estimate.tax_amount and estimate.tax_amount > 0 %}
+                <div class="totals-row">
+                    <span class="totals-label">
+                        Tax
+                        {% if estimate.tax_rate %}({{ estimate.tax_rate }}%){% endif %}
+                    </span>
+                    <span class="totals-value">{{ tax_amount }}</span>
+                </div>
+                {% endif %}
+                <div class="totals-row grand-total">
+                    <span class="totals-label">Total</span>
+                    <span class="totals-value">{{ total_amount }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if estimate.notes %}
+        <div class="notes-section">
+            <h3>Notes</h3>
+            <p>{{ estimate.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Terms -->
+        {% if estimate.terms %}
+        <div class="notes-section">
+            <h3>Terms & Conditions</h3>
+            <p>{{ estimate.terms|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Acceptance Notice -->
+        <div class="payment-info">
+            <h3>Acceptance</h3>
+            <p style="color: #0369a1; font-size: 9pt;">
+                This estimate is valid {% if estimate.expiry_date %}until {{ estimate.expiry_date|date:"F d, Y" }}{% else %}for 30 days from the date above{% endif %}.
+                To accept this estimate, please contact us or sign below.
+            </p>
+            <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                <div style="width: 45%;">
+                    <div style="border-bottom: 1px solid #333; height: 40px;"></div>
+                    <p style="font-size: 8pt; color: #666; margin-top: 5px;">Signature</p>
+                </div>
+                <div style="width: 45%;">
+                    <div style="border-bottom: 1px solid #333; height: 40px;"></div>
+                    <p style="font-size: 8pt; color: #666; margin-top: 5px;">Date</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Thank you for considering our services!</p>
+            {% if org.name %}
+            <p>{{ org.name }}</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

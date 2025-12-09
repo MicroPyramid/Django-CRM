@@ -212,8 +212,8 @@ export async function load({ url, locals, cookies }) {
 		// Transform teams
 		const teams = (teamsRes.teams || teamsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
 
-		// Transform tags
-		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name }));
+		// Transform tags (include color for TagFilter)
+		const tags = (tagsRes.tags || tagsRes.results || []).map((t) => ({ id: t.id, name: t.name, color: t.color || 'blue' }));
 
 		return {
 			cases: transformedCases,

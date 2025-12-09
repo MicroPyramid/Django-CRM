@@ -19,7 +19,7 @@ from common.views.organization_views import (
 )
 from common.views.settings_views import DomainDetailView, DomainList
 from common.views.org_settings_views import OrgSettingsView
-from common.views.tags_views import TagsDetailView, TagsListView
+from common.views.tags_views import TagsDetailView, TagsListView, TagsRestoreView
 from common.views.team_views import TeamsDetailView, TeamsListView
 from common.views.user_views import (
     GetTeamsAndUsersView,
@@ -70,4 +70,5 @@ urlpatterns = [
     # Tags
     path("tags/", TagsListView.as_view()),
     path("tags/<str:pk>/", TagsDetailView.as_view()),
+    path("tags/<str:pk>/restore/", TagsRestoreView.as_view()),
 ]

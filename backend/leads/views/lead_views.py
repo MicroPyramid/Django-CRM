@@ -138,7 +138,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         context["status"] = LEAD_STATUS
         context["source"] = LEAD_SOURCE
         context["tags"] = TagsSerializer(
-            Tags.objects.filter(org=self.request.profile.org), many=True
+            Tags.objects.filter(org=self.request.profile.org, is_active=True), many=True
         ).data
 
         users = Profile.objects.filter(
@@ -204,13 +204,8 @@ class LeadListView(APIView, LimitOffsetPagination):
             )
             if data.get("tags", None):
                 tags = data.get("tags")
-                for t in tags:
-                    tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
-                    if tag.exists():
-                        tag = tag[0]
-                    else:
-                        tag = Tags.objects.create(name=t, org=request.profile.org)
-                    lead_obj.tags.add(tag)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                lead_obj.tags.add(*tag_objs)
 
             if data.get("contacts", None):
                 obj_contact = Contact.objects.filter(
@@ -536,13 +531,8 @@ class LeadDetailView(APIView):
             lead_obj.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
-                for t in tags:
-                    tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
-                    if tag.exists():
-                        tag = tag[0]
-                    else:
-                        tag = Tags.objects.create(name=t, org=request.profile.org)
-                    lead_obj.tags.add(tag)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                lead_obj.tags.add(*tag_objs)
 
             assigned_to_list = list(
                 lead_obj.assigned_to.all().values_list("id", flat=True)
@@ -692,13 +682,8 @@ class LeadDetailView(APIView):
                 lead_obj.tags.clear()
                 tags = params.get("tags")
                 if tags:
-                    for t in tags:
-                        tag = Tags.objects.filter(slug=t.lower(), org=request.profile.org)
-                        if tag.exists():
-                            tag = tag[0]
-                        else:
-                            tag = Tags.objects.create(name=t, org=request.profile.org)
-                        lead_obj.tags.add(tag)
+                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    lead_obj.tags.add(*tag_objs)
 
             if "contacts" in params:
                 lead_obj.contacts.clear()

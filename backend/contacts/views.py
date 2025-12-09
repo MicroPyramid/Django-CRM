@@ -160,13 +160,8 @@ class ContactsListView(APIView, LimitOffsetPagination):
             tags = params.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
-            for tag in tags:
-                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                if tag_obj.exists():
-                    tag_obj = tag_obj[0]
-                else:
-                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                contact_obj.tags.add(tag_obj)
+            tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+            contact_obj.tags.add(*tag_objs)
 
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
         send_email_to_assigned_user.delay(
@@ -261,13 +256,8 @@ class ContactDetailView(APIView):
             tags = data.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
-            for tag in tags:
-                tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                if tag_obj.exists():
-                    tag_obj = tag_obj[0]
-                else:
-                    tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                contact_obj.tags.add(tag_obj)
+            tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+            contact_obj.tags.add(*tag_objs)
 
         previous_assigned_to_users = list(
             contact_obj.assigned_to.all().values_list("id", flat=True)
@@ -578,13 +568,8 @@ class ContactDetailView(APIView):
             if tags_list:
                 if isinstance(tags_list, str):
                     tags_list = json.loads(tags_list)
-                for tag in tags_list:
-                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                    contact_obj.tags.add(tag_obj)
+                tag_objs = Tags.objects.filter(id__in=tags_list, org=request.profile.org, is_active=True)
+                contact_obj.tags.add(*tag_objs)
 
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},

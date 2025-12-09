@@ -1,182 +1,466 @@
 <script>
-	import { formatCurrency } from '$lib/utils/formatting.js';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
-	/** @type {import('./$types').PageData} - for external reference */
-	export let data;
+	import { PageHeader } from '$lib/components/layout';
+	import { CrmTable } from '$lib/components/ui/crm-table';
+	import { FilterBar, SearchInput, DateRangeFilter, SelectFilter } from '$lib/components/ui/filter';
+	import { Pagination } from '$lib/components/ui/pagination';
+	import { Button } from '$lib/components/ui/button';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
+	import { Plus, Filter, Columns3 } from '@lucide/svelte';
+
+	/** @type {{ data: import('./$types').PageData }} */
+	let { data } = $props();
+
+	// Invoice status options
+	const INVOICE_STATUSES = [
+		{
+			value: 'Draft',
+			label: 'Draft',
+			color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+		},
+		{
+			value: 'Sent',
+			label: 'Sent',
+			color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+		},
+		{
+			value: 'Viewed',
+			label: 'Viewed',
+			color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+		},
+		{
+			value: 'Partially_Paid',
+			label: 'Partially Paid',
+			color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+		},
+		{
+			value: 'Paid',
+			label: 'Paid',
+			color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+		},
+		{
+			value: 'Overdue',
+			label: 'Overdue',
+			color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+		},
+		{
+			value: 'Cancelled',
+			label: 'Cancelled',
+			color: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+		}
+	];
 
 	/**
-	 * @param {string} status
+	 * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
+	 * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: Array<{value: string, label: string, color: string}> }} ColumnDef
 	 */
-	function getStatusClass(status) {
-		/** @type {{ [key: string]: string }} */
-		const classes = {
-			ACCEPTED: 'bg-green-100 text-green-700',
-			PRESENTED: 'bg-blue-100 text-blue-700',
-			DRAFT: 'bg-gray-100 text-gray-700',
-			APPROVED: 'bg-purple-100 text-purple-700',
-			REJECTED: 'bg-red-100 text-red-700'
-		};
-		return classes[status] || 'bg-gray-100 text-gray-700';
+
+	/** @type {ColumnDef[]} */
+	const columns = [
+		{
+			key: 'invoiceNumber',
+			label: 'Invoice #',
+			type: 'text',
+			width: 'w-28',
+			editable: false,
+			canHide: false
+		},
+		{
+			key: 'clientName',
+			label: 'Client',
+			type: 'text',
+			width: 'w-40',
+			editable: false,
+			canHide: false
+		},
+		{
+			key: 'account',
+			label: 'Account',
+			type: 'relation',
+			width: 'w-36',
+			relationIcon: 'building',
+			canHide: true,
+			getValue: (row) => row.account?.name
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			width: 'w-28',
+			options: INVOICE_STATUSES,
+			canHide: true,
+			getValue: (row) => row.status
+		},
+		{
+			key: 'issueDate',
+			label: 'Issue Date',
+			type: 'date',
+			width: 'w-28',
+			canHide: true,
+			getValue: (row) => row.issueDate
+		},
+		{
+			key: 'dueDate',
+			label: 'Due Date',
+			type: 'date',
+			width: 'w-28',
+			canHide: true,
+			getValue: (row) => row.dueDate
+		},
+		{
+			key: 'totalAmount',
+			label: 'Total',
+			type: 'number',
+			width: 'w-28',
+			canHide: false
+		},
+		{
+			key: 'amountDue',
+			label: 'Amount Due',
+			type: 'number',
+			width: 'w-28',
+			canHide: true
+		}
+	];
+
+	// Default visible columns
+	const DEFAULT_VISIBLE_COLUMNS = [
+		'invoiceNumber',
+		'clientName',
+		'status',
+		'issueDate',
+		'dueDate',
+		'totalAmount'
+	];
+
+	// Status chip filter definitions
+	const STATUS_CHIPS = [
+		{ key: 'ALL', label: 'All' },
+		{ key: 'OPEN', label: 'Open', statuses: ['Draft', 'Sent', 'Viewed'] },
+		{ key: 'PAID', label: 'Paid', statuses: ['Paid', 'Partially_Paid'] },
+		{ key: 'OVERDUE', label: 'Overdue', statuses: ['Overdue'] },
+		{ key: 'CANCELLED', label: 'Cancelled', statuses: ['Cancelled'] }
+	];
+
+	// State
+	let filtersExpanded = $state(false);
+	let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+	let statusChipFilter = $state('ALL');
+
+	// Derived values
+	const filters = $derived(data.filters);
+	const pagination = $derived(data.pagination);
+	const allInvoices = $derived(data.invoices);
+
+	// Filter invoices by chip selection (client-side filtering)
+	const invoices = $derived.by(() => {
+		if (statusChipFilter === 'ALL') {
+			return allInvoices;
+		}
+		const chip = STATUS_CHIPS.find((c) => c.key === statusChipFilter);
+		if (!chip?.statuses) return allInvoices;
+		return allInvoices.filter((inv) => chip.statuses.includes(inv.status));
+	});
+
+	// Count invoices per chip category
+	const chipCounts = $derived.by(() => {
+		const counts = { ALL: allInvoices.length };
+		STATUS_CHIPS.forEach((chip) => {
+			if (chip.statuses) {
+				counts[chip.key] = allInvoices.filter((inv) => chip.statuses.includes(inv.status)).length;
+			}
+		});
+		return counts;
+	});
+
+	// Count active filters
+	const activeFiltersCount = $derived.by(() => {
+		let count = 0;
+		if (filters.search) count++;
+		if (filters.status) count++;
+		if (filters.account) count++;
+		if (filters.issue_date_gte || filters.issue_date_lte) count++;
+		if (filters.due_date_gte || filters.due_date_lte) count++;
+		return count;
+	});
+
+	// Filter handlers
+	async function updateFilters(newFilters) {
+		const url = new URL($page.url);
+
+		// Clear existing filter params
+		[
+			'search',
+			'status',
+			'account',
+			'contact',
+			'assigned_to',
+			'issue_date_gte',
+			'issue_date_lte',
+			'due_date_gte',
+			'due_date_lte'
+		].forEach((key) => url.searchParams.delete(key));
+
+		// Set new params
+		Object.entries(newFilters).forEach(([key, value]) => {
+			if (Array.isArray(value)) {
+				value.forEach((v) => url.searchParams.append(key, v));
+			} else if (value) {
+				url.searchParams.set(key, value);
+			}
+		});
+
+		// Reset to page 1 when filters change
+		url.searchParams.set('page', '1');
+
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
 	}
+
+	async function clearFilters() {
+		await updateFilters({});
+	}
+
+	// Pagination handlers
+	async function handlePageChange(newPage) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	async function handleLimitChange(newLimit) {
+		const url = new URL($page.url);
+		url.searchParams.set('limit', newLimit.toString());
+		url.searchParams.set('page', '1');
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	// Row click - navigate to invoice detail
+	function handleRowClick(invoice) {
+		goto(`/invoices/${invoice.id}`);
+	}
+
+	// Create new invoice - navigate to new page
+	function createNewInvoice() {
+		goto('/invoices/new');
+	}
+
+	// Status badge color
+	function getStatusColor(status) {
+		const statusObj = INVOICE_STATUSES.find((s) => s.value === status);
+		return statusObj?.color || 'bg-gray-100 text-gray-700';
+	}
+
+	// Column visibility
+	function loadColumnConfig() {
+		if (typeof window !== 'undefined') {
+			const saved = localStorage.getItem('invoices-column-config');
+			if (saved) {
+				try {
+					visibleColumns = JSON.parse(saved);
+				} catch (e) {
+					visibleColumns = [...DEFAULT_VISIBLE_COLUMNS];
+				}
+			}
+		}
+	}
+
+	function saveColumnConfig() {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('invoices-column-config', JSON.stringify(visibleColumns));
+		}
+	}
+
+	function toggleColumn(key) {
+		const column = columns.find((c) => c.key === key);
+		if (column && !column.canHide) return;
+
+		if (visibleColumns.includes(key)) {
+			visibleColumns = visibleColumns.filter((k) => k !== key);
+		} else {
+			visibleColumns = [...visibleColumns, key];
+		}
+		saveColumnConfig();
+	}
+
+	// Load column config on mount
+	$effect(() => {
+		loadColumnConfig();
+	});
 </script>
 
-<!-- Super Rich Invoice List Page - Uniform Blue-Purple Theme -->
-<div class="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-8">
-	<div class="mx-auto max-w-5xl">
-		<div class="mb-10 flex items-center justify-between">
-			<h1 class="text-4xl font-extrabold tracking-tight text-blue-900">Invoices</h1>
-			<a
-				href="/invoices/new"
-				class="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-700 to-purple-700 px-6 py-3 text-lg font-semibold text-white shadow-lg transition hover:from-blue-800 hover:to-purple-800"
-				>+ New Invoice</a
-			>
-		</div>
+<svelte:head>
+	<title>Invoices | BottleCRM</title>
+</svelte:head>
 
-		<!-- Search and Filter Controls -->
-		<div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-			<!-- Search -->
-			<div
-				class="flex flex-1 items-center rounded-xl border border-blue-200 bg-white/80 px-4 py-2 shadow backdrop-blur-md"
-			>
-				<svg
-					class="mr-2 h-5 w-5 text-blue-400"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					viewBox="0 0 24 24"
-				>
-					<circle cx="11" cy="11" r="8" />
-					<line x1="21" y1="21" x2="16.65" y2="16.65" />
-				</svg>
-				<label for="invoice-search" class="sr-only">Search invoices</label>
-				<input
-					id="invoice-search"
-					type="text"
-					placeholder="Search invoices..."
-					class="flex-1 bg-transparent text-blue-900 placeholder-blue-400 outline-none"
-				/>
-			</div>
-
-			<!-- Status Filter -->
-			<div
-				class="flex items-center rounded-xl border border-blue-200 bg-white/80 px-4 py-2 shadow backdrop-blur-md"
-			>
-				<svg
-					class="mr-2 h-5 w-5 text-purple-400"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					viewBox="0 0 24 24"
-				>
-					<rect x="3" y="7" width="18" height="13" rx="2" />
-					<path d="M16 3v4M8 3v4" />
-				</svg>
-				<label for="invoice-status-filter" class="sr-only">Filter by status</label>
-				<select
-					id="invoice-status-filter"
-					class="bg-transparent font-semibold text-blue-900 outline-none"
-				>
-					<option>All Statuses</option>
-					<option>Paid</option>
-					<option>Unpaid</option>
-					<option>Overdue</option>
-				</select>
-			</div>
-
-			<!-- Date Range -->
-			<div
-				class="flex items-center rounded-xl border border-blue-200 bg-white/80 px-4 py-2 shadow backdrop-blur-md"
-			>
-				<svg
-					class="mr-2 h-5 w-5 text-blue-400"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					viewBox="0 0 24 24"
-				>
-					<rect x="3" y="4" width="18" height="18" rx="2" />
-					<path d="M16 2v4M8 2v4M3 10h18" />
-				</svg>
-				<label for="invoice-date-range" class="sr-only">Date range filter</label>
-				<input
-					id="invoice-date-range"
-					type="text"
-					placeholder="Date range"
-					class="w-28 bg-transparent text-blue-900 placeholder-blue-400 outline-none"
-				/>
-			</div>
-		</div>
-
-		<!-- Invoice Cards -->
-		<div class="flex flex-col gap-5">
-			{#each data.invoices as invoice}
-				<div
-					class="relative flex flex-col gap-4 overflow-hidden rounded-2xl border-t-8 border-blue-600 bg-white/80 p-5 shadow-xl backdrop-blur-md md:flex-row md:items-center md:justify-between"
-				>
-					<div class="flex flex-1 flex-col gap-4 md:flex-row md:items-center">
-						<div class="flex min-w-[120px] flex-col gap-1">
+<!-- Page Content -->
+<div class="flex flex-col">
+	<!-- Header -->
+	<PageHeader title="Invoices">
+		{#snippet actions()}
+			<div class="flex items-center gap-2">
+				<!-- Status Filter Chips -->
+				<div class="flex gap-1">
+					{#each STATUS_CHIPS as chip}
+						<button
+							type="button"
+							onclick={() => (statusChipFilter = chip.key)}
+							class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+							chip.key
+								? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+								: 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						>
+							{chip.label}
 							<span
-								class="w-fit rounded-full px-2 py-0.5 text-xs font-bold tracking-widest uppercase {getStatusClass(
-									invoice.status
-								)}">{invoice.status.toLowerCase()}</span
+								class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === chip.key
+									? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
+									: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
 							>
-							<span class="text-xs text-blue-500"
-								>Due: {invoice.expirationDate
-									? new Date(invoice.expirationDate).toLocaleDateString()
-									: 'N/A'}</span
-							>
-						</div>
-						<div class="flex-1">
-							<h2 class="mb-0.5 text-xl font-bold text-blue-900">{invoice.quoteNumber}</h2>
-							<p class="mb-1 text-sm text-blue-500">{invoice.account.name}</p>
-							<div class="mb-1">
-								{#each invoice.lineItems as item}
-									<div class="mb-0.5 flex justify-between text-xs text-blue-700">
-										<span>{item.description || item.product?.name}</span>
-										<span>{formatCurrency(Number(item.totalPrice))}</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-					</div>
-					<div class="flex-shrink-0 text-right">
-						<div class="mb-1 text-2xl font-extrabold text-purple-700">
-							{formatCurrency(Number(invoice.grandTotal))}
-						</div>
-						<div class="flex gap-2">
-							<a
-								href="/invoices/{invoice.id}"
-								class="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-blue-700"
-								>View</a
-							>
-							<a
-								href="/invoices/{invoice.id}/edit"
-								class="rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-purple-700"
-								>Edit</a
-							>
-						</div>
-					</div>
-					<!-- Decorative gradient -->
-					<div
-						class="absolute top-0 right-0 h-32 w-32 translate-x-16 -translate-y-16 rounded-full bg-gradient-to-bl from-purple-200/30 to-transparent"
-					></div>
+								{chipCounts[chip.key] || 0}
+							</span>
+						</button>
+					{/each}
 				</div>
-			{/each}
 
-			<!-- Empty State -->
-			{#if data.invoices.length === 0}
-				<div class="rounded-2xl bg-white/80 p-12 text-center shadow-xl backdrop-blur-md">
-					<div class="mb-4 text-6xl">📄</div>
-					<h3 class="mb-2 text-2xl font-bold text-blue-900">No invoices yet</h3>
-					<p class="mb-6 text-blue-600">Create your first invoice to get started</p>
-					<a
-						href="/invoices/new"
-						class="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-700 to-purple-700 px-6 py-3 font-semibold text-white shadow-lg transition hover:from-blue-800 hover:to-purple-800"
-					>
-						Create Invoice
-					</a>
-				</div>
+				<div class="bg-border mx-1 h-6 w-px"></div>
+
+				<!-- Filters Toggle -->
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={() => (filtersExpanded = !filtersExpanded)}
+					class="gap-2"
+				>
+					<Filter class="size-4" />
+					Filters
+					{#if activeFiltersCount > 0}
+						<span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+							{activeFiltersCount}
+						</span>
+					{/if}
+				</Button>
+
+				<!-- Column Visibility -->
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="gap-2">
+								<Columns3 class="size-4" />
+								Columns
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						{#each columns as column}
+							<DropdownMenu.CheckboxItem
+								class=""
+								checked={visibleColumns.includes(column.key)}
+								disabled={!column.canHide}
+								onCheckedChange={() => toggleColumn(column.key)}
+							>
+								{column.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<!-- New Invoice -->
+				<Button onclick={createNewInvoice} class="gap-2">
+					<Plus class="size-4" />
+					New Invoice
+				</Button>
+			</div>
+		{/snippet}
+	</PageHeader>
+
+	<!-- Filter Bar -->
+	<FilterBar
+		minimal
+		expanded={filtersExpanded}
+		activeCount={activeFiltersCount}
+		onClear={clearFilters}
+	>
+		<SearchInput
+			value={filters.search}
+			placeholder="Search invoices..."
+			onchange={(value) => updateFilters({ ...filters, search: value })}
+		/>
+
+		<SelectFilter
+			label="Status"
+			value={filters.status}
+			options={INVOICE_STATUSES}
+			onchange={(value) => updateFilters({ ...filters, status: value })}
+		/>
+
+		<DateRangeFilter
+			label="Issue Date"
+			startDate={filters.issue_date_gte}
+			endDate={filters.issue_date_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, issue_date_gte: start, issue_date_lte: end })}
+		/>
+
+		<DateRangeFilter
+			label="Due Date"
+			startDate={filters.due_date_gte}
+			endDate={filters.due_date_lte}
+			onchange={(start, end) =>
+				updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
+		/>
+	</FilterBar>
+
+	<!-- Invoice Table -->
+	<CrmTable data={invoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
+		{#snippet emptyState()}
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<span class="mb-4 text-6xl">📄</span>
+				<h3 class="text-foreground text-lg font-medium">No invoices yet</h3>
+				<p class="text-muted-foreground mb-4 text-sm">Create your first invoice to get started</p>
+				<Button onclick={createNewInvoice} class="gap-2">
+					<Plus class="size-4" />
+					Create Invoice
+				</Button>
+			</div>
+		{/snippet}
+		{#snippet cellContent(row, column)}
+			{#if column.key === 'status'}
+				<span
+					class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {getStatusColor(
+						row.status
+					)}"
+				>
+					{row.status.replace('_', ' ')}
+				</span>
+			{:else if column.key === 'issueDate' || column.key === 'dueDate'}
+				{row[column.key] ? formatDate(row[column.key]) : '-'}
+			{:else if column.key === 'totalAmount' || column.key === 'amountDue'}
+				<span
+					class={column.key === 'amountDue' && parseFloat(row.amountDue || 0) > 0
+						? 'font-medium text-orange-600 dark:text-orange-400'
+						: ''}
+				>
+					{formatCurrency(row[column.key], row.currency)}
+				</span>
+			{:else if column.key === 'account' || column.key === 'contact'}
+				{row[column.key]?.name || '-'}
+			{:else}
+				{row[column.key] || '-'}
 			{/if}
-		</div>
-	</div>
+		{/snippet}
+	</CrmTable>
+
+	<!-- Pagination -->
+	{#if invoices.length > 0}
+		<Pagination
+			page={pagination.page}
+			limit={pagination.limit}
+			total={pagination.total}
+			limitOptions={[10, 25, 50, 100]}
+			onPageChange={handlePageChange}
+			onLimitChange={handleLimitChange}
+		/>
+	{/if}
 </div>

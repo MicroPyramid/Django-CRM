@@ -26,7 +26,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
-	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
 	import {
 		caseStatusOptions,
@@ -170,6 +170,8 @@
 	const contacts = $derived(formOptions.contacts || []);
 	const teams = $derived(formOptions.teams || []);
 	const tags = $derived(formOptions.tags || []);
+	// Tags with color for filter dropdown
+	const allTags = $derived(formOptions.tags || []);
 
 	/**
 	 * Get account name from server-provided accounts list
@@ -837,6 +839,11 @@
 			endDate={filters.created_at_lte}
 			onchange={(start, end) =>
 				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+		<TagFilter
+			tags={allTags}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
 	<CrmTable
