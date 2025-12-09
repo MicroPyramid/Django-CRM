@@ -796,7 +796,8 @@
 					drawerData = result.data.lead;
 				} else if (result.type === 'failure') {
 					console.error('Server action failed:', result.data);
-					throw new Error(result.data?.error || 'Failed to fetch lead');
+					const errorMsg = /** @type {{ error?: string }} */ (result.data)?.error;
+					throw new Error(errorMsg || 'Failed to fetch lead');
 				} else if (result.type === 'error') {
 					console.error('Server action error:', result.error);
 					throw new Error(result.error?.message || 'Failed to fetch lead');

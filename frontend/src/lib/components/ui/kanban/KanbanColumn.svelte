@@ -101,8 +101,7 @@
 	<div class="flex-1 space-y-2 overflow-y-auto p-2" style="max-height: calc(100vh - 280px)">
 		{#each column.items as item (item.id)}
 			{#if CardComponent}
-				<svelte:component
-					this={CardComponent}
+				<CardComponent
 					{item}
 					onclick={() => onCardClick(item)}
 					ondragstart={(e) => onCardDragStart(e, item)}

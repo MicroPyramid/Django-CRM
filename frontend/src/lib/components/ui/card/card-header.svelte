@@ -1,6 +1,6 @@
 <script>
 	import { cn } from '$lib/utils.js';
-	let { ref = $bindable(null), class: className, children, ...restProps } = $props();
+	let { ref = $bindable(null), class: className = undefined, children, ...restProps } = $props();
 </script>
 
 <div

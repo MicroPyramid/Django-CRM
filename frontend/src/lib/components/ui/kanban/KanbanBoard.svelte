@@ -258,8 +258,7 @@
 			<div class="space-y-3">
 				{#each activeMobileColumn.items as item (item.id)}
 					{#if CardComponent}
-						<svelte:component
-							this={CardComponent}
+						<CardComponent
 							{item}
 							onclick={() => onCardClick(item)}
 						/>

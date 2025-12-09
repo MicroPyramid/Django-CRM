@@ -25,13 +25,14 @@ export async function load({ cookies, locals }) {
 export const actions = {
 	create: async ({ request, cookies }) => {
 		const formData = await request.formData();
+		const name = /** @type {string | null} */ (formData.get('name'));
 		const data = {
-			name: formData.get('name'),
+			name,
 			color: formData.get('color') || 'blue',
 			description: formData.get('description') || ''
 		};
 
-		if (!data.name?.trim()) {
+		if (!name?.trim()) {
 			return fail(400, { error: 'Tag name is required' });
 		}
 
@@ -47,13 +48,14 @@ export const actions = {
 	update: async ({ request, cookies }) => {
 		const formData = await request.formData();
 		const tagId = formData.get('tagId');
+		const name = /** @type {string | null} */ (formData.get('name'));
 		const data = {
-			name: formData.get('name'),
+			name,
 			color: formData.get('color'),
 			description: formData.get('description') || ''
 		};
 
-		if (!data.name?.trim()) {
+		if (!name?.trim()) {
 			return fail(400, { error: 'Tag name is required' });
 		}
 

@@ -12,6 +12,10 @@ declare global {
 				currency_symbol?: string;
 				default_country?: string | null;
 			};
+			profile?: {
+				role?: string;
+				is_organization_admin?: boolean;
+			};
 		}
 		// interface PageData {}
 		// interface PageState {}

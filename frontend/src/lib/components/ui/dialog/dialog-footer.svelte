@@ -2,7 +2,7 @@
 	import { cn } from "$lib/utils.js";
 	let {
 		ref = $bindable(null),
-		class: className,
+		class: className = undefined,
 		children,
 		...restProps
 	} = $props();
