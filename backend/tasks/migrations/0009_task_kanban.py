@@ -34,6 +34,8 @@ def reverse_kanban_order(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # Disable atomic mode to avoid "pending trigger events" error from RLS policies
+    atomic = False
 
     dependencies = [
         ('common', '0012_add_tag_color_description_isactive'),

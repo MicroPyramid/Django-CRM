@@ -7,6 +7,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    # Disable atomic mode to avoid "pending trigger events" error from RLS policies
+    atomic = False
 
     dependencies = [
         ('accounts', '0006_add_enterprise_constraints'),
