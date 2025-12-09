@@ -92,6 +92,25 @@ class Org(BaseModel):
     api_key = models.TextField(default=generate_unique_key, unique=True, editable=False)
     is_active = models.BooleanField(default=True)
 
+    # Company Profile (for invoices, documents, etc.)
+    company_name = models.CharField(
+        max_length=255, blank=True, help_text="Legal company name for invoices"
+    )
+    logo = models.ImageField(
+        upload_to="org_logos/", blank=True, null=True, help_text="Company logo"
+    )
+    address_line = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    postcode = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=3, choices=COUNTRIES, blank=True)
+    phone = models.CharField(max_length=25, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    tax_id = models.CharField(
+        max_length=50, blank=True, help_text="Tax ID / VAT / Registration number"
+    )
+
     # Locale settings
     default_currency = models.CharField(
         max_length=3, choices=CURRENCY_CODES, default="USD"
@@ -111,10 +130,34 @@ class Org(BaseModel):
 
 
 class Tags(BaseModel):
-    """Tags for categorizing CRM entities (Accounts, Leads, Opportunities)"""
+    """Tags for categorizing CRM entities (Accounts, Leads, Opportunities, etc.)"""
 
-    name = models.CharField(max_length=20)
-    slug = models.CharField(max_length=20, blank=True)
+    COLOR_CHOICES = (
+        ("gray", "Gray"),
+        ("red", "Red"),
+        ("orange", "Orange"),
+        ("amber", "Amber"),
+        ("yellow", "Yellow"),
+        ("lime", "Lime"),
+        ("green", "Green"),
+        ("emerald", "Emerald"),
+        ("teal", "Teal"),
+        ("cyan", "Cyan"),
+        ("sky", "Sky"),
+        ("blue", "Blue"),
+        ("indigo", "Indigo"),
+        ("violet", "Violet"),
+        ("purple", "Purple"),
+        ("fuchsia", "Fuchsia"),
+        ("pink", "Pink"),
+        ("rose", "Rose"),
+    )
+
+    name = models.CharField(max_length=50)
+    slug = models.CharField(max_length=50, blank=True)
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES, default="blue")
+    description = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
     org = models.ForeignKey(
         "Org",
         on_delete=models.CASCADE,
@@ -125,7 +168,7 @@ class Tags(BaseModel):
         verbose_name = "Tag"
         verbose_name_plural = "Tags"
         db_table = "tags"
-        ordering = ("-created_at",)
+        ordering = ("name",)
         unique_together = ["slug", "org"]
 
     def __str__(self):

@@ -34,7 +34,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmDrawer } from '$lib/components/ui/crm-drawer';
-	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
 	import { cn } from '$lib/utils.js';
 	import { TASK_STATUSES as statuses, PRIORITIES as priorities } from '$lib/constants/filters.js';
@@ -488,7 +488,7 @@
 		formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
 		formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
 		formState.teams = (row.teams || []).map((/** @type {any} */ t) => t.id);
-		formState.tags = (row.tags || []).map((/** @type {any} */ t) => t.name);
+		formState.tags = (row.tags || []).map((/** @type {any} */ t) => t.id);
 
 		await tick();
 		updateForm.requestSubmit();
@@ -598,7 +598,7 @@
 				assignedTo: (task.assignedTo || []).map((/** @type {any} */ a) => a.id),
 				contacts: (task.contacts || []).map((/** @type {any} */ c) => c.id),
 				teams: (task.teams || []).map((/** @type {any} */ t) => t.id),
-				tags: (task.tags || []).map((/** @type {any} */ t) => t.name)
+				tags: (task.tags || []).map((/** @type {any} */ t) => t.id)
 			};
 		}
 		sheetOpen = true;
@@ -819,9 +819,8 @@
 	]);
 
 	// Tag options for drawer
-	// Note: Django expects tag names (not IDs), so we use name as value
 	const tagOptions = $derived(
-		allTags.map((/** @type {any} */ t) => ({ value: t.name, label: t.name }))
+		allTags.map((/** @type {any} */ t) => ({ value: t.id, label: t.name }))
 	);
 
 	// Drawer columns for NotionDrawer (derived to use dynamic options)
@@ -1116,6 +1115,11 @@
 			endDate={filters.due_date_lte}
 			onchange={(start, end) =>
 				updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
+		/>
+		<TagFilter
+			tags={allTags}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
 	{#if viewMode === 'list'}

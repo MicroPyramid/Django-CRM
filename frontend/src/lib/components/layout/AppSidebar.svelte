@@ -25,7 +25,14 @@
 		User,
 		LogOut,
 		ChevronsUpDown,
-		Settings
+		Settings,
+		FileText,
+		FileEdit,
+		Package,
+		RefreshCw,
+		FileCode,
+		BarChart3,
+		Tag
 	} from '@lucide/svelte';
 
 	/**
@@ -168,6 +175,20 @@
 			icon: CheckSquare,
 			type: 'link',
 			preload: 'off'
+		},
+		{
+			key: 'invoices',
+			label: 'Invoices',
+			icon: FileText,
+			type: 'dropdown',
+			children: [
+				{ href: '/invoices', label: 'All Invoices', icon: FileText, preload: 'off' },
+				{ href: '/invoices/estimates', label: 'Estimates', icon: FileEdit, preload: 'off' },
+				{ href: '/invoices/products', label: 'Products', icon: Package, preload: 'off' },
+				{ href: '/invoices/recurring', label: 'Recurring', icon: RefreshCw, preload: 'off' },
+				{ href: '/invoices/templates', label: 'Templates', icon: FileCode, preload: 'off' },
+				{ href: '/invoices/reports', label: 'Reports', icon: BarChart3, preload: 'off' }
+			]
 		},
 		{
 			href: '/support',
@@ -403,6 +424,14 @@
 							>
 								<Settings class="mr-2 size-4" />
 								<span>Settings</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item
+								class=""
+								inset={false}
+								onclick={() => navigateTo('/settings/tags')}
+							>
+								<Tag class="mr-2 size-4" />
+								<span>Tags</span>
 							</DropdownMenu.Item>
 						</DropdownMenu.Group>
 						<DropdownMenu.Separator class="" />

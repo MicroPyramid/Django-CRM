@@ -25,7 +25,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
-	import { FilterBar, SearchInput, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
 	import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
 	import { goto } from '$app/navigation';
@@ -804,6 +804,11 @@
 			onchange={(start, end) =>
 				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 			class="w-56"
+		/>
+		<TagFilter
+			tags={data.allTags || []}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
 

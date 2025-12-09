@@ -45,7 +45,7 @@ from common.utils import (
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from invoices.serializer import InvoiceSerailizer
+from invoices.serializer import InvoiceListSerializer
 from leads.models import Lead
 from leads.serializer import LeadSerializer
 from opportunity.models import SOURCES, STAGES, Opportunity
@@ -145,7 +145,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["countries"] = COUNTRIES
         context["industries"] = INDCHOICES
 
-        tags = Tags.objects.filter(org=self.request.profile.org)
+        tags = Tags.objects.filter(org=self.request.profile.org, is_active=True)
         tags = TagsSerializer(tags, many=True).data
 
         context["tags"] = tags
@@ -286,13 +286,8 @@ class AccountDetailView(APIView):
             account_object.tags.clear()
             if data.get("tags"):
                 tags = json.loads(data.get("tags"))
-                for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                    account_object.tags.add(tag_obj)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                account_object.tags.add(*tag_objs)
 
             account_object.teams.clear()
             if data.get("teams"):
@@ -459,8 +454,8 @@ class AccountDetailView(APIView):
                 "tasks": TaskSerializer(
                     self.account.accounts_tasks.all(), many=True
                 ).data,
-                "invoices": InvoiceSerailizer(
-                    self.account.accounts_invoices.all(), many=True
+                "invoices": InvoiceListSerializer(
+                    self.account.invoices.all(), many=True
                 ).data,
                 "emails": EmailSerializer(
                     self.account.sent_email.all(), many=True
@@ -596,13 +591,8 @@ class AccountDetailView(APIView):
                 if tags:
                     if isinstance(tags, str):
                         tags = json.loads(tags)
-                    for tag in tags:
-                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                        if tag_obj.exists():
-                            tag_obj = tag_obj[0]
-                        else:
-                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                        account_object.tags.add(tag_obj)
+                    tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                    account_object.tags.add(*tag_objs)
 
             if "teams" in data:
                 account_object.teams.clear()

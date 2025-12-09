@@ -85,24 +85,55 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 
 class OrgSettingsSerializer(serializers.ModelSerializer):
-    """Serializer for org settings (currency, country, locale)"""
+    """Serializer for org settings (currency, country, locale, company profile)"""
 
     currency_symbol = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Org
-        fields = ["id", "name", "default_currency", "default_country", "currency_symbol"]
-        read_only_fields = ["id", "currency_symbol"]
+        fields = [
+            "id",
+            "name",
+            # Company profile
+            "company_name",
+            "logo",
+            "logo_url",
+            "address_line",
+            "city",
+            "state",
+            "postcode",
+            "country",
+            "phone",
+            "email",
+            "website",
+            "tax_id",
+            # Locale settings
+            "default_currency",
+            "default_country",
+            "currency_symbol",
+        ]
+        read_only_fields = ["id", "currency_symbol", "logo_url"]
 
     @extend_schema_field(str)
     def get_currency_symbol(self, obj):
         return CURRENCY_SYMBOLS.get(obj.default_currency or "USD", "$")
 
+    @extend_schema_field(str)
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
-        fields = ("id", "name", "slug")
+        fields = ("id", "name", "slug", "color", "description", "is_active", "created_at")
+        read_only_fields = ("id", "slug", "created_at")
 
 
 class SocialLoginSerializer(serializers.Serializer):

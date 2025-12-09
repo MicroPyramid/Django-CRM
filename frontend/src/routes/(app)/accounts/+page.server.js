@@ -186,7 +186,8 @@ export async function load({ locals, url, cookies }) {
 		const allTags = (response.tags || []).map((t) => ({
 			id: t.id,
 			name: t.name,
-			slug: t.slug
+			slug: t.slug,
+			color: t.color || 'blue'
 		}));
 
 		return {

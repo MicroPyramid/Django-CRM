@@ -183,13 +183,8 @@ class TaskListView(APIView, LimitOffsetPagination):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                    task_obj.tags.add(tag_obj)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                task_obj.tags.add(*tag_objs)
 
             # Handle new FK relationships with org validation
             if params.get("opportunity"):
@@ -469,13 +464,8 @@ class TaskDetailView(APIView):
                 tags = params.get("tags")
                 if isinstance(tags, str):
                     tags = json.loads(tags)
-                for tag in tags:
-                    tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                    if tag_obj.exists():
-                        tag_obj = tag_obj[0]
-                    else:
-                        tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                    task_obj.tags.add(tag_obj)
+                tag_objs = Tags.objects.filter(id__in=tags, org=request.profile.org, is_active=True)
+                task_obj.tags.add(*tag_objs)
 
             # Handle FK relationships with org validation
             if params.get("opportunity"):
@@ -592,13 +582,8 @@ class TaskDetailView(APIView):
                 if tags_list:
                     if isinstance(tags_list, str):
                         tags_list = json.loads(tags_list)
-                    for tag in tags_list:
-                        tag_obj = Tags.objects.filter(slug=tag.lower(), org=request.profile.org)
-                        if tag_obj.exists():
-                            tag_obj = tag_obj[0]
-                        else:
-                            tag_obj = Tags.objects.create(name=tag, org=request.profile.org)
-                        task_obj.tags.add(tag_obj)
+                    tag_objs = Tags.objects.filter(id__in=tags_list, org=request.profile.org, is_active=True)
+                    task_obj.tags.add(*tag_objs)
 
             # Handle FK relationships with org validation
             if "opportunity" in params:

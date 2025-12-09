@@ -12,7 +12,7 @@
 	 * @type {{
 	 *   label: string,
 	 *   value?: any,
-	 *   type?: 'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'multiselect' | 'textarea',
+	 *   type?: 'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'boolean' | 'multiselect' | 'textarea' | 'color',
 	 *   icon?: import('svelte').Component,
 	 *   options?: any[],
 	 *   placeholder?: string,
@@ -157,6 +157,15 @@
 	}
 
 	/**
+	 * Handle color input
+	 * @param {Event} e
+	 */
+	function handleColorInput(e) {
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		onchange?.(target.value);
+	}
+
+	/**
 	 * Handle select change
 	 * @param {string} newValue
 	 */
@@ -272,7 +281,7 @@
 					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
-		{:else if type === 'checkbox'}
+		{:else if type === 'checkbox' || type === 'boolean'}
 			<button
 				type="button"
 				onclick={handleCheckboxToggle}
@@ -285,6 +294,17 @@
 					<Check class="h-3.5 w-3.5 text-white" />
 				{/if}
 			</button>
+		{:else if type === 'color'}
+			<div class="flex items-center gap-2 px-2 py-1">
+				<input
+					type="color"
+					value={value || '#3B82F6'}
+					oninput={handleColorInput}
+					disabled={!editable}
+					class="h-8 w-10 cursor-pointer rounded border border-gray-200 bg-transparent p-0.5 dark:border-gray-700"
+				/>
+				<span class="text-sm text-gray-600 dark:text-gray-400">{value || '#3B82F6'}</span>
+			</div>
 		{:else if type === 'multiselect'}
 			<EditableMultiSelect
 				value={Array.isArray(value) ? value : []}

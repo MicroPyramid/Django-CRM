@@ -55,7 +55,10 @@ export async function load({ url, cookies, locals }) {
 	try {
 		// Django leads endpoint with filter params
 		const queryString = queryParams.toString();
-		const response = await apiRequest(`/leads/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org });
+		const [response, tagsResponse] = await Promise.all([
+			apiRequest(`/leads/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
+		]);
 
 		// Handle Django response format
 		// Django returns: { open_leads: { leads_count, open_leads: [...] }, close_leads: {...}, ... }
@@ -148,8 +151,16 @@ export async function load({ url, cookies, locals }) {
 		// Get total count from response
 		const total = response.open_leads?.leads_count || response.count || transformedLeads.length;
 
+		// Extract tags from response
+		const tags = (tagsResponse.tags || []).map((/** @type {any} */ t) => ({
+			id: t.id,
+			name: t.name,
+			color: t.color || 'blue'
+		}));
+
 		return {
 			leads: transformedLeads,
+			tags,
 			pagination: {
 				page,
 				limit,

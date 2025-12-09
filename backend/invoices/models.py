@@ -1,271 +1,157 @@
 import datetime
+import secrets
+from decimal import Decimal
 
 from django.db import models
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
-from common.base import BaseModel
-from common.models import Address, Org, Profile, Teams, User
-from common.utils import CURRENCY_CODES
+from common.base import AssignableMixin, BaseModel
+from common.models import Org, Profile, Teams
+from common.utils import COUNTRIES, CURRENCY_CODES
+from contacts.models import Contact
+from opportunity.models import Opportunity
 
 
-class Invoice(BaseModel):
-    """Model definition for Invoice."""
+# =============================================================================
+# CONSTANTS
+# =============================================================================
 
-    INVOICE_STATUS = (
-        ("Draft", "Draft"),
-        ("Sent", "Sent"),
-        ("Paid", "Paid"),
-        ("Pending", "Pending"),
-        ("Cancelled", "Cancel"),
+INVOICE_STATUS = (
+    ("Draft", "Draft"),
+    ("Sent", "Sent"),
+    ("Viewed", "Viewed"),
+    ("Paid", "Paid"),
+    ("Partially_Paid", "Partially Paid"),
+    ("Overdue", "Overdue"),
+    ("Pending", "Pending"),
+    ("Cancelled", "Cancelled"),
+)
+
+PAYMENT_TERMS = (
+    ("DUE_ON_RECEIPT", "Due on Receipt"),
+    ("NET_15", "Net 15"),
+    ("NET_30", "Net 30"),
+    ("NET_45", "Net 45"),
+    ("NET_60", "Net 60"),
+    ("CUSTOM", "Custom"),
+)
+
+PAYMENT_METHODS = (
+    ("CASH", "Cash"),
+    ("CHECK", "Check"),
+    ("CREDIT_CARD", "Credit Card"),
+    ("BANK_TRANSFER", "Bank Transfer"),
+    ("PAYPAL", "PayPal"),
+    ("STRIPE", "Stripe"),
+    ("OTHER", "Other"),
+)
+
+RECURRING_FREQUENCIES = (
+    ("WEEKLY", "Weekly"),
+    ("BIWEEKLY", "Bi-weekly"),
+    ("MONTHLY", "Monthly"),
+    ("QUARTERLY", "Quarterly"),
+    ("SEMI_ANNUALLY", "Semi-annually"),
+    ("YEARLY", "Yearly"),
+    ("CUSTOM", "Custom"),
+)
+
+DISCOUNT_TYPES = (
+    ("PERCENTAGE", "Percentage (%)"),
+    ("FIXED", "Fixed Amount"),
+)
+
+ESTIMATE_STATUS = (
+    ("Draft", "Draft"),
+    ("Sent", "Sent"),
+    ("Viewed", "Viewed"),
+    ("Accepted", "Accepted"),
+    ("Declined", "Declined"),
+    ("Expired", "Expired"),
+)
+
+REMINDER_FREQUENCIES = (
+    ("ONCE", "Once"),
+    ("WEEKLY", "Weekly until paid"),
+    ("CUSTOM", "Custom schedule"),
+)
+
+
+# =============================================================================
+# INVOICE TEMPLATE
+# =============================================================================
+
+
+class InvoiceTemplate(BaseModel):
+    """Custom invoice templates for PDF generation"""
+
+    name = models.CharField(_("Template Name"), max_length=100)
+    logo = models.ImageField(
+        _("Logo"), upload_to="invoice_templates/logos/", blank=True, null=True
     )
-
-    invoice_title = models.CharField(_("Invoice Title"), max_length=50)
-    invoice_number = models.CharField(_("Invoice Number"), max_length=50)
-    from_address = models.ForeignKey(
-        Address,
-        related_name="invoice_from_address",
-        on_delete=models.SET_NULL,
-        null=True,
+    primary_color = models.CharField(
+        _("Primary Color"), max_length=7, default="#3B82F6"
     )
-    to_address = models.ForeignKey(
-        Address, related_name="invoice_to_address", on_delete=models.SET_NULL, null=True
+    secondary_color = models.CharField(
+        _("Secondary Color"), max_length=7, default="#1E40AF"
     )
-    name = models.CharField(_("Name"), max_length=100)
-    email = models.EmailField(_("Email"))
-    assigned_to = models.ManyToManyField(Profile, related_name="invoice_assigned_to")
-    # quantity is the number of hours worked
-    quantity = models.PositiveIntegerField(default=0)
-    # rate is the rate charged
-    rate = models.DecimalField(default=0, max_digits=12, decimal_places=2)
-    # total amount is product of rate and quantity
-    total_amount = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    tax = models.DecimalField(blank=True, null=True, max_digits=12, decimal_places=2)
-    currency = models.CharField(
-        max_length=3, choices=CURRENCY_CODES, blank=True, null=True
-    )
-    phone = models.CharField(max_length=20, null=True, blank=True)
-
-    amount_due = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    amount_paid = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    is_email_sent = models.BooleanField(default=False)
-    status = models.CharField(choices=INVOICE_STATUS, max_length=15, default="Draft")
-    details = models.TextField(_("Details"), null=True, blank=True)
-    due_date = models.DateField(blank=True, null=True)
-    accounts = models.ManyToManyField(Account, related_name="accounts_invoices")
-    teams = models.ManyToManyField(Teams, related_name="invoices_teams")
-
-    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="invoices")
-
-    class Meta:
-        verbose_name = "Invoice"
-        verbose_name_plural = "Invoices"
-        db_table = "invoice"
-        ordering = ("-created_at",)
-
-    def __str__(self):
-        """Unicode representation of Invoice."""
-        return f"{self.invoice_number}"
-
-    def save(self, *args, **kwargs):
-        if not self.invoice_number:
-            self.invoice_number = self.invoice_id_generator()
-            while Invoice.objects.filter(invoice_number=self.invoice_number).exists():
-                self.invoice_number = self.invoice_id_generator(
-                    prev_invoice_number=self.invoice_number
-                )
-        super(Invoice, self).save(*args, **kwargs)
-
-    def invoice_id_generator(self, prev_invoice_number=None):
-        if prev_invoice_number:
-            prev_invoice_number += 1
-            return prev_invoice_number
-        date = datetime.datetime.now().strftime("%d%m%Y")
-        return int(date + "0001")
-
-    def formatted_total_amount(self):
-        currency = self.currency or "USD"
-        return currency + " " + str(self.total_amount)
-
-    def formatted_rate(self):
-        currency = self.currency or "USD"
-        return str(self.rate) + " " + currency
-
-    def formatted_total_quantity(self):
-        return str(self.quantity) + " " + "Hours"
-
-    def is_draft(self):
-        if self.status == "Draft":
-            return True
-        else:
-            return False
-
-    def is_sent(self):
-        if self.status == "Sent" and self.is_email_sent == False:
-            return True
-        else:
-            return False
-
-    def is_resent(self):
-        if self.status == "Sent" and self.is_email_sent == True:
-            return True
-        else:
-            return False
-
-    def is_paid_or_cancelled(self):
-        if self.status in ["Paid", "Cancelled"]:
-            return True
-        else:
-            return False
-
-    @property
-    def created_on_arrow(self):
-        return timesince(self.created_at) + " ago"
-
-    @property
-    def get_team_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        return Profile.objects.filter(id__in=team_user_ids)
-
-    @property
-    def get_team_and_assigned_users(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = team_user_ids + assigned_user_ids
-        return Profile.objects.filter(id__in=user_ids)
-
-    @property
-    def get_assigned_users_not_in_teams(self):
-        team_user_ids = list(self.teams.values_list("users__id", flat=True))
-        assigned_user_ids = list(self.assigned_to.values_list("id", flat=True))
-        user_ids = set(assigned_user_ids) - set(team_user_ids)
-        return Profile.objects.filter(id__in=list(user_ids))
-
-
-class InvoiceHistory(BaseModel):
-    """Model definition for InvoiceHistory.
-    This model is used to track/keep a record of the updates made to original invoice object.
-    """
-
-    INVOICE_STATUS = (
-        ("Draft", "Draft"),
-        ("Sent", "Sent"),
-        ("Paid", "Paid"),
-        ("Pending", "Pending"),
-        ("Cancelled", "Cancel"),
-    )
-    invoice = models.ForeignKey(
-        Invoice, on_delete=models.CASCADE, related_name="invoice_history"
-    )
-    invoice_title = models.CharField(_("Invoice Title"), max_length=50)
-    invoice_number = models.CharField(_("Invoice Number"), max_length=50)
-    from_address = models.ForeignKey(
-        Address,
-        related_name="invoice_history_from_address",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
-    to_address = models.ForeignKey(
-        Address,
-        related_name="invoice_history_to_address",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
-    name = models.CharField(_("Name"), max_length=100)
-    email = models.EmailField(_("Email"))
-    assigned_to = models.ManyToManyField(
-        Profile, related_name="invoice_history_assigned_to"
-    )
-    # quantity is the number of hours worked
-    quantity = models.PositiveIntegerField(default=0)
-    # rate is the rate charged
-    rate = models.DecimalField(default=0, max_digits=12, decimal_places=2)
-    # total amount is product of rate and quantity
-    total_amount = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    currency = models.CharField(
-        max_length=3, choices=CURRENCY_CODES, blank=True, null=True
-    )
-    phone = models.CharField(max_length=20, null=True, blank=True)
-    updated_by = models.ForeignKey(
-        Profile,
-        related_name="invoice_history_updated_by",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
-
-    amount_due = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    amount_paid = models.DecimalField(
-        blank=True, null=True, max_digits=12, decimal_places=2
-    )
-    is_email_sent = models.BooleanField(default=False)
-    status = models.CharField(choices=INVOICE_STATUS, max_length=15, default="Draft")
-    # details or description here stores the fields changed in the original invoice object
-    details = models.TextField(_("Details"), null=True, blank=True)
-    due_date = models.DateField(blank=True, null=True)
+    template_html = models.TextField(_("Custom HTML"), blank=True)
+    template_css = models.TextField(_("Custom CSS"), blank=True)
+    default_notes = models.TextField(_("Default Notes"), blank=True)
+    default_terms = models.TextField(_("Default Terms"), blank=True)
+    footer_text = models.TextField(_("Footer Text"), blank=True)
+    is_default = models.BooleanField(_("Is Default"), default=False)
     org = models.ForeignKey(
-        Org,
-        on_delete=models.CASCADE,
-        related_name="invoice_histories",
+        Org, on_delete=models.CASCADE, related_name="invoice_templates"
     )
 
     class Meta:
-        verbose_name = "InvoiceHistory"
-        verbose_name_plural = "InvoiceHistories"
-        db_table = "invoice_history"
+        verbose_name = "Invoice Template"
+        verbose_name_plural = "Invoice Templates"
+        db_table = "invoice_template"
         ordering = ("-created_at",)
         indexes = [
             models.Index(fields=["org", "-created_at"]),
         ]
 
     def __str__(self):
-        """Unicode representation of Invoice."""
-        return self.invoice_number
+        return self.name
 
     def save(self, *args, **kwargs):
-        if not self.org_id and self.invoice_id:
-            self.org_id = self.invoice.org_id
-        super().save(*args, **kwargs)
+        from django.db import transaction
 
-    def formatted_total_amount(self):
-        currency = self.currency or "USD"
-        return currency + " " + str(self.total_amount)
-
-    def formatted_rate(self):
-        currency = self.currency or "USD"
-        return str(self.rate) + " " + currency
-
-    def formatted_total_quantity(self):
-        return str(self.quantity) + " " + "Hours"
-
-    @property
-    def created_on_arrow(self):
-        return timesince(self.created_at) + " ago"
+        # Ensure only one default template per org (with transaction for race condition safety)
+        if self.is_default:
+            with transaction.atomic():
+                InvoiceTemplate.objects.filter(org=self.org, is_default=True).exclude(
+                    pk=self.pk
+                ).select_for_update().update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 
-# Phase 3: Enhanced Quotes with Line Items
+# =============================================================================
+# PRODUCT CATALOG
+# =============================================================================
 
 
 class Product(BaseModel):
     """Product Catalog for Line Items"""
 
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    sku = models.CharField(max_length=100, blank=True, null=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CODES, blank=True, null=True)
-    category = models.CharField(max_length=100, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(_("Product Name"), max_length=255)
+    description = models.TextField(_("Description"), blank=True, null=True)
+    sku = models.CharField(_("SKU"), max_length=100, blank=True, null=True)
+    price = models.DecimalField(
+        _("Price"), max_digits=12, decimal_places=2, default=0
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
+    )
+    category = models.CharField(_("Category"), max_length=100, blank=True, null=True)
+    is_active = models.BooleanField(_("Is Active"), default=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="products")
 
     class Meta:
@@ -274,13 +160,338 @@ class Product(BaseModel):
         db_table = "product"
         ordering = ("name",)
         unique_together = [["sku", "org"]]
+        indexes = [
+            models.Index(fields=["org", "is_active"]),
+        ]
 
     def __str__(self):
         return self.name
 
 
+# =============================================================================
+# INVOICE
+# =============================================================================
+
+
+class Invoice(AssignableMixin, BaseModel):
+    """
+    Invoice model with full CRM integration.
+
+    CRM Integration Rules:
+    - account: MANDATORY - The legal entity responsible for payment
+    - contact: MANDATORY (via serializer) - The "Bill To" contact
+    - opportunity: Optional but recommended for ROI/commission tracking
+    """
+
+    # Core Invoice Info
+    invoice_title = models.CharField(_("Invoice Title"), max_length=100)
+    invoice_number = models.CharField(_("Invoice Number"), max_length=50, unique=True)
+    status = models.CharField(
+        _("Status"), choices=INVOICE_STATUS, max_length=20, default="Draft"
+    )
+
+    # CRM Integration (MANDATORY Account and Contact - enforced via serializer)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="invoices",
+        help_text="The legal entity responsible for payment (REQUIRED via validation)",
+    )
+    contact = models.ForeignKey(
+        Contact,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoices",
+        help_text="The 'Bill To' contact (REQUIRED via validation)",
+    )
+    opportunity = models.ForeignKey(
+        Opportunity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoices",
+        help_text="The sales opportunity this invoice relates to (optional)",
+    )
+
+    # Client Details (denormalized for PDF generation and history)
+    client_name = models.CharField(_("Client Name"), max_length=255, default="")
+    client_email = models.EmailField(_("Client Email"), default="")
+    client_phone = models.CharField(_("Client Phone"), max_length=25, blank=True)
+
+    # Billing Address (flat fields - company "From" address)
+    billing_address_line = models.CharField(
+        _("Billing Address"), max_length=255, blank=True
+    )
+    billing_city = models.CharField(_("Billing City"), max_length=100, blank=True)
+    billing_state = models.CharField(_("Billing State"), max_length=100, blank=True)
+    billing_postcode = models.CharField(
+        _("Billing Postal Code"), max_length=20, blank=True
+    )
+    billing_country = models.CharField(
+        _("Billing Country"), max_length=3, choices=COUNTRIES, blank=True
+    )
+
+    # Client Address (flat fields - "Bill To" address)
+    client_address_line = models.CharField(
+        _("Client Address"), max_length=255, blank=True
+    )
+    client_city = models.CharField(_("Client City"), max_length=100, blank=True)
+    client_state = models.CharField(_("Client State"), max_length=100, blank=True)
+    client_postcode = models.CharField(
+        _("Client Postal Code"), max_length=20, blank=True
+    )
+    client_country = models.CharField(
+        _("Client Country"), max_length=3, choices=COUNTRIES, blank=True
+    )
+
+    # Financial - Line Items Summary
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(
+        _("Discount Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+    tax_amount = models.DecimalField(
+        _("Tax Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    shipping_amount = models.DecimalField(
+        _("Shipping"), max_digits=12, decimal_places=2, default=0
+    )
+    total_amount = models.DecimalField(
+        _("Total Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, default="USD"
+    )
+
+    # Payment Tracking
+    amount_paid = models.DecimalField(
+        _("Amount Paid"), max_digits=12, decimal_places=2, default=0
+    )
+    amount_due = models.DecimalField(
+        _("Amount Due"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Dates & Terms
+    issue_date = models.DateField(_("Issue Date"), default=datetime.date.today)
+    due_date = models.DateField(_("Due Date"), blank=True, null=True)
+    payment_terms = models.CharField(
+        _("Payment Terms"), max_length=20, choices=PAYMENT_TERMS, default="NET_30"
+    )
+
+    # Status Timestamps
+    sent_at = models.DateTimeField(_("Sent At"), null=True, blank=True)
+    viewed_at = models.DateTimeField(_("Viewed At"), null=True, blank=True)
+    paid_at = models.DateTimeField(_("Paid At"), null=True, blank=True)
+    cancelled_at = models.DateTimeField(_("Cancelled At"), null=True, blank=True)
+
+    # Payment Reminders
+    reminder_enabled = models.BooleanField(_("Reminders Enabled"), default=True)
+    reminder_days_before = models.PositiveIntegerField(
+        _("Remind Days Before Due"), default=3
+    )
+    reminder_days_after = models.PositiveIntegerField(
+        _("Remind Days After Due"), default=7
+    )
+    reminder_frequency = models.CharField(
+        _("Reminder Frequency"),
+        max_length=20,
+        choices=REMINDER_FREQUENCIES,
+        default="ONCE",
+    )
+    last_reminder_sent = models.DateTimeField(
+        _("Last Reminder Sent"), null=True, blank=True
+    )
+    reminder_count = models.PositiveIntegerField(_("Reminders Sent"), default=0)
+
+    # Client Portal
+    public_token = models.CharField(
+        _("Public Token"), max_length=64, unique=True, blank=True
+    )
+    public_link_enabled = models.BooleanField(_("Public Link Enabled"), default=True)
+
+    # Template
+    template = models.ForeignKey(
+        InvoiceTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoices",
+    )
+
+    # Notes & Terms
+    notes = models.TextField(_("Notes"), blank=True)
+    terms = models.TextField(_("Terms & Conditions"), blank=True)
+    details = models.TextField(_("Internal Details"), blank=True, null=True)
+
+    # Additional Metadata
+    billing_period = models.CharField(
+        _("Billing Period"), max_length=100, blank=True, null=True
+    )
+    po_number = models.CharField(
+        _("PO Number"), max_length=100, blank=True, null=True
+    )
+
+    # Assignment
+    assigned_to = models.ManyToManyField(Profile, related_name="invoice_assigned_to")
+    teams = models.ManyToManyField(Teams, related_name="invoices_teams")
+
+    is_email_sent = models.BooleanField(default=False)
+
+    # Organization
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="invoices")
+
+    class Meta:
+        verbose_name = "Invoice"
+        verbose_name_plural = "Invoices"
+        db_table = "invoice"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["org", "status"]),
+            models.Index(fields=["account"]),
+            models.Index(fields=["due_date"]),
+            models.Index(fields=["public_token"]),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice_number}"
+
+    def save(self, *args, **kwargs):
+        # Generate invoice number if not set
+        if not self.invoice_number:
+            self.invoice_number = self.generate_invoice_number()
+
+        # Generate public token if not set (with collision check)
+        if not self.public_token:
+            token = secrets.token_urlsafe(32)
+            while Invoice.objects.filter(public_token=token).exists():
+                token = secrets.token_urlsafe(32)
+            self.public_token = token
+
+        # Calculate due date from payment terms if not set
+        if self.issue_date and not self.due_date:
+            self.due_date = self.calculate_due_date()
+
+        # Recalculate totals
+        self.recalculate_totals()
+
+        super().save(*args, **kwargs)
+
+    def generate_invoice_number(self):
+        """Generate unique invoice number: INV-YYYYMMDD-XXXX"""
+        from django.db import transaction
+        from django.db.models import Max
+        from django.db.models.functions import Cast, Substr, Length
+        from django.db.models import IntegerField
+
+        date_str = datetime.datetime.now().strftime("%Y%m%d")
+        prefix = f"INV-{date_str}-"
+        prefix_len = len(prefix)
+
+        # Use select_for_update to prevent race conditions
+        with transaction.atomic():
+            # Get max sequence number by extracting and casting to integer
+            result = (
+                Invoice.objects.filter(invoice_number__startswith=prefix)
+                .select_for_update()
+                .annotate(
+                    seq_num=Cast(
+                        Substr("invoice_number", prefix_len + 1),
+                        IntegerField()
+                    )
+                )
+                .aggregate(max_seq=Max("seq_num"))
+            )
+
+            max_seq = result.get("max_seq")
+            new_seq = (max_seq or 0) + 1
+
+            return f"{prefix}{new_seq:04d}"
+
+    def calculate_due_date(self):
+        """Calculate due date based on payment terms"""
+        from datetime import timedelta
+
+        if not self.issue_date:
+            return None
+
+        term_days = {
+            "DUE_ON_RECEIPT": 0,
+            "NET_15": 15,
+            "NET_30": 30,
+            "NET_45": 45,
+            "NET_60": 60,
+        }
+
+        days = term_days.get(self.payment_terms, 30)
+        return self.issue_date + timedelta(days=days)
+
+    def recalculate_totals(self):
+        """Recalculate invoice totals from line items"""
+        # Calculate subtotal from line items
+        line_items = self.line_items.all() if self.pk else []
+        self.subtotal = sum(item.subtotal for item in line_items)
+
+        # Calculate discount
+        if self.discount_type == "PERCENTAGE":
+            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+        else:
+            self.discount_amount = self.discount_value
+
+        # Calculate tax on discounted amount
+        taxable = self.subtotal - self.discount_amount
+        self.tax_amount = taxable * (self.tax_rate / Decimal("100"))
+
+        # Calculate total
+        self.total_amount = taxable + self.tax_amount + self.shipping_amount
+
+        # Calculate amount due
+        self.amount_due = self.total_amount - self.amount_paid
+
+    def formatted_total_amount(self):
+        currency = self.currency or "USD"
+        return f"{currency} {self.total_amount}"
+
+    def formatted_amount_due(self):
+        currency = self.currency or "USD"
+        return f"{currency} {self.amount_due}"
+
+    @property
+    def is_overdue(self):
+        if self.due_date and self.status not in ["Paid", "Cancelled"]:
+            return datetime.date.today() > self.due_date
+        return False
+
+    @property
+    def public_url(self):
+        """Generate the public viewing URL"""
+        return f"/portal/invoice/{self.public_token}"
+
+    @property
+    def created_on_arrow(self):
+        return timesince(self.created_at) + " ago"
+
+
+# =============================================================================
+# INVOICE LINE ITEM
+# =============================================================================
+
+
 class InvoiceLineItem(BaseModel):
-    """Line Item for Invoices"""
+    """Line Item for Invoices with per-item discount and tax support"""
 
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="line_items"
@@ -292,15 +503,46 @@ class InvoiceLineItem(BaseModel):
         blank=True,
         related_name="invoice_line_items",
     )
-    description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    order = models.PositiveIntegerField(default=0)
+    name = models.CharField(_("Item Name"), max_length=255, blank=True, null=True)
+    description = models.CharField(_("Description"), max_length=500, blank=True)
+    quantity = models.DecimalField(
+        _("Quantity"), max_digits=10, decimal_places=2, default=1
+    )
+    unit_price = models.DecimalField(
+        _("Unit Price"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Per-item discount
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(
+        _("Discount Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Per-item tax
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+    tax_amount = models.DecimalField(
+        _("Tax Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Computed amounts
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    total = models.DecimalField(_("Total"), max_digits=12, decimal_places=2, default=0)
+
+    # Ordering
+    order = models.PositiveIntegerField(_("Order"), default=0)
+
+    # Organization
     org = models.ForeignKey(
-        Org,
-        on_delete=models.CASCADE,
-        related_name="invoice_line_items",
+        Org, on_delete=models.CASCADE, related_name="invoice_line_items"
     )
 
     class Meta:
@@ -313,13 +555,30 @@ class InvoiceLineItem(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.invoice.invoice_number} - {self.description}"
+        display_name = self.name or self.description or "Item"
+        return f"{self.invoice.invoice_number} - {display_name}"
 
     def save(self, *args, **kwargs):
-        # Auto-calculate total
-        self.total = self.quantity * self.unit_price
+        # Calculate subtotal (quantity * unit_price)
+        self.subtotal = self.quantity * self.unit_price
+
+        # Calculate discount
+        if self.discount_type == "PERCENTAGE":
+            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+        else:
+            self.discount_amount = self.discount_value
+
+        # Calculate tax on discounted amount
+        taxable = self.subtotal - self.discount_amount
+        self.tax_amount = taxable * (self.tax_rate / Decimal("100"))
+
+        # Calculate total
+        self.total = taxable + self.tax_amount
+
+        # Inherit org from invoice if not set
         if not self.org_id and self.invoice_id:
             self.org_id = self.invoice.org_id
+
         super().save(*args, **kwargs)
 
     @property
@@ -333,3 +592,620 @@ class InvoiceLineItem(BaseModel):
         if self.invoice and self.invoice.currency:
             return f"{self.invoice.currency} {self.total}"
         return str(self.total)
+
+
+# =============================================================================
+# PAYMENT
+# =============================================================================
+
+
+class Payment(BaseModel):
+    """Track payments against invoices"""
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="payments"
+    )
+    amount = models.DecimalField(_("Amount"), max_digits=12, decimal_places=2)
+    payment_date = models.DateField(_("Payment Date"))
+    payment_method = models.CharField(
+        _("Payment Method"), max_length=20, choices=PAYMENT_METHODS
+    )
+    reference_number = models.CharField(
+        _("Reference Number"), max_length=100, blank=True
+    )
+    notes = models.TextField(_("Notes"), blank=True)
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="payments")
+
+    class Meta:
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
+        db_table = "payment"
+        ordering = ("-payment_date",)
+        indexes = [
+            models.Index(fields=["org", "-payment_date"]),
+            models.Index(fields=["invoice"]),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice.invoice_number} - {self.amount}"
+
+    def save(self, *args, **kwargs):
+        # Inherit org from invoice if not set
+        if not self.org_id and self.invoice_id:
+            self.org_id = self.invoice.org_id
+
+        super().save(*args, **kwargs)
+
+        # Update invoice payment totals
+        self.update_invoice_payment()
+
+    def delete(self, *args, **kwargs):
+        invoice = self.invoice
+        super().delete(*args, **kwargs)
+        # Recalculate after deletion
+        self.update_invoice_payment(invoice)
+
+    def update_invoice_payment(self, invoice=None):
+        """Update the invoice's amount_paid and status"""
+        invoice = invoice or self.invoice
+        total_paid = invoice.payments.aggregate(total=models.Sum("amount"))["total"] or 0
+        invoice.amount_paid = total_paid
+        invoice.amount_due = invoice.total_amount - total_paid
+
+        # Update status based on payment
+        if invoice.amount_due <= 0:
+            invoice.status = "Paid"
+            if not invoice.paid_at:
+                from django.utils import timezone
+
+                invoice.paid_at = timezone.now()
+        elif total_paid > 0:
+            invoice.status = "Partially_Paid"
+
+        invoice.save(update_fields=["amount_paid", "amount_due", "status", "paid_at"])
+
+
+# =============================================================================
+# ESTIMATE
+# =============================================================================
+
+
+class Estimate(AssignableMixin, BaseModel):
+    """Estimates/Quotes - can be converted to Invoice"""
+
+    # Core Info
+    estimate_number = models.CharField(
+        _("Estimate Number"), max_length=50, unique=True
+    )
+    title = models.CharField(_("Title"), max_length=100)
+    status = models.CharField(
+        _("Status"), max_length=20, choices=ESTIMATE_STATUS, default="Draft"
+    )
+
+    # CRM Integration (same rules as Invoice - enforced via serializer)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="estimates",
+        help_text="The legal entity (REQUIRED via validation)",
+    )
+    contact = models.ForeignKey(
+        Contact,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="estimates",
+        help_text="The contact person (REQUIRED via validation)",
+    )
+    opportunity = models.ForeignKey(
+        Opportunity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="estimates",
+    )
+
+    # Client Details
+    client_name = models.CharField(_("Client Name"), max_length=255, default="")
+    client_email = models.EmailField(_("Client Email"), default="")
+    client_phone = models.CharField(_("Client Phone"), max_length=25, blank=True)
+
+    # Client Address
+    client_address_line = models.CharField(
+        _("Client Address"), max_length=255, blank=True
+    )
+    client_city = models.CharField(_("Client City"), max_length=100, blank=True)
+    client_state = models.CharField(_("Client State"), max_length=100, blank=True)
+    client_postcode = models.CharField(
+        _("Client Postal Code"), max_length=20, blank=True
+    )
+    client_country = models.CharField(
+        _("Client Country"), max_length=3, choices=COUNTRIES, blank=True
+    )
+
+    # Financial
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(
+        _("Discount Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+    tax_amount = models.DecimalField(
+        _("Tax Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    total_amount = models.DecimalField(
+        _("Total Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, default="USD"
+    )
+
+    # Dates
+    issue_date = models.DateField(_("Issue Date"), default=datetime.date.today)
+    expiry_date = models.DateField(_("Expiry Date"), null=True, blank=True)
+
+    # Status Timestamps
+    sent_at = models.DateTimeField(_("Sent At"), null=True, blank=True)
+    viewed_at = models.DateTimeField(_("Viewed At"), null=True, blank=True)
+    accepted_at = models.DateTimeField(_("Accepted At"), null=True, blank=True)
+    declined_at = models.DateTimeField(_("Declined At"), null=True, blank=True)
+
+    # Conversion
+    converted_to_invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_estimate",
+    )
+
+    # Client Portal
+    public_token = models.CharField(
+        _("Public Token"), max_length=64, unique=True, blank=True
+    )
+    public_link_enabled = models.BooleanField(_("Public Link Enabled"), default=True)
+
+    # Notes
+    notes = models.TextField(_("Notes"), blank=True)
+    terms = models.TextField(_("Terms & Conditions"), blank=True)
+
+    # Assignment
+    assigned_to = models.ManyToManyField(Profile, related_name="estimate_assigned_to")
+    teams = models.ManyToManyField(Teams, related_name="estimate_teams")
+
+    # Organization
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="estimates")
+
+    class Meta:
+        verbose_name = "Estimate"
+        verbose_name_plural = "Estimates"
+        db_table = "estimate"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["org", "status"]),
+            models.Index(fields=["account"]),
+            models.Index(fields=["expiry_date"]),
+            models.Index(fields=["public_token"]),
+        ]
+
+    def __str__(self):
+        return f"{self.estimate_number}"
+
+    def save(self, *args, **kwargs):
+        if not self.estimate_number:
+            self.estimate_number = self.generate_estimate_number()
+
+        # Generate public token if not set (with collision check)
+        if not self.public_token:
+            token = secrets.token_urlsafe(32)
+            while Estimate.objects.filter(public_token=token).exists():
+                token = secrets.token_urlsafe(32)
+            self.public_token = token
+
+        self.recalculate_totals()
+        super().save(*args, **kwargs)
+
+    def generate_estimate_number(self):
+        """Generate unique estimate number: EST-YYYYMMDD-XXXX"""
+        from django.db import transaction
+        from django.db.models import Max
+        from django.db.models.functions import Cast, Substr
+        from django.db.models import IntegerField
+
+        date_str = datetime.datetime.now().strftime("%Y%m%d")
+        prefix = f"EST-{date_str}-"
+        prefix_len = len(prefix)
+
+        # Use select_for_update to prevent race conditions
+        with transaction.atomic():
+            # Get max sequence number by extracting and casting to integer
+            result = (
+                Estimate.objects.filter(estimate_number__startswith=prefix)
+                .select_for_update()
+                .annotate(
+                    seq_num=Cast(
+                        Substr("estimate_number", prefix_len + 1),
+                        IntegerField()
+                    )
+                )
+                .aggregate(max_seq=Max("seq_num"))
+            )
+
+            max_seq = result.get("max_seq")
+            new_seq = (max_seq or 0) + 1
+
+            return f"{prefix}{new_seq:04d}"
+
+    def recalculate_totals(self):
+        """Recalculate estimate totals from line items"""
+        line_items = self.line_items.all() if self.pk else []
+        self.subtotal = sum(item.subtotal for item in line_items)
+
+        if self.discount_type == "PERCENTAGE":
+            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+        else:
+            self.discount_amount = self.discount_value
+
+        taxable = self.subtotal - self.discount_amount
+        self.tax_amount = taxable * (self.tax_rate / Decimal("100"))
+        self.total_amount = taxable + self.tax_amount
+
+    @property
+    def is_expired(self):
+        if self.expiry_date and self.status not in ["Accepted", "Declined"]:
+            return datetime.date.today() > self.expiry_date
+        return False
+
+    @property
+    def public_url(self):
+        return f"/portal/estimate/{self.public_token}"
+
+
+class EstimateLineItem(BaseModel):
+    """Line item for Estimates - mirrors InvoiceLineItem structure"""
+
+    estimate = models.ForeignKey(
+        Estimate, on_delete=models.CASCADE, related_name="line_items"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="estimate_line_items",
+    )
+    name = models.CharField(_("Item Name"), max_length=255, blank=True, null=True)
+    description = models.CharField(_("Description"), max_length=500, blank=True)
+    quantity = models.DecimalField(
+        _("Quantity"), max_digits=10, decimal_places=2, default=1
+    )
+    unit_price = models.DecimalField(
+        _("Unit Price"), max_digits=12, decimal_places=2, default=0
+    )
+
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(
+        _("Discount Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+    tax_amount = models.DecimalField(
+        _("Tax Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    total = models.DecimalField(_("Total"), max_digits=12, decimal_places=2, default=0)
+
+    order = models.PositiveIntegerField(_("Order"), default=0)
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="estimate_line_items"
+    )
+
+    class Meta:
+        verbose_name = "Estimate Line Item"
+        verbose_name_plural = "Estimate Line Items"
+        db_table = "estimate_line_item"
+        ordering = ("order",)
+        indexes = [
+            models.Index(fields=["org", "order"]),
+        ]
+
+    def __str__(self):
+        display_name = self.name or self.description or "Item"
+        return f"{self.estimate.estimate_number} - {display_name}"
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.quantity * self.unit_price
+
+        if self.discount_type == "PERCENTAGE":
+            self.discount_amount = self.subtotal * (self.discount_value / Decimal("100"))
+        else:
+            self.discount_amount = self.discount_value
+
+        taxable = self.subtotal - self.discount_amount
+        self.tax_amount = taxable * (self.tax_rate / Decimal("100"))
+        self.total = taxable + self.tax_amount
+
+        if not self.org_id and self.estimate_id:
+            self.org_id = self.estimate.org_id
+
+        super().save(*args, **kwargs)
+
+
+# =============================================================================
+# RECURRING INVOICE
+# =============================================================================
+
+
+class RecurringInvoice(AssignableMixin, BaseModel):
+    """Template for auto-generating invoices on a schedule"""
+
+    # Core Info
+    title = models.CharField(_("Title"), max_length=100)
+    is_active = models.BooleanField(_("Is Active"), default=True)
+
+    # CRM Integration (same rules as Invoice - enforced via serializer)
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="recurring_invoices",
+    )
+    contact = models.ForeignKey(
+        Contact,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recurring_invoices",
+    )
+    opportunity = models.ForeignKey(
+        Opportunity,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recurring_invoices",
+    )
+
+    # Client Details
+    client_name = models.CharField(_("Client Name"), max_length=255, default="")
+    client_email = models.EmailField(_("Client Email"), default="")
+
+    # Schedule
+    frequency = models.CharField(
+        _("Frequency"), max_length=20, choices=RECURRING_FREQUENCIES, default="MONTHLY"
+    )
+    custom_days = models.PositiveIntegerField(
+        _("Custom Days Interval"), null=True, blank=True
+    )
+    start_date = models.DateField(_("Start Date"), default=datetime.date.today)
+    end_date = models.DateField(_("End Date"), null=True, blank=True)
+    next_generation_date = models.DateField(_("Next Generation Date"), default=datetime.date.today)
+
+    # Settings
+    payment_terms = models.CharField(
+        _("Payment Terms"), max_length=20, choices=PAYMENT_TERMS, default="NET_30"
+    )
+    auto_send = models.BooleanField(_("Auto Send"), default=False)
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, default="USD"
+    )
+
+    # Financial
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+    total_amount = models.DecimalField(
+        _("Total Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Notes
+    notes = models.TextField(_("Notes"), blank=True)
+    terms = models.TextField(_("Terms & Conditions"), blank=True)
+
+    # Statistics
+    invoices_generated = models.PositiveIntegerField(
+        _("Invoices Generated"), default=0
+    )
+
+    # Assignment
+    assigned_to = models.ManyToManyField(
+        Profile, related_name="recurring_invoice_assigned_to"
+    )
+    teams = models.ManyToManyField(Teams, related_name="recurring_invoice_teams")
+
+    # Organization
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="recurring_invoices"
+    )
+
+    class Meta:
+        verbose_name = "Recurring Invoice"
+        verbose_name_plural = "Recurring Invoices"
+        db_table = "recurring_invoice"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["org", "is_active"]),
+            models.Index(fields=["next_generation_date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.frequency})"
+
+    def calculate_next_date(self):
+        """Calculate the next generation date based on frequency"""
+        from datetime import timedelta
+        from dateutil.relativedelta import relativedelta
+
+        current = self.next_generation_date
+
+        if self.frequency == "WEEKLY":
+            return current + timedelta(weeks=1)
+        elif self.frequency == "BIWEEKLY":
+            return current + timedelta(weeks=2)
+        elif self.frequency == "MONTHLY":
+            return current + relativedelta(months=1)
+        elif self.frequency == "QUARTERLY":
+            return current + relativedelta(months=3)
+        elif self.frequency == "SEMI_ANNUALLY":
+            return current + relativedelta(months=6)
+        elif self.frequency == "YEARLY":
+            return current + relativedelta(years=1)
+        elif self.frequency == "CUSTOM" and self.custom_days:
+            return current + timedelta(days=self.custom_days)
+
+        return current + relativedelta(months=1)
+
+
+class RecurringInvoiceLineItem(BaseModel):
+    """Line item template for recurring invoices"""
+
+    recurring_invoice = models.ForeignKey(
+        RecurringInvoice, on_delete=models.CASCADE, related_name="line_items"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recurring_invoice_line_items",
+    )
+    name = models.CharField(_("Item Name"), max_length=255, blank=True, null=True)
+    description = models.CharField(_("Description"), max_length=500, blank=True)
+    quantity = models.DecimalField(
+        _("Quantity"), max_digits=10, decimal_places=2, default=1
+    )
+    unit_price = models.DecimalField(
+        _("Unit Price"), max_digits=12, decimal_places=2, default=0
+    )
+
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    tax_rate = models.DecimalField(
+        _("Tax Rate (%)"), max_digits=5, decimal_places=2, default=0
+    )
+
+    order = models.PositiveIntegerField(_("Order"), default=0)
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="recurring_invoice_line_items"
+    )
+
+    class Meta:
+        verbose_name = "Recurring Invoice Line Item"
+        verbose_name_plural = "Recurring Invoice Line Items"
+        db_table = "recurring_invoice_line_item"
+        ordering = ("order",)
+
+    def __str__(self):
+        return f"{self.recurring_invoice.title} - {self.description}"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.recurring_invoice_id:
+            self.org_id = self.recurring_invoice.org_id
+        super().save(*args, **kwargs)
+
+
+# =============================================================================
+# INVOICE HISTORY (Audit Trail)
+# =============================================================================
+
+
+class InvoiceHistory(BaseModel):
+    """
+    Audit trail for Invoice changes.
+    Tracks updates made to the original invoice object.
+    """
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="invoice_history"
+    )
+    invoice_title = models.CharField(_("Invoice Title"), max_length=100)
+    invoice_number = models.CharField(_("Invoice Number"), max_length=50)
+    status = models.CharField(
+        _("Status"), choices=INVOICE_STATUS, max_length=20, default="Draft"
+    )
+
+    # Snapshot of key fields at time of change
+    client_name = models.CharField(_("Client Name"), max_length=255, blank=True)
+    client_email = models.EmailField(_("Client Email"), blank=True)
+    total_amount = models.DecimalField(
+        _("Total Amount"), max_digits=12, decimal_places=2, default=0
+    )
+    amount_due = models.DecimalField(
+        _("Amount Due"), max_digits=12, decimal_places=2, default=0
+    )
+    currency = models.CharField(
+        _("Currency"), max_length=3, choices=CURRENCY_CODES, blank=True, null=True
+    )
+    due_date = models.DateField(_("Due Date"), blank=True, null=True)
+
+    # Change tracking
+    updated_by = models.ForeignKey(
+        Profile,
+        related_name="invoice_history_updated_by",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    details = models.TextField(_("Change Details"), blank=True, null=True)
+
+    # Organization
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="invoice_histories"
+    )
+
+    class Meta:
+        verbose_name = "Invoice History"
+        verbose_name_plural = "Invoice Histories"
+        db_table = "invoice_history"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["invoice"]),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.created_at}"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.invoice_id:
+            self.org_id = self.invoice.org_id
+        super().save(*args, **kwargs)
+
+    @property
+    def created_on_arrow(self):
+        return timesince(self.created_at) + " ago"

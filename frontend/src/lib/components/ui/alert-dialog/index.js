@@ -7,6 +7,7 @@ import Footer from './alert-dialog-footer.svelte';
 import Title from './alert-dialog-title.svelte';
 import Description from './alert-dialog-description.svelte';
 import Cancel from './alert-dialog-cancel.svelte';
+import Action from './alert-dialog-action.svelte';
 
 const Root = AlertDialogPrimitive.Root;
 const Portal = AlertDialogPrimitive.Portal;
@@ -22,6 +23,7 @@ export {
 	Title,
 	Description,
 	Cancel,
+	Action,
 	//
 	Root as AlertDialog,
 	Trigger as AlertDialogTrigger,
@@ -32,5 +34,6 @@ export {
 	Footer as AlertDialogFooter,
 	Title as AlertDialogTitle,
 	Description as AlertDialogDescription,
-	Cancel as AlertDialogCancel
+	Cancel as AlertDialogCancel,
+	Action as AlertDialogAction
 };

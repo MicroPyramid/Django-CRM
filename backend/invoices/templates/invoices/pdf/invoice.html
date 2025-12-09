@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <link rel="stylesheet" href="invoice.css">
+</head>
+<body>
+    <div class="invoice-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="company-details">
+                <h1>{{ org.company_name|default:org.name }}</h1>
+                {% if org.company_name and org.name and org.company_name != org.name %}
+                <p>{{ org.name }}</p>
+                {% endif %}
+                {% if org.address_line %}
+                <p>{{ org.address_line }}</p>
+                {% endif %}
+                {% if org.city or org.state or org.postcode %}
+                <p>
+                    {% if org.city %}{{ org.city }}{% endif %}{% if org.city and org.state %}, {% endif %}{% if org.state %}{{ org.state }}{% endif %}
+                    {% if org.postcode %} {{ org.postcode }}{% endif %}
+                </p>
+                {% endif %}
+                {% if org.phone %}
+                <p>Tel: {{ org.phone }}</p>
+                {% endif %}
+                {% if org.email %}
+                <p>Email: <a href="mailto:{{ org.email }}">{{ org.email }}</a></p>
+                {% endif %}
+                {% if org.website %}
+                <p>Web: <a href="{{ org.website }}">{{ org.website }}</a></p>
+                {% endif %}
+            </div>
+
+            <div class="invoice-branding">
+                <div class="invoice-title">Invoice</div>
+                {% if org.logo %}
+                <div class="logo-container">
+                    <img src="{{ org.logo.url }}" alt="{{ org.name }}" class="logo">
+                </div>
+                {% else %}
+                <div class="logo-container">
+                    <span class="logo-text">{{ org.company_name|default:org.name|slice:":4"|upper }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Client & Invoice Details Section -->
+        <section class="info-section">
+            <div class="client-address">
+                <h3>{{ invoice.client_name }}</h3>
+                {% if invoice.client_address_line %}
+                <p>{{ invoice.client_address_line }}</p>
+                {% endif %}
+                {% if invoice.client_city or invoice.client_state or invoice.client_postcode %}
+                <p>
+                    {% if invoice.client_city %}{{ invoice.client_city }}{% endif %}{% if invoice.client_city and invoice.client_state %}, {% endif %}{% if invoice.client_state %}{{ invoice.client_state }}{% endif %}
+                    {% if invoice.client_postcode %} {{ invoice.client_postcode }}{% endif %}
+                </p>
+                {% endif %}
+                {% if invoice.client_country %}
+                <p>{{ invoice.client_country }}</p>
+                {% endif %}
+            </div>
+
+            <div class="invoice-meta">
+                {% if invoice.invoice_title %}
+                <div class="meta-row">
+                    <span class="meta-label">Reference:</span>
+                    <span class="meta-value">{{ invoice.invoice_title }}</span>
+                </div>
+                {% endif %}
+                <div class="meta-row">
+                    <span class="meta-label">Invoice #:</span>
+                    <span class="meta-value">{{ invoice.invoice_number }}</span>
+                </div>
+                {% if invoice.po_number %}
+                <div class="meta-row">
+                    <span class="meta-label">PO Number:</span>
+                    <span class="meta-value">{{ invoice.po_number }}</span>
+                </div>
+                {% endif %}
+                {% if invoice.billing_period %}
+                <div class="meta-row">
+                    <span class="meta-label">Billing Period:</span>
+                    <span class="meta-value">{{ invoice.billing_period }}</span>
+                </div>
+                {% endif %}
+                {% if invoice.payment_terms %}
+                <div class="meta-row">
+                    <span class="meta-label">Terms:</span>
+                    <span class="meta-value">{{ invoice.get_payment_terms_display }}</span>
+                </div>
+                {% endif %}
+                {% if invoice.issue_date %}
+                <div class="meta-row">
+                    <span class="meta-label">Invoice Date:</span>
+                    <span class="meta-value">{{ invoice.issue_date|date:"F d, Y" }}</span>
+                </div>
+                {% endif %}
+                {% if invoice.due_date %}
+                <div class="meta-row">
+                    <span class="meta-label">Due Date:</span>
+                    <span class="meta-value">{{ invoice.due_date|date:"F d, Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Line Items Table -->
+        <table class="line-items-table">
+            <thead>
+                <tr>
+                    <th class="desc-col">Description</th>
+                    <th class="qty-col">Quantity</th>
+                    <th class="price-col">Price</th>
+                    <th class="total-col">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in line_items %}
+                <tr>
+                    <td class="desc-col">
+                        {% if item.name %}
+                        <span class="item-title">{{ item.name }}</span>
+                        {% if item.description %}
+                        <span class="item-desc">{{ item.description }}</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="item-title">{{ item.description }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="qty-col">{{ item.quantity }}</td>
+                    <td class="price-col">{{ item.unit_price }}</td>
+                    <td class="total-col">{{ item.total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="no-items">No line items</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Totals Section -->
+        <div class="totals-container">
+            <table class="totals-table">
+                <tbody>
+                    <tr>
+                        <td class="totals-label">Subtotal</td>
+                        <td class="totals-value">{{ subtotal }}</td>
+                    </tr>
+                    <tr>
+                        <td class="totals-label">Shipping</td>
+                        <td class="totals-value">{{ shipping_amount }}</td>
+                    </tr>
+                    {% if invoice.discount_amount and invoice.discount_amount > 0 %}
+                    <tr>
+                        <td class="totals-label">Discount</td>
+                        <td class="totals-value">-{{ discount_amount }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="totals-label">Tax</td>
+                        <td class="totals-value">{{ tax_amount }}</td>
+                    </tr>
+                    <tr class="grand-total">
+                        <td class="totals-label">Total</td>
+                        <td class="totals-value">{{ total_amount }}</td>
+                    </tr>
+                    {% if invoice.amount_paid and invoice.amount_paid > 0 %}
+                    <tr>
+                        <td class="totals-label">Amount Paid</td>
+                        <td class="totals-value paid">-{{ amount_paid }}</td>
+                    </tr>
+                    <tr class="amount-due">
+                        <td class="totals-label">Amount Due</td>
+                        <td class="totals-value">{{ amount_due }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Notes Section -->
+        {% if invoice.notes %}
+        <div class="footer-notes">
+            <h4>Description:</h4>
+            <p>{{ invoice.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Footer Section -->
+        <div class="sign-off">
+            <p>Yours Sincerely,</p>
+            <br>
+            <p class="sign-company">{{ org.company_name|default:org.name }}</p>
+            {% if invoice.client_name %}
+            <p class="sign-client">{{ invoice.client_name }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Copyright Footer -->
+        <div class="copyright">
+            {% if org.tax_id %}
+            <p>Tax ID: {{ org.tax_id }}</p>
+            {% endif %}
+            <p>Copyright &copy; {% now "Y" %}. {{ org.company_name|default:org.name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -56,7 +56,41 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure environment variables
+### 3. Install PDF generation system dependencies
+
+Invoice PDF generation uses WeasyPrint (already included in requirements.txt). However, WeasyPrint requires system libraries that must be installed separately:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install -y \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info
+```
+
+**macOS:**
+```bash
+brew install pango cairo libffi gdk-pixbuf
+```
+
+**Fedora/CentOS:**
+```bash
+sudo dnf install -y \
+    pango \
+    cairo \
+    gdk-pixbuf2 \
+    libffi-devel
+```
+
+**Windows:**
+Follow the [WeasyPrint Windows installation guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
+
+> **Note**: If you skip this step, the CRM will work but PDF download for invoices will show "PDF generation unavailable".
+
+### 4. Configure environment variables
 
 Create a `.env` file in the `backend/` directory:
 
@@ -85,7 +119,7 @@ DOMAIN_NAME=http://localhost:8000
 SWAGGER_ROOT_URL=http://localhost:8000
 ```
 
-### 4. Set up database
+### 5. Set up database
 
 ```bash
 # Create PostgreSQL database
@@ -101,7 +135,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 5. Run the development server
+### 6. Run the development server
 
 ```bash
 python manage.py runserver

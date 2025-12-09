@@ -32,6 +32,7 @@ from common.utils import (
     STAGES,
     STATUS_CHOICE,
 )
+from invoices.seed import InvoiceSeeder
 
 
 class Command(BaseCommand):
@@ -99,6 +100,7 @@ class Command(BaseCommand):
         super().__init__(*args, **kwargs)
         self.fake = None
         self.admin_user = None
+        self.invoice_seeder = None
         self.stats = {
             "orgs": 0,
             "users": 0,
@@ -184,6 +186,38 @@ class Command(BaseCommand):
             help="Tags per organization (default: 5)",
         )
 
+        # Invoice-related arguments
+        parser.add_argument(
+            "--products",
+            type=int,
+            default=20,
+            help="Products per organization (default: 20)",
+        )
+        parser.add_argument(
+            "--invoices",
+            type=int,
+            default=50,
+            help="Invoices per organization (default: 50)",
+        )
+        parser.add_argument(
+            "--estimates",
+            type=int,
+            default=15,
+            help="Estimates per organization (default: 15)",
+        )
+        parser.add_argument(
+            "--recurring-invoices",
+            type=int,
+            default=5,
+            help="Recurring invoices per organization (default: 5)",
+        )
+        parser.add_argument(
+            "--invoice-templates",
+            type=int,
+            default=3,
+            help="Invoice templates per organization (default: 3)",
+        )
+
         # Options
         parser.add_argument(
             "--seed",
@@ -216,6 +250,9 @@ class Command(BaseCommand):
             Faker.seed(seed)
         else:
             self.fake = Faker(["en_US", "en_GB", "en_CA", "en_AU"])
+
+        # Initialize InvoiceSeeder
+        self.invoice_seeder = InvoiceSeeder(self.fake, self.stdout)
 
         self.stdout.write(self.style.MIGRATE_HEADING("Seeding CRM database..."))
         if seed:
@@ -264,6 +301,9 @@ class Command(BaseCommand):
         from opportunity.models import Opportunity
         from tasks.models import Task
 
+        # Clear invoice data first (depends on accounts/contacts)
+        self.invoice_seeder.clear_invoice_data()
+
         # Delete in reverse dependency order
         Task.objects.all().delete()
         Case.objects.all().delete()
@@ -310,12 +350,34 @@ class Command(BaseCommand):
             accounts = self.create_accounts(
                 org, profiles, teams, tags, contacts, options["accounts"]
             )
+
+            # Invoice prerequisites
+            products = self.invoice_seeder.create_products(org, options["products"])
+            templates = self.invoice_seeder.create_invoice_templates(
+                org, options["invoice_templates"]
+            )
+
             leads = self.create_leads(
                 org, profiles, teams, tags, contacts, options["leads"]
             )
             opportunities = self.create_opportunities(
                 org, profiles, teams, tags, contacts, accounts, options["opportunities"]
             )
+
+            # Invoice entities
+            invoices = self.invoice_seeder.create_invoices(
+                org, profiles, teams, products, templates,
+                accounts, contacts, opportunities, options["invoices"]
+            )
+            self.invoice_seeder.create_payments(org, invoices)
+            self.invoice_seeder.create_estimates(
+                org, profiles, teams, products, accounts, contacts, options["estimates"]
+            )
+            self.invoice_seeder.create_recurring_invoices(
+                org, profiles, teams, products, accounts, contacts,
+                options["recurring_invoices"]
+            )
+
             cases = self.create_cases(
                 org, profiles, teams, tags, contacts, accounts, options["cases"]
             )
@@ -771,6 +833,9 @@ class Command(BaseCommand):
 
     def print_summary(self, elapsed_seconds):
         """Print seeding summary."""
+        # Merge invoice stats
+        self.stats.update(self.invoice_seeder.stats)
+
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Seeding complete!"))
         self.stdout.write("")
@@ -782,8 +847,16 @@ class Command(BaseCommand):
         self.stdout.write(f"  Tags: {self.stats['tags']}")
         self.stdout.write(f"  Contacts: {self.stats['contacts']}")
         self.stdout.write(f"  Accounts: {self.stats['accounts']}")
+        self.stdout.write(f"  Products: {self.stats['products']}")
+        self.stdout.write(f"  Invoice Templates: {self.stats['invoice_templates']}")
         self.stdout.write(f"  Leads: {self.stats['leads']}")
         self.stdout.write(f"  Opportunities: {self.stats['opportunities']}")
+        self.stdout.write(f"  Invoices: {self.stats['invoices']}")
+        self.stdout.write(f"  Invoice Line Items: {self.stats['invoice_line_items']}")
+        self.stdout.write(f"  Payments: {self.stats['payments']}")
+        self.stdout.write(f"  Estimates: {self.stats['estimates']}")
+        self.stdout.write(f"  Estimate Line Items: {self.stats['estimate_line_items']}")
+        self.stdout.write(f"  Recurring Invoices: {self.stats['recurring_invoices']}")
         self.stdout.write(f"  Cases: {self.stats['cases']}")
         self.stdout.write(f"  Tasks: {self.stats['tasks']}")
         self.stdout.write("")

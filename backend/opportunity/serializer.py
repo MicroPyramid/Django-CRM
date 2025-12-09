@@ -11,11 +11,109 @@ from common.serializer import (
     UserSerializer,
 )
 from contacts.serializer import ContactSerializer
-from opportunity.models import Opportunity
+from invoices.serializer import ProductSerializer
+from opportunity.models import Opportunity, OpportunityLineItem
 
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
 # - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
+
+
+class OpportunityLineItemSerializer(serializers.ModelSerializer):
+    """Serializer for reading OpportunityLineItem data"""
+
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    formatted_unit_price = serializers.SerializerMethodField()
+    formatted_total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OpportunityLineItem
+        fields = (
+            "id",
+            "product",
+            "product_id",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "discount_type",
+            "discount_value",
+            "discount_amount",
+            "subtotal",
+            "total",
+            "order",
+            "formatted_unit_price",
+            "formatted_total",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "id",
+            "discount_amount",
+            "subtotal",
+            "total",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_formatted_unit_price(self, obj):
+        """Format unit price with currency symbol"""
+        currency = obj.opportunity.currency or "USD"
+        return f"{currency} {obj.unit_price:,.2f}"
+
+    def get_formatted_total(self, obj):
+        """Format total with currency symbol"""
+        currency = obj.opportunity.currency or "USD"
+        return f"{currency} {obj.total:,.2f}"
+
+
+class OpportunityLineItemCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating OpportunityLineItem data"""
+
+    product_id = serializers.UUIDField(required=False, allow_null=True)
+
+    class Meta:
+        model = OpportunityLineItem
+        fields = (
+            "product_id",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "discount_type",
+            "discount_value",
+            "order",
+        )
+
+    def create(self, validated_data):
+        # Handle product_id
+        product_id = validated_data.pop("product_id", None)
+        if product_id:
+            from invoices.models import Product
+
+            try:
+                validated_data["product"] = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                pass
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Handle product_id
+        product_id = validated_data.pop("product_id", None)
+        if product_id:
+            from invoices.models import Product
+
+            try:
+                validated_data["product"] = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                pass
+        elif product_id is None and "product_id" in self.initial_data:
+            # Explicitly set to null
+            validated_data["product"] = None
+
+        return super().update(instance, validated_data)
 
 
 class OpportunitySerializer(serializers.ModelSerializer):
@@ -29,11 +127,18 @@ class OpportunitySerializer(serializers.ModelSerializer):
     assigned_to = ProfileSerializer(read_only=True, many=True)
     contacts = ContactSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
+    line_items = OpportunityLineItemSerializer(read_only=True, many=True)
     created_on_arrow = serializers.SerializerMethodField()
+    line_items_total = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
     def get_created_on_arrow(self, obj):
         return obj.created_on_arrow
+
+    @extend_schema_field(float)
+    def get_line_items_total(self, obj):
+        """Calculate total from line items"""
+        return sum(item.total for item in obj.line_items.all())
 
     class Meta:
         model = Opportunity
@@ -47,12 +152,16 @@ class OpportunitySerializer(serializers.ModelSerializer):
             # Financial Information
             "currency",
             "amount",
+            "amount_source",
             "probability",
             "closed_on",
             # Source & Context
             "lead_source",
             # Relationships
             "contacts",
+            # Line Items / Products
+            "line_items",
+            "line_items_total",
             # Assignment
             "assigned_to",
             "teams",

@@ -21,6 +21,8 @@ urlpatterns = [
         name="healthz",
     ),
     path("api/", include("common.app_urls", namespace="common_urls")),
+    # Public portal endpoints (no auth required)
+    path("api/public/", include("invoices.public_urls", namespace="public_invoices")),
     path(
         "logout/", views.LogoutView.as_view(), {"next_page": "/login/"}, name="logout"
     ),

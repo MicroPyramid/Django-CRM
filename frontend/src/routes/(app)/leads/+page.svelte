@@ -30,7 +30,7 @@
 		Filter
 	} from '@lucide/svelte';
 	import { page } from '$app/stores';
-	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { PageHeader } from '$lib/components/layout';
@@ -1418,6 +1418,11 @@
 			onchange={(start, end) =>
 				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
 			class="w-56"
+		/>
+		<TagFilter
+			tags={data.tags || []}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
 

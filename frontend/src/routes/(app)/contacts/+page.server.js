@@ -48,10 +48,11 @@ export async function load({ url, locals, cookies }) {
 		if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
 		if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-		// Fetch contacts and accounts in parallel (accounts needed for quick action prefill)
-		const [contactsResponse, accountsRes] = await Promise.all([
+		// Fetch contacts, accounts, and tags in parallel
+		const [contactsResponse, accountsRes, tagsResponse] = await Promise.all([
 			apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
-			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({}))
+			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+			apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
 		]);
 
 		// Handle Django response format
@@ -158,6 +159,13 @@ export async function load({ url, locals, cookies }) {
 		}
 		const accounts = accountsList.map((a) => ({ id: a.id, name: a.name }));
 
+		// Transform tags for filter
+		const allTags = (tagsResponse.tags || []).map((/** @type {any} */ tag) => ({
+			id: tag.id,
+			name: tag.name,
+			color: tag.color || 'blue'
+		}));
+
 		return {
 			contacts: transformedContacts,
 			pagination: {
@@ -169,7 +177,7 @@ export async function load({ url, locals, cookies }) {
 			filters,
 			// Dropdown options are now lazy-loaded on client when drawer opens
 			owners: [],
-			allTags: [],
+			allTags,
 			// Accounts for quick action prefill lookup
 			accounts
 		};

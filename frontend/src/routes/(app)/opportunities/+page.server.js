@@ -62,13 +62,19 @@ export async function load({ locals, cookies, url }) {
 
 		const queryString = queryParams.toString();
 
-		// Fetch opportunities and teams/users from Django API in parallel
-		const [response, teamsUsersResponse] = await Promise.all([
+		// Fetch opportunities, teams/users, and products from Django API in parallel
+		const [response, teamsUsersResponse, productsResponse] = await Promise.all([
 			apiRequest(`/opportunities/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
 			apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch((err) => {
 				console.error('Failed to fetch teams/users:', err);
 				return { teams: [], profiles: [] };
-			})
+			}),
+			apiRequest('/invoices/products/?is_active=true&limit=200', {}, { cookies, org }).catch(
+				(err) => {
+					console.error('Failed to fetch products:', err);
+					return { results: [] };
+				}
+			)
 		]);
 
 		// Handle Django response structure
@@ -96,7 +102,8 @@ export async function load({ locals, cookies, url }) {
 		const tags = (response.tags || []).map((tag) => ({
 			id: tag.id,
 			name: tag.name,
-			slug: tag.slug
+			slug: tag.slug,
+			color: tag.color || 'blue'
 		}));
 
 		// Extract users (profiles) from teams/users response
@@ -110,6 +117,16 @@ export async function load({ locals, cookies, url }) {
 		const teams = (teamsUsersResponse.teams || []).map((team) => ({
 			id: team.id,
 			name: team.name
+		}));
+
+		// Extract products from products response
+		const products = (productsResponse.results || []).map((product) => ({
+			id: product.id,
+			name: product.name,
+			sku: product.sku,
+			price: product.price ? Number(product.price) : 0,
+			currency: product.currency,
+			category: product.category
 		}));
 
 		// Transform Django opportunities with all fields
@@ -174,6 +191,25 @@ export async function load({ locals, cookies, url }) {
 					}
 				: null,
 
+			// Line Items / Products
+			lineItems: (opp.line_items || []).map((item) => ({
+				id: item.id,
+				productId: item.product?.id || null,
+				productName: item.product?.name || item.name,
+				name: item.name,
+				description: item.description,
+				quantity: item.quantity ? Number(item.quantity) : 1,
+				unitPrice: item.unit_price ? Number(item.unit_price) : 0,
+				discountType: item.discount_type,
+				discountValue: item.discount_value ? Number(item.discount_value) : 0,
+				discountAmount: item.discount_amount ? Number(item.discount_amount) : 0,
+				subtotal: item.subtotal ? Number(item.subtotal) : 0,
+				total: item.total ? Number(item.total) : 0,
+				order: item.order || 0
+			})),
+			lineItemsTotal: opp.line_items_total ? Number(opp.line_items_total) : 0,
+			amountSource: opp.amount_source || 'MANUAL',
+
 			// Counts
 			_count: {
 				tasks: opp.task_count || 0,
@@ -210,7 +246,8 @@ export async function load({ locals, cookies, url }) {
 				contacts,
 				tags,
 				users,
-				teams
+				teams,
+				products
 			},
 			filters
 		};
@@ -402,6 +439,165 @@ export const actions = {
 		} catch (err) {
 			console.error('Error deleting opportunity:', err);
 			return fail(500, { message: 'Failed to delete opportunity' });
+		}
+	},
+
+	// ==========================================================================
+	// LINE ITEM ACTIONS
+	// ==========================================================================
+
+	addLineItem: async ({ request, locals, cookies }) => {
+		try {
+			const formData = await request.formData();
+			const opportunityId = formData.get('opportunityId')?.toString();
+			const org = locals.org;
+
+			if (!opportunityId || !org) {
+				return fail(400, { message: 'Missing required data' });
+			}
+
+			const lineItemData = {
+				product_id: formData.get('productId')?.toString() || null,
+				name: formData.get('name')?.toString() || '',
+				description: formData.get('description')?.toString() || '',
+				quantity: formData.get('quantity') ? Number(formData.get('quantity')) : 1,
+				unit_price: formData.get('unitPrice') ? Number(formData.get('unitPrice')) : 0,
+				discount_type: formData.get('discountType')?.toString() || '',
+				discount_value: formData.get('discountValue') ? Number(formData.get('discountValue')) : 0,
+				order: formData.get('order') ? Number(formData.get('order')) : 0
+			};
+
+			const response = await apiRequest(
+				`/opportunities/${opportunityId}/line-items/`,
+				{ method: 'POST', body: lineItemData },
+				{ cookies, org }
+			);
+
+			return {
+				success: true,
+				message: 'Product added',
+				lineItem: response.line_item,
+				opportunityAmount: response.opportunity_amount
+			};
+		} catch (err) {
+			console.error('Error adding line item:', err);
+			return fail(500, { message: `Failed to add product: ${err.message}` });
+		}
+	},
+
+	updateLineItem: async ({ request, locals, cookies }) => {
+		try {
+			const formData = await request.formData();
+			const opportunityId = formData.get('opportunityId')?.toString();
+			const lineItemId = formData.get('lineItemId')?.toString();
+			const org = locals.org;
+
+			if (!opportunityId || !lineItemId || !org) {
+				return fail(400, { message: 'Missing required data' });
+			}
+
+			/** @type {Record<string, any>} */
+			const lineItemData = {};
+
+			if (formData.has('productId')) {
+				lineItemData.product_id = formData.get('productId')?.toString() || null;
+			}
+			if (formData.has('name')) {
+				lineItemData.name = formData.get('name')?.toString() || '';
+			}
+			if (formData.has('description')) {
+				lineItemData.description = formData.get('description')?.toString() || '';
+			}
+			if (formData.has('quantity')) {
+				lineItemData.quantity = Number(formData.get('quantity')) || 1;
+			}
+			if (formData.has('unitPrice')) {
+				lineItemData.unit_price = Number(formData.get('unitPrice')) || 0;
+			}
+			if (formData.has('discountType')) {
+				lineItemData.discount_type = formData.get('discountType')?.toString() || '';
+			}
+			if (formData.has('discountValue')) {
+				lineItemData.discount_value = Number(formData.get('discountValue')) || 0;
+			}
+			if (formData.has('order')) {
+				lineItemData.order = Number(formData.get('order')) || 0;
+			}
+
+			const response = await apiRequest(
+				`/opportunities/${opportunityId}/line-items/${lineItemId}/`,
+				{ method: 'PUT', body: lineItemData },
+				{ cookies, org }
+			);
+
+			return {
+				success: true,
+				message: 'Product updated',
+				lineItem: response.line_item,
+				opportunityAmount: response.opportunity_amount
+			};
+		} catch (err) {
+			console.error('Error updating line item:', err);
+			return fail(500, { message: `Failed to update product: ${err.message}` });
+		}
+	},
+
+	deleteLineItem: async ({ request, locals, cookies }) => {
+		try {
+			const formData = await request.formData();
+			const opportunityId = formData.get('opportunityId')?.toString();
+			const lineItemId = formData.get('lineItemId')?.toString();
+			const org = locals.org;
+
+			if (!opportunityId || !lineItemId || !org) {
+				return fail(400, { message: 'Missing required data' });
+			}
+
+			const response = await apiRequest(
+				`/opportunities/${opportunityId}/line-items/${lineItemId}/`,
+				{ method: 'DELETE' },
+				{ cookies, org }
+			);
+
+			return {
+				success: true,
+				message: 'Product removed',
+				opportunityAmount: response.opportunity_amount
+			};
+		} catch (err) {
+			console.error('Error deleting line item:', err);
+			return fail(500, { message: `Failed to remove product: ${err.message}` });
+		}
+	},
+
+	// ==========================================================================
+	// CREATE INVOICE FROM OPPORTUNITY
+	// ==========================================================================
+
+	createInvoice: async ({ request, locals, cookies }) => {
+		try {
+			const formData = await request.formData();
+			const opportunityId = formData.get('opportunityId')?.toString();
+			const org = locals.org;
+
+			if (!opportunityId || !org) {
+				return fail(400, { message: 'Missing required data' });
+			}
+
+			const response = await apiRequest(
+				`/invoices/from-opportunity/${opportunityId}/`,
+				{ method: 'POST' },
+				{ cookies, org }
+			);
+
+			return {
+				success: true,
+				message: 'Invoice created successfully',
+				invoiceId: response.invoice?.id
+			};
+		} catch (err) {
+			console.error('Error creating invoice from opportunity:', err);
+			return fail(500, { message: `Failed to create invoice: ${err.message}` });
 		}
 	}
 };

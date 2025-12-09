@@ -34,7 +34,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { CrmTable } from '$lib/components/ui/crm-table';
-	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter } from '$lib/components/ui/filter';
+	import { FilterBar, SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
 	import { Pagination } from '$lib/components/ui/pagination';
 	import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
 	import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
@@ -249,7 +249,9 @@
 	const contactOptions = $derived(
 		(data.contacts || []).map((c) => ({ value: c.id, label: c.name }))
 	);
-	const tagOptions = $derived((data.tags || []).map((t) => ({ value: t.id, label: t.name })));
+	const tagOptions = $derived(
+		(data.tags || []).map((/** @type {any} */ t) => ({ id: t.id, name: t.name, color: t.color || 'blue' }))
+	);
 
 	// Drawer columns with dynamic M2M options
 	const drawerColumns = $derived([
@@ -866,6 +868,11 @@
 			endDate={filters.created_at_lte}
 			onchange={(start, end) =>
 				updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+		/>
+		<TagFilter
+			tags={tagOptions}
+			value={filters.tags}
+			onchange={(ids) => updateFilters({ ...filters, tags: ids })}
 		/>
 	</FilterBar>
 	<!-- Accounts Table -->

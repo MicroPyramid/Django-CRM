@@ -1,6 +1,8 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -10,6 +12,19 @@ from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import CURRENCY_CODES, OPPORTUNITY_TYPES, SOURCES, STAGES
 from contacts.models import Contact
+
+
+# Amount source choices for Opportunity
+AMOUNT_SOURCE_CHOICES = (
+    ("MANUAL", "Manual"),
+    ("CALCULATED", "Calculated from Products"),
+)
+
+# Discount type choices
+DISCOUNT_TYPES = (
+    ("PERCENTAGE", "Percentage (%)"),
+    ("FIXED", "Fixed Amount"),
+)
 
 
 class Opportunity(AssignableMixin, BaseModel):
@@ -40,6 +55,12 @@ class Opportunity(AssignableMixin, BaseModel):
     )
     amount = models.DecimalField(
         _("Amount"), decimal_places=2, max_digits=12, blank=True, null=True
+    )
+    amount_source = models.CharField(
+        _("Amount Source"),
+        max_length=20,
+        choices=AMOUNT_SOURCE_CHOICES,
+        default="MANUAL",
     )
     probability = models.IntegerField(
         _("Probability (%)"), default=0, blank=True, null=True
@@ -128,6 +149,25 @@ class Opportunity(AssignableMixin, BaseModel):
         if errors:
             raise ValidationError(errors)
 
+    def recalculate_amount(self):
+        """
+        Recalculate opportunity amount from line items.
+        Only updates if amount_source is CALCULATED or if line items exist.
+        Returns True if amount was updated, False otherwise.
+        """
+        line_items = self.line_items.all()
+        if line_items.exists():
+            total = line_items.aggregate(total=Sum("total"))["total"] or Decimal("0")
+            self.amount = total
+            self.amount_source = "CALCULATED"
+            return True
+        elif self.amount_source == "CALCULATED":
+            # No line items but was calculated - reset to manual
+            self.amount_source = "MANUAL"
+            self.amount = Decimal("0")
+            return True
+        return False
+
     def save(self, *args, **kwargs):
         """Auto-set probability based on stage if not manually set."""
         from .workflow import STAGE_PROBABILITIES
@@ -137,3 +177,120 @@ class Opportunity(AssignableMixin, BaseModel):
             self.probability = STAGE_PROBABILITIES.get(self.stage, 0)
 
         super().save(*args, **kwargs)
+
+
+class OpportunityLineItem(BaseModel):
+    """
+    Line item for an opportunity - represents a product or service being quoted.
+    Similar to InvoiceLineItem but for the pre-sale stage.
+    """
+
+    opportunity = models.ForeignKey(
+        Opportunity,
+        on_delete=models.CASCADE,
+        related_name="line_items",
+    )
+    product = models.ForeignKey(
+        "invoices.Product",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="opportunity_line_items",
+    )
+
+    # Item details (can override product info or be custom)
+    name = models.CharField(_("Item Name"), max_length=255, blank=True)
+    description = models.CharField(_("Description"), max_length=500, blank=True)
+
+    # Quantity and pricing
+    quantity = models.DecimalField(
+        _("Quantity"), max_digits=10, decimal_places=2, default=1
+    )
+    unit_price = models.DecimalField(
+        _("Unit Price"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Per-item discount
+    discount_type = models.CharField(
+        _("Discount Type"), max_length=20, choices=DISCOUNT_TYPES, blank=True
+    )
+    discount_value = models.DecimalField(
+        _("Discount Value"), max_digits=12, decimal_places=2, default=0
+    )
+    discount_amount = models.DecimalField(
+        _("Discount Amount"), max_digits=12, decimal_places=2, default=0
+    )
+
+    # Computed totals
+    subtotal = models.DecimalField(
+        _("Subtotal"), max_digits=12, decimal_places=2, default=0
+    )
+    total = models.DecimalField(_("Total"), max_digits=12, decimal_places=2, default=0)
+
+    # Display order
+    order = models.PositiveIntegerField(_("Order"), default=0)
+
+    # Organization (for RLS)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="opportunity_line_items",
+    )
+
+    class Meta:
+        verbose_name = "Opportunity Line Item"
+        verbose_name_plural = "Opportunity Line Items"
+        db_table = "opportunity_line_item"
+        ordering = ["order", "created_at"]
+        indexes = [
+            models.Index(fields=["opportunity"]),
+            models.Index(fields=["org"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name or self.product.name if self.product else 'Item'} x {self.quantity}"
+
+    def save(self, *args, **kwargs):
+        """Calculate totals before saving."""
+        # Get name from product if not set
+        if not self.name and self.product:
+            self.name = self.product.name
+
+        # Get unit price from product if not set and product exists
+        if self.unit_price == 0 and self.product:
+            self.unit_price = self.product.price or Decimal("0")
+
+        # Calculate subtotal
+        self.subtotal = self.quantity * self.unit_price
+
+        # Calculate discount
+        if self.discount_type == "PERCENTAGE":
+            self.discount_amount = self.subtotal * (
+                self.discount_value / Decimal("100")
+            )
+        else:
+            self.discount_amount = self.discount_value
+
+        # Calculate total (no tax at opportunity stage)
+        self.total = self.subtotal - self.discount_amount
+
+        # Ensure org is set from opportunity if not provided
+        if not self.org_id and self.opportunity_id:
+            self.org_id = self.opportunity.org_id
+
+        super().save(*args, **kwargs)
+
+        # Recalculate opportunity amount after saving line item
+        if self.opportunity:
+            self.opportunity.recalculate_amount()
+            self.opportunity.save(update_fields=["amount", "amount_source"])
+
+    def delete(self, *args, **kwargs):
+        """Recalculate opportunity amount after deleting line item."""
+        opportunity = self.opportunity
+        super().delete(*args, **kwargs)
+
+        # Recalculate opportunity amount after deletion
+        if opportunity:
+            opportunity.recalculate_amount()
+            opportunity.save(update_fields=["amount", "amount_source"])
