@@ -197,6 +197,106 @@ class BoardTask(BaseModel):
 
 
 
+class TaskPipeline(BaseModel):
+    """
+    Custom pipeline for organizing tasks into stages (Kanban columns).
+    Each organization can have multiple pipelines (e.g., Development, Support, Marketing).
+    """
+
+    name = models.CharField(_("Pipeline Name"), max_length=255)
+    description = models.TextField(_("Description"), blank=True, null=True)
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="task_pipelines"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        help_text="If true, new tasks without explicit pipeline go here",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Task Pipeline"
+        verbose_name_plural = "Task Pipelines"
+        db_table = "task_pipeline"
+        ordering = ("-is_default", "name")
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+        ]
+        constraints = [
+            # Only one default pipeline per org
+            models.UniqueConstraint(
+                fields=["org"],
+                condition=models.Q(is_default=True),
+                name="unique_default_task_pipeline_per_org",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.org.name})"
+
+
+class TaskStage(BaseModel):
+    """
+    Stage within a Task Pipeline (Kanban column).
+    """
+
+    STAGE_TYPE_CHOICES = [
+        ("open", "Open"),  # New tasks
+        ("in_progress", "In Progress"),  # Active work
+        ("completed", "Completed"),  # Done
+    ]
+
+    pipeline = models.ForeignKey(
+        TaskPipeline, on_delete=models.CASCADE, related_name="stages"
+    )
+    name = models.CharField(_("Stage Name"), max_length=100)
+    order = models.PositiveIntegerField(default=0)
+    color = models.CharField(max_length=7, default="#6B7280")  # Hex color
+
+    # Business logic fields
+    stage_type = models.CharField(
+        max_length=20, choices=STAGE_TYPE_CHOICES, default="open"
+    )
+    maps_to_status = models.CharField(
+        _("Maps to Status"),
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="When task enters this stage, also update Task.status",
+    )
+
+    # Kanban features
+    wip_limit = models.PositiveIntegerField(
+        _("WIP Limit"),
+        null=True,
+        blank=True,
+        help_text="Maximum tasks allowed in this stage (null = unlimited)",
+    )
+
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="task_stages"
+    )
+
+    class Meta:
+        verbose_name = "Task Stage"
+        verbose_name_plural = "Task Stages"
+        db_table = "task_stage"
+        ordering = ("order",)
+        unique_together = ("pipeline", "name")
+        indexes = [
+            models.Index(fields=["org", "order"]),
+            models.Index(fields=["pipeline", "order"]),
+        ]
+
+    def __str__(self):
+        return f"{self.pipeline.name} - {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.org_id and self.pipeline_id:
+            self.org_id = self.pipeline.org_id
+        super().save(*args, **kwargs)
+
+
 class Task(AssignableMixin, BaseModel):
 
     STATUS_CHOICES = (
@@ -248,6 +348,23 @@ class Task(AssignableMixin, BaseModel):
     tags = models.ManyToManyField(Tags, related_name="task_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")
 
+    # Kanban fields
+    kanban_order = models.DecimalField(
+        _("Kanban Order"),
+        max_digits=15,
+        decimal_places=6,
+        default=0,
+        help_text="Order within the kanban column for drag-drop positioning",
+    )
+    stage = models.ForeignKey(
+        TaskStage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasks",
+        help_text="Custom pipeline stage (if using pipeline mode)",
+    )
+
     class Meta:
         verbose_name = "Task"
         verbose_name_plural = "Tasks"
@@ -257,6 +374,8 @@ class Task(AssignableMixin, BaseModel):
             models.Index(fields=["status"]),
             models.Index(fields=["due_date"]),
             models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["status", "kanban_order"]),
+            models.Index(fields=["stage", "kanban_order"]),
         ]
 
     def __str__(self):

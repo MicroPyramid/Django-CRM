@@ -23,8 +23,8 @@
 	 * @property {Array<{id: string, user_details?: {email?: string}, email?: string}>} [assignedTo]
 	 */
 
-	/** @type {{ lead: Lead, onclick?: () => void, ondragstart?: (e: DragEvent) => void, ondragend?: () => void }} */
-	let { lead, onclick, ondragstart, ondragend } = $props();
+	/** @type {{ item: Lead, onclick?: () => void, ondragstart?: (e: DragEvent) => void, ondragend?: () => void }} */
+	let { item, onclick, ondragstart, ondragend } = $props();
 
 	// Rating color mapping
 	const ratingColors = {
@@ -34,14 +34,14 @@
 	};
 
 	// Computed values
-	const title = $derived(lead.title || lead.full_name || lead.fullName || 'Untitled Lead');
-	const company = $derived(lead.company_name || lead.company || '');
-	const amount = $derived(lead.opportunity_amount || lead.opportunityAmount);
-	const currency = $derived(lead.currency || 'USD');
-	const followUp = $derived(lead.next_follow_up || lead.nextFollowUp);
-	const isOverdue = $derived(lead.is_follow_up_overdue || lead.isFollowUpOverdue);
-	const rating = $derived(lead.rating);
-	const assignees = $derived(lead.assigned_to || lead.assignedTo || []);
+	const title = $derived(item.title || item.full_name || item.fullName || 'Untitled Lead');
+	const company = $derived(item.company_name || item.company || '');
+	const amount = $derived(item.opportunity_amount || item.opportunityAmount);
+	const currency = $derived(item.currency || 'USD');
+	const followUp = $derived(item.next_follow_up || item.nextFollowUp);
+	const isOverdue = $derived(item.is_follow_up_overdue || item.isFollowUpOverdue);
+	const rating = $derived(item.rating);
+	const assignees = $derived(item.assigned_to || item.assignedTo || []);
 
 	/**
 	 * Format currency amount

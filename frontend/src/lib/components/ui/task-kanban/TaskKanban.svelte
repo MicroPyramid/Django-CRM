@@ -1,6 +1,6 @@
 <script>
 	import { KanbanBoard } from '$lib/components/ui/kanban';
-	import LeadCard from './LeadCard.svelte';
+	import TaskCard from './TaskCard.svelte';
 
 	/**
 	 * @typedef {Object} Column
@@ -11,8 +11,8 @@
 	 * @property {string} stage_type
 	 * @property {boolean} is_status_column
 	 * @property {number|null} wip_limit
-	 * @property {number} lead_count
-	 * @property {Array<any>} leads
+	 * @property {number} task_count
+	 * @property {Array<any>} tasks
 	 */
 
 	/**
@@ -20,15 +20,15 @@
 	 * @property {string} mode
 	 * @property {Object|null} pipeline
 	 * @property {Column[]} columns
-	 * @property {number} total_leads
+	 * @property {number} total_tasks
 	 */
 
 	/**
 	 * @type {{
 	 *   data: KanbanData | null,
 	 *   loading?: boolean,
-	 *   onStatusChange: (leadId: string, newStatus: string, columnId: string) => Promise<void>,
-	 *   onCardClick: (lead: any) => void
+	 *   onStatusChange: (taskId: string, newStatus: string, columnId: string) => Promise<void>,
+	 *   onCardClick: (task: any) => void
 	 * }}
 	 */
 	let { data = null, loading = false, onStatusChange, onCardClick } = $props();
@@ -42,10 +42,10 @@
 			pipeline: data.pipeline,
 			columns: data.columns.map((col) => ({
 				...col,
-				items: col.leads || [],
-				item_count: col.lead_count || col.leads?.length || 0
+				items: col.tasks || [],
+				item_count: col.task_count || col.tasks?.length || 0
 			})),
-			total_items: data.total_leads
+			total_items: data.total_tasks
 		};
 	});
 </script>
@@ -53,10 +53,10 @@
 <KanbanBoard
 	data={transformedData()}
 	{loading}
-	itemName="lead"
-	itemNamePlural="leads"
+	itemName="task"
+	itemNamePlural="tasks"
 	onItemMove={onStatusChange}
 	{onCardClick}
-	CardComponent={LeadCard}
+	CardComponent={TaskCard}
 	emptyMessage="No kanban data available"
 />

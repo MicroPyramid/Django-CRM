@@ -22,6 +22,9 @@ export async function load({ locals, cookies, url }) {
 		throw error(401, 'Organization context required');
 	}
 
+	// Parse view mode from URL
+	const viewMode = url.searchParams.get('view') || 'list';
+
 	// Parse pagination params from URL
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -55,9 +58,21 @@ export async function load({ locals, cookies, url }) {
 		if (filters.due_date_gte) queryParams.append('due_date__gte', filters.due_date_gte);
 		if (filters.due_date_lte) queryParams.append('due_date__lte', filters.due_date_lte);
 
-		// Fetch tasks and dropdown options in parallel
-		const [tasksResponse, usersRes, accountsRes, contactsRes, teamsRes, opportunitiesRes, casesRes, leadsRes, tagsRes] = await Promise.all([
+		// Build kanban query params (similar filters)
+		const kanbanQueryParams = new URLSearchParams();
+		if (filters.search) kanbanQueryParams.append('search', filters.search);
+		if (filters.priority) kanbanQueryParams.append('priority', filters.priority);
+		filters.assigned_to.forEach((id) => kanbanQueryParams.append('assigned_to', id));
+		if (filters.due_date_gte) kanbanQueryParams.append('due_date__gte', filters.due_date_gte);
+		if (filters.due_date_lte) kanbanQueryParams.append('due_date__lte', filters.due_date_lte);
+
+		// Fetch tasks (or kanban data) and dropdown options in parallel
+		const kanbanQueryString = kanbanQueryParams.toString();
+		const [tasksResponse, kanbanResponse, usersRes, accountsRes, contactsRes, teamsRes, opportunitiesRes, casesRes, leadsRes, tagsRes] = await Promise.all([
 			apiRequest(`/tasks/?${queryParams.toString()}`, {}, { cookies, org }),
+			viewMode === 'kanban'
+				? apiRequest(`/tasks/kanban/${kanbanQueryString ? '?' + kanbanQueryString : ''}`, {}, { cookies, org })
+				: Promise.resolve(null),
 			apiRequest('/users/', {}, { cookies, org }).catch(() => ({})),
 			apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
 			apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
@@ -209,6 +224,8 @@ export async function load({ locals, cookies, url }) {
 				totalPages: Math.ceil(total / limit) || 1
 			},
 			filters,
+			viewMode,
+			kanbanData: kanbanResponse,
 			// Dropdown options for drawer form
 			formOptions: {
 				users,
@@ -429,6 +446,48 @@ export const actions = {
 		} catch (err) {
 			console.error('Error deleting task:', err);
 			return { success: false, error: 'Failed to delete task' };
+		}
+	},
+
+	moveTask: async ({ request, locals, cookies }) => {
+		const org = locals.org;
+
+		try {
+			const form = await request.formData();
+			const taskId = form.get('taskId')?.toString();
+			const status = form.get('status')?.toString();
+			const stageId = form.get('stageId')?.toString() || null;
+			const aboveTaskId = form.get('aboveTaskId')?.toString() || null;
+			const belowTaskId = form.get('belowTaskId')?.toString() || null;
+
+			if (!taskId) {
+				return { success: false, error: 'Task ID is required' };
+			}
+
+			if (!status && !stageId) {
+				return { success: false, error: 'Either status or stageId is required' };
+			}
+
+			/** @type {Record<string, string>} */
+			const moveData = {};
+			if (status) moveData.status = status;
+			if (stageId) moveData.stage_id = stageId;
+			if (aboveTaskId) moveData.above_task_id = aboveTaskId;
+			if (belowTaskId) moveData.below_task_id = belowTaskId;
+
+			await apiRequest(
+				`/tasks/${taskId}/move/`,
+				{
+					method: 'PATCH',
+					body: moveData
+				},
+				{ cookies, org }
+			);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error moving task:', err);
+			return { success: false, error: 'Failed to move task' };
 		}
 	}
 };

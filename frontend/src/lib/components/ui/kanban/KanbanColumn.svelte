@@ -1,31 +1,35 @@
 <script>
-	import LeadCard from './LeadCard.svelte';
-
 	/**
 	 * @typedef {Object} Column
 	 * @property {string} id
 	 * @property {string} name
 	 * @property {string} color
-	 * @property {number} lead_count
+	 * @property {number} [item_count]
+	 * @property {number} [lead_count] - Legacy support for leads
+	 * @property {number} [task_count] - Legacy support for tasks
 	 * @property {number|null} [wip_limit]
-	 * @property {Array<any>} leads
+	 * @property {Array<any>} items
 	 */
 
 	/**
 	 * @type {{
 	 *   column: Column,
+	 *   itemName?: string,
 	 *   isDragOver: boolean,
+	 *   CardComponent?: any,
 	 *   onDragOver: (e: DragEvent) => void,
 	 *   onDragLeave: () => void,
 	 *   onDrop: (e: DragEvent) => void,
-	 *   onCardClick: (lead: any) => void,
-	 *   onCardDragStart: (e: DragEvent, lead: any) => void,
+	 *   onCardClick: (item: any) => void,
+	 *   onCardDragStart: (e: DragEvent, item: any) => void,
 	 *   onCardDragEnd: () => void
 	 * }}
 	 */
 	let {
 		column,
+		itemName = 'item',
 		isDragOver,
+		CardComponent = null,
 		onDragOver,
 		onDragLeave,
 		onDrop,
@@ -36,7 +40,14 @@
 
 	// Check if column is at WIP limit
 	const isAtWipLimit = $derived(
-		column.wip_limit !== null && column.wip_limit !== undefined && column.lead_count >= column.wip_limit
+		column.wip_limit !== null &&
+			column.wip_limit !== undefined &&
+			column.item_count >= column.wip_limit
+	);
+
+	// Get item count (supports item_count, lead_count, task_count)
+	const itemCount = $derived(
+		column.item_count ?? column.lead_count ?? column.task_count ?? column.items?.length ?? 0
 	);
 
 	/**
@@ -58,7 +69,7 @@
 	ondragleave={onDragLeave}
 	ondrop={onDrop}
 	role="region"
-	aria-label="{column.name} column with {column.lead_count} leads"
+	aria-label="{column.name} column with {itemCount} {itemCount !== 1 ? 'items' : itemName}"
 >
 	<!-- Column Header -->
 	<div
@@ -72,7 +83,7 @@
 			<span
 				class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300"
 			>
-				{column.lead_count}
+				{itemCount}
 			</span>
 			{#if column.wip_limit}
 				<span
@@ -88,20 +99,39 @@
 
 	<!-- Column Content -->
 	<div class="flex-1 space-y-2 overflow-y-auto p-2" style="max-height: calc(100vh - 280px)">
-		{#each column.leads as lead (lead.id)}
-			<LeadCard
-				{lead}
-				onclick={() => onCardClick(lead)}
-				ondragstart={(e) => onCardDragStart(e, lead)}
-				ondragend={onCardDragEnd}
-			/>
+		{#each column.items as item (item.id)}
+			{#if CardComponent}
+				<svelte:component
+					this={CardComponent}
+					{item}
+					onclick={() => onCardClick(item)}
+					ondragstart={(e) => onCardDragStart(e, item)}
+					ondragend={onCardDragEnd}
+				/>
+			{:else}
+				<!-- Default card rendering -->
+				<div
+					class="cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
+					draggable="true"
+					onclick={() => onCardClick(item)}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onCardClick(item)}
+					ondragstart={(e) => onCardDragStart(e, item)}
+					ondragend={onCardDragEnd}
+					role="button"
+					tabindex="0"
+				>
+					<div class="font-medium text-gray-900 dark:text-gray-100">
+						{item.title || item.name || 'Untitled'}
+					</div>
+				</div>
+			{/if}
 		{/each}
 
-		{#if column.leads.length === 0}
+		{#if column.items.length === 0}
 			<div
 				class="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-400 dark:border-gray-600 dark:text-gray-500"
 			>
-				No leads
+				No {itemName}s
 			</div>
 		{/if}
 	</div>

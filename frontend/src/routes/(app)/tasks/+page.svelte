@@ -27,8 +27,10 @@
 		Tag,
 		Contact,
 		Link2,
-		Filter
+		Filter,
+		Columns
 	} from '@lucide/svelte';
+	import { TaskKanban } from '$lib/components/ui/task-kanban';
 	import { PageHeader } from '$lib/components/layout';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -426,9 +428,19 @@
 	/** @type {string | null} */
 	let selectedTaskId = $state(null);
 
-	// View mode state (list or calendar)
-	/** @type {'list' | 'calendar'} */
+	// View mode state (list, kanban, or calendar) - sync with server data
+	/** @type {'list' | 'kanban' | 'calendar'} */
 	let viewMode = $state('list');
+
+	// Sync viewMode when data changes (e.g., on navigation)
+	$effect(() => {
+		if (data.viewMode) {
+			viewMode = data.viewMode;
+		}
+	});
+
+	// Kanban data from server
+	const kanbanData = $derived(data.kanbanData);
 
 	// Form references for server actions
 	/** @type {HTMLFormElement} */
@@ -441,6 +453,17 @@
 	let completeForm;
 	/** @type {HTMLFormElement} */
 	let reopenForm;
+	/** @type {HTMLFormElement} */
+	let moveTaskForm;
+
+	// Kanban form state for drag-drop
+	let kanbanFormState = $state({
+		taskId: '',
+		status: '',
+		stageId: '',
+		aboveTaskId: '',
+		belowTaskId: ''
+	});
 
 	// Form data state
 	let formState = $state({
@@ -941,6 +964,104 @@
 			createForm.requestSubmit();
 		}
 	}
+
+	/**
+	 * Handle view mode change (sync with URL for kanban data loading)
+	 * @param {'list' | 'kanban' | 'calendar'} mode
+	 */
+	async function updateViewMode(mode) {
+		viewMode = mode;
+		const url = new URL($page.url);
+		if (mode === 'list') {
+			url.searchParams.delete('view');
+		} else {
+			url.searchParams.set('view', mode);
+		}
+		await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+	}
+
+	/**
+	 * Handle kanban status change (drag-drop)
+	 * @param {string} taskId
+	 * @param {string} newStatus
+	 * @param {string} _columnId
+	 */
+	async function handleKanbanStatusChange(taskId, newStatus, _columnId) {
+		kanbanFormState.taskId = taskId;
+		kanbanFormState.status = newStatus;
+		kanbanFormState.stageId = '';
+		kanbanFormState.aboveTaskId = '';
+		kanbanFormState.belowTaskId = '';
+		await tick();
+		moveTaskForm.requestSubmit();
+	}
+
+	/**
+	 * Handle kanban card click (open drawer)
+	 * Kanban tasks have different field names than list tasks, so we handle both cases
+	 * @param {any} task
+	 */
+	function handleKanbanCardClick(task) {
+		// First try to find in localTasks (list data - has full details)
+		const listTask = localTasks.find((t) => t.id === task.id);
+
+		if (listTask) {
+			// Use list data which has full details
+			openTaskSheet(task.id);
+		} else {
+			// Use kanban task data directly (different field names)
+			selectedTaskId = task.id;
+
+			// Extract related entity info from kanban data
+			const relatedEntity = task.related_entity;
+			let accountId = '';
+			let accountName = '';
+			let leadId = '';
+			let leadName = '';
+			let opportunityId = '';
+			let opportunityName = '';
+			let caseId = '';
+			let caseName = '';
+
+			if (relatedEntity) {
+				if (relatedEntity.type === 'account') {
+					accountId = relatedEntity.id;
+					accountName = relatedEntity.name;
+				} else if (relatedEntity.type === 'lead') {
+					leadId = relatedEntity.id;
+					leadName = relatedEntity.name;
+				} else if (relatedEntity.type === 'opportunity') {
+					opportunityId = relatedEntity.id;
+					opportunityName = relatedEntity.name;
+				} else if (relatedEntity.type === 'case') {
+					caseId = relatedEntity.id;
+					caseName = relatedEntity.name;
+				}
+			}
+
+			formState = {
+				taskId: task.id,
+				subject: task.title || '', // kanban uses 'title'
+				description: '', // Not available in kanban card data
+				status: task.status || 'New',
+				priority: task.priority || 'Medium',
+				dueDate: task.due_date ? task.due_date.split('T')[0] : '', // kanban uses 'due_date'
+				accountId,
+				accountName,
+				opportunityId,
+				opportunityName,
+				caseId,
+				caseName,
+				leadId,
+				leadName,
+				assignedTo: (task.assigned_to || []).map((/** @type {any} */ a) => a.id),
+				contacts: [],
+				teams: [],
+				tags: []
+			};
+			sheetOpen = true;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -1012,16 +1133,25 @@
 				<Button
 					variant={viewMode === 'list' ? 'secondary' : 'ghost'}
 					size="sm"
-					onclick={() => (viewMode = 'list')}
+					onclick={() => updateViewMode('list')}
 					class="h-8 px-3"
 				>
 					<List class="mr-1.5 h-4 w-4" />
 					List
 				</Button>
 				<Button
+					variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+					size="sm"
+					onclick={() => updateViewMode('kanban')}
+					class="h-8 px-3"
+				>
+					<Columns class="mr-1.5 h-4 w-4" />
+					Board
+				</Button>
+				<Button
 					variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
 					size="sm"
-					onclick={() => (viewMode = 'calendar')}
+					onclick={() => updateViewMode('calendar')}
 					class="h-8 px-3"
 				>
 					<Calendar class="mr-1.5 h-4 w-4" />
@@ -1137,6 +1267,13 @@
 				</div>
 			{/snippet}
 		</CrmTable>
+	{:else if viewMode === 'kanban'}
+		<TaskKanban
+			data={kanbanData}
+			loading={false}
+			onStatusChange={handleKanbanStatusChange}
+			onCardClick={handleKanbanCardClick}
+		/>
 	{:else}
 		<!-- Calendar View -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -1482,4 +1619,18 @@
 	class="hidden"
 >
 	<input type="hidden" name="taskId" value={formState.taskId} />
+</form>
+
+<form
+	method="POST"
+	action="?/moveTask"
+	bind:this={moveTaskForm}
+	use:enhance={createEnhanceHandler('Task moved successfully', false)}
+	class="hidden"
+>
+	<input type="hidden" name="taskId" value={kanbanFormState.taskId} />
+	<input type="hidden" name="status" value={kanbanFormState.status} />
+	<input type="hidden" name="stageId" value={kanbanFormState.stageId} />
+	<input type="hidden" name="aboveTaskId" value={kanbanFormState.aboveTaskId} />
+	<input type="hidden" name="belowTaskId" value={kanbanFormState.belowTaskId} />
 </form>
