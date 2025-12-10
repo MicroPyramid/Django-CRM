@@ -542,7 +542,11 @@
 
   /* Premium card style */
   .premium-card {
-    @apply glass-card rounded-xl;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
     transition: all var(--duration-normal) var(--ease-out);
   }
 
