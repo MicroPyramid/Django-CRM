@@ -54,6 +54,13 @@ class OrgAwareRefreshToken(RefreshToken):
         """
         token = cls.for_user(user)
 
+        # Add user info to token (avoids extra API calls for display)
+        if user:
+            token["user_email"] = user.email
+            # Build display name from email (User model doesn't have first/last name)
+            token["user_name"] = user.email.split("@")[0] if user.email else ""
+            token["user_profile_pic"] = user.profile_pic or ""
+
         # Add org context to the token payload
         if org:
             org_id = str(org.id) if hasattr(org, "id") else str(org)

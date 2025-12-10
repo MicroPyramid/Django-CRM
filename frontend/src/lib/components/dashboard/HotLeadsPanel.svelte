@@ -1,8 +1,7 @@
 <script>
-  import * as Card from '$lib/components/ui/card/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { Flame, Phone, Mail, ChevronRight, Calendar } from '@lucide/svelte';
+  import { Flame, Phone, Mail, ChevronRight, Calendar, Sparkles } from '@lucide/svelte';
 
   /**
    * @typedef {Object} Lead
@@ -23,10 +22,25 @@
   /** @type {Props} */
   let { leads = [] } = $props();
 
-  const ratingConfig = /** @type {Record<string, { color: string }>} */ ({
-    HOT: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    WARM: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-    COLD: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' }
+  const ratingConfig = /** @type {Record<string, { bg: string, text: string, border: string, iconColor: string }>} */ ({
+    HOT: {
+      bg: 'bg-orange-500/10 dark:bg-orange-500/15',
+      text: 'text-orange-600 dark:text-orange-400',
+      border: 'border-orange-500/30 dark:border-orange-400/20',
+      iconColor: 'text-orange-500 dark:text-orange-400'
+    },
+    WARM: {
+      bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      text: 'text-amber-600 dark:text-amber-400',
+      border: 'border-amber-500/30 dark:border-amber-400/20',
+      iconColor: 'text-amber-500 dark:text-amber-400'
+    },
+    COLD: {
+      bg: 'bg-cyan-500/10 dark:bg-cyan-500/15',
+      text: 'text-cyan-600 dark:text-cyan-400',
+      border: 'border-cyan-500/30 dark:border-cyan-400/20',
+      iconColor: 'text-cyan-500 dark:text-cyan-400'
+    }
   });
 
   /**
@@ -75,73 +89,92 @@
   }
 </script>
 
-<Card.Root class="flex h-full flex-col">
-  <Card.Header class="flex-row items-center justify-between space-y-0 pb-3">
-    <div class="flex items-center gap-2">
-      <Flame class="h-4 w-4 text-red-500" />
-      <Card.Title class="text-foreground text-sm font-medium">Hot Leads</Card.Title>
+<div class="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm dark:bg-card/50">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+    <div class="flex items-center gap-3">
+      <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20">
+        <Flame class="size-4 text-orange-500 dark:text-orange-400" />
+      </div>
+      <h3 class="text-foreground text-sm font-semibold tracking-tight">Hot Leads</h3>
     </div>
-    <Button variant="ghost" size="sm" href="/leads?rating=HOT" class="text-xs">
+    <Button variant="ghost" size="sm" href="/leads?rating=HOT" class="gap-1 text-xs font-medium">
       View all
-      <ChevronRight class="ml-1 h-3 w-3" />
+      <ChevronRight class="size-3.5" />
     </Button>
-  </Card.Header>
-  <Card.Content class="flex-1 overflow-auto p-0">
+  </div>
+
+  <!-- Leads list -->
+  <div class="flex-1 overflow-auto">
     {#if leads.length === 0}
-      <div
-        class="text-muted-foreground flex h-full flex-col items-center justify-center py-8 text-center"
-      >
-        <Flame class="text-muted-foreground/30 mb-2 h-10 w-10" />
-        <p class="text-sm">No hot leads</p>
+      <div class="flex h-full flex-col items-center justify-center py-10 text-center">
+        <div class="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
+          <Sparkles class="text-muted-foreground/50 size-6" />
+        </div>
+        <p class="text-muted-foreground text-sm font-medium">No hot leads</p>
         <p class="text-muted-foreground/70 text-xs">Mark leads as "Hot" to see them here</p>
       </div>
     {:else}
-      <div class="divide-border/50 divide-y">
+      <div class="divide-y divide-border/30">
         {#each leads as lead (lead.id)}
+          {@const config = ratingConfig[lead.rating || 'HOT'] || ratingConfig.HOT}
           <a
-            href="/leads/{lead.id}"
-            class="hover:bg-muted/50 group flex items-center gap-3 px-4 py-2.5 transition-colors"
+            href="/leads?view={lead.id}"
+            class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-muted/30"
           >
+            <!-- Lead info -->
             <div class="min-w-0 flex-1">
-              <p class="text-foreground truncate text-sm font-medium">
+              <p class="text-foreground truncate text-sm font-medium transition-colors group-hover:text-primary">
                 {getLeadName(lead)}
               </p>
-              <p class="text-muted-foreground truncate text-xs">
+              <p class="text-muted-foreground mt-0.5 truncate text-xs">
                 {lead.company || 'No company'}
               </p>
             </div>
+
+            <!-- Rating badge -->
             <Badge
-              class="{ratingConfig[lead.rating || 'HOT']?.color} flex-shrink-0 gap-1 text-[10px]"
+              class="flex-shrink-0 gap-1.5 border text-[10px] font-semibold {config.bg} {config.text} {config.border}"
             >
-              <Flame class="h-3 w-3" />
+              <Flame class="size-3 {config.iconColor}" />
               {lead.rating || 'HOT'}
             </Badge>
+
+            <!-- Follow-up date -->
             {#if lead.next_follow_up}
-              <div class="flex flex-shrink-0 items-center gap-1">
-                <Calendar class="text-muted-foreground h-3 w-3" />
+              <div class="flex flex-shrink-0 items-center gap-1.5">
+                <Calendar class="text-muted-foreground size-3.5" />
                 <span
-                  class="text-xs tabular-nums {isOverdue(lead.next_follow_up)
-                    ? 'font-medium text-red-500'
-                    : 'text-muted-foreground'}"
+                  class="text-xs font-medium tabular-nums
+                    {isOverdue(lead.next_follow_up) ? 'text-rose-500 dark:text-rose-400' : 'text-muted-foreground'}"
                 >
                   {formatFollowUp(lead.next_follow_up)}
                 </span>
               </div>
             {/if}
+
             <!-- Hover actions -->
-            <div
-              class="flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <Button variant="ghost" size="icon" class="h-7 w-7" title="Call">
-                <Phone class="h-3.5 w-3.5" />
+            <div class="flex flex-shrink-0 gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 rounded-lg hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:bg-cyan-500/20 dark:hover:text-cyan-400"
+                title="Call"
+              >
+                <Phone class="size-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" class="h-7 w-7" title="Email">
-                <Mail class="h-3.5 w-3.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 rounded-lg hover:bg-violet-500/10 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
+                title="Email"
+              >
+                <Mail class="size-3.5" />
               </Button>
             </div>
           </a>
         {/each}
       </div>
     {/if}
-  </Card.Content>
-</Card.Root>
+  </div>
+</div>

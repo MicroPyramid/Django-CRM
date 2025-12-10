@@ -1,9 +1,8 @@
 <script>
-  import * as Card from '$lib/components/ui/card/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Progress } from '$lib/components/ui/progress/index.js';
-  import { Target, ChevronRight, Calendar } from '@lucide/svelte';
+  import { Sparkles, ChevronRight, Calendar } from '@lucide/svelte';
   import { formatCurrency } from '$lib/utils/formatting.js';
 
   /**
@@ -27,30 +26,42 @@
   /** @type {Props} */
   let { opportunities = [] } = $props();
 
-  const stageConfig = /** @type {Record<string, { label: string, color: string }>} */ ({
+  const stageConfig = /** @type {Record<string, { label: string, bg: string, text: string, border: string }>} */ ({
     PROSPECTING: {
       label: 'Prospecting',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      bg: 'bg-slate-500/10 dark:bg-slate-500/15',
+      text: 'text-slate-600 dark:text-slate-400',
+      border: 'border-slate-500/30'
     },
     QUALIFICATION: {
       label: 'Qualification',
-      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      bg: 'bg-cyan-500/10 dark:bg-cyan-500/15',
+      text: 'text-cyan-600 dark:text-cyan-400',
+      border: 'border-cyan-500/30'
     },
     PROPOSAL: {
       label: 'Proposal',
-      color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+      bg: 'bg-violet-500/10 dark:bg-violet-500/15',
+      text: 'text-violet-600 dark:text-violet-400',
+      border: 'border-violet-500/30'
     },
     NEGOTIATION: {
       label: 'Negotiation',
-      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      text: 'text-amber-600 dark:text-amber-400',
+      border: 'border-amber-500/30'
     },
     CLOSED_WON: {
       label: 'Won',
-      color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+      text: 'text-emerald-600 dark:text-emerald-400',
+      border: 'border-emerald-500/30'
     },
     CLOSED_LOST: {
       label: 'Lost',
-      color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      bg: 'bg-rose-500/10 dark:bg-rose-500/15',
+      text: 'text-rose-600 dark:text-rose-400',
+      border: 'border-rose-500/30'
     }
   });
 
@@ -86,65 +97,83 @@
   );
 </script>
 
-<Card.Root class="flex h-full flex-col">
-  <Card.Header class="flex-row items-center justify-between space-y-0 pb-3">
-    <div class="flex items-center gap-2">
-      <Target class="h-4 w-4 text-green-500" />
-      <Card.Title class="text-foreground text-sm font-medium">My Opportunities</Card.Title>
+<div class="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm dark:bg-card/50">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+    <div class="flex items-center gap-3">
+      <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20">
+        <Sparkles class="size-4 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <h3 class="text-foreground text-sm font-semibold tracking-tight">My Opportunities</h3>
     </div>
-    <Button variant="ghost" size="sm" href="/opportunities" class="text-xs">
+    <Button variant="ghost" size="sm" href="/opportunities" class="gap-1 text-xs font-medium">
       View all
-      <ChevronRight class="ml-1 h-3 w-3" />
+      <ChevronRight class="size-3.5" />
     </Button>
-  </Card.Header>
-  <Card.Content class="flex-1 overflow-auto p-0">
+  </div>
+
+  <!-- Opportunities list -->
+  <div class="flex-1 overflow-auto">
     {#if openOpportunities.length === 0}
-      <div
-        class="text-muted-foreground flex h-full flex-col items-center justify-center py-8 text-center"
-      >
-        <Target class="text-muted-foreground/30 mb-2 h-10 w-10" />
-        <p class="text-sm">No open opportunities</p>
+      <div class="flex h-full flex-col items-center justify-center py-10 text-center">
+        <div class="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
+          <Sparkles class="text-muted-foreground/50 size-6" />
+        </div>
+        <p class="text-muted-foreground text-sm font-medium">No open opportunities</p>
+        <p class="text-muted-foreground/70 text-xs">Create one to start tracking</p>
       </div>
     {:else}
-      <div class="divide-border/50 divide-y">
+      <div class="divide-y divide-border/30">
         {#each openOpportunities.slice(0, 5) as opp (opp.id)}
           {@const daysUntilClose = getDaysUntilClose(opp.closed_on)}
+          {@const config = stageConfig[opp.stage] || stageConfig.PROSPECTING}
           <a
-            href="/opportunities/{opp.id}"
-            class="hover:bg-muted/50 group block px-4 py-3 transition-colors"
+            href="/opportunities?view={opp.id}"
+            class="group block px-5 py-3.5 transition-all duration-200 hover:bg-muted/30"
           >
-            <div class="mb-2 flex items-start justify-between gap-2">
+            <!-- Top row: Name and Amount -->
+            <div class="mb-2.5 flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <p class="text-foreground truncate text-sm font-medium">
+                <p class="text-foreground truncate text-sm font-medium transition-colors group-hover:text-primary">
                   {opp.name}
                 </p>
-                <p class="text-muted-foreground truncate text-xs">
+                <p class="text-muted-foreground mt-0.5 truncate text-xs">
                   {opp.account?.name || 'No account'}
                 </p>
               </div>
-              <span class="text-foreground flex-shrink-0 text-sm font-semibold tabular-nums">
+              <span class="text-foreground flex-shrink-0 text-base font-bold tabular-nums tracking-tight">
                 {formatCurrency(opp.amount, opp.currency || 'USD')}
               </span>
             </div>
+
+            <!-- Bottom row: Stage, Progress, Close Date -->
             <div class="flex items-center gap-3">
-              <Badge class="{stageConfig[opp.stage]?.color} text-[10px]">
-                {stageConfig[opp.stage]?.label || opp.stage}
+              <!-- Stage badge -->
+              <Badge
+                class="flex-shrink-0 border text-[10px] font-semibold {config.bg} {config.text} {config.border}"
+              >
+                {config.label}
               </Badge>
+
+              <!-- Probability progress -->
               <div class="flex flex-1 items-center gap-2">
                 <Progress value={opp.probability || 0} class="h-1.5 flex-1" />
-                <span class="text-muted-foreground w-8 text-right text-xs tabular-nums">
+                <span class="text-muted-foreground w-8 text-right text-xs font-medium tabular-nums">
                   {opp.probability || 0}%
                 </span>
               </div>
+
+              <!-- Close date -->
               {#if daysUntilClose !== null}
-                <div class="flex items-center gap-1">
-                  <Calendar class="text-muted-foreground h-3 w-3" />
+                <div class="flex flex-shrink-0 items-center gap-1.5">
+                  <Calendar class="text-muted-foreground size-3.5" />
                   <span
-                    class="text-xs tabular-nums {daysUntilClose < 0
-                      ? 'font-medium text-red-500'
-                      : daysUntilClose <= 7
-                        ? 'text-orange-500'
-                        : 'text-muted-foreground'}"
+                    class="text-xs font-medium tabular-nums
+                      {daysUntilClose < 0
+                        ? 'text-rose-500 dark:text-rose-400'
+                        : daysUntilClose <= 7
+                          ? 'text-amber-500 dark:text-amber-400'
+                          : 'text-muted-foreground'}"
                   >
                     {formatDaysUntilClose(daysUntilClose)}
                   </span>
@@ -155,5 +184,5 @@
         {/each}
       </div>
     {/if}
-  </Card.Content>
-</Card.Root>
+  </div>
+</div>

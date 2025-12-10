@@ -1,5 +1,4 @@
 <script>
-  import * as Card from '$lib/components/ui/card/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import {
     Activity,
@@ -9,7 +8,8 @@
     Eye,
     MessageSquare,
     UserPlus,
-    ChevronRight
+    ChevronRight,
+    Clock
   } from '@lucide/svelte';
 
   /**
@@ -35,23 +35,44 @@
 
   let showAll = $state(false);
 
-  const actionIcons = /** @type {Record<string, typeof Activity>} */ ({
-    CREATE: Plus,
-    UPDATE: Pencil,
-    DELETE: Trash2,
-    VIEW: Eye,
-    COMMENT: MessageSquare,
-    ASSIGN: UserPlus
+  const actionConfig = /** @type {Record<string, { icon: typeof Activity, bg: string, text: string }>} */ ({
+    CREATE: {
+      icon: Plus,
+      bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+      text: 'text-emerald-600 dark:text-emerald-400'
+    },
+    UPDATE: {
+      icon: Pencil,
+      bg: 'bg-cyan-500/10 dark:bg-cyan-500/20',
+      text: 'text-cyan-600 dark:text-cyan-400'
+    },
+    DELETE: {
+      icon: Trash2,
+      bg: 'bg-rose-500/10 dark:bg-rose-500/20',
+      text: 'text-rose-600 dark:text-rose-400'
+    },
+    VIEW: {
+      icon: Eye,
+      bg: 'bg-slate-500/10 dark:bg-slate-500/20',
+      text: 'text-slate-600 dark:text-slate-400'
+    },
+    COMMENT: {
+      icon: MessageSquare,
+      bg: 'bg-violet-500/10 dark:bg-violet-500/20',
+      text: 'text-violet-600 dark:text-violet-400'
+    },
+    ASSIGN: {
+      icon: UserPlus,
+      bg: 'bg-amber-500/10 dark:bg-amber-500/20',
+      text: 'text-amber-600 dark:text-amber-400'
+    }
   });
 
-  const actionColors = /** @type {Record<string, string>} */ ({
-    CREATE: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    UPDATE: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    DELETE: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-    VIEW: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-    COMMENT: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    ASSIGN: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-  });
+  const defaultConfig = {
+    icon: Activity,
+    bg: 'bg-muted',
+    text: 'text-muted-foreground'
+  };
 
   /**
    * Get date category for grouping
@@ -109,56 +130,64 @@
   const groupedActivities = $derived(groupByDate(displayedActivities));
 </script>
 
-<Card.Root class="flex h-full flex-col">
-  <Card.Header class="flex-row items-center justify-between space-y-0 pb-3">
-    <div class="flex items-center gap-2">
-      <Activity class="text-muted-foreground h-4 w-4" />
-      <Card.Title class="text-foreground text-sm font-medium">Recent Activity</Card.Title>
+<div class="overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm dark:bg-card/50">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+    <div class="flex items-center gap-3">
+      <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20">
+        <Activity class="size-4 text-violet-600 dark:text-violet-400" />
+      </div>
+      <h3 class="text-foreground text-sm font-semibold tracking-tight">Recent Activity</h3>
     </div>
-    <Button variant="ghost" size="sm" href="/activities" class="text-xs">
+    <Button variant="ghost" size="sm" href="/activities" class="gap-1 text-xs font-medium">
       View all
-      <ChevronRight class="ml-1 h-3 w-3" />
+      <ChevronRight class="size-3.5" />
     </Button>
-  </Card.Header>
-  <Card.Content class="flex-1 overflow-auto p-0 px-4 pb-4">
+  </div>
+
+  <!-- Activity list -->
+  <div class="p-5">
     {#if activities.length === 0}
-      <div
-        class="text-muted-foreground flex h-full flex-col items-center justify-center py-8 text-center"
-      >
-        <Activity class="text-muted-foreground/30 mb-2 h-10 w-10" />
-        <p class="text-sm">No recent activity</p>
+      <div class="flex flex-col items-center justify-center py-10 text-center">
+        <div class="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
+          <Clock class="text-muted-foreground/50 size-6" />
+        </div>
+        <p class="text-muted-foreground text-sm font-medium">No recent activity</p>
+        <p class="text-muted-foreground/70 text-xs">Actions will appear here</p>
       </div>
     {:else}
-      <div class="space-y-4">
+      <div class="space-y-5">
         {#each groupedActivities as group}
           <div>
-            <p class="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+            <p class="text-muted-foreground mb-3 text-[10px] font-semibold uppercase tracking-widest">
               {group.category}
             </p>
             <div class="space-y-2">
               {#each group.items as activity (activity.id)}
-                {@const Icon = actionIcons[activity.action || ''] || Activity}
-                {@const colorClass =
-                  actionColors[activity.action || ''] || 'bg-muted text-muted-foreground'}
+                {@const config = actionConfig[activity.action || ''] || defaultConfig}
+                {@const Icon = config.icon}
                 <div
-                  class="hover:bg-muted/50 -mx-2 flex items-start gap-3 rounded-md px-2 py-1.5 transition-colors"
+                  class="group -mx-2 flex items-start gap-3 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-muted/30"
                 >
+                  <!-- Icon -->
                   <div
-                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full {colorClass}"
+                    class="flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 {config.bg}"
                   >
-                    <Icon class="h-3 w-3" />
+                    <Icon class="size-3.5 {config.text}" />
                   </div>
+
+                  <!-- Content -->
                   <div class="min-w-0 flex-1">
-                    <p class="text-foreground text-sm">
+                    <p class="text-foreground text-sm leading-snug">
                       {activity.description ||
                         activity.message ||
                         `${activity.action} ${activity.entityType}: ${activity.entityName}`}
                     </p>
-                    <p class="text-muted-foreground text-xs">
-                      {activity.user?.name || 'System'} &middot; {formatTime(
-                        activity.timestamp || activity.createdAt
-                      )}
-                    </p>
+                    <div class="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs">
+                      <span class="font-medium">{activity.user?.name || 'System'}</span>
+                      <span class="text-muted-foreground/50">&middot;</span>
+                      <span>{formatTime(activity.timestamp || activity.createdAt)}</span>
+                    </div>
                   </div>
                 </div>
               {/each}
@@ -166,16 +195,17 @@
           </div>
         {/each}
       </div>
+
       {#if activities.length > 5 && !showAll}
         <Button
           variant="ghost"
           size="sm"
-          class="mt-3 w-full text-xs"
+          class="mt-4 w-full text-xs font-medium"
           onclick={() => (showAll = true)}
         >
           Show more ({activities.length - 5} more)
         </Button>
       {/if}
     {/if}
-  </Card.Content>
-</Card.Root>
+  </div>
+</div>

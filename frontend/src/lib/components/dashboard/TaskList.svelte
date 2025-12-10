@@ -1,8 +1,7 @@
 <script>
-  import * as Card from '$lib/components/ui/card/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { Circle, CheckCircle2, ChevronRight } from '@lucide/svelte';
+  import { Circle, CheckCircle2, ChevronRight, ListTodo } from '@lucide/svelte';
 
   /**
    * @typedef {Object} Task
@@ -80,16 +79,28 @@
   );
 
   /**
-   * Get priority badge class
+   * Get priority config
    * @param {string} priority
    */
-  function getPriorityClass(priority) {
-    const classes = /** @type {Record<string, string>} */ ({
-      High: 'border-red-300 text-red-600 dark:border-red-700 dark:text-red-400',
-      Medium: 'border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400',
-      Low: 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-400'
+  function getPriorityConfig(priority) {
+    const configs = /** @type {Record<string, { bg: string, text: string, border: string }>} */ ({
+      High: {
+        bg: 'bg-rose-500/10 dark:bg-rose-500/15',
+        text: 'text-rose-600 dark:text-rose-400',
+        border: 'border-rose-500/30 dark:border-rose-400/20'
+      },
+      Medium: {
+        bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+        text: 'text-amber-600 dark:text-amber-400',
+        border: 'border-amber-500/30 dark:border-amber-400/20'
+      },
+      Low: {
+        bg: 'bg-slate-500/10 dark:bg-slate-500/15',
+        text: 'text-slate-600 dark:text-slate-400',
+        border: 'border-slate-500/30 dark:border-slate-400/20'
+      }
     });
-    return classes[priority] || classes['Medium'];
+    return configs[priority] || configs['Medium'];
   }
 
   /**
@@ -106,93 +117,102 @@
     }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
+
+  /** @type {{ id: 'all' | 'overdue' | 'today' | 'week', label: string }[]} */
+  const filterButtons = [
+    { id: 'all', label: 'All' },
+    { id: 'overdue', label: 'Overdue' },
+    { id: 'today', label: 'Today' },
+    { id: 'week', label: 'Week' }
+  ];
 </script>
 
-<Card.Root class="flex h-full flex-col">
-  <Card.Header class="flex-row items-center justify-between space-y-0 pb-3">
-    <Card.Title class="text-foreground text-sm font-medium">My Tasks</Card.Title>
-    <Button variant="ghost" size="sm" href="/tasks" class="text-xs">
+<div class="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm dark:bg-card/50">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+    <div class="flex items-center gap-3">
+      <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/10 to-teal-500/10 dark:from-cyan-500/20 dark:to-teal-500/20">
+        <ListTodo class="size-4 text-cyan-600 dark:text-cyan-400" />
+      </div>
+      <h3 class="text-foreground text-sm font-semibold tracking-tight">My Tasks</h3>
+    </div>
+    <Button variant="ghost" size="sm" href="/tasks" class="gap-1 text-xs font-medium">
       View all
-      <ChevronRight class="ml-1 h-3 w-3" />
-    </Button>
-  </Card.Header>
-  <div class="border-border/50 flex gap-1 border-b px-4 pb-2">
-    <Button
-      variant={filter === 'all' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2.5 text-xs"
-      onclick={() => (filter = 'all')}
-    >
-      All
-    </Button>
-    <Button
-      variant={filter === 'overdue' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2.5 text-xs {overdueTasks.length > 0 ? 'text-red-600 dark:text-red-400' : ''}"
-      onclick={() => (filter = 'overdue')}
-    >
-      Overdue
-      {#if overdueTasks.length > 0}
-        <Badge variant="destructive" class="ml-1 h-4 px-1 text-[10px]">{overdueTasks.length}</Badge>
-      {/if}
-    </Button>
-    <Button
-      variant={filter === 'today' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2.5 text-xs"
-      onclick={() => (filter = 'today')}
-    >
-      Today
-    </Button>
-    <Button
-      variant={filter === 'week' ? 'secondary' : 'ghost'}
-      size="sm"
-      class="h-7 px-2.5 text-xs"
-      onclick={() => (filter = 'week')}
-    >
-      Week
+      <ChevronRight class="size-3.5" />
     </Button>
   </div>
-  <Card.Content class="flex-1 overflow-auto p-0">
+
+  <!-- Filter tabs -->
+  <div class="flex gap-1 border-b border-border/50 px-4 py-2">
+    {#each filterButtons as btn}
+      <Button
+        variant={filter === btn.id ? 'secondary' : 'ghost'}
+        size="sm"
+        class="h-7 px-3 text-xs font-medium transition-all duration-200
+          {filter === btn.id ? 'bg-secondary shadow-sm' : 'hover:bg-secondary/50'}"
+        onclick={() => (filter = btn.id)}
+      >
+        {btn.label}
+        {#if btn.id === 'overdue' && overdueTasks.length > 0}
+          <Badge class="ml-1.5 h-4 min-w-4 bg-rose-500 px-1 text-[10px] font-bold text-white">
+            {overdueTasks.length}
+          </Badge>
+        {/if}
+      </Button>
+    {/each}
+  </div>
+
+  <!-- Task list -->
+  <div class="flex-1 overflow-auto">
     {#if filteredTasks().length === 0}
-      <div class="text-muted-foreground flex h-full items-center justify-center py-8 text-sm">
-        No tasks found
+      <div class="flex h-full flex-col items-center justify-center py-10 text-center">
+        <div class="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
+          <ListTodo class="text-muted-foreground/50 size-6" />
+        </div>
+        <p class="text-muted-foreground text-sm font-medium">No tasks found</p>
+        <p class="text-muted-foreground/70 text-xs">All caught up!</p>
       </div>
     {:else}
-      <div class="divide-border/50 divide-y">
+      <div class="divide-y divide-border/30">
         {#each filteredTasks() as task (task.id)}
+          {@const config = getPriorityConfig(task.priority)}
           <a
-            href="/tasks/{task.id}"
-            class="hover:bg-muted/50 group flex items-center gap-3 px-4 py-2.5 transition-colors"
+            href="/tasks?view={task.id}"
+            class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-muted/30"
           >
-            <button class="text-muted-foreground hover:text-foreground flex-shrink-0">
+            <!-- Status icon -->
+            <button class="text-muted-foreground flex-shrink-0 transition-colors hover:text-foreground">
               {#if task.status === 'Completed'}
-                <CheckCircle2 class="h-4 w-4 text-green-500" />
+                <CheckCircle2 class="size-5 text-emerald-500 dark:text-emerald-400" />
               {:else}
-                <Circle class="h-4 w-4" />
+                <Circle class="size-5" />
               {/if}
             </button>
+
+            <!-- Task details -->
             <div class="min-w-0 flex-1">
               <p
-                class="text-foreground truncate text-sm font-medium {task.status === 'Completed'
-                  ? 'text-muted-foreground line-through'
-                  : ''}"
+                class="text-foreground truncate text-sm font-medium transition-colors group-hover:text-primary
+                  {task.status === 'Completed' ? 'text-muted-foreground line-through' : ''}"
               >
                 {task.subject}
               </p>
-              <p class="text-muted-foreground truncate text-xs">{task.status}</p>
+              <p class="text-muted-foreground mt-0.5 truncate text-xs">{task.status}</p>
             </div>
+
+            <!-- Priority badge -->
             <Badge
               variant="outline"
-              class="flex-shrink-0 text-[10px] {getPriorityClass(task.priority)}"
+              class="flex-shrink-0 border text-[10px] font-semibold {config.bg} {config.text} {config.border}"
             >
               {task.priority}
             </Badge>
+
+            <!-- Due date -->
             {#if task.dueDate}
               <span
-                class="flex-shrink-0 text-xs tabular-nums {isOverdue(task.dueDate)
-                  ? 'font-medium text-red-500'
-                  : 'text-muted-foreground'}"
+                class="flex-shrink-0 text-xs font-medium tabular-nums
+                  {isOverdue(task.dueDate) ? 'text-rose-500 dark:text-rose-400' : 'text-muted-foreground'}"
               >
                 {formatDate(task.dueDate)}
               </span>
@@ -201,5 +221,5 @@
         {/each}
       </div>
     {/if}
-  </Card.Content>
-</Card.Root>
+  </div>
+</div>

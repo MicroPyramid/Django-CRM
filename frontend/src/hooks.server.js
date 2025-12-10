@@ -16,7 +16,7 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
  * @typedef {{ default_currency?: string, currency_symbol?: string, default_country?: string|null }} OrgSettingsPayload
- * @typedef {{ org_id?: string, org_name?: string, role?: string, user_id?: string, exp?: number, iat?: number, org_settings?: OrgSettingsPayload }} JWTPayload
+ * @typedef {{ org_id?: string, org_name?: string, role?: string, user_id?: string, user_name?: string, user_email?: string, user_profile_pic?: string, exp?: number, iat?: number, org_settings?: OrgSettingsPayload }} JWTPayload
  * @typedef {{ id: string, name: string }} OrgInfo
  * @typedef {{ org: OrgInfo, role?: string }} ProfileInfo
  * @typedef {{ id?: string, organizations?: Array<{ id: string, name: string }> }} UserInfo
@@ -158,7 +158,12 @@ export async function handle({ event, resolve }) {
   // Set user in locals from JWT payload (no API call needed!)
   if (jwtPayload) {
     // Build user object from JWT claims
-    event.locals.user = { id: jwtPayload.user_id };
+    event.locals.user = {
+      id: jwtPayload.user_id,
+      name: jwtPayload.user_name || '',
+      email: jwtPayload.user_email || '',
+      profilePhoto: jwtPayload.user_profile_pic || ''
+    };
 
     // Check if org cookie is set and token has org context
     if (orgId) {

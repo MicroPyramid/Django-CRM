@@ -1,5 +1,5 @@
 <script>
-  import { AlertCircle, Calendar, Phone, Flame } from '@lucide/svelte';
+  import { AlertCircle, Calendar, Phone, Flame, Zap } from '@lucide/svelte';
 
   /**
    * @typedef {Object} Props
@@ -16,7 +16,8 @@
     {
       href: '/tasks?filter=overdue',
       icon: AlertCircle,
-      iconClass: 'text-red-500',
+      iconClass: 'text-rose-500 dark:text-rose-400',
+      bgClass: 'bg-rose-500/10 dark:bg-rose-500/15',
       count: overdueCount,
       label: 'Overdue',
       show: overdueCount > 0
@@ -24,7 +25,8 @@
     {
       href: '/tasks?filter=today',
       icon: Calendar,
-      iconClass: 'text-orange-500',
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      bgClass: 'bg-amber-500/10 dark:bg-amber-500/15',
       count: todayCount,
       label: 'Due Today',
       show: true
@@ -32,7 +34,8 @@
     {
       href: '/leads?filter=followup_today',
       icon: Phone,
-      iconClass: 'text-blue-500',
+      iconClass: 'text-cyan-500 dark:text-cyan-400',
+      bgClass: 'bg-cyan-500/10 dark:bg-cyan-500/15',
       count: followupsCount,
       label: 'Follow-ups',
       show: true
@@ -40,7 +43,8 @@
     {
       href: '/leads?rating=HOT',
       icon: Flame,
-      iconClass: 'text-red-500',
+      iconClass: 'text-orange-500 dark:text-orange-400',
+      bgClass: 'bg-orange-500/10 dark:bg-orange-500/15',
       count: hotLeadsCount,
       label: 'Hot Leads',
       show: hotLeadsCount > 0
@@ -53,25 +57,45 @@
 
 {#if visibleItems.length > 0}
   <div
-    class="flex items-center gap-2 overflow-x-auto rounded-lg border px-4 py-2.5 sm:gap-4 sm:px-6
-			{hasUrgentItems
-      ? 'border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20'
-      : 'border-border/50 bg-muted/30'}"
+    class="relative overflow-hidden rounded-xl border px-4 py-3 backdrop-blur-sm transition-all duration-300 sm:px-6
+      {hasUrgentItems
+        ? 'border-rose-300/50 bg-rose-50/50 dark:border-rose-500/20 dark:bg-rose-950/20'
+        : 'border-border/50 bg-card/50 dark:bg-card/30'}"
   >
-    <span class="text-muted-foreground hidden text-xs font-medium tracking-wider uppercase sm:block"
-      >Today's Focus</span
-    >
-    <div class="flex items-center gap-1 sm:gap-3">
-      {#each visibleItems as item}
-        <a
-          href={item.href}
-          class="hover:bg-muted/50 flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors sm:gap-2 sm:px-3"
-        >
-          <item.icon class="h-4 w-4 {item.iconClass}" />
-          <span class="text-foreground text-sm font-semibold tabular-nums">{item.count}</span>
-          <span class="text-muted-foreground hidden text-xs sm:inline">{item.label}</span>
-        </a>
-      {/each}
+    <!-- Subtle gradient overlay -->
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent dark:via-white/[0.02]"></div>
+
+    <div class="relative flex items-center gap-3 sm:gap-5">
+      <!-- Label with icon -->
+      <div class="hidden items-center gap-2 sm:flex">
+        <div class="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/10 to-teal-500/10 dark:from-cyan-500/20 dark:to-teal-500/20">
+          <Zap class="size-4 text-cyan-600 dark:text-cyan-400" />
+        </div>
+        <span class="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+          Today's Focus
+        </span>
+      </div>
+
+      <!-- Divider -->
+      <div class="hidden h-6 w-px bg-border/50 sm:block"></div>
+
+      <!-- Items -->
+      <div class="flex flex-1 items-center gap-1 overflow-x-auto sm:gap-2">
+        {#each visibleItems as item}
+          <a
+            href={item.href}
+            class="group flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-white/50 dark:hover:bg-white/5 sm:gap-2.5 sm:px-4"
+          >
+            <div class="flex size-8 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 {item.bgClass}">
+              <item.icon class="size-4 {item.iconClass}" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-foreground text-base font-bold tabular-nums">{item.count}</span>
+              <span class="text-muted-foreground hidden text-xs font-medium sm:inline">{item.label}</span>
+            </div>
+          </a>
+        {/each}
+      </div>
     </div>
   </div>
 {/if}

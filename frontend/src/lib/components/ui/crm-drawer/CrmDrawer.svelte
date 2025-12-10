@@ -168,26 +168,30 @@
 <Sheet.Root bind:open onOpenChange={(value) => onOpenChange?.(value)}>
   <Sheet.Content
     side="right"
-    class={cn('w-[440px] overflow-hidden p-0 sm:max-w-[440px]', className)}
+    class={cn('w-[480px] overflow-hidden border-l border-border/50 bg-background/95 p-0 backdrop-blur-xl sm:max-w-[480px]', className)}
   >
     {#if loading}
-      <!-- Loading skeleton -->
+      <!-- Loading skeleton with premium styling -->
       <div class="flex h-full flex-col">
-        <div
-          class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800"
-        >
-          <Skeleton class="h-4 w-16" />
-          <Skeleton class="h-6 w-6 rounded" />
-        </div>
-        <div class="flex-1 overflow-y-auto">
-          <div class="px-6 pt-6 pb-4">
-            <Skeleton class="h-8 w-48" />
+        <!-- Header skeleton -->
+        <div class="relative border-b border-border/40 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <Skeleton class="h-4 w-16 rounded-md" />
+            <Skeleton class="h-8 w-8 rounded-lg" />
           </div>
-          <div class="space-y-3 px-4 pb-6">
+        </div>
+
+        <!-- Content skeleton -->
+        <div class="flex-1 overflow-y-auto">
+          <div class="px-6 pt-8 pb-6">
+            <Skeleton class="h-9 w-64 rounded-lg" />
+          </div>
+          <div class="space-y-2 px-6 pb-8">
             {#each { length: 6 } as _}
-              <div class="flex items-center gap-2 py-2">
-                <Skeleton class="h-4 w-28" />
-                <Skeleton class="h-6 w-32" />
+              <div class="flex items-center gap-4 rounded-lg bg-muted/20 px-3 py-3">
+                <Skeleton class="h-6 w-6 rounded-md" />
+                <Skeleton class="h-4 w-24" />
+                <Skeleton class="ml-auto h-5 w-32 rounded-md" />
               </div>
             {/each}
           </div>
@@ -195,97 +199,60 @@
       </div>
     {:else}
       <div class="flex h-full flex-col">
-        <!-- Header with close button -->
-        <div
-          class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800"
-        >
-          <span class="text-sm text-gray-500 dark:text-gray-400">{headerLabel}</span>
-          <button
-            onclick={closeDrawer}
-            class="rounded p-1 transition-colors duration-75 hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <X class="h-4 w-4 text-gray-400" />
-          </button>
+        <!-- Premium Header -->
+        <div class="relative border-b border-border/40 bg-gradient-to-b from-muted/30 to-transparent">
+          <!-- Ambient glow -->
+          <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div class="absolute -top-12 left-1/4 h-24 w-48 rounded-full bg-primary/5 blur-2xl"></div>
+          </div>
+
+          <div class="relative flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-2">
+              <span class="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                {headerLabel}
+              </span>
+              {#if mode === 'create'}
+                <span class="text-xs text-muted-foreground">New</span>
+              {/if}
+            </div>
+            <button
+              onclick={closeDrawer}
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-150 hover:bg-muted/60 hover:text-foreground"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <!-- Scrollable content -->
         <div class="flex-1 overflow-x-hidden overflow-y-auto">
-          <!-- Title section -->
-          <div class="px-6 pt-6 pb-4">
+          <!-- Title section with elegant styling -->
+          <div class="px-6 pt-8 pb-6">
             {#if titleEditable}
               <input
                 type="text"
                 value={titleValue}
                 oninput={handleTitleChange}
                 placeholder={titlePlaceholder}
-                class="w-full border-0 bg-transparent text-2xl font-semibold outline-none placeholder:text-gray-300 focus:ring-0 dark:placeholder:text-gray-600"
+                class="w-full border-0 bg-transparent text-2xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/30"
+                style="letter-spacing: -0.025em;"
               />
             {:else}
-              <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              <h2
+                class="text-2xl font-bold tracking-tight text-foreground"
+                style="letter-spacing: -0.025em;"
+              >
                 {titleValue || titlePlaceholder}
               </h2>
             {/if}
           </div>
 
-          <!-- Properties section -->
-          <div class="px-4 pb-6">
+          <!-- Properties section with refined spacing -->
+          <div class="px-6 pb-8">
             {#if enableProgressiveDisclosure && essentialColumns.length > 0}
-              <!-- Essential fields (always shown) -->
-              {#each essentialColumns as col (col.key)}
-                <CrmPropertyRow
-                  label={col.label}
-                  value={getFieldValue(col)}
-                  type={col.type || 'text'}
-                  icon={col.icon}
-                  options={col.options}
-                  placeholder={col.placeholder}
-                  emptyText={col.emptyText}
-                  editable={col.editable !== false}
-                  prefix={col.prefix}
-                  onchange={(value) => handleFieldChange(col.key, value)}
-                />
-              {/each}
-
-              <!-- Progressive disclosure toggle button -->
-              {#if hiddenFieldsCount > 0 || showAllFields}
-                <button
-                  type="button"
-                  onclick={toggleShowAllFields}
-                  class="group -mx-2 my-2 flex w-full items-center gap-2 rounded px-2 py-2 text-[13px] text-gray-500 transition-colors duration-75 hover:bg-gray-50/60 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800/40 dark:hover:text-gray-300"
-                >
-                  {#if showAllFields}
-                    <ChevronUp class="h-4 w-4" />
-                    <span>Hide additional fields</span>
-                  {:else}
-                    <ChevronDown class="h-4 w-4" />
-                    <span
-                      >Show {hiddenFieldsCount} more {hiddenFieldsCount === 1
-                        ? 'field'
-                        : 'fields'}</span
-                    >
-                  {/if}
-                </button>
-              {/if}
-
-              <!-- Additional fields (conditionally shown) -->
-              {#each visibleAdditionalColumns as col (col.key)}
-                <CrmPropertyRow
-                  label={col.label}
-                  value={getFieldValue(col)}
-                  type={col.type || 'text'}
-                  icon={col.icon}
-                  options={col.options}
-                  placeholder={col.placeholder}
-                  emptyText={col.emptyText}
-                  editable={col.editable !== false}
-                  prefix={col.prefix}
-                  onchange={(value) => handleFieldChange(col.key, value)}
-                />
-              {/each}
-            {:else}
-              <!-- Original behavior: show all fields when no essential fields defined -->
-              {#each columns as col (col.key)}
-                {#if col.key !== titleKey}
+              <!-- Essential fields section -->
+              <div class="space-y-1">
+                {#each essentialColumns as col (col.key)}
                   <CrmPropertyRow
                     label={col.label}
                     value={getFieldValue(col)}
@@ -298,30 +265,92 @@
                     prefix={col.prefix}
                     onchange={(value) => handleFieldChange(col.key, value)}
                   />
-                {/if}
-              {/each}
+                {/each}
+              </div>
+
+              <!-- Progressive disclosure toggle with refined styling -->
+              {#if hiddenFieldsCount > 0 || showAllFields}
+                <button
+                  type="button"
+                  onclick={toggleShowAllFields}
+                  class="group -mx-3 my-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-muted-foreground transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
+                >
+                  <div class="flex h-6 w-6 items-center justify-center rounded-md bg-muted/50 transition-colors group-hover:bg-muted">
+                    {#if showAllFields}
+                      <ChevronUp class="h-3.5 w-3.5" />
+                    {:else}
+                      <ChevronDown class="h-3.5 w-3.5" />
+                    {/if}
+                  </div>
+                  {#if showAllFields}
+                    <span>Hide additional fields</span>
+                  {:else}
+                    <span>Show {hiddenFieldsCount} more {hiddenFieldsCount === 1 ? 'field' : 'fields'}</span>
+                  {/if}
+                </button>
+              {/if}
+
+              <!-- Additional fields -->
+              {#if visibleAdditionalColumns.length > 0}
+                <div class="space-y-1">
+                  {#each visibleAdditionalColumns as col (col.key)}
+                    <CrmPropertyRow
+                      label={col.label}
+                      value={getFieldValue(col)}
+                      type={col.type || 'text'}
+                      icon={col.icon}
+                      options={col.options}
+                      placeholder={col.placeholder}
+                      emptyText={col.emptyText}
+                      editable={col.editable !== false}
+                      prefix={col.prefix}
+                      onchange={(value) => handleFieldChange(col.key, value)}
+                    />
+                  {/each}
+                </div>
+              {/if}
+            {:else}
+              <!-- Original behavior: show all fields when no essential fields defined -->
+              <div class="space-y-1">
+                {#each columns as col (col.key)}
+                  {#if col.key !== titleKey}
+                    <CrmPropertyRow
+                      label={col.label}
+                      value={getFieldValue(col)}
+                      type={col.type || 'text'}
+                      icon={col.icon}
+                      options={col.options}
+                      placeholder={col.placeholder}
+                      emptyText={col.emptyText}
+                      editable={col.editable !== false}
+                      prefix={col.prefix}
+                      onchange={(value) => handleFieldChange(col.key, value)}
+                    />
+                  {/if}
+                {/each}
+              </div>
             {/if}
           </div>
 
-          <!-- Activity section (optional) -->
+          <!-- Activity section with refined styling -->
           {#if activitySection}
-            <Separator class="mx-4" />
-            <div class="px-4 py-4">
+            <div class="mx-6 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+            <div class="px-6 py-6">
               {@render activitySection()}
             </div>
           {/if}
         </div>
 
-        <!-- Footer -->
-        <div class="mt-auto border-t border-gray-100 px-4 py-3 dark:border-gray-800">
-          <div class="flex items-center justify-between">
+        <!-- Premium Footer -->
+        <div class="relative mt-auto border-t border-border/40 bg-gradient-to-t from-muted/20 to-transparent">
+          <div class="flex items-center justify-between px-6 py-4">
             <!-- Delete button -->
             {#if onDelete && mode !== 'create'}
               <button
                 onclick={handleDelete}
-                class="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-red-600 transition-colors duration-75 hover:bg-red-50 dark:hover:bg-red-900/20"
+                class="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-all duration-150 hover:bg-destructive/10"
               >
-                <Trash2 class="h-4 w-4" />
+                <Trash2 class="h-4 w-4 transition-transform group-hover:scale-110" />
                 Delete
               </button>
             {:else}
