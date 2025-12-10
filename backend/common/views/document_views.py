@@ -164,14 +164,28 @@ class DocumentListView(APIView, LimitOffsetPagination):
             )
             if params.get("shared_to"):
                 assinged_to_list = params.get("shared_to")
+                if isinstance(assinged_to_list, str):
+                    assinged_to_list = json.loads(assinged_to_list)
+                # Extract IDs if assinged_to_list contains objects with 'id' field
+                assigned_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in assinged_to_list
+                ]
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.profile.org, is_active=True
+                    id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
                 if profiles:
                     doc.shared_to.add(*profiles)
             if params.get("teams"):
                 teams_list = params.get("teams")
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                if isinstance(teams_list, str):
+                    teams_list = json.loads(teams_list)
+                # Extract IDs if teams_list contains objects with 'id' field
+                team_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in teams_list
+                ]
+                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)
 
@@ -333,8 +347,15 @@ class DocumentDetailView(APIView):
             doc.shared_to.clear()
             if params.get("shared_to"):
                 assinged_to_list = params.get("shared_to")
+                if isinstance(assinged_to_list, str):
+                    assinged_to_list = json.loads(assinged_to_list)
+                # Extract IDs if assinged_to_list contains objects with 'id' field
+                assigned_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in assinged_to_list
+                ]
                 profiles = Profile.objects.filter(
-                    id__in=assinged_to_list, org=request.profile.org, is_active=True
+                    id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
                 if profiles:
                     doc.shared_to.add(*profiles)
@@ -342,7 +363,14 @@ class DocumentDetailView(APIView):
             doc.teams.clear()
             if params.get("teams"):
                 teams_list = params.get("teams")
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                if isinstance(teams_list, str):
+                    teams_list = json.loads(teams_list)
+                # Extract IDs if teams_list contains objects with 'id' field
+                team_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in teams_list
+                ]
+                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)
             return Response(

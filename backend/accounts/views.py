@@ -286,33 +286,61 @@ class AccountDetailView(APIView):
 
             account_object.contacts.clear()
             if data.get("contacts"):
-                contacts_list = json.loads(data.get("contacts"))
+                contacts_list = data.get("contacts")
+                if isinstance(contacts_list, str):
+                    contacts_list = json.loads(contacts_list)
+                # Extract IDs if contacts_list contains objects with 'id' field
+                contact_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in contacts_list
+                ]
                 contacts = Contact.objects.filter(
-                    id__in=contacts_list, org=request.profile.org
+                    id__in=contact_ids, org=request.profile.org
                 )
                 if contacts:
                     account_object.contacts.add(*contacts)
 
             account_object.tags.clear()
             if data.get("tags"):
-                tags = json.loads(data.get("tags"))
+                tags = data.get("tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                # Extract IDs if tags contains objects with 'id' field
+                tag_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in tags
+                ]
                 tag_objs = Tags.objects.filter(
-                    id__in=tags, org=request.profile.org, is_active=True
+                    id__in=tag_ids, org=request.profile.org, is_active=True
                 )
                 account_object.tags.add(*tag_objs)
 
             account_object.teams.clear()
             if data.get("teams"):
-                teams_list = json.loads(data.get("teams"))
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                teams_list = data.get("teams")
+                if isinstance(teams_list, str):
+                    teams_list = json.loads(teams_list)
+                # Extract IDs if teams_list contains objects with 'id' field
+                team_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in teams_list
+                ]
+                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams:
                     account_object.teams.add(*teams)
 
             account_object.assigned_to.clear()
             if data.get("assigned_to"):
-                assigned_to_list = json.loads(data.get("assigned_to"))
+                assigned_to_list = data.get("assigned_to")
+                if isinstance(assigned_to_list, str):
+                    assigned_to_list = json.loads(assigned_to_list)
+                # Extract IDs if assigned_to_list contains objects with 'id' field
+                assigned_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in assigned_to_list
+                ]
                 profiles = Profile.objects.filter(
-                    id__in=assigned_to_list, org=request.profile.org, is_active=True
+                    id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
                 if profiles:
                     account_object.assigned_to.add(*profiles)
@@ -595,8 +623,13 @@ class AccountDetailView(APIView):
                 if contacts_list:
                     if isinstance(contacts_list, str):
                         contacts_list = json.loads(contacts_list)
+                    # Extract IDs if contacts_list contains objects with 'id' field
+                    contact_ids = [
+                        item.get("id") if isinstance(item, dict) else item
+                        for item in contacts_list
+                    ]
                     contacts = Contact.objects.filter(
-                        id__in=contacts_list, org=request.profile.org
+                        id__in=contact_ids, org=request.profile.org
                     )
                     account_object.contacts.add(*contacts)
 
@@ -606,8 +639,13 @@ class AccountDetailView(APIView):
                 if tags:
                     if isinstance(tags, str):
                         tags = json.loads(tags)
+                    # Extract IDs if tags contains objects with 'id' field
+                    tag_ids = [
+                        tag.get("id") if isinstance(tag, dict) else tag
+                        for tag in tags
+                    ]
                     tag_objs = Tags.objects.filter(
-                        id__in=tags, org=request.profile.org, is_active=True
+                        id__in=tag_ids, org=request.profile.org, is_active=True
                     )
                     account_object.tags.add(*tag_objs)
 
@@ -617,8 +655,13 @@ class AccountDetailView(APIView):
                 if teams_list:
                     if isinstance(teams_list, str):
                         teams_list = json.loads(teams_list)
+                    # Extract IDs if teams_list contains objects with 'id' field
+                    team_ids = [
+                        item.get("id") if isinstance(item, dict) else item
+                        for item in teams_list
+                    ]
                     teams = Teams.objects.filter(
-                        id__in=teams_list, org=request.profile.org
+                        id__in=team_ids, org=request.profile.org
                     )
                     account_object.teams.add(*teams)
 
@@ -628,8 +671,13 @@ class AccountDetailView(APIView):
                 if assigned_to_list:
                     if isinstance(assigned_to_list, str):
                         assigned_to_list = json.loads(assigned_to_list)
+                    # Extract IDs if assigned_to_list contains objects with 'id' field
+                    assigned_ids = [
+                        item.get("id") if isinstance(item, dict) else item
+                        for item in assigned_to_list
+                    ]
                     profiles = Profile.objects.filter(
-                        id__in=assigned_to_list, org=request.profile.org, is_active=True
+                        id__in=assigned_ids, org=request.profile.org, is_active=True
                     )
                     account_object.assigned_to.add(*profiles)
 

@@ -1571,6 +1571,7 @@
     <SearchInput
       value={filters.search}
       placeholder="Search leads..."
+      showLabel={false}
       onchange={(value) => updateFilters({ ...filters, search: value })}
       class="w-64"
     />

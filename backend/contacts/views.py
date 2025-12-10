@@ -157,13 +157,27 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         if params.get("teams"):
             teams_list = params.get("teams")
-            teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+            if isinstance(teams_list, str):
+                teams_list = json.loads(teams_list)
+            # Extract IDs if teams_list contains objects with 'id' field
+            team_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in teams_list
+            ]
+            teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         if params.get("assigned_to"):
             assinged_to_list = params.get("assigned_to")
+            if isinstance(assinged_to_list, str):
+                assinged_to_list = json.loads(assinged_to_list)
+            # Extract IDs if assinged_to_list contains objects with 'id' field
+            assigned_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in assinged_to_list
+            ]
             profiles = Profile.objects.filter(
-                id__in=assinged_to_list, org=request.profile.org
+                id__in=assigned_ids, org=request.profile.org
             )
             contact_obj.assigned_to.add(*profiles)
 
@@ -171,8 +185,13 @@ class ContactsListView(APIView, LimitOffsetPagination):
             tags = params.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
+            # Extract IDs if tags contains objects with 'id' field
+            tag_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in tags
+            ]
             tag_objs = Tags.objects.filter(
-                id__in=tags, org=request.profile.org, is_active=True
+                id__in=tag_ids, org=request.profile.org, is_active=True
             )
             contact_obj.tags.add(*tag_objs)
 
@@ -252,15 +271,29 @@ class ContactDetailView(APIView):
         contact_obj = contact_serializer.save()
         contact_obj.teams.clear()
         if data.get("teams"):
-            teams_list = json.loads(data.get("teams"))
-            teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+            teams_list = data.get("teams")
+            if isinstance(teams_list, str):
+                teams_list = json.loads(teams_list)
+            # Extract IDs if teams_list contains objects with 'id' field
+            team_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in teams_list
+            ]
+            teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         contact_obj.assigned_to.clear()
         if data.get("assigned_to"):
-            assinged_to_list = json.loads(data.get("assigned_to"))
+            assinged_to_list = data.get("assigned_to")
+            if isinstance(assinged_to_list, str):
+                assinged_to_list = json.loads(assinged_to_list)
+            # Extract IDs if assinged_to_list contains objects with 'id' field
+            assigned_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in assinged_to_list
+            ]
             profiles = Profile.objects.filter(
-                id__in=assinged_to_list, org=request.profile.org
+                id__in=assigned_ids, org=request.profile.org
             )
             contact_obj.assigned_to.add(*profiles)
 
@@ -269,8 +302,13 @@ class ContactDetailView(APIView):
             tags = data.get("tags")
             if isinstance(tags, str):
                 tags = json.loads(tags)
+            # Extract IDs if tags contains objects with 'id' field
+            tag_ids = [
+                item.get("id") if isinstance(item, dict) else item
+                for item in tags
+            ]
             tag_objs = Tags.objects.filter(
-                id__in=tags, org=request.profile.org, is_active=True
+                id__in=tag_ids, org=request.profile.org, is_active=True
             )
             contact_obj.tags.add(*tag_objs)
 
@@ -566,7 +604,12 @@ class ContactDetailView(APIView):
             if teams_list:
                 if isinstance(teams_list, str):
                     teams_list = json.loads(teams_list)
-                teams = Teams.objects.filter(id__in=teams_list, org=request.profile.org)
+                # Extract IDs if teams_list contains objects with 'id' field
+                team_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in teams_list
+                ]
+                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 contact_obj.teams.add(*teams)
 
         if "assigned_to" in data:
@@ -575,8 +618,13 @@ class ContactDetailView(APIView):
             if assigned_to_list:
                 if isinstance(assigned_to_list, str):
                     assigned_to_list = json.loads(assigned_to_list)
+                # Extract IDs if assigned_to_list contains objects with 'id' field
+                assigned_ids = [
+                    item.get("id") if isinstance(item, dict) else item
+                    for item in assigned_to_list
+                ]
                 profiles = Profile.objects.filter(
-                    id__in=assigned_to_list, org=request.profile.org
+                    id__in=assigned_ids, org=request.profile.org
                 )
                 contact_obj.assigned_to.add(*profiles)
 
@@ -586,8 +634,13 @@ class ContactDetailView(APIView):
             if tags_list:
                 if isinstance(tags_list, str):
                     tags_list = json.loads(tags_list)
+                # Extract IDs if tags_list contains objects with 'id' field
+                tag_ids = [
+                    tag.get("id") if isinstance(tag, dict) else tag
+                    for tag in tags_list
+                ]
                 tag_objs = Tags.objects.filter(
-                    id__in=tags_list, org=request.profile.org, is_active=True
+                    id__in=tag_ids, org=request.profile.org, is_active=True
                 )
                 contact_obj.tags.add(*tag_objs)
 

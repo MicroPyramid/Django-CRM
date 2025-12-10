@@ -132,8 +132,8 @@ class GoogleOAuthCallbackView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        # Generate JWT tokens
-        token = RefreshToken.for_user(user)
+        # Generate JWT tokens (with user info embedded)
+        token = OrgAwareRefreshToken.for_user_and_org(user, None)
 
         return Response(
             {
@@ -219,8 +219,8 @@ class LoginView(APIView):
                     user, default_org, profile
                 )
             else:
-                # User has no orgs - generate token without org context
-                token = RefreshToken.for_user(user)
+                # User has no orgs - generate token without org context (but with user info)
+                token = OrgAwareRefreshToken.for_user_and_org(user, None)
 
             # Audit log successful login
             audit_log.login_success(user, default_org, request)
@@ -387,8 +387,8 @@ class OrgAwareTokenRefreshView(APIView):
                 new_token = OrgAwareRefreshToken.for_user_and_org(user, org, profile)
                 audit_log.token_refresh(user, org, request)
             else:
-                # No org context - standard refresh
-                new_token = BaseRefreshToken.for_user(user)
+                # No org context - refresh with user info only
+                new_token = OrgAwareRefreshToken.for_user_and_org(user, None)
                 audit_log.token_refresh(user, None, request)
 
             return Response(

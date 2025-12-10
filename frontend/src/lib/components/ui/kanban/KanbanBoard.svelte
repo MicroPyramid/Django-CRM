@@ -1,7 +1,7 @@
 <script>
   import { toast } from 'svelte-sonner';
   import KanbanColumn from './KanbanColumn.svelte';
-  import { Loader2 } from '@lucide/svelte';
+  import { Loader2, TrendingUp, Users, Flame, Zap } from '@lucide/svelte';
 
   /**
    * @typedef {Object} Column
@@ -74,6 +74,42 @@
       mobileActiveColumn = localColumns[0].id;
     }
   });
+
+  // Calculate pipeline statistics
+  const pipelineStats = $derived(() => {
+    if (!localColumns || localColumns.length === 0) {
+      return { totalValue: 0, hotCount: 0, avgValue: 0 };
+    }
+
+    let totalValue = 0;
+    let hotCount = 0;
+    let itemCount = 0;
+
+    localColumns.forEach(col => {
+      col.items?.forEach(item => {
+        const amount = parseFloat(String(item.opportunity_amount || item.opportunityAmount || 0));
+        if (!isNaN(amount)) totalValue += amount;
+        if (item.rating === 'HOT') hotCount++;
+        itemCount++;
+      });
+    });
+
+    return {
+      totalValue,
+      hotCount,
+      avgValue: itemCount > 0 ? totalValue / itemCount : 0
+    };
+  });
+
+  // Format large numbers
+  function formatValue(value) {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
+    }
+    return value.toFixed(0);
+  }
 
   /**
    * Handle drag start
@@ -211,44 +247,114 @@
 </script>
 
 {#if loading}
-  <div class="flex h-64 items-center justify-center">
-    <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
+  <div class="flex h-96 flex-col items-center justify-center gap-4">
+    <div class="relative">
+      <div class="absolute inset-0 animate-ping rounded-full bg-cyan-400/30"></div>
+      <div class="relative rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 p-3">
+        <Loader2 class="h-6 w-6 animate-spin text-white" />
+      </div>
+    </div>
+    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Loading pipeline...</p>
   </div>
 {:else if !data || sortedColumns.length === 0}
-  <div class="flex h-64 flex-col items-center justify-center text-center text-gray-500">
-    <p>{emptyMessage}</p>
+  <div class="flex h-96 flex-col items-center justify-center gap-4 text-center">
+    <div class="rounded-2xl bg-gray-100 p-6 dark:bg-white/5">
+      <Zap class="h-12 w-12 text-gray-300 dark:text-gray-600" />
+    </div>
+    <div>
+      <p class="text-lg font-semibold text-gray-600 dark:text-gray-300">{emptyMessage}</p>
+      <p class="mt-1 text-sm text-gray-400 dark:text-gray-500">Add some {itemNamePlural} to get started</p>
+    </div>
   </div>
 {:else}
   <!-- Desktop: Horizontal scroll container with all columns -->
-  <div class="hidden gap-4 overflow-x-auto pb-4 md:flex" style="min-height: 400px">
-    {#each sortedColumns as column (column.id)}
-      <KanbanColumn
-        {column}
-        {itemName}
-        {CardComponent}
-        isDragOver={dragOverColumn === column.id}
-        onDragOver={(e) => handleDragOver(e, column.id)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, column.id)}
-        {onCardClick}
-        onCardDragStart={(e, item) => handleDragStart(e, item, column.id)}
-        onCardDragEnd={handleDragEnd}
-      />
-    {/each}
+  <div class="kanban-board hidden md:block">
+    <!-- Pipeline Stats Bar -->
+    {#if pipelineStats().totalValue > 0}
+      <div class="mb-5 flex items-center gap-6 rounded-xl border border-white/10 bg-white/60 px-5 py-3 backdrop-blur-sm dark:border-white/[0.04] dark:bg-white/[0.02]">
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20">
+            <TrendingUp class="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Pipeline Value</p>
+            <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
+              AED {formatValue(pipelineStats().totalValue)}
+            </p>
+          </div>
+        </div>
+
+        <div class="h-8 w-px bg-gray-200 dark:bg-white/10"></div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 shadow-lg shadow-rose-500/20">
+            <Flame class="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Hot Leads</p>
+            <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
+              {pipelineStats().hotCount}
+            </p>
+          </div>
+        </div>
+
+        <div class="h-8 w-px bg-gray-200 dark:bg-white/10"></div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/20">
+            <Users class="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Total {itemNamePlural}</p>
+            <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
+              {totalCount}
+            </p>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Kanban Columns -->
+    <div class="columns-container flex gap-4 overflow-x-auto pb-4" style="min-height: 400px">
+      {#each sortedColumns as column, index (column.id)}
+        <div class="column-animate" style="animation-delay: {index * 80}ms">
+          <KanbanColumn
+            {column}
+            {itemName}
+            {CardComponent}
+            isDragOver={dragOverColumn === column.id}
+            onDragOver={(e) => handleDragOver(e, column.id)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, column.id)}
+            {onCardClick}
+            onCardDragStart={(e, item) => handleDragStart(e, item, column.id)}
+            onCardDragEnd={handleDragEnd}
+          />
+        </div>
+      {/each}
+    </div>
   </div>
 
   <!-- Mobile: Tab-based single column view -->
   <div class="md:hidden">
-    <!-- Column selector -->
-    <div class="mb-4">
-      <select
-        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-        bind:value={mobileActiveColumn}
-      >
+    <!-- Column selector - Pill style -->
+    <div class="mb-4 overflow-x-auto">
+      <div class="flex gap-2 pb-2">
         {#each sortedColumns as col (col.id)}
-          <option value={col.id}>{col.name} ({col.item_count})</option>
+          <button
+            class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all
+              {mobileActiveColumn === col.id
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+                : 'bg-white/60 text-gray-600 hover:bg-white dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'}"
+            onclick={() => mobileActiveColumn = col.id}
+          >
+            {col.name}
+            <span class="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
+              {col.item_count}
+            </span>
+          </button>
         {/each}
-      </select>
+      </div>
     </div>
 
     <!-- Active column cards -->
@@ -259,7 +365,7 @@
             <CardComponent {item} onclick={() => onCardClick(item)} />
           {:else}
             <div
-              class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+              class="rounded-xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm dark:border-white/[0.06] dark:bg-white/[0.03]"
               onclick={() => onCardClick(item)}
               onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onCardClick(item)}
               role="button"
@@ -274,9 +380,12 @@
 
         {#if activeMobileColumn.items.length === 0}
           <div
-            class="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-gray-400"
+            class="flex h-32 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200/60 text-center dark:border-white/[0.06]"
           >
-            No {itemNamePlural} in this column
+            <div class="text-3xl opacity-30">📭</div>
+            <span class="text-sm font-medium text-gray-400 dark:text-gray-500">
+              No {itemNamePlural} in this stage
+            </span>
           </div>
         {/if}
       </div>
@@ -284,8 +393,61 @@
   </div>
 
   <!-- Total count footer -->
-  <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-    {totalCount}
-    {totalCount !== 1 ? itemNamePlural : itemName} total
+  <div class="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400 dark:text-gray-500">
+    <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"></div>
+    <span class="px-4 font-medium">
+      {totalCount} {totalCount !== 1 ? itemNamePlural : itemName} across {sortedColumns.length} stages
+    </span>
+    <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"></div>
   </div>
 {/if}
+
+<style>
+  /* Column entrance animation */
+  .column-animate {
+    opacity: 0;
+    animation: column-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes column-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Horizontal scroll with fade indicators */
+  .columns-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+
+  .columns-container::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .columns-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .columns-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 100px;
+  }
+
+  :global(.dark) .columns-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .columns-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  :global(.dark) .columns-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>
