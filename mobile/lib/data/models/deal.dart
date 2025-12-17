@@ -152,7 +152,7 @@ class DealProduct {
   double get totalPrice => quantity * unitPrice;
 }
 
-/// Deal model for SalesPro CRM
+/// Deal model for BottleCRM
 class Deal {
   final String id;
   final String title;

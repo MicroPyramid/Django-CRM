@@ -46,7 +46,7 @@ enum NotificationType {
   }
 }
 
-/// Notification model for SalesPro CRM
+/// Notification model for BottleCRM
 class AppNotification {
   final String id;
   final String userId;

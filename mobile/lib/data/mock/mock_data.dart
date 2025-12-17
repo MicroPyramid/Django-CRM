@@ -1,6 +1,6 @@
 import '../models/models.dart';
 
-/// Mock data for SalesPro CRM
+/// Mock data for BottleCRM
 /// Comprehensive realistic data for all screens
 class MockData {
   MockData._();
@@ -13,7 +13,7 @@ class MockData {
     User(
       id: 'user-1',
       name: 'Alex Johnson',
-      email: 'alex.johnson@salespro.com',
+      email: 'alex.johnson@bottlecrm.io',
       phone: '+1 (555) 123-4567',
       role: 'Sales Manager',
       avatar: null,
@@ -24,7 +24,7 @@ class MockData {
     User(
       id: 'user-2',
       name: 'Sarah Williams',
-      email: 'sarah.williams@salespro.com',
+      email: 'sarah.williams@bottlecrm.io',
       phone: '+1 (555) 234-5678',
       role: 'Account Executive',
       avatar: null,
@@ -35,7 +35,7 @@ class MockData {
     User(
       id: 'user-3',
       name: 'Michael Chen',
-      email: 'michael.chen@salespro.com',
+      email: 'michael.chen@bottlecrm.io',
       phone: '+1 (555) 345-6789',
       role: 'Sales Representative',
       avatar: null,
@@ -46,7 +46,7 @@ class MockData {
     User(
       id: 'user-4',
       name: 'Emily Davis',
-      email: 'emily.davis@salespro.com',
+      email: 'emily.davis@bottlecrm.io',
       phone: '+1 (555) 456-7890',
       role: 'Business Development',
       avatar: null,

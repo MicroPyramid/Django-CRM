@@ -29,21 +29,21 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: SalesProApp(),
+      child: BottleCRMApp(),
     ),
   );
 }
 
-/// SalesPro CRM - Main Application Widget
-class SalesProApp extends ConsumerWidget {
-  const SalesProApp({super.key});
+/// BottleCRM - Main Application Widget
+class BottleCRMApp extends ConsumerWidget {
+  const BottleCRMApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'SalesPro CRM',
+      title: 'BottleCRM',
       debugShowCheckedModeBanner: false,
 
       // Theme

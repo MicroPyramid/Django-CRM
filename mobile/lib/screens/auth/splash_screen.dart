@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
@@ -72,11 +71,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
 
-    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+    final authState = ref.read(authProvider);
 
-    if (isAuthenticated) {
-      // User is logged in, go to dashboard
-      context.go(AppRoutes.dashboard);
+    if (authState.isAuthenticated) {
+      if (authState.needsOrgSelection) {
+        // User needs to select an organization
+        context.go(AppRoutes.orgSelection);
+      } else {
+        // User is logged in and has org selected, go to dashboard
+        context.go(AppRoutes.dashboard);
+      }
     } else {
       // User is not logged in, go to onboarding/login
       context.go(AppRoutes.onboarding);
@@ -138,7 +142,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: Column(
                     children: [
                       Text(
-                        'SalesPro',
+                        'BottleCRM',
                         style: AppTypography.display.copyWith(
                           color: Colors.white,
                           fontSize: 36,
@@ -147,7 +151,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Your Sales, Supercharged',
+                        'Your CRM, Simplified',
                         style: AppTypography.body.copyWith(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 16,
@@ -192,42 +196,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background decoration
-          Positioned(
-            top: 20,
-            right: 20,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppColors.primary100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          // Main icon
-          Icon(
-            LucideIcons.trendingUp,
-            size: 56,
-            color: AppColors.primary600,
-          ),
-          // Accent dot
-          Positioned(
-            bottom: 24,
-            left: 24,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(
-                color: AppColors.success500,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Image.asset(
+          'assets/icon/icon.png',
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

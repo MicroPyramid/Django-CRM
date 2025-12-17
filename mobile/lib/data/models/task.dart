@@ -33,7 +33,7 @@ class RelatedEntity {
   String get displayLabel => '${type.label}: $title';
 }
 
-/// Task model for SalesPro CRM
+/// Task model for BottleCRM
 class Task {
   final String id;
   final String title;

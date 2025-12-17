@@ -4,7 +4,7 @@ import 'app_colors.dart';
 import 'app_typography.dart';
 import 'app_spacing.dart';
 
-/// SalesPro CRM Theme Configuration
+/// BottleCRM Theme Configuration
 /// A cohesive, professional theme for the entire application
 class AppTheme {
   AppTheme._();

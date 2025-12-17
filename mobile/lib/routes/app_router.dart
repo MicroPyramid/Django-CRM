@@ -9,6 +9,7 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/onboarding_screen.dart';
+import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
 import '../screens/dashboard/dashboard_screen.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
   static const String onboarding = '/onboarding';
+  static const String orgSelection = '/org-selection';
 
   // Main routes
   static const String dashboard = '/dashboard';
@@ -61,6 +63,11 @@ const _publicRoutes = [
   AppRoutes.onboarding,
 ];
 
+/// Routes that require authentication but not org selection
+const _authOnlyRoutes = [
+  AppRoutes.orgSelection,
+];
+
 /// Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -68,7 +75,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final isAuthenticated = ref.read(authProvider).isAuthenticated;
+      final authState = ref.read(authProvider);
+      final isAuthenticated = authState.isAuthenticated;
+      final needsOrgSelection = authState.needsOrgSelection;
       final currentPath = state.matchedLocation;
 
       // Allow public routes
@@ -76,9 +85,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // Redirect to login if not authenticated and trying to access protected route
+      // Redirect to login if not authenticated
       if (!isAuthenticated) {
         return AppRoutes.login;
+      }
+
+      // Handle org selection routes
+      if (_authOnlyRoutes.contains(currentPath)) {
+        // Already on org selection, allow it
+        return null;
+      }
+
+      // Redirect to org selection if needed
+      if (needsOrgSelection) {
+        return AppRoutes.orgSelection;
       }
 
       return null;
@@ -118,6 +138,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboarding,
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.orgSelection,
+        name: 'orgSelection',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const OrgSelectionScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       ),
 
       // ============================================

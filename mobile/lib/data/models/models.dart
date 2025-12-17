@@ -1,4 +1,4 @@
-/// SalesPro CRM Data Models
+/// BottleCRM Data Models
 /// Barrel export for all model files
 library;
 

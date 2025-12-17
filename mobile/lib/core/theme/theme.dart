@@ -1,4 +1,4 @@
-/// SalesPro CRM Theme System
+/// BottleCRM Theme System
 /// Barrel export for all theme-related files
 library;
 

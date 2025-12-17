@@ -1,4 +1,4 @@
-/// User model for SalesPro CRM
+/// User model for BottleCRM
 class User {
   final String id;
   final String name;

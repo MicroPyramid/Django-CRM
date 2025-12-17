@@ -50,6 +50,7 @@ class AuthUser {
 class Organization {
   final String id;
   final String name;
+  final String? role;
   final String? defaultCurrency;
   final String? currencySymbol;
   final String? defaultCountry;
@@ -57,6 +58,7 @@ class Organization {
   const Organization({
     required this.id,
     required this.name,
+    this.role,
     this.defaultCurrency,
     this.currencySymbol,
     this.defaultCountry,
@@ -66,6 +68,7 @@ class Organization {
     return Organization(
       id: json['id'] as String,
       name: json['name'] as String,
+      role: json['role'] as String?,
       defaultCurrency: json['default_currency'] as String?,
       currencySymbol: json['currency_symbol'] as String?,
       defaultCountry: json['default_country'] as String?,
@@ -76,14 +79,25 @@ class Organization {
     return {
       'id': id,
       'name': name,
+      'role': role,
       'default_currency': defaultCurrency,
       'currency_symbol': currencySymbol,
       'default_country': defaultCountry,
     };
   }
 
+  /// Get initials for avatar fallback
+  String get initials {
+    if (name.isEmpty) return 'O';
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
   @override
-  String toString() => 'Organization(id: $id, name: $name)';
+  String toString() => 'Organization(id: $id, name: $name, role: $role)';
 }
 
 /// Response from Google OAuth callback

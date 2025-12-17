@@ -1,4 +1,4 @@
-/// Common Widgets for SalesPro CRM
+/// Common Widgets for BottleCRM
 /// Barrel export for all common widget files
 library;
 

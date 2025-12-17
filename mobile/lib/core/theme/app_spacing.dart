@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// SalesPro CRM Spacing & Layout System
+/// BottleCRM Spacing & Layout System
 /// Based on a 4px base unit system for consistent rhythm
 class AppSpacing {
   AppSpacing._();
@@ -99,7 +99,7 @@ class AppSpacing {
   );
 }
 
-/// SalesPro CRM Layout Constants
+/// BottleCRM Layout Constants
 class AppLayout {
   AppLayout._();
 
@@ -202,7 +202,7 @@ class AppLayout {
       ];
 }
 
-/// SalesPro CRM Animation Constants
+/// BottleCRM Animation Constants
 class AppDurations {
   AppDurations._();
 

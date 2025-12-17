@@ -87,7 +87,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       setState(() => _isLoading = false);
 
       if (success) {
-        context.go(AppRoutes.dashboard);
+        // Check if org selection is needed
+        final authState = ref.read(authProvider);
+        if (authState.needsOrgSelection) {
+          context.go(AppRoutes.orgSelection);
+        } else {
+          context.go(AppRoutes.dashboard);
+        }
       } else {
         // Show error message
         final error = ref.read(authProvider).error;
@@ -253,17 +259,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Logo Icon
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: AppColors.primary100,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Icon(
-            LucideIcons.trendingUp,
-            size: 28,
-            color: AppColors.primary600,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'assets/icon/icon.png',
+            width: 56,
+            height: 56,
+            fit: BoxFit.cover,
           ),
         ),
 
@@ -279,7 +281,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Subtitle
         Text(
-          'Sign in to continue managing your sales',
+          'Sign in to continue to BottleCRM',
           style: AppTypography.body.copyWith(
             color: AppColors.textSecondary,
           ),

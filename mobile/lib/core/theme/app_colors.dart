@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// SalesPro CRM Color System
+/// BottleCRM Color System
 /// A professional, modern color palette optimized for sales workflows
 class AppColors {
   AppColors._();

@@ -41,6 +41,13 @@ class AuthService {
   Organization? get selectedOrganization => _selectedOrganization;
   String? get accessToken => _accessToken;
 
+  /// Check if user needs to select an organization
+  bool get needsOrgSelection =>
+      isLoggedIn &&
+      _organizations != null &&
+      _organizations!.isNotEmpty &&
+      _selectedOrganization == null;
+
   bool get _isTokenExpired {
     if (_accessToken == null) return true;
     try {
@@ -197,13 +204,44 @@ class AuthService {
     }
   }
 
-  /// Select an organization
+  /// Select an organization and get new tokens with org context
   Future<bool> selectOrganization(Organization org) async {
-    _selectedOrganization = org;
-    _apiService.setOrganizationId(org.id);
-    await _saveSelectedOrganization();
-    debugPrint('AuthService: Selected organization: ${org.name}');
-    return true;
+    try {
+      debugPrint('AuthService: Switching to organization: ${org.name}...');
+
+      // Call switch-org API to get new tokens with org context
+      final response = await _apiService.post(
+        ApiConfig.switchOrg,
+        {'org_id': org.id},
+        requiresAuth: true,
+      );
+
+      if (!response.success || response.data == null) {
+        debugPrint('AuthService: Switch org failed: ${response.message}');
+        return false;
+      }
+
+      // Update tokens from response
+      _accessToken = response.data!['access_token'] as String?;
+      _refreshToken = response.data!['refresh_token'] as String?;
+
+      // Update selected organization
+      _selectedOrganization = org;
+
+      // Sync with ApiService
+      _apiService.setAccessToken(_accessToken);
+      _apiService.setOrganizationId(org.id);
+
+      // Persist to storage
+      await _saveToStorage();
+      await _saveSelectedOrganization();
+
+      debugPrint('AuthService: Switched to organization: ${org.name}');
+      return true;
+    } catch (e) {
+      debugPrint('AuthService: Switch org error: $e');
+      return false;
+    }
   }
 
   /// Sign out and clear all stored data

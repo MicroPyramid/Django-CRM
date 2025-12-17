@@ -49,7 +49,7 @@ enum ActivityType {
   }
 }
 
-/// Activity model for SalesPro CRM
+/// Activity model for BottleCRM
 class Activity {
   final String id;
   final ActivityType type;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// SalesPro CRM Typography System
+/// BottleCRM Typography System
 /// Using Plus Jakarta Sans - a modern, professional geometric sans-serif
 /// that's distinctive yet highly readable for data-dense interfaces
 class AppTypography {

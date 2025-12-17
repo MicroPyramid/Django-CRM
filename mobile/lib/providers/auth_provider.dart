@@ -30,6 +30,13 @@ class AuthState {
         isAuthenticated = false,
         error = null;
 
+  /// Check if user needs to select an organization
+  bool get needsOrgSelection =>
+      isAuthenticated &&
+      organizations != null &&
+      organizations!.isNotEmpty &&
+      selectedOrganization == null;
+
   /// Create a copy with updated fields
   AuthState copyWith({
     AuthUser? user,
@@ -196,4 +203,9 @@ final currentUserProvider = Provider<AuthUser?>((ref) {
 /// Provider for selected organization
 final selectedOrgProvider = Provider<Organization?>((ref) {
   return ref.watch(authProvider).selectedOrganization;
+});
+
+/// Provider for checking if org selection is needed
+final needsOrgSelectionProvider = Provider<bool>((ref) {
+  return ref.watch(authProvider).needsOrgSelection;
 });

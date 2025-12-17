@@ -94,7 +94,7 @@ enum Priority {
   }
 }
 
-/// Lead model for SalesPro CRM
+/// Lead model for BottleCRM
 class Lead {
   final String id;
   final String name;
