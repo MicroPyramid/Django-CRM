@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/loading.dart';
 
 /// Splash Screen
-/// Displays animated logo and loading indicator, auto-navigates after 2.5s
-class SplashScreen extends StatefulWidget {
+/// Displays animated logo and loading indicator, checks auth status and navigates
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -55,14 +57,30 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Auto-navigate after splash duration
-    Future.delayed(AppDurations.splash, () {
-      if (mounted) {
-        // Navigate to onboarding for new users, or login for returning users
-        // For demo, always go to onboarding
-        context.go(AppRoutes.onboarding);
-      }
-    });
+    // Check auth status and navigate
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Wait for splash animation to complete
+    await Future.delayed(AppDurations.splash);
+
+    if (!mounted) return;
+
+    // Check authentication status
+    await ref.read(authProvider.notifier).checkAuthStatus();
+
+    if (!mounted) return;
+
+    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+
+    if (isAuthenticated) {
+      // User is logged in, go to dashboard
+      context.go(AppRoutes.dashboard);
+    } else {
+      // User is not logged in, go to onboarding/login
+      context.go(AppRoutes.onboarding);
+    }
   }
 
   @override

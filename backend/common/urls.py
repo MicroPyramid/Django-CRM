@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
 from common.views.auth_views import (
+    GoogleIdTokenView,
     GoogleOAuthCallbackView,
     LoginView,
     MeView,
@@ -46,6 +47,8 @@ urlpatterns = [
     path("auth/switch-org/", OrgSwitchView.as_view(), name="switch_org"),
     # Google OAuth callback with PKCE (secure implementation)
     path("auth/google/callback/", GoogleOAuthCallbackView.as_view()),
+    # Google ID token auth for mobile apps
+    path("auth/google/", GoogleIdTokenView.as_view(), name="google_id_token"),
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),

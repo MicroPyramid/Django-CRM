@@ -144,6 +144,105 @@ class GoogleOAuthCallbackView(APIView):
         )
 
 
+class GoogleIdTokenView(APIView):
+    """
+    Handle Google Sign-In from mobile apps using ID token.
+    Mobile app sends Google ID token, backend verifies and returns JWT.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["auth"],
+        request=inline_serializer(
+            name="GoogleIdTokenRequest",
+            fields={"idToken": serializers.CharField()},
+        ),
+        responses={
+            200: inline_serializer(
+                name="GoogleIdTokenResponse",
+                fields={
+                    "JWTtoken": serializers.CharField(),
+                    "user": serializers.DictField(),
+                    "organizations": serializers.ListField(),
+                },
+            )
+        },
+    )
+    def post(self, request):
+        from django.utils import timezone
+
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        id_token_str = request.data.get("idToken")
+        if not id_token_str:
+            return Response(
+                {"error": "Missing idToken"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Verify the ID token with Google
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                id_token_str,
+                google_requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
+            )
+            email = idinfo.get("email")
+            picture = idinfo.get("picture", "")
+        except ValueError as e:
+            return Response(
+                {"error": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not email:
+            return Response(
+                {"error": "No email in token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get or create user
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "profile_pic": picture,
+                "password": make_password(secrets.token_urlsafe(32)),
+            },
+        )
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+
+        # Get user's organizations
+        profiles = Profile.objects.filter(user=user).select_related("org")
+        organizations = [
+            {
+                "id": str(p.org.id),
+                "name": p.org.name,
+                "role": p.role,
+            }
+            for p in profiles
+        ]
+
+        # Generate JWT token
+        token = OrgAwareRefreshToken.for_user_and_org(user, None)
+
+        return Response(
+            {
+                "JWTtoken": str(token.access_token),
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "name": email.split("@")[0],
+                    "profileImage": user.profile_pic,
+                },
+                "organizations": organizations,
+            }
+        )
+
+
 class LoginView(APIView):
     """
     Login with email and password, returns JWT tokens

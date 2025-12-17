@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../data/mock/mock_data.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
 /// More/Settings Screen
 /// User profile, app settings, and support options
-class MoreScreen extends StatefulWidget {
+class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
 
   @override
-  State<MoreScreen> createState() => _MoreScreenState();
+  ConsumerState<MoreScreen> createState() => _MoreScreenState();
 }
 
-class _MoreScreenState extends State<MoreScreen> {
+class _MoreScreenState extends ConsumerState<MoreScreen> {
   bool _darkMode = false;
 
   User get _currentUser => MockData.currentUser;
@@ -317,24 +319,30 @@ class _MoreScreenState extends State<MoreScreen> {
   void _handleSignOut() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Sign Out'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go(AppRoutes.login);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Signed out successfully'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              // Sign out using auth provider
+              await ref.read(authProvider.notifier).signOut();
+
+              if (mounted) {
+                context.go(AppRoutes.login);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Signed out successfully'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
             child: Text(
               'Sign Out',

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/auth_provider.dart';
+
 // Auth Screens
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -51,12 +53,36 @@ class AppRoutes {
 /// Navigation shell key for bottom navigation
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Auth routes that don't require authentication
+const _publicRoutes = [
+  AppRoutes.splash,
+  AppRoutes.login,
+  AppRoutes.forgotPassword,
+  AppRoutes.onboarding,
+];
+
 /// Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final isAuthenticated = ref.read(authProvider).isAuthenticated;
+      final currentPath = state.matchedLocation;
+
+      // Allow public routes
+      if (_publicRoutes.contains(currentPath)) {
+        return null;
+      }
+
+      // Redirect to login if not authenticated and trying to access protected route
+      if (!isAuthenticated) {
+        return AppRoutes.login;
+      }
+
+      return null;
+    },
     routes: [
       // ============================================
       // AUTH ROUTES (No bottom navigation)

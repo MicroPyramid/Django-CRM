@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
 /// Login Screen
 /// Email/password authentication with Google OAuth option
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -78,10 +80,27 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1500));
+
+    final success = await ref.read(authProvider.notifier).signInWithGoogle();
+
     if (mounted) {
       setState(() => _isLoading = false);
-      context.go(AppRoutes.dashboard);
+
+      if (success) {
+        context.go(AppRoutes.dashboard);
+      } else {
+        // Show error message
+        final error = ref.read(authProvider).error;
+        if (error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: AppColors.danger600,
+            ),
+          );
+        }
+      }
     }
   }
 
