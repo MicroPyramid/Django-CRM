@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/mock/mock_data.dart';
+import '../../providers/leads_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/cards/lead_card.dart';
 import '../../widgets/common/common.dart';
 
 /// Leads List Screen
 /// Searchable, filterable list of all leads
-class LeadsListScreen extends StatefulWidget {
+class LeadsListScreen extends ConsumerStatefulWidget {
   const LeadsListScreen({super.key});
 
   @override
-  State<LeadsListScreen> createState() => _LeadsListScreenState();
+  ConsumerState<LeadsListScreen> createState() => _LeadsListScreenState();
 }
 
-class _LeadsListScreenState extends State<LeadsListScreen> {
+class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -27,16 +28,35 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
   String _sortBy = 'newest';
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch leads when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(leadsProvider.notifier).fetchLeads(refresh: true);
+    });
+
+    // Setup scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(leadsProvider.notifier).loadMore();
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  List<Lead> get _filteredLeads {
-    var result = List<Lead>.from(MockData.leads);
+  List<Lead> _filterAndSortLeads(List<Lead> leads) {
+    var result = List<Lead>.from(leads);
 
-    // Search filter
+    // Search filter (client-side for already loaded leads)
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       result = result.where((lead) {
@@ -72,10 +92,10 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
         break;
       case 'hot':
         result.sort((a, b) {
-          if (a.priority == Priority.high && b.priority != Priority.high) {
+          if (a.rating == LeadRating.hot && b.rating != LeadRating.hot) {
             return -1;
           }
-          if (b.priority == Priority.high && a.priority != Priority.high) {
+          if (b.rating == LeadRating.hot && a.rating != LeadRating.hot) {
             return 1;
           }
           return 0;
@@ -102,6 +122,9 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final leadsState = ref.watch(leadsProvider);
+    final filteredLeads = _filterAndSortLeads(leadsState.leads);
+
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
       appBar: AppBar(
@@ -125,32 +148,78 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
           _buildFilterBar(),
 
           // Results Count
-          _buildResultsCount(),
+          _buildResultsCount(filteredLeads.length, leadsState.totalCount),
 
           // Leads List
           Expanded(
-            child: _filteredLeads.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      // Simulate refresh
-                      await Future.delayed(const Duration(seconds: 1));
-                    },
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                      itemCount: _filteredLeads.length,
-                      itemBuilder: (context, index) {
-                        final lead = _filteredLeads[index];
-                        return LeadCard(
-                          lead: lead,
-                          onTap: () => context.push('/leads/${lead.id}'),
-                        );
-                      },
-                    ),
-                  ),
+            child: _buildLeadsList(leadsState, filteredLeads),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLeadsList(LeadsState state, List<Lead> filteredLeads) {
+    // Initial loading
+    if (state.isLoading && state.leads.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Error state
+    if (state.error != null && state.leads.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.alertCircle, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load leads',
+              style: AppTypography.label.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.error!,
+              style: AppTypography.caption,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => ref.read(leadsProvider.notifier).refresh(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Empty state
+    if (filteredLeads.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Leads list
+    return RefreshIndicator(
+      onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+        itemCount: filteredLeads.length + (state.hasMore && !_hasActiveFilters ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == filteredLeads.length) {
+            // Loading indicator at bottom
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final lead = filteredLeads[index];
+          return LeadCard(
+            lead: lead,
+            onTap: () => context.push('/leads/${lead.id}'),
+          );
+        },
       ),
     );
   }
@@ -282,13 +351,13 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
     );
   }
 
-  Widget _buildResultsCount() {
+  Widget _buildResultsCount(int filteredCount, int totalCount) {
     return Container(
       width: double.infinity,
       color: AppColors.surfaceDim,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Text(
-        '${_filteredLeads.length} lead${_filteredLeads.length == 1 ? '' : 's'}',
+        '$filteredCount lead${filteredCount == 1 ? '' : 's'}${_hasActiveFilters || _searchQuery.isNotEmpty ? ' (filtered)' : ''}',
         style: AppTypography.caption.copyWith(
           color: AppColors.textSecondary,
         ),
@@ -297,8 +366,7 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
   }
 
   Widget _buildEmptyState() {
-    final hasSearchOrFilters =
-        _searchQuery.isNotEmpty || _hasActiveFilters;
+    final hasSearchOrFilters = _searchQuery.isNotEmpty || _hasActiveFilters;
 
     return EmptyState(
       icon: hasSearchOrFilters ? LucideIcons.search : LucideIcons.users,
@@ -351,7 +419,7 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
           ...LeadStatus.values.map((status) => _FilterOption(
                 label: status.displayName,
                 isSelected: _statusFilter == status,
-                color: _getStatusColor(status),
+                color: status.color,
                 onTap: () {
                   setState(() => _statusFilter = status);
                   Navigator.pop(context);
@@ -380,7 +448,7 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
               Navigator.pop(context);
             },
           ),
-          ...LeadSource.values.map((source) => _FilterOption(
+          ...LeadSource.values.where((s) => s != LeadSource.none).map((source) => _FilterOption(
                 label: source.displayName,
                 isSelected: _sourceFilter == source,
                 onTap: () {
@@ -448,19 +516,6 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
         ],
       ),
     );
-  }
-
-  Color _getStatusColor(LeadStatus status) {
-    switch (status) {
-      case LeadStatus.newLead:
-        return AppColors.primary600;
-      case LeadStatus.contacted:
-        return AppColors.warning600;
-      case LeadStatus.qualified:
-        return AppColors.success600;
-      case LeadStatus.lost:
-        return AppColors.danger600;
-    }
   }
 }
 

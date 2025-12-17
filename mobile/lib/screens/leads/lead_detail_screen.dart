@@ -28,8 +28,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   final TextEditingController _noteController = TextEditingController();
 
   Lead? get lead => MockData.getLeadById(widget.leadId);
-  User? get assignedUser =>
-      lead != null ? MockData.getUserById(lead!.assignedTo) : null;
+  User? get assignedUser => null; // Will be loaded from API in future
 
   List<Activity> get leadActivities => MockData.activities
       .where((a) =>
@@ -189,7 +188,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
               // Avatar
               UserAvatar(
                 name: lead!.name,
-                imageUrl: lead!.avatar,
                 size: AvatarSize.xl,
               ),
 
@@ -353,10 +351,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
 
           const SizedBox(height: 16),
 
-          // Notes Preview Card
-          if (lead!.notes != null && lead!.notes!.isNotEmpty)
+          // Description Preview Card
+          if (lead!.description != null && lead!.description!.isNotEmpty)
             _buildCard(
-              title: 'Notes',
+              title: 'Description',
               action: GestureDetector(
                 onTap: () => _tabController.animateTo(2),
                 child: Text(
@@ -367,9 +365,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                 ),
               ),
               child: Text(
-                lead!.notes!.length > 200
-                    ? '${lead!.notes!.substring(0, 200)}...'
-                    : lead!.notes!,
+                lead!.description!.length > 200
+                    ? '${lead!.description!.substring(0, 200)}...'
+                    : lead!.description!,
                 style: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.5,
@@ -405,8 +403,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     // Mock notes for this lead
     final notes = [
       {
-        'text': lead!.notes ?? 'Initial contact made via website form.',
-        'author': assignedUser?.name ?? 'Unknown',
+        'text': lead!.description ?? 'Initial contact made via website form.',
+        'author': lead!.assignedToName,
         'timestamp': lead!.createdAt,
       },
     ];
@@ -684,16 +682,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   }
 
   Color _getStatusColor(LeadStatus status) {
-    switch (status) {
-      case LeadStatus.newLead:
-        return AppColors.primary600;
-      case LeadStatus.contacted:
-        return AppColors.warning600;
-      case LeadStatus.qualified:
-        return AppColors.success600;
-      case LeadStatus.lost:
-        return AppColors.danger600;
-    }
+    // Use the color defined in the enum
+    return status.color;
   }
 
   String _formatDate(DateTime date) {

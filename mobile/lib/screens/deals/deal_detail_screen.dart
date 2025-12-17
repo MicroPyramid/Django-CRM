@@ -545,7 +545,6 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                 children: [
                   UserAvatar(
                     name: relatedLead!.name,
-                    imageUrl: relatedLead!.avatar,
                     size: AvatarSize.md,
                   ),
                   const SizedBox(width: 12),

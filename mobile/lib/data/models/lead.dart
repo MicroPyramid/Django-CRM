@@ -1,86 +1,109 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Lead status enumeration
+/// Lead status enumeration matching backend LEAD_STATUS
 enum LeadStatus {
-  newLead('New', AppColors.primary500),
-  contacted('Contacted', AppColors.warning500),
-  qualified('Qualified', AppColors.success500),
-  lost('Lost', AppColors.danger500);
+  newLead('new', 'New', AppColors.primary500),
+  assigned('assigned', 'Assigned', AppColors.primary400),
+  inProcess('in process', 'In Process', AppColors.warning500),
+  contacted('contacted', 'Contacted', AppColors.warning600),
+  qualified('qualified', 'Qualified', AppColors.success500),
+  converted('converted', 'Converted', AppColors.success600),
+  closed('closed', 'Closed', AppColors.gray500),
+  lost('lost', 'Lost', AppColors.danger500);
 
+  final String value;
   final String label;
   final Color color;
 
-  const LeadStatus(this.label, this.color);
+  const LeadStatus(this.value, this.label, this.color);
 
-  /// Alias for label
   String get displayName => label;
 
-  static LeadStatus fromString(String value) {
-    switch (value.toLowerCase()) {
-      case 'new':
-        return LeadStatus.newLead;
-      case 'contacted':
-        return LeadStatus.contacted;
-      case 'qualified':
-        return LeadStatus.qualified;
-      case 'lost':
-        return LeadStatus.lost;
-      default:
-        return LeadStatus.newLead;
-    }
+  static LeadStatus fromString(String? value) {
+    if (value == null) return LeadStatus.newLead;
+    final normalized = value.toLowerCase().trim();
+    return LeadStatus.values.firstWhere(
+      (s) => s.value == normalized,
+      orElse: () => LeadStatus.newLead,
+    );
   }
 }
 
-/// Lead source enumeration
+/// Lead source enumeration matching backend LEAD_SOURCE
 enum LeadSource {
-  website('Website', Icons.language),
-  referral('Referral', Icons.people),
-  linkedin('LinkedIn', Icons.business),
-  coldCall('Cold Call', Icons.phone),
-  tradeShow('Trade Show', Icons.event);
+  none('', 'None', Icons.help_outline),
+  email('email', 'Email', Icons.email),
+  coldCall('call', 'Cold Call', Icons.phone),
+  website('web', 'Website', Icons.language),
+  webDownload('web download', 'Web Download', Icons.download),
+  webResearch('web research', 'Web Research', Icons.search),
+  referral('referral', 'Referral', Icons.people),
+  campaign('campaign', 'Campaign', Icons.campaign),
+  socialMedia('social media', 'Social Media', Icons.share),
+  tradeShow('trade show', 'Trade Show', Icons.event),
+  partner('partner', 'Partner', Icons.handshake),
+  publicRelations('public relations', 'PR', Icons.newspaper),
+  other('other', 'Other', Icons.more_horiz);
 
+  final String value;
   final String label;
   final IconData icon;
 
-  const LeadSource(this.label, this.icon);
+  const LeadSource(this.value, this.label, this.icon);
 
-  /// Alias for label
   String get displayName => label;
 
-  static LeadSource fromString(String value) {
-    switch (value.toLowerCase().replaceAll('-', '').replaceAll('_', '')) {
-      case 'website':
-        return LeadSource.website;
-      case 'referral':
-        return LeadSource.referral;
-      case 'linkedin':
-        return LeadSource.linkedin;
-      case 'coldcall':
-        return LeadSource.coldCall;
-      case 'tradeshow':
-        return LeadSource.tradeShow;
-      default:
-        return LeadSource.website;
-    }
+  static LeadSource fromString(String? value) {
+    if (value == null || value.isEmpty) return LeadSource.none;
+    final normalized = value.toLowerCase().trim();
+    return LeadSource.values.firstWhere(
+      (s) => s.value == normalized,
+      orElse: () => LeadSource.other,
+    );
   }
 }
 
-/// Priority enumeration
+/// Lead rating/priority enumeration matching backend rating field
+enum LeadRating {
+  cold('COLD', 'Cold', AppColors.primary400),
+  warm('WARM', 'Warm', AppColors.warning500),
+  hot('HOT', 'Hot', AppColors.danger500);
+
+  final String value;
+  final String label;
+  final Color color;
+
+  const LeadRating(this.value, this.label, this.color);
+
+  String get displayName => label;
+
+  static LeadRating fromString(String? value) {
+    if (value == null) return LeadRating.cold;
+    final normalized = value.toUpperCase().trim();
+    return LeadRating.values.firstWhere(
+      (r) => r.value == normalized,
+      orElse: () => LeadRating.cold,
+    );
+  }
+}
+
+/// Priority enumeration (for backwards compatibility)
 enum Priority {
-  low('Low', AppColors.gray400),
+  low('Low', AppColors.success500),
   medium('Medium', AppColors.warning500),
-  high('High', AppColors.danger500);
+  high('High', AppColors.danger500),
+  urgent('Urgent', AppColors.purple500);
 
   final String label;
   final Color color;
 
   const Priority(this.label, this.color);
 
-  /// Alias for label
   String get displayName => label;
 
-  static Priority fromString(String value) {
+  static Priority fromString(String? value) {
+    if (value == null) return Priority.medium;
     switch (value.toLowerCase()) {
       case 'low':
         return Priority.low;
@@ -88,8 +111,22 @@ enum Priority {
         return Priority.medium;
       case 'high':
         return Priority.high;
+      case 'urgent':
+        return Priority.urgent;
       default:
         return Priority.medium;
+    }
+  }
+
+  /// Convert from LeadRating
+  static Priority fromRating(LeadRating rating) {
+    switch (rating) {
+      case LeadRating.cold:
+        return Priority.low;
+      case LeadRating.warm:
+        return Priority.medium;
+      case LeadRating.hot:
+        return Priority.high;
     }
   }
 }
@@ -97,85 +134,277 @@ enum Priority {
 /// Lead model for BottleCRM
 class Lead {
   final String id;
-  final String name;
-  final String company;
+  final String? title;
+  final String? salutation;
+  final String firstName;
+  final String lastName;
   final String email;
   final String? phone;
+  final String? jobTitle;
+  final String? website;
+  final String? linkedinUrl;
+  final String companyName;
   final LeadStatus status;
   final LeadSource source;
-  final Priority priority;
-  final String assignedTo;
+  final LeadRating rating;
+  final String? industry;
+  final double? opportunityAmount;
+  final String? currency;
+  final int? probability;
+  final DateTime? closeDate;
+  final String? addressLine;
+  final String? city;
+  final String? state;
+  final String? postcode;
+  final String? country;
+  final DateTime? lastContacted;
+  final DateTime? nextFollowUp;
+  final String? description;
   final List<String> tags;
-  final String? notes;
-  final String? avatar;
+  final List<Map<String, dynamic>>? assignedTo;
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
+  final bool isActive;
 
   const Lead({
     required this.id,
-    required this.name,
-    required this.company,
+    this.title,
+    this.salutation,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     this.phone,
+    this.jobTitle,
+    this.website,
+    this.linkedinUrl,
+    required this.companyName,
     required this.status,
     required this.source,
-    required this.priority,
-    required this.assignedTo,
+    required this.rating,
+    this.industry,
+    this.opportunityAmount,
+    this.currency,
+    this.probability,
+    this.closeDate,
+    this.addressLine,
+    this.city,
+    this.state,
+    this.postcode,
+    this.country,
+    this.lastContacted,
+    this.nextFollowUp,
+    this.description,
     this.tags = const [],
-    this.notes,
-    this.avatar,
+    this.assignedTo,
     required this.createdAt,
-    required this.updatedAt,
+    this.updatedAt,
+    this.isActive = true,
   });
+
+  /// Full name combining first and last name
+  String get name {
+    final parts = [firstName, lastName].where((p) => p.isNotEmpty).toList();
+    return parts.isNotEmpty ? parts.join(' ') : email;
+  }
+
+  /// Alias for companyName
+  String get company => companyName;
+
+  /// Priority based on rating
+  Priority get priority => Priority.fromRating(rating);
+
+  /// Get assigned user name (first one if multiple)
+  String get assignedToName {
+    if (assignedTo == null || assignedTo!.isEmpty) return 'Unassigned';
+    final first = assignedTo!.first;
+    final email = first['user__email'] as String? ?? '';
+    return email.split('@').first;
+  }
 
   /// Get lead initials for avatar fallback
   String get initials {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
-      return parts[0][0].toUpperCase();
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      return '${firstName[0]}${lastName[0]}'.toUpperCase();
+    } else if (firstName.isNotEmpty) {
+      return firstName.substring(0, firstName.length >= 2 ? 2 : 1).toUpperCase();
+    } else if (lastName.isNotEmpty) {
+      return lastName.substring(0, lastName.length >= 2 ? 2 : 1).toUpperCase();
     }
     return '?';
   }
 
-  /// Get first name
-  String get firstName {
-    final parts = name.trim().split(' ');
-    return parts.isNotEmpty ? parts[0] : name;
+  /// Factory constructor to create Lead from JSON
+  factory Lead.fromJson(Map<String, dynamic> json) {
+    // Parse tags
+    List<String> parsedTags = [];
+    if (json['tags'] != null) {
+      final tagsList = json['tags'] as List<dynamic>;
+      parsedTags = tagsList.map((t) {
+        if (t is Map<String, dynamic>) {
+          return t['name'] as String? ?? '';
+        }
+        return t.toString();
+      }).where((t) => t.isNotEmpty).toList();
+    }
+
+    // Parse assigned_to
+    List<Map<String, dynamic>>? parsedAssignedTo;
+    if (json['assigned_to'] != null) {
+      final assignedList = json['assigned_to'] as List<dynamic>;
+      parsedAssignedTo = assignedList
+          .map((a) => a is Map<String, dynamic> ? a : <String, dynamic>{})
+          .toList();
+    }
+
+    return Lead(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] as String?,
+      salutation: json['salutation'] as String?,
+      firstName: json['first_name'] as String? ?? '',
+      lastName: json['last_name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String?,
+      jobTitle: json['job_title'] as String?,
+      website: json['website'] as String?,
+      linkedinUrl: json['linkedin_url'] as String?,
+      companyName: json['company_name'] as String? ?? '',
+      status: LeadStatus.fromString(json['status'] as String?),
+      source: LeadSource.fromString(json['source'] as String?),
+      rating: LeadRating.fromString(json['rating'] as String?),
+      industry: json['industry'] as String?,
+      opportunityAmount: json['opportunity_amount'] != null
+          ? double.tryParse(json['opportunity_amount'].toString())
+          : null,
+      currency: json['currency'] as String?,
+      probability: json['probability'] as int?,
+      closeDate: json['close_date'] != null
+          ? DateTime.tryParse(json['close_date'] as String)
+          : null,
+      addressLine: json['address_line'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      postcode: json['postcode'] as String?,
+      country: json['country'] as String?,
+      lastContacted: json['last_contacted'] != null
+          ? DateTime.tryParse(json['last_contacted'] as String)
+          : null,
+      nextFollowUp: json['next_follow_up'] != null
+          ? DateTime.tryParse(json['next_follow_up'] as String)
+          : null,
+      description: json['description'] as String?,
+      tags: parsedTags,
+      assignedTo: parsedAssignedTo,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String)
+          : null,
+      isActive: json['is_active'] as bool? ?? true,
+    );
+  }
+
+  /// Convert Lead to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'salutation': salutation,
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'job_title': jobTitle,
+      'website': website,
+      'linkedin_url': linkedinUrl,
+      'company_name': companyName,
+      'status': status.value,
+      'source': source.value,
+      'rating': rating.value,
+      'industry': industry,
+      'opportunity_amount': opportunityAmount,
+      'currency': currency,
+      'probability': probability,
+      'close_date': closeDate?.toIso8601String(),
+      'address_line': addressLine,
+      'city': city,
+      'state': state,
+      'postcode': postcode,
+      'country': country,
+      'last_contacted': lastContacted?.toIso8601String(),
+      'next_follow_up': nextFollowUp?.toIso8601String(),
+      'description': description,
+      'is_active': isActive,
+    };
   }
 
   Lead copyWith({
     String? id,
-    String? name,
-    String? company,
+    String? title,
+    String? salutation,
+    String? firstName,
+    String? lastName,
     String? email,
     String? phone,
+    String? jobTitle,
+    String? website,
+    String? linkedinUrl,
+    String? companyName,
     LeadStatus? status,
     LeadSource? source,
-    Priority? priority,
-    String? assignedTo,
+    LeadRating? rating,
+    String? industry,
+    double? opportunityAmount,
+    String? currency,
+    int? probability,
+    DateTime? closeDate,
+    String? addressLine,
+    String? city,
+    String? state,
+    String? postcode,
+    String? country,
+    DateTime? lastContacted,
+    DateTime? nextFollowUp,
+    String? description,
     List<String>? tags,
-    String? notes,
-    String? avatar,
+    List<Map<String, dynamic>>? assignedTo,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isActive,
   }) {
     return Lead(
       id: id ?? this.id,
-      name: name ?? this.name,
-      company: company ?? this.company,
+      title: title ?? this.title,
+      salutation: salutation ?? this.salutation,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      jobTitle: jobTitle ?? this.jobTitle,
+      website: website ?? this.website,
+      linkedinUrl: linkedinUrl ?? this.linkedinUrl,
+      companyName: companyName ?? this.companyName,
       status: status ?? this.status,
       source: source ?? this.source,
-      priority: priority ?? this.priority,
-      assignedTo: assignedTo ?? this.assignedTo,
+      rating: rating ?? this.rating,
+      industry: industry ?? this.industry,
+      opportunityAmount: opportunityAmount ?? this.opportunityAmount,
+      currency: currency ?? this.currency,
+      probability: probability ?? this.probability,
+      closeDate: closeDate ?? this.closeDate,
+      addressLine: addressLine ?? this.addressLine,
+      city: city ?? this.city,
+      state: state ?? this.state,
+      postcode: postcode ?? this.postcode,
+      country: country ?? this.country,
+      lastContacted: lastContacted ?? this.lastContacted,
+      nextFollowUp: nextFollowUp ?? this.nextFollowUp,
+      description: description ?? this.description,
       tags: tags ?? this.tags,
-      notes: notes ?? this.notes,
-      avatar: avatar ?? this.avatar,
+      assignedTo: assignedTo ?? this.assignedTo,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isActive: isActive ?? this.isActive,
     );
   }
 

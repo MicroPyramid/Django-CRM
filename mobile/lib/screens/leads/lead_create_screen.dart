@@ -763,42 +763,18 @@ class _LeadCreateScreenState extends State<LeadCreateScreen> {
   }
 
   Color _getPriorityColor(Priority priority) {
-    switch (priority) {
-      case Priority.low:
-        return AppColors.gray400;
-      case Priority.medium:
-        return AppColors.warning500;
-      case Priority.high:
-        return AppColors.danger500;
-    }
+    // Use the color defined in the enum
+    return priority.color;
   }
 
   Color _getStatusColorForPicker(LeadStatus status) {
-    switch (status) {
-      case LeadStatus.newLead:
-        return AppColors.primary600;
-      case LeadStatus.contacted:
-        return AppColors.warning600;
-      case LeadStatus.qualified:
-        return AppColors.success600;
-      case LeadStatus.lost:
-        return AppColors.danger600;
-    }
+    // Use the color defined in the enum
+    return status.color;
   }
 
   IconData _getSourceIcon(LeadSource source) {
-    switch (source) {
-      case LeadSource.website:
-        return LucideIcons.globe;
-      case LeadSource.referral:
-        return LucideIcons.users;
-      case LeadSource.linkedin:
-        return LucideIcons.linkedin;
-      case LeadSource.coldCall:
-        return LucideIcons.phone;
-      case LeadSource.tradeShow:
-        return LucideIcons.calendar;
-    }
+    // Use the icon defined in the enum
+    return source.icon;
   }
 }
 

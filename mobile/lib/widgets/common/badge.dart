@@ -64,6 +64,8 @@ class PriorityBadge extends StatelessWidget {
 
   IconData get _icon {
     switch (priority) {
+      case Priority.urgent:
+        return Icons.priority_high_rounded;
       case Priority.high:
         return Icons.arrow_upward_rounded;
       case Priority.medium:

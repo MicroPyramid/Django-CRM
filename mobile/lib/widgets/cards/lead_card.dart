@@ -70,7 +70,6 @@ class LeadCard extends StatelessWidget {
         // Avatar
         UserAvatar(
           name: lead.name,
-          imageUrl: lead.avatar,
           size: AvatarSize.md,
         ),
 
@@ -204,18 +203,8 @@ class LeadCard extends StatelessWidget {
   }
 
   IconData _getSourceIcon(LeadSource source) {
-    switch (source) {
-      case LeadSource.website:
-        return LucideIcons.globe;
-      case LeadSource.referral:
-        return LucideIcons.users;
-      case LeadSource.linkedin:
-        return LucideIcons.linkedin;
-      case LeadSource.coldCall:
-        return LucideIcons.phone;
-      case LeadSource.tradeShow:
-        return LucideIcons.calendar;
-    }
+    // Use the icon defined in the enum
+    return source.icon;
   }
 
   String _formatTimeAgo(DateTime dateTime) {
@@ -266,7 +255,6 @@ class LeadCardCompact extends StatelessWidget {
               children: [
                 UserAvatar(
                   name: lead.name,
-                  imageUrl: lead.avatar,
                   size: AvatarSize.sm,
                 ),
                 const SizedBox(width: 8),
