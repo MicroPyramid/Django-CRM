@@ -98,11 +98,13 @@ enum DealStage {
   /// Get display name (alias for label)
   String get displayName => label;
 
-  static DealStage fromString(String value) {
-    switch (value.toLowerCase().replaceAll('-', '').replaceAll('_', '')) {
+  static DealStage fromString(String? value) {
+    if (value == null) return DealStage.prospecting;
+    switch (value.toLowerCase().replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '')) {
       case 'prospecting':
         return DealStage.prospecting;
       case 'qualified':
+      case 'qualification': // Backend uses QUALIFICATION
         return DealStage.qualified;
       case 'proposal':
         return DealStage.proposal;
@@ -187,6 +189,125 @@ class Deal {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// Factory constructor to create Deal from JSON (backend API)
+  factory Deal.fromJson(Map<String, dynamic> json) {
+    // Parse tags
+    List<String> parsedTags = [];
+    if (json['tags'] != null) {
+      final tagsList = json['tags'] as List<dynamic>? ?? [];
+      parsedTags = tagsList.map((t) {
+        if (t is Map<String, dynamic>) {
+          return t['name'] as String? ?? '';
+        }
+        return t.toString();
+      }).where((t) => t.isNotEmpty).toList();
+    }
+
+    // Parse assigned_to - get first person's email for display
+    String assignedToName = 'Unassigned';
+    if (json['assigned_to'] != null) {
+      final assignedList = json['assigned_to'] as List<dynamic>? ?? [];
+      if (assignedList.isNotEmpty) {
+        final first = assignedList.first;
+        if (first is Map<String, dynamic>) {
+          final email = first['user']?['email'] as String? ??
+                        first['user__email'] as String? ?? '';
+          assignedToName = email.split('@').first;
+          if (assignedToName.isEmpty) assignedToName = 'Assigned';
+        }
+      }
+    }
+
+    // Parse account/company name
+    String companyName = 'No Account';
+    if (json['account'] != null && json['account'] is Map<String, dynamic>) {
+      companyName = json['account']['name'] as String? ?? 'No Account';
+    }
+
+    // Parse products/line_items
+    List<DealProduct> products = [];
+    if (json['line_items'] != null) {
+      final lineItems = json['line_items'] as List<dynamic>? ?? [];
+      products = lineItems.map((item) {
+        if (item is Map<String, dynamic>) {
+          // Parse quantity - can be num or string
+          int qty = 1;
+          if (item['quantity'] != null) {
+            if (item['quantity'] is num) {
+              qty = (item['quantity'] as num).toInt();
+            } else if (item['quantity'] is String) {
+              qty = int.tryParse(item['quantity'] as String) ?? 1;
+            }
+          }
+          // Parse unit_price - can be num or string
+          double price = 0.0;
+          if (item['unit_price'] != null) {
+            if (item['unit_price'] is num) {
+              price = (item['unit_price'] as num).toDouble();
+            } else if (item['unit_price'] is String) {
+              price = double.tryParse(item['unit_price'] as String) ?? 0.0;
+            }
+          }
+          return DealProduct(
+            id: item['id']?.toString() ?? '',
+            name: item['name'] as String? ?? '',
+            quantity: qty,
+            unitPrice: price,
+          );
+        }
+        return const DealProduct(id: '', name: '', quantity: 0, unitPrice: 0);
+      }).where((p) => p.id.isNotEmpty).toList();
+    }
+
+    // Parse close date
+    DateTime? closeDate;
+    if (json['closed_on'] != null) {
+      closeDate = DateTime.tryParse(json['closed_on'] as String);
+    }
+
+    // Parse amount - can be num or string
+    double amount = 0.0;
+    if (json['amount'] != null) {
+      if (json['amount'] is num) {
+        amount = (json['amount'] as num).toDouble();
+      } else if (json['amount'] is String) {
+        amount = double.tryParse(json['amount'] as String) ?? 0.0;
+      }
+    }
+
+    // Parse probability - can be num or string
+    int probability = 0;
+    if (json['probability'] != null) {
+      if (json['probability'] is num) {
+        probability = (json['probability'] as num).toInt();
+      } else if (json['probability'] is String) {
+        probability = int.tryParse(json['probability'] as String) ?? 0;
+      }
+    }
+
+    return Deal(
+      id: json['id']?.toString() ?? '',
+      title: json['name'] as String? ?? '',
+      value: amount,
+      stage: DealStage.fromString(json['stage'] as String?),
+      probability: probability,
+      closeDate: closeDate,
+      leadId: null, // API doesn't have lead reference directly
+      companyName: companyName,
+      products: products,
+      assignedTo: assignedToName,
+      priority: Priority.medium, // API doesn't have priority, default to medium
+      labels: parsedTags,
+      notes: json['description'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
 
   /// Get weighted value based on probability
   double get weightedValue => value * (probability / 100);

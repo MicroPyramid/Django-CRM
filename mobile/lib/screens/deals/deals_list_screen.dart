@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/mock/mock_data.dart';
+import '../../providers/deals_provider.dart';
 import '../../widgets/cards/deal_card.dart';
 import '../../widgets/misc/kanban_column.dart';
 import '../../widgets/common/common.dart';
@@ -12,14 +13,14 @@ enum ViewMode { kanban, list }
 
 /// Deals List Screen
 /// Pipeline view with Kanban board or list layout
-class DealsListScreen extends StatefulWidget {
+class DealsListScreen extends ConsumerStatefulWidget {
   const DealsListScreen({super.key});
 
   @override
-  State<DealsListScreen> createState() => _DealsListScreenState();
+  ConsumerState<DealsListScreen> createState() => _DealsListScreenState();
 }
 
-class _DealsListScreenState extends State<DealsListScreen> {
+class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _kanbanScrollController = ScrollController();
 
@@ -37,6 +38,15 @@ class _DealsListScreenState extends State<DealsListScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch deals on screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(dealsProvider.notifier).fetchDeals(refresh: true);
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _kanbanScrollController.dispose();
@@ -44,7 +54,8 @@ class _DealsListScreenState extends State<DealsListScreen> {
   }
 
   List<Deal> get _filteredDeals {
-    var result = List<Deal>.from(MockData.deals);
+    final deals = ref.watch(dealsListProvider);
+    var result = List<Deal>.from(deals);
 
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
@@ -214,15 +225,8 @@ class _DealsListScreenState extends State<DealsListScreen> {
   }
 
   Widget _buildPipelineSummary() {
-    final totalValue = _filteredDeals
-        .where((d) =>
-            d.stage != DealStage.closedLost && d.stage != DealStage.closedWon)
-        .fold<double>(0, (sum, deal) => sum + deal.value);
-
-    final activeDeals = _filteredDeals
-        .where((d) =>
-            d.stage != DealStage.closedLost && d.stage != DealStage.closedWon)
-        .length;
+    final totalValue = ref.watch(pipelineValueProvider);
+    final activeDeals = ref.watch(activeDealsCountProvider);
 
     return Container(
       color: AppColors.surface,
@@ -246,35 +250,96 @@ class _DealsListScreenState extends State<DealsListScreen> {
   }
 
   Widget _buildKanbanView() {
+    final isLoading = ref.watch(dealsLoadingProvider);
+    final error = ref.watch(dealsErrorProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final columnWidth = screenWidth * 0.85;
 
+    // Show loading indicator on first load
+    if (isLoading && _filteredDeals.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error if any
+    if (error != null && _filteredDeals.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
+            const SizedBox(height: 16),
+            Text(error, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(dealsProvider.notifier).refresh(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // RefreshIndicator needs vertical scroll, so wrap in CustomScrollView
     return RefreshIndicator(
       onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
+        await ref.read(dealsProvider.notifier).refresh();
       },
-      child: SingleChildScrollView(
-        controller: _kanbanScrollController,
-        scrollDirection: Axis.horizontal,
-        physics: const PageScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(10, 12, 10, 100),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: _kanbanStages.map((stage) {
-            return KanbanColumn(
-              stage: stage,
-              deals: _dealsByStage[stage] ?? [],
-              width: columnWidth,
-              onDealTap: (deal) => context.push('/deals/${deal.id}'),
-              onDealMoved: _handleDealMoved,
-            );
-          }).toList(),
-        ),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverFillRemaining(
+            child: SingleChildScrollView(
+              controller: _kanbanScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const PageScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(10, 12, 10, 100),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _kanbanStages.map((stage) {
+                  return KanbanColumn(
+                    stage: stage,
+                    deals: _dealsByStage[stage] ?? [],
+                    width: columnWidth,
+                    onDealTap: (deal) => context.push('/deals/${deal.id}'),
+                    onDealMoved: _handleDealMoved,
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildListView() {
+    final isLoading = ref.watch(dealsLoadingProvider);
+    final error = ref.watch(dealsErrorProvider);
+
+    // Show loading indicator on first load
+    if (isLoading && _filteredDeals.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error if any
+    if (error != null && _filteredDeals.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
+            const SizedBox(height: 16),
+            Text(error, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(dealsProvider.notifier).refresh(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_filteredDeals.isEmpty) {
       return EmptyState(
         icon: LucideIcons.briefcase,
@@ -294,7 +359,7 @@ class _DealsListScreenState extends State<DealsListScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
+        await ref.read(dealsProvider.notifier).refresh();
       },
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),

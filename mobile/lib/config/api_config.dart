@@ -67,7 +67,7 @@ class ApiConfig {
   static String get accounts => '$apiBaseUrl/accounts/';
 
   /// Opportunities (deals) management
-  static String get opportunities => '$apiBaseUrl/opportunity/';
+  static String get opportunities => '$apiBaseUrl/opportunities/';
 
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
