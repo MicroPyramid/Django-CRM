@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/mock/mock_data.dart';
 import '../common/common.dart';
 
 /// Task Row Widget
@@ -23,8 +22,6 @@ class TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final assignedUser = MockData.getUserById(task.assignedTo);
-
     return Dismissible(
       key: Key(task.id),
       direction: DismissDirection.endToStart,
@@ -155,12 +152,10 @@ class TaskRow extends StatelessWidget {
               const SizedBox(width: 10),
 
               // Assignee Avatar
-              if (assignedUser != null)
-                UserAvatar(
-                  name: assignedUser.name,
-                  imageUrl: assignedUser.avatar,
-                  size: AvatarSize.xs,
-                ),
+              UserAvatar(
+                name: task.assignedToName,
+                size: AvatarSize.xs,
+              ),
             ],
           ),
         ),
@@ -169,16 +164,18 @@ class TaskRow extends StatelessWidget {
   }
 
   bool _isUrgent() {
+    if (task.dueDate == null) return false;
     final now = DateTime.now();
-    return task.dueDate.isBefore(now) ||
-        task.dueDate.difference(now).inHours < 2;
+    return task.dueDate!.isBefore(now) ||
+        task.dueDate!.difference(now).inHours < 2;
   }
 
   Color _getDueTimeColor() {
     if (task.completed) return AppColors.textTertiary;
+    if (task.dueDate == null) return AppColors.textTertiary;
 
     final now = DateTime.now();
-    final dueDate = task.dueDate;
+    final dueDate = task.dueDate!;
 
     if (dueDate.isBefore(now)) {
       return AppColors.danger600;
@@ -192,8 +189,10 @@ class TaskRow extends StatelessWidget {
   }
 
   String _formatDueTime() {
+    if (task.dueDate == null) return 'No due date';
+
     final now = DateTime.now();
-    final dueDate = task.dueDate;
+    final dueDate = task.dueDate!;
 
     if (dueDate.isBefore(now) && !_isSameDay(dueDate, now)) {
       final daysOverdue = now.difference(dueDate).inDays;
@@ -235,8 +234,12 @@ class TaskRow extends StatelessWidget {
     switch (type) {
       case RelatedEntityType.lead:
         return 'Lead: $title';
-      case RelatedEntityType.deal:
-        return 'Deal: $title';
+      case RelatedEntityType.account:
+        return 'Account: $title';
+      case RelatedEntityType.opportunity:
+        return 'Opportunity: $title';
+      case RelatedEntityType.case_:
+        return 'Case: $title';
       case RelatedEntityType.contact:
         return 'Contact: $title';
     }

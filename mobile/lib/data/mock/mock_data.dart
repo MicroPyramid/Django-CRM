@@ -351,10 +351,9 @@ class MockData {
       title: 'Follow up with TechCorp',
       description: 'Send updated proposal with revised pricing',
       dueDate: DateTime.now().add(const Duration(hours: 2)),
-      completed: false,
+      status: TaskStatus.inProgress,
       priority: Priority.high,
-      assignedTo: 'user-1',
-      relatedTo: const RelatedEntity(id: 'deal-1', type: RelatedEntityType.deal, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       updatedAt: DateTime.now(),
     ),
@@ -363,10 +362,9 @@ class MockData {
       title: 'Schedule demo for HealthFirst',
       description: 'Coordinate with technical team for product demo',
       dueDate: DateTime.now(),
-      completed: false,
+      status: TaskStatus.newTask,
       priority: Priority.high,
-      assignedTo: 'user-4',
-      relatedTo: const RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
+      relatedTo: RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
       updatedAt: DateTime.now(),
     ),
@@ -375,9 +373,8 @@ class MockData {
       title: 'Prepare quarterly report',
       description: 'Compile sales data for Q4 review',
       dueDate: DateTime.now().subtract(const Duration(days: 1)),
-      completed: false,
+      status: TaskStatus.newTask,
       priority: Priority.medium,
-      assignedTo: 'user-1',
       relatedTo: null,
       createdAt: DateTime.now().subtract(const Duration(days: 5)),
       updatedAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -387,10 +384,9 @@ class MockData {
       title: 'Call Global Solutions',
       description: 'Discuss implementation timeline',
       dueDate: DateTime.now(),
-      completed: true,
+      status: TaskStatus.completed,
       priority: Priority.medium,
-      assignedTo: 'user-2',
-      relatedTo: const RelatedEntity(id: 'lead-2', type: RelatedEntityType.lead, title: 'Emma Wilson'),
+      relatedTo: RelatedEntity(id: 'lead-2', type: RelatedEntityType.lead, title: 'Emma Wilson'),
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
       updatedAt: DateTime.now().subtract(const Duration(hours: 4)),
     ),
@@ -399,10 +395,9 @@ class MockData {
       title: 'Send contract to Innovate Labs',
       description: 'Final contract ready for signature',
       dueDate: DateTime.now().add(const Duration(days: 1)),
-      completed: false,
+      status: TaskStatus.newTask,
       priority: Priority.high,
-      assignedTo: 'user-1',
-      relatedTo: const RelatedEntity(id: 'deal-7', type: RelatedEntityType.deal, title: 'Innovate Labs Pilot'),
+      relatedTo: RelatedEntity(id: 'deal-7', type: RelatedEntityType.opportunity, title: 'Innovate Labs Pilot'),
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       updatedAt: DateTime.now(),
     ),
@@ -411,10 +406,9 @@ class MockData {
       title: 'Update CRM notes for Retail Plus',
       description: 'Document latest conversation details',
       dueDate: DateTime.now().add(const Duration(days: 3)),
-      completed: false,
+      status: TaskStatus.newTask,
       priority: Priority.low,
-      assignedTo: 'user-2',
-      relatedTo: const RelatedEntity(id: 'lead-5', type: RelatedEntityType.lead, title: 'David Thompson'),
+      relatedTo: RelatedEntity(id: 'lead-5', type: RelatedEntityType.lead, title: 'David Thompson'),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     ),
@@ -423,10 +417,9 @@ class MockData {
       title: 'Review Metro Financial requirements',
       description: 'Analyze technical requirements document',
       dueDate: DateTime.now().add(const Duration(days: 2)),
-      completed: false,
+      status: TaskStatus.inProgress,
       priority: Priority.medium,
-      assignedTo: 'user-3',
-      relatedTo: const RelatedEntity(id: 'deal-3', type: RelatedEntityType.deal, title: 'Metro Financial CRM Upgrade'),
+      relatedTo: RelatedEntity(id: 'deal-3', type: RelatedEntityType.opportunity, title: 'Metro Financial CRM Upgrade'),
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
       updatedAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
@@ -435,9 +428,8 @@ class MockData {
       title: 'Team sync meeting',
       description: 'Weekly sales team standup',
       dueDate: DateTime.now().add(const Duration(days: 4)),
-      completed: false,
+      status: TaskStatus.newTask,
       priority: Priority.low,
-      assignedTo: 'user-1',
       relatedTo: null,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -457,7 +449,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: const RelatedEntity(id: 'deal-1', type: RelatedEntityType.deal, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
     ),
     Activity(
       id: 'activity-2',
@@ -467,7 +459,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 5)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: const RelatedEntity(id: 'lead-1', type: RelatedEntityType.lead, title: 'John Smith'),
+      relatedTo: RelatedEntity(id: 'lead-1', type: RelatedEntityType.lead, title: 'John Smith'),
     ),
     Activity(
       id: 'activity-3',
@@ -477,7 +469,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 8)),
       userId: 'user-2',
       userName: 'Sarah Williams',
-      relatedTo: const RelatedEntity(id: 'deal-2', type: RelatedEntityType.deal, title: 'Global Solutions Implementation'),
+      relatedTo: RelatedEntity(id: 'deal-2', type: RelatedEntityType.opportunity, title: 'Global Solutions Implementation'),
     ),
     Activity(
       id: 'activity-4',
@@ -487,7 +479,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 12)),
       userId: 'user-4',
       userName: 'Emily Davis',
-      relatedTo: const RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
+      relatedTo: RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
     ),
     Activity(
       id: 'activity-5',
@@ -497,7 +489,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: const RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
+      relatedTo: RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
     ),
     Activity(
       id: 'activity-6',
@@ -507,7 +499,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
       userId: 'user-3',
       userName: 'Michael Chen',
-      relatedTo: const RelatedEntity(id: 'lead-4', type: RelatedEntityType.lead, title: 'Lisa Anderson'),
+      relatedTo: RelatedEntity(id: 'lead-4', type: RelatedEntityType.lead, title: 'Lisa Anderson'),
     ),
     Activity(
       id: 'activity-7',
@@ -527,7 +519,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 2, hours: 6)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: const RelatedEntity(id: 'deal-1', type: RelatedEntityType.deal, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
     ),
   ];
 
@@ -543,7 +535,7 @@ class MockData {
       title: 'Task Due Soon',
       message: 'Follow up with TechCorp is due in 2 hours',
       read: false,
-      relatedTo: const RelatedEntity(id: 'task-1', type: RelatedEntityType.deal, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(id: 'task-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
       timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
     ),
     AppNotification(
@@ -553,7 +545,7 @@ class MockData {
       title: 'Deal Updated',
       message: 'Innovate Labs Pilot moved to negotiation',
       read: false,
-      relatedTo: const RelatedEntity(id: 'deal-7', type: RelatedEntityType.deal, title: 'Innovate Labs Pilot'),
+      relatedTo: RelatedEntity(id: 'deal-7', type: RelatedEntityType.opportunity, title: 'Innovate Labs Pilot'),
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     ),
     AppNotification(
@@ -563,7 +555,7 @@ class MockData {
       title: 'New Lead Assigned',
       message: 'Robert Martinez from Innovate Labs has been assigned to you',
       read: true,
-      relatedTo: const RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
+      relatedTo: RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
     ),
     AppNotification(
@@ -628,7 +620,7 @@ class MockData {
     return tasks
         .where((t) => !t.completed && (t.isDueToday || t.isOverdue))
         .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      ..sort((a, b) => (a.dueDate ?? DateTime.now()).compareTo(b.dueDate ?? DateTime.now()));
   }
 
   static List<Activity> get recentActivities {
@@ -719,7 +711,7 @@ class MockData {
   static List<Activity> getActivitiesForDeal(String dealId) {
     return activities
         .where((a) =>
-            a.relatedTo?.type == RelatedEntityType.deal &&
+            a.relatedTo?.type == RelatedEntityType.opportunity &&
             a.relatedTo?.id == dealId)
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));

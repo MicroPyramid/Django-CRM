@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/mock/mock_data.dart';
+import '../../providers/tasks_provider.dart';
 import '../../widgets/cards/task_row.dart';
 import '../../widgets/common/common.dart';
 
@@ -11,71 +12,55 @@ enum TaskViewMode { calendar, list }
 
 /// Tasks List Screen
 /// Calendar and List views for task management
-class TasksListScreen extends StatefulWidget {
+class TasksListScreen extends ConsumerStatefulWidget {
   const TasksListScreen({super.key});
 
   @override
-  State<TasksListScreen> createState() => _TasksListScreenState();
+  ConsumerState<TasksListScreen> createState() => _TasksListScreenState();
 }
 
-class _TasksListScreenState extends State<TasksListScreen> {
-  TaskViewMode _viewMode = TaskViewMode.calendar;
+class _TasksListScreenState extends ConsumerState<TasksListScreen> {
+  TaskViewMode _viewMode = TaskViewMode.list;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
-  // Get all tasks (using a copy for modification simulation)
-  List<Task> get _allTasks => List<Task>.from(MockData.tasks);
+  @override
+  void initState() {
+    super.initState();
+    // Fetch tasks on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(tasksProvider.notifier).fetchTasks(refresh: true);
+    });
+  }
 
   // Get task dates for calendar markers
-  Set<String> get _taskDates {
-    return _allTasks.map((t) => _formatDateKey(t.dueDate)).toSet();
+  Set<String> _getTaskDates(List<Task> tasks) {
+    return tasks
+        .where((t) => t.dueDate != null)
+        .map((t) => _formatDateKey(t.dueDate!))
+        .toSet();
   }
 
   // Tasks for selected date (Calendar view)
-  List<Task> get _tasksForSelectedDate {
-    return _allTasks
-        .where((t) => _isSameDay(t.dueDate, _selectedDay))
+  List<Task> _getTasksForSelectedDate(List<Task> tasks) {
+    return tasks
+        .where((t) => t.dueDate != null && _isSameDay(t.dueDate!, _selectedDay))
         .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-  }
-
-  // Grouped tasks for List view
-  List<Task> get _overdueTasks {
-    final now = DateTime.now();
-    return _allTasks
-        .where((t) =>
-            !t.completed &&
-            t.dueDate.isBefore(now) &&
-            !_isSameDay(t.dueDate, now))
-        .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-  }
-
-  List<Task> get _todayTasks {
-    final now = DateTime.now();
-    return _allTasks
-        .where((t) => !t.completed && _isSameDay(t.dueDate, now))
-        .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-  }
-
-  List<Task> get _upcomingTasks {
-    final now = DateTime.now();
-    return _allTasks
-        .where((t) =>
-            !t.completed &&
-            (t.dueDate.isAfter(now) && !_isSameDay(t.dueDate, now)))
-        .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-  }
-
-  List<Task> get _completedTasks {
-    return _allTasks.where((t) => t.completed).toList();
+      ..sort((a, b) {
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
   }
 
   @override
   Widget build(BuildContext context) {
+    final tasksState = ref.watch(tasksProvider);
+    final allTasks = tasksState.tasks;
+    final isLoading = tasksState.isLoading;
+    final error = tasksState.error;
+
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
       appBar: AppBar(
@@ -115,16 +100,70 @@ class _TasksListScreenState extends State<TasksListScreen> {
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: AppDurations.normal,
-        child: _viewMode == TaskViewMode.calendar
-            ? _buildCalendarView()
-            : _buildListView(),
-      ),
+      body: _buildBody(allTasks, isLoading, error),
     );
   }
 
-  Widget _buildCalendarView() {
+  Widget _buildBody(List<Task> allTasks, bool isLoading, String? error) {
+    // Show loading spinner for initial load
+    if (isLoading && allTasks.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // Show error state
+    if (error != null && allTasks.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LucideIcons.alertCircle,
+                size: 48,
+                color: AppColors.danger500,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load tasks',
+                style: AppTypography.h3,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                label: 'Retry',
+                icon: LucideIcons.refreshCw,
+                onPressed: () {
+                  ref.read(tasksProvider.notifier).fetchTasks(refresh: true);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: AppDurations.normal,
+      child: _viewMode == TaskViewMode.calendar
+          ? _buildCalendarView(allTasks)
+          : _buildListView(allTasks, isLoading),
+    );
+  }
+
+  Widget _buildCalendarView(List<Task> allTasks) {
+    final taskDates = _getTaskDates(allTasks);
+    final tasksForSelectedDate = _getTasksForSelectedDate(allTasks);
+
     return Column(
       children: [
         // Calendar
@@ -210,12 +249,12 @@ class _TasksListScreenState extends State<TasksListScreen> {
             ),
             calendarBuilders: CalendarBuilders(
               markerBuilder: (context, date, events) {
-                if (_taskDates.contains(_formatDateKey(date))) {
-                  final tasksOnDate = _allTasks
-                      .where((t) => _isSameDay(t.dueDate, date))
+                if (taskDates.contains(_formatDateKey(date))) {
+                  final tasksOnDate = allTasks
+                      .where((t) => t.dueDate != null && _isSameDay(t.dueDate!, date))
                       .toList();
                   final hasOverdue = tasksOnDate.any((t) =>
-                      !t.completed && t.dueDate.isBefore(DateTime.now()));
+                      !t.completed && t.dueDate != null && t.dueDate!.isBefore(DateTime.now()));
 
                   return Positioned(
                     bottom: 4,
@@ -268,13 +307,13 @@ class _TasksListScreenState extends State<TasksListScreen> {
 
         // Tasks for selected date
         Expanded(
-          child: _tasksForSelectedDate.isEmpty
+          child: tasksForSelectedDate.isEmpty
               ? _buildEmptyDateState()
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 100),
-                  itemCount: _tasksForSelectedDate.length,
+                  itemCount: tasksForSelectedDate.length,
                   itemBuilder: (context, index) {
-                    final task = _tasksForSelectedDate[index];
+                    final task = tasksForSelectedDate[index];
                     return TaskRow(
                       task: task,
                       onToggle: () => _toggleTask(task),
@@ -288,66 +327,93 @@ class _TasksListScreenState extends State<TasksListScreen> {
     );
   }
 
-  Widget _buildListView() {
-    final hasAnyTasks = _overdueTasks.isNotEmpty ||
-        _todayTasks.isNotEmpty ||
-        _upcomingTasks.isNotEmpty;
+  Widget _buildListView(List<Task> allTasks, bool isLoading) {
+    final overdueTasks = ref.watch(overdueTasksProvider);
+    final todayTasks = ref.watch(todayTasksProvider);
+    final upcomingTasks = ref.watch(upcomingTasksProvider);
+    final completedTasks = ref.watch(completedTasksProvider);
+    final noDueDateTasks = ref.watch(noDueDateTasksProvider);
 
-    if (!hasAnyTasks) {
+    final hasAnyTasks = overdueTasks.isNotEmpty ||
+        todayTasks.isNotEmpty ||
+        upcomingTasks.isNotEmpty ||
+        noDueDateTasks.isNotEmpty;
+
+    if (!hasAnyTasks && !isLoading) {
       return _buildAllCaughtUpState();
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
+        await ref.read(tasksProvider.notifier).refresh();
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 100),
         child: Column(
           children: [
             // Overdue
-            if (_overdueTasks.isNotEmpty)
+            if (overdueTasks.isNotEmpty)
               TaskGroup(
                 title: 'Overdue',
                 variant: 'danger',
-                tasks: _overdueTasks,
+                tasks: overdueTasks,
                 onToggle: _toggleTask,
                 onTap: _showTaskDetail,
                 onDelete: _deleteTask,
               ),
 
             // Today
-            if (_todayTasks.isNotEmpty)
+            if (todayTasks.isNotEmpty)
               TaskGroup(
                 title: 'Today',
                 variant: 'warning',
-                tasks: _todayTasks,
+                tasks: todayTasks,
                 onToggle: _toggleTask,
                 onTap: _showTaskDetail,
                 onDelete: _deleteTask,
               ),
 
             // Upcoming
-            if (_upcomingTasks.isNotEmpty)
+            if (upcomingTasks.isNotEmpty)
               TaskGroup(
                 title: 'Upcoming',
                 variant: 'default',
-                tasks: _upcomingTasks,
+                tasks: upcomingTasks,
+                onToggle: _toggleTask,
+                onTap: _showTaskDetail,
+                onDelete: _deleteTask,
+              ),
+
+            // No Due Date
+            if (noDueDateTasks.isNotEmpty)
+              TaskGroup(
+                title: 'No Due Date',
+                variant: 'default',
+                tasks: noDueDateTasks,
                 onToggle: _toggleTask,
                 onTap: _showTaskDetail,
                 onDelete: _deleteTask,
               ),
 
             // Completed (collapsed by default)
-            if (_completedTasks.isNotEmpty)
+            if (completedTasks.isNotEmpty)
               TaskGroup(
                 title: 'Completed',
                 variant: 'default',
-                tasks: _completedTasks,
+                tasks: completedTasks,
                 initiallyExpanded: false,
                 onToggle: _toggleTask,
                 onTap: _showTaskDetail,
                 onDelete: _deleteTask,
+              ),
+
+            // Loading indicator at bottom
+            if (isLoading && allTasks.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
           ],
         ),
@@ -530,16 +596,41 @@ class _TasksListScreenState extends State<TasksListScreen> {
                 children: [
                   PriorityBadge(priority: task.priority),
                   const SizedBox(width: 8),
-                  Text(
-                    _formatDueDate(task.dueDate),
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
+                  if (task.dueDate != null)
+                    Text(
+                      _formatDueDate(task.dueDate!),
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    )
+                  else
+                    Text(
+                      'No due date',
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
                 ],
               ),
 
-              if (task.description != null) ...[
+              // Status
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: task.status.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  task.status.label,
+                  style: AppTypography.caption.copyWith(
+                    color: task.status.color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              if (task.description != null && task.description!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
                   task.description!,
@@ -561,9 +652,7 @@ class _TasksListScreenState extends State<TasksListScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        task.relatedTo!.type == RelatedEntityType.lead
-                            ? LucideIcons.user
-                            : LucideIcons.briefcase,
+                        task.relatedTo!.type.icon,
                         size: 18,
                         color: AppColors.textSecondary,
                       ),
@@ -659,23 +748,16 @@ class _TasksListScreenState extends State<TasksListScreen> {
   String _formatDueDate(DateTime date) {
     final now = DateTime.now();
     if (_isSameDay(date, now)) {
-      return 'Due today at ${_formatTime(date)}';
+      return 'Due today';
     } else if (_isSameDay(date, now.add(const Duration(days: 1)))) {
-      return 'Due tomorrow at ${_formatTime(date)}';
+      return 'Due tomorrow';
     } else {
       final months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
-      return 'Due ${months[date.month - 1]} ${date.day} at ${_formatTime(date)}';
+      return 'Due ${months[date.month - 1]} ${date.day}';
     }
-  }
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$hour:$minute $period';
   }
 
   bool _isSameDay(DateTime a, DateTime b) {

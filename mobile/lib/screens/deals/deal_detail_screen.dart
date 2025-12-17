@@ -31,7 +31,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
 
   List<Activity> get dealActivities => MockData.activities
       .where((a) =>
-          a.relatedTo?.type == RelatedEntityType.deal && a.relatedTo?.id == widget.dealId)
+          a.relatedTo?.type == RelatedEntityType.opportunity && a.relatedTo?.id == widget.dealId)
       .toList()
     ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
