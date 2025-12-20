@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/theme/theme.dart';
@@ -89,14 +90,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
           // Add task
           IconButton(
             icon: const Icon(LucideIcons.plus, size: 22),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Create task coming soon'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => _navigateToCreateTask(),
           ),
         ],
       ),
@@ -450,14 +444,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Create task coming soon'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onTap: () => _navigateToCreateTask(),
               child: Text(
                 'Add a task',
                 style: AppTypography.label.copyWith(
@@ -510,14 +497,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             PrimaryButton(
               label: 'Add Task',
               icon: LucideIcons.plus,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Create task coming soon'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onPressed: () => _navigateToCreateTask(),
             ),
           ],
         ),
@@ -543,198 +523,59 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
     }
   }
 
-  void _toggleTask(Task task) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          task.completed
-              ? 'Task marked as incomplete'
-              : 'Task completed',
-        ),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {},
-        ),
-      ),
-    );
+  Future<void> _navigateToCreateTask() async {
+    final result = await context.push('/tasks/create');
+    if (result == true && mounted) {
+      // Refresh after creating a task
+      ref.read(tasksProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _toggleTask(Task task) async {
+    final response = await ref.read(tasksProvider.notifier).toggleTaskStatus(task);
+
+    if (mounted) {
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              task.completed
+                  ? 'Task marked as incomplete'
+                  : 'Task completed',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message ?? 'Failed to update task'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger600,
+          ),
+        );
+      }
+    }
   }
 
   void _showTaskDetail(Task task) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.gray300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Title
-              Text(task.title, style: AppTypography.h2),
-              const SizedBox(height: 8),
-
-              // Priority & Due
-              Row(
-                children: [
-                  PriorityBadge(priority: task.priority),
-                  const SizedBox(width: 8),
-                  if (task.dueDate != null)
-                    Text(
-                      _formatDueDate(task.dueDate!),
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    )
-                  else
-                    Text(
-                      'No due date',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-
-              // Status
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: task.status.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  task.status.label,
-                  style: AppTypography.caption.copyWith(
-                    color: task.status.color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-
-              if (task.description != null && task.description!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  task.description!,
-                  style: AppTypography.body.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-
-              if (task.relatedTo != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.gray50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        task.relatedTo!.type.icon,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${task.relatedTo!.type.label.toUpperCase()}: ${task.relatedTo!.title}',
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      label: task.completed ? 'Mark Incomplete' : 'Complete',
-                      icon: task.completed
-                          ? LucideIcons.circle
-                          : LucideIcons.checkCircle2,
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _toggleTask(task);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: PrimaryButton(
-                      label: 'Edit',
-                      icon: LucideIcons.pencil,
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Edit task coming soon'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Navigate to full detail screen
+    context.push('/tasks/${task.id}');
   }
 
-  void _deleteTask(Task task) {
-    showDialog(
+  Future<void> _deleteTask(Task task) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Task?'),
         content: Text('Are you sure you want to delete "${task.title}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Task deleted'),
-                  behavior: SnackBarBehavior.floating,
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () {},
-                  ),
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
               style: TextStyle(color: AppColors.danger600),
@@ -743,20 +584,28 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
         ],
       ),
     );
-  }
 
-  String _formatDueDate(DateTime date) {
-    final now = DateTime.now();
-    if (_isSameDay(date, now)) {
-      return 'Due today';
-    } else if (_isSameDay(date, now.add(const Duration(days: 1)))) {
-      return 'Due tomorrow';
-    } else {
-      final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return 'Due ${months[date.month - 1]} ${date.day}';
+    if (confirmed == true && mounted) {
+      final response = await ref.read(tasksProvider.notifier).deleteTask(task.id);
+
+      if (mounted) {
+        if (response.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Task deleted'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Failed to delete task'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: AppColors.danger600,
+            ),
+          );
+        }
+      }
     }
   }
 

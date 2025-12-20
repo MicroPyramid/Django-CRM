@@ -20,6 +20,8 @@ import '../screens/leads/lead_form_screen.dart';
 import '../screens/deals/deals_list_screen.dart';
 import '../screens/deals/deal_detail_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
+import '../screens/tasks/task_detail_screen.dart';
+import '../screens/tasks/task_form_screen.dart';
 import '../screens/settings/more_screen.dart';
 
 // Shell
@@ -48,6 +50,7 @@ class AppRoutes {
   static const String tasks = '/tasks';
   static const String taskDetail = '/tasks/:id';
   static const String taskCreate = '/tasks/create';
+  static const String taskEdit = '/tasks/:id/edit';
   static const String more = '/more';
   static const String profile = '/more/profile';
   static const String notifications = '/more/notifications';
@@ -240,6 +243,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.tasks,
                 name: 'tasks',
                 builder: (context, state) => const TasksListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: 'taskCreate',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const TaskFormScreen(),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    name: 'taskDetail',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return TaskDetailScreen(taskId: id);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        name: 'taskEdit',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return TaskFormScreen(taskId: id);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

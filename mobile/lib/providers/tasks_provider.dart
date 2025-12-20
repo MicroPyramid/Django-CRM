@@ -4,6 +4,8 @@ import '../config/api_config.dart';
 import '../data/models/task.dart';
 import '../services/api_service.dart';
 
+export '../services/api_service.dart' show ApiResponse;
+
 /// Tasks list state
 class TasksState {
   final List<Task> tasks;
@@ -174,6 +176,109 @@ class TasksNotifier extends StateNotifier<TasksState> {
   /// Clear tasks data
   void clear() {
     state = const TasksState.initial();
+  }
+
+  /// Get a single task by ID
+  Future<Task?> getTaskById(String taskId) async {
+    try {
+      final url = '${ApiConfig.tasks}$taskId/';
+      debugPrint('TasksNotifier: Fetching task $taskId');
+
+      final response = await _apiService.get(url);
+
+      if (response.success && response.data != null) {
+        return Task.fromJson(response.data!);
+      } else {
+        debugPrint('TasksNotifier: Failed to get task - ${response.message}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('TasksNotifier: Exception getting task - $e');
+      return null;
+    }
+  }
+
+  /// Create a new task
+  Future<ApiResponse<Map<String, dynamic>>> createTask(Map<String, dynamic> data) async {
+    try {
+      debugPrint('TasksNotifier: Creating task');
+      final response = await _apiService.post(ApiConfig.tasks, data);
+
+      if (response.success) {
+        // Refresh the list to include the new task
+        await fetchTasks(refresh: true);
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('TasksNotifier: Exception creating task - $e');
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Update an existing task
+  Future<ApiResponse<Map<String, dynamic>>> updateTask(String taskId, Map<String, dynamic> data) async {
+    try {
+      final url = '${ApiConfig.tasks}$taskId/';
+      debugPrint('TasksNotifier: Updating task $taskId');
+
+      final response = await _apiService.put(url, data);
+
+      if (response.success) {
+        // Update the task in local state
+        final updatedTask = Task.fromJson(response.data!);
+        state = state.copyWith(
+          tasks: state.tasks.map((t) => t.id == taskId ? updatedTask : t).toList(),
+        );
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('TasksNotifier: Exception updating task - $e');
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Delete a task
+  Future<ApiResponse<Map<String, dynamic>>> deleteTask(String taskId) async {
+    try {
+      final url = '${ApiConfig.tasks}$taskId/';
+      debugPrint('TasksNotifier: Deleting task $taskId');
+
+      final response = await _apiService.delete(url);
+
+      if (response.success || response.statusCode == 204) {
+        // Remove from local state
+        state = state.copyWith(
+          tasks: state.tasks.where((t) => t.id != taskId).toList(),
+          totalCount: state.totalCount - 1,
+        );
+        return ApiResponse(success: true, statusCode: 204);
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('TasksNotifier: Exception deleting task - $e');
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Toggle task completion status
+  Future<ApiResponse<Map<String, dynamic>>> toggleTaskStatus(Task task) async {
+    final newStatus = task.completed ? 'New' : 'Completed';
+    return updateTask(task.id, {'status': newStatus});
   }
 }
 
