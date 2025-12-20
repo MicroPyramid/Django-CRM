@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'comment.dart';
 
 /// Lead status enumeration matching backend LEAD_STATUS
 enum LeadStatus {
-  newLead('new', 'New', AppColors.primary500),
   assigned('assigned', 'Assigned', AppColors.primary400),
   inProcess('in process', 'In Process', AppColors.warning500),
-  contacted('contacted', 'Contacted', AppColors.warning600),
-  qualified('qualified', 'Qualified', AppColors.success500),
   converted('converted', 'Converted', AppColors.success600),
-  closed('closed', 'Closed', AppColors.gray500),
-  lost('lost', 'Lost', AppColors.danger500);
+  recycled('recycled', 'Recycled', AppColors.gray500),
+  closed('closed', 'Closed', AppColors.danger500);
 
   final String value;
   final String label;
@@ -21,11 +19,11 @@ enum LeadStatus {
   String get displayName => label;
 
   static LeadStatus fromString(String? value) {
-    if (value == null) return LeadStatus.newLead;
+    if (value == null) return LeadStatus.assigned;
     final normalized = value.toLowerCase().trim();
     return LeadStatus.values.firstWhere(
       (s) => s.value == normalized,
-      orElse: () => LeadStatus.newLead,
+      orElse: () => LeadStatus.assigned,
     );
   }
 }
@@ -33,17 +31,12 @@ enum LeadStatus {
 /// Lead source enumeration matching backend LEAD_SOURCE
 enum LeadSource {
   none('', 'None', Icons.help_outline),
+  call('call', 'Call', Icons.phone),
   email('email', 'Email', Icons.email),
-  coldCall('call', 'Cold Call', Icons.phone),
-  website('web', 'Website', Icons.language),
-  webDownload('web download', 'Web Download', Icons.download),
-  webResearch('web research', 'Web Research', Icons.search),
-  referral('referral', 'Referral', Icons.people),
-  campaign('campaign', 'Campaign', Icons.campaign),
-  socialMedia('social media', 'Social Media', Icons.share),
-  tradeShow('trade show', 'Trade Show', Icons.event),
+  existingCustomer('existing customer', 'Existing Customer', Icons.people),
   partner('partner', 'Partner', Icons.handshake),
-  publicRelations('public relations', 'PR', Icons.newspaper),
+  publicRelations('public relations', 'Public Relations', Icons.newspaper),
+  campaign('compaign', 'Campaign', Icons.campaign), // Note: backend has typo "compaign"
   other('other', 'Other', Icons.more_horiz);
 
   final String value;
@@ -162,6 +155,7 @@ class Lead {
   final String? description;
   final List<String> tags;
   final List<Map<String, dynamic>>? assignedTo;
+  final List<Comment> comments;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool isActive;
@@ -196,6 +190,7 @@ class Lead {
     this.description,
     this.tags = const [],
     this.assignedTo,
+    this.comments = const [],
     required this.createdAt,
     this.updatedAt,
     this.isActive = true,
@@ -256,6 +251,15 @@ class Lead {
           .toList();
     }
 
+    // Parse comments (lead_comments from backend)
+    List<Comment> parsedComments = [];
+    if (json['lead_comments'] != null) {
+      final commentsList = json['lead_comments'] as List<dynamic>;
+      parsedComments = commentsList
+          .map((c) => Comment.fromJson(c as Map<String, dynamic>))
+          .toList();
+    }
+
     return Lead(
       id: json['id']?.toString() ?? '',
       title: json['title'] as String?,
@@ -294,6 +298,7 @@ class Lead {
       description: json['description'] as String?,
       tags: parsedTags,
       assignedTo: parsedAssignedTo,
+      comments: parsedComments,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -368,6 +373,7 @@ class Lead {
     String? description,
     List<String>? tags,
     List<Map<String, dynamic>>? assignedTo,
+    List<Comment>? comments,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -402,6 +408,7 @@ class Lead {
       description: description ?? this.description,
       tags: tags ?? this.tags,
       assignedTo: assignedTo ?? this.assignedTo,
+      comments: comments ?? this.comments,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,

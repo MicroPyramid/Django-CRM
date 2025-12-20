@@ -482,13 +482,15 @@ class LeadDetailView(APIView):
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
-        comment_serializer = CommentSerializer(data=params)
-        if comment_serializer.is_valid():
-            if params.get("comment"):
-                comment_serializer.save(
-                    lead_id=self.lead_obj.id,
-                    commented_by_id=self.request.profile.id,
-                )
+        if params.get("comment"):
+            lead_content_type = ContentType.objects.get_for_model(Lead)
+            Comment.objects.create(
+                content_type=lead_content_type,
+                object_id=self.lead_obj.id,
+                comment=params.get("comment"),
+                commented_by=self.request.profile,
+                org=self.request.profile.org,
+            )
 
             if self.request.FILES.get("lead_attachment"):
                 attachment = Attachments()

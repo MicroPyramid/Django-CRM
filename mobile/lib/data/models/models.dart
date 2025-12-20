@@ -8,3 +8,4 @@ export 'deal.dart';
 export 'task.dart';
 export 'activity.dart';
 export 'notification.dart';
+export 'comment.dart';

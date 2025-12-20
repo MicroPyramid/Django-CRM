@@ -24,21 +24,21 @@ class LeadCard extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: AppLayout.borderRadiusLg,
-          boxShadow: AppLayout.shadowSm,
+          borderRadius: AppLayout.borderRadiusMd,
+          border: Border.all(color: AppColors.border),
         ),
         child: Material(
           color: Colors.transparent,
-          borderRadius: AppLayout.borderRadiusLg,
+          borderRadius: AppLayout.borderRadiusMd,
           child: InkWell(
             onTap: onTap,
             onLongPress: onLongPress,
-            borderRadius: AppLayout.borderRadiusLg,
+            borderRadius: AppLayout.borderRadiusMd,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -47,12 +47,12 @@ class LeadCard extends StatelessWidget {
 
                   // Row 2: Tags
                   if (lead.tags.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _buildTags(),
                   ],
 
                   // Row 3: Status + Assignment
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _buildFooter(),
                 ],
               ),
@@ -70,10 +70,10 @@ class LeadCard extends StatelessWidget {
         // Avatar
         UserAvatar(
           name: lead.name,
-          size: AvatarSize.md,
+          size: AvatarSize.sm,
         ),
 
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
 
         // Name + Company
         Expanded(
@@ -82,14 +82,15 @@ class LeadCard extends StatelessWidget {
             children: [
               Text(
                 lead.name,
-                style: AppTypography.h3,
+                style: AppTypography.label.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
               Text(
                 lead.company,
-                style: AppTypography.body.copyWith(
+                style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                 ),
                 maxLines: 1,
@@ -107,31 +108,32 @@ class LeadCard extends StatelessWidget {
           children: [
             if (lead.priority == Priority.high)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.danger100,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       LucideIcons.flame,
-                      size: 12,
+                      size: 11,
                       color: AppColors.danger600,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     Text(
                       'Hot',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.danger600,
                         fontWeight: FontWeight.w600,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               _formatTimeAgo(lead.createdAt),
               style: AppTypography.caption.copyWith(
@@ -151,12 +153,12 @@ class LeadCard extends StatelessWidget {
     return Row(
       children: [
         ...displayTags.map((tag) => Padding(
-              padding: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.only(right: 4),
               child: LabelPill(label: tag),
             )),
         if (remainingCount > 0)
           Text(
-            '+$remainingCount more',
+            '+$remainingCount',
             style: AppTypography.caption.copyWith(
               color: AppColors.textTertiary,
             ),
@@ -175,20 +177,20 @@ class LeadCard extends StatelessWidget {
 
         // Source indicator
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: AppColors.gray100,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 _getSourceIcon(lead.source),
-                size: 12,
+                size: 11,
                 color: AppColors.textSecondary,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               Text(
                 lead.source.displayName,
                 style: AppTypography.caption.copyWith(

@@ -203,13 +203,13 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
         itemCount: filteredLeads.length + (state.hasMore && !_hasActiveFilters ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == filteredLeads.length) {
             // Loading indicator at bottom
             return const Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),
             );
           }
@@ -227,10 +227,11 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   Widget _buildSearchBar() {
     return Container(
       color: AppColors.surfaceDim,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
+        style: AppTypography.body,
         decoration: InputDecoration(
           hintText: 'Search leads...',
           hintStyle: AppTypography.body.copyWith(
@@ -239,14 +240,14 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           prefixIcon: Icon(
             LucideIcons.search,
             color: AppColors.textTertiary,
-            size: 20,
+            size: 18,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     LucideIcons.x,
                     color: AppColors.textTertiary,
-                    size: 18,
+                    size: 16,
                   ),
                   onPressed: () {
                     _searchController.clear();
@@ -257,20 +258,20 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           filled: true,
           fillColor: AppColors.gray100,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+            horizontal: 12,
+            vertical: 10,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary500, width: 1.5),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.primary500, width: 1),
           ),
         ),
       ),
@@ -282,7 +283,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       color: AppColors.surface,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
         child: Row(
           children: [
             // Status Filter
@@ -292,7 +293,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               onTap: () => _showStatusFilter(),
             ),
 
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
             // Source Filter
             _FilterChip(
@@ -301,7 +302,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               onTap: () => _showSourceFilter(),
             ),
 
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
             // Sort
             _FilterChip(
@@ -312,27 +313,27 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
 
             if (_hasActiveFilters) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: _clearFilters,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 8,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.danger100,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         LucideIcons.x,
-                        size: 14,
+                        size: 12,
                         color: AppColors.danger600,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Text(
                         'Clear',
                         style: AppTypography.caption.copyWith(
@@ -355,7 +356,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     return Container(
       width: double.infinity,
       color: AppColors.surfaceDim,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Text(
         '$filteredCount lead${filteredCount == 1 ? '' : 's'}${_hasActiveFilters || _searchQuery.isNotEmpty ? ' (filtered)' : ''}',
         style: AppTypography.caption.copyWith(
@@ -539,10 +540,10 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AppDurations.fast,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary100 : AppColors.gray100,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(4),
           border: isActive
               ? Border.all(color: AppColors.primary300, width: 1)
               : null,
@@ -553,10 +554,10 @@ class _FilterChip extends StatelessWidget {
             if (icon != null) ...[
               Icon(
                 icon,
-                size: 14,
+                size: 12,
                 color: isActive ? AppColors.primary700 : AppColors.gray600,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
             ],
             Text(
               label,
@@ -565,10 +566,10 @@ class _FilterChip extends StatelessWidget {
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             Icon(
               LucideIcons.chevronDown,
-              size: 14,
+              size: 12,
               color: isActive ? AppColors.primary700 : AppColors.gray600,
             ),
           ],
@@ -596,8 +597,8 @@ class _FilterBottomSheet extends StatelessWidget {
         children: [
           // Handle
           Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
+            margin: const EdgeInsets.only(top: 8),
+            width: 32,
             height: 4,
             decoration: BoxDecoration(
               color: AppColors.gray300,
@@ -607,17 +608,17 @@ class _FilterBottomSheet extends StatelessWidget {
 
           // Title
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Text(
               title,
-              style: AppTypography.h3,
+              style: AppTypography.label,
             ),
           ),
 
           // Options
           ...options.map((option) => option),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -647,27 +648,27 @@ class _FilterOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             if (color != null) ...[
               Container(
-                width: 12,
-                height: 12,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
             ],
             if (icon != null) ...[
               Icon(
                 icon,
-                size: 18,
+                size: 16,
                 color: iconColor ?? AppColors.textSecondary,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
             ],
             Expanded(
               child: Text(
@@ -681,7 +682,7 @@ class _FilterOption extends StatelessWidget {
             if (isSelected)
               Icon(
                 LucideIcons.check,
-                size: 20,
+                size: 18,
                 color: AppColors.primary600,
               ),
           ],

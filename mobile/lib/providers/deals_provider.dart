@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/models/deal.dart';
@@ -73,7 +72,6 @@ class DealsNotifier extends StateNotifier<DealsState> {
       );
     }
 
-    debugPrint('DealsNotifier: Fetching deals (offset: ${state.currentOffset})...');
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -96,9 +94,6 @@ class DealsNotifier extends StateNotifier<DealsState> {
       if (response.success && response.data != null) {
         final data = response.data!;
 
-        debugPrint('DealsNotifier: API response keys: ${data.keys.toList()}');
-        debugPrint('DealsNotifier: Full response data: $data');
-
         // Parse deals - handle different response formats
         List<dynamic> dealsList = [];
         int dealsCount = 0;
@@ -106,40 +101,19 @@ class DealsNotifier extends StateNotifier<DealsState> {
         if (data['opportunities'] != null) {
           dealsList = data['opportunities'] as List<dynamic>? ?? [];
           dealsCount = data['opportunities_count'] as int? ?? dealsList.length;
-          debugPrint('DealsNotifier: Found opportunities key with ${dealsList.length} items');
         } else if (data['results'] != null) {
-          // Handle paginated response format
           dealsList = data['results'] as List<dynamic>? ?? [];
           dealsCount = data['count'] as int? ?? dealsList.length;
-          debugPrint('DealsNotifier: Found results key with ${dealsList.length} items');
-        } else {
-          debugPrint('DealsNotifier: No opportunities or results key found!');
-          // Try to find any list in the response
-          for (final key in data.keys) {
-            if (data[key] is List) {
-              debugPrint('DealsNotifier: Found list at key "$key" with ${(data[key] as List).length} items');
-            }
-          }
         }
 
-        debugPrint('DealsNotifier: Found ${dealsList.length} deals in response');
-
         final newDeals = <Deal>[];
-        for (int i = 0; i < dealsList.length; i++) {
-          final item = dealsList[i];
+        for (final item in dealsList) {
           try {
             if (item is Map<String, dynamic>) {
-              debugPrint('DealsNotifier: Parsing deal $i: name=${item['name']}, stage=${item['stage']}');
-              final deal = Deal.fromJson(item);
-              debugPrint('DealsNotifier: Successfully parsed deal: ${deal.title} (stage: ${deal.stage})');
-              newDeals.add(deal);
-            } else {
-              debugPrint('DealsNotifier: Skipping non-map item at index $i: ${item.runtimeType}');
+              newDeals.add(Deal.fromJson(item));
             }
-          } catch (e, stack) {
-            debugPrint('DealsNotifier: Error parsing deal at index $i: $e');
-            debugPrint('DealsNotifier: Stack trace: $stack');
-            debugPrint('DealsNotifier: Deal data: $item');
+          } catch (e) {
+            // Skip invalid deals
           }
         }
 
@@ -153,17 +127,13 @@ class DealsNotifier extends StateNotifier<DealsState> {
           hasMore: newDeals.length >= _pageSize,
           currentOffset: state.currentOffset + newDeals.length,
         );
-
-        debugPrint('DealsNotifier: Loaded ${newDeals.length} deals (total: ${updatedDeals.length})');
       } else {
         state = state.copyWith(
           isLoading: false,
           error: response.message ?? 'Failed to load deals',
         );
-        debugPrint('DealsNotifier: API error - ${response.message}');
       }
     } catch (e) {
-      debugPrint('DealsNotifier: Exception - $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load deals: ${e.toString()}',

@@ -38,6 +38,7 @@ class AuthState {
       selectedOrganization == null;
 
   /// Create a copy with updated fields
+  /// Use [clearSelectedOrganization] to explicitly set selectedOrganization to null
   AuthState copyWith({
     AuthUser? user,
     List<Organization>? organizations,
@@ -46,11 +47,14 @@ class AuthState {
     bool? isAuthenticated,
     String? error,
     bool clearError = false,
+    bool clearSelectedOrganization = false,
   }) {
     return AuthState(
       user: user ?? this.user,
       organizations: organizations ?? this.organizations,
-      selectedOrganization: selectedOrganization ?? this.selectedOrganization,
+      selectedOrganization: clearSelectedOrganization
+          ? null
+          : (selectedOrganization ?? this.selectedOrganization),
       isLoading: isLoading ?? this.isLoading,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       error: clearError ? null : (error ?? this.error),
@@ -98,12 +102,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final success = await _authService.signInWithGoogle();
 
       if (success) {
+        // Fresh Google sign-in clears selected org - user must select again
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: true,
           user: _authService.currentUser,
           organizations: _authService.organizations,
-          selectedOrganization: _authService.selectedOrganization,
+          clearSelectedOrganization: true,
         );
 
         debugPrint('AuthNotifier: Google sign-in successful');

@@ -32,15 +32,15 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: filled ? color.withValues(alpha: 0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
         border: filled ? null : Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,
-        style: AppTypography.labelSmall.copyWith(
+        style: AppTypography.caption.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
         ),
@@ -87,17 +87,17 @@ class PriorityBadge extends StatelessWidget {
         ),
         child: Icon(
           _icon,
-          size: 14,
+          size: 12,
           color: priority.color,
         ),
       );
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: priority.color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -108,13 +108,12 @@ class PriorityBadge extends StatelessWidget {
             color: priority.color,
           ),
           if (showLabel) ...[
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             Text(
               priority.label,
-              style: AppTypography.labelSmall.copyWith(
+              style: AppTypography.caption.copyWith(
                 color: priority.color,
                 fontWeight: FontWeight.w600,
-                fontSize: 11,
               ),
             ),
           ],
@@ -145,14 +144,14 @@ class LabelPill extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.only(
-        left: 10,
-        right: onRemove != null ? 4 : 10,
-        top: 4,
-        bottom: 4,
+        left: 8,
+        right: onRemove != null ? 4 : 8,
+        top: 3,
+        bottom: 3,
       ),
       decoration: BoxDecoration(
         color: outlined ? Colors.transparent : pillColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(4),
         border: outlined
             ? Border.all(color: pillColor.withValues(alpha: 0.3))
             : null,
@@ -162,13 +161,13 @@ class LabelPill extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.labelSmall.copyWith(
+            style: AppTypography.caption.copyWith(
               color: pillColor,
               fontWeight: FontWeight.w500,
             ),
           ),
           if (onRemove != null) ...[
-            const SizedBox(width: 2),
+            const SizedBox(width: 3),
             GestureDetector(
               onTap: onRemove,
               child: Container(
@@ -179,7 +178,7 @@ class LabelPill extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.close_rounded,
-                  size: 12,
+                  size: 10,
                   color: pillColor,
                 ),
               ),

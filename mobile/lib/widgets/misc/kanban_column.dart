@@ -11,6 +11,7 @@ class KanbanColumn extends StatelessWidget {
   final Function(Deal) onDealTap;
   final Function(Deal, DealStage)? onDealMoved;
   final double width;
+  final String currencySymbol;
 
   const KanbanColumn({
     super.key,
@@ -19,6 +20,7 @@ class KanbanColumn extends StatelessWidget {
     required this.onDealTap,
     this.onDealMoved,
     this.width = 300,
+    this.currencySymbol = '\$',
   });
 
   double get totalValue {
@@ -84,16 +86,21 @@ class KanbanColumn extends StatelessWidget {
                                   child: DealCard(
                                     deal: deal,
                                     isDragging: true,
+                                    currencySymbol: currencySymbol,
                                   ),
                                 ),
                               ),
                               childWhenDragging: Opacity(
                                 opacity: 0.3,
-                                child: DealCard(deal: deal),
+                                child: DealCard(
+                                  deal: deal,
+                                  currencySymbol: currencySymbol,
+                                ),
                               ),
                               child: DealCard(
                                 deal: deal,
                                 onTap: () => onDealTap(deal),
+                                currencySymbol: currencySymbol,
                               ),
                             );
                           },
@@ -224,11 +231,11 @@ class KanbanColumn extends StatelessWidget {
 
   String _formatCurrency(double value) {
     if (value >= 1000000) {
-      return '\$${(value / 1000000).toStringAsFixed(1)}M';
+      return '$currencySymbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
-      return '\$${(value / 1000).toStringAsFixed(0)}K';
+      return '$currencySymbol${(value / 1000).toStringAsFixed(0)}K';
     } else {
-      return '\$${value.toStringAsFixed(0)}';
+      return '$currencySymbol${value.toStringAsFixed(0)}';
     }
   }
 }

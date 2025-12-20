@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/deals_provider.dart';
 import '../../widgets/cards/deal_card.dart';
 import '../../widgets/misc/kanban_column.dart';
@@ -181,10 +182,11 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   Widget _buildSearchBar() {
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: TextField(
         controller: _searchController,
         autofocus: true,
+        style: AppTypography.body,
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
           hintText: 'Search deals...',
@@ -194,14 +196,14 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           prefixIcon: Icon(
             LucideIcons.search,
             color: AppColors.textTertiary,
-            size: 20,
+            size: 18,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     LucideIcons.x,
                     color: AppColors.textTertiary,
-                    size: 18,
+                    size: 16,
                   ),
                   onPressed: () {
                     _searchController.clear();
@@ -212,11 +214,11 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           filled: true,
           fillColor: AppColors.gray100,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+            horizontal: 12,
+            vertical: 10,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
           ),
         ),
@@ -230,7 +232,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
 
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Row(
         children: [
           _SummaryChip(
@@ -238,7 +240,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
             label: _formatCurrency(totalValue),
             sublabel: 'Pipeline',
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           _SummaryChip(
             icon: LucideIcons.briefcase,
             label: '$activeDeals',
@@ -292,16 +294,18 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
               controller: _kanbanScrollController,
               scrollDirection: Axis.horizontal,
               physics: const PageScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(10, 12, 10, 100),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: _kanbanStages.map((stage) {
+                  final currencySymbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
                   return KanbanColumn(
                     stage: stage,
                     deals: _dealsByStage[stage] ?? [],
                     width: columnWidth,
                     onDealTap: (deal) => context.push('/deals/${deal.id}'),
                     onDealMoved: _handleDealMoved,
+                    currencySymbol: currencySymbol,
                   );
                 }).toList(),
               ),
@@ -377,10 +381,14 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
               _buildStageHeader(stage, stageDeals),
 
               // Stage Deals
-              ...stageDeals.map((deal) => DealCard(
-                    deal: deal,
-                    onTap: () => context.push('/deals/${deal.id}'),
-                  )),
+              ...stageDeals.map((deal) {
+                final currencySymbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
+                return DealCard(
+                  deal: deal,
+                  onTap: () => context.push('/deals/${deal.id}'),
+                  currencySymbol: currencySymbol,
+                );
+              }),
 
               const SizedBox(height: 16),
             ],
@@ -463,12 +471,13 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   }
 
   String _formatCurrency(double value) {
+    final symbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
     if (value >= 1000000) {
-      return '\$${(value / 1000000).toStringAsFixed(1)}M';
+      return '$symbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
-      return '\$${(value / 1000).toStringAsFixed(0)}K';
+      return '$symbol${(value / 1000).toStringAsFixed(0)}K';
     } else {
-      return '\$${value.toStringAsFixed(0)}';
+      return '$symbol${value.toStringAsFixed(0)}';
     }
   }
 }
@@ -516,7 +525,6 @@ class _SummaryChip extends StatelessWidget {
                 sublabel,
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textTertiary,
-                  fontSize: 10,
                 ),
               ),
             ],

@@ -1,42 +1,43 @@
 import 'package:flutter/material.dart';
 
 /// BottleCRM Spacing & Layout System
+/// Optimized for CRM-style dense, data-heavy interfaces
 /// Based on a 4px base unit system for consistent rhythm
 class AppSpacing {
   AppSpacing._();
 
   // ============================================
-  // SPACING SCALE (4px base unit)
+  // SPACING SCALE (4px base unit) - CRM Dense
   // ============================================
-  static const double xs = 4.0;    // 4px - Tight spacing
-  static const double sm = 8.0;    // 8px - Small spacing
-  static const double md = 12.0;   // 12px - Medium spacing
-  static const double lg = 16.0;   // 16px - Default spacing
-  static const double xl = 20.0;   // 20px - Large spacing
-  static const double xxl = 24.0;  // 24px - Extra large
-  static const double xxxl = 32.0; // 32px - Section spacing
+  static const double xs = 2.0;    // 2px - Micro spacing
+  static const double sm = 4.0;    // 4px - Tight spacing
+  static const double md = 8.0;    // 8px - Small spacing
+  static const double lg = 12.0;   // 12px - Default spacing
+  static const double xl = 16.0;   // 16px - Medium spacing
+  static const double xxl = 20.0;  // 20px - Large spacing
+  static const double xxxl = 24.0; // 24px - Section spacing
 
   // ============================================
-  // SEMANTIC SPACING
+  // SEMANTIC SPACING - CRM Optimized
   // ============================================
 
   /// Page horizontal padding
-  static const double pagePadding = lg; // 16px
+  static const double pagePadding = lg; // 12px
 
   /// Card internal padding
-  static const double cardPadding = lg; // 16px
+  static const double cardPadding = lg; // 12px
 
   /// Card margin/gap between cards
-  static const double cardMargin = md; // 12px
+  static const double cardMargin = md; // 8px
 
   /// Section gap (between major sections)
-  static const double sectionGap = xxl; // 24px
+  static const double sectionGap = xl; // 16px
 
   /// Item gap (between list items)
-  static const double itemGap = md; // 12px
+  static const double itemGap = md; // 8px
 
   /// Small item gap
-  static const double itemGapSmall = sm; // 8px
+  static const double itemGapSmall = sm; // 4px
 
   // ============================================
   // EDGE INSETS PRESETS
@@ -62,21 +63,21 @@ class AppSpacing {
 
   /// Button padding (medium)
   static const EdgeInsets buttonMedium = EdgeInsets.symmetric(
-    horizontal: lg,
-    vertical: sm,
+    horizontal: xl,
+    vertical: md,
   );
 
   /// Button padding (small)
   static const EdgeInsets buttonSmall = EdgeInsets.symmetric(
-    horizontal: md,
-    vertical: xs,
+    horizontal: lg,
+    vertical: sm,
   );
 
   /// Section header padding
   static const EdgeInsets sectionHeader = EdgeInsets.only(
     left: lg,
     right: lg,
-    top: sectionGap,
+    top: xl,
     bottom: md,
   );
 
@@ -88,7 +89,7 @@ class AppSpacing {
 
   /// Chip/badge padding
   static const EdgeInsets chip = EdgeInsets.symmetric(
-    horizontal: sm,
+    horizontal: md,
     vertical: xs,
   );
 
@@ -99,7 +100,7 @@ class AppSpacing {
   );
 }
 
-/// BottleCRM Layout Constants
+/// BottleCRM Layout Constants - CRM Optimized
 class AppLayout {
   AppLayout._();
 
@@ -107,32 +108,32 @@ class AppLayout {
   // SCREEN CONSTRAINTS
   // ============================================
   static const double maxWidth = 430.0;
-  static const double minTouchTarget = 44.0;
+  static const double minTouchTarget = 40.0;
 
   // ============================================
-  // COMPONENT HEIGHTS
+  // COMPONENT HEIGHTS - CRM Dense
   // ============================================
-  static const double appBarHeight = 56.0;
-  static const double bottomNavHeight = 64.0;
-  static const double inputHeight = 56.0;
-  static const double buttonHeightLarge = 48.0;
-  static const double buttonHeightMedium = 44.0;
-  static const double buttonHeightSmall = 36.0;
-  static const double fabSize = 56.0;
-  static const double fabMiniSize = 48.0;
-  static const double tabBarHeight = 48.0;
-  static const double searchBarHeight = 48.0;
-  static const double filterChipHeight = 36.0;
+  static const double appBarHeight = 52.0;
+  static const double bottomNavHeight = 56.0;
+  static const double inputHeight = 44.0;
+  static const double buttonHeightLarge = 44.0;
+  static const double buttonHeightMedium = 40.0;
+  static const double buttonHeightSmall = 32.0;
+  static const double fabSize = 52.0;
+  static const double fabMiniSize = 44.0;
+  static const double tabBarHeight = 44.0;
+  static const double searchBarHeight = 40.0;
+  static const double filterChipHeight = 32.0;
 
   // ============================================
-  // BORDER RADIUS
+  // BORDER RADIUS - Tighter for CRM
   // ============================================
   static const double radiusXs = 4.0;
-  static const double radiusSm = 8.0;
-  static const double radiusMd = 12.0;
-  static const double radiusLg = 16.0;
-  static const double radiusXl = 20.0;
-  static const double radiusXxl = 24.0;
+  static const double radiusSm = 6.0;
+  static const double radiusMd = 8.0;
+  static const double radiusLg = 10.0;
+  static const double radiusXl = 12.0;
+  static const double radiusXxl = 16.0;
   static const double radiusFull = 9999.0;
 
   // ============================================
@@ -149,22 +150,22 @@ class AppLayout {
   // ============================================
   // ICON SIZES
   // ============================================
-  static const double iconXs = 16.0;
-  static const double iconSm = 20.0;
-  static const double iconMd = 24.0;
-  static const double iconLg = 32.0;
-  static const double iconXl = 48.0;
-  static const double iconXxl = 64.0;
+  static const double iconXs = 14.0;
+  static const double iconSm = 18.0;
+  static const double iconMd = 20.0;
+  static const double iconLg = 24.0;
+  static const double iconXl = 32.0;
+  static const double iconXxl = 48.0;
 
   // ============================================
-  // AVATAR SIZES
+  // AVATAR SIZES - CRM Compact
   // ============================================
-  static const double avatarXs = 24.0;
-  static const double avatarSm = 32.0;
-  static const double avatarMd = 40.0;
-  static const double avatarLg = 48.0;
-  static const double avatarXl = 64.0;
-  static const double avatarXxl = 80.0;
+  static const double avatarXs = 20.0;
+  static const double avatarSm = 28.0;
+  static const double avatarMd = 32.0;
+  static const double avatarLg = 40.0;
+  static const double avatarXl = 56.0;
+  static const double avatarXxl = 72.0;
 
   // ============================================
   // SHADOWS

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../data/mock/mock_data.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/misc/stage_stepper.dart';
 import '../../widgets/misc/timeline_item.dart';
 
 /// Deal Detail Screen
 /// Shows deal information with stage stepper and progression actions
-class DealDetailScreen extends StatefulWidget {
+class DealDetailScreen extends ConsumerStatefulWidget {
   final String dealId;
 
   const DealDetailScreen({
@@ -19,10 +21,10 @@ class DealDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<DealDetailScreen> createState() => _DealDetailScreenState();
+  ConsumerState<DealDetailScreen> createState() => _DealDetailScreenState();
 }
 
-class _DealDetailScreenState extends State<DealDetailScreen> {
+class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   Deal? get deal => MockData.getDealById(widget.dealId);
   User? get assignedUser =>
       deal != null ? MockData.getUserById(deal!.assignedTo) : null;
@@ -870,12 +872,13 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
   }
 
   String _formatCurrency(double value) {
+    final symbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
     if (value >= 1000000) {
-      return '\$${(value / 1000000).toStringAsFixed(1)}M';
+      return '$symbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
-      return '\$${(value / 1000).toStringAsFixed(0)}K';
+      return '$symbol${(value / 1000).toStringAsFixed(0)}K';
     } else {
-      return '\$${value.toStringAsFixed(0)}';
+      return '$symbol${value.toStringAsFixed(0)}';
     }
   }
 

@@ -30,10 +30,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
     final dashboardState = ref.watch(dashboardProvider);
     final authState = ref.watch(authProvider);
     final userName = authState.user?.displayName ?? 'User';
+    final currencySymbol = authState.selectedOrganization?.currencySymbol ?? '\$';
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol, decimalDigits: 0);
+    final compactCurrencyFormat = NumberFormat.compactCurrency(symbol: currencySymbol, decimalDigits: 1);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -67,35 +69,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              actions: [
-                IconButton(
-                  icon: Stack(
-                    children: [
-                      const Icon(LucideIcons.bell, size: 22),
-                      if ((dashboardState.data?.urgentCounts.overdueTasks ?? 0) > 0)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.danger500,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  onPressed: () {},
-                ),
-                const SizedBox(width: 8),
-              ],
             ),
 
             // Content
             SliverToBoxAdapter(
-              child: _buildContent(dashboardState, currencyFormat),
+              child: _buildContent(dashboardState, currencyFormat, compactCurrencyFormat),
             ),
           ],
         ),
@@ -104,7 +82,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildContent(DashboardState dashboardState, NumberFormat currencyFormat) {
+  Widget _buildContent(DashboardState dashboardState, NumberFormat currencyFormat, NumberFormat compactCurrencyFormat) {
     if (dashboardState.isLoading && dashboardState.data == null) {
       return const SizedBox(
         height: 400,
@@ -141,42 +119,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // KPI Cards
-        _buildKpiSection(data, currencyFormat),
+        _buildKpiSection(data, compactCurrencyFormat),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
         // Urgent Metrics
         if (_hasUrgentItems(data.urgentCounts)) ...[
           _buildUrgentSection(data.urgentCounts),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
         ],
 
         // Pipeline Overview
         if (data.pipelineByStage.isNotEmpty) ...[
           _buildPipelineSection(data.pipelineByStage, currencyFormat),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
         ],
 
         // Hot Leads
         if (data.hotLeads.isNotEmpty) ...[
           _buildHotLeadsSection(data.hotLeads),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
         ],
 
         // Today's Tasks
         _buildTasksSection(data.tasks),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
         // Recent Activity
         if (data.activities.isNotEmpty) ...[
           _buildActivitySection(data.activities),
         ],
 
-        const SizedBox(height: 100),
+        const SizedBox(height: 80),
       ],
     );
   }
@@ -196,11 +174,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildKpiSection(DashboardData data, NumberFormat currencyFormat) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final kpiHeight = 70 + (30 * textScale); // Base 70 + scaled text area
+
     return SizedBox(
-      height: 110,
+      height: kpiHeight,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
           _KpiCard(
             title: 'Pipeline',
@@ -233,12 +214,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildUrgentSection(UrgentCounts counts) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.warning50,
-          borderRadius: AppLayout.borderRadiusLg,
+          borderRadius: AppLayout.borderRadiusMd,
           border: Border.all(color: AppColors.warning200),
         ),
         child: Column(
@@ -246,18 +227,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(LucideIcons.alertTriangle, size: 18, color: AppColors.warning600),
-                const SizedBox(width: 8),
+                Icon(LucideIcons.alertTriangle, size: 16, color: AppColors.warning600),
+                const SizedBox(width: 6),
                 Text(
                   'Needs Attention',
-                  style: AppTypography.label.copyWith(color: AppColors.warning700),
+                  style: AppTypography.labelSmall.copyWith(color: AppColors.warning700),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 16,
-              runSpacing: 8,
+              spacing: 12,
+              runSpacing: 6,
               children: [
                 if (counts.overdueTasks > 0)
                   _UrgentBadge(
@@ -303,60 +284,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final maxValue = activeStages.map((s) => s.value).reduce((a, b) => a > b ? a : b);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: AppLayout.borderRadiusLg,
+          borderRadius: AppLayout.borderRadiusMd,
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pipeline Overview', style: AppTypography.label),
-            const SizedBox(height: 16),
+            Text('Pipeline Overview', style: AppTypography.labelSmall),
+            const SizedBox(height: 10),
             ...activeStages.map((stage) {
               final percentage = maxValue > 0 ? stage.value / maxValue : 0;
               final stageColor = _getStageColor(stage.code);
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
                         color: stageColor,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     SizedBox(
-                      width: 90,
+                      width: 80,
                       child: Text(
                         stage.label,
-                        style: AppTypography.caption,
+                        style: AppTypography.bodySmall.copyWith(fontSize: 11),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Expanded(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
                           value: percentage.toDouble(),
                           backgroundColor: AppColors.gray100,
                           valueColor: AlwaysStoppedAnimation(stageColor),
-                          minHeight: 8,
+                          minHeight: 6,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     SizedBox(
                       width: 70,
                       child: Text(
                         currencyFormat.format(stage.value),
-                        style: AppTypography.numberSmall,
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
                         textAlign: TextAlign.right,
                       ),
                     ),
@@ -394,42 +379,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Hot Leads', style: AppTypography.label),
+              Text('Hot Leads', style: AppTypography.labelSmall),
               GestureDetector(
                 onTap: () => context.go(AppRoutes.leads),
                 child: Text(
                   'See All',
-                  style: AppTypography.labelSmall.copyWith(
+                  style: AppTypography.bodySmall.copyWith(
                     color: AppColors.primary600,
+                    fontSize: 11,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         SizedBox(
-          height: 90,
+          height: 76,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: leads.take(5).length,
             itemBuilder: (context, index) {
               final lead = leads[index];
               return GestureDetector(
                 onTap: () => context.push('/leads/${lead.id}'),
                 child: Container(
-                  width: 180,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(12),
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: AppLayout.borderRadiusMd,
-                    border: Border.all(color: AppColors.borderLight),
+                    borderRadius: AppLayout.borderRadiusSm,
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,21 +425,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Expanded(
                             child: Text(
                               lead.fullName,
-                              style: AppTypography.label,
+                              style: AppTypography.labelSmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
                               color: AppColors.danger100,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
                               'HOT',
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: 8,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.danger600,
                               ),
@@ -461,11 +447,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       if (lead.company != null)
                         Text(
                           lead.company!,
-                          style: AppTypography.caption,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -473,9 +462,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       if (lead.nextFollowUp != null)
                         Text(
                           'Follow-up: ${DateFormat.MMMd().format(lead.nextFollowUp!)}',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.bodySmall.copyWith(
                             color: AppColors.warning600,
-                            fontSize: 11,
+                            fontSize: 10,
                           ),
                         ),
                     ],
@@ -496,42 +485,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Upcoming Tasks', style: AppTypography.label),
+              Text('Upcoming Tasks', style: AppTypography.labelSmall),
               GestureDetector(
                 onTap: () => context.go(AppRoutes.tasks),
                 child: Text(
                   'See All',
-                  style: AppTypography.labelSmall.copyWith(
+                  style: AppTypography.bodySmall.copyWith(
                     color: AppColors.primary600,
+                    fontSize: 11,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: AppLayout.borderRadiusLg,
+              borderRadius: AppLayout.borderRadiusMd,
+              border: Border.all(color: AppColors.border),
             ),
             child: upcomingTasks.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(16),
                     child: Center(
                       child: Column(
                         children: [
-                          Icon(LucideIcons.checkCircle, size: 32, color: Colors.grey[300]),
-                          const SizedBox(height: 8),
+                          Icon(LucideIcons.checkCircle, size: 24, color: Colors.grey[300]),
+                          const SizedBox(height: 6),
                           Text(
                             'No upcoming tasks',
-                            style: AppTypography.caption,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
                           ),
                         ],
                       ),
@@ -558,16 +551,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Recent Activity', style: AppTypography.label),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text('Recent Activity', style: AppTypography.labelSmall),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: AppLayout.borderRadiusLg,
+              borderRadius: AppLayout.borderRadiusMd,
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               children: activities.take(5).toList().asMap().entries.map((entry) {
@@ -684,37 +678,47 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final cardWidth = 100 + (25 * textScale); // Base 100 + scaled text area
+
     return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
+      width: cardWidth,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: AppLayout.borderRadiusMd,
+        borderRadius: AppLayout.borderRadiusSm,
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(4),
             ),
-            child: Icon(icon, size: 16, color: color),
+            child: Icon(icon, size: 14, color: color),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             value,
-            style: AppTypography.h3.copyWith(fontSize: 18),
+            style: AppTypography.label.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             title,
-            style: AppTypography.caption,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -740,10 +744,10 @@ class _UrgentBadge extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -751,16 +755,16 @@ class _UrgentBadge extends StatelessWidget {
               Text(
                 count.toString(),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: color,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: color,
                 ),
               ),
@@ -801,25 +805,27 @@ class _TaskItem extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
               Container(
-                width: 4,
-                height: 40,
+                width: 3,
+                height: 32,
                 decoration: BoxDecoration(
                   color: _getPriorityColor(),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       task.title,
-                      style: AppTypography.body,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -830,17 +836,21 @@ class _TaskItem extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 task.relatedTo!,
-                                style: AppTypography.caption,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           if (task.relatedTo != null && task.dueDate != null)
-                            const Text(' • ', style: TextStyle(color: AppColors.gray300)),
+                            Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
                           if (task.dueDate != null)
                             Text(
                               DateFormat.MMMd().format(task.dueDate!),
-                              style: AppTypography.caption,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
                             ),
                         ],
                       ),
@@ -848,7 +858,7 @@ class _TaskItem extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: _getPriorityColor().withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
@@ -856,7 +866,7 @@ class _TaskItem extends StatelessWidget {
                 child: Text(
                   task.priority,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: _getPriorityColor(),
                   ),
@@ -865,7 +875,7 @@ class _TaskItem extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider) const Divider(height: 1, indent: 28),
+        if (showDivider) const Divider(height: 1, indent: 24),
       ],
     );
   }
@@ -920,23 +930,23 @@ class _ActivityItem extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   color: _getActivityColor().withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   _getActivityIcon(),
-                  size: 18,
+                  size: 14,
                   color: _getActivityColor(),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,16 +965,19 @@ class _ActivityItem extends StatelessWidget {
                               activity.userName!.split('@').first,
                               style: AppTypography.caption.copyWith(
                                 fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const Text(' • ', style: TextStyle(color: AppColors.gray300)),
+                          Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
                         ],
                         Text(
                           activity.relativeTime,
-                          style: AppTypography.caption,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
                         ),
                       ],
                     ),
@@ -974,7 +987,7 @@ class _ActivityItem extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider) const Divider(height: 1, indent: 60),
+        if (showDivider) const Divider(height: 1, indent: 48),
       ],
     );
   }

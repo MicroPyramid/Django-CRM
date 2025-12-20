@@ -161,9 +161,11 @@ class AuthService {
 
     // Sync with ApiService
     _apiService.setAccessToken(_accessToken);
+    _apiService.setOrganizationId(null);
 
-    // Persist to storage
+    // Persist to storage (including clearing selected org)
     await _saveToStorage();
+    await _clearSelectedOrganization();
 
     debugPrint('AuthService: Auth response handled, user: ${_currentUser?.email}');
     debugPrint('AuthService: Organizations: ${_organizations?.length ?? 0}');
@@ -337,6 +339,12 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_selectedOrgKey, jsonEncode(_selectedOrganization!.toJson()));
     }
+  }
+
+  /// Clear selected organization from storage
+  Future<void> _clearSelectedOrganization() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_selectedOrgKey);
   }
 
   /// Clear all stored authentication data

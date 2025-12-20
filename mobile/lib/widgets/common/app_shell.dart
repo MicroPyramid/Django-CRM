@@ -60,7 +60,7 @@ class _BottomNav extends StatelessWidget {
             children: [
               _NavItem(
                 icon: LucideIcons.layoutDashboard,
-                label: 'Dashboard',
+                label: 'Home',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
               ),

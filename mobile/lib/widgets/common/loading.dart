@@ -239,7 +239,7 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: AppSpacing.page,
         child: Column(
           mainAxisSize: MainAxisSize.min,

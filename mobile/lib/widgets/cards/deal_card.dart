@@ -11,12 +11,14 @@ class DealCard extends StatelessWidget {
   final Deal deal;
   final VoidCallback? onTap;
   final bool isDragging;
+  final String currencySymbol;
 
   const DealCard({
     super.key,
     required this.deal,
     this.onTap,
     this.isDragging = false,
+    this.currencySymbol = '\$',
   });
 
   int get daysUntilClose {
@@ -234,11 +236,11 @@ class DealCard extends StatelessWidget {
 
   String _formatCurrency(double value) {
     if (value >= 1000000) {
-      return '\$${(value / 1000000).toStringAsFixed(1)}M';
+      return '$currencySymbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
-      return '\$${(value / 1000).toStringAsFixed(0)}K';
+      return '$currencySymbol${(value / 1000).toStringAsFixed(0)}K';
     } else {
-      return '\$${value.toStringAsFixed(0)}';
+      return '$currencySymbol${value.toStringAsFixed(0)}';
     }
   }
 
@@ -254,11 +256,13 @@ class DealCard extends StatelessWidget {
 class DealCardCompact extends StatelessWidget {
   final Deal deal;
   final VoidCallback? onTap;
+  final String currencySymbol;
 
   const DealCardCompact({
     super.key,
     required this.deal,
     this.onTap,
+    this.currencySymbol = '\$',
   });
 
   @override
@@ -311,7 +315,7 @@ class DealCardCompact extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '\$${(deal.value / 1000).toStringAsFixed(0)}K',
+                  '$currencySymbol${(deal.value / 1000).toStringAsFixed(0)}K',
                   style: AppTypography.label.copyWith(
                     color: AppColors.primary600,
                     fontWeight: FontWeight.w600,

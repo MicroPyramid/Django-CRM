@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/models/lead.dart';
+import '../data/models/comment.dart';
 import '../services/api_service.dart';
 
 /// Leads list state
@@ -57,6 +57,121 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
   final ApiService _apiService = ApiService();
   static const int _pageSize = 20;
 
+  /// Get a single lead by ID
+  Future<Lead?> getLeadById(String id) async {
+    try {
+      final url = '${ApiConfig.leads}$id/';
+      final response = await _apiService.get(url);
+
+      if (response.success && response.data != null) {
+        final leadData = response.data!['lead_obj'] as Map<String, dynamic>?;
+        if (leadData != null) {
+          final lead = Lead.fromJson(leadData);
+
+          // Parse comments from separate field in response
+          final commentsData = response.data!['comments'] as List<dynamic>?;
+          if (commentsData != null && commentsData.isNotEmpty) {
+            final comments = commentsData
+                .map((c) => Comment.fromJson(c as Map<String, dynamic>))
+                .toList();
+            return lead.copyWith(comments: comments);
+          }
+
+          return lead;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Create a new lead
+  Future<ApiResponse<Map<String, dynamic>>> createLead(Map<String, dynamic> leadData) async {
+    try {
+      final response = await _apiService.post(ApiConfig.leads, leadData);
+      if (response.success) {
+        await refresh();
+      }
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Update an existing lead
+  Future<ApiResponse<Map<String, dynamic>>> updateLead(String id, Map<String, dynamic> leadData) async {
+    try {
+      final url = '${ApiConfig.leads}$id/';
+      final response = await _apiService.put(url, leadData);
+      if (response.success) {
+        await refresh();
+      }
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Delete a lead
+  Future<ApiResponse<Map<String, dynamic>>> deleteLead(String id) async {
+    try {
+      final url = '${ApiConfig.leads}$id/';
+      final response = await _apiService.delete(url);
+      if (response.success) {
+        state = state.copyWith(
+          leads: state.leads.where((l) => l.id != id).toList(),
+          totalCount: state.totalCount > 0 ? state.totalCount - 1 : 0,
+        );
+      }
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Add a comment to a lead
+  Future<ApiResponse<Map<String, dynamic>>> addComment(String leadId, String comment) async {
+    try {
+      final url = '${ApiConfig.leads}$leadId/';
+      final response = await _apiService.post(url, {'comment': comment});
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// Delete a comment from a lead
+  Future<ApiResponse<Map<String, dynamic>>> deleteComment(String commentId) async {
+    try {
+      final url = ApiConfig.leadComment(commentId);
+      final response = await _apiService.delete(url);
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
   /// Fetch leads from API
   Future<void> fetchLeads({
     String? search,
@@ -74,7 +189,6 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
       );
     }
 
-    debugPrint('LeadsNotifier: Fetching leads (offset: ${state.currentOffset})...');
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -126,17 +240,13 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
           hasMore: newLeads.length >= _pageSize,
           currentOffset: state.currentOffset + newLeads.length,
         );
-
-        debugPrint('LeadsNotifier: Loaded ${newLeads.length} leads (total: ${updatedLeads.length})');
       } else {
         state = state.copyWith(
           isLoading: false,
           error: response.message ?? 'Failed to load leads',
         );
-        debugPrint('LeadsNotifier: API error - ${response.message}');
       }
     } catch (e) {
-      debugPrint('LeadsNotifier: Exception - $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load leads: ${e.toString()}',

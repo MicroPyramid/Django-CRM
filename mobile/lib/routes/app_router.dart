@@ -16,6 +16,7 @@ import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/leads/leads_list_screen.dart';
 import '../screens/leads/lead_detail_screen.dart';
 import '../screens/leads/lead_create_screen.dart';
+import '../screens/leads/lead_form_screen.dart';
 import '../screens/deals/deals_list_screen.dart';
 import '../screens/deals/deal_detail_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String leads = '/leads';
   static const String leadDetail = '/leads/:id';
   static const String leadCreate = '/leads/create';
+  static const String leadEdit = '/leads/:id/edit';
   static const String deals = '/deals';
   static const String dealDetail = '/deals/:id';
   static const String dealCreate = '/deals/create';
@@ -192,6 +194,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       final id = state.pathParameters['id']!;
                       return LeadDetailScreen(leadId: id);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        name: 'leadEdit',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return LeadFormScreen(leadId: id);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

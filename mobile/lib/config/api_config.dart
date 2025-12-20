@@ -60,6 +60,9 @@ class ApiConfig {
   /// Leads management
   static String get leads => '$apiBaseUrl/leads/';
 
+  /// Lead comment (for update/delete)
+  static String leadComment(String commentId) => '$apiBaseUrl/leads/comment/$commentId/';
+
   /// Contacts management
   static String get contacts => '$apiBaseUrl/contacts/';
 
