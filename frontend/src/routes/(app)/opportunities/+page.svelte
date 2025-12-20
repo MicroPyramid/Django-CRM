@@ -30,6 +30,8 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import {
     FilterBar,
@@ -561,6 +563,8 @@
     opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length
   );
 
+  let currentUser = $state(null);
+
   // Load column visibility from localStorage
   onMount(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -571,6 +575,7 @@
         console.error('Failed to parse saved columns:', e);
       }
     }
+    currentUser = getCurrentUser();
   });
 
   // Save column visibility when changed
@@ -1492,6 +1497,17 @@
             </div>
           </div>
         {/if}
+      </div>
+
+      <!-- Comments Section -->
+      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+        <CommentSection
+          entityId={selectedRow.id}
+          entityType="opportunity"
+          initialComments={selectedRow.comments || []}
+          currentUserEmail={currentUser?.email}
+          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+        />
       </div>
     {/if}
   {/snippet}

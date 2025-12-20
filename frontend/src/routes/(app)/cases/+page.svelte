@@ -29,6 +29,8 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import {
     FilterBar,
     SearchInput,
@@ -97,6 +99,7 @@
   // Column visibility state
   const STORAGE_KEY = 'cases-column-config';
   let visibleColumns = $state(columns.map((c) => c.key));
+  let currentUser = $state(null);
 
   // Load column visibility from localStorage
   onMount(() => {
@@ -111,6 +114,7 @@
         console.error('Failed to parse saved columns:', e);
       }
     }
+    currentUser = getCurrentUser();
   });
 
   // Save column visibility when changed
@@ -1026,43 +1030,14 @@
   mode={drawer.mode === 'create' ? 'create' : 'view'}
 >
   {#snippet activitySection()}
-    {#if drawer.mode !== 'create' && drawer.selected?.comments?.length > 0}
-      <div class="space-y-3">
-        <div class="mb-3 flex items-center gap-2">
-          <Activity class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-          <p class="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-            Activity
-          </p>
-        </div>
-        {#each drawer.selected.comments.slice(0, 5) as comment (comment.id)}
-          <div class="flex gap-3">
-            <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-            >
-              <MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm text-gray-900 dark:text-gray-100">
-                <span class="font-medium">{comment.author?.name || 'Unknown'}</span>
-                {' '}added a note
-              </p>
-              <p class="mt-0.5 text-xs text-gray-500">
-                {new Date(comment.createdAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
-              <p class="mt-1 line-clamp-2 text-sm text-gray-500">{comment.body}</p>
-            </div>
-          </div>
-        {/each}
-      </div>
-    {:else if drawer.mode !== 'create'}
-      <div class="flex flex-col items-center justify-center py-6 text-center">
-        <MessageSquare class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
-        <p class="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
-      </div>
+    {#if drawer.mode !== 'create' && drawer.selected}
+      <CommentSection
+        entityId={drawer.selected.id}
+        entityType="cases"
+        initialComments={drawer.selected.comments || []}
+        currentUserEmail={currentUser?.email}
+        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+      />
     {/if}
   {/snippet}
 

@@ -53,6 +53,8 @@
   } from '$lib/utils/table-helpers.js';
   import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
   import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import { browser } from '$app/environment';
   import { orgSettings } from '$lib/stores/org.js';
   import { ViewToggle } from '$lib/components/ui/view-toggle';
@@ -520,6 +522,7 @@
 
   onMount(() => {
     loadColumnVisibility();
+    currentUser = getCurrentUser();
   });
 
   // Save to localStorage when column visibility changes
@@ -619,6 +622,7 @@
   let drawerData = $state(null);
   let drawerLoading = $state(false);
   let isSaving = $state(false);
+  let currentUser = $state(null);
 
   // For create mode - temporary form data
   let createFormData = $state(
@@ -1725,34 +1729,14 @@
   onClose={closeDrawer}
 >
   {#snippet activitySection()}
-    {#if drawerMode !== 'create' && drawerData?.comments?.length > 0}
-      <div class="space-y-3">
-        <div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-          <MessageSquare class="h-4 w-4" />
-          Activity
-        </div>
-        {#each drawerData.comments.slice(0, 3) as comment (comment.id)}
-          <div class="flex gap-3">
-            <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-            >
-              <MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm text-gray-900 dark:text-gray-100">
-                <span class="font-medium">{comment.author?.name || 'Unknown'}</span>
-                {' '}added a note
-              </p>
-              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                {formatRelativeDate(comment.createdAt)}
-              </p>
-              <p class="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
-                {comment.body}
-              </p>
-            </div>
-          </div>
-        {/each}
-      </div>
+    {#if drawerMode !== 'create' && drawerData}
+      <CommentSection
+        entityId={drawerData.id}
+        entityType="leads"
+        initialComments={drawerData.comments || []}
+        currentUserEmail={currentUser?.email}
+        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+      />
     {/if}
   {/snippet}
 

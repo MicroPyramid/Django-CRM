@@ -36,6 +36,8 @@
   import * as Card from '$lib/components/ui/card/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import {
     FilterBar,
     SearchInput,
@@ -230,6 +232,7 @@
   // Column visibility state - use defaults
   const STORAGE_KEY = 'tasks-table-columns';
   let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+  let currentUser = $state(null);
 
   // Load column visibility from localStorage
   onMount(() => {
@@ -244,6 +247,7 @@
         console.error('Failed to parse saved columns:', e);
       }
     }
+    currentUser = getCurrentUser();
   });
 
   // Save column visibility when changed
@@ -1525,6 +1529,17 @@
             <span>Created {formatRelativeDate(selectedTask.createdAt)}</span>
           </div>
         {/if}
+      </div>
+
+      <!-- Comments Section -->
+      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+        <CommentSection
+          entityId={selectedTask.id}
+          entityType="tasks"
+          initialComments={selectedTask.comments || []}
+          currentUserEmail={currentUser?.email}
+          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+        />
       </div>
     {/if}
   {/snippet}

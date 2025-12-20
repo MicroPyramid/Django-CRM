@@ -22,6 +22,8 @@
   } from '@lucide/svelte';
   import { PageHeader } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
@@ -247,6 +249,7 @@
 
   // Column visibility state - use defaults (excludes owner)
   let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
+  let currentUser = $state(null);
 
   // Load column visibility from localStorage
   onMount(() => {
@@ -258,6 +261,7 @@
         console.error('Failed to parse saved columns:', e);
       }
     }
+    currentUser = getCurrentUser();
   });
 
   // Save column visibility when changed
@@ -884,6 +888,17 @@
             </p>
           </div>
         </div>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+        <CommentSection
+          entityId={selectedContact.id}
+          entityType="contacts"
+          initialComments={selectedContact.comments || []}
+          currentUserEmail={currentUser?.email}
+          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+        />
       </div>
     {/if}
   {/snippet}

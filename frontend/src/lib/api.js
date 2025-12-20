@@ -425,6 +425,17 @@ function createCrudApi(entityPath) {
     },
 
     /**
+     * Delete a comment
+     * @param {string} commentId - Comment UUID
+     * @returns {Promise<any>} Response
+     */
+    async deleteComment(commentId) {
+      return await apiRequest(`/${entityPath}/comment/${commentId}/`, {
+        method: 'DELETE'
+      });
+    },
+
+    /**
      * Get attachments for an entity
      * @param {string} id - Entity UUID
      * @returns {Promise<any>} List of attachments
