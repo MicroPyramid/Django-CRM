@@ -187,7 +187,14 @@ class TasksNotifier extends StateNotifier<TasksState> {
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
-        return Task.fromJson(response.data!);
+        // API returns { "task_obj": {...}, "attachments": [...], ... }
+        final taskData = response.data!['task_obj'] as Map<String, dynamic>?;
+        if (taskData != null) {
+          debugPrint('TasksNotifier: Task data keys: ${taskData.keys.toList()}');
+          return Task.fromJson(taskData);
+        }
+        debugPrint('TasksNotifier: task_obj not found in response');
+        return null;
       } else {
         debugPrint('TasksNotifier: Failed to get task - ${response.message}');
         return null;
@@ -278,7 +285,34 @@ class TasksNotifier extends StateNotifier<TasksState> {
   /// Toggle task completion status
   Future<ApiResponse<Map<String, dynamic>>> toggleTaskStatus(Task task) async {
     final newStatus = task.completed ? 'New' : 'Completed';
-    return updateTask(task.id, {'status': newStatus});
+    return patchTask(task.id, {'status': newStatus});
+  }
+
+  /// Partially update a task (PATCH)
+  Future<ApiResponse<Map<String, dynamic>>> patchTask(String taskId, Map<String, dynamic> data) async {
+    try {
+      final url = '${ApiConfig.tasks}$taskId/';
+      debugPrint('TasksNotifier: Patching task $taskId with $data');
+
+      final response = await _apiService.patch(url, data);
+
+      if (response.success && response.data != null) {
+        // Update the task in local state
+        final updatedTask = Task.fromJson(response.data!);
+        state = state.copyWith(
+          tasks: state.tasks.map((t) => t.id == taskId ? updatedTask : t).toList(),
+        );
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('TasksNotifier: Exception patching task - $e');
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
   }
 }
 

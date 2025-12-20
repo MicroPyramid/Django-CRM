@@ -205,10 +205,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ),
       ),
       child: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Status Badge
@@ -222,10 +224,10 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
               const SizedBox(height: 12),
 
-              // Title
+              // Title - always show
               Text(
                 _task!.title,
-                style: AppTypography.h1.copyWith(
+                style: AppTypography.h2.copyWith(
                   color: AppColors.textPrimary,
                   decoration: _task!.completed
                       ? TextDecoration.lineThrough

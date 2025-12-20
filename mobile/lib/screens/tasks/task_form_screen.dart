@@ -475,23 +475,27 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
               width: isSelected ? 2 : 1,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? priority.color : AppColors.gray500,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                priority.label,
-                style: AppTypography.label.copyWith(
-                  color: isSelected ? priority.color : AppColors.textSecondary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isSelected ? priority.color : AppColors.gray500,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Text(
+                  priority.label,
+                  style: AppTypography.label.copyWith(
+                    color: isSelected ? priority.color : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
