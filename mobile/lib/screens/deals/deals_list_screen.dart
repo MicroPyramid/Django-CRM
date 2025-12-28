@@ -139,13 +139,11 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           // Add new deal
           IconButton(
             icon: const Icon(LucideIcons.plus, size: 22),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Create deal coming soon'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+            onPressed: () async {
+              final result = await context.push('/deals/create');
+              if (result == true) {
+                ref.read(dealsProvider.notifier).refresh();
+              }
             },
           ),
         ],
@@ -357,7 +355,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
                 _searchController.clear();
                 setState(() => _searchQuery = '');
               }
-            : () {},
+            : () async {
+                final result = await context.push('/deals/create');
+                if (result == true) {
+                  ref.read(dealsProvider.notifier).refresh();
+                }
+              },
       );
     }
 

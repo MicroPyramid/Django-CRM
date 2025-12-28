@@ -157,6 +157,141 @@ class DealsNotifier extends StateNotifier<DealsState> {
   void clear() {
     state = const DealsState.initial();
   }
+
+  /// Get a single deal by ID
+  Future<Deal?> getDeal(String id) async {
+    try {
+      final url = '${ApiConfig.opportunities}$id/';
+      final response = await _apiService.get(url);
+
+      if (response.success && response.data != null) {
+        return Deal.fromJson(response.data!);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Create a new deal
+  Future<({bool success, String? error, Deal? deal})> createDeal(Deal deal) async {
+    try {
+      final response = await _apiService.post(
+        ApiConfig.opportunities,
+        deal.toJson(),
+      );
+
+      if (response.success && response.data != null) {
+        final newDeal = Deal.fromJson(response.data!);
+        // Add to the list
+        state = state.copyWith(
+          deals: [newDeal, ...state.deals],
+          totalCount: state.totalCount + 1,
+        );
+        return (success: true, error: null, deal: newDeal);
+      }
+
+      // Parse error message
+      String errorMsg = response.message ?? 'Failed to create deal';
+      if (response.data != null && response.data!['errors'] != null) {
+        final errors = response.data!['errors'] as Map<String, dynamic>;
+        errorMsg = errors.values.map((v) => v is List ? v.join(', ') : v.toString()).join('; ');
+      }
+      return (success: false, error: errorMsg, deal: null);
+    } catch (e) {
+      return (success: false, error: 'Failed to create deal: ${e.toString()}', deal: null);
+    }
+  }
+
+  /// Update an existing deal
+  Future<({bool success, String? error, Deal? deal})> updateDeal(String id, Deal deal) async {
+    try {
+      final url = '${ApiConfig.opportunities}$id/';
+      final response = await _apiService.put(
+        url,
+        deal.toJson(),
+      );
+
+      if (response.success && response.data != null) {
+        final updatedDeal = Deal.fromJson(response.data!);
+        // Update in the list
+        final updatedDeals = state.deals.map((d) {
+          return d.id == id ? updatedDeal : d;
+        }).toList();
+        state = state.copyWith(deals: updatedDeals);
+        return (success: true, error: null, deal: updatedDeal);
+      }
+
+      // Parse error message
+      String errorMsg = response.message ?? 'Failed to update deal';
+      if (response.data != null && response.data!['errors'] != null) {
+        final errors = response.data!['errors'] as Map<String, dynamic>;
+        errorMsg = errors.values.map((v) => v is List ? v.join(', ') : v.toString()).join('; ');
+      }
+      return (success: false, error: errorMsg, deal: null);
+    } catch (e) {
+      return (success: false, error: 'Failed to update deal: ${e.toString()}', deal: null);
+    }
+  }
+
+  /// Update deal stage (quick action)
+  Future<({bool success, String? error})> updateDealStage(String id, DealStage stage) async {
+    try {
+      final url = '${ApiConfig.opportunities}$id/';
+      final response = await _apiService.patch(
+        url,
+        {
+          'stage': stage.value,
+          'probability': stage.defaultProbability,
+        },
+      );
+
+      if (response.success && response.data != null) {
+        final updatedDeal = Deal.fromJson(response.data!);
+        // Update in the list
+        final updatedDeals = state.deals.map((d) {
+          return d.id == id ? updatedDeal : d;
+        }).toList();
+        state = state.copyWith(deals: updatedDeals);
+        return (success: true, error: null);
+      }
+
+      return (success: false, error: response.message ?? 'Failed to update stage');
+    } catch (e) {
+      return (success: false, error: 'Failed to update stage: ${e.toString()}');
+    }
+  }
+
+  /// Delete a deal
+  Future<({bool success, String? error})> deleteDeal(String id) async {
+    try {
+      final url = '${ApiConfig.opportunities}$id/';
+      final response = await _apiService.delete(url);
+
+      if (response.success) {
+        // Remove from the list
+        final updatedDeals = state.deals.where((d) => d.id != id).toList();
+        state = state.copyWith(
+          deals: updatedDeals,
+          totalCount: state.totalCount - 1,
+        );
+        return (success: true, error: null);
+      }
+
+      return (success: false, error: response.message ?? 'Failed to delete deal');
+    } catch (e) {
+      return (success: false, error: 'Failed to delete deal: ${e.toString()}');
+    }
+  }
+
+  /// Get deal from current state by ID
+  Deal? getDealFromState(String id) {
+    try {
+      return state.deals.firstWhere((d) => d.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// Deals provider

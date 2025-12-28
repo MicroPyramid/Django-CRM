@@ -19,6 +19,7 @@ import '../screens/leads/lead_create_screen.dart';
 import '../screens/leads/lead_form_screen.dart';
 import '../screens/deals/deals_list_screen.dart';
 import '../screens/deals/deal_detail_screen.dart';
+import '../screens/deals/deal_form_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
@@ -223,6 +224,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const DealsListScreen(),
                 routes: [
                   GoRoute(
+                    path: 'create',
+                    name: 'dealCreate',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const DealFormScreen(),
+                  ),
+                  GoRoute(
                     path: ':id',
                     name: 'dealDetail',
                     parentNavigatorKey: _rootNavigatorKey,
@@ -230,6 +237,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       final id = state.pathParameters['id']!;
                       return DealDetailScreen(dealId: id);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        name: 'dealEdit',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return DealFormScreen(dealId: id);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

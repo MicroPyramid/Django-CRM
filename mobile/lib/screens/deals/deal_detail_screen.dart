@@ -4,11 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/mock/mock_data.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/deals_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/misc/stage_stepper.dart';
-import '../../widgets/misc/timeline_item.dart';
 
 /// Deal Detail Screen
 /// Shows deal information with stage stepper and progression actions
@@ -25,17 +24,35 @@ class DealDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
-  Deal? get deal => MockData.getDealById(widget.dealId);
-  User? get assignedUser =>
-      deal != null ? MockData.getUserById(deal!.assignedTo) : null;
-  Lead? get relatedLead =>
-      deal?.leadId != null ? MockData.getLeadById(deal!.leadId!) : null;
+  Deal? _deal;
+  bool _isLoading = true;
+  String? _error;
+  bool _isUpdatingStage = false;
 
-  List<Activity> get dealActivities => MockData.activities
-      .where((a) =>
-          a.relatedTo?.type == RelatedEntityType.opportunity && a.relatedTo?.id == widget.dealId)
-      .toList()
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  @override
+  void initState() {
+    super.initState();
+    _fetchDeal();
+  }
+
+  Future<void> _fetchDeal() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final deal = await ref.read(dealsProvider.notifier).getDeal(widget.dealId);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _deal = deal;
+        if (deal == null) {
+          _error = 'Failed to load deal';
+        }
+      });
+    }
+  }
 
   static const List<DealStage> _stageOrder = [
     DealStage.prospecting,
@@ -46,7 +63,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   ];
 
   DealStage? get nextStage {
-    final currentIndex = _stageOrder.indexOf(deal!.stage);
+    if (_deal == null) return null;
+    final currentIndex = _stageOrder.indexOf(_deal!.stage);
     if (currentIndex < _stageOrder.length - 1 && currentIndex >= 0) {
       return _stageOrder[currentIndex + 1];
     }
@@ -55,7 +73,22 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (deal == null) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.surfaceDim,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null || _deal == null) {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
@@ -63,10 +96,22 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const EmptyState(
-          icon: LucideIcons.briefcase,
-          title: 'Deal not found',
-          description: 'This deal may have been deleted',
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const EmptyState(
+                icon: LucideIcons.briefcase,
+                title: 'Deal not found',
+                description: 'This deal may have been deleted',
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _fetchDeal,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -109,14 +154,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Edit coming soon'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _navigateToEdit(),
               ),
               IconButton(
                 icon: Container(
@@ -147,7 +185,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: StageStepper(
-                    currentStage: deal!.stage,
+                    currentStage: _deal!.stage,
                     onStageChange: _handleStageChange,
                   ),
                 ),
@@ -159,13 +197,11 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 _buildProbabilityCard(),
 
                 // Products Section
-                if (deal!.products.isNotEmpty) _buildProductsCard(),
+                if (_deal!.products.isNotEmpty) _buildProductsCard(),
 
-                // Related Lead Card
-                if (relatedLead != null) _buildRelatedLeadCard(),
-
-                // Activity Timeline
-                _buildActivitySection(),
+                // Notes Section
+                if (_deal!.notes != null && _deal!.notes!.isNotEmpty)
+                  _buildNotesCard(),
 
                 // Bottom spacing for action buttons
                 const SizedBox(height: 140),
@@ -201,7 +237,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
             children: [
               // Deal Title
               Text(
-                deal!.title,
+                _deal!.title,
                 style: AppTypography.h1.copyWith(
                   color: AppColors.textPrimary,
                 ),
@@ -212,27 +248,10 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               const SizedBox(height: 4),
 
               // Company Name
-              GestureDetector(
-                onTap: relatedLead != null
-                    ? () => context.push('/leads/${relatedLead!.id}')
-                    : null,
-                child: Row(
-                  children: [
-                    Text(
-                      deal!.companyName,
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if (relatedLead != null) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        LucideIcons.externalLink,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ],
+              Text(
+                _deal!.companyName,
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
 
@@ -240,7 +259,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
               // Deal Value
               Text(
-                _formatCurrency(deal!.value),
+                _formatCurrency(_deal!.value),
                 style: AppTypography.display.copyWith(
                   color: AppColors.primary600,
                   fontSize: 32,
@@ -252,11 +271,24 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               // Badges
               Row(
                 children: [
-                  if (deal!.priority == Priority.high) ...[
-                    PriorityBadge(priority: deal!.priority),
-                    const SizedBox(width: 8),
-                  ],
-                  ...deal!.labels.take(2).map((label) => Padding(
+                  // Stage badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _deal!.stage.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _deal!.stage.label,
+                      style: AppTypography.caption.copyWith(
+                        color: _deal!.stage.color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Tags
+                  ..._deal!.labels.take(2).map((label) => Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: LabelPill(label: label),
                       )),
@@ -297,14 +329,14 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                   child: _InfoItem(
                     icon: LucideIcons.dollarSign,
                     label: 'VALUE',
-                    value: _formatCurrency(deal!.value),
+                    value: _formatCurrency(_deal!.value),
                   ),
                 ),
                 Expanded(
                   child: _InfoItem(
                     icon: LucideIcons.percent,
                     label: 'PROBABILITY',
-                    value: '${deal!.probability}%',
+                    value: '${_deal!.probability}%',
                   ),
                 ),
               ],
@@ -316,8 +348,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                   child: _InfoItem(
                     icon: LucideIcons.calendar,
                     label: 'EXPECTED CLOSE',
-                    value: deal!.closeDate != null
-                        ? _formatDate(deal!.closeDate!)
+                    value: _deal!.closeDate != null
+                        ? _formatDate(_deal!.closeDate!)
                         : 'Not set',
                   ),
                 ),
@@ -325,7 +357,28 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                   child: _InfoItem(
                     icon: LucideIcons.clock,
                     label: 'CREATED',
-                    value: _formatDate(deal!.createdAt),
+                    value: _formatDate(_deal!.createdAt),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Additional Info
+            Row(
+              children: [
+                Expanded(
+                  child: _InfoItem(
+                    icon: LucideIcons.tag,
+                    label: 'TYPE',
+                    value: _deal!.opportunityType.label,
+                  ),
+                ),
+                Expanded(
+                  child: _InfoItem(
+                    icon: LucideIcons.compass,
+                    label: 'SOURCE',
+                    value: _deal!.leadSource.label,
                   ),
                 ),
               ],
@@ -355,13 +408,12 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                     Row(
                       children: [
                         UserAvatar(
-                          name: assignedUser?.name ?? 'Unknown',
-                          imageUrl: assignedUser?.avatar,
+                          name: _deal!.assignedTo,
                           size: AvatarSize.xs,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          assignedUser?.name ?? 'Unknown',
+                          _deal!.assignedTo,
                           style: AppTypography.body,
                         ),
                       ],
@@ -399,9 +451,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                   ),
                 ),
                 Text(
-                  '${deal!.probability}%',
+                  '${_deal!.probability}%',
                   style: AppTypography.h3.copyWith(
-                    color: _getProbabilityColor(deal!.probability),
+                    color: _getProbabilityColor(_deal!.probability),
                   ),
                 ),
               ],
@@ -410,17 +462,17 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: deal!.probability / 100,
+                value: _deal!.probability / 100,
                 minHeight: 8,
                 backgroundColor: AppColors.gray200,
                 valueColor: AlwaysStoppedAnimation(
-                  _getProbabilityColor(deal!.probability),
+                  _getProbabilityColor(_deal!.probability),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _getProbabilityText(deal!.probability),
+              _getProbabilityText(_deal!.probability),
               style: AppTypography.caption.copyWith(
                 color: AppColors.textTertiary,
               ),
@@ -432,7 +484,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   }
 
   Widget _buildProductsCard() {
-    final totalProductValue = deal!.products
+    final totalProductValue = _deal!.products
         .fold<double>(0, (sum, p) => sum + (p.unitPrice * p.quantity));
 
     return Padding(
@@ -459,7 +511,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    CountBadge(count: deal!.products.length),
+                    CountBadge(count: _deal!.products.length),
                   ],
                 ),
                 Text(
@@ -471,7 +523,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            ...deal!.products.map((product) => Padding(
+            ..._deal!.products.map((product) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
                     children: [
@@ -521,71 +573,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
     );
   }
 
-  Widget _buildRelatedLeadCard() {
+  Widget _buildNotesCard() {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: GestureDetector(
-        onTap: () => context.push('/leads/${relatedLead!.id}'),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppLayout.borderRadiusLg,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'RELATED LEAD',
-                style: AppTypography.overline.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  UserAvatar(
-                    name: relatedLead!.name,
-                    size: AvatarSize.md,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          relatedLead!.name,
-                          style: AppTypography.label,
-                        ),
-                        Text(
-                          relatedLead!.company,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    LucideIcons.chevronRight,
-                    size: 20,
-                    color: AppColors.textTertiary,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivitySection() {
-    final activities = dealActivities.take(5).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -596,45 +586,19 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'ACTIVITY',
-                  style: AppTypography.overline.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (dealActivities.length > 5)
-                  Text(
-                    'See All',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.primary600,
-                    ),
-                  ),
-              ],
+            Text(
+              'NOTES',
+              style: AppTypography.overline.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-            const SizedBox(height: 16),
-            if (activities.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'No activity yet',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...activities.asMap().entries.map((entry) {
-                return TimelineItem(
-                  activity: entry.value,
-                  isFirst: entry.key == 0,
-                  isLast: entry.key == activities.length - 1,
-                );
-              }),
+            const SizedBox(height: 12),
+            Text(
+              _deal!.notes!,
+              style: AppTypography.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -642,8 +606,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   }
 
   Widget _buildActionButtons() {
-    final isWon = deal!.stage == DealStage.closedWon;
-    final isLost = deal!.stage == DealStage.closedLost;
+    final isWon = _deal!.stage == DealStage.closedWon;
+    final isLost = _deal!.stage == DealStage.closedLost;
     final isClosed = isWon || isLost;
 
     return Container(
@@ -660,10 +624,10 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
           children: [
             if (!isClosed && nextStage != null)
               PrimaryButton(
-                label: 'Move to ${nextStage!.displayName}',
+                label: _isUpdatingStage ? 'Updating...' : 'Move to ${nextStage!.displayName}',
                 icon: LucideIcons.arrowRight,
                 iconRight: true,
-                onPressed: () => _handleStageChange(nextStage!),
+                onPressed: _isUpdatingStage ? null : () => _handleStageChange(nextStage!),
               ),
 
             if (isWon)
@@ -694,6 +658,34 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 ),
               ),
 
+            if (isLost)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.danger100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.xCircle,
+                      color: AppColors.danger600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Deal Lost',
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.danger600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             if (!isClosed) ...[
               const SizedBox(height: 12),
               GhostButton(
@@ -709,38 +701,68 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
     );
   }
 
-  void _handleStageChange(DealStage newStage) {
-    showDialog(
+  void _navigateToEdit() async {
+    final result = await context.push('/deals/${widget.dealId}/edit');
+    if (result == true) {
+      _fetchDeal();
+    }
+  }
+
+  Future<void> _handleStageChange(DealStage newStage) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Move to ${newStage.displayName}?'),
-        content: Text(
+        content: const Text(
           'This will update the deal stage and probability.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Deal moved to ${newStage.displayName}'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Move'),
           ),
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    setState(() => _isUpdatingStage = true);
+
+    final result = await ref.read(dealsProvider.notifier).updateDealStage(
+      widget.dealId,
+      newStage,
+    );
+
+    if (mounted) {
+      setState(() => _isUpdatingStage = false);
+
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deal moved to ${newStage.displayName}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchDeal();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'Failed to update stage'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger600,
+          ),
+        );
+      }
+    }
   }
 
-  void _handleMarkLost() {
-    showDialog(
+  Future<void> _handleMarkLost() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Mark as Lost?'),
@@ -749,19 +771,11 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Deal marked as lost'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Mark Lost',
               style: TextStyle(color: AppColors.danger600),
@@ -770,6 +784,37 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    setState(() => _isUpdatingStage = true);
+
+    final result = await ref.read(dealsProvider.notifier).updateDealStage(
+      widget.dealId,
+      DealStage.closedLost,
+    );
+
+    if (mounted) {
+      setState(() => _isUpdatingStage = false);
+
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Deal marked as lost'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchDeal();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'Failed to update stage'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger600,
+          ),
+        );
+      }
+    }
   }
 
   void _showMoreOptions() {
@@ -793,19 +838,6 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(LucideIcons.copy),
-              title: const Text('Duplicate Deal'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Deal duplicated'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-            ListTile(
               leading: Icon(LucideIcons.trash2, color: AppColors.danger600),
               title: Text(
                 'Delete Deal',
@@ -823,8 +855,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
     );
   }
 
-  void _confirmDelete() {
-    showDialog(
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Deal?'),
@@ -833,20 +865,11 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Deal deleted'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
               style: TextStyle(color: AppColors.danger600),
@@ -855,6 +878,30 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    final result = await ref.read(dealsProvider.notifier).deleteDeal(widget.dealId);
+
+    if (mounted) {
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Deal deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'Failed to delete deal'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger600,
+          ),
+        );
+      }
+    }
   }
 
   Color _getProbabilityColor(int probability) {
