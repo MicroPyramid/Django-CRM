@@ -18,31 +18,31 @@
   /** @type {Props} */
   let { pipelineData = {}, currency = 'USD' } = $props();
 
-  // Only show open stages in the chart (not closed)
+  // Only show open stages in the chart (not closed) - using design system tokens
   const stages = [
     {
       id: 'PROSPECTING',
-      color: 'bg-slate-500',
-      bgLight: 'bg-slate-500/20',
-      text: 'text-slate-600 dark:text-slate-400'
+      color: 'bg-[var(--stage-new)]',
+      bgLight: 'bg-[var(--stage-new)]/20',
+      text: 'text-[var(--stage-new)]'
     },
     {
       id: 'QUALIFICATION',
-      color: 'bg-cyan-500',
-      bgLight: 'bg-cyan-500/20',
-      text: 'text-cyan-600 dark:text-cyan-400'
+      color: 'bg-[var(--stage-qualified)]',
+      bgLight: 'bg-[var(--stage-qualified)]/20',
+      text: 'text-[var(--stage-qualified)]'
     },
     {
       id: 'PROPOSAL',
-      color: 'bg-violet-500',
-      bgLight: 'bg-violet-500/20',
-      text: 'text-violet-600 dark:text-violet-400'
+      color: 'bg-[var(--stage-proposal)]',
+      bgLight: 'bg-[var(--stage-proposal)]/20',
+      text: 'text-[var(--stage-proposal)]'
     },
     {
       id: 'NEGOTIATION',
-      color: 'bg-amber-500',
-      bgLight: 'bg-amber-500/20',
-      text: 'text-amber-600 dark:text-amber-400'
+      color: 'bg-[var(--stage-negotiation)]',
+      bgLight: 'bg-[var(--stage-negotiation)]/20',
+      text: 'text-[var(--stage-negotiation)]'
     }
   ];
 
@@ -50,13 +50,13 @@
   const totalPipeline = $derived(stages.reduce((sum, s) => sum + (pipelineData[s.id]?.value || 0), 0));
 </script>
 
-<div class="overflow-hidden rounded-xl border border-border/50 bg-card/80 p-6 backdrop-blur-sm dark:bg-card/50">
-  <!-- Header -->
+<div class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+  <!-- Header - Orange accent -->
   <div class="mb-6 flex items-center gap-3">
-    <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/10 to-violet-500/10 dark:from-cyan-500/20 dark:to-violet-500/20">
-      <BarChart3 class="size-4 text-cyan-600 dark:text-cyan-400" />
+    <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+      <BarChart3 class="size-4 text-[var(--color-primary-default)]" />
     </div>
-    <h3 class="text-foreground text-sm font-semibold tracking-tight">Pipeline by Stage</h3>
+    <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">Pipeline by Stage</h3>
   </div>
 
   <!-- Bar chart -->
@@ -69,9 +69,9 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <div class="size-2.5 rounded-full {stage.color}"></div>
-            <span class="text-muted-foreground text-xs font-medium">{data.label || stage.id}</span>
+            <span class="text-[var(--text-secondary)] text-xs font-medium">{data.label || stage.id}</span>
           </div>
-          <span class="text-foreground text-sm font-bold tabular-nums tracking-tight">
+          <span class="text-[var(--text-primary)] text-sm font-bold tabular-nums tracking-tight">
             {formatCurrency(data.value, currency, true)}
           </span>
         </div>
@@ -90,9 +90,9 @@
   </div>
 
   <!-- Summary -->
-  <div class="mt-6 flex items-center justify-between border-t border-border/50 pt-4">
-    <span class="text-muted-foreground text-xs font-medium">Total Open Pipeline</span>
-    <span class="text-foreground text-lg font-bold tabular-nums tracking-tight">
+  <div class="mt-6 flex items-center justify-between border-t border-[var(--border-default)]/50 pt-4">
+    <span class="text-[var(--text-secondary)] text-xs font-medium">Total Open Pipeline</span>
+    <span class="text-[var(--text-primary)] text-lg font-bold tabular-nums tracking-tight">
       {formatCurrency(totalPipeline, currency, true)}
     </span>
   </div>

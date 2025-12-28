@@ -35,8 +35,6 @@
     BarChart3,
     Tag,
     Sparkles,
-    Search,
-    Star,
     Home
   } from '@lucide/svelte';
 
@@ -171,7 +169,7 @@
     },
     {
       href: '/accounts',
-      label: 'Companies',
+      label: 'Accounts',
       icon: Building,
       type: 'link',
       preload: 'off'
@@ -248,7 +246,10 @@
   };
 </script>
 
-<Sidebar.Root collapsible="icon" class="hubspot-sidebar border-r border-sidebar-border/60 bg-sidebar">
+<Sidebar.Root
+  collapsible="icon"
+  class="hubspot-sidebar border-sidebar-border/60 bg-sidebar border-r"
+>
   <!-- Header with Logo - HubSpot Style -->
   <Sidebar.Header class="px-3 py-4">
     <Sidebar.Menu>
@@ -258,13 +259,16 @@
             <a href="/" {...props} class="flex items-center gap-3">
               <!-- Logo Container -->
               <div
-                class="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#ff7a59] to-[#ff5c35] shadow-md shadow-[#ff7a59]/20 transition-transform duration-200 group-hover:scale-105"
+                class="flex size-9 items-center justify-center transition-transform duration-200 group-hover:scale-105"
               >
-                <img src={imgLogo} alt="Logo" class="size-5" />
+                <img src={imgLogo} alt="Logo" class="size-8" />
               </div>
               <div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span class="truncate text-[15px] font-semibold tracking-tight text-sidebar-foreground">{org_name}</span>
-                <span class="truncate text-[11px] font-medium text-sidebar-foreground/50">
+                <span
+                  class="text-sidebar-foreground truncate text-[15px] font-semibold tracking-tight"
+                  >{org_name}</span
+                >
+                <span class="text-sidebar-foreground/50 truncate text-[11px] font-medium">
                   CRM Platform
                 </span>
               </div>
@@ -275,21 +279,12 @@
     </Sidebar.Menu>
   </Sidebar.Header>
 
-  <!-- Quick Search Bar - HubSpot Style -->
-  <div class="mx-3 mb-3 group-data-[collapsible=icon]:mx-2 group-data-[collapsible=icon]:hidden">
-    <button
-      class="flex h-9 w-full items-center gap-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-3 text-sm text-sidebar-foreground/60 transition-all hover:border-sidebar-border hover:bg-sidebar-accent/50"
-    >
-      <Search class="size-4" />
-      <span class="flex-1 text-left">Search...</span>
-      <kbd class="hidden rounded bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium text-sidebar-foreground/50 sm:inline-block">⌘K</kbd>
-    </button>
-  </div>
-
   <Sidebar.Content class="px-2">
     <!-- CRM Section -->
     <Sidebar.Group>
-      <Sidebar.GroupLabel class="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
+      <Sidebar.GroupLabel
+        class="text-sidebar-foreground/40 mb-1 px-3 text-[10px] font-bold tracking-widest uppercase group-data-[collapsible=icon]:hidden"
+      >
         CRM
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
@@ -299,29 +294,30 @@
               <Sidebar.MenuButton
                 isActive={currentPath === item.href}
                 tooltipContent={item.label}
-                class="hubspot-menu-item group/item relative h-9 rounded-lg px-3 transition-all duration-150
+                class="nav-item group/item relative h-9 rounded-lg px-2.5 transition-all duration-200
                   {currentPath === item.href
-                    ? 'bg-[#fff1ee] text-[#ff5c35] dark:bg-[#ff7a59]/10 dark:text-[#ff7a59]'
-                    : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'}"
+                  ? 'nav-item-active bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:bg-[var(--color-primary-default)]/15 dark:shadow-none'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
               >
                 {#snippet child({ props })}
                   <a
                     href={item.href}
                     {...props}
                     data-sveltekit-preload-data={item.preload || 'hover'}
-                    class="flex items-center gap-3"
+                    class="flex items-center gap-2.5"
                   >
-                    <!-- Active indicator bar - HubSpot style left border -->
-                    {#if currentPath === item.href}
-                      <div class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#ff7a59]"></div>
-                    {/if}
-                    <div class="flex size-5 items-center justify-center">
+                    <div
+                      class="flex size-6 items-center justify-center rounded-md transition-all duration-200
+                        {currentPath === item.href
+                        ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
+                        : 'text-current group-hover/item:bg-sidebar-accent'}"
+                    >
                       <item.icon
-                        class="size-[18px] transition-colors duration-150"
-                        strokeWidth={currentPath === item.href ? 2.25 : 1.75}
+                        class="size-[15px] transition-transform duration-200 {currentPath === item.href ? 'scale-105' : 'group-hover/item:scale-105'}"
+                        strokeWidth={2}
                       />
                     </div>
-                    <span class="text-[13px] font-medium">{item.label}</span>
+                    <span class="text-[13px] {currentPath === item.href ? 'font-semibold' : 'font-medium'}">{item.label}</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
@@ -333,7 +329,9 @@
 
     <!-- Sales Section -->
     <Sidebar.Group class="mt-4">
-      <Sidebar.GroupLabel class="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
+      <Sidebar.GroupLabel
+        class="text-sidebar-foreground/40 mb-1 px-3 text-[10px] font-bold tracking-widest uppercase group-data-[collapsible=icon]:hidden"
+      >
         Sales
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
@@ -354,40 +352,48 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="hubspot-menu-item group/item h-9 rounded-lg px-3 transition-all duration-150
+                        class="nav-item group/item h-9 rounded-lg px-2.5 transition-all duration-200
                           {hasActiveChild(item.children ?? [])
-                            ? 'text-[#ff5c35] dark:text-[#ff7a59]'
-                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'}"
+                          ? 'text-[var(--color-primary-default)]'
+                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
                       >
-                        <div class="flex w-full items-center gap-3">
-                          <div class="flex size-5 items-center justify-center">
-                            <item.icon class="size-[18px]" strokeWidth={1.75} />
+                        <div class="flex w-full items-center gap-2.5">
+                          <div
+                            class="flex size-6 items-center justify-center rounded-md transition-all duration-200
+                              {hasActiveChild(item.children ?? [])
+                              ? 'bg-[var(--color-primary-default)]/10 text-[var(--color-primary-default)]'
+                              : 'text-current group-hover/item:bg-sidebar-accent'}"
+                          >
+                            <item.icon class="size-[15px]" strokeWidth={2} />
                           </div>
-                          <span class="text-[13px] font-medium">{item.label}</span>
+                          <span class="text-[13px] {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}">{item.label}</span>
                           <ChevronDown
-                            class="ml-auto size-4 text-sidebar-foreground/40 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                            class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
                           />
                         </div>
                       </Sidebar.MenuButton>
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub class="hubspot-submenu mt-1 border-l-2 border-sidebar-border/50 ml-[18px] pl-4 py-1">
+                    <Sidebar.MenuSub
+                      class="mt-1.5 ml-[11px] space-y-0.5 border-l border-sidebar-border/40 py-1 pl-3"
+                    >
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="hubspot-submenu-item group/subitem relative h-8 rounded-md px-2 transition-all duration-150
+                            class="nav-subitem group/subitem relative h-7 rounded-md px-2 transition-all duration-200
                               {currentPath === navChild.href
-                                ? 'bg-[#fff1ee] text-[#ff5c35] dark:bg-[#ff7a59]/10 dark:text-[#ff7a59]'
-                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}"
+                              ? 'bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+                              : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props} class="flex items-center gap-2.5">
-                                <div class="flex size-4 items-center justify-center">
-                                  <navChild.icon class="size-3.5" strokeWidth={1.75} />
-                                </div>
-                                <span class="text-[12px] font-medium">{navChild.label}</span>
+                              <a href={navChild.href} {...props} class="flex items-center gap-2">
+                                <navChild.icon
+                                  class="size-3.5 transition-colors duration-200"
+                                  strokeWidth={currentPath === navChild.href ? 2.25 : 1.75}
+                                />
+                                <span class="text-[12px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}">{navChild.label}</span>
                               </a>
                             {/snippet}
                           </Sidebar.MenuSubButton>
@@ -405,7 +411,9 @@
 
     <!-- Support Section -->
     <Sidebar.Group class="mt-4">
-      <Sidebar.GroupLabel class="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
+      <Sidebar.GroupLabel
+        class="text-sidebar-foreground/40 mb-1 px-3 text-[10px] font-bold tracking-widest uppercase group-data-[collapsible=icon]:hidden"
+      >
         Support
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
@@ -415,28 +423,30 @@
               <Sidebar.MenuButton
                 isActive={currentPath === item.href}
                 tooltipContent={item.label}
-                class="hubspot-menu-item group/item relative h-9 rounded-lg px-3 transition-all duration-150
+                class="nav-item group/item relative h-9 rounded-lg px-2.5 transition-all duration-200
                   {currentPath === item.href
-                    ? 'bg-[#fff1ee] text-[#ff5c35] dark:bg-[#ff7a59]/10 dark:text-[#ff7a59]'
-                    : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'}"
+                  ? 'nav-item-active bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:bg-[var(--color-primary-default)]/15 dark:shadow-none'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
               >
                 {#snippet child({ props })}
                   <a
                     href={item.href}
                     {...props}
                     data-sveltekit-preload-data={item.preload || 'hover'}
-                    class="flex items-center gap-3"
+                    class="flex items-center gap-2.5"
                   >
-                    {#if currentPath === item.href}
-                      <div class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#ff7a59]"></div>
-                    {/if}
-                    <div class="flex size-5 items-center justify-center">
+                    <div
+                      class="flex size-6 items-center justify-center rounded-md transition-all duration-200
+                        {currentPath === item.href
+                        ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
+                        : 'text-current group-hover/item:bg-sidebar-accent'}"
+                    >
                       <item.icon
-                        class="size-[18px] transition-colors duration-150"
-                        strokeWidth={currentPath === item.href ? 2.25 : 1.75}
+                        class="size-[15px] transition-transform duration-200 {currentPath === item.href ? 'scale-105' : 'group-hover/item:scale-105'}"
+                        strokeWidth={2}
                       />
                     </div>
-                    <span class="text-[13px] font-medium">{item.label}</span>
+                    <span class="text-[13px] {currentPath === item.href ? 'font-semibold' : 'font-medium'}">{item.label}</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
@@ -447,14 +457,14 @@
     </Sidebar.Group>
   </Sidebar.Content>
 
-  <Sidebar.Footer class="border-t border-sidebar-border/60 px-2 py-3">
+  <Sidebar.Footer class="border-sidebar-border/60 border-t px-2 py-3">
     <Sidebar.Menu class="space-y-1">
       <!-- Collapse/Expand Toggle - HubSpot Style -->
       <Sidebar.MenuItem class="group-data-[collapsible=icon]:hidden">
         <Sidebar.MenuButton
           onclick={() => sidebar.toggle()}
           tooltipContent="Collapse sidebar"
-          class="h-8 rounded-lg px-3 text-sidebar-foreground/60 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          class="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground h-8 rounded-lg px-3 transition-all duration-150"
         >
           {#snippet child({ props })}
             <button {...props} class="flex w-full items-center gap-3">
@@ -470,7 +480,7 @@
         <Sidebar.MenuButton
           onclick={() => sidebar.toggle()}
           tooltipContent="Expand sidebar"
-          class="flex h-8 w-full items-center justify-center rounded-lg text-sidebar-foreground/60 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          class="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex h-8 w-full items-center justify-center rounded-lg transition-all duration-150"
         >
           {#snippet child({ props })}
             <button {...props} class="flex items-center justify-center">
@@ -480,63 +490,6 @@
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
 
-      <!-- Theme Switcher -->
-      <Sidebar.MenuItem>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Sidebar.MenuButton
-                {...props}
-                tooltipContent="Theme"
-                class="h-8 rounded-lg px-3 text-sidebar-foreground/60 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              >
-                <div class="flex size-4 items-center justify-center">
-                  {#if theme === 'dark'}
-                    <Moon class="size-4 text-[#ff7a59]" strokeWidth={1.75} />
-                  {:else if theme === 'light'}
-                    <Sun class="size-4 text-amber-500" strokeWidth={1.75} />
-                  {:else}
-                    <Monitor class="size-4" strokeWidth={1.75} />
-                  {/if}
-                </div>
-                <span class="text-[12px] font-medium">Theme</span>
-                <span
-                  class="ml-auto rounded-md bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium capitalize text-sidebar-foreground/50"
-                >
-                  {theme}
-                </span>
-              </Sidebar.MenuButton>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content side="top" align="start" class="w-44">
-            <DropdownMenu.Item inset={false} onclick={() => setTheme('light')} class="gap-2.5">
-              <Sun class="size-4 text-amber-500" />
-              <span>Light</span>
-              {#if theme === 'light'}
-                <div class="ml-auto size-2 rounded-full bg-[#ff7a59]"></div>
-              {/if}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item inset={false} onclick={() => setTheme('dark')} class="gap-2.5">
-              <Moon class="size-4 text-[#ff7a59]" />
-              <span>Dark</span>
-              {#if theme === 'dark'}
-                <div class="ml-auto size-2 rounded-full bg-[#ff7a59]"></div>
-              {/if}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item inset={false} onclick={() => setTheme('system')} class="gap-2.5">
-              <Monitor class="size-4 text-muted-foreground" />
-              <span>System</span>
-              {#if theme === 'system'}
-                <div class="ml-auto size-2 rounded-full bg-[#ff7a59]"></div>
-              {/if}
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </Sidebar.MenuItem>
-
-      <!-- Divider -->
-      <div class="mx-3 my-2 h-px bg-sidebar-border/50 group-data-[collapsible=icon]:hidden"></div>
-
       <!-- User Menu - HubSpot Style -->
       <Sidebar.MenuItem>
         <DropdownMenu.Root>
@@ -545,30 +498,36 @@
               <Sidebar.MenuButton
                 size="lg"
                 {...props}
-                class="group/user h-12 rounded-lg px-2 transition-all duration-150 data-[state=open]:bg-sidebar-accent hover:bg-sidebar-accent"
+                class="group/user data-[state=open]:bg-sidebar-accent hover:bg-sidebar-accent h-12 rounded-lg px-2 transition-all duration-150"
               >
                 <!-- Avatar with status -->
                 <div class="relative">
                   {#if user.profilePhoto && !profileImageError}
                     <img
-                      class="size-8 rounded-full object-cover ring-2 ring-sidebar-border/50 transition-all duration-150 group-hover/user:ring-[#ff7a59]/30"
+                      class="ring-sidebar-border/50 size-8 rounded-full object-cover ring-2 transition-all duration-150 group-hover/user:ring-[#ff7a59]/30"
                       src={user.profilePhoto}
                       alt="User avatar"
-                      onerror={() => profileImageError = true}
+                      onerror={() => (profileImageError = true)}
                     />
                   {:else}
-                    <div class="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ff7a59] to-[#ff5c35] text-xs font-semibold text-white ring-2 ring-sidebar-border/50 transition-all duration-150 group-hover/user:ring-[#ff7a59]/30">
+                    <div
+                      class="ring-sidebar-border/50 flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ff7a59] to-[#ff5c35] text-xs font-semibold text-white ring-2 transition-all duration-150 group-hover/user:ring-[#ff7a59]/30"
+                    >
                       {getInitials(user.name)}
                     </div>
                   {/if}
                   <!-- Online status indicator -->
-                  <div class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-sidebar bg-emerald-500"></div>
+                  <div
+                    class="border-sidebar absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 bg-emerald-500"
+                  ></div>
                 </div>
                 <div class="grid flex-1 text-left leading-tight">
-                  <span class="truncate text-[13px] font-semibold text-sidebar-foreground">{user.name}</span>
-                  <span class="truncate text-[11px] text-sidebar-foreground/50">{user.email}</span>
+                  <span class="text-sidebar-foreground truncate text-[13px] font-semibold"
+                    >{user.name}</span
+                  >
+                  <span class="text-sidebar-foreground/50 truncate text-[11px]">{user.email}</span>
                 </div>
-                <ChevronsUpDown class="ml-auto size-4 text-sidebar-foreground/40" />
+                <ChevronsUpDown class="text-sidebar-foreground/40 ml-auto size-4" />
               </Sidebar.MenuButton>
             {/snippet}
           </DropdownMenu.Trigger>
@@ -577,12 +536,18 @@
             align="start"
             class="w-[--bits-dropdown-menu-anchor-width] min-w-56"
           >
-            <DropdownMenu.Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <DropdownMenu.Label
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               My Account
             </DropdownMenu.Label>
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
-              <DropdownMenu.Item inset={false} onclick={() => navigateTo('/profile')} class="gap-2.5">
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/profile')}
+                class="gap-2.5"
+              >
                 <User class="size-4" />
                 <span>Profile</span>
               </DropdownMenu.Item>
@@ -602,14 +567,47 @@
                 <Settings class="size-4" />
                 <span>Settings</span>
               </DropdownMenu.Item>
-              <DropdownMenu.Item inset={false} onclick={() => navigateTo('/settings/tags')} class="gap-2.5">
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/tags')}
+                class="gap-2.5"
+              >
                 <Tag class="size-4" />
                 <span>Tags</span>
               </DropdownMenu.Item>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />
+            <DropdownMenu.Label
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
+              Theme
+            </DropdownMenu.Label>
+            <DropdownMenu.Group class="flex gap-1 px-2 py-1.5">
+              <button
+                onclick={() => setTheme('light')}
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'light' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+              >
+                <Sun class="size-4" />
+                <span class="text-[10px] font-medium">Light</span>
+              </button>
+              <button
+                onclick={() => setTheme('dark')}
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'dark' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+              >
+                <Moon class="size-4" />
+                <span class="text-[10px] font-medium">Dark</span>
+              </button>
+              <button
+                onclick={() => setTheme('system')}
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'system' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+              >
+                <Monitor class="size-4" />
+                <span class="text-[10px] font-medium">System</span>
+              </button>
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
             <DropdownMenu.Item
-              class="gap-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
+              class="text-destructive focus:bg-destructive/10 focus:text-destructive gap-2.5"
               inset={false}
               onclick={() => navigateTo('/logout')}
             >
@@ -626,46 +624,17 @@
 </Sidebar.Root>
 
 <style>
-  /* HubSpot-style sidebar refinements */
+  /* Refined sidebar typography */
   :global(.hubspot-sidebar) {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family:
+      'Geist',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
   }
 
-  :global(.hubspot-sidebar [data-slot="sidebar-menu-button"]) {
+  :global(.hubspot-sidebar [data-slot='sidebar-menu-button']) {
     font-weight: 500;
-  }
-
-  /* Smooth hover transition for menu items */
-  :global(.hubspot-menu-item) {
-    position: relative;
-  }
-
-  /* Active state animation */
-  :global(.hubspot-menu-item::before) {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 20px;
-    background: #ff7a59;
-    border-radius: 0 4px 4px 0;
-    transition: width 0.15s ease;
-  }
-
-  /* Submenu refinements */
-  :global(.hubspot-submenu) {
-    position: relative;
-  }
-
-  :global(.hubspot-submenu::before) {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(180deg, transparent, var(--sidebar-border), transparent);
   }
 </style>

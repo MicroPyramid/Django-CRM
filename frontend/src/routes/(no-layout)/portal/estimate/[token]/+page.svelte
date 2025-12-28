@@ -18,16 +18,17 @@
 
   let isSubmitting = $state(false);
 
+  // Status colors - using design system tokens
   function getStatusColor(status) {
     const colors = {
-      Draft: 'bg-gray-100 text-gray-700',
-      Sent: 'bg-blue-100 text-blue-700',
-      Viewed: 'bg-indigo-100 text-indigo-700',
-      Accepted: 'bg-green-100 text-green-700',
-      Declined: 'bg-red-100 text-red-700',
-      Expired: 'bg-orange-100 text-orange-700'
+      Draft: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]',
+      Sent: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)]',
+      Viewed: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)]',
+      Accepted: 'bg-[var(--color-success-light)] text-[var(--color-success-default)]',
+      Declined: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)]',
+      Expired: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)]'
     };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+    return colors[status] || 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]';
   }
 
   function isExpired() {

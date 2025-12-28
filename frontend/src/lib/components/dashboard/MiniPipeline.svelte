@@ -19,55 +19,56 @@
   /** @type {Props} */
   let { pipelineData = {}, currency = 'USD' } = $props();
 
+  // Pipeline stages using design system tokens
   const stages = [
     {
       id: 'PROSPECTING',
-      color: 'bg-slate-500',
-      textColor: 'text-slate-600 dark:text-slate-400',
-      bgColor: 'bg-slate-500/10 dark:bg-slate-500/15',
-      borderColor: 'border-slate-500/30 dark:border-slate-400/20',
-      glowColor: 'hover:shadow-slate-500/10'
+      color: 'bg-[var(--stage-new)]',
+      textColor: 'text-[var(--stage-new)]',
+      bgColor: 'bg-[var(--stage-new-bg)] dark:bg-[var(--stage-new)]/15',
+      borderColor: 'border-[var(--stage-new)]/30',
+      glowColor: 'hover:shadow-[var(--stage-new)]/10'
     },
     {
       id: 'QUALIFICATION',
-      color: 'bg-cyan-500',
-      textColor: 'text-cyan-600 dark:text-cyan-400',
-      bgColor: 'bg-cyan-500/10 dark:bg-cyan-500/15',
-      borderColor: 'border-cyan-500/30 dark:border-cyan-400/20',
-      glowColor: 'hover:shadow-cyan-500/10 dark:hover:shadow-cyan-400/20'
+      color: 'bg-[var(--stage-qualified)]',
+      textColor: 'text-[var(--stage-qualified)]',
+      bgColor: 'bg-[var(--stage-qualified-bg)] dark:bg-[var(--stage-qualified)]/15',
+      borderColor: 'border-[var(--stage-qualified)]/30',
+      glowColor: 'hover:shadow-[var(--stage-qualified)]/10 dark:hover:shadow-[var(--stage-qualified)]/20'
     },
     {
       id: 'PROPOSAL',
-      color: 'bg-violet-500',
-      textColor: 'text-violet-600 dark:text-violet-400',
-      bgColor: 'bg-violet-500/10 dark:bg-violet-500/15',
-      borderColor: 'border-violet-500/30 dark:border-violet-400/20',
-      glowColor: 'hover:shadow-violet-500/10 dark:hover:shadow-violet-400/20'
+      color: 'bg-[var(--stage-proposal)]',
+      textColor: 'text-[var(--stage-proposal)]',
+      bgColor: 'bg-[var(--stage-proposal-bg)] dark:bg-[var(--stage-proposal)]/15',
+      borderColor: 'border-[var(--stage-proposal)]/30',
+      glowColor: 'hover:shadow-[var(--stage-proposal)]/10 dark:hover:shadow-[var(--stage-proposal)]/20'
     },
     {
       id: 'NEGOTIATION',
-      color: 'bg-amber-500',
-      textColor: 'text-amber-600 dark:text-amber-400',
-      bgColor: 'bg-amber-500/10 dark:bg-amber-500/15',
-      borderColor: 'border-amber-500/30 dark:border-amber-400/20',
-      glowColor: 'hover:shadow-amber-500/10 dark:hover:shadow-amber-400/20'
+      color: 'bg-[var(--stage-negotiation)]',
+      textColor: 'text-[var(--stage-negotiation)]',
+      bgColor: 'bg-[var(--stage-negotiation-bg)] dark:bg-[var(--stage-negotiation)]/15',
+      borderColor: 'border-[var(--stage-negotiation)]/30',
+      glowColor: 'hover:shadow-[var(--stage-negotiation)]/10 dark:hover:shadow-[var(--stage-negotiation)]/20'
     },
     {
       id: 'CLOSED_WON',
-      color: 'bg-emerald-500',
-      textColor: 'text-emerald-600 dark:text-emerald-400',
-      bgColor: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-      borderColor: 'border-emerald-500/30 dark:border-emerald-400/20',
-      glowColor: 'hover:shadow-emerald-500/10 dark:hover:shadow-emerald-400/20',
+      color: 'bg-[var(--stage-won)]',
+      textColor: 'text-[var(--stage-won)]',
+      bgColor: 'bg-[var(--stage-won-bg)] dark:bg-[var(--stage-won)]/15',
+      borderColor: 'border-[var(--stage-won)]/30',
+      glowColor: 'hover:shadow-[var(--stage-won)]/10 dark:hover:shadow-[var(--stage-won)]/20',
       icon: Trophy
     },
     {
       id: 'CLOSED_LOST',
-      color: 'bg-rose-500',
-      textColor: 'text-rose-600 dark:text-rose-400',
-      bgColor: 'bg-rose-500/10 dark:bg-rose-500/15',
-      borderColor: 'border-rose-500/30 dark:border-rose-400/20',
-      glowColor: 'hover:shadow-rose-500/10',
+      color: 'bg-[var(--stage-lost)]',
+      textColor: 'text-[var(--stage-lost)]',
+      bgColor: 'bg-[var(--stage-lost-bg)] dark:bg-[var(--stage-lost)]/15',
+      borderColor: 'border-[var(--stage-lost)]/30',
+      glowColor: 'hover:shadow-[var(--stage-lost)]/10',
       icon: XCircle
     }
   ];
@@ -79,7 +80,7 @@
       {@const data = pipelineData[stage.id] || { count: 0, value: 0, label: stage.id }}
       <a
         href="/opportunities?stage={stage.id}"
-        class="group relative min-w-[130px] flex-1 overflow-hidden rounded-xl border px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg {stage.borderColor} {stage.bgColor} {stage.glowColor}"
+        class="group relative min-w-[130px] flex-1 overflow-hidden rounded-[var(--radius-lg)] border px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg {stage.borderColor} {stage.bgColor} {stage.glowColor}"
       >
         <!-- Gradient overlay on hover -->
         <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-white/5"></div>
@@ -89,7 +90,7 @@
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <div class="size-2.5 rounded-full {stage.color} shadow-sm"></div>
-              <span class="text-foreground text-xs font-semibold tracking-tight">
+              <span class="text-[var(--text-primary)] text-xs font-semibold tracking-tight">
                 {data.label || stage.id.replace('_', ' ')}
               </span>
             </div>
@@ -106,7 +107,7 @@
             {#if stage.icon}
               <stage.icon class="size-4 {stage.textColor}" />
             {/if}
-            <p class="text-foreground text-lg font-bold tabular-nums tracking-tight">
+            <p class="text-[var(--text-primary)] text-lg font-bold tabular-nums tracking-tight">
               {formatCurrency(data.value, currency, true)}
             </p>
           </div>
@@ -116,16 +117,16 @@
       <!-- Connector arrows between active stages -->
       {#if index < 4}
         <div class="flex-shrink-0 px-1">
-          <ChevronRight class="text-muted-foreground/30 size-5 transition-colors group-hover:text-muted-foreground/50" />
+          <ChevronRight class="size-5 text-[var(--text-tertiary)]/30 transition-colors group-hover:text-[var(--text-tertiary)]/50" />
         </div>
       {/if}
 
       <!-- Divider before closed stages -->
       {#if index === 3}
         <div class="flex flex-shrink-0 flex-col items-center gap-1 px-2">
-          <div class="bg-border/50 h-4 w-px"></div>
-          <span class="text-muted-foreground/50 text-[8px] font-medium uppercase tracking-widest">Closed</span>
-          <div class="bg-border/50 h-4 w-px"></div>
+          <div class="h-4 w-px bg-[var(--border-default)]/50"></div>
+          <span class="text-[var(--text-tertiary)]/50 text-[8px] font-medium uppercase tracking-widest">Closed</span>
+          <div class="h-4 w-px bg-[var(--border-default)]/50"></div>
         </div>
       {/if}
     {/each}

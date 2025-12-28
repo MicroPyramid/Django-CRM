@@ -18,7 +18,7 @@
  */
 export function getOptionStyle(value, options) {
   const option = options.find((o) => o.value === value);
-  return option?.color ?? 'bg-gray-100 text-gray-600';
+  return option?.color ?? 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]';
 }
 
 /**
@@ -119,231 +119,239 @@ export function getVisibleColumnCount(columns) {
   };
 }
 
-// Common status options for CRM entities
+// Common status options for CRM entities - Using design system tokens
 // Must match Django LEAD_STATUS: assigned, in process, converted, recycled, closed
 export const leadStatusOptions = [
   {
     value: 'ASSIGNED',
     label: 'Assigned',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--stage-new-bg)] text-[var(--stage-new)] dark:bg-[var(--stage-new)]/15'
   },
   {
     value: 'IN_PROCESS',
     label: 'In Process',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
   },
   {
     value: 'CONVERTED',
     label: 'Converted',
-    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+    color: 'bg-[var(--stage-won-bg)] text-[var(--stage-won)] dark:bg-[var(--stage-won)]/15'
   },
   {
     value: 'RECYCLED',
     label: 'Recycled',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'CLOSED',
     label: 'Closed',
-    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }
 ];
 
+// Lead temperature ratings - using design system tokens
 export const leadRatingOptions = [
   {
     value: 'HOT',
     label: 'Hot',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--lead-hot-bg)] text-[var(--lead-hot)] dark:bg-[var(--lead-hot)]/15'
   },
   {
     value: 'WARM',
     label: 'Warm',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--lead-warm-bg)] text-[var(--lead-warm)] dark:bg-[var(--lead-warm)]/15'
   },
   {
     value: 'COLD',
     label: 'Cold',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--lead-cold-bg)] text-[var(--lead-cold)] dark:bg-[var(--lead-cold)]/15'
   }
 ];
 
+// Priority options - using design system tokens
 export const priorityOptions = [
   {
     value: 'URGENT',
     label: 'Urgent',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
   },
   {
     value: 'HIGH',
     label: 'High',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
   },
   {
     value: 'NORMAL',
     label: 'Normal',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'MEDIUM',
     label: 'Medium',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'LOW',
     label: 'Low',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    color: 'bg-[var(--priority-low-bg)] text-[var(--priority-low)] dark:bg-[var(--priority-low)]/15'
   }
 ];
 
+// Task status options - using design system tokens
 export const taskStatusOptions = [
   {
     value: 'NOT STARTED',
     label: 'Not Started',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
   },
   {
     value: 'IN PROGRESS',
     label: 'In Progress',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
   },
   {
     value: 'PENDING',
     label: 'Pending',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'COMPLETED',
     label: 'Completed',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    color: 'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
   },
   {
     value: 'DEFERRED',
     label: 'Deferred',
-    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }
 ];
 
+// Case status options - using design system tokens
 export const caseStatusOptions = [
   {
     value: 'New',
     label: 'New',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--stage-new-bg)] text-[var(--stage-new)] dark:bg-[var(--stage-new)]/15'
   },
   {
     value: 'Assigned',
     label: 'Assigned',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'Pending',
     label: 'Pending',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   },
   {
     value: 'Closed',
     label: 'Closed',
-    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   },
   {
     value: 'Rejected',
     label: 'Rejected',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--stage-lost-bg)] text-[var(--stage-lost)] dark:bg-[var(--stage-lost)]/15'
   },
   {
     value: 'Duplicate',
     label: 'Duplicate',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   }
 ];
 
+// Case type options - using design system tokens
 export const caseTypeOptions = [
   {
     value: 'Question',
     label: 'Question',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'Incident',
     label: 'Incident',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'Problem',
     label: 'Problem',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--stage-lost-bg)] text-[var(--stage-lost)] dark:bg-[var(--stage-lost)]/15'
   }
 ];
 
+// Case priority options - using design system tokens
 export const casePriorityOptions = [
   {
     value: 'Low',
     label: 'Low',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    color: 'bg-[var(--priority-low-bg)] text-[var(--priority-low)] dark:bg-[var(--priority-low)]/15'
   },
   {
     value: 'Normal',
     label: 'Normal',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'High',
     label: 'High',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
   },
   {
     value: 'Urgent',
     label: 'Urgent',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
   }
 ];
 
+// Account status options - using design system tokens
 export const accountStatusOptions = [
   {
     value: 'ACTIVE',
     label: 'Active',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
   },
   {
     value: 'INACTIVE',
     label: 'Inactive',
-    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   },
   {
     value: 'PENDING',
     label: 'Pending',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   }
 ];
 
+// Opportunity stage options - using design system tokens
 export const opportunityStageOptions = [
   {
     value: 'PROSPECTING',
     label: 'Prospecting',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    color: 'bg-[var(--stage-new-bg)] text-[var(--stage-new)] dark:bg-[var(--stage-new)]/15'
   },
   {
     value: 'QUALIFICATION',
     label: 'Qualification',
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'PROPOSAL',
     label: 'Proposal',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
   },
   {
     value: 'NEGOTIATION',
     label: 'Negotiation',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   },
   {
     value: 'CLOSED_WON',
     label: 'Closed Won',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    color: 'bg-[var(--stage-won-bg)] text-[var(--stage-won)] dark:bg-[var(--stage-won)]/15'
   },
   {
     value: 'CLOSED_LOST',
     label: 'Closed Lost',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    color: 'bg-[var(--stage-lost-bg)] text-[var(--stage-lost)] dark:bg-[var(--stage-lost)]/15'
   }
 ];

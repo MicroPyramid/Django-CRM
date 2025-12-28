@@ -1,5 +1,5 @@
 <script>
-  import { DollarSign, TrendingUp, Target, Percent, AlertCircle, Zap, Sparkles } from '@lucide/svelte';
+  import { DollarSign, TrendingUp, Target, Percent, AlertCircle, Sparkles } from '@lucide/svelte';
   import {
     KPICard,
     FocusBar,
@@ -46,26 +46,26 @@
 </svelte:head>
 
 <div class="relative min-h-screen">
-  <!-- Subtle gradient mesh background -->
+  <!-- Subtle gradient mesh background with orange tint -->
   <div class="gradient-mesh noise-overlay pointer-events-none fixed inset-0 -z-10 opacity-50 dark:opacity-30"></div>
 
   <div class="space-y-8 p-6 md:p-8">
-    <!-- Header Section with gradient text -->
+    <!-- Header Section with orange gradient accent -->
     <header class="animate-in-up">
       <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div class="space-y-2">
           <div class="flex items-center gap-3">
-            <div class="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg dark:shadow-cyan-500/20">
+            <div class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--color-primary-default)] to-[var(--stage-contacted)] shadow-lg dark:shadow-[var(--color-primary-default)]/20">
               <Sparkles class="size-5 text-white" />
             </div>
             <div>
-              <p class="text-muted-foreground text-sm font-medium">{getGreeting()}</p>
-              <h1 class="text-foreground text-2xl font-bold tracking-tight md:text-3xl">
+              <p class="text-[var(--text-secondary)] text-sm font-medium">{getGreeting()}</p>
+              <h1 class="text-[var(--text-primary)] text-2xl font-bold tracking-tight md:text-3xl">
                 Dashboard
               </h1>
             </div>
           </div>
-          <p class="text-muted-foreground max-w-md text-sm">
+          <p class="text-[var(--text-secondary)] max-w-md text-sm">
             Here's what's happening with your CRM today. Stay on top of your pipeline and close more deals.
           </p>
         </div>
@@ -74,14 +74,14 @@
 
     {#if data.error}
       <div
-        class="animate-in-up stagger-1 flex items-center gap-4 rounded-xl border border-red-200/50 bg-red-50/50 p-5 backdrop-blur-sm dark:border-red-800/30 dark:bg-red-900/10"
+        class="animate-in-up stagger-1 flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
       >
-        <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-          <AlertCircle class="size-5 text-red-500 dark:text-red-400" />
+        <div class="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20">
+          <AlertCircle class="size-5 text-[var(--color-negative-default)]" />
         </div>
         <div>
-          <p class="text-sm font-medium text-red-700 dark:text-red-300">Error loading dashboard</p>
-          <p class="text-xs text-red-600/80 dark:text-red-400/80">{data.error}</p>
+          <p class="text-sm font-medium text-[var(--color-negative-default)]">Error loading dashboard</p>
+          <p class="text-xs text-[var(--color-negative-default)]/80">{data.error}</p>
         </div>
       </div>
     {:else}
@@ -96,15 +96,15 @@
       </div>
 
       <!-- Pipeline Overview - Full Width with glass effect -->
-      <div class="animate-in-up stagger-2 rounded-2xl border border-border/50 bg-card/80 p-6 shadow-sm backdrop-blur-sm dark:bg-card/50 dark:shadow-lg dark:shadow-black/10">
+      <div class="animate-in-up stagger-2 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm dark:shadow-lg dark:shadow-black/10">
         <div class="mb-5 flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20">
-              <TrendingUp class="size-5 text-violet-600 dark:text-violet-400" />
+            <div class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+              <TrendingUp class="size-5 text-[var(--color-primary-default)]" />
             </div>
             <div>
-              <h2 class="text-foreground text-base font-semibold tracking-tight">Sales Pipeline</h2>
-              <p class="text-muted-foreground text-xs">{currencyNote}</p>
+              <h2 class="text-[var(--text-primary)] text-base font-semibold tracking-tight">Sales Pipeline</h2>
+              <p class="text-[var(--text-tertiary)] text-xs">{currencyNote}</p>
             </div>
           </div>
         </div>
@@ -117,7 +117,7 @@
           label="Pipeline Value"
           value={formatCurrency(revenueMetrics.pipeline_value || 0, orgCurrency, true)}
           subtitle={currencyNote}
-          accentColor="cyan"
+          accentColor="orange"
         >
           {#snippet icon()}
             <DollarSign class="size-5" />

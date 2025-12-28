@@ -98,7 +98,7 @@
   const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
     value: c.value,
     label: c.label,
-    color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }));
 
   // Base drawer columns (using $derived for dynamic currency symbol)
@@ -748,14 +748,14 @@
           onclick={() => (statusChipFilter = 'ALL')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-primary-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           All
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-primary-dark)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {accounts.length}
           </span>
@@ -765,14 +765,14 @@
           onclick={() => (statusChipFilter = 'active')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'active'
-            ? 'bg-emerald-600 text-white dark:bg-emerald-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-success-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Active
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
-              ? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-success-dark)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {activeCount}
           </span>
@@ -782,14 +782,14 @@
           onclick={() => (statusChipFilter = 'closed')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'closed'
-            ? 'bg-gray-600 text-white dark:bg-gray-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--text-secondary)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Closed
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--text-tertiary)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {closedCount}
           </span>
@@ -809,7 +809,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
           >
             {activeFiltersCount}
           </span>
@@ -825,7 +825,7 @@
               Columns
               {#if visibleColumnCount < totalColumnCount}
                 <span
-                  class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
                 >
                   {visibleColumnCount}/{totalColumnCount}
                 </span>
@@ -892,8 +892,11 @@
   <!-- Accounts Table -->
   {#if filteredAccounts.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
-      <h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <Building2 class="size-8 text-[var(--text-tertiary)]" />
+      </div>
+      <h3 class="text-[var(--text-primary)] text-lg font-medium">No accounts found</h3>
+      <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new account</p>
     </div>
   {:else}
     <!-- Desktop Table using CrmTable -->
@@ -906,42 +909,44 @@
       >
         {#snippet emptyState()}
           <div class="flex flex-col items-center justify-center py-16 text-center">
-            <Building2 class="text-muted-foreground/50 mb-4 h-12 w-12" />
-            <h3 class="text-foreground text-lg font-medium">No accounts found</h3>
+            <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+              <Building2 class="size-8 text-[var(--text-tertiary)]" />
+            </div>
+            <h3 class="text-[var(--text-primary)] text-lg font-medium">No accounts found</h3>
           </div>
         {/snippet}
       </CrmTable>
     </div>
 
     <!-- Mobile Card View -->
-    <div class="divide-y md:hidden dark:divide-gray-800">
+    <div class="divide-y divide-[var(--border-default)] md:hidden">
       {#each filteredAccounts as account (account.id)}
         <button
           type="button"
-          class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 {!account.isActive
+          class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-[var(--surface-sunken)] {!account.isActive
             ? 'opacity-60'
             : ''}"
           onclick={() => openAccount(account)}
         >
           <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-medium text-white"
+            class="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-primary-default)] text-sm font-medium text-white"
           >
             {getAccountInitials(account)}
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-2">
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">{account.name}</p>
+                <p class="font-medium text-[var(--text-primary)]">{account.name}</p>
                 <div class="mt-1 flex items-center gap-1.5">
                   {#if account.isActive !== false}
                     <span
-                      class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      class="inline-flex items-center rounded-full bg-[var(--color-success-light)] px-2.5 py-1 text-xs font-medium text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15"
                     >
                       Active
                     </span>
                   {:else}
                     <span
-                      class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                      class="inline-flex items-center rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]"
                     >
                       Closed
                     </span>
@@ -950,21 +955,21 @@
               </div>
             </div>
             <div
-              class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400"
+              class="mt-2 flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]"
             >
               {#if account.industry}
                 <span>{account.industry}</span>
               {/if}
               <div class="flex items-center gap-1">
-                <Users class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                <Users class="size-3.5 text-[var(--text-tertiary)]" />
                 <span>{account.contactCount || 0}</span>
               </div>
               <div class="flex items-center gap-1">
-                <Target class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                <Target class="size-3.5 text-[var(--text-tertiary)]" />
                 <span>{account.opportunityCount || 0}</span>
               </div>
               <div class="flex items-center gap-1">
-                <Calendar class="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                <Calendar class="size-3.5 text-[var(--text-tertiary)]" />
                 <span>{formatRelativeDate(account.createdAt)}</span>
               </div>
             </div>
@@ -1003,13 +1008,13 @@
     <!-- Closed account warning -->
     {#if isClosed && drawerMode !== 'create'}
       <div
-        class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/30"
+        class="mb-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-light)] bg-[var(--color-negative-light)] p-3 dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
       >
         <div class="flex gap-2">
-          <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+          <AlertTriangle class="mt-0.5 size-4 shrink-0 text-[var(--color-negative-default)]" />
           <div>
-            <p class="text-sm font-medium text-red-700 dark:text-red-400">This account is closed</p>
-            <p class="mt-0.5 text-xs text-red-600 dark:text-red-500">
+            <p class="text-sm font-medium text-[var(--color-negative-default)]">This account is closed</p>
+            <p class="mt-0.5 text-xs text-[var(--color-negative-default)]/80">
               Reopen the account to make changes
             </p>
           </div>
@@ -1021,46 +1026,46 @@
     {#if drawerMode !== 'create' && selectedAccount}
       <div class="mb-4">
         <p
-          class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
         >
           Related
         </p>
         <div class="grid grid-cols-4 gap-2">
-          <div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
-            <div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
-              <Users class="h-3.5 w-3.5" />
+          <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
+            <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
+              <Users class="size-3.5" />
             </div>
-            <p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
               {selectedAccount.contactCount || 0}
             </p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400">Contacts</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Contacts</p>
           </div>
-          <div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
-            <div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
-              <Target class="h-3.5 w-3.5" />
+          <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
+            <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
+              <Target class="size-3.5" />
             </div>
-            <p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
               {selectedAccount.opportunityCount || 0}
             </p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400">Opportunities</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Opportunities</p>
           </div>
-          <div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
-            <div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
-              <AlertTriangle class="h-3.5 w-3.5" />
+          <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
+            <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
+              <AlertTriangle class="size-3.5" />
             </div>
-            <p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
               {selectedAccount.caseCount || 0}
             </p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400">Cases</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Cases</p>
           </div>
-          <div class="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-800">
-            <div class="flex items-center justify-center gap-1 text-gray-400 dark:text-gray-500">
-              <CheckSquare class="h-3.5 w-3.5" />
+          <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
+            <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
+              <CheckSquare class="size-3.5" />
             </div>
-            <p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
               {selectedAccount.taskCount || 0}
             </p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400">Tasks</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Tasks</p>
           </div>
         </div>
       </div>
@@ -1069,7 +1074,7 @@
       {#if !isClosed}
         <div class="mb-4">
           <p
-            class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+            class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
           >
             Quick Actions
           </p>
@@ -1099,20 +1104,20 @@
       <!-- Metadata -->
       <div>
         <p
-          class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
         >
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-xs text-[var(--text-tertiary)]">Owner</p>
+            <p class="font-medium text-[var(--text-primary)]">
               {selectedAccount.owner?.name || 'Unassigned'}
             </p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-xs text-[var(--text-tertiary)]">Created</p>
+            <p class="font-medium text-[var(--text-primary)]">
               {formatRelativeDate(selectedAccount.createdAt)}
             </p>
           </div>
@@ -1120,7 +1125,7 @@
       </div>
 
       <!-- Comments Section -->
-      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+      <div class="mt-6 border-t border-[var(--border-default)] pt-4">
         <CommentSection
           entityId={selectedAccount.id}
           entityType="accounts"
@@ -1142,22 +1147,22 @@
       <Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
       <Button
         variant="outline"
-        class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+        class="text-[var(--color-success-default)] hover:text-[var(--color-success-dark)]"
         onclick={handleReopen}
         disabled={isSubmitting}
       >
-        <Unlock class="mr-1.5 h-4 w-4" />
+        <Unlock class="mr-1.5 size-4" />
         Reopen Account
       </Button>
     {:else}
       <Button variant="outline" onclick={closeDrawer} disabled={isSubmitting}>Cancel</Button>
       <Button
         variant="ghost"
-        class="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+        class="text-[var(--color-primary-default)] hover:text-[var(--color-primary-dark)]"
         onclick={handleClose}
         disabled={isSubmitting}
       >
-        <Lock class="mr-1.5 h-4 w-4" />
+        <Lock class="mr-1.5 size-4" />
         Close Account
       </Button>
       <Button onclick={handleDrawerUpdate} disabled={isSubmitting || !drawerFormData.name?.trim()}>

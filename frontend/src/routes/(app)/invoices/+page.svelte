@@ -14,42 +14,42 @@
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
 
-  // Invoice status options
+  // Invoice status options - using design system tokens
   const INVOICE_STATUSES = [
     {
       value: 'Draft',
       label: 'Draft',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     },
     {
       value: 'Sent',
       label: 'Sent',
-      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+      color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
     },
     {
       value: 'Viewed',
       label: 'Viewed',
-      color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+      color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'Partially_Paid',
       label: 'Partially Paid',
-      color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+      color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
     },
     {
       value: 'Paid',
       label: 'Paid',
-      color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+      color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
     },
     {
       value: 'Overdue',
       label: 'Overdue',
-      color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+      color: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15'
     },
     {
       value: 'Cancelled',
       label: 'Cancelled',
-      color: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-tertiary)]'
     }
   ];
 
@@ -309,14 +309,14 @@
               onclick={() => (statusChipFilter = chip.key)}
               class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
               chip.key
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+                ? 'bg-[var(--color-primary-default)] text-white'
+                : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
             >
               {chip.label}
               <span
                 class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === chip.key
-                  ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-                  : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+                  ? 'bg-[var(--color-primary-dark)] text-white/90'
+                  : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
               >
                 {chipCounts[chip.key] || 0}
               </span>
@@ -336,7 +336,7 @@
           <Filter class="size-4" />
           Filters
           {#if activeFiltersCount > 0}
-            <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+            <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
               {activeFiltersCount}
             </span>
           {/if}
@@ -416,9 +416,11 @@
   <CrmTable data={invoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <span class="mb-4 text-6xl">📄</span>
-        <h3 class="text-foreground text-lg font-medium">No invoices yet</h3>
-        <p class="text-muted-foreground mb-4 text-sm">Create your first invoice to get started</p>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <span class="text-4xl">📄</span>
+        </div>
+        <h3 class="text-[var(--text-primary)] text-lg font-medium">No invoices yet</h3>
+        <p class="text-[var(--text-secondary)] mb-4 text-sm">Create your first invoice to get started</p>
         <Button onclick={createNewInvoice} class="gap-2">
           <Plus class="size-4" />
           Create Invoice
@@ -439,7 +441,7 @@
       {:else if column.key === 'totalAmount' || column.key === 'amountDue'}
         <span
           class={column.key === 'amountDue' && parseFloat(row.amountDue || 0) > 0
-            ? 'font-medium text-orange-600 dark:text-orange-400'
+            ? 'font-medium text-[var(--color-primary-default)]'
             : ''}
         >
           {formatCurrency(row[column.key], row.currency)}

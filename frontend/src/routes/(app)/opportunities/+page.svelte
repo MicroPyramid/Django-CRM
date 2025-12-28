@@ -60,59 +60,59 @@
   let accountName = $state('');
   let accountIdFromUrl = $state('');
 
-  // Stage options with colors
+  // Stage options with colors - using design system tokens
   const stageOptions = [
     {
       value: 'PROSPECTING',
       label: 'Prospecting',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--stage-new-bg)] text-[var(--stage-new)] dark:bg-[var(--stage-new)]/15'
     },
     {
       value: 'QUALIFICATION',
       label: 'Qualification',
-      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'PROPOSAL',
       label: 'Proposal',
-      color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+      color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
     },
     {
       value: 'NEGOTIATION',
       label: 'Negotiation',
-      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
     },
     {
       value: 'CLOSED_WON',
       label: 'Won',
-      color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      color: 'bg-[var(--stage-won-bg)] text-[var(--stage-won)] dark:bg-[var(--stage-won)]/15'
     },
     {
       value: 'CLOSED_LOST',
       label: 'Lost',
-      color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      color: 'bg-[var(--stage-lost-bg)] text-[var(--stage-lost)] dark:bg-[var(--stage-lost)]/15'
     }
   ];
 
-  // Type options
+  // Type options - using design system tokens
   const typeOptions = OPPORTUNITY_TYPES.map((t) => ({
     value: t.value,
     label: t.label,
-    color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }));
 
-  // Source options
+  // Source options - using design system tokens
   const sourceOptions = OPPORTUNITY_SOURCES.map((s) => ({
     value: s.value,
     label: s.label,
-    color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   }));
 
-  // Currency options
+  // Currency options - using design system tokens
   const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
     value: c.value,
     label: c.label,
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }));
 
   /**
@@ -1098,14 +1098,14 @@
           onclick={() => (statusChipFilter = 'ALL')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-primary-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           All
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-primary-dark)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {opportunities.length}
           </span>
@@ -1115,14 +1115,14 @@
           onclick={() => (statusChipFilter = 'open')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'open'
-            ? 'bg-blue-600 text-white dark:bg-blue-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--stage-qualified)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Open
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
-              ? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {openCount}
           </span>
@@ -1132,14 +1132,14 @@
           onclick={() => (statusChipFilter = 'won')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'won'
-            ? 'bg-emerald-600 text-white dark:bg-emerald-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--stage-won)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Won
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'won'
-              ? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {wonCount}
           </span>
@@ -1149,14 +1149,14 @@
           onclick={() => (statusChipFilter = 'lost')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'lost'
-            ? 'bg-red-600 text-white dark:bg-red-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--stage-lost)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Lost
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
-              ? 'bg-red-700 text-red-100 dark:bg-red-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {lostCount}
           </span>
@@ -1176,7 +1176,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
           >
             {activeFiltersCount}
           </span>
@@ -1192,7 +1192,7 @@
               Columns
               {#if visibleColumns.length < columns.length}
                 <span
-                  class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
                 >
                   {visibleColumns.length}/{columns.length}
                 </span>
@@ -1261,8 +1261,11 @@
   <!-- Table View -->
   {#if filteredOpportunities.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
-      <h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
+      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <Target class="size-8 text-[var(--text-tertiary)]" />
+      </div>
+      <h3 class="text-[var(--text-primary)] text-lg font-medium">No opportunities found</h3>
+      <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new opportunity</p>
     </div>
   {:else}
     <CrmTable
@@ -1274,8 +1277,10 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <Target class="text-muted-foreground/50 mb-4 h-12 w-12" />
-          <h3 class="text-foreground text-lg font-medium">No opportunities found</h3>
+          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+            <Target class="size-8 text-[var(--text-tertiary)]" />
+          </div>
+          <h3 class="text-[var(--text-primary)] text-lg font-medium">No opportunities found</h3>
         </div>
       {/snippet}
     </CrmTable>
@@ -1311,37 +1316,37 @@
     {#if drawerMode !== 'create' && selectedRow}
       <div class="mb-4">
         <p
-          class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
         >
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500">Account</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-xs text-[var(--text-tertiary)]">Account</p>
+            <p class="font-medium text-[var(--text-primary)]">
               {selectedRow.account?.name || '-'}
             </p>
           </div>
           {#if selectedRow.createdAt}
             <div>
-              <p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
-              <p class="font-medium text-gray-900 dark:text-gray-100">
+              <p class="text-xs text-[var(--text-tertiary)]">Created</p>
+              <p class="font-medium text-[var(--text-primary)]">
                 {formatRelativeDate(selectedRow.createdAt)}
               </p>
             </div>
           {/if}
           {#if isClosed && selectedRow.closedBy}
             <div>
-              <p class="text-xs text-gray-400 dark:text-gray-500">Closed By</p>
-              <p class="font-medium text-gray-900 dark:text-gray-100">
+              <p class="text-xs text-[var(--text-tertiary)]">Closed By</p>
+              <p class="font-medium text-[var(--text-primary)]">
                 {selectedRow.closedBy.name || '-'}
               </p>
             </div>
           {/if}
           {#if isClosed && selectedRow.closedOn}
             <div>
-              <p class="text-xs text-gray-400 dark:text-gray-500">Closed On</p>
-              <p class="font-medium text-gray-900 dark:text-gray-100">
+              <p class="text-xs text-[var(--text-tertiary)]">Closed On</p>
+              <p class="font-medium text-[var(--text-primary)]">
                 {formatDate(selectedRow.closedOn)}
               </p>
             </div>
@@ -1350,16 +1355,16 @@
       </div>
 
       <!-- Products Section -->
-      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+      <div class="mt-6 border-t border-[var(--border-default)] pt-4">
         <div class="mb-3 flex items-center justify-between">
           <p
-            class="flex items-center gap-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+            class="flex items-center gap-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
           >
-            <Package class="h-4 w-4" />
+            <Package class="size-4" />
             Products
           </p>
           {#if hasLineItems}
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span class="text-sm font-medium text-[var(--text-primary)]">
               Total: {formatCurrency(
                 selectedRow.lineItemsTotal || 0,
                 selectedRow.currency || 'USD'
@@ -1373,13 +1378,13 @@
           <div class="mb-4 space-y-2">
             {#each lineItems as item (item.id)}
               <div
-                class="flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                class="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-sunken)] px-3 py-2"
               >
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p class="truncate text-sm font-medium text-[var(--text-primary)]">
                     {item.productName || item.name || 'Custom Item'}
                   </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-xs text-[var(--text-secondary)]">
                     {item.quantity} x {formatCurrency(
                       item.unitPrice,
                       selectedRow.currency || 'USD'
@@ -1390,12 +1395,12 @@
                 {#if !isClosed}
                   <button
                     type="button"
-                    class="ml-2 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                    class="ml-2 rounded-[var(--radius-md)] p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-raised)] hover:text-[var(--color-negative-default)] disabled:cursor-not-allowed disabled:opacity-50"
                     onclick={() => deleteLineItem(item.id)}
                     disabled={isDeletingLineItem === item.id}
                   >
                     {#if isDeletingLineItem === item.id}
-                      <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                      <svg class="size-4 animate-spin" viewBox="0 0 24 24">
                         <circle
                           class="opacity-25"
                           cx="12"
@@ -1412,7 +1417,7 @@
                         ></path>
                       </svg>
                     {:else}
-                      <Trash2 class="h-4 w-4" />
+                      <Trash2 class="size-4" />
                     {/if}
                   </button>
                 {/if}
@@ -1420,15 +1425,15 @@
             {/each}
           </div>
         {:else}
-          <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">No products added yet.</p>
+          <p class="mb-4 text-sm text-[var(--text-secondary)]">No products added yet.</p>
         {/if}
 
         <!-- Add product form (only if not closed) -->
         {#if !isClosed}
           <div
-            class="space-y-3 rounded-lg border bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
+            class="space-y-3 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-sunken)] p-3"
           >
-            <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Add Product</p>
+            <p class="text-xs font-medium text-[var(--text-secondary)]">Add Product</p>
             <div class="grid grid-cols-1 gap-2">
               <Select.Root
                 type="single"
@@ -1446,7 +1451,7 @@
                     'Select product...'}
                 </Select.Trigger>
                 <Select.Content class="max-h-60">
-                  <div class="sticky top-0 bg-white p-2 dark:bg-gray-800">
+                  <div class="sticky top-0 bg-[var(--surface-raised)] p-2">
                     <Input
                       type="text"
                       placeholder="Search products..."
@@ -1500,7 +1505,7 @@
       </div>
 
       <!-- Comments Section -->
-      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+      <div class="mt-6 border-t border-[var(--border-default)] pt-4">
         <CommentSection
           entityId={selectedRow.id}
           entityType="opportunity"
@@ -1521,20 +1526,20 @@
       {#if !isClosed}
         <Button
           variant="outline"
-          class="text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-300"
+          class="text-[var(--stage-won)] hover:bg-[var(--stage-won-bg)] hover:text-[var(--stage-won)]"
           onclick={handleMarkWon}
           disabled={isLoading}
         >
-          <Trophy class="mr-1.5 h-4 w-4" />
+          <Trophy class="mr-1.5 size-4" />
           Mark Won
         </Button>
         <Button
           variant="outline"
-          class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+          class="text-[var(--stage-lost)] hover:bg-[var(--stage-lost-bg)] hover:text-[var(--stage-lost)]"
           onclick={handleMarkLost}
           disabled={isLoading}
         >
-          <XCircle class="mr-1.5 h-4 w-4" />
+          <XCircle class="mr-1.5 size-4" />
           Mark Lost
         </Button>
       {/if}
@@ -1545,10 +1550,10 @@
               <Button
                 {...props}
                 variant="outline"
-                class="text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
+                class="text-[var(--color-primary-default)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary-default)]"
                 disabled={isLoading}
               >
-                <Receipt class="mr-1.5 h-4 w-4" />
+                <Receipt class="mr-1.5 size-4" />
                 Create Invoice
               </Button>
             {/snippet}

@@ -157,7 +157,7 @@
           Create and manage tags to organize contacts, companies, deals, and tickets.
         </p>
       </div>
-      <Button onclick={openCreate} class="bg-[#ff7a59] hover:bg-[#ff5c35] text-white border-0">
+      <Button onclick={openCreate} class="bg-[var(--color-primary-default)] hover:bg-[var(--color-primary-dark)] text-white border-0">
         <Plus class="mr-2 h-4 w-4" />
         Create tag
       </Button>
@@ -217,7 +217,7 @@
             <p class="mt-1 max-w-sm text-sm text-muted-foreground">
               Tags help you organize and filter your CRM records. Create your first tag to get started.
             </p>
-            <Button onclick={openCreate} class="mt-4 bg-[#ff7a59] hover:bg-[#ff5c35] text-white border-0">
+            <Button onclick={openCreate} class="mt-4 bg-[var(--color-primary-default)] hover:bg-[var(--color-primary-dark)] text-white border-0">
               <Plus class="mr-2 h-4 w-4" />
               Create tag
             </Button>
@@ -457,7 +457,7 @@
         <Button
           type="submit"
           disabled={!formName.trim() || isLoading}
-          class="bg-[#ff7a59] hover:bg-[#ff5c35] text-white border-0"
+          class="bg-[var(--color-primary-default)] hover:bg-[var(--color-primary-dark)] text-white border-0"
         >
           {isLoading ? 'Creating...' : 'Create tag'}
         </Button>
@@ -540,7 +540,7 @@
         <Button
           type="submit"
           disabled={!formName.trim() || isLoading}
-          class="bg-[#ff7a59] hover:bg-[#ff5c35] text-white border-0"
+          class="bg-[var(--color-primary-default)] hover:bg-[var(--color-primary-dark)] text-white border-0"
         >
           {isLoading ? 'Saving...' : 'Save'}
         </Button>

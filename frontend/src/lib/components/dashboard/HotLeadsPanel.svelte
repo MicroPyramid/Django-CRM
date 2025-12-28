@@ -22,24 +22,25 @@
   /** @type {Props} */
   let { leads = [] } = $props();
 
+  // Using design system lead temperature tokens
   const ratingConfig = /** @type {Record<string, { bg: string, text: string, border: string, iconColor: string }>} */ ({
     HOT: {
-      bg: 'bg-orange-500/10 dark:bg-orange-500/15',
-      text: 'text-orange-600 dark:text-orange-400',
-      border: 'border-orange-500/30 dark:border-orange-400/20',
-      iconColor: 'text-orange-500 dark:text-orange-400'
+      bg: 'bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15',
+      text: 'text-[var(--lead-hot)]',
+      border: 'border-[var(--lead-hot)]/30',
+      iconColor: 'text-[var(--lead-hot)]'
     },
     WARM: {
-      bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-      text: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-500/30 dark:border-amber-400/20',
-      iconColor: 'text-amber-500 dark:text-amber-400'
+      bg: 'bg-[var(--lead-warm-bg)] dark:bg-[var(--lead-warm)]/15',
+      text: 'text-[var(--lead-warm)]',
+      border: 'border-[var(--lead-warm)]/30',
+      iconColor: 'text-[var(--lead-warm)]'
     },
     COLD: {
-      bg: 'bg-cyan-500/10 dark:bg-cyan-500/15',
-      text: 'text-cyan-600 dark:text-cyan-400',
-      border: 'border-cyan-500/30 dark:border-cyan-400/20',
-      iconColor: 'text-cyan-500 dark:text-cyan-400'
+      bg: 'bg-[var(--lead-cold-bg)] dark:bg-[var(--lead-cold)]/15',
+      text: 'text-[var(--lead-cold)]',
+      border: 'border-[var(--lead-cold)]/30',
+      iconColor: 'text-[var(--lead-cold)]'
     }
   });
 
@@ -89,14 +90,14 @@
   }
 </script>
 
-<div class="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm dark:bg-card/50">
-  <!-- Header -->
-  <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+<div class="flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+  <!-- Header - Orange accent for hot leads -->
+  <div class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4">
     <div class="flex items-center gap-3">
-      <div class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20">
-        <Flame class="size-4 text-orange-500 dark:text-orange-400" />
+      <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15">
+        <Flame class="size-4 text-[var(--lead-hot)]" />
       </div>
-      <h3 class="text-foreground text-sm font-semibold tracking-tight">Hot Leads</h3>
+      <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">Hot Leads</h3>
     </div>
     <Button variant="ghost" size="sm" href="/leads?rating=HOT" class="gap-1 text-xs font-medium">
       View all
@@ -108,26 +109,26 @@
   <div class="flex-1 overflow-auto">
     {#if leads.length === 0}
       <div class="flex h-full flex-col items-center justify-center py-10 text-center">
-        <div class="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
-          <Sparkles class="text-muted-foreground/50 size-6" />
+        <div class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+          <Sparkles class="size-6 text-[var(--text-tertiary)]" />
         </div>
-        <p class="text-muted-foreground text-sm font-medium">No hot leads</p>
-        <p class="text-muted-foreground/70 text-xs">Mark leads as "Hot" to see them here</p>
+        <p class="text-[var(--text-secondary)] text-sm font-medium">No hot leads</p>
+        <p class="text-[var(--text-tertiary)] text-xs">Mark leads as "Hot" to see them here</p>
       </div>
     {:else}
-      <div class="divide-y divide-border/30">
+      <div class="divide-y divide-[var(--border-default)]/30">
         {#each leads as lead (lead.id)}
           {@const config = ratingConfig[lead.rating || 'HOT'] || ratingConfig.HOT}
           <a
             href="/leads?view={lead.id}"
-            class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-muted/30"
+            class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
           >
             <!-- Lead info -->
             <div class="min-w-0 flex-1">
-              <p class="text-foreground truncate text-sm font-medium transition-colors group-hover:text-primary">
+              <p class="text-[var(--text-primary)] truncate text-sm font-medium transition-colors group-hover:text-[var(--color-primary-default)]">
                 {getLeadName(lead)}
               </p>
-              <p class="text-muted-foreground mt-0.5 truncate text-xs">
+              <p class="text-[var(--text-secondary)] mt-0.5 truncate text-xs">
                 {lead.company || 'No company'}
               </p>
             </div>
@@ -143,10 +144,10 @@
             <!-- Follow-up date -->
             {#if lead.next_follow_up}
               <div class="flex flex-shrink-0 items-center gap-1.5">
-                <Calendar class="text-muted-foreground size-3.5" />
+                <Calendar class="size-3.5 text-[var(--text-tertiary)]" />
                 <span
                   class="text-xs font-medium tabular-nums
-                    {isOverdue(lead.next_follow_up) ? 'text-rose-500 dark:text-rose-400' : 'text-muted-foreground'}"
+                    {isOverdue(lead.next_follow_up) ? 'text-[var(--task-overdue)]' : 'text-[var(--text-secondary)]'}"
                 >
                   {formatFollowUp(lead.next_follow_up)}
                 </span>
@@ -158,7 +159,7 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="size-7 rounded-lg hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:bg-cyan-500/20 dark:hover:text-cyan-400"
+                class="size-7 rounded-[var(--radius-md)] hover:bg-[var(--activity-call)]/10 hover:text-[var(--activity-call)]"
                 title="Call"
               >
                 <Phone class="size-3.5" />
@@ -166,7 +167,7 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="size-7 rounded-lg hover:bg-violet-500/10 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
+                class="size-7 rounded-[var(--radius-md)] hover:bg-[var(--activity-email)]/10 hover:text-[var(--activity-email)]"
                 title="Email"
               >
                 <Mail class="size-3.5" />

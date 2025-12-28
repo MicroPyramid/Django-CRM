@@ -56,22 +56,22 @@
   let accountNameFromUrl = $state('');
   let accountIdFromUrl = $state('');
 
-  // Status and priority options with colors
+  // Status and priority options with colors - using design system tokens
   const statusOptions = [
     {
       value: 'New',
       label: 'New',
-      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      color: 'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
     },
     {
       value: 'In Progress',
       label: 'In Progress',
-      color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+      color: 'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
     },
     {
       value: 'Completed',
       label: 'Completed',
-      color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+      color: 'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
     }
   ];
 
@@ -79,17 +79,17 @@
     {
       value: 'High',
       label: 'High',
-      color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
     },
     {
       value: 'Medium',
       label: 'Medium',
-      color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+      color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
     },
     {
       value: 'Low',
       label: 'Low',
-      color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+      color: 'bg-[var(--priority-low-bg)] text-[var(--priority-low)] dark:bg-[var(--priority-low)]/15'
     }
   ];
 
@@ -550,7 +550,7 @@
    */
   function getOptionStyle(value, options) {
     const option = options.find((o) => o.value === value);
-    return option?.color ?? 'bg-gray-100 text-gray-600';
+    return option?.color ?? 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]';
   }
 
   /**
@@ -1088,14 +1088,14 @@
           onclick={() => (statusChipFilter = 'ALL')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-primary-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           All
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-primary-dark)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {tasks.length}
           </span>
@@ -1105,14 +1105,14 @@
           onclick={() => (statusChipFilter = 'active')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'active'
-            ? 'bg-blue-600 text-white dark:bg-blue-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--task-due-today)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Active
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
-              ? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {activeTaskCount}
           </span>
@@ -1122,14 +1122,14 @@
           onclick={() => (statusChipFilter = 'completed')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'completed'
-            ? 'bg-emerald-600 text-white dark:bg-emerald-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--task-completed)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Completed
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'completed'
-              ? 'bg-emerald-700 text-emerald-100 dark:bg-emerald-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {completedCount}
           </span>
@@ -1180,7 +1180,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
           >
             {activeFiltersCount}
           </span>
@@ -1196,7 +1196,7 @@
                 Columns
                 {#if columnCounts.visible < columnCounts.total}
                   <span
-                    class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                    class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
                   >
                     {columnCounts.visible}/{columnCounts.total}
                   </span>
@@ -1272,8 +1272,11 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <CheckSquare class="text-muted-foreground/50 mb-4 h-12 w-12" />
-          <h3 class="text-foreground text-lg font-medium">No tasks found</h3>
+          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+            <CheckSquare class="size-8 text-[var(--text-tertiary)]" />
+          </div>
+          <h3 class="text-[var(--text-primary)] text-lg font-medium">No tasks found</h3>
+          <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new task</p>
         </div>
       {/snippet}
     </CrmTable>
@@ -1516,23 +1519,23 @@
     <!-- Task metadata (only for existing tasks) -->
     {#if selectedTask && !isCreateMode}
       <div class="space-y-2 text-sm">
-        <div class="mb-3 text-[13px] font-medium text-gray-500 dark:text-gray-400">Details</div>
+        <div class="mb-3 text-[13px] font-medium text-[var(--text-tertiary)]">Details</div>
         {#if selectedTask.createdBy}
-          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <User class="h-3.5 w-3.5" />
+          <div class="flex items-center gap-2 text-[var(--text-secondary)]">
+            <User class="size-3.5" />
             <span>Created by {selectedTask.createdBy.name}</span>
           </div>
         {/if}
         {#if selectedTask.createdAt}
-          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Clock class="h-3.5 w-3.5" />
+          <div class="flex items-center gap-2 text-[var(--text-secondary)]">
+            <Clock class="size-3.5" />
             <span>Created {formatRelativeDate(selectedTask.createdAt)}</span>
           </div>
         {/if}
       </div>
 
       <!-- Comments Section -->
-      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+      <div class="mt-6 border-t border-[var(--border-default)] pt-4">
         <CommentSection
           entityId={selectedTask.id}
           entityType="tasks"

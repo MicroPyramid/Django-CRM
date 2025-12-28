@@ -411,7 +411,7 @@
         </svg>
         Filters
         {#if activeFiltersCount() > 0}
-          <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+          <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
             {activeFiltersCount()}
           </span>
         {/if}
@@ -509,9 +509,11 @@
   <CrmTable data={products} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <span class="mb-4 text-4xl">📦</span>
-        <h3 class="text-foreground text-lg font-medium">No products yet</h3>
-        <p class="text-muted-foreground text-sm">Create your first product to use in invoices</p>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <span class="text-4xl">📦</span>
+        </div>
+        <h3 class="text-[var(--text-primary)] text-lg font-medium">No products yet</h3>
+        <p class="text-[var(--text-secondary)] text-sm">Create your first product to use in invoices</p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}

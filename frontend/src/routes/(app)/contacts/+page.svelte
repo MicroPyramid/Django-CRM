@@ -738,7 +738,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
           >
             {activeFiltersCount}
           </span>
@@ -754,7 +754,7 @@
               Columns
               {#if visibleColumns.length < columns.length}
                 <span
-                  class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
                 >
                   {visibleColumns.length}/{columns.length}
                 </span>
@@ -819,8 +819,11 @@
   <!-- Table -->
   {#if filteredContacts.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <User class="text-muted-foreground/50 mb-4 h-12 w-12" />
-      <h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <User class="size-8 text-[var(--text-tertiary)]" />
+      </div>
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
+      <p class="mt-1 text-sm text-[var(--text-secondary)]">Create a new contact to get started</p>
     </div>
   {:else}
     <CrmTable
@@ -832,8 +835,10 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <User class="text-muted-foreground/50 mb-4 h-12 w-12" />
-          <h3 class="text-foreground text-lg font-medium">No contacts found</h3>
+          <div class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+            <User class="size-6 text-[var(--text-tertiary)]" />
+          </div>
+          <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
         </div>
       {/snippet}
     </CrmTable>
@@ -870,20 +875,20 @@
     {#if drawerMode !== 'create' && selectedContact}
       <div>
         <p
-          class="mb-2 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
         >
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500">Owner</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-xs text-[var(--text-tertiary)]">Owner</p>
+            <p class="font-medium text-[var(--text-primary)]">
               {selectedContact.owner?.name || 'Unassigned'}
             </p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500">Created</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-xs text-[var(--text-tertiary)]">Created</p>
+            <p class="font-medium text-[var(--text-primary)]">
               {formatRelativeDate(selectedContact.createdAt)}
             </p>
           </div>
@@ -891,7 +896,7 @@
       </div>
 
       <!-- Comments Section -->
-      <div class="mt-6 border-t pt-4 dark:border-gray-700">
+      <div class="mt-6 border-t border-[var(--border-default)] pt-4">
         <CommentSection
           entityId={selectedContact.id}
           entityType="contacts"
