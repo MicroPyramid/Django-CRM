@@ -357,20 +357,22 @@
                           ? 'text-[var(--color-primary-default)]'
                           : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
                       >
-                        <div class="flex w-full items-center gap-2.5">
-                          <div
-                            class="flex size-6 items-center justify-center rounded-md transition-all duration-200
-                              {hasActiveChild(item.children ?? [])
-                              ? 'bg-[var(--color-primary-default)]/10 text-[var(--color-primary-default)]'
-                              : 'text-current group-hover/item:bg-sidebar-accent'}"
-                          >
-                            <item.icon class="size-[15px]" strokeWidth={2} />
-                          </div>
-                          <span class="text-[13px] {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}">{item.label}</span>
-                          <ChevronDown
-                            class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
-                          />
-                        </div>
+                        {#snippet child({ props: btnProps })}
+                          <button {...btnProps} class="flex w-full items-center gap-2.5">
+                            <div
+                              class="flex size-6 items-center justify-center rounded-md transition-all duration-200
+                                {hasActiveChild(item.children ?? [])
+                                ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
+                                : 'text-current group-hover/item:bg-sidebar-accent'}"
+                            >
+                              <item.icon class="size-[15px]" strokeWidth={2} />
+                            </div>
+                            <span class="text-[13px] {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}">{item.label}</span>
+                            <ChevronDown
+                              class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                            />
+                          </button>
+                        {/snippet}
                       </Sidebar.MenuButton>
                     {/snippet}
                   </Collapsible.Trigger>

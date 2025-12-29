@@ -51,7 +51,7 @@
 
   <div class="space-y-8 p-6 md:p-8">
     <!-- Header Section with orange gradient accent -->
-    <header class="animate-in-up">
+    <header>
       <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div class="space-y-2">
           <div class="flex items-center gap-3">
@@ -74,7 +74,7 @@
 
     {#if data.error}
       <div
-        class="animate-in-up stagger-1 flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
+        class="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
       >
         <div class="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20">
           <AlertCircle class="size-5 text-[var(--color-negative-default)]" />
@@ -86,7 +86,7 @@
       </div>
     {:else}
       <!-- Focus Bar - Urgent Items with premium styling -->
-      <div class="animate-in-up stagger-1">
+      <div>
         <FocusBar
           overdueCount={urgentCounts.overdue_tasks || 0}
           todayCount={urgentCounts.tasks_due_today || 0}
@@ -96,7 +96,7 @@
       </div>
 
       <!-- Pipeline Overview - Full Width with glass effect -->
-      <div class="animate-in-up stagger-2 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm dark:shadow-lg dark:shadow-black/10">
+      <div class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm dark:shadow-lg dark:shadow-black/10">
         <div class="mb-5 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
@@ -112,7 +112,7 @@
       </div>
 
       <!-- Revenue Metrics Grid - 4 columns with hover effects -->
-      <div class="animate-in-up stagger-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KPICard
           label="Pipeline Value"
           value={formatCurrency(revenueMetrics.pipeline_value || 0, orgCurrency, true)}
@@ -155,7 +155,7 @@
       </div>
 
       <!-- Pipeline Chart + Hot Leads -->
-      <div class="animate-in-up stagger-4 grid grid-cols-1 gap-6 lg:grid-cols-5">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div class="lg:col-span-3">
           <PipelineChart pipelineData={pipelineByStage} currency={orgCurrency} />
         </div>
@@ -165,13 +165,13 @@
       </div>
 
       <!-- Tasks + Opportunities -->
-      <div class="animate-in-up stagger-5 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TaskList tasks={recentData.tasks || []} />
         <OpportunitiesTable opportunities={recentData.opportunities || []} />
       </div>
 
       <!-- Activity Feed - Full Width -->
-      <div class="animate-in-up stagger-6">
+      <div>
         <ActivityFeed activities={recentData.activities || []} />
       </div>
     {/if}
