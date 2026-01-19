@@ -122,7 +122,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
         slivers: [
           // App Bar + Header
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 260,
             pinned: true,
             backgroundColor: AppColors.primary50,
             leading: IconButton(
@@ -230,22 +230,23 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 60, 24, 16),
+          padding: const EdgeInsets.fromLTRB(24, 56, 24, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Deal Title
               Text(
                 _deal!.title,
-                style: AppTypography.h1.copyWith(
+                style: AppTypography.h2.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
 
               // Company Name
               Text(
@@ -255,18 +256,18 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               // Deal Value
               Text(
                 _formatCurrency(_deal!.value),
                 style: AppTypography.display.copyWith(
                   color: AppColors.primary600,
-                  fontSize: 32,
+                  fontSize: 28,
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               // Badges
               Row(

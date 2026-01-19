@@ -165,7 +165,11 @@ class DealsNotifier extends StateNotifier<DealsState> {
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
-        return Deal.fromJson(response.data!);
+        // API returns opportunity wrapped in 'opportunity_obj' key
+        final opportunityData = response.data!['opportunity_obj'] as Map<String, dynamic>?;
+        if (opportunityData != null) {
+          return Deal.fromJson(opportunityData);
+        }
       }
       return null;
     } catch (e) {
@@ -182,13 +186,13 @@ class DealsNotifier extends StateNotifier<DealsState> {
       );
 
       if (response.success && response.data != null) {
-        final newDeal = Deal.fromJson(response.data!);
-        // Add to the list
-        state = state.copyWith(
-          deals: [newDeal, ...state.deals],
-          totalCount: state.totalCount + 1,
-        );
-        return (success: true, error: null, deal: newDeal);
+        // API returns {"error": false, "message": "..."} on success, not the deal object
+        final isError = response.data!['error'] as bool? ?? true;
+        if (!isError) {
+          // Refresh the deals list to get the new deal
+          await fetchDeals(refresh: true);
+          return (success: true, error: null, deal: null);
+        }
       }
 
       // Parse error message
@@ -213,13 +217,13 @@ class DealsNotifier extends StateNotifier<DealsState> {
       );
 
       if (response.success && response.data != null) {
-        final updatedDeal = Deal.fromJson(response.data!);
-        // Update in the list
-        final updatedDeals = state.deals.map((d) {
-          return d.id == id ? updatedDeal : d;
-        }).toList();
-        state = state.copyWith(deals: updatedDeals);
-        return (success: true, error: null, deal: updatedDeal);
+        // API returns {"error": false, "message": "..."} on success, not the deal object
+        final isError = response.data!['error'] as bool? ?? true;
+        if (!isError) {
+          // Refresh the deals list to get updated data
+          await fetchDeals(refresh: true);
+          return (success: true, error: null, deal: null);
+        }
       }
 
       // Parse error message
@@ -247,13 +251,23 @@ class DealsNotifier extends StateNotifier<DealsState> {
       );
 
       if (response.success && response.data != null) {
-        final updatedDeal = Deal.fromJson(response.data!);
-        // Update in the list
-        final updatedDeals = state.deals.map((d) {
-          return d.id == id ? updatedDeal : d;
-        }).toList();
-        state = state.copyWith(deals: updatedDeals);
-        return (success: true, error: null);
+        // API returns {"error": false, "message": "..."} on success
+        final isError = response.data!['error'] as bool? ?? true;
+        if (!isError) {
+          // Update the deal stage locally without full refresh for better UX
+          final updatedDeals = state.deals.map((d) {
+            if (d.id == id) {
+              return d.copyWith(
+                stage: stage,
+                probability: stage.defaultProbability,
+                updatedAt: DateTime.now(),
+              );
+            }
+            return d;
+          }).toList();
+          state = state.copyWith(deals: updatedDeals);
+          return (success: true, error: null);
+        }
       }
 
       return (success: false, error: response.message ?? 'Failed to update stage');

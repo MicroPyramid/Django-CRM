@@ -82,6 +82,16 @@ class ApiConfig {
   static String get invoices => '$apiBaseUrl/invoices/';
 
   // ==========================================================================
+  // USERS & TAGS ENDPOINTS
+  // ==========================================================================
+
+  /// Get teams and users (for assignment dropdowns)
+  static String get teamsAndUsers => '$apiBaseUrl/users/get-teams-and-users/';
+
+  /// Tags management
+  static String get tags => '$apiBaseUrl/tags/';
+
+  // ==========================================================================
   // REQUEST CONFIGURATION
   // ==========================================================================
 

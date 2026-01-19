@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/deals_provider.dart';
+import '../../providers/lookup_provider.dart';
 import '../../widgets/common/common.dart';
 
 /// Deal Form Screen - Reusable for both Create and Edit
@@ -41,10 +42,22 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   String? _fetchError;
   Deal? _existingDeal;
 
+  // Selector state
+  String? _selectedAccountId;
+  List<String> _selectedContactIds = [];
+  List<String> _selectedAssignedToIds = [];
+  List<String> _selectedTagIds = [];
+
   @override
   void initState() {
     super.initState();
     _probabilityController.text = _stage.defaultProbability.toString();
+
+    // Fetch lookup data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(lookupProvider.notifier).fetchAll();
+    });
+
     if (widget.initialDeal != null) {
       _populateFromDeal(widget.initialDeal!);
     } else if (widget.isEditMode) {
@@ -93,6 +106,10 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     _leadSource = deal.leadSource;
     _currency = deal.currency;
     _closeDate = deal.closeDate;
+    _selectedAccountId = deal.accountId;
+    _selectedContactIds = List.from(deal.contactIds);
+    _selectedAssignedToIds = List.from(deal.assignedToIds);
+    _selectedTagIds = List.from(deal.tagIds);
   }
 
   bool get _hasUnsavedChanges {
@@ -105,11 +122,29 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           _opportunityType != _existingDeal!.opportunityType ||
           _leadSource != _existingDeal!.leadSource ||
           _currency != _existingDeal!.currency ||
-          _closeDate != _existingDeal!.closeDate;
+          _closeDate != _existingDeal!.closeDate ||
+          _selectedAccountId != _existingDeal!.accountId ||
+          !_listEquals(_selectedContactIds, _existingDeal!.contactIds) ||
+          !_listEquals(_selectedAssignedToIds, _existingDeal!.assignedToIds) ||
+          !_listEquals(_selectedTagIds, _existingDeal!.tagIds);
     }
     return _nameController.text.isNotEmpty ||
         _amountController.text.isNotEmpty ||
-        _notesController.text.isNotEmpty;
+        _notesController.text.isNotEmpty ||
+        _selectedAccountId != null ||
+        _selectedContactIds.isNotEmpty ||
+        _selectedAssignedToIds.isNotEmpty ||
+        _selectedTagIds.isNotEmpty;
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    final sortedA = List.from(a)..sort();
+    final sortedB = List.from(b)..sort();
+    for (int i = 0; i < sortedA.length; i++) {
+      if (sortedA[i] != sortedB[i]) return false;
+    }
+    return true;
   }
 
   Future<bool> _onWillPop() async {
@@ -145,6 +180,10 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     final probability = int.tryParse(_probabilityController.text.trim()) ?? _stage.defaultProbability;
 
+    // Get account name from lookup
+    final lookupState = ref.read(lookupProvider);
+    final account = lookupState.accounts.where((a) => a.id == _selectedAccountId).firstOrNull;
+
     return Deal(
       id: widget.dealId ?? '',
       title: _nameController.text.trim(),
@@ -152,14 +191,14 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       stage: _stage,
       probability: probability,
       closeDate: _closeDate,
-      companyName: _existingDeal?.companyName ?? '',
-      accountId: _existingDeal?.accountId,
+      companyName: account?.name ?? _existingDeal?.companyName ?? '',
+      accountId: _selectedAccountId,
       assignedTo: _existingDeal?.assignedTo ?? '',
-      assignedToIds: _existingDeal?.assignedToIds ?? [],
+      assignedToIds: _selectedAssignedToIds,
       priority: Priority.medium,
       labels: _existingDeal?.labels ?? [],
-      tagIds: _existingDeal?.tagIds ?? [],
-      contactIds: _existingDeal?.contactIds ?? [],
+      tagIds: _selectedTagIds,
+      contactIds: _selectedContactIds,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       opportunityType: _opportunityType,
       leadSource: _leadSource,
@@ -305,6 +344,13 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             _buildSectionTitle('Deal Details'),
             const SizedBox(height: 16),
             _buildDealDetailsFields(),
+
+            const SizedBox(height: 32),
+
+            // Relationships Section
+            _buildSectionTitle('Relationships'),
+            const SizedBox(height: 16),
+            _buildRelationshipFields(),
 
             const SizedBox(height: 32),
 
@@ -518,6 +564,76 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     );
   }
 
+  Widget _buildRelationshipFields() {
+    final lookupState = ref.watch(lookupProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Account Selector
+        _buildSingleSelectField(
+          label: 'Account',
+          value: _selectedAccountId != null
+              ? lookupState.accounts.where((a) => a.id == _selectedAccountId).firstOrNull?.name
+              : null,
+          placeholder: 'Select account',
+          icon: LucideIcons.building2,
+          isLoading: lookupState.isLoadingAccounts,
+          onTap: _showAccountPicker,
+          onClear: _selectedAccountId != null ? () => setState(() => _selectedAccountId = null) : null,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Contacts Multi-Select
+        _buildMultiSelectField(
+          label: 'Contacts',
+          selectedCount: _selectedContactIds.length,
+          selectedItems: _selectedContactIds
+              .map((id) => lookupState.contacts.where((c) => c.id == id).firstOrNull?.fullName ?? '')
+              .where((name) => name.isNotEmpty)
+              .toList(),
+          placeholder: 'Select contacts',
+          icon: LucideIcons.users,
+          isLoading: lookupState.isLoadingContacts,
+          onTap: _showContactsPicker,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Assigned To Multi-Select
+        _buildMultiSelectField(
+          label: 'Assigned To',
+          selectedCount: _selectedAssignedToIds.length,
+          selectedItems: _selectedAssignedToIds
+              .map((id) => lookupState.users.where((u) => u.id == id).firstOrNull?.displayName ?? '')
+              .where((name) => name.isNotEmpty)
+              .toList(),
+          placeholder: 'Select assignees',
+          icon: LucideIcons.userCheck,
+          isLoading: lookupState.isLoadingUsers,
+          onTap: _showAssignedToPicker,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Tags Multi-Select
+        _buildMultiSelectField(
+          label: 'Tags',
+          selectedCount: _selectedTagIds.length,
+          selectedItems: _selectedTagIds
+              .map((id) => lookupState.tags.where((t) => t.id == id).firstOrNull?.name ?? '')
+              .where((name) => name.isNotEmpty)
+              .toList(),
+          placeholder: 'Select tags',
+          icon: LucideIcons.tag,
+          isLoading: lookupState.isLoadingTags,
+          onTap: _showTagsPicker,
+        ),
+      ],
+    );
+  }
+
   Widget _buildClassificationFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,6 +712,200 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSingleSelectField({
+    required String label,
+    required String? value,
+    required String placeholder,
+    required IconData icon,
+    required bool isLoading,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: isLoading ? null : onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.gray50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: isLoading
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Loading...',
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.gray400,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          value ?? placeholder,
+                          style: AppTypography.body.copyWith(
+                            color: value != null ? AppColors.textPrimary : AppColors.gray400,
+                          ),
+                        ),
+                ),
+                if (onClear != null && value != null) ...[
+                  GestureDetector(
+                    onTap: onClear,
+                    child: Icon(
+                      LucideIcons.x,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Icon(
+                  LucideIcons.chevronDown,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultiSelectField({
+    required String label,
+    required int selectedCount,
+    required List<String> selectedItems,
+    required String placeholder,
+    required IconData icon,
+    required bool isLoading,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: isLoading ? null : onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.gray50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: isLoading
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Loading...',
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.gray400,
+                              ),
+                            ),
+                          ],
+                        )
+                      : selectedCount > 0
+                          ? Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: [
+                                ...selectedItems.take(2).map((item) => _buildChip(item)),
+                                if (selectedCount > 2)
+                                  _buildChip('+${selectedCount - 2} more', isMore: true),
+                              ],
+                            )
+                          : Text(
+                              placeholder,
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.gray400,
+                              ),
+                            ),
+                ),
+                Icon(
+                  LucideIcons.chevronDown,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChip(String label, {bool isMore = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isMore ? AppColors.primary100 : AppColors.gray200,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.caption.copyWith(
+          color: isMore ? AppColors.primary700 : AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -772,6 +1082,147 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       ),
     );
   }
+
+  void _showAccountPicker() {
+    final accounts = ref.read(lookupProvider).accounts;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => _SearchablePickerSheet(
+          title: 'Select Account',
+          searchHint: 'Search accounts...',
+          items: accounts,
+          itemBuilder: (account) => _PickerOption(
+            label: account.name,
+            subtitle: account.website,
+            isSelected: _selectedAccountId == account.id,
+            onTap: () {
+              setState(() => _selectedAccountId = account.id);
+              Navigator.pop(context);
+            },
+          ),
+          searchMatcher: (account, query) =>
+              account.name.toLowerCase().contains(query.toLowerCase()),
+          scrollController: scrollController,
+          emptyMessage: 'No accounts found',
+        ),
+      ),
+    );
+  }
+
+  void _showContactsPicker() {
+    final contacts = ref.read(lookupProvider).contacts;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => _MultiSelectPickerSheet<ContactLookup>(
+          title: 'Select Contacts',
+          searchHint: 'Search contacts...',
+          items: contacts,
+          selectedIds: _selectedContactIds,
+          getId: (c) => c.id,
+          getLabel: (c) => c.fullName,
+          getSubtitle: (c) => c.email,
+          searchMatcher: (contact, query) =>
+              contact.fullName.toLowerCase().contains(query.toLowerCase()) ||
+              (contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false),
+          scrollController: scrollController,
+          emptyMessage: 'No contacts found',
+          onDone: (selectedIds) {
+            setState(() => _selectedContactIds = selectedIds);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showAssignedToPicker() {
+    final users = ref.read(lookupProvider).users;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => _MultiSelectPickerSheet<UserLookup>(
+          title: 'Assign To',
+          searchHint: 'Search users...',
+          items: users,
+          selectedIds: _selectedAssignedToIds,
+          getId: (u) => u.id,
+          getLabel: (u) => u.displayName,
+          getSubtitle: (u) => u.email,
+          searchMatcher: (user, query) =>
+              user.displayName.toLowerCase().contains(query.toLowerCase()) ||
+              user.email.toLowerCase().contains(query.toLowerCase()),
+          scrollController: scrollController,
+          emptyMessage: 'No users found',
+          onDone: (selectedIds) {
+            setState(() => _selectedAssignedToIds = selectedIds);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showTagsPicker() {
+    final tags = ref.read(lookupProvider).tags;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => _MultiSelectPickerSheet<TagLookup>(
+          title: 'Select Tags',
+          searchHint: 'Search tags...',
+          items: tags,
+          selectedIds: _selectedTagIds,
+          getId: (t) => t.id,
+          getLabel: (t) => t.name,
+          getSubtitle: null,
+          searchMatcher: (tag, query) =>
+              tag.name.toLowerCase().contains(query.toLowerCase()),
+          scrollController: scrollController,
+          emptyMessage: 'No tags found',
+          onDone: (selectedIds) {
+            setState(() => _selectedTagIds = selectedIds);
+          },
+          tagColors: {for (var t in tags) t.id: t.color},
+        ),
+      ),
+    );
+  }
 }
 
 /// Picker bottom sheet
@@ -821,12 +1272,14 @@ class _PickerBottomSheet extends StatelessWidget {
 /// Picker option item
 class _PickerOption extends StatelessWidget {
   final String label;
+  final String? subtitle;
   final bool isSelected;
   final Color? color;
   final VoidCallback onTap;
 
   const _PickerOption({
     required this.label,
+    this.subtitle,
     required this.isSelected,
     this.color,
     required this.onTap,
@@ -852,14 +1305,26 @@ class _PickerOption extends StatelessWidget {
               const SizedBox(width: 12),
             ],
             Expanded(
-              child: Text(
-                label,
-                style: AppTypography.body.copyWith(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? AppColors.primary600
-                      : AppColors.textPrimary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.primary600
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty)
+                    Text(
+                      subtitle!,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
               ),
             ),
             if (isSelected)
@@ -871,6 +1336,367 @@ class _PickerOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Searchable picker sheet for single selection
+class _SearchablePickerSheet<T> extends StatefulWidget {
+  final String title;
+  final String searchHint;
+  final List<T> items;
+  final Widget Function(T item) itemBuilder;
+  final bool Function(T item, String query) searchMatcher;
+  final ScrollController scrollController;
+  final String emptyMessage;
+
+  const _SearchablePickerSheet({
+    required this.title,
+    required this.searchHint,
+    required this.items,
+    required this.itemBuilder,
+    required this.searchMatcher,
+    required this.scrollController,
+    required this.emptyMessage,
+  });
+
+  @override
+  State<_SearchablePickerSheet<T>> createState() => _SearchablePickerSheetState<T>();
+}
+
+class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
+  final _searchController = TextEditingController();
+  List<T> _filteredItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredItems = widget.items;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = widget.items;
+      } else {
+        _filteredItems = widget.items
+            .where((item) => widget.searchMatcher(item, query))
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 12),
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.gray300,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(widget.title, style: AppTypography.h3),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: widget.searchHint,
+              prefixIcon: Icon(LucideIcons.search, size: 20),
+              filled: true,
+              fillColor: AppColors.gray50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _filteredItems.isEmpty
+              ? Center(
+                  child: Text(
+                    widget.emptyMessage,
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: widget.scrollController,
+                  itemCount: _filteredItems.length,
+                  itemBuilder: (context, index) =>
+                      widget.itemBuilder(_filteredItems[index]),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Multi-select picker sheet
+class _MultiSelectPickerSheet<T> extends StatefulWidget {
+  final String title;
+  final String searchHint;
+  final List<T> items;
+  final List<String> selectedIds;
+  final String Function(T item) getId;
+  final String Function(T item) getLabel;
+  final String? Function(T item)? getSubtitle;
+  final bool Function(T item, String query) searchMatcher;
+  final ScrollController scrollController;
+  final String emptyMessage;
+  final void Function(List<String> selectedIds) onDone;
+  final Map<String, String>? tagColors;
+
+  const _MultiSelectPickerSheet({
+    required this.title,
+    required this.searchHint,
+    required this.items,
+    required this.selectedIds,
+    required this.getId,
+    required this.getLabel,
+    this.getSubtitle,
+    required this.searchMatcher,
+    required this.scrollController,
+    required this.emptyMessage,
+    required this.onDone,
+    this.tagColors,
+  });
+
+  @override
+  State<_MultiSelectPickerSheet<T>> createState() => _MultiSelectPickerSheetState<T>();
+}
+
+class _MultiSelectPickerSheetState<T> extends State<_MultiSelectPickerSheet<T>> {
+  final _searchController = TextEditingController();
+  List<T> _filteredItems = [];
+  late List<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredItems = widget.items;
+    _selectedIds = List.from(widget.selectedIds);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = widget.items;
+      } else {
+        _filteredItems = widget.items
+            .where((item) => widget.searchMatcher(item, query))
+            .toList();
+      }
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  Color _getTagColor(String colorName) {
+    final colors = {
+      'gray': AppColors.gray400,
+      'red': AppColors.danger500,
+      'orange': AppColors.warning500,
+      'amber': const Color(0xFFF59E0B),
+      'yellow': const Color(0xFFEAB308),
+      'lime': const Color(0xFF84CC16),
+      'green': AppColors.success500,
+      'emerald': const Color(0xFF10B981),
+      'teal': AppColors.teal500,
+      'cyan': const Color(0xFF06B6D4),
+      'sky': const Color(0xFF0EA5E9),
+      'blue': AppColors.primary500,
+      'indigo': const Color(0xFF6366F1),
+      'violet': AppColors.purple500,
+      'purple': const Color(0xFFA855F7),
+      'fuchsia': const Color(0xFFD946EF),
+      'pink': const Color(0xFFEC4899),
+      'rose': const Color(0xFFF43F5E),
+    };
+    return colors[colorName] ?? AppColors.gray400;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 12),
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.gray300,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.title, style: AppTypography.h3),
+              TextButton(
+                onPressed: () {
+                  widget.onDone(_selectedIds);
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  'Done (${_selectedIds.length})',
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.primary600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: widget.searchHint,
+              prefixIcon: Icon(LucideIcons.search, size: 20),
+              filled: true,
+              fillColor: AppColors.gray50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _filteredItems.isEmpty
+              ? Center(
+                  child: Text(
+                    widget.emptyMessage,
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: widget.scrollController,
+                  itemCount: _filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _filteredItems[index];
+                    final id = widget.getId(item);
+                    final isSelected = _selectedIds.contains(id);
+                    final subtitle = widget.getSubtitle?.call(item);
+                    final tagColor = widget.tagColors?[id];
+
+                    return InkWell(
+                      onTap: () => _toggleSelection(id),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary600
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primary600
+                                      : AppColors.gray300,
+                                  width: 2,
+                                ),
+                              ),
+                              child: isSelected
+                                  ? const Icon(
+                                      LucideIcons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            if (tagColor != null) ...[
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: _getTagColor(tagColor),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.getLabel(item),
+                                    style: AppTypography.body.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  if (subtitle != null && subtitle.isNotEmpty)
+                                    Text(
+                                      subtitle,
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
