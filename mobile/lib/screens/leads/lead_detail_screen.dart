@@ -755,14 +755,36 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                   trailing: _lead!.status == status
                       ? Icon(LucideIcons.check, color: AppColors.primary600)
                       : null,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Status changed to ${status.displayName}'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    if (_lead!.status == status) return;
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    final response = await ref
+                        .read(leadsProvider.notifier)
+                        .updateLeadStatus(_lead!.id, status);
+
+                    if (mounted) {
+                      if (response.success) {
+                        setState(() {
+                          _lead = _lead!.copyWith(status: status);
+                        });
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Status changed to ${status.displayName}'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } else {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(response.message ?? 'Failed to update status'),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: AppColors.danger600,
+                          ),
+                        );
+                      }
+                    }
                   },
                 )),
             const SizedBox(height: 16),

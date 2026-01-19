@@ -121,6 +121,33 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
     }
   }
 
+  /// Update lead status (quick action)
+  Future<ApiResponse<Map<String, dynamic>>> updateLeadStatus(String id, LeadStatus status) async {
+    try {
+      final url = '${ApiConfig.leads}$id/';
+      final response = await _apiService.patch(url, {'status': status.value});
+
+      if (response.success) {
+        // Update local state
+        final updatedLeads = state.leads.map((l) {
+          if (l.id == id) {
+            return l.copyWith(status: status);
+          }
+          return l;
+        }).toList();
+        state = state.copyWith(leads: updatedLeads);
+      }
+
+      return response;
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: e.toString(),
+        statusCode: 0,
+      );
+    }
+  }
+
   /// Delete a lead
   Future<ApiResponse<Map<String, dynamic>>> deleteLead(String id) async {
     try {

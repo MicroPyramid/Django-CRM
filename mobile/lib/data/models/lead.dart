@@ -154,7 +154,9 @@ class Lead {
   final DateTime? nextFollowUp;
   final String? description;
   final List<String> tags;
+  final List<String> tagIds;
   final List<Map<String, dynamic>>? assignedTo;
+  final List<String> assignedToIds;
   final List<Comment> comments;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -189,7 +191,9 @@ class Lead {
     this.nextFollowUp,
     this.description,
     this.tags = const [],
+    this.tagIds = const [],
     this.assignedTo,
+    this.assignedToIds = const [],
     this.comments = const [],
     required this.createdAt,
     this.updatedAt,
@@ -230,25 +234,36 @@ class Lead {
 
   /// Factory constructor to create Lead from JSON
   factory Lead.fromJson(Map<String, dynamic> json) {
-    // Parse tags
+    // Parse tags - both names and IDs
     List<String> parsedTags = [];
+    List<String> parsedTagIds = [];
     if (json['tags'] != null) {
       final tagsList = json['tags'] as List<dynamic>;
-      parsedTags = tagsList.map((t) {
+      for (final t in tagsList) {
         if (t is Map<String, dynamic>) {
-          return t['name'] as String? ?? '';
+          final name = t['name'] as String? ?? '';
+          final id = t['id']?.toString() ?? '';
+          if (name.isNotEmpty) parsedTags.add(name);
+          if (id.isNotEmpty) parsedTagIds.add(id);
+        } else if (t is String) {
+          parsedTags.add(t);
         }
-        return t.toString();
-      }).where((t) => t.isNotEmpty).toList();
+      }
     }
 
-    // Parse assigned_to
+    // Parse assigned_to - both full objects and IDs
     List<Map<String, dynamic>>? parsedAssignedTo;
+    List<String> parsedAssignedToIds = [];
     if (json['assigned_to'] != null) {
       final assignedList = json['assigned_to'] as List<dynamic>;
-      parsedAssignedTo = assignedList
-          .map((a) => a is Map<String, dynamic> ? a : <String, dynamic>{})
-          .toList();
+      parsedAssignedTo = [];
+      for (final a in assignedList) {
+        if (a is Map<String, dynamic>) {
+          parsedAssignedTo.add(a);
+          final id = a['id']?.toString() ?? '';
+          if (id.isNotEmpty) parsedAssignedToIds.add(id);
+        }
+      }
     }
 
     // Parse comments (lead_comments from backend)
@@ -297,7 +312,9 @@ class Lead {
           : null,
       description: json['description'] as String?,
       tags: parsedTags,
+      tagIds: parsedTagIds,
       assignedTo: parsedAssignedTo,
+      assignedToIds: parsedAssignedToIds,
       comments: parsedComments,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
@@ -372,7 +389,9 @@ class Lead {
     DateTime? nextFollowUp,
     String? description,
     List<String>? tags,
+    List<String>? tagIds,
     List<Map<String, dynamic>>? assignedTo,
+    List<String>? assignedToIds,
     List<Comment>? comments,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -407,7 +426,9 @@ class Lead {
       nextFollowUp: nextFollowUp ?? this.nextFollowUp,
       description: description ?? this.description,
       tags: tags ?? this.tags,
+      tagIds: tagIds ?? this.tagIds,
       assignedTo: assignedTo ?? this.assignedTo,
+      assignedToIds: assignedToIds ?? this.assignedToIds,
       comments: comments ?? this.comments,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

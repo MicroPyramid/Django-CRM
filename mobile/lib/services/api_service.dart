@@ -91,8 +91,28 @@ class ApiService {
     if (data is Map<String, dynamic>) {
       // Check common error field names
       if (data.containsKey('detail')) return data['detail'].toString();
-      if (data.containsKey('message')) return data['message'].toString();
-      if (data.containsKey('error')) return data['error'].toString();
+      if (data.containsKey('message') && data['message'] is String) {
+        return data['message'].toString();
+      }
+
+      // Handle field-specific errors (Django REST format)
+      if (data.containsKey('errors') && data['errors'] is Map) {
+        final errors = data['errors'] as Map<String, dynamic>;
+        final errorMessages = <String>[];
+        for (final entry in errors.entries) {
+          final fieldName = entry.key;
+          final messages = entry.value;
+          if (messages is List && messages.isNotEmpty) {
+            // Capitalize field name
+            final fieldLabel = fieldName.replaceAll('_', ' ');
+            errorMessages.add('${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}: ${messages.first}');
+          }
+        }
+        if (errorMessages.isNotEmpty) {
+          return errorMessages.join('\n');
+        }
+      }
+
       if (data.containsKey('non_field_errors')) {
         final errors = data['non_field_errors'];
         if (errors is List && errors.isNotEmpty) {
