@@ -53,6 +53,8 @@
   } from '$lib/utils/table-helpers.js';
   import CrmTable from '$lib/components/ui/crm-table/CrmTable.svelte';
   import CrmDrawer from '$lib/components/ui/crm-drawer/CrmDrawer.svelte';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import { browser } from '$app/environment';
   import { orgSettings } from '$lib/stores/org.js';
   import { ViewToggle } from '$lib/components/ui/view-toggle';
@@ -182,79 +184,79 @@
   ];
   let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
 
-  // Source options for leads
+  // Source options for leads - using design system tokens
   const sourceOptions = [
     {
       value: 'call',
       label: 'Call',
-      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      color: 'bg-[var(--activity-call)]/10 text-[var(--activity-call)] dark:bg-[var(--activity-call)]/15'
     },
     {
       value: 'email',
       label: 'Email',
-      color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+      color: 'bg-[var(--activity-email)]/10 text-[var(--activity-email)] dark:bg-[var(--activity-email)]/15'
     },
     {
       value: 'existing customer',
       label: 'Existing Customer',
-      color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
     },
     {
       value: 'partner',
       label: 'Partner',
-      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
     },
     {
       value: 'public relations',
       label: 'Public Relations',
-      color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
+      color: 'bg-[var(--activity-meeting)]/10 text-[var(--activity-meeting)] dark:bg-[var(--activity-meeting)]/15'
     },
     {
       value: 'campaign',
       label: 'Campaign',
-      color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400'
+      color: 'bg-[var(--stage-qualified)]/10 text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'other',
       label: 'Other',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] dark:bg-[var(--surface-sunken)]'
     }
   ];
 
-  // Salutation options
+  // Salutation options - using design system tokens
   const salutationOptions = [
     {
       value: 'Mr',
       label: 'Mr',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     },
     {
       value: 'Mrs',
       label: 'Mrs',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     },
     {
       value: 'Ms',
       label: 'Ms',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     },
     {
       value: 'Dr',
       label: 'Dr',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     },
     {
       value: 'Prof',
       label: 'Prof',
-      color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
     }
   ];
 
-  // Currency options for select
+  // Currency options for select - using design system tokens
   const currencyOptions = CURRENCY_CODES.filter((c) => c.value).map((c) => ({
     value: c.value,
     label: c.label,
-    color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+    color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   }));
 
   // Full drawer columns for NotionDrawer (all lead fields)
@@ -520,6 +522,7 @@
 
   onMount(() => {
     loadColumnVisibility();
+    currentUser = getCurrentUser();
   });
 
   // Save to localStorage when column visibility changes
@@ -619,6 +622,7 @@
   let drawerData = $state(null);
   let drawerLoading = $state(false);
   let isSaving = $state(false);
+  let currentUser = $state(null);
 
   // For create mode - temporary form data
   let createFormData = $state(
@@ -1439,23 +1443,23 @@
       <!-- View Toggle -->
       <ViewToggle view={viewMode} onchange={setViewMode} />
 
-      <div class="bg-border mx-1 h-6 w-px"></div>
+      <div class="mx-1 h-6 w-px bg-[var(--border-default)]"></div>
 
-      <!-- Status Filter Chips -->
+      <!-- Status Filter Chips - Using design system tokens -->
       <div class="flex gap-1">
         <button
           type="button"
           onclick={() => (statusChipFilter = 'ALL')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--text-primary)] text-[var(--surface-default)]'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           All
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--text-secondary)] text-[var(--surface-default)]'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {totalLeadCount}
           </span>
@@ -1465,14 +1469,14 @@
           onclick={() => (statusChipFilter = 'open')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'open'
-            ? 'bg-blue-600 text-white dark:bg-blue-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-primary-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Open
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
-              ? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-primary-hover)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {openCount}
           </span>
@@ -1482,21 +1486,21 @@
           onclick={() => (statusChipFilter = 'lost')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'lost'
-            ? 'bg-red-600 text-white dark:bg-red-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--stage-lost)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Lost
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
-              ? 'bg-red-700 text-red-100 dark:bg-red-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--stage-lost)]/80 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {lostCount}
           </span>
         </button>
       </div>
 
-      <div class="bg-border mx-1 h-6 w-px"></div>
+      <div class="mx-1 h-6 w-px bg-[var(--border-default)]"></div>
 
       <!-- Filter Toggle Button -->
       <Button
@@ -1509,7 +1513,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
           >
             {activeFiltersCount}
           </span>
@@ -1526,7 +1530,7 @@
                 Columns
                 {#if visibleColumns.length < columns.length}
                   <span
-                    class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                    class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
                   >
                     {visibleColumns.length}/{columns.length}
                   </span>
@@ -1616,8 +1620,11 @@
     <!-- Table View -->
     {#if filteredLeads.length === 0}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <User class="size-8 text-[var(--text-tertiary)]" />
+        </div>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No leads found</h3>
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">Create a new lead to get started</p>
       </div>
     {:else}
       <!-- Desktop Table using CrmTable -->
@@ -1631,29 +1638,31 @@
         >
           {#snippet emptyState()}
             <div class="flex flex-col items-center justify-center py-16 text-center">
-              <User class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
-              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No leads found</h3>
+              <div class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+                <User class="size-6 text-[var(--text-tertiary)]" />
+              </div>
+              <h3 class="text-lg font-medium text-[var(--text-primary)]">No leads found</h3>
             </div>
           {/snippet}
         </CrmTable>
       </div>
 
       <!-- Mobile Card View -->
-      <div class="divide-y md:hidden dark:divide-gray-800">
+      <div class="divide-y divide-[var(--border-default)]/50 md:hidden">
         {#each filteredLeads as lead (lead.id)}
           <button
             type="button"
-            class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/30 dark:hover:bg-gray-800/30"
+            class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
             onclick={() => openLead(lead)}
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p class="text-sm font-medium text-[var(--text-primary)]">
                     {getFullName(lead)}
                   </p>
                   {#if lead.company}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-[var(--text-secondary)]">
                       {typeof lead.company === 'object' ? lead.company.name : lead.company}
                     </p>
                   {/if}
@@ -1668,7 +1677,7 @@
                 </span>
               </div>
               <div
-                class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
+                class="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]"
               >
                 {#if lead.rating}
                   <span
@@ -1690,7 +1699,7 @@
         <button
           type="button"
           onclick={openCreate}
-          class="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          class="flex w-full items-center gap-2 px-4 py-3 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)]"
         >
           <Plus class="h-4 w-4" />
           New
@@ -1725,34 +1734,14 @@
   onClose={closeDrawer}
 >
   {#snippet activitySection()}
-    {#if drawerMode !== 'create' && drawerData?.comments?.length > 0}
-      <div class="space-y-3">
-        <div class="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-          <MessageSquare class="h-4 w-4" />
-          Activity
-        </div>
-        {#each drawerData.comments.slice(0, 3) as comment (comment.id)}
-          <div class="flex gap-3">
-            <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-            >
-              <MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm text-gray-900 dark:text-gray-100">
-                <span class="font-medium">{comment.author?.name || 'Unknown'}</span>
-                {' '}added a note
-              </p>
-              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                {formatRelativeDate(comment.createdAt)}
-              </p>
-              <p class="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
-                {comment.body}
-              </p>
-            </div>
-          </div>
-        {/each}
-      </div>
+    {#if drawerMode !== 'create' && drawerData}
+      <CommentSection
+        entityId={drawerData.id}
+        entityType="leads"
+        initialComments={drawerData.comments || []}
+        currentUserEmail={currentUser?.email}
+        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+      />
     {/if}
   {/snippet}
 

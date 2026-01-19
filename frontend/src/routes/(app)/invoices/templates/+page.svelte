@@ -355,7 +355,7 @@
         </svg>
         Filters
         {#if activeFiltersCount() > 0}
-          <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+          <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
             {activeFiltersCount()}
           </span>
         {/if}
@@ -400,26 +400,28 @@
   <CrmTable data={templates} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <span class="mb-4 text-4xl">🎨</span>
-        <h3 class="text-foreground text-lg font-medium">No templates yet</h3>
-        <p class="text-muted-foreground text-sm">Create your first invoice template</p>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <span class="text-4xl">🎨</span>
+        </div>
+        <h3 class="text-[var(--text-primary)] text-lg font-medium">No templates yet</h3>
+        <p class="text-[var(--text-secondary)] text-sm">Create your first invoice template</p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}
       {#if column.key === 'isDefault'}
         {#if row.isDefault}
           <span
-            class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
+            class="inline-flex items-center rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
           >
             Default
           </span>
         {:else}
-          <span class="text-gray-400">-</span>
+          <span class="text-[var(--text-tertiary)]">-</span>
         {/if}
       {:else if column.key === 'primaryColor'}
         <div class="flex items-center gap-2">
-          <div class="h-5 w-5 rounded border" style="background-color: {row.primaryColor}"></div>
-          <span class="text-xs text-gray-500">{row.primaryColor}</span>
+          <div class="h-5 w-5 rounded border border-[var(--border-default)]" style="background-color: {row.primaryColor}"></div>
+          <span class="text-xs text-[var(--text-secondary)]">{row.primaryColor}</span>
         </div>
       {:else}
         {row[column.key] || '-'}
@@ -479,7 +481,7 @@
             ></div>
           </div>
           {#if selectedTemplate.footerText}
-            <p class="text-xs text-gray-500 italic">{selectedTemplate.footerText}</p>
+            <p class="text-xs text-[var(--text-secondary)] italic">{selectedTemplate.footerText}</p>
           {/if}
         </div>
       </div>

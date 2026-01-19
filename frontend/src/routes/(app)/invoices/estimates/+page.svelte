@@ -17,14 +17,14 @@
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
 
-  // Estimate status options
+  // Estimate status options - using design system tokens
   const ESTIMATE_STATUSES = [
-    { value: 'Draft', label: 'Draft', color: 'gray' },
-    { value: 'Sent', label: 'Sent', color: 'blue' },
-    { value: 'Viewed', label: 'Viewed', color: 'indigo' },
-    { value: 'Accepted', label: 'Accepted', color: 'green' },
-    { value: 'Declined', label: 'Declined', color: 'red' },
-    { value: 'Expired', label: 'Expired', color: 'orange' }
+    { value: 'Draft', label: 'Draft', color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]' },
+    { value: 'Sent', label: 'Sent', color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15' },
+    { value: 'Viewed', label: 'Viewed', color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15' },
+    { value: 'Accepted', label: 'Accepted', color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15' },
+    { value: 'Declined', label: 'Declined', color: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15' },
+    { value: 'Expired', label: 'Expired', color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15' }
   ];
 
   /**
@@ -451,17 +451,10 @@
     window.open(`/api/invoices/estimates/${selectedEstimate.id}/pdf/`, '_blank');
   }
 
-  // Status badge color
+  // Status badge color - using design system tokens
   function getStatusColor(status) {
-    const colors = {
-      Draft: 'bg-gray-100 text-gray-700',
-      Sent: 'bg-blue-100 text-blue-700',
-      Viewed: 'bg-indigo-100 text-indigo-700',
-      Accepted: 'bg-green-100 text-green-700',
-      Declined: 'bg-red-100 text-red-700',
-      Expired: 'bg-orange-100 text-orange-700'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+    const statusObj = ESTIMATE_STATUSES.find((s) => s.value === status);
+    return statusObj?.color || 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]';
   }
 
   // Check if estimate is expired
@@ -685,14 +678,14 @@
               onclick={() => (statusChipFilter = chip.key)}
               class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
               chip.key
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+                ? 'bg-[var(--color-primary-default)] text-white'
+                : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
             >
               {chip.label}
               <span
                 class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === chip.key
-                  ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-                  : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+                  ? 'bg-[var(--color-primary-dark)] text-white/90'
+                  : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
               >
                 {chipCounts[chip.key] || 0}
               </span>
@@ -743,7 +736,7 @@
           </svg>
           Filters
           {#if activeFiltersCount() > 0}
-            <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+            <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
               {activeFiltersCount()}
             </span>
           {/if}
@@ -849,9 +842,11 @@
   <CrmTable data={estimates} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <span class="mb-4 text-4xl">📋</span>
-        <h3 class="text-foreground text-lg font-medium">No estimates yet</h3>
-        <p class="text-muted-foreground text-sm">Create your first estimate to get started</p>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <span class="text-4xl">📋</span>
+        </div>
+        <h3 class="text-[var(--text-primary)] text-lg font-medium">No estimates yet</h3>
+        <p class="text-[var(--text-secondary)] text-sm">Create your first estimate to get started</p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}

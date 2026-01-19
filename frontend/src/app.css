@@ -5,133 +5,259 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   OBSIDIAN LUXE - Premium Dark-First CRM Design System
-   A sophisticated aesthetic with vivid accents and glass-morphism effects
+   BOTTLECRM DESIGN SYSTEM - Orange Primary
+   A modern CRM design system with warm orange accents and professional styling
+   Based on DESIGN_SYSTEM.md v1.2
    ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Google Fonts Import - Plus Jakarta Sans (geometric, modern) */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* Base radius for components */
   --radius: 0.625rem;
 
   /* ─────────────────────────────────────────────────────────────────────────
-     LIGHT MODE - Clean, airy with subtle warmth
+     BRAND COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-brand-primary: #EA580C;
+  --color-brand-dark: #404346;
+  --color-brand-white: #FFFFFF;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     LIGHT MODE - Clean, professional with warm orange accents
      ───────────────────────────────────────────────────────────────────────── */
 
   /* Core surfaces */
-  --background: oklch(0.985 0.002 250);
+  --background: oklch(0.985 0.002 60);
   --foreground: oklch(0.15 0.02 260);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0.02 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.02 260);
 
-  /* Primary - Deep teal */
-  --primary: oklch(0.55 0.15 195);
+  /* Primary - Orange */
+  --primary: oklch(0.58 0.2 30);
   --primary-foreground: oklch(0.98 0 0);
 
   /* Secondary */
-  --secondary: oklch(0.96 0.01 250);
+  --secondary: oklch(0.96 0.01 60);
   --secondary-foreground: oklch(0.25 0.02 260);
 
   /* Muted */
-  --muted: oklch(0.96 0.005 250);
+  --muted: oklch(0.96 0.005 60);
   --muted-foreground: oklch(0.45 0.02 260);
 
-  /* Accent - Warm amber */
-  --accent: oklch(0.96 0.02 80);
-  --accent-foreground: oklch(0.25 0.05 80);
+  /* Accent - Light orange tint */
+  --accent: oklch(0.98 0.02 60);
+  --accent-foreground: oklch(0.25 0.05 30);
 
   /* Destructive */
   --destructive: oklch(0.55 0.22 25);
 
   /* Borders & inputs */
-  --border: oklch(0.91 0.005 250);
-  --input: oklch(0.91 0.005 250);
-  --ring: oklch(0.55 0.15 195);
+  --border: oklch(0.91 0.005 60);
+  --input: oklch(0.91 0.005 60);
+  --ring: oklch(0.58 0.2 30);
 
-  /* Chart colors - Vibrant palette */
-  --chart-1: oklch(0.65 0.18 195);
-  --chart-2: oklch(0.7 0.16 145);
-  --chart-3: oklch(0.75 0.15 80);
-  --chart-4: oklch(0.6 0.2 280);
-  --chart-5: oklch(0.65 0.2 350);
+  /* Chart colors - Sequential (Orange-based) */
+  --chart-1: #EA580C;
+  --chart-2: #F97316;
+  --chart-3: #FB923C;
+  --chart-4: #FDBA74;
+  --chart-5: #FED7AA;
 
-  /* Sidebar - HubSpot Style Light */
+  /* Sidebar */
   --sidebar: oklch(0.995 0 0);
-  --sidebar-foreground: oklch(0.25 0.02 250);
-  --sidebar-primary: oklch(0.62 0.2 25);
+  --sidebar-foreground: oklch(0.25 0.02 60);
+  --sidebar-primary: #EA580C;
   --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.97 0.005 250);
-  --sidebar-accent-foreground: oklch(0.2 0.02 250);
-  --sidebar-border: oklch(0.94 0.005 250);
-  --sidebar-ring: oklch(0.62 0.2 25);
-
-  /* HubSpot Brand Colors */
-  --hubspot-orange: #ff7a59;
-  --hubspot-orange-hover: #ff5c35;
-  --hubspot-orange-light: #fff1ee;
-  --hubspot-navy: #2d3e50;
-  --hubspot-navy-light: #516f90;
-  --hubspot-teal: #00bda5;
-  --hubspot-teal-light: #e5f8f6;
+  --sidebar-accent: oklch(0.97 0.01 60);
+  --sidebar-accent-foreground: oklch(0.2 0.02 60);
+  --sidebar-border: oklch(0.94 0.005 60);
+  --sidebar-ring: #EA580C;
 
   /* ─────────────────────────────────────────────────────────────────────────
-     SEMANTIC LAYERS
+     PRIMARY COLOR SCALE
      ───────────────────────────────────────────────────────────────────────── */
-
-  /* Background Layers */
-  --bg-base: #fafbfc;
-  --bg-subtle: #f4f6f8;
-  --bg-muted: #eef1f4;
-  --bg-emphasis: #e4e8ec;
-
-  /* Border Colors */
-  --border-default: #e2e6eb;
-  --border-strong: #c9d0d8;
-  --border-subtle: #f0f2f5;
-
-  /* Text Colors */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-  --text-inverse: #ffffff;
-
-  /* Accent Colors - Teal/Cyan primary */
-  --accent-primary: #0891b2;
-  --accent-primary-hover: #0e7490;
-  --accent-primary-subtle: #ecfeff;
-
-  /* Secondary Accent - Warm Amber */
-  --accent-secondary: #f59e0b;
-  --accent-secondary-hover: #d97706;
-  --accent-secondary-subtle: #fffbeb;
-
-  /* Status Colors */
-  --status-success: #059669;
-  --status-success-bg: #ecfdf5;
-  --status-warning: #d97706;
-  --status-warning-bg: #fffbeb;
-  --status-danger: #dc2626;
-  --status-danger-bg: #fef2f2;
-  --status-info: #0891b2;
-  --status-info-bg: #ecfeff;
-
-  /* Stage Colors (Pipeline) - Refined palette */
-  --stage-prospecting: #64748b;
-  --stage-qualified: #0891b2;
-  --stage-proposal: #8b5cf6;
-  --stage-negotiation: #f59e0b;
-  --stage-won: #059669;
-  --stage-lost: #dc2626;
+  --color-primary-default: #EA580C;
+  --color-primary-hover: #C2410C;
+  --color-primary-active: #9A3412;
+  --color-primary-light: #FFF7ED;
 
   /* ─────────────────────────────────────────────────────────────────────────
-     SPACING & LAYOUT
+     SEMANTIC COLORS
      ───────────────────────────────────────────────────────────────────────── */
 
+  /* Negative/Error */
+  --color-negative-default: #DC3545;
+  --color-negative-hover: #C82333;
+  --color-negative-light: #FDEAEA;
+
+  /* Warning */
+  --color-warning-default: #FFC107;
+  --color-warning-dark: #E0A800;
+  --color-warning-light: #FFF8E1;
+
+  /* Success */
+  --color-success-default: #28A745;
+  --color-success-light: #E8F5E9;
+
+  /* Info */
+  --color-info-default: #17A2B8;
+  --color-info-light: #E3F2FD;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     GREY SCALE
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-grey-50: #FAFAFA;
+  --color-grey-100: #F5F5F5;
+  --color-grey-200: #EEEEEE;
+  --color-grey-300: #E0E0E0;
+  --color-grey-400: #BDBDBD;
+  --color-grey-500: #9E9E9E;
+  --color-grey-600: #757575;
+  --color-grey-700: #616161;
+  --color-grey-800: #424242;
+  --color-grey-900: #212121;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SURFACE COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --surface-default: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #F5F5F5;
+  --surface-overlay: #FFFFFF;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TEXT COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --text-primary: #212121;
+  --text-secondary: #616161;
+  --text-tertiary: #9E9E9E;
+  --text-disabled: #BDBDBD;
+  --text-inverse: #FFFFFF;
+  --text-link: #EA580C;
+  --text-error: #DC3545;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     BORDER COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --border-default: #E0E0E0;
+  --border-strong: #BDBDBD;
+  --border-focus: #EA580C;
+  --border-error: #DC3545;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     PIPELINE STAGE COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --stage-new: #EA580C;
+  --stage-contacted: #F97316;
+  --stage-qualified: #3B82F6;
+  --stage-proposal: #8B5CF6;
+  --stage-negotiation: #F59E0B;
+  --stage-won: #22C55E;
+  --stage-lost: #EF4444;
+
+  /* Pipeline Stage Backgrounds */
+  --stage-new-bg: #FFF7ED;
+  --stage-contacted-bg: #FFEDD5;
+  --stage-qualified-bg: #EFF6FF;
+  --stage-proposal-bg: #F5F3FF;
+  --stage-negotiation-bg: #FFFBEB;
+  --stage-won-bg: #F0FDF4;
+  --stage-lost-bg: #FEF2F2;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ACTIVITY TYPE COLORS
+     ───────────────────────────────────────────────────────────────────────── */
+  --activity-call: #22C55E;
+  --activity-email: #3B82F6;
+  --activity-meeting: #8B5CF6;
+  --activity-task: #F59E0B;
+  --activity-note: #6B7280;
+  --activity-deadline: #EF4444;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     LEAD TEMPERATURE
+     ───────────────────────────────────────────────────────────────────────── */
+  --lead-hot: #EF4444;
+  --lead-warm: #F59E0B;
+  --lead-cold: #6B7280;
+
+  /* Lead Temperature Backgrounds */
+  --lead-hot-bg: #FEF2F2;
+  --lead-warm-bg: #FFFBEB;
+  --lead-cold-bg: #F3F4F6;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     PRIORITY LEVELS
+     ───────────────────────────────────────────────────────────────────────── */
+  --priority-urgent: #DC2626;
+  --priority-high: #F97316;
+  --priority-medium: #FBBF24;
+  --priority-low: #22C55E;
+  --priority-none: #9CA3AF;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     DEAL PROBABILITY
+     ───────────────────────────────────────────────────────────────────────── */
+  --probability-high: #22C55E;
+  --probability-mid: #F59E0B;
+  --probability-low: #EF4444;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TASK STATUS
+     ───────────────────────────────────────────────────────────────────────── */
+  --task-overdue: #EF4444;
+  --task-due-today: #F59E0B;
+  --task-upcoming: #3B82F6;
+  --task-completed: #22C55E;
+  --task-cancelled: #9CA3AF;
+
+  /* Task Status Backgrounds */
+  --task-overdue-bg: #FEF2F2;
+  --task-due-today-bg: #FFFBEB;
+  --task-upcoming-bg: #EFF6FF;
+  --task-completed-bg: #F0FDF4;
+  --task-cancelled-bg: #F3F4F6;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     CHARTS - CATEGORICAL
+     ───────────────────────────────────────────────────────────────────────── */
+  --cat-1: #EA580C;
+  --cat-2: #3B82F6;
+  --cat-3: #22C55E;
+  --cat-4: #8B5CF6;
+  --cat-5: #EC4899;
+  --cat-6: #14B8A6;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     PROGRESS BAR
+     ───────────────────────────────────────────────────────────────────────── */
+  --progress-default: #EA580C;
+  --progress-success: #22C55E;
+  --progress-warning: #F59E0B;
+  --progress-danger: #EF4444;
+  --progress-bg: #E5E7EB;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SPACING (8px Grid System)
+     ───────────────────────────────────────────────────────────────────────── */
   --space-0: 0px;
+  --space-25: 2px;
+  --space-50: 4px;
+  --space-100: 8px;
+  --space-150: 12px;
+  --space-200: 16px;
+  --space-250: 20px;
+  --space-300: 24px;
+  --space-400: 32px;
+  --space-500: 40px;
+  --space-600: 48px;
+  --space-700: 56px;
+  --space-800: 64px;
+  --space-900: 72px;
+  --space-1000: 80px;
+
+  /* Legacy spacing aliases */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -142,39 +268,80 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* Border Radius - Slightly larger for premium feel */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
+  /* ─────────────────────────────────────────────────────────────────────────
+     BORDER RADIUS
+     ───────────────────────────────────────────────────────────────────────── */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
   --radius-full: 9999px;
 
-  /* Z-Index Layers */
+  /* ─────────────────────────────────────────────────────────────────────────
+     SHADOWS
+     ───────────────────────────────────────────────────────────────────────── */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.10), 0 10px 10px rgba(0, 0, 0, 0.04);
+
+  /* Focus Ring */
+  --focus-ring: 0 0 0 2px var(--surface-default), 0 0 0 4px var(--color-primary-default);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ICON SIZES
+     ───────────────────────────────────────────────────────────────────────── */
+  --icon-xs: 12px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+  --icon-2xl: 48px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Z-INDEX LAYERS
+     ───────────────────────────────────────────────────────────────────────── */
   --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-overlay: 400;
+  --z-toast: 500;
   --z-sidebar: 10;
   --z-drawer-backdrop: 40;
   --z-drawer: 50;
-  --z-dropdown: 60;
-  --z-modal: 70;
-  --z-toast: 80;
   --z-tooltip: 90;
 
-  /* Animation Timing - Refined easing */
+  /* ─────────────────────────────────────────────────────────────────────────
+     TRANSITIONS
+     ───────────────────────────────────────────────────────────────────────── */
+  --transition-fast: 100ms ease;
+  --transition-normal: 150ms ease;
+  --transition-slow: 300ms ease;
+
+  /* Animation timing functions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
 
-  /* Animation Durations */
+  /* Animation durations */
   --duration-instant: 0ms;
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 350ms;
   --duration-slower: 500ms;
 
-  /* Layout Dimensions */
+  /* ─────────────────────────────────────────────────────────────────────────
+     LAYOUT DIMENSIONS
+     ───────────────────────────────────────────────────────────────────────── */
   --sidebar-width: 260px;
   --sidebar-width-collapsed: 72px;
   --drawer-width: 520px;
@@ -182,116 +349,213 @@
   --content-padding: 28px;
   --content-max-width: 1400px;
 
-  /* Typography */
-  --font-sans: 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'DM Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  /* Container Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+
+  /* Breakpoints */
+  --breakpoint-xs: 0px;
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1440px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TYPOGRAPHY
+     ───────────────────────────────────────────────────────────────────────── */
+  --font-family-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "Geist Mono", "SF Mono", "Fira Code", Consolas, monospace;
+  --font-sans: var(--font-family-sans);
+  --font-body: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Glass morphism properties */
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.3);
   --glass-blur: 12px;
+
+  /* Legacy semantic aliases */
+  --bg-base: #FAFAFA;
+  --bg-subtle: #F5F5F5;
+  --bg-muted: #EEEEEE;
+  --bg-emphasis: #E0E0E0;
+  --accent-primary: #EA580C;
+  --accent-primary-hover: #C2410C;
+  --accent-primary-subtle: #FFF7ED;
+  --accent-secondary: #F59E0B;
+  --accent-secondary-hover: #D97706;
+  --accent-secondary-subtle: #FFFBEB;
+  --status-success: #28A745;
+  --status-success-bg: #E8F5E9;
+  --status-warning: #FFC107;
+  --status-warning-bg: #FFF8E1;
+  --status-danger: #DC3545;
+  --status-danger-bg: #FDEAEA;
+  --status-info: #17A2B8;
+  --status-info-bg: #E3F2FD;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DARK MODE - Obsidian Luxe
-   Deep, rich darks with vivid accent colors and subtle glow effects
+   DARK MODE
+   Deep, rich darks with vivid orange accent and subtle glow effects
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .dark {
-  /* Core surfaces - Deep obsidian with subtle blue undertone */
-  --background: oklch(0.12 0.015 260);
-  --foreground: oklch(0.95 0.005 250);
-  --card: oklch(0.16 0.015 260);
-  --card-foreground: oklch(0.95 0.005 250);
-  --popover: oklch(0.18 0.018 260);
-  --popover-foreground: oklch(0.95 0.005 250);
+  /* Core surfaces - Deep with subtle warmth */
+  --background: oklch(0.12 0.01 30);
+  --foreground: oklch(0.95 0.005 60);
+  --card: oklch(0.16 0.01 30);
+  --card-foreground: oklch(0.95 0.005 60);
+  --popover: oklch(0.18 0.012 30);
+  --popover-foreground: oklch(0.95 0.005 60);
 
-  /* Primary - Vivid cyan */
-  --primary: oklch(0.75 0.16 195);
-  --primary-foreground: oklch(0.12 0.015 260);
+  /* Primary - Vivid orange */
+  --primary: oklch(0.72 0.18 35);
+  --primary-foreground: oklch(0.12 0.01 30);
 
   /* Secondary */
-  --secondary: oklch(0.22 0.015 260);
-  --secondary-foreground: oklch(0.92 0.005 250);
+  --secondary: oklch(0.22 0.01 30);
+  --secondary-foreground: oklch(0.92 0.005 60);
 
   /* Muted */
-  --muted: oklch(0.22 0.012 260);
-  --muted-foreground: oklch(0.65 0.01 260);
+  --muted: oklch(0.22 0.008 30);
+  --muted-foreground: oklch(0.65 0.01 60);
 
-  /* Accent - Amber glow */
-  --accent: oklch(0.25 0.04 80);
-  --accent-foreground: oklch(0.85 0.12 80);
+  /* Accent - Warm orange glow */
+  --accent: oklch(0.25 0.04 35);
+  --accent-foreground: oklch(0.85 0.12 35);
 
   /* Destructive */
   --destructive: oklch(0.65 0.2 25);
 
-  /* Borders & inputs - Subtle with glow potential */
-  --border: oklch(0.28 0.015 260);
-  --input: oklch(0.24 0.015 260);
-  --ring: oklch(0.7 0.14 195);
+  /* Borders & inputs */
+  --border: oklch(0.28 0.01 30);
+  --input: oklch(0.24 0.01 30);
+  --ring: oklch(0.7 0.16 35);
 
-  /* Chart colors - Vibrant neon-ish */
-  --chart-1: oklch(0.75 0.18 195);
-  --chart-2: oklch(0.72 0.18 155);
-  --chart-3: oklch(0.78 0.15 85);
-  --chart-4: oklch(0.7 0.2 290);
-  --chart-5: oklch(0.72 0.2 10);
+  /* Chart colors - Vibrant */
+  --chart-1: #FB923C;
+  --chart-2: #FDBA74;
+  --chart-3: #FED7AA;
+  --chart-4: #FFEDD5;
+  --chart-5: #FFF7ED;
 
-  /* Sidebar - HubSpot Style Dark */
-  --sidebar: oklch(0.16 0.015 250);
-  --sidebar-foreground: oklch(0.92 0.005 250);
-  --sidebar-primary: oklch(0.7 0.18 25);
-  --sidebar-primary-foreground: oklch(0.12 0.015 260);
-  --sidebar-accent: oklch(0.22 0.02 250);
-  --sidebar-accent-foreground: oklch(0.92 0.005 250);
-  --sidebar-border: oklch(0.28 0.015 250);
-  --sidebar-ring: oklch(0.7 0.18 25);
+  /* Sidebar */
+  --sidebar: oklch(0.16 0.01 30);
+  --sidebar-foreground: oklch(0.92 0.005 60);
+  --sidebar-primary: #FB923C;
+  --sidebar-primary-foreground: oklch(0.12 0.01 30);
+  --sidebar-accent: oklch(0.22 0.015 30);
+  --sidebar-accent-foreground: oklch(0.92 0.005 60);
+  --sidebar-border: oklch(0.28 0.01 30);
+  --sidebar-ring: #FB923C;
 
-  /* Background Layers - Obsidian depth */
+  /* Primary color scale - Dark mode */
+  --color-primary-default: #FB923C;
+  --color-primary-hover: #FDBA74;
+  --color-primary-active: #F97316;
+  --color-primary-light: #431407;
+
+  /* Surface Colors - Dark mode */
+  --surface-default: #1E1E1E;
+  --surface-raised: #252525;
+  --surface-sunken: #141414;
+  --surface-overlay: #2D2D2D;
+
+  /* Text Colors - Dark mode */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B0B0B0;
+  --text-tertiary: #757575;
+  --text-disabled: #525252;
+  --text-inverse: #212121;
+  --text-link: #FB923C;
+  --text-error: #F87171;
+
+  /* Border Colors - Dark mode */
+  --border-default: #3D3D3D;
+  --border-strong: #525252;
+  --border-focus: #FB923C;
+  --border-error: #F87171;
+
+  /* Background Layers - Dark */
   --bg-base: #0c0d12;
   --bg-subtle: #121318;
   --bg-muted: #181a21;
   --bg-emphasis: #1f222b;
 
-  /* Border Colors */
-  --border-default: #262a36;
-  --border-strong: #363b4a;
-  --border-subtle: #1c1f28;
-
-  /* Text Colors */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --text-inverse: #0c0d12;
-
-  /* Accent Colors - Cyan glow */
-  --accent-primary: #22d3ee;
-  --accent-primary-hover: #06b6d4;
-  --accent-primary-subtle: rgba(34, 211, 238, 0.1);
-
-  /* Secondary Accent - Warm Amber */
-  --accent-secondary: #fbbf24;
-  --accent-secondary-hover: #f59e0b;
+  /* Accent Colors - Orange glow */
+  --accent-primary: #FB923C;
+  --accent-primary-hover: #FDBA74;
+  --accent-primary-subtle: rgba(251, 146, 60, 0.1);
+  --accent-secondary: #FBBF24;
+  --accent-secondary-hover: #F59E0B;
   --accent-secondary-subtle: rgba(251, 191, 36, 0.1);
 
   /* Status Colors - Vivid in dark */
-  --status-success: #34d399;
+  --status-success: #34D399;
   --status-success-bg: rgba(52, 211, 153, 0.12);
-  --status-warning: #fbbf24;
+  --status-warning: #FBBF24;
   --status-warning-bg: rgba(251, 191, 36, 0.12);
-  --status-danger: #f87171;
+  --status-danger: #F87171;
   --status-danger-bg: rgba(248, 113, 113, 0.12);
-  --status-info: #22d3ee;
-  --status-info-bg: rgba(34, 211, 238, 0.12);
+  --status-info: #38BDF8;
+  --status-info-bg: rgba(56, 189, 248, 0.12);
 
-  /* Stage Colors - Neon variants */
-  --stage-prospecting: #94a3b8;
-  --stage-qualified: #22d3ee;
-  --stage-proposal: #a78bfa;
-  --stage-negotiation: #fbbf24;
-  --stage-won: #34d399;
-  --stage-lost: #f87171;
+  /* Semantic colors dark mode */
+  --color-negative-default: #F87171;
+  --color-negative-hover: #FCA5A5;
+  --color-negative-light: rgba(248, 113, 113, 0.15);
+  --color-warning-default: #FBBF24;
+  --color-warning-dark: #FCD34D;
+  --color-warning-light: rgba(251, 191, 36, 0.15);
+  --color-success-default: #34D399;
+  --color-success-light: rgba(52, 211, 153, 0.15);
+  --color-info-default: #38BDF8;
+  --color-info-light: rgba(56, 189, 248, 0.15);
+
+  /* Grey Scale - Dark mode */
+  --color-grey-50: #18181B;
+  --color-grey-100: #27272A;
+  --color-grey-200: #3F3F46;
+  --color-grey-300: #52525B;
+  --color-grey-400: #71717A;
+  --color-grey-500: #A1A1AA;
+  --color-grey-600: #D4D4D8;
+  --color-grey-700: #E4E4E7;
+  --color-grey-800: #F4F4F5;
+  --color-grey-900: #FAFAFA;
+
+  /* Stage Colors - Lighter variants for dark mode */
+  --stage-new-bg: rgba(234, 88, 12, 0.15);
+  --stage-contacted-bg: rgba(249, 115, 22, 0.15);
+  --stage-qualified-bg: rgba(59, 130, 246, 0.15);
+  --stage-proposal-bg: rgba(139, 92, 246, 0.15);
+  --stage-negotiation-bg: rgba(245, 158, 11, 0.15);
+  --stage-won-bg: rgba(34, 197, 94, 0.15);
+  --stage-lost-bg: rgba(239, 68, 68, 0.15);
+
+  /* Lead Temperature Backgrounds - Dark mode */
+  --lead-hot-bg: rgba(239, 68, 68, 0.15);
+  --lead-warm-bg: rgba(245, 158, 11, 0.15);
+  --lead-cold-bg: rgba(107, 114, 128, 0.15);
+
+  /* Task Status Backgrounds - Dark mode */
+  --task-overdue-bg: rgba(239, 68, 68, 0.15);
+  --task-due-today-bg: rgba(245, 158, 11, 0.15);
+  --task-upcoming-bg: rgba(59, 130, 246, 0.15);
+  --task-completed-bg: rgba(34, 197, 94, 0.15);
+  --task-cancelled-bg: rgba(156, 163, 175, 0.15);
+
+  /* Progress - Dark mode */
+  --progress-bg: #3F3F46;
 
   /* Glass morphism - Dark variant */
   --glass-bg: rgba(18, 19, 24, 0.8);
@@ -304,10 +568,10 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -385,7 +649,7 @@
     background-clip: content-box;
   }
 
-  /* Selection styling */
+  /* Selection styling - Orange */
   ::selection {
     background: var(--accent-primary);
     color: var(--text-inverse);
@@ -405,7 +669,7 @@
     border: 1px solid var(--glass-border);
   }
 
-  /* Glow effects */
+  /* Glow effects - Orange accent */
   .glow-sm {
     box-shadow: 0 0 15px -3px var(--accent-primary);
   }
@@ -445,7 +709,7 @@
     opacity: 0.04;
   }
 
-  /* Gradient mesh background */
+  /* Gradient mesh background - Orange themed */
   .gradient-mesh {
     background:
       radial-gradient(at 40% 20%, var(--accent-primary-subtle) 0px, transparent 50%),
@@ -558,6 +822,41 @@
     border-color: var(--accent-primary);
     box-shadow: 0 0 30px -10px var(--accent-primary);
   }
+
+  /* Pipeline stage badge utilities */
+  .badge-stage-new { background: var(--stage-new-bg); color: var(--stage-new); }
+  .badge-stage-contacted { background: var(--stage-contacted-bg); color: var(--stage-contacted); }
+  .badge-stage-qualified { background: var(--stage-qualified-bg); color: var(--stage-qualified); }
+  .badge-stage-proposal { background: var(--stage-proposal-bg); color: var(--stage-proposal); }
+  .badge-stage-negotiation { background: var(--stage-negotiation-bg); color: var(--stage-negotiation); }
+  .badge-stage-won { background: var(--stage-won-bg); color: var(--stage-won); }
+  .badge-stage-lost { background: var(--stage-lost-bg); color: var(--stage-lost); }
+
+  /* Lead temperature badge utilities */
+  .badge-lead-hot { background: var(--lead-hot-bg); color: var(--lead-hot); }
+  .badge-lead-warm { background: var(--lead-warm-bg); color: var(--lead-warm); }
+  .badge-lead-cold { background: var(--lead-cold-bg); color: var(--lead-cold); }
+
+  /* Priority badge utilities */
+  .badge-priority-urgent { background: rgba(220, 38, 38, 0.1); color: var(--priority-urgent); }
+  .badge-priority-high { background: rgba(249, 115, 22, 0.1); color: var(--priority-high); }
+  .badge-priority-medium { background: rgba(251, 191, 36, 0.1); color: var(--priority-medium); }
+  .badge-priority-low { background: rgba(34, 197, 94, 0.1); color: var(--priority-low); }
+
+  /* Task status badge utilities */
+  .badge-task-overdue { background: var(--task-overdue-bg); color: var(--task-overdue); }
+  .badge-task-due-today { background: var(--task-due-today-bg); color: var(--task-due-today); }
+  .badge-task-upcoming { background: var(--task-upcoming-bg); color: var(--task-upcoming); }
+  .badge-task-completed { background: var(--task-completed-bg); color: var(--task-completed); }
+  .badge-task-cancelled { background: var(--task-cancelled-bg); color: var(--task-cancelled); }
+
+  /* Activity type badge utilities */
+  .badge-activity-call { background: rgba(34, 197, 94, 0.1); color: var(--activity-call); }
+  .badge-activity-email { background: rgba(59, 130, 246, 0.1); color: var(--activity-email); }
+  .badge-activity-meeting { background: rgba(139, 92, 246, 0.1); color: var(--activity-meeting); }
+  .badge-activity-task { background: rgba(245, 158, 11, 0.1); color: var(--activity-task); }
+  .badge-activity-note { background: rgba(107, 114, 128, 0.1); color: var(--activity-note); }
+  .badge-activity-deadline { background: rgba(239, 68, 68, 0.1); color: var(--activity-deadline); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -588,7 +887,7 @@ input, textarea, select {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HUBSPOT-STYLE SIDEBAR ENHANCEMENTS
+   SIDEBAR ENHANCEMENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Sidebar base styling */
@@ -596,12 +895,12 @@ input, textarea, select {
   transition: width 0.2s ease, transform 0.2s ease;
 }
 
-/* HubSpot-style menu button refinements */
+/* Menu button refinements */
 [data-slot="sidebar-menu-button"] {
   letter-spacing: -0.01em;
 }
 
-/* HubSpot-style active state with left accent bar */
+/* Active state with left accent bar */
 [data-slot="sidebar-menu-button"][data-active="true"] {
   position: relative;
 }
@@ -615,7 +914,7 @@ input, textarea, select {
   transform: none;
 }
 
-/* Group label styling - HubSpot uppercase sections */
+/* Group label styling - uppercase sections */
 [data-slot="sidebar-group-label"] {
   font-size: 10px;
   font-weight: 700;
@@ -632,9 +931,9 @@ input, textarea, select {
   margin-top: 4px;
 }
 
-/* Rail hover effect */
+/* Rail hover effect - Orange accent */
 [data-slot="sidebar-rail"]:hover {
-  background: linear-gradient(90deg, transparent, rgba(255, 122, 89, 0.1));
+  background: linear-gradient(90deg, transparent, rgba(234, 88, 12, 0.1));
 }
 
 /* Collapsed state icon centering */
@@ -645,4 +944,36 @@ input, textarea, select {
 /* Footer divider */
 [data-slot="sidebar-footer"] {
   background: linear-gradient(180deg, transparent, var(--sidebar) 8px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KANBAN BOARD STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Kanban column styles using pipeline colors */
+.kanban-column-new { border-top: 3px solid var(--stage-new); background: var(--stage-new-bg); }
+.kanban-column-contacted { border-top: 3px solid var(--stage-contacted); background: var(--stage-contacted-bg); }
+.kanban-column-qualified { border-top: 3px solid var(--stage-qualified); background: var(--stage-qualified-bg); }
+.kanban-column-proposal { border-top: 3px solid var(--stage-proposal); background: var(--stage-proposal-bg); }
+.kanban-column-negotiation { border-top: 3px solid var(--stage-negotiation); background: var(--stage-negotiation-bg); }
+.kanban-column-won { border-top: 3px solid var(--stage-won); background: var(--stage-won-bg); }
+.kanban-column-lost { border-top: 3px solid var(--stage-lost); background: var(--stage-lost-bg); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATA TABLE STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Table row hover - subtle orange tint */
+.data-table-row:hover {
+  background: var(--color-primary-light);
+}
+
+.dark .data-table-row:hover {
+  background: rgba(251, 146, 60, 0.05);
+}
+
+/* Selected row */
+.data-table-row-selected {
+  background: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary-default);
 }

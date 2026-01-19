@@ -259,9 +259,9 @@
             <Card.Header class="pb-4">
               <div class="flex items-center gap-3">
                 <div
-                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15"
                 >
-                  <Plus class="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <Plus class="h-5 w-5 text-[var(--color-success-default)]" />
                 </div>
                 <div>
                   <Card.Title class="">Add New Member</Card.Title>
@@ -312,9 +312,9 @@
             <Card.Header class="pb-4">
               <div class="flex items-center gap-3">
                 <div
-                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
                 >
-                  <Users class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <Users class="h-5 w-5 text-[var(--color-primary-default)]" />
                 </div>
                 <div>
                   <Card.Title class="">Team Members</Card.Title>
@@ -345,7 +345,7 @@
                                 <Avatar.Image class="" src={user.avatar} alt={user.name} />
                               {/if}
                               <Avatar.Fallback
-                                class="bg-gradient-to-br from-blue-500 to-purple-600 text-sm text-white"
+                                class="bg-[var(--color-primary-default)] text-sm text-white"
                               >
                                 {getInitials(user.name)}
                               </Avatar.Fallback>
@@ -432,7 +432,7 @@
                             <Button
                               variant="ghost"
                               size="icon"
-                              class="h-8 w-8 text-green-600 hover:bg-green-100"
+                              class="h-8 w-8 text-[var(--color-success-default)] hover:bg-[var(--color-success-light)]"
                               onclick={() => handleActivateUser(user.id)}
                               title="Activate user"
                             >
@@ -514,9 +514,9 @@
             <Card.Root class="py-12">
               <Card.Content class="text-center">
                 <div
-                  class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30"
+                  class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
                 >
-                  <UsersRound class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  <UsersRound class="h-8 w-8 text-[var(--color-primary-default)]" />
                 </div>
                 <h3 class="mb-2 text-lg font-semibold">No teams yet</h3>
                 <p class="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">

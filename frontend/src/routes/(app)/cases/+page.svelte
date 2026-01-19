@@ -29,6 +29,8 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CommentSection } from '$lib/components/ui/comment-section';
+  import { getCurrentUser } from '$lib/api.js';
   import {
     FilterBar,
     SearchInput,
@@ -97,6 +99,7 @@
   // Column visibility state
   const STORAGE_KEY = 'cases-column-config';
   let visibleColumns = $state(columns.map((c) => c.key));
+  let currentUser = $state(null);
 
   // Load column visibility from localStorage
   onMount(() => {
@@ -111,6 +114,7 @@
         console.error('Failed to parse saved columns:', e);
       }
     }
+    currentUser = getCurrentUser();
   });
 
   // Save column visibility when changed
@@ -249,11 +253,11 @@
 
   // Account options for drawer select
   const accountOptions = $derived([
-    { value: '', label: 'None', color: 'bg-gray-100 text-gray-600' },
+    { value: '', label: 'None', color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]' },
     ...accounts.map((/** @type {any} */ a) => ({
       value: a.id,
       label: a.name,
-      color: 'bg-blue-100 text-blue-700'
+      color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)]'
     }))
   ]);
 
@@ -797,14 +801,14 @@
           onclick={() => (statusChipFilter = 'ALL')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--color-primary-default)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           All
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-200 dark:text-gray-700'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--color-primary-dark)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {casesData.length}
           </span>
@@ -814,14 +818,14 @@
           onclick={() => (statusChipFilter = 'open')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'open'
-            ? 'bg-blue-600 text-white dark:bg-blue-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--stage-qualified)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Open
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
-              ? 'bg-blue-700 text-blue-100 dark:bg-blue-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-black/20 text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {openCount}
           </span>
@@ -831,14 +835,14 @@
           onclick={() => (statusChipFilter = 'closed')}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'closed'
-            ? 'bg-gray-600 text-white dark:bg-gray-500'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+            ? 'bg-[var(--text-secondary)] text-white'
+            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
         >
           Closed
           <span
             class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
-              ? 'bg-gray-700 text-gray-200 dark:bg-gray-600'
-              : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-500'}"
+              ? 'bg-[var(--text-tertiary)] text-white/90'
+              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
           >
             {closedCount}
           </span>
@@ -882,7 +886,7 @@
         Filters
         {#if activeFiltersCount > 0}
           <span
-            class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
           >
             {activeFiltersCount}
           </span>
@@ -897,7 +901,7 @@
               Columns
               {#if columnCounts.visible < columnCounts.total}
                 <span
-                  class="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
                 >
                   {columnCounts.visible}/{columnCounts.total}
                 </span>
@@ -979,8 +983,11 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <Briefcase class="text-muted-foreground/50 mb-4 h-12 w-12" />
-          <h3 class="text-foreground text-lg font-medium">No cases found</h3>
+          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+            <Briefcase class="size-8 text-[var(--text-tertiary)]" />
+          </div>
+          <h3 class="text-[var(--text-primary)] text-lg font-medium">No cases found</h3>
+          <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new case</p>
         </div>
       {/snippet}
     </CrmTable>
@@ -1026,43 +1033,14 @@
   mode={drawer.mode === 'create' ? 'create' : 'view'}
 >
   {#snippet activitySection()}
-    {#if drawer.mode !== 'create' && drawer.selected?.comments?.length > 0}
-      <div class="space-y-3">
-        <div class="mb-3 flex items-center gap-2">
-          <Activity class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-          <p class="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-            Activity
-          </p>
-        </div>
-        {#each drawer.selected.comments.slice(0, 5) as comment (comment.id)}
-          <div class="flex gap-3">
-            <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-            >
-              <MessageSquare class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm text-gray-900 dark:text-gray-100">
-                <span class="font-medium">{comment.author?.name || 'Unknown'}</span>
-                {' '}added a note
-              </p>
-              <p class="mt-0.5 text-xs text-gray-500">
-                {new Date(comment.createdAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
-              <p class="mt-1 line-clamp-2 text-sm text-gray-500">{comment.body}</p>
-            </div>
-          </div>
-        {/each}
-      </div>
-    {:else if drawer.mode !== 'create'}
-      <div class="flex flex-col items-center justify-center py-6 text-center">
-        <MessageSquare class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
-        <p class="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
-      </div>
+    {#if drawer.mode !== 'create' && drawer.selected}
+      <CommentSection
+        entityId={drawer.selected.id}
+        entityType="cases"
+        initialComments={drawer.selected.comments || []}
+        currentUserEmail={currentUser?.email}
+        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+      />
     {/if}
   {/snippet}
 

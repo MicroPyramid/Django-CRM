@@ -17,15 +17,15 @@
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
 
-  // Frequency options
+  // Frequency options - using design system tokens
   const FREQUENCIES = [
-    { value: 'WEEKLY', label: 'Weekly', color: 'blue' },
-    { value: 'BIWEEKLY', label: 'Bi-weekly', color: 'cyan' },
-    { value: 'MONTHLY', label: 'Monthly', color: 'green' },
-    { value: 'QUARTERLY', label: 'Quarterly', color: 'yellow' },
-    { value: 'SEMI_ANNUALLY', label: 'Semi-annually', color: 'orange' },
-    { value: 'YEARLY', label: 'Yearly', color: 'purple' },
-    { value: 'CUSTOM', label: 'Custom', color: 'gray' }
+    { value: 'WEEKLY', label: 'Weekly', color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)]' },
+    { value: 'BIWEEKLY', label: 'Bi-weekly', color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)]' },
+    { value: 'MONTHLY', label: 'Monthly', color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)]' },
+    { value: 'QUARTERLY', label: 'Quarterly', color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)]' },
+    { value: 'SEMI_ANNUALLY', label: 'Semi-annually', color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)]' },
+    { value: 'YEARLY', label: 'Yearly', color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)]' },
+    { value: 'CUSTOM', label: 'Custom', color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]' }
   ];
 
   // Status options
@@ -592,7 +592,7 @@
         </svg>
         Filters
         {#if activeFiltersCount() > 0}
-          <span class="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+          <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
             {activeFiltersCount()}
           </span>
         {/if}
@@ -688,9 +688,11 @@
   <CrmTable data={recurringInvoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <span class="mb-4 text-4xl">🔄</span>
-        <h3 class="text-foreground text-lg font-medium">No recurring invoices yet</h3>
-        <p class="text-muted-foreground text-sm">Create your first recurring invoice template</p>
+        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <span class="text-4xl">🔄</span>
+        </div>
+        <h3 class="text-[var(--text-primary)] text-lg font-medium">No recurring invoices yet</h3>
+        <p class="text-[var(--text-secondary)] text-sm">Create your first recurring invoice template</p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}

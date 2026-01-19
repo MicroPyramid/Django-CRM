@@ -103,14 +103,14 @@
 <div class="flex-1 space-y-6 p-4 md:p-6">
   <!-- Success/Error Messages -->
   {#if form?.success}
-    <Card.Root class="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+    <Card.Root class="border-[var(--color-success-default)]/20 bg-[var(--color-success-light)]">
       <Card.Content class="flex items-center gap-3 p-4">
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-800"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/20"
         >
-          <Check class="h-4 w-4 text-green-600 dark:text-green-300" />
+          <Check class="h-4 w-4 text-[var(--color-success-default)]" />
         </div>
-        <p class="text-sm font-medium text-green-800 dark:text-green-200">
+        <p class="text-sm font-medium text-[var(--color-success-default)]">
           {form.message}
         </p>
       </Card.Content>
@@ -118,14 +118,14 @@
   {/if}
 
   {#if form?.error}
-    <Card.Root class="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+    <Card.Root class="border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)]">
       <Card.Content class="flex items-center gap-3 p-4">
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-800"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20"
         >
-          <X class="h-4 w-4 text-red-600 dark:text-red-300" />
+          <X class="h-4 w-4 text-[var(--color-negative-default)]" />
         </div>
-        <p class="text-sm font-medium text-red-800 dark:text-red-200">
+        <p class="text-sm font-medium text-[var(--color-negative-default)]">
           {form.error}
         </p>
       </Card.Content>
@@ -146,7 +146,7 @@
                 class=""
               />
             {/if}
-            <Avatar.Fallback class="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+            <Avatar.Fallback class="bg-[var(--color-primary-default)] text-white">
               {getInitials(data.user.name)}
             </Avatar.Fallback>
           </Avatar.Root>
@@ -315,7 +315,7 @@
             <div class="bg-muted/30 flex items-center justify-between rounded-lg border p-4">
               <div class="flex items-center gap-3">
                 <div
-                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-default)]"
                 >
                   <Building2 class="h-5 w-5 text-white" />
                 </div>

@@ -53,16 +53,16 @@
     { value: 'CUSTOM', label: 'Custom' }
   ];
 
-  // Status colors
+  // Status colors - using design system tokens
   const STATUS_COLORS = {
-    Draft: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-    Sent: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    Viewed: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-    Partially_Paid: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-    Paid: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    Overdue: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-    Pending: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-    Cancelled: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+    Draft: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]',
+    Sent: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15',
+    Viewed: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15',
+    Partially_Paid: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15',
+    Paid: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15',
+    Overdue: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15',
+    Pending: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15',
+    Cancelled: 'bg-[var(--surface-sunken)] text-[var(--text-tertiary)]'
   };
 
   // Status options for dropdown
@@ -782,7 +782,7 @@
               </div>
               <div class="flex justify-between font-medium">
                 <span>Amount Due</span>
-                <span class="text-orange-600"
+                <span class="text-[var(--color-primary-default)]"
                   >{formatCurrency(Number(invoice.amountDue), invoice.currency)}</span
                 >
               </div>

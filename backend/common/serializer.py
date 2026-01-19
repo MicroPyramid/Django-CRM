@@ -202,7 +202,26 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class CommentUserSerializer(serializers.ModelSerializer):
+    """Simplified user serializer for comments"""
+
+    user_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ("id", "user_details")
+
+    def get_user_details(self, obj):
+        if obj.user:
+            return {"email": obj.user.email, "profile_pic": obj.user.profile_pic}
+        return None
+
+
 class LeadCommentSerializer(serializers.ModelSerializer):
+    """Comment serializer with user details for display"""
+
+    commented_by = CommentUserSerializer(read_only=True)
+
     class Meta:
         model = Comment
         fields = (

@@ -1,0 +1,70 @@
+name: bottle_crm
+description: "CRM for everyone."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+9
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  http: ^1.1.0
+  google_sign_in: ^7.1.1
+  shared_preferences: ^2.2.2
+  jwt_decoder: ^2.0.1
+  package_info_plus: ^8.0.2
+  # Icons
+  cupertino_icons: ^1.0.8
+  lucide_icons: ^0.257.0
+
+  # Navigation
+  go_router: ^14.6.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # Calendar
+  table_calendar: ^3.1.2
+
+  # Utilities
+  intl: ^0.19.0
+  url_launcher: ^6.3.1
+
+  # Google Fonts for distinctive typography
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: "^0.14.4"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 31 # android min sdk Android 12 (API 31)
+  remove_alpha_ios: true # remove alpha channel from iOS icons, default false
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/icon/
+    - assets/images/
