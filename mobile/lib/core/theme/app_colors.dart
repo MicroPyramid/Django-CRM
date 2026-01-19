@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// BottleCRM Color System
-/// A professional, modern color palette optimized for sales workflows
+/// A professional, modern color palette optimized for CRM workflows
+/// Inspired by HubSpot mobile app design patterns
 class AppColors {
   AppColors._();
 
@@ -18,6 +19,18 @@ class AppColors {
   static const Color primary700 = Color(0xFF1D4ED8);
   static const Color primary800 = Color(0xFF1E40AF);
   static const Color primary900 = Color(0xFF1E3A8A);
+
+  // ============================================
+  // ACCENT PALETTE (Coral/Orange - CTAs & FAB)
+  // ============================================
+  static const Color accent50 = Color(0xFFFFF7ED);
+  static const Color accent100 = Color(0xFFFFEDD5);
+  static const Color accent200 = Color(0xFFFED7AA);
+  static const Color accent300 = Color(0xFFFDBA74);
+  static const Color accent400 = Color(0xFFFB923C);
+  static const Color accent500 = Color(0xFFF97316); // Main accent color
+  static const Color accent600 = Color(0xFFEA580C);
+  static const Color accent700 = Color(0xFFC2410C);
 
   // ============================================
   // SUCCESS (Green - Wins & Completions)
@@ -72,6 +85,18 @@ class AppColors {
   static const Color purple700 = Color(0xFF7C3AED);
 
   // ============================================
+  // TEAL (For Links & Dates - HubSpot style)
+  // ============================================
+  static const Color teal50 = Color(0xFFF0FDFA);
+  static const Color teal100 = Color(0xFFCCFBF1);
+  static const Color teal200 = Color(0xFF99F6E4);
+  static const Color teal300 = Color(0xFF5EEAD4);
+  static const Color teal400 = Color(0xFF2DD4BF);
+  static const Color teal500 = Color(0xFF14B8A6);
+  static const Color teal600 = Color(0xFF0D9488);
+  static const Color teal700 = Color(0xFF0F766E);
+
+  // ============================================
   // NEUTRAL GRAYS
   // ============================================
   static const Color gray50 = Color(0xFFF9FAFB);
@@ -89,7 +114,7 @@ class AppColors {
   // SURFACES
   // ============================================
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceDim = Color(0xFFF8FAFC);
+  static const Color surfaceDim = Color(0xFFF9FAFB); // Page background
   static const Color surfaceBright = Color(0xFFFFFFFF);
 
   // ============================================
@@ -131,6 +156,7 @@ class AppColors {
   static const Color priorityLow = gray400;
   static const Color priorityMedium = warning500;
   static const Color priorityHigh = danger500;
+  static const Color priorityUrgent = purple500;
 
   // ============================================
   // AVATAR BACKGROUND COLORS

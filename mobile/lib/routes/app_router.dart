@@ -8,7 +8,6 @@ import '../providers/auth_provider.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
-import '../screens/auth/onboarding_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -36,7 +35,6 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
-  static const String onboarding = '/onboarding';
   static const String orgSelection = '/org-selection';
 
   // Main routes
@@ -66,7 +64,6 @@ const _publicRoutes = [
   AppRoutes.splash,
   AppRoutes.login,
   AppRoutes.forgotPassword,
-  AppRoutes.onboarding,
 ];
 
 /// Routes that require authentication but not org selection
@@ -139,11 +136,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.forgotPassword,
         name: 'forgotPassword',
         builder: (context, state) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.onboarding,
-        name: 'onboarding',
-        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgSelection,

@@ -110,16 +110,16 @@ class AppTheme {
           }),
         ),
 
-        // Floating Action Button
+        // Floating Action Button (Accent color like HubSpot)
         floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: AppColors.primary600,
+          backgroundColor: AppColors.accent500,
           foregroundColor: Colors.white,
-          elevation: 4,
-          focusElevation: 6,
-          hoverElevation: 6,
-          highlightElevation: 8,
+          elevation: 2,
+          focusElevation: 4,
+          hoverElevation: 4,
+          highlightElevation: 4,
           shape: RoundedRectangleBorder(
-            borderRadius: AppLayout.borderRadiusLg,
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
 
@@ -214,13 +214,14 @@ class AppTheme {
           suffixIconColor: AppColors.gray400,
         ),
 
-        // Card
+        // Card (Flat design with border, no shadow)
         cardTheme: CardThemeData(
           color: AppColors.card,
           elevation: 0,
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: AppLayout.borderRadiusLg,
+            borderRadius: AppLayout.borderRadiusMd,
+            side: const BorderSide(color: AppColors.border, width: 1),
           ),
         ),
 

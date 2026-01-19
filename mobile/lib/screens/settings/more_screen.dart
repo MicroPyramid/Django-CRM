@@ -6,7 +6,6 @@ import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../data/mock/mock_data.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -75,10 +74,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                   ),
                 );
               },
-            ),
-            _FontSizeMenuItem(
-              currentSize: ref.watch(fontSizeOptionProvider),
-              onTap: () => _showFontSizePicker(),
             ),
             _MenuItem(
               icon: LucideIcons.globe,
@@ -303,47 +298,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                 _showComingSoon('German language');
               },
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showFontSizePicker() {
-    final currentSize = ref.read(fontSizeOptionProvider);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.gray300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Font Size', style: AppTypography.h3),
-            ),
-            ...FontSizeOption.values.map((option) => _FontSizeOption(
-                  option: option,
-                  isSelected: currentSize == option,
-                  onTap: () {
-                    ref.read(settingsProvider.notifier).setFontSize(option);
-                    Navigator.pop(sheetContext);
-                  },
-                )),
             const SizedBox(height: 16),
           ],
         ),
@@ -578,126 +532,3 @@ class _LanguageOption extends StatelessWidget {
   }
 }
 
-/// Font Size Menu Item Widget
-class _FontSizeMenuItem extends StatelessWidget {
-  final FontSizeOption currentSize;
-  final VoidCallback onTap;
-
-  const _FontSizeMenuItem({
-    required this.currentSize,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border(
-            bottom: BorderSide(color: AppColors.gray100),
-          ),
-        ),
-        child: Row(
-          children: [
-            // Icon
-            Icon(
-              LucideIcons.type,
-              size: 22,
-              color: AppColors.textSecondary,
-            ),
-
-            const SizedBox(width: 14),
-
-            // Label
-            Expanded(
-              child: Text(
-                'Font Size',
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-
-            // Current Value
-            Text(
-              currentSize.label,
-              style: AppTypography.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Chevron
-            Icon(
-              LucideIcons.chevronRight,
-              size: 20,
-              color: AppColors.textTertiary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Font Size Option Widget
-class _FontSizeOption extends StatelessWidget {
-  final FontSizeOption option;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _FontSizeOption({
-    required this.option,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Text(
-                    option.label,
-                    style: AppTypography.body.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected
-                          ? AppColors.primary600
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Preview text
-                  Text(
-                    'Aa',
-                    style: TextStyle(
-                      fontSize: 14 * option.scale,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                LucideIcons.check,
-                size: 20,
-                color: AppColors.primary600,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

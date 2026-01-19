@@ -82,8 +82,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         context.go(AppRoutes.dashboard);
       }
     } else {
-      // User is not logged in, go to onboarding/login
-      context.go(AppRoutes.onboarding);
+      // User is not logged in, go to login
+      context.go(AppRoutes.login);
     }
   }
 
