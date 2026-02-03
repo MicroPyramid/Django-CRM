@@ -1,4 +1,4 @@
-django==5.2.9
+django==5.2.11
 celery==5.6.0
 python-dotenv==1.2.1
 django-cors-headers==4.9.0
