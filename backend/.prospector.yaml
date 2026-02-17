@@ -9,6 +9,7 @@ ignore-patterns:
 pylint:
   options:
     max-args: 10
+    django-settings-module: crm.settings
   run: true
   disable:
     - redefined-builtin
