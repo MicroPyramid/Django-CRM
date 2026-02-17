@@ -4,11 +4,15 @@ Public views for client portal.
 These views do not require authentication and are accessed via public tokens.
 """
 
+import logging
+
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
 
 from invoices.models import Invoice, Estimate, InvoiceTemplate
 from invoices.pdf import (
@@ -147,14 +151,16 @@ class PublicInvoicePDFView(APIView):
             response = HttpResponse(pdf_content, content_type="application/pdf")
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
             return response
-        except ImportError as e:
+        except ImportError:
+            logger.exception("PDF generation library not available")
             return Response(
-                {"error": True, "message": f"PDF generation unavailable: {str(e)}"},
+                {"error": True, "message": "PDF generation unavailable"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to generate invoice PDF")
             return Response(
-                {"error": True, "message": f"Failed to generate PDF: {str(e)}"},
+                {"error": True, "message": "Failed to generate PDF"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -278,14 +284,16 @@ class PublicEstimatePDFView(APIView):
             response = HttpResponse(pdf_content, content_type="application/pdf")
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
             return response
-        except ImportError as e:
+        except ImportError:
+            logger.exception("PDF generation library not available")
             return Response(
-                {"error": True, "message": f"PDF generation unavailable: {str(e)}"},
+                {"error": True, "message": "PDF generation unavailable"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to generate estimate PDF")
             return Response(
-                {"error": True, "message": f"Failed to generate PDF: {str(e)}"},
+                {"error": True, "message": "Failed to generate PDF"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
