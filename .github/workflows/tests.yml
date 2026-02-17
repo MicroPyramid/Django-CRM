@@ -1,21 +1,23 @@
-name: Backend Tests
+name: CI
 
 on:
   push:
     branches: [master]
     paths:
       - 'backend/**'
+      - 'frontend/**'
       - '.coveragerc'
       - '.github/workflows/tests.yml'
   pull_request:
     branches: [master]
     paths:
       - 'backend/**'
+      - 'frontend/**'
       - '.coveragerc'
       - '.github/workflows/tests.yml'
 
 jobs:
-  test:
+  backend-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -75,3 +77,35 @@ jobs:
           name: coverage-report
           path: backend/htmlcov/
           retention-days: 14
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint + Prettier)
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Type check (svelte-check)
+        working-directory: frontend
+        run: pnpm check
+
+      - name: Build
+        working-directory: frontend
+        run: pnpm build
