@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common import swagger_params
-from common.models import Profile, Teams
+from common.models import Comment, Profile, Teams
 from common.serializer import (
     BillingAddressSerializer,
     CommentSerializer,
@@ -261,7 +261,7 @@ class UserDetailView(APIView):
         cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
         context["cases"] = CaseSerializer(cases, many=True).data
         context["assigned_data"] = assigned_data
-        comments = profile_obj.user_comments.all()
+        comments = Comment.objects.filter(commented_by=profile_obj)
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
         return Response(
@@ -321,7 +321,7 @@ class UserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if address_serializer.is_valid():
-            address_obj = address_serializer.save()
+            address_obj = address_serializer.save(org=request.profile.org)
             user = serializer.save()
             user.email = user.email
             user.save()

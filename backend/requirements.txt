@@ -25,3 +25,8 @@ cairocffi==1.7.1
 
 # Production server
 gunicorn==25.1.0
+
+# Testing
+pytest==9.0.2
+pytest-django==4.12.0
+pytest-cov==7.0.0

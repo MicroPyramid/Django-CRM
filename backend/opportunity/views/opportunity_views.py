@@ -292,6 +292,11 @@ class OpportunityDetailView(APIView):
     def put(self, request, pk, format=None):
         params = request.data
         opportunity_object = self.get_object(pk=pk)
+        if not opportunity_object:
+            return Response(
+                {"error": True, "errors": "Opportunity not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         if opportunity_object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
@@ -473,6 +478,11 @@ class OpportunityDetailView(APIView):
     )
     def get(self, request, pk, format=None):
         self.opportunity = self.get_object(pk=pk)
+        if not self.opportunity:
+            return Response(
+                {"error": True, "errors": "Opportunity not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         context = {}
         context["opportunity_obj"] = OpportunitySerializer(self.opportunity).data
         if self.opportunity.org != request.profile.org:

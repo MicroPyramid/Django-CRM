@@ -711,7 +711,7 @@ class AccountCommentView(APIView):
             or request.profile.is_admin
             or request.profile == obj.commented_by
         ):
-            serializer = CommentSerializer(obj, data=data)
+            serializer = CommentSerializer(obj, data=data, partial=True)
             if data.get("comment"):
                 if serializer.is_valid():
                     serializer.save()

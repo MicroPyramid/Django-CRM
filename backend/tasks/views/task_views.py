@@ -2,6 +2,7 @@ import json
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
@@ -263,7 +264,7 @@ class TaskDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return Task.objects.get(pk=pk, org=self.request.profile.org)
+        return get_object_or_404(Task, pk=pk, org=self.request.profile.org)
 
     def get_context_data(self, **kwargs):
         context = {}

@@ -463,13 +463,15 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Document with this Title already exists"
                 )
-        if Document.objects.filter(title__iexact=title, org=self.org).exists():
-            raise serializers.ValidationError("Document with this Title already exists")
+        else:
+            if Document.objects.filter(title__iexact=title, org=self.org).exists():
+                raise serializers.ValidationError("Document with this Title already exists")
         return title
 
     class Meta:
         model = Document
         fields = ["title", "document_file", "status", "org"]
+        read_only_fields = ["org"]
 
 
 def find_urls(string):
@@ -759,7 +761,7 @@ class TeamCreateSerializer(serializers.ModelSerializer):
             ):
                 raise serializers.ValidationError("Team already exists with this name")
         else:
-            if Teams.objects.filter(name__iexact=name).exists():
+            if Teams.objects.filter(name__iexact=name, org=self.org).exists():
                 raise serializers.ValidationError("Team already exists with this name")
         return name
 
@@ -772,6 +774,7 @@ class TeamCreateSerializer(serializers.ModelSerializer):
             "created_by",
             "org",
         )
+        read_only_fields = ("created_at", "created_by", "org")
 
 
 class TeamswaggerCreateSerializer(serializers.ModelSerializer):
