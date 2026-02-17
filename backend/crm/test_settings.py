@@ -13,3 +13,7 @@ DATABASES = {
         "NAME": ":memory:",
     }
 }
+
+# Disable Celery broker/result backend in tests (no Redis needed)
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "cache+memory://"
