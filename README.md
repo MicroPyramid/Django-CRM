@@ -124,10 +124,8 @@ Run the full stack (backend, frontend, PostgreSQL, Redis, Celery) with a single 
 
 ```bash
 # Start all services (first run will build images)
+# An admin user (admin@localhost / admin) is created automatically
 docker compose up --build
-
-# Create an admin user
-docker compose exec backend python manage.py createsuperuser
 
 # (Optional) Load sample data
 docker compose exec backend python manage.py seed_data --email admin@example.com
