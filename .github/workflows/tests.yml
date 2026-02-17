@@ -60,8 +60,8 @@ jobs:
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         working-directory: backend
         run: |
-          pip install coverage-badge
-          coverage-badge -o ../coverage-badge.svg -f
+          pip install "genbadge[coverage]"
+          genbadge coverage -i coverage.xml -o ../coverage-badge.svg
 
       - name: Commit coverage badge
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
