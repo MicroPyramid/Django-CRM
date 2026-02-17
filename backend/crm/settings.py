@@ -12,6 +12,10 @@ load_dotenv()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
 
+if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
+    if os.environ.get("ENV_TYPE", "dev") != "dev":
+        raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
@@ -305,9 +309,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-
-DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "http://localhost:8000")
-
 
 SIMPLE_JWT = {
     # Security: Reduced token lifetimes

@@ -15,10 +15,18 @@ class Command(BaseCommand):
             return
 
         email = os.environ.get("ADMIN_EMAIL", "admin@localhost")
-        password = os.environ.get("ADMIN_PASSWORD", "admin")
+        password = os.environ.get("ADMIN_PASSWORD", "")
+
+        if not password:
+            self.stdout.write(
+                self.style.WARNING(
+                    "WARNING: ADMIN_PASSWORD not set — using default 'admin'. "
+                    "Change it immediately in production!"
+                )
+            )
+            password = "admin"
 
         User.objects.create_superuser(
-            username=email,
             email=email,
             password=password,
         )
