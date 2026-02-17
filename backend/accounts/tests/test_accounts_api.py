@@ -886,15 +886,6 @@ class TestAccountEmailModel:
         contact = Contact.objects.create(
             first_name="Contact", last_name="Org", org=org_a
         )
-        # Create email with explicit org (so it exists), then set email's org to None for the log
-        account = Account.objects.create(name="Hack Acct", org=org_a)
-        email = AccountEmail.objects.create(
-            from_account=account,
-            message_subject="Contact Org",
-            from_email="test@example.com",
-            org=org_a,
-        )
-        # Simulate email with no org by creating a log where email.org_id is cleared
         log = AccountEmailLog(contact=contact, is_sent=False)
         log.save()
         assert log.org_id == org_a.id

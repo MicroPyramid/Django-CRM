@@ -1369,8 +1369,8 @@ class TestOpportunityModel:
 class TestOpportunityLineItemModel:
     """Cover OpportunityLineItem model methods."""
 
-    def test_str_no_product(self, admin_user, org_a):
-        """__str__ returns 'Item x <qty>' when product is None (operator precedence)."""
+    def test_str_no_product_with_name(self, admin_user, org_a):
+        """__str__ uses name field when product is None."""
         _set_rls(org_a)
         opp = Opportunity.objects.create(
             name="LI Str Opp",
@@ -1385,10 +1385,7 @@ class TestOpportunityLineItemModel:
             unit_price=Decimal("10.00"),
             org=org_a,
         )
-        # Due to operator precedence in __str__:
-        # (self.name or self.product.name) if self.product else 'Item'
-        # When product is None, result is always 'Item x <qty>'
-        assert str(li) == "Item x 3"
+        assert str(li) == "Widget x 3"
 
     def test_str_without_name_no_product(self, admin_user, org_a):
         """__str__ returns 'Item x <qty>' when no name and no product."""
@@ -1438,7 +1435,7 @@ class TestOpportunityLineItemModel:
             org=org_a,
             created_by=admin_user,
         )
-        li1 = OpportunityLineItem.objects.create(
+        OpportunityLineItem.objects.create(
             opportunity=opp,
             name="Keep",
             quantity=1,

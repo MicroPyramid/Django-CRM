@@ -1,6 +1,19 @@
 import pytest
+from django.db import connection
 
 from tasks.models import Task, TaskPipeline, TaskStage
+
+
+def _set_rls(org):
+    """Set PostgreSQL RLS context so direct ORM writes are allowed.
+    No-op on SQLite (used in tests).
+    """
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
+        )
 
 
 @pytest.mark.django_db
@@ -19,6 +32,7 @@ class TestTaskPipeline:
         assert TaskPipeline.objects.filter(name="Development Pipeline", org=org_a).exists()
 
     def test_list_pipelines(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         TaskPipeline.objects.create(
             name="Pipeline 1", org=org_a, created_by=admin_user
         )
@@ -29,6 +43,7 @@ class TestTaskPipeline:
         assert len(data["pipelines"]) >= 1
 
     def test_get_pipeline_detail(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Detail Pipeline", org=org_a, created_by=admin_user
         )
@@ -38,6 +53,7 @@ class TestTaskPipeline:
         assert data["name"] == "Detail Pipeline"
 
     def test_delete_empty_pipeline(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Empty Pipeline", org=org_a, created_by=admin_user
         )
@@ -66,6 +82,7 @@ class TestTaskPipeline:
 
     def test_update_pipeline(self, admin_client, admin_user, org_a):
         """Admin should be able to update a pipeline name."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Old Name", org=org_a, created_by=admin_user
         )
@@ -81,6 +98,7 @@ class TestTaskPipeline:
         self, user_client, admin_user, org_a
     ):
         """Non-admin should not be able to update a pipeline."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Non-Admin Pipeline", org=org_a, created_by=admin_user
         )
@@ -95,6 +113,7 @@ class TestTaskPipeline:
         self, admin_client, admin_user, org_a
     ):
         """Deleting a pipeline that has tasks linked to its stages should fail."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Busy Pipeline", org=org_a, created_by=admin_user
         )
@@ -121,6 +140,7 @@ class TestTaskPipeline:
         self, user_client, admin_user, org_a
     ):
         """Non-admin should not be able to delete a pipeline."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Non-Admin Delete Pipeline",
             org=org_a,
@@ -135,6 +155,7 @@ class TestTaskStage:
     """Tests for /api/tasks/pipelines/<pk>/stages/ and /api/tasks/stages/<pk>/."""
 
     def test_create_stage(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Stage Pipeline", org=org_a, created_by=admin_user
         )
@@ -156,6 +177,7 @@ class TestTaskStage:
         ).exists()
 
     def test_update_stage(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Update Pipeline", org=org_a, created_by=admin_user
         )
@@ -176,6 +198,7 @@ class TestTaskStage:
         assert data["name"] == "Renamed Stage"
 
     def test_delete_empty_stage(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Delete Pipeline", org=org_a, created_by=admin_user
         )
@@ -191,6 +214,7 @@ class TestTaskStage:
         assert not TaskStage.objects.filter(id=stage.id).exists()
 
     def test_reorder_stages(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Reorder Pipeline", org=org_a, created_by=admin_user
         )
@@ -213,6 +237,7 @@ class TestTaskStage:
 
     def test_create_stage_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to create a stage."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Non-Admin Stage Pipeline", org=org_a, created_by=admin_user
         )
@@ -225,6 +250,7 @@ class TestTaskStage:
 
     def test_update_stage_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to update a stage."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Non-Admin Update Pipeline", org=org_a, created_by=admin_user
         )
@@ -244,6 +270,7 @@ class TestTaskStage:
 
     def test_delete_stage_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to delete a stage."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Non-Admin Del Pipeline", org=org_a, created_by=admin_user
         )
@@ -261,6 +288,7 @@ class TestTaskStage:
         self, admin_client, admin_user, org_a
     ):
         """Deleting a stage with tasks should fail with 400."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Busy Stage Pipeline", org=org_a, created_by=admin_user
         )
@@ -285,6 +313,7 @@ class TestTaskStage:
 
     def test_reorder_stages_invalid_ids(self, admin_client, admin_user, org_a):
         """Reorder with invalid stage IDs should fail."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Invalid Reorder Pipeline", org=org_a, created_by=admin_user
         )
@@ -303,6 +332,7 @@ class TestTaskStage:
         self, user_client, admin_user, org_a
     ):
         """Non-admin should not be able to reorder stages."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Reorder Non-Admin Pipeline", org=org_a, created_by=admin_user
         )
@@ -322,6 +352,7 @@ class TestTaskKanban:
     """Tests for GET /api/tasks/kanban/."""
 
     def test_kanban_view(self, admin_client, admin_user, org_a):
+        _set_rls(org_a)
         Task.objects.create(
             title="Kanban Task",
             status="New",
@@ -338,6 +369,7 @@ class TestTaskKanban:
 
     def test_kanban_pipeline_mode(self, admin_client, admin_user, org_a):
         """Kanban with pipeline_id should return pipeline-based columns."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Kanban Pipeline", org=org_a, created_by=admin_user
         )
@@ -368,6 +400,7 @@ class TestTaskKanban:
 
     def test_kanban_filter_by_priority(self, admin_client, admin_user, org_a):
         """Kanban should filter tasks by priority."""
+        _set_rls(org_a)
         Task.objects.create(
             title="High Kanban",
             status="New",
@@ -389,6 +422,7 @@ class TestTaskKanban:
 
     def test_kanban_filter_by_search(self, admin_client, admin_user, org_a):
         """Kanban should filter tasks by search query."""
+        _set_rls(org_a)
         Task.objects.create(
             title="Find Me",
             status="New",
@@ -412,6 +446,7 @@ class TestTaskKanban:
         self, admin_client, admin_profile, admin_user, org_a
     ):
         """Kanban should filter tasks by assigned_to."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Assigned Kanban",
             status="New",
@@ -442,6 +477,7 @@ class TestTaskKanban:
         Note: ORM-created tasks have created_by=None (crum middleware not active
         in tests), so only assigned_to filtering works for non-admin visibility.
         """
+        _set_rls(org_a)
         Task.objects.create(
             title="Admin Kanban Only",
             status="New",
@@ -479,6 +515,7 @@ class TestTaskMove:
 
     def test_move_task_status(self, admin_client, admin_user, org_a):
         """Move task to a different status column."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Move Task",
             status="New",
@@ -498,6 +535,7 @@ class TestTaskMove:
 
     def test_move_task_to_stage(self, admin_client, admin_user, org_a):
         """Move task to a pipeline stage."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Move Pipeline", org=org_a, created_by=admin_user
         )
@@ -529,6 +567,7 @@ class TestTaskMove:
 
     def test_move_task_with_kanban_order(self, admin_client, admin_user, org_a):
         """Move task with explicit kanban_order."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Order Task",
             status="New",
@@ -547,6 +586,7 @@ class TestTaskMove:
 
     def test_move_task_wip_limit_exceeded(self, admin_client, admin_user, org_a):
         """Moving a task to a stage at WIP limit should fail."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="WIP Pipeline", org=org_a, created_by=admin_user
         )
@@ -583,6 +623,7 @@ class TestTaskMove:
 
     def test_move_task_invalid_data(self, admin_client, admin_user, org_a):
         """Moving without stage_id or status should fail validation."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Invalid Move Task",
             status="New",
@@ -601,6 +642,7 @@ class TestTaskMove:
         self, user_client, admin_user, org_a
     ):
         """Non-admin who is not creator/assignee should get 403."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Move Forbidden Task",
             status="New",
@@ -619,6 +661,7 @@ class TestTaskMove:
         self, user_client, admin_user, user_profile, org_a
     ):
         """Non-admin who is assigned should be able to move a task."""
+        _set_rls(org_a)
         task = Task.objects.create(
             title="Assignee Move Task",
             status="New",
@@ -638,6 +681,7 @@ class TestTaskMove:
         self, admin_client, admin_user, org_a
     ):
         """Move task between two tasks using above_task_id and below_task_id."""
+        _set_rls(org_a)
         task_a = Task.objects.create(
             title="Task A",
             status="New",
@@ -677,6 +721,7 @@ class TestTaskMove:
 
     def test_move_task_clear_stage(self, admin_client, admin_user, org_a):
         """Move task to stage_id=null should clear the stage."""
+        _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
             name="Clear Stage Pipeline", org=org_a, created_by=admin_user
         )

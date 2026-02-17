@@ -393,7 +393,7 @@ class TaskDetailView(APIView):
     def post(self, request, pk, **kwargs):
         params = request.data
         context = {}
-        self.task_obj = Task.objects.get(pk=pk)
+        self.task_obj = get_object_or_404(Task, pk=pk, org=request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
                 (self.request.profile == self.task_obj.created_by)

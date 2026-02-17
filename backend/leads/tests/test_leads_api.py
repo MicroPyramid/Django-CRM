@@ -1,4 +1,3 @@
-from io import BytesIO
 from unittest.mock import patch
 
 import pytest
@@ -979,7 +978,7 @@ class TestLeadListViewFilters:
         response = admin_client.get(LEADS_LIST_URL, {"name": "NameFilter"})
         assert response.status_code == 200
         open_leads = response.json()["open_leads"]["open_leads"]
-        emails = [l["email"] for l in open_leads]
+        emails = [lead["email"] for lead in open_leads]
         assert "namefilter@example.com" in emails
 
     def test_filter_by_salutation(self, admin_client, admin_user, org_a):

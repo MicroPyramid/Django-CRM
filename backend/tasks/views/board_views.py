@@ -118,7 +118,7 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
                 {"name": "Done", "order": 3, "color": "#10B981"},
             ]
             for col_data in default_columns:
-                BoardColumn.objects.create(board=board, **col_data)
+                BoardColumn.objects.create(board=board, org=org, created_by=request.user, **col_data)
 
         return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
 

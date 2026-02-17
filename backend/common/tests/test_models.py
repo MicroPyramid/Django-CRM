@@ -334,17 +334,11 @@ class TestAssignableMixin:
 class TestOrgScopedManager:
     """Test OrgScopedQuerySet.for_org() and for_request() via a model that uses them."""
 
-    def test_for_org_filters_correctly(self, org_a, org_b):
-        """for_org should only return records for the specified org."""
-        # We need a model that uses OrgScopedManager. SecurityAuditLog uses BaseModel
-        # which does NOT use OrgScopedManager. Let's test via the base classes directly.
+    def test_org_scoped_classes_instantiate(self, org_a, org_b):
+        """OrgScopedQuerySet and OrgScopedManager can be instantiated."""
         from common.base import OrgScopedManager, OrgScopedQuerySet
 
-        # Create a mock model to test the queryset methods
-        # Instead, let's check the queryset methods manually
-        qs = OrgScopedQuerySet(model=Activity)
-        # We can't easily test without a real model using OrgScopedManager,
-        # but we can at least instantiate and check it doesn't error
+        _qs = OrgScopedQuerySet(model=Activity)
         manager = OrgScopedManager()
         assert manager is not None
 

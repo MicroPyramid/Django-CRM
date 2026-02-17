@@ -1028,7 +1028,7 @@ class TestTaskListFiltersCoverage:
 
     def test_filter_by_created_at_gte(self, admin_client, admin_user, org_a):
         """Filter tasks by created_at__gte."""
-        task = Task.objects.create(
+        Task.objects.create(
             title="Created At GTE Task",
             status="New",
             priority="Low",
@@ -1074,7 +1074,7 @@ class TestTaskListFiltersCoverage:
         account = Account.objects.create(
             name="Test Account Filter", org=org_a, created_by=admin_user
         )
-        task = Task.objects.create(
+        Task.objects.create(
             title="Account Task",
             status="New",
             priority="Low",
@@ -1103,7 +1103,7 @@ class TestTaskListFiltersCoverage:
             org=org_a,
             created_by=admin_user,
         )
-        task = Task.objects.create(
+        Task.objects.create(
             title="Opp Task",
             status="New",
             priority="Low",
@@ -1133,7 +1133,7 @@ class TestTaskListFiltersCoverage:
             org=org_a,
             created_by=admin_user,
         )
-        task = Task.objects.create(
+        Task.objects.create(
             title="Case Task",
             status="New",
             priority="Low",
@@ -1162,7 +1162,7 @@ class TestTaskListFiltersCoverage:
             org=org_a,
             created_by=admin_user,
         )
-        task = Task.objects.create(
+        Task.objects.create(
             title="Lead Task",
             status="New",
             priority="Low",

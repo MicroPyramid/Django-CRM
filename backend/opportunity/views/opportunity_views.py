@@ -434,6 +434,11 @@ class OpportunityDetailView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
+        if not self.object:
+            return Response(
+                {"error": True, "errors": "Opportunity not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         if self.object.org != request.profile.org:
             return Response(
                 {"error": True, "errors": "User company doesnot match with header...."},
@@ -654,6 +659,11 @@ class OpportunityDetailView(APIView):
         """Handle partial updates to an opportunity."""
         params = request.data
         opportunity_object = self.get_object(pk=pk)
+        if not opportunity_object:
+            return Response(
+                {"error": True, "errors": "Opportunity not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         if opportunity_object.org != request.profile.org:
             return Response(
                 {

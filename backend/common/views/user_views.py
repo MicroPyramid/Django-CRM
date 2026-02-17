@@ -261,7 +261,7 @@ class UserDetailView(APIView):
         cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
         context["cases"] = CaseSerializer(cases, many=True).data
         context["assigned_data"] = assigned_data
-        comments = Comment.objects.filter(commented_by=profile_obj)
+        comments = Comment.objects.filter(commented_by=profile_obj, org=request.profile.org)
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
         return Response(

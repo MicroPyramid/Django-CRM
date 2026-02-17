@@ -220,15 +220,23 @@ class LeadListView(APIView, LimitOffsetPagination):
                 lead_obj = serializer.save(
                     created_by=request.profile.user, org=request.profile.org
                 )
-            except IntegrityError:
+            except IntegrityError as e:
+                if "email" in str(e).lower():
+                    return Response(
+                        {
+                            "error": True,
+                            "errors": {
+                                "email": [
+                                    "A lead with this email already exists in your organization."
+                                ]
+                            },
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 return Response(
                     {
                         "error": True,
-                        "errors": {
-                            "email": [
-                                "A lead with this email already exists in your organization."
-                            ]
-                        },
+                        "errors": "A lead with these details already exists.",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
