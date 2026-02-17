@@ -7,6 +7,7 @@ A modern, open-source CRM platform built with Django REST Framework and SvelteKi
 ![Django](https://img.shields.io/badge/django-5.x-green.svg)
 ![SvelteKit](https://img.shields.io/badge/sveltekit-2.x-orange.svg)
 ![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
+![Coverage](./coverage-badge.svg)
 
 ## Overview
 
@@ -210,12 +211,31 @@ python manage.py manage_rls --test
 
 ## Development
 
+### Testing
+
+```bash
+cd backend
+
+# Run all tests with coverage
+pytest
+
+# Run tests without coverage (faster)
+pytest --no-cov -x
+
+# Run a specific module's tests
+pytest accounts/tests/
+pytest leads/tests/test_leads_kanban.py
+
+# Run tests matching a keyword
+pytest -k "test_login"
+
+# View coverage report in browser
+open htmlcov/index.html
+```
+
 ### Backend Commands
 
 ```bash
-# Run tests
-cd backend && pytest
-
 # Format code
 black . && isort .
 

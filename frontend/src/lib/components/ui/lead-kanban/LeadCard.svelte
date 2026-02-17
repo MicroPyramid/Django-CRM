@@ -128,11 +128,11 @@
 <div
   class="lead-card group relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-300 ease-out
     {isOverdue ? 'border-l-[3px] border-l-rose-500' : 'border-white/10 dark:border-white/[0.06]'}
-    bg-white/80 dark:bg-white/[0.03]
-    backdrop-blur-sm
-    hover:border-white/20 dark:hover:border-white/[0.1]
-    hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20
-    hover:-translate-y-0.5"
+    bg-white/80 backdrop-blur-sm
+    hover:-translate-y-0.5
+    hover:border-white/20 hover:shadow-lg
+    hover:shadow-black/5 dark:bg-white/[0.03] dark:hover:border-white/[0.1]
+    dark:hover:shadow-black/20"
   class:hot-card={rating === 'HOT'}
   draggable="true"
   {onclick}
@@ -143,24 +143,32 @@
   tabindex="0"
 >
   <!-- Subtle gradient overlay for depth -->
-  <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.02]"></div>
+  <div
+    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.02]"
+  ></div>
 
   <!-- Hot lead animated glow -->
   {#if rating === 'HOT'}
-    <div class="hot-glow pointer-events-none absolute -inset-[1px] rounded-xl bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"></div>
+    <div
+      class="hot-glow pointer-events-none absolute -inset-[1px] rounded-xl bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"
+    ></div>
   {/if}
 
   <div class="relative p-3.5">
     <!-- Header: Title + Rating -->
     <div class="flex items-start justify-between gap-2">
-      <h4 class="flex-1 truncate text-[0.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-white/95">
+      <h4
+        class="flex-1 truncate text-[0.9rem] leading-tight font-semibold tracking-tight text-gray-900 dark:text-white/95"
+      >
         {title}
       </h4>
 
       {#if config}
         {@const RatingIcon = config.icon}
-        <div class="rating-badge flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider {config.bg} {config.text} {config.border} border"
-          class:rating-pulse={config.pulse}>
+        <div
+          class="rating-badge flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wider uppercase {config.bg} {config.text} {config.border} border"
+          class:rating-pulse={config.pulse}
+        >
           <RatingIcon class="h-3 w-3" />
           {rating}
         </div>
@@ -178,7 +186,9 @@
     <!-- Amount - Featured Display -->
     {#if amount}
       <div class="mt-3 flex items-center gap-2">
-        <div class="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 px-2.5 py-1.5 dark:from-emerald-500/15 dark:to-teal-500/15">
+        <div
+          class="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 px-2.5 py-1.5 dark:from-emerald-500/15 dark:to-teal-500/15"
+        >
           <DollarSign class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <span class="text-sm font-bold tracking-tight text-emerald-700 dark:text-emerald-300">
             {formatAmount(amount, currency)}
@@ -193,7 +203,9 @@
         <div class="flex items-center -space-x-2">
           {#each assignees.slice(0, 3) as assignee, i (assignee.id)}
             <div
-              class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br {getAvatarColor(getAssigneeName(assignee))} text-[0.7rem] font-semibold text-white shadow-sm ring-2 ring-white dark:ring-gray-900"
+              class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br {getAvatarColor(
+                getAssigneeName(assignee)
+              )} text-[0.7rem] font-semibold text-white shadow-sm ring-2 ring-white dark:ring-gray-900"
               style="z-index: {3 - i}"
               title={getAssigneeName(assignee)}
             >
@@ -212,7 +224,10 @@
 
         <!-- Quick sparkle indicator for high-value leads -->
         {#if amount && parseFloat(String(amount)) > 300000}
-          <div class="flex items-center gap-1 text-amber-500 dark:text-amber-400" title="High-value lead">
+          <div
+            class="flex items-center gap-1 text-amber-500 dark:text-amber-400"
+            title="High-value lead"
+          >
             <Sparkles class="h-4 w-4" />
           </div>
         {/if}
@@ -232,11 +247,15 @@
   }
 
   :global(.dark) .lead-card {
-    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --card-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   :global(.dark) .lead-card:hover {
-    --card-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 8px 20px -8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --card-shadow:
+      0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 8px 20px -8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .lead-card:active {
@@ -246,7 +265,9 @@
   }
 
   :global(.dark) .lead-card:active {
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px -5px rgba(34, 211, 238, 0.15);
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 30px -5px rgba(34, 211, 238, 0.15);
   }
 
   .lead-card:focus-visible {
@@ -256,11 +277,19 @@
 
   /* Hot card special styling */
   .hot-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 251, 250, 0.95) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 251, 250, 0.95) 100%
+    );
   }
 
   :global(.dark) .hot-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(251, 113, 133, 0.03) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(251, 113, 133, 0.03) 100%
+    );
   }
 
   /* Rating badge pulse for HOT leads */
@@ -269,7 +298,8 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -284,7 +314,8 @@
   }
 
   @keyframes shimmer-glow {
-    0%, 100% {
+    0%,
+    100% {
       background-position: 0% 50%;
     }
     50% {

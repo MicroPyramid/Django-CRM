@@ -47,16 +47,24 @@
   ];
 
   const maxValue = $derived(Math.max(...stages.map((s) => pipelineData[s.id]?.value || 0), 1));
-  const totalPipeline = $derived(stages.reduce((sum, s) => sum + (pipelineData[s.id]?.value || 0), 0));
+  const totalPipeline = $derived(
+    stages.reduce((sum, s) => sum + (pipelineData[s.id]?.value || 0), 0)
+  );
 </script>
 
-<div class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+<div
+  class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm"
+>
   <!-- Header - Orange accent -->
   <div class="mb-6 flex items-center gap-3">
-    <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+    <div
+      class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
+    >
       <BarChart3 class="size-4 text-[var(--color-primary-default)]" />
     </div>
-    <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">Pipeline by Stage</h3>
+    <h3 class="text-sm font-semibold tracking-tight text-[var(--text-primary)]">
+      Pipeline by Stage
+    </h3>
   </div>
 
   <!-- Bar chart -->
@@ -69,9 +77,11 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <div class="size-2.5 rounded-full {stage.color}"></div>
-            <span class="text-[var(--text-secondary)] text-xs font-medium">{data.label || stage.id}</span>
+            <span class="text-xs font-medium text-[var(--text-secondary)]"
+              >{data.label || stage.id}</span
+            >
           </div>
-          <span class="text-[var(--text-primary)] text-sm font-bold tabular-nums tracking-tight">
+          <span class="text-sm font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
             {formatCurrency(data.value, currency, true)}
           </span>
         </div>
@@ -83,16 +93,20 @@
             style="width: {percentage}%"
           ></div>
           <!-- Shimmer effect on hover -->
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          <div
+            class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          ></div>
         </div>
       </div>
     {/each}
   </div>
 
   <!-- Summary -->
-  <div class="mt-6 flex items-center justify-between border-t border-[var(--border-default)]/50 pt-4">
-    <span class="text-[var(--text-secondary)] text-xs font-medium">Total Open Pipeline</span>
-    <span class="text-[var(--text-primary)] text-lg font-bold tabular-nums tracking-tight">
+  <div
+    class="mt-6 flex items-center justify-between border-t border-[var(--border-default)]/50 pt-4"
+  >
+    <span class="text-xs font-medium text-[var(--text-secondary)]">Total Open Pipeline</span>
+    <span class="text-lg font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
       {formatCurrency(totalPipeline, currency, true)}
     </span>
   </div>

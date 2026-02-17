@@ -85,8 +85,8 @@
     let hotCount = 0;
     let itemCount = 0;
 
-    localColumns.forEach(col => {
-      col.items?.forEach(item => {
+    localColumns.forEach((col) => {
+      col.items?.forEach((item) => {
         const amount = parseFloat(String(item.opportunity_amount || item.opportunityAmount || 0));
         if (!isNaN(amount)) totalValue += amount;
         if (item.rating === 'HOT') hotCount++;
@@ -263,7 +263,9 @@
     </div>
     <div>
       <p class="text-lg font-semibold text-gray-600 dark:text-gray-300">{emptyMessage}</p>
-      <p class="mt-1 text-sm text-gray-400 dark:text-gray-500">Add some {itemNamePlural} to get started</p>
+      <p class="mt-1 text-sm text-gray-400 dark:text-gray-500">
+        Add some {itemNamePlural} to get started
+      </p>
     </div>
   </div>
 {:else}
@@ -271,13 +273,21 @@
   <div class="kanban-board hidden md:block">
     <!-- Pipeline Stats Bar -->
     {#if pipelineStats().totalValue > 0}
-      <div class="mb-5 flex items-center gap-6 rounded-xl border border-white/10 bg-white/60 px-5 py-3 backdrop-blur-sm dark:border-white/[0.04] dark:bg-white/[0.02]">
+      <div
+        class="mb-5 flex items-center gap-6 rounded-xl border border-white/10 bg-white/60 px-5 py-3 backdrop-blur-sm dark:border-white/[0.04] dark:bg-white/[0.02]"
+      >
         <div class="flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20"
+          >
             <TrendingUp class="h-4 w-4 text-white" />
           </div>
           <div>
-            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Pipeline Value</p>
+            <p
+              class="text-[0.65rem] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-500"
+            >
+              Pipeline Value
+            </p>
             <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
               AED {formatValue(pipelineStats().totalValue)}
             </p>
@@ -287,11 +297,17 @@
         <div class="h-8 w-px bg-gray-200 dark:bg-white/10"></div>
 
         <div class="flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 shadow-lg shadow-rose-500/20">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 shadow-lg shadow-rose-500/20"
+          >
             <Flame class="h-4 w-4 text-white" />
           </div>
           <div>
-            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Hot Leads</p>
+            <p
+              class="text-[0.65rem] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-500"
+            >
+              Hot Leads
+            </p>
             <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
               {pipelineStats().hotCount}
             </p>
@@ -301,11 +317,17 @@
         <div class="h-8 w-px bg-gray-200 dark:bg-white/10"></div>
 
         <div class="flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/20">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/20"
+          >
             <Users class="h-4 w-4 text-white" />
           </div>
           <div>
-            <p class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Total {itemNamePlural}</p>
+            <p
+              class="text-[0.65rem] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-500"
+            >
+              Total {itemNamePlural}
+            </p>
             <p class="text-lg font-bold tracking-tight text-gray-800 dark:text-white">
               {totalCount}
             </p>
@@ -344,9 +366,9 @@
           <button
             class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all
               {mobileActiveColumn === col.id
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
-                : 'bg-white/60 text-gray-600 hover:bg-white dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'}"
-            onclick={() => mobileActiveColumn = col.id}
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+              : 'bg-white/60 text-gray-600 hover:bg-white dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'}"
+            onclick={() => (mobileActiveColumn = col.id)}
           >
             {col.name}
             <span class="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
@@ -394,11 +416,16 @@
 
   <!-- Total count footer -->
   <div class="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-    <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"></div>
+    <div
+      class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"
+    ></div>
     <span class="px-4 font-medium">
-      {totalCount} {totalCount !== 1 ? itemNamePlural : itemName} across {sortedColumns.length} stages
+      {totalCount}
+      {totalCount !== 1 ? itemNamePlural : itemName} across {sortedColumns.length} stages
     </span>
-    <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"></div>
+    <div
+      class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"
+    ></div>
   </div>
 {/if}
 

@@ -247,7 +247,8 @@ class OpportunityLineItem(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.name or self.product.name if self.product else 'Item'} x {self.quantity}"
+        display_name = self.name if self.name else (self.product.name if self.product else "Item")
+        return f"{display_name} x {self.quantity}"
 
     def save(self, *args, **kwargs):
         """Calculate totals before saving."""

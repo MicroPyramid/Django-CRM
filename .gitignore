@@ -37,6 +37,8 @@ ENV/
 .coverage
 .pytest_cache/
 htmlcov/
+coverage.xml
+coverage-badge.svg
 
 # Documentation
 docs/build/
@@ -48,7 +50,6 @@ frontend/build/
 frontend/.env
 frontend/.env.local
 frontend/package-lock.json
-frontend/pnpm-lock.yaml
 
 # Logs
 logs/

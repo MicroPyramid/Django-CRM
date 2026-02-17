@@ -169,7 +169,7 @@
 
 <div class={cn('flex flex-col gap-1.5', className)}>
   {#if label}
-    <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+    <span class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase">
       {label}
     </span>
   {/if}
@@ -195,15 +195,16 @@
             'hover:border-input hover:bg-background/80',
             // Focus state
             'focus:border-primary/50 focus:bg-background',
-            'focus:ring-2 focus:ring-primary/20',
+            'focus:ring-primary/20 focus:ring-2',
             // Dark mode
-            'dark:bg-white/[0.03] dark:border-white/[0.08]',
-            'dark:hover:bg-white/[0.05] dark:hover:border-white/[0.12]',
-            'dark:focus:bg-white/[0.06] dark:focus:border-primary/40',
+            'dark:border-white/[0.08] dark:bg-white/[0.03]',
+            'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
+            'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
             // Active state
-            hasValue && 'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
+            hasValue &&
+              'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
             // Open state
-            open && 'ring-2 ring-primary/20 dark:ring-primary/30'
+            open && 'ring-primary/20 dark:ring-primary/30 ring-2'
           )}
           {...props}
         >
@@ -227,7 +228,9 @@
           <div class="flex shrink-0 items-center gap-1">
             {#if hasValue}
               <!-- Active indicator -->
-              <div class="h-1.5 w-1.5 rounded-full bg-primary animate-in fade-in zoom-in duration-200"></div>
+              <div
+                class="bg-primary animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full duration-200"
+              ></div>
               <!-- Clear button -->
               <span
                 role="button"
@@ -256,7 +259,7 @@
             {/if}
             <ChevronDown
               class={cn(
-                'h-4 w-4 text-muted-foreground/50 transition-transform duration-200',
+                'text-muted-foreground/50 h-4 w-4 transition-transform duration-200',
                 open && 'rotate-180'
               )}
             />
@@ -271,9 +274,9 @@
       class={cn(
         'date-filter-content',
         'w-auto overflow-hidden rounded-xl p-0',
-        'border border-border/60 bg-popover/95 backdrop-blur-md',
+        'border-border/60 bg-popover/95 border backdrop-blur-md',
         'shadow-lg shadow-black/5',
-        'dark:border-white/[0.08] dark:bg-popover/90',
+        'dark:bg-popover/90 dark:border-white/[0.08]',
         'dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]',
         'animate-in fade-in-0 zoom-in-95 duration-150'
       )}
@@ -282,12 +285,14 @@
         <!-- Presets sidebar -->
         <div
           class={cn(
-            'flex flex-col gap-0.5 border-r border-border/40 p-2',
-            'bg-muted/30 dark:bg-white/[0.02] dark:border-white/[0.04]'
+            'border-border/40 flex flex-col gap-0.5 border-r p-2',
+            'bg-muted/30 dark:border-white/[0.04] dark:bg-white/[0.02]'
           )}
         >
           <div class="mb-1 px-2 py-1">
-            <span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <span
+              class="text-muted-foreground/60 text-[10px] font-semibold tracking-wider uppercase"
+            >
               Quick select
             </span>
           </div>
@@ -317,32 +322,32 @@
           <div
             class={cn(
               'mb-3 flex items-center justify-center gap-2',
-              'rounded-lg bg-muted/50 px-3 py-2',
+              'bg-muted/50 rounded-lg px-3 py-2',
               'dark:bg-white/[0.03]'
             )}
           >
             {#if startDate}
               <div class="flex items-center gap-1.5">
-                <div class="h-2 w-2 rounded-full bg-primary"></div>
-                <span class="text-xs font-medium text-foreground">
+                <div class="bg-primary h-2 w-2 rounded-full"></div>
+                <span class="text-foreground text-xs font-medium">
                   {formatDateShort(startDate)}
                 </span>
               </div>
             {:else}
-              <span class="text-xs text-muted-foreground">Start date</span>
+              <span class="text-muted-foreground text-xs">Start date</span>
             {/if}
 
-            <ArrowRight class="h-3 w-3 text-muted-foreground/50" />
+            <ArrowRight class="text-muted-foreground/50 h-3 w-3" />
 
             {#if endDate}
               <div class="flex items-center gap-1.5">
-                <div class="h-2 w-2 rounded-full bg-primary"></div>
-                <span class="text-xs font-medium text-foreground">
+                <div class="bg-primary h-2 w-2 rounded-full"></div>
+                <span class="text-foreground text-xs font-medium">
                   {formatDateShort(endDate)}
                 </span>
               </div>
             {:else}
-              <span class="text-xs text-muted-foreground">
+              <span class="text-muted-foreground text-xs">
                 {selectingEnd ? 'Select end' : 'End date'}
               </span>
             {/if}

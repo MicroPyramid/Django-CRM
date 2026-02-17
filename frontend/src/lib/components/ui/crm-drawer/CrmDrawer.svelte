@@ -168,13 +168,16 @@
 <Sheet.Root bind:open onOpenChange={(value) => onOpenChange?.(value)}>
   <Sheet.Content
     side="right"
-    class={cn('w-[480px] overflow-hidden border-l border-border/50 bg-background/95 p-0 backdrop-blur-xl sm:max-w-[480px]', className)}
+    class={cn(
+      'border-border/50 bg-background/95 w-[480px] overflow-hidden border-l p-0 backdrop-blur-xl sm:max-w-[480px]',
+      className
+    )}
   >
     {#if loading}
       <!-- Loading skeleton with premium styling -->
       <div class="flex h-full flex-col">
         <!-- Header skeleton -->
-        <div class="relative border-b border-border/40 px-6 py-4">
+        <div class="border-border/40 relative border-b px-6 py-4">
           <div class="flex items-center justify-between">
             <Skeleton class="h-4 w-16 rounded-md" />
             <Skeleton class="h-8 w-8 rounded-lg" />
@@ -188,7 +191,7 @@
           </div>
           <div class="space-y-2 px-6 pb-8">
             {#each { length: 6 } as _}
-              <div class="flex items-center gap-4 rounded-lg bg-muted/20 px-3 py-3">
+              <div class="bg-muted/20 flex items-center gap-4 rounded-lg px-3 py-3">
                 <Skeleton class="h-6 w-6 rounded-md" />
                 <Skeleton class="h-4 w-24" />
                 <Skeleton class="ml-auto h-5 w-32 rounded-md" />
@@ -200,24 +203,30 @@
     {:else}
       <div class="flex h-full flex-col">
         <!-- Premium Header -->
-        <div class="relative border-b border-border/40 bg-gradient-to-b from-muted/30 to-transparent">
+        <div
+          class="border-border/40 from-muted/30 relative border-b bg-gradient-to-b to-transparent"
+        >
           <!-- Ambient glow -->
           <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div class="absolute -top-12 left-1/4 h-24 w-48 rounded-full bg-primary/5 blur-2xl"></div>
+            <div
+              class="bg-primary/5 absolute -top-12 left-1/4 h-24 w-48 rounded-full blur-2xl"
+            ></div>
           </div>
 
           <div class="relative flex items-center justify-between px-6 py-4">
             <div class="flex items-center gap-2">
-              <span class="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+              <span
+                class="bg-primary/10 text-primary rounded-md px-2 py-1 text-xs font-semibold tracking-wider uppercase"
+              >
                 {headerLabel}
               </span>
               {#if mode === 'create'}
-                <span class="text-xs text-muted-foreground">New</span>
+                <span class="text-muted-foreground text-xs">New</span>
               {/if}
             </div>
             <button
               onclick={closeDrawer}
-              class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-150 hover:bg-muted/60 hover:text-foreground"
+              class="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"
             >
               <X class="h-4 w-4" />
             </button>
@@ -234,12 +243,12 @@
                 value={titleValue}
                 oninput={handleTitleChange}
                 placeholder={titlePlaceholder}
-                class="w-full border-0 bg-transparent text-2xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/30"
+                class="text-foreground placeholder:text-muted-foreground/30 w-full border-0 bg-transparent text-2xl font-bold tracking-tight outline-none"
                 style="letter-spacing: -0.025em;"
               />
             {:else}
               <h2
-                class="text-2xl font-bold tracking-tight text-foreground"
+                class="text-foreground text-2xl font-bold tracking-tight"
                 style="letter-spacing: -0.025em;"
               >
                 {titleValue || titlePlaceholder}
@@ -273,9 +282,11 @@
                 <button
                   type="button"
                   onclick={toggleShowAllFields}
-                  class="group -mx-3 my-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-muted-foreground transition-all duration-150 hover:bg-muted/40 hover:text-foreground"
+                  class="group text-muted-foreground hover:bg-muted/40 hover:text-foreground -mx-3 my-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150"
                 >
-                  <div class="flex h-6 w-6 items-center justify-center rounded-md bg-muted/50 transition-colors group-hover:bg-muted">
+                  <div
+                    class="bg-muted/50 group-hover:bg-muted flex h-6 w-6 items-center justify-center rounded-md transition-colors"
+                  >
                     {#if showAllFields}
                       <ChevronUp class="h-3.5 w-3.5" />
                     {:else}
@@ -285,7 +296,11 @@
                   {#if showAllFields}
                     <span>Hide additional fields</span>
                   {:else}
-                    <span>Show {hiddenFieldsCount} more {hiddenFieldsCount === 1 ? 'field' : 'fields'}</span>
+                    <span
+                      >Show {hiddenFieldsCount} more {hiddenFieldsCount === 1
+                        ? 'field'
+                        : 'fields'}</span
+                    >
                   {/if}
                 </button>
               {/if}
@@ -334,7 +349,9 @@
 
           <!-- Activity section with refined styling -->
           {#if activitySection}
-            <div class="mx-6 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+            <div
+              class="via-border mx-6 h-px bg-gradient-to-r from-transparent to-transparent"
+            ></div>
             <div class="px-6 py-6">
               {@render activitySection()}
             </div>
@@ -342,13 +359,15 @@
         </div>
 
         <!-- Premium Footer -->
-        <div class="relative mt-auto border-t border-border/40 bg-gradient-to-t from-muted/20 to-transparent">
+        <div
+          class="border-border/40 from-muted/20 relative mt-auto border-t bg-gradient-to-t to-transparent"
+        >
           <div class="flex items-center justify-between px-6 py-4">
             <!-- Delete button -->
             {#if onDelete && mode !== 'create'}
               <button
                 onclick={handleDelete}
-                class="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-all duration-150 hover:bg-destructive/10"
+                class="group text-destructive hover:bg-destructive/10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150"
               >
                 <Trash2 class="h-4 w-4 transition-transform group-hover:scale-110" />
                 Delete

@@ -22,5 +22,15 @@ export default [
   {
     files: ['**/*.svelte', '**/*.svelte.js'],
     languageOptions: { parserOptions: { svelteConfig } }
+  },
+  {
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-useless-assignment': 'warn',
+      'svelte/require-each-key': 'warn',
+      'svelte/no-navigation-without-resolve': 'warn',
+      'svelte/prefer-svelte-reactivity': 'warn',
+      'svelte/prefer-writable-derived': 'warn'
+    }
   }
 ];

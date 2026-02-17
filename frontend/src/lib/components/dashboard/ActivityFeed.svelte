@@ -36,38 +36,39 @@
   let showAll = $state(false);
 
   // Using design system activity tokens
-  const actionConfig = /** @type {Record<string, { icon: typeof Activity, bg: string, text: string }>} */ ({
-    CREATE: {
-      icon: Plus,
-      bg: 'bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15',
-      text: 'text-[var(--color-success-default)]'
-    },
-    UPDATE: {
-      icon: Pencil,
-      bg: 'bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15',
-      text: 'text-[var(--color-primary-default)]'
-    },
-    DELETE: {
-      icon: Trash2,
-      bg: 'bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/15',
-      text: 'text-[var(--color-negative-default)]'
-    },
-    VIEW: {
-      icon: Eye,
-      bg: 'bg-[var(--surface-sunken)]',
-      text: 'text-[var(--text-secondary)]'
-    },
-    COMMENT: {
-      icon: MessageSquare,
-      bg: 'bg-[var(--activity-note)]/10 dark:bg-[var(--activity-note)]/15',
-      text: 'text-[var(--activity-note)]'
-    },
-    ASSIGN: {
-      icon: UserPlus,
-      bg: 'bg-[var(--activity-meeting)]/10 dark:bg-[var(--activity-meeting)]/15',
-      text: 'text-[var(--activity-meeting)]'
-    }
-  });
+  const actionConfig =
+    /** @type {Record<string, { icon: typeof Activity, bg: string, text: string }>} */ ({
+      CREATE: {
+        icon: Plus,
+        bg: 'bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15',
+        text: 'text-[var(--color-success-default)]'
+      },
+      UPDATE: {
+        icon: Pencil,
+        bg: 'bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15',
+        text: 'text-[var(--color-primary-default)]'
+      },
+      DELETE: {
+        icon: Trash2,
+        bg: 'bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/15',
+        text: 'text-[var(--color-negative-default)]'
+      },
+      VIEW: {
+        icon: Eye,
+        bg: 'bg-[var(--surface-sunken)]',
+        text: 'text-[var(--text-secondary)]'
+      },
+      COMMENT: {
+        icon: MessageSquare,
+        bg: 'bg-[var(--activity-note)]/10 dark:bg-[var(--activity-note)]/15',
+        text: 'text-[var(--activity-note)]'
+      },
+      ASSIGN: {
+        icon: UserPlus,
+        bg: 'bg-[var(--activity-meeting)]/10 dark:bg-[var(--activity-meeting)]/15',
+        text: 'text-[var(--activity-meeting)]'
+      }
+    });
 
   const defaultConfig = {
     icon: Activity,
@@ -131,14 +132,22 @@
   const groupedActivities = $derived(groupByDate(displayedActivities));
 </script>
 
-<div class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+<div
+  class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm"
+>
   <!-- Header - Orange accent -->
-  <div class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4">
+  <div
+    class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4"
+  >
     <div class="flex items-center gap-3">
-      <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+      <div
+        class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
+      >
         <Activity class="size-4 text-[var(--color-primary-default)]" />
       </div>
-      <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">Recent Activity</h3>
+      <h3 class="text-sm font-semibold tracking-tight text-[var(--text-primary)]">
+        Recent Activity
+      </h3>
     </div>
     <Button variant="ghost" size="sm" href="/activities" class="gap-1 text-xs font-medium">
       View all
@@ -150,17 +159,21 @@
   <div class="p-5">
     {#if activities.length === 0}
       <div class="flex flex-col items-center justify-center py-10 text-center">
-        <div class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+        >
           <Clock class="size-6 text-[var(--text-tertiary)]" />
         </div>
-        <p class="text-[var(--text-secondary)] text-sm font-medium">No recent activity</p>
-        <p class="text-[var(--text-tertiary)] text-xs">Actions will appear here</p>
+        <p class="text-sm font-medium text-[var(--text-secondary)]">No recent activity</p>
+        <p class="text-xs text-[var(--text-tertiary)]">Actions will appear here</p>
       </div>
     {:else}
       <div class="space-y-5">
         {#each groupedActivities as group}
           <div>
-            <p class="text-[var(--text-tertiary)] mb-3 text-[10px] font-semibold uppercase tracking-widest">
+            <p
+              class="mb-3 text-[10px] font-semibold tracking-widest text-[var(--text-tertiary)] uppercase"
+            >
               {group.category}
             </p>
             <div class="space-y-2">
@@ -179,12 +192,14 @@
 
                   <!-- Content -->
                   <div class="min-w-0 flex-1">
-                    <p class="text-[var(--text-primary)] text-sm leading-snug">
+                    <p class="text-sm leading-snug text-[var(--text-primary)]">
                       {activity.description ||
                         activity.message ||
                         `${activity.action} ${activity.entityType}: ${activity.entityName}`}
                     </p>
-                    <div class="mt-1 flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                    <div
+                      class="mt-1 flex items-center gap-1.5 text-xs text-[var(--text-secondary)]"
+                    >
                       <span class="font-medium">{activity.user?.name || 'System'}</span>
                       <span class="text-[var(--text-tertiary)]">&middot;</span>
                       <span>{formatTime(activity.timestamp || activity.createdAt)}</span>

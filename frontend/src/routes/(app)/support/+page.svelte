@@ -38,7 +38,8 @@
         Help & <span class="text-gradient">Support</span>
       </h1>
       <p class="hero-description animate-in-up stagger-2">
-        Join thousands of businesses using BottleCRM to manage customer relationships without the enterprise price tag.
+        Join thousands of businesses using BottleCRM to manage customer relationships without the
+        enterprise price tag.
       </p>
     </div>
   </header>
@@ -52,9 +53,10 @@
       <div class="mission-content">
         <h2>Our Mission</h2>
         <p>
-          BottleCRM addresses the high subscription costs of commercial CRM alternatives by providing a
-          <strong>completely free, open-source, and highly customizable</strong> solution. Clone it, self-host it,
-          and make it yours — forever free.
+          BottleCRM addresses the high subscription costs of commercial CRM alternatives by
+          providing a
+          <strong>completely free, open-source, and highly customizable</strong> solution. Clone it, self-host
+          it, and make it yours — forever free.
         </p>
       </div>
       <div class="mission-pattern"></div>
@@ -72,7 +74,8 @@
         </div>
         <h3>Join the Community</h3>
         <p>
-          Collaborate with developers worldwide. Get free support, share ideas, and help shape the future of open-source CRM.
+          Collaborate with developers worldwide. Get free support, share ideas, and help shape the
+          future of open-source CRM.
         </p>
         <div class="card-stats">
           <div class="stat">
@@ -90,7 +93,7 @@
         >
           <Github class="h-4 w-4" />
           Visit GitHub
-          <ArrowRight class="h-4 w-4 ml-auto transition-transform group-hover:translate-x-1" />
+          <ArrowRight class="ml-auto h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Button>
       </article>
 
@@ -123,9 +126,7 @@
           </div>
         </div>
         <h3>Feature Requests</h3>
-        <p>
-          Have an idea? Share your requests and help shape the future of BottleCRM.
-        </p>
+        <p>Have an idea? Share your requests and help shape the future of BottleCRM.</p>
         <Button
           variant="outline"
           class="card-action-outline"
@@ -149,9 +150,7 @@
           </div>
         </div>
         <h3>Bug Reports</h3>
-        <p>
-          Found an issue? Your feedback helps make the platform more stable for everyone.
-        </p>
+        <p>Found an issue? Your feedback helps make the platform more stable for everyone.</p>
         <Button
           variant="outline"
           class="card-action-outline"
@@ -178,8 +177,8 @@
         </div>
         <h3>Security Issues</h3>
         <p>
-          <strong>Security is our priority.</strong> Report vulnerabilities privately.
-          Never create public issues for security concerns.
+          <strong>Security is our priority.</strong> Report vulnerabilities privately. Never create public
+          issues for security concerns.
         </p>
         <Button
           variant="destructive"
@@ -368,7 +367,11 @@
     height: 52px;
     flex-shrink: 0;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--accent-primary) 0%, color-mix(in oklch, var(--accent-primary) 80%, var(--accent-secondary)) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary) 0%,
+      color-mix(in oklch, var(--accent-primary) 80%, var(--accent-secondary)) 100%
+    );
     color: white;
     box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--accent-primary) 30%, transparent);
   }
@@ -407,8 +410,11 @@
     right: 0;
     width: 200px;
     height: 100%;
-    background:
-      radial-gradient(circle at 100% 0%, var(--accent-secondary-subtle) 0%, transparent 50%);
+    background: radial-gradient(
+      circle at 100% 0%,
+      var(--accent-secondary-subtle) 0%,
+      transparent 50%
+    );
     pointer-events: none;
     opacity: 0.6;
   }
@@ -456,7 +462,11 @@
   .bento-featured {
     grid-column: span 2;
     padding: 1.5rem;
-    background: linear-gradient(145deg, var(--card) 0%, color-mix(in oklch, var(--card) 95%, var(--accent-primary)) 100%);
+    background: linear-gradient(
+      145deg,
+      var(--card) 0%,
+      color-mix(in oklch, var(--card) 95%, var(--accent-primary)) 100%
+    );
   }
 
   @media (max-width: 680px) {
@@ -622,7 +632,8 @@
     padding: 1.5rem;
     border-radius: var(--radius-xl);
     overflow: hidden;
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+      135deg,
       color-mix(in oklch, var(--accent-primary) 12%, var(--card)) 0%,
       color-mix(in oklch, var(--accent-secondary) 8%, var(--card)) 100%
     );
@@ -630,7 +641,8 @@
   }
 
   :global(.dark) .custom-dev-banner {
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+      135deg,
       color-mix(in oklch, var(--accent-primary) 8%, var(--card)) 0%,
       color-mix(in oklch, var(--accent-secondary) 5%, var(--card)) 100%
     );
@@ -696,8 +708,11 @@
     right: 0;
     width: 300px;
     height: 100%;
-    background:
-      radial-gradient(circle at 100% 50%, var(--accent-secondary-subtle) 0%, transparent 50%);
+    background: radial-gradient(
+      circle at 100% 50%,
+      var(--accent-secondary-subtle) 0%,
+      transparent 50%
+    );
     pointer-events: none;
     opacity: 0.5;
   }

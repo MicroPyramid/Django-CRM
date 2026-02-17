@@ -17,9 +17,9 @@
   /* ─────────────────────────────────────────────────────────────────────────
      BRAND COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --color-brand-primary: #EA580C;
+  --color-brand-primary: #ea580c;
   --color-brand-dark: #404346;
-  --color-brand-white: #FFFFFF;
+  --color-brand-white: #ffffff;
 
   /* ─────────────────────────────────────────────────────────────────────────
      LIGHT MODE - Clean, professional with warm orange accents
@@ -58,61 +58,61 @@
   --ring: oklch(0.58 0.2 30);
 
   /* Chart colors - Sequential (Orange-based) */
-  --chart-1: #EA580C;
-  --chart-2: #F97316;
-  --chart-3: #FB923C;
-  --chart-4: #FDBA74;
-  --chart-5: #FED7AA;
+  --chart-1: #ea580c;
+  --chart-2: #f97316;
+  --chart-3: #fb923c;
+  --chart-4: #fdba74;
+  --chart-5: #fed7aa;
 
   /* Sidebar */
   --sidebar: oklch(0.995 0 0);
   --sidebar-foreground: oklch(0.25 0.02 60);
-  --sidebar-primary: #EA580C;
+  --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: oklch(0.995 0 0);
   --sidebar-accent: oklch(0.97 0.01 60);
   --sidebar-accent-foreground: oklch(0.2 0.02 60);
   --sidebar-border: oklch(0.94 0.005 60);
-  --sidebar-ring: #EA580C;
+  --sidebar-ring: #ea580c;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PRIMARY COLOR SCALE
      ───────────────────────────────────────────────────────────────────────── */
-  --color-primary-default: #EA580C;
-  --color-primary-hover: #C2410C;
-  --color-primary-active: #9A3412;
-  --color-primary-light: #FFF7ED;
+  --color-primary-default: #ea580c;
+  --color-primary-hover: #c2410c;
+  --color-primary-active: #9a3412;
+  --color-primary-light: #fff7ed;
 
   /* ─────────────────────────────────────────────────────────────────────────
      SEMANTIC COLORS
      ───────────────────────────────────────────────────────────────────────── */
 
   /* Negative/Error */
-  --color-negative-default: #DC3545;
-  --color-negative-hover: #C82333;
-  --color-negative-light: #FDEAEA;
+  --color-negative-default: #dc3545;
+  --color-negative-hover: #c82333;
+  --color-negative-light: #fdeaea;
 
   /* Warning */
-  --color-warning-default: #FFC107;
-  --color-warning-dark: #E0A800;
-  --color-warning-light: #FFF8E1;
+  --color-warning-default: #ffc107;
+  --color-warning-dark: #e0a800;
+  --color-warning-light: #fff8e1;
 
   /* Success */
-  --color-success-default: #28A745;
-  --color-success-light: #E8F5E9;
+  --color-success-default: #28a745;
+  --color-success-light: #e8f5e9;
 
   /* Info */
-  --color-info-default: #17A2B8;
-  --color-info-light: #E3F2FD;
+  --color-info-default: #17a2b8;
+  --color-info-light: #e3f2fd;
 
   /* ─────────────────────────────────────────────────────────────────────────
      GREY SCALE
      ───────────────────────────────────────────────────────────────────────── */
-  --color-grey-50: #FAFAFA;
-  --color-grey-100: #F5F5F5;
-  --color-grey-200: #EEEEEE;
-  --color-grey-300: #E0E0E0;
-  --color-grey-400: #BDBDBD;
-  --color-grey-500: #9E9E9E;
+  --color-grey-50: #fafafa;
+  --color-grey-100: #f5f5f5;
+  --color-grey-200: #eeeeee;
+  --color-grey-300: #e0e0e0;
+  --color-grey-400: #bdbdbd;
+  --color-grey-500: #9e9e9e;
   --color-grey-600: #757575;
   --color-grey-700: #616161;
   --color-grey-800: #424242;
@@ -121,122 +121,122 @@
   /* ─────────────────────────────────────────────────────────────────────────
      SURFACE COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --surface-default: #FFFFFF;
-  --surface-raised: #FFFFFF;
-  --surface-sunken: #F5F5F5;
-  --surface-overlay: #FFFFFF;
+  --surface-default: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f5f5f5;
+  --surface-overlay: #ffffff;
 
   /* ─────────────────────────────────────────────────────────────────────────
      TEXT COLORS
      ───────────────────────────────────────────────────────────────────────── */
   --text-primary: #212121;
   --text-secondary: #616161;
-  --text-tertiary: #9E9E9E;
-  --text-disabled: #BDBDBD;
-  --text-inverse: #FFFFFF;
-  --text-link: #EA580C;
-  --text-error: #DC3545;
+  --text-tertiary: #9e9e9e;
+  --text-disabled: #bdbdbd;
+  --text-inverse: #ffffff;
+  --text-link: #ea580c;
+  --text-error: #dc3545;
 
   /* ─────────────────────────────────────────────────────────────────────────
      BORDER COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --border-default: #E0E0E0;
-  --border-strong: #BDBDBD;
-  --border-focus: #EA580C;
-  --border-error: #DC3545;
+  --border-default: #e0e0e0;
+  --border-strong: #bdbdbd;
+  --border-focus: #ea580c;
+  --border-error: #dc3545;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PIPELINE STAGE COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --stage-new: #EA580C;
-  --stage-contacted: #F97316;
-  --stage-qualified: #3B82F6;
-  --stage-proposal: #8B5CF6;
-  --stage-negotiation: #F59E0B;
-  --stage-won: #22C55E;
-  --stage-lost: #EF4444;
+  --stage-new: #ea580c;
+  --stage-contacted: #f97316;
+  --stage-qualified: #3b82f6;
+  --stage-proposal: #8b5cf6;
+  --stage-negotiation: #f59e0b;
+  --stage-won: #22c55e;
+  --stage-lost: #ef4444;
 
   /* Pipeline Stage Backgrounds */
-  --stage-new-bg: #FFF7ED;
-  --stage-contacted-bg: #FFEDD5;
-  --stage-qualified-bg: #EFF6FF;
-  --stage-proposal-bg: #F5F3FF;
-  --stage-negotiation-bg: #FFFBEB;
-  --stage-won-bg: #F0FDF4;
-  --stage-lost-bg: #FEF2F2;
+  --stage-new-bg: #fff7ed;
+  --stage-contacted-bg: #ffedd5;
+  --stage-qualified-bg: #eff6ff;
+  --stage-proposal-bg: #f5f3ff;
+  --stage-negotiation-bg: #fffbeb;
+  --stage-won-bg: #f0fdf4;
+  --stage-lost-bg: #fef2f2;
 
   /* ─────────────────────────────────────────────────────────────────────────
      ACTIVITY TYPE COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --activity-call: #22C55E;
-  --activity-email: #3B82F6;
-  --activity-meeting: #8B5CF6;
-  --activity-task: #F59E0B;
-  --activity-note: #6B7280;
-  --activity-deadline: #EF4444;
+  --activity-call: #22c55e;
+  --activity-email: #3b82f6;
+  --activity-meeting: #8b5cf6;
+  --activity-task: #f59e0b;
+  --activity-note: #6b7280;
+  --activity-deadline: #ef4444;
 
   /* ─────────────────────────────────────────────────────────────────────────
      LEAD TEMPERATURE
      ───────────────────────────────────────────────────────────────────────── */
-  --lead-hot: #EF4444;
-  --lead-warm: #F59E0B;
-  --lead-cold: #6B7280;
+  --lead-hot: #ef4444;
+  --lead-warm: #f59e0b;
+  --lead-cold: #6b7280;
 
   /* Lead Temperature Backgrounds */
-  --lead-hot-bg: #FEF2F2;
-  --lead-warm-bg: #FFFBEB;
-  --lead-cold-bg: #F3F4F6;
+  --lead-hot-bg: #fef2f2;
+  --lead-warm-bg: #fffbeb;
+  --lead-cold-bg: #f3f4f6;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PRIORITY LEVELS
      ───────────────────────────────────────────────────────────────────────── */
-  --priority-urgent: #DC2626;
-  --priority-high: #F97316;
-  --priority-medium: #FBBF24;
-  --priority-low: #22C55E;
-  --priority-none: #9CA3AF;
+  --priority-urgent: #dc2626;
+  --priority-high: #f97316;
+  --priority-medium: #fbbf24;
+  --priority-low: #22c55e;
+  --priority-none: #9ca3af;
 
   /* ─────────────────────────────────────────────────────────────────────────
      DEAL PROBABILITY
      ───────────────────────────────────────────────────────────────────────── */
-  --probability-high: #22C55E;
-  --probability-mid: #F59E0B;
-  --probability-low: #EF4444;
+  --probability-high: #22c55e;
+  --probability-mid: #f59e0b;
+  --probability-low: #ef4444;
 
   /* ─────────────────────────────────────────────────────────────────────────
      TASK STATUS
      ───────────────────────────────────────────────────────────────────────── */
-  --task-overdue: #EF4444;
-  --task-due-today: #F59E0B;
-  --task-upcoming: #3B82F6;
-  --task-completed: #22C55E;
-  --task-cancelled: #9CA3AF;
+  --task-overdue: #ef4444;
+  --task-due-today: #f59e0b;
+  --task-upcoming: #3b82f6;
+  --task-completed: #22c55e;
+  --task-cancelled: #9ca3af;
 
   /* Task Status Backgrounds */
-  --task-overdue-bg: #FEF2F2;
-  --task-due-today-bg: #FFFBEB;
-  --task-upcoming-bg: #EFF6FF;
-  --task-completed-bg: #F0FDF4;
-  --task-cancelled-bg: #F3F4F6;
+  --task-overdue-bg: #fef2f2;
+  --task-due-today-bg: #fffbeb;
+  --task-upcoming-bg: #eff6ff;
+  --task-completed-bg: #f0fdf4;
+  --task-cancelled-bg: #f3f4f6;
 
   /* ─────────────────────────────────────────────────────────────────────────
      CHARTS - CATEGORICAL
      ───────────────────────────────────────────────────────────────────────── */
-  --cat-1: #EA580C;
-  --cat-2: #3B82F6;
-  --cat-3: #22C55E;
-  --cat-4: #8B5CF6;
-  --cat-5: #EC4899;
-  --cat-6: #14B8A6;
+  --cat-1: #ea580c;
+  --cat-2: #3b82f6;
+  --cat-3: #22c55e;
+  --cat-4: #8b5cf6;
+  --cat-5: #ec4899;
+  --cat-6: #14b8a6;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PROGRESS BAR
      ───────────────────────────────────────────────────────────────────────── */
-  --progress-default: #EA580C;
-  --progress-success: #22C55E;
-  --progress-warning: #F59E0B;
-  --progress-danger: #EF4444;
-  --progress-bg: #E5E7EB;
+  --progress-default: #ea580c;
+  --progress-success: #22c55e;
+  --progress-warning: #f59e0b;
+  --progress-danger: #ef4444;
+  --progress-bg: #e5e7eb;
 
   /* ─────────────────────────────────────────────────────────────────────────
      SPACING (8px Grid System)
@@ -288,7 +288,7 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.10), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
 
   /* Focus Ring */
   --focus-ring: 0 0 0 2px var(--surface-default), 0 0 0 4px var(--color-primary-default);
@@ -366,8 +366,8 @@
   /* ─────────────────────────────────────────────────────────────────────────
      TYPOGRAPHY
      ───────────────────────────────────────────────────────────────────────── */
-  --font-family-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family-mono: "Geist Mono", "SF Mono", "Fira Code", Consolas, monospace;
+  --font-family-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'Geist Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
   --font-sans: var(--font-family-sans);
   --font-body: var(--font-family-sans);
   --font-mono: var(--font-family-mono);
@@ -383,24 +383,24 @@
   --glass-blur: 12px;
 
   /* Legacy semantic aliases */
-  --bg-base: #FAFAFA;
-  --bg-subtle: #F5F5F5;
-  --bg-muted: #EEEEEE;
-  --bg-emphasis: #E0E0E0;
-  --accent-primary: #EA580C;
-  --accent-primary-hover: #C2410C;
-  --accent-primary-subtle: #FFF7ED;
-  --accent-secondary: #F59E0B;
-  --accent-secondary-hover: #D97706;
-  --accent-secondary-subtle: #FFFBEB;
-  --status-success: #28A745;
-  --status-success-bg: #E8F5E9;
-  --status-warning: #FFC107;
-  --status-warning-bg: #FFF8E1;
-  --status-danger: #DC3545;
-  --status-danger-bg: #FDEAEA;
-  --status-info: #17A2B8;
-  --status-info-bg: #E3F2FD;
+  --bg-base: #fafafa;
+  --bg-subtle: #f5f5f5;
+  --bg-muted: #eeeeee;
+  --bg-emphasis: #e0e0e0;
+  --accent-primary: #ea580c;
+  --accent-primary-hover: #c2410c;
+  --accent-primary-subtle: #fff7ed;
+  --accent-secondary: #f59e0b;
+  --accent-secondary-hover: #d97706;
+  --accent-secondary-subtle: #fffbeb;
+  --status-success: #28a745;
+  --status-success-bg: #e8f5e9;
+  --status-warning: #ffc107;
+  --status-warning-bg: #fff8e1;
+  --status-danger: #dc3545;
+  --status-danger-bg: #fdeaea;
+  --status-info: #17a2b8;
+  --status-info-bg: #e3f2fd;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -442,48 +442,48 @@
   --ring: oklch(0.7 0.16 35);
 
   /* Chart colors - Vibrant */
-  --chart-1: #FB923C;
-  --chart-2: #FDBA74;
-  --chart-3: #FED7AA;
-  --chart-4: #FFEDD5;
-  --chart-5: #FFF7ED;
+  --chart-1: #fb923c;
+  --chart-2: #fdba74;
+  --chart-3: #fed7aa;
+  --chart-4: #ffedd5;
+  --chart-5: #fff7ed;
 
   /* Sidebar */
   --sidebar: oklch(0.16 0.01 30);
   --sidebar-foreground: oklch(0.92 0.005 60);
-  --sidebar-primary: #FB923C;
+  --sidebar-primary: #fb923c;
   --sidebar-primary-foreground: oklch(0.12 0.01 30);
   --sidebar-accent: oklch(0.22 0.015 30);
   --sidebar-accent-foreground: oklch(0.92 0.005 60);
   --sidebar-border: oklch(0.28 0.01 30);
-  --sidebar-ring: #FB923C;
+  --sidebar-ring: #fb923c;
 
   /* Primary color scale - Dark mode */
-  --color-primary-default: #FB923C;
-  --color-primary-hover: #FDBA74;
-  --color-primary-active: #F97316;
+  --color-primary-default: #fb923c;
+  --color-primary-hover: #fdba74;
+  --color-primary-active: #f97316;
   --color-primary-light: #431407;
 
   /* Surface Colors - Dark mode */
-  --surface-default: #1E1E1E;
+  --surface-default: #1e1e1e;
   --surface-raised: #252525;
   --surface-sunken: #141414;
-  --surface-overlay: #2D2D2D;
+  --surface-overlay: #2d2d2d;
 
   /* Text Colors - Dark mode */
-  --text-primary: #FFFFFF;
-  --text-secondary: #B0B0B0;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
   --text-tertiary: #757575;
   --text-disabled: #525252;
   --text-inverse: #212121;
-  --text-link: #FB923C;
-  --text-error: #F87171;
+  --text-link: #fb923c;
+  --text-error: #f87171;
 
   /* Border Colors - Dark mode */
-  --border-default: #3D3D3D;
+  --border-default: #3d3d3d;
   --border-strong: #525252;
-  --border-focus: #FB923C;
-  --border-error: #F87171;
+  --border-focus: #fb923c;
+  --border-error: #f87171;
 
   /* Background Layers - Dark */
   --bg-base: #0c0d12;
@@ -492,46 +492,46 @@
   --bg-emphasis: #1f222b;
 
   /* Accent Colors - Orange glow */
-  --accent-primary: #FB923C;
-  --accent-primary-hover: #FDBA74;
+  --accent-primary: #fb923c;
+  --accent-primary-hover: #fdba74;
   --accent-primary-subtle: rgba(251, 146, 60, 0.1);
-  --accent-secondary: #FBBF24;
-  --accent-secondary-hover: #F59E0B;
+  --accent-secondary: #fbbf24;
+  --accent-secondary-hover: #f59e0b;
   --accent-secondary-subtle: rgba(251, 191, 36, 0.1);
 
   /* Status Colors - Vivid in dark */
-  --status-success: #34D399;
+  --status-success: #34d399;
   --status-success-bg: rgba(52, 211, 153, 0.12);
-  --status-warning: #FBBF24;
+  --status-warning: #fbbf24;
   --status-warning-bg: rgba(251, 191, 36, 0.12);
-  --status-danger: #F87171;
+  --status-danger: #f87171;
   --status-danger-bg: rgba(248, 113, 113, 0.12);
-  --status-info: #38BDF8;
+  --status-info: #38bdf8;
   --status-info-bg: rgba(56, 189, 248, 0.12);
 
   /* Semantic colors dark mode */
-  --color-negative-default: #F87171;
-  --color-negative-hover: #FCA5A5;
+  --color-negative-default: #f87171;
+  --color-negative-hover: #fca5a5;
   --color-negative-light: rgba(248, 113, 113, 0.15);
-  --color-warning-default: #FBBF24;
-  --color-warning-dark: #FCD34D;
+  --color-warning-default: #fbbf24;
+  --color-warning-dark: #fcd34d;
   --color-warning-light: rgba(251, 191, 36, 0.15);
-  --color-success-default: #34D399;
+  --color-success-default: #34d399;
   --color-success-light: rgba(52, 211, 153, 0.15);
-  --color-info-default: #38BDF8;
+  --color-info-default: #38bdf8;
   --color-info-light: rgba(56, 189, 248, 0.15);
 
   /* Grey Scale - Dark mode */
-  --color-grey-50: #18181B;
-  --color-grey-100: #27272A;
-  --color-grey-200: #3F3F46;
-  --color-grey-300: #52525B;
-  --color-grey-400: #71717A;
-  --color-grey-500: #A1A1AA;
-  --color-grey-600: #D4D4D8;
-  --color-grey-700: #E4E4E7;
-  --color-grey-800: #F4F4F5;
-  --color-grey-900: #FAFAFA;
+  --color-grey-50: #18181b;
+  --color-grey-100: #27272a;
+  --color-grey-200: #3f3f46;
+  --color-grey-300: #52525b;
+  --color-grey-400: #71717a;
+  --color-grey-500: #a1a1aa;
+  --color-grey-600: #d4d4d8;
+  --color-grey-700: #e4e4e7;
+  --color-grey-800: #f4f4f5;
+  --color-grey-900: #fafafa;
 
   /* Stage Colors - Lighter variants for dark mode */
   --stage-new-bg: rgba(234, 88, 12, 0.15);
@@ -555,7 +555,7 @@
   --task-cancelled-bg: rgba(156, 163, 175, 0.15);
 
   /* Progress - Dark mode */
-  --progress-bg: #3F3F46;
+  --progress-bg: #3f3f46;
 
   /* Glass morphism - Dark variant */
   --glass-bg: rgba(18, 19, 24, 0.8);
@@ -732,35 +732,47 @@
     inset: 0;
     padding: 1px;
     border-radius: inherit;
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-primary));
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary),
+      var(--accent-secondary),
+      var(--accent-primary)
+    );
     background-size: 200% 200%;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     animation: border-rotate 4s linear infinite;
   }
 
   @keyframes border-rotate {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 200% 200%; }
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 200% 200%;
+    }
   }
 
   /* Shimmer loading effect */
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--muted) 0%,
-      var(--bg-emphasis) 50%,
-      var(--muted) 100%
-    );
+    background: linear-gradient(90deg, var(--muted) 0%, var(--bg-emphasis) 50%, var(--muted) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
 
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 
   /* Smooth fade in animation */
@@ -780,28 +792,43 @@
   }
 
   /* Staggered animation delays */
-  .stagger-1 { animation-delay: 50ms; }
-  .stagger-2 { animation-delay: 100ms; }
-  .stagger-3 { animation-delay: 150ms; }
-  .stagger-4 { animation-delay: 200ms; }
-  .stagger-5 { animation-delay: 250ms; }
-  .stagger-6 { animation-delay: 300ms; }
+  .stagger-1 {
+    animation-delay: 50ms;
+  }
+  .stagger-2 {
+    animation-delay: 100ms;
+  }
+  .stagger-3 {
+    animation-delay: 150ms;
+  }
+  .stagger-4 {
+    animation-delay: 200ms;
+  }
+  .stagger-5 {
+    animation-delay: 250ms;
+  }
+  .stagger-6 {
+    animation-delay: 300ms;
+  }
 
   /* Hover lift effect */
   .hover-lift {
-    transition: transform var(--duration-normal) var(--ease-out),
-                box-shadow var(--duration-normal) var(--ease-out);
+    transition:
+      transform var(--duration-normal) var(--ease-out),
+      box-shadow var(--duration-normal) var(--ease-out);
   }
 
   .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1),
-                0 4px 10px -3px rgba(0, 0, 0, 0.05);
+    box-shadow:
+      0 8px 25px -5px rgba(0, 0, 0, 0.1),
+      0 4px 10px -3px rgba(0, 0, 0, 0.05);
   }
 
   .dark .hover-lift:hover {
-    box-shadow: 0 8px 30px -5px rgba(0, 0, 0, 0.4),
-                0 0 20px -5px var(--accent-primary-subtle);
+    box-shadow:
+      0 8px 30px -5px rgba(0, 0, 0, 0.4),
+      0 0 20px -5px var(--accent-primary-subtle);
   }
 
   /* Premium card style */
@@ -824,39 +851,114 @@
   }
 
   /* Pipeline stage badge utilities */
-  .badge-stage-new { background: var(--stage-new-bg); color: var(--stage-new); }
-  .badge-stage-contacted { background: var(--stage-contacted-bg); color: var(--stage-contacted); }
-  .badge-stage-qualified { background: var(--stage-qualified-bg); color: var(--stage-qualified); }
-  .badge-stage-proposal { background: var(--stage-proposal-bg); color: var(--stage-proposal); }
-  .badge-stage-negotiation { background: var(--stage-negotiation-bg); color: var(--stage-negotiation); }
-  .badge-stage-won { background: var(--stage-won-bg); color: var(--stage-won); }
-  .badge-stage-lost { background: var(--stage-lost-bg); color: var(--stage-lost); }
+  .badge-stage-new {
+    background: var(--stage-new-bg);
+    color: var(--stage-new);
+  }
+  .badge-stage-contacted {
+    background: var(--stage-contacted-bg);
+    color: var(--stage-contacted);
+  }
+  .badge-stage-qualified {
+    background: var(--stage-qualified-bg);
+    color: var(--stage-qualified);
+  }
+  .badge-stage-proposal {
+    background: var(--stage-proposal-bg);
+    color: var(--stage-proposal);
+  }
+  .badge-stage-negotiation {
+    background: var(--stage-negotiation-bg);
+    color: var(--stage-negotiation);
+  }
+  .badge-stage-won {
+    background: var(--stage-won-bg);
+    color: var(--stage-won);
+  }
+  .badge-stage-lost {
+    background: var(--stage-lost-bg);
+    color: var(--stage-lost);
+  }
 
   /* Lead temperature badge utilities */
-  .badge-lead-hot { background: var(--lead-hot-bg); color: var(--lead-hot); }
-  .badge-lead-warm { background: var(--lead-warm-bg); color: var(--lead-warm); }
-  .badge-lead-cold { background: var(--lead-cold-bg); color: var(--lead-cold); }
+  .badge-lead-hot {
+    background: var(--lead-hot-bg);
+    color: var(--lead-hot);
+  }
+  .badge-lead-warm {
+    background: var(--lead-warm-bg);
+    color: var(--lead-warm);
+  }
+  .badge-lead-cold {
+    background: var(--lead-cold-bg);
+    color: var(--lead-cold);
+  }
 
   /* Priority badge utilities */
-  .badge-priority-urgent { background: rgba(220, 38, 38, 0.1); color: var(--priority-urgent); }
-  .badge-priority-high { background: rgba(249, 115, 22, 0.1); color: var(--priority-high); }
-  .badge-priority-medium { background: rgba(251, 191, 36, 0.1); color: var(--priority-medium); }
-  .badge-priority-low { background: rgba(34, 197, 94, 0.1); color: var(--priority-low); }
+  .badge-priority-urgent {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--priority-urgent);
+  }
+  .badge-priority-high {
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--priority-high);
+  }
+  .badge-priority-medium {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--priority-medium);
+  }
+  .badge-priority-low {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--priority-low);
+  }
 
   /* Task status badge utilities */
-  .badge-task-overdue { background: var(--task-overdue-bg); color: var(--task-overdue); }
-  .badge-task-due-today { background: var(--task-due-today-bg); color: var(--task-due-today); }
-  .badge-task-upcoming { background: var(--task-upcoming-bg); color: var(--task-upcoming); }
-  .badge-task-completed { background: var(--task-completed-bg); color: var(--task-completed); }
-  .badge-task-cancelled { background: var(--task-cancelled-bg); color: var(--task-cancelled); }
+  .badge-task-overdue {
+    background: var(--task-overdue-bg);
+    color: var(--task-overdue);
+  }
+  .badge-task-due-today {
+    background: var(--task-due-today-bg);
+    color: var(--task-due-today);
+  }
+  .badge-task-upcoming {
+    background: var(--task-upcoming-bg);
+    color: var(--task-upcoming);
+  }
+  .badge-task-completed {
+    background: var(--task-completed-bg);
+    color: var(--task-completed);
+  }
+  .badge-task-cancelled {
+    background: var(--task-cancelled-bg);
+    color: var(--task-cancelled);
+  }
 
   /* Activity type badge utilities */
-  .badge-activity-call { background: rgba(34, 197, 94, 0.1); color: var(--activity-call); }
-  .badge-activity-email { background: rgba(59, 130, 246, 0.1); color: var(--activity-email); }
-  .badge-activity-meeting { background: rgba(139, 92, 246, 0.1); color: var(--activity-meeting); }
-  .badge-activity-task { background: rgba(245, 158, 11, 0.1); color: var(--activity-task); }
-  .badge-activity-note { background: rgba(107, 114, 128, 0.1); color: var(--activity-note); }
-  .badge-activity-deadline { background: rgba(239, 68, 68, 0.1); color: var(--activity-deadline); }
+  .badge-activity-call {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--activity-call);
+  }
+  .badge-activity-email {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--activity-email);
+  }
+  .badge-activity-meeting {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--activity-meeting);
+  }
+  .badge-activity-task {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--activity-task);
+  }
+  .badge-activity-note {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--activity-note);
+  }
+  .badge-activity-deadline {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--activity-deadline);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -864,24 +966,27 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Card refinements */
-[data-slot="card"] {
+[data-slot='card'] {
   transition: all var(--duration-normal) var(--ease-out);
 }
 
 /* Button refinements */
-button, [role="button"] {
+button,
+[role='button'] {
   font-family: var(--font-sans);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
 
 /* Input refinements */
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: var(--font-body);
 }
 
 /* Badge refinements */
-[data-slot="badge"] {
+[data-slot='badge'] {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -891,31 +996,33 @@ input, textarea, select {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Sidebar base styling */
-[data-slot="sidebar"] {
-  transition: width 0.2s ease, transform 0.2s ease;
+[data-slot='sidebar'] {
+  transition:
+    width 0.2s ease,
+    transform 0.2s ease;
 }
 
 /* Menu button refinements */
-[data-slot="sidebar-menu-button"] {
+[data-slot='sidebar-menu-button'] {
   letter-spacing: -0.01em;
 }
 
 /* Active state with left accent bar */
-[data-slot="sidebar-menu-button"][data-active="true"] {
+[data-slot='sidebar-menu-button'][data-active='true'] {
   position: relative;
 }
 
 /* Smooth hover transitions */
-[data-slot="sidebar-menu-button"]:hover {
+[data-slot='sidebar-menu-button']:hover {
   transform: translateX(1px);
 }
 
-[data-slot="sidebar-menu-button"][data-active="true"]:hover {
+[data-slot='sidebar-menu-button'][data-active='true']:hover {
   transform: none;
 }
 
 /* Group label styling - uppercase sections */
-[data-slot="sidebar-group-label"] {
+[data-slot='sidebar-group-label'] {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -927,22 +1034,22 @@ input, textarea, select {
 }
 
 /* Submenu refinements */
-[data-slot="sidebar-menu-sub"] {
+[data-slot='sidebar-menu-sub'] {
   margin-top: 4px;
 }
 
 /* Rail hover effect - Orange accent */
-[data-slot="sidebar-rail"]:hover {
+[data-slot='sidebar-rail']:hover {
   background: linear-gradient(90deg, transparent, rgba(234, 88, 12, 0.1));
 }
 
 /* Collapsed state icon centering */
-[data-collapsible="icon"] [data-slot="sidebar-menu-button"] {
+[data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
   justify-content: center;
 }
 
 /* Footer divider */
-[data-slot="sidebar-footer"] {
+[data-slot='sidebar-footer'] {
   background: linear-gradient(180deg, transparent, var(--sidebar) 8px);
 }
 
@@ -951,13 +1058,34 @@ input, textarea, select {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Kanban column styles using pipeline colors */
-.kanban-column-new { border-top: 3px solid var(--stage-new); background: var(--stage-new-bg); }
-.kanban-column-contacted { border-top: 3px solid var(--stage-contacted); background: var(--stage-contacted-bg); }
-.kanban-column-qualified { border-top: 3px solid var(--stage-qualified); background: var(--stage-qualified-bg); }
-.kanban-column-proposal { border-top: 3px solid var(--stage-proposal); background: var(--stage-proposal-bg); }
-.kanban-column-negotiation { border-top: 3px solid var(--stage-negotiation); background: var(--stage-negotiation-bg); }
-.kanban-column-won { border-top: 3px solid var(--stage-won); background: var(--stage-won-bg); }
-.kanban-column-lost { border-top: 3px solid var(--stage-lost); background: var(--stage-lost-bg); }
+.kanban-column-new {
+  border-top: 3px solid var(--stage-new);
+  background: var(--stage-new-bg);
+}
+.kanban-column-contacted {
+  border-top: 3px solid var(--stage-contacted);
+  background: var(--stage-contacted-bg);
+}
+.kanban-column-qualified {
+  border-top: 3px solid var(--stage-qualified);
+  background: var(--stage-qualified-bg);
+}
+.kanban-column-proposal {
+  border-top: 3px solid var(--stage-proposal);
+  background: var(--stage-proposal-bg);
+}
+.kanban-column-negotiation {
+  border-top: 3px solid var(--stage-negotiation);
+  background: var(--stage-negotiation-bg);
+}
+.kanban-column-won {
+  border-top: 3px solid var(--stage-won);
+  background: var(--stage-won-bg);
+}
+.kanban-column-lost {
+  border-top: 3px solid var(--stage-lost);
+  background: var(--stage-lost-bg);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DATA TABLE STYLES

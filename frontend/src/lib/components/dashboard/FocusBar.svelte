@@ -59,19 +59,23 @@
   <div
     class="relative overflow-hidden rounded-[var(--radius-lg)] border px-4 py-3 backdrop-blur-sm transition-all duration-300 sm:px-6
       {hasUrgentItems
-        ? 'border-[var(--task-overdue)]/30 bg-[var(--task-overdue-bg)] dark:border-[var(--task-overdue)]/20 dark:bg-[var(--task-overdue)]/10'
-        : 'border-[var(--border-default)] bg-[var(--surface-raised)]/50 dark:bg-[var(--surface-raised)]/30'}"
+      ? 'border-[var(--task-overdue)]/30 bg-[var(--task-overdue-bg)] dark:border-[var(--task-overdue)]/20 dark:bg-[var(--task-overdue)]/10'
+      : 'border-[var(--border-default)] bg-[var(--surface-raised)]/50 dark:bg-[var(--surface-raised)]/30'}"
   >
     <!-- Subtle gradient overlay -->
-    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent dark:via-white/[0.02]"></div>
+    <div
+      class="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent dark:via-white/[0.02]"
+    ></div>
 
     <div class="relative flex items-center gap-3 sm:gap-5">
       <!-- Label with icon - Orange accent -->
       <div class="hidden items-center gap-2 sm:flex">
-        <div class="flex size-7 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+        <div
+          class="flex size-7 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
+        >
           <Zap class="size-4 text-[var(--color-primary-default)]" />
         </div>
-        <span class="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">
+        <span class="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
           Today's Focus
         </span>
       </div>
@@ -84,14 +88,20 @@
         {#each visibleItems as item}
           <a
             href={item.href}
-            class="group flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200 hover:bg-white/50 dark:hover:bg-white/5 sm:gap-2.5 sm:px-4"
+            class="group flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200 hover:bg-white/50 sm:gap-2.5 sm:px-4 dark:hover:bg-white/5"
           >
-            <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] transition-transform duration-200 group-hover:scale-110 {item.bgClass}">
+            <div
+              class="flex size-8 items-center justify-center rounded-[var(--radius-md)] transition-transform duration-200 group-hover:scale-110 {item.bgClass}"
+            >
               <item.icon class="size-4 {item.iconClass}" />
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-[var(--text-primary)] text-base font-bold tabular-nums">{item.count}</span>
-              <span class="text-[var(--text-secondary)] hidden text-xs font-medium sm:inline">{item.label}</span>
+              <span class="text-base font-bold text-[var(--text-primary)] tabular-nums"
+                >{item.count}</span
+              >
+              <span class="hidden text-xs font-medium text-[var(--text-secondary)] sm:inline"
+                >{item.label}</span
+              >
             </div>
           </a>
         {/each}

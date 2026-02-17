@@ -36,12 +36,7 @@ urlpatterns = [
         kanban_views.CaseStageDetailView.as_view(),
         name="stage_detail",
     ),
-    # Case detail routes (must be after specific routes due to pk pattern)
-    path("<str:pk>/", views.CaseDetailView.as_view()),
-    path("<str:pk>/move/", kanban_views.CaseMoveView.as_view(), name="case_move"),
-    path("comment/<str:pk>/", views.CaseCommentView.as_view()),
-    path("attachment/<str:pk>/", views.CaseAttachmentView.as_view()),
-    # Solutions (Knowledge Base) endpoints
+    # Solutions (Knowledge Base) endpoints (must be before <str:pk>/ to avoid conflicts)
     path(
         "solutions/", solution_views.SolutionListView.as_view(), name="solutions_list"
     ),
@@ -60,4 +55,9 @@ urlpatterns = [
         solution_views.SolutionUnpublishView.as_view(),
         name="solution_unpublish",
     ),
+    # Case detail routes (must be after all named routes due to <str:pk> pattern)
+    path("<str:pk>/", views.CaseDetailView.as_view()),
+    path("<str:pk>/move/", kanban_views.CaseMoveView.as_view(), name="case_move"),
+    path("comment/<str:pk>/", views.CaseCommentView.as_view()),
+    path("attachment/<str:pk>/", views.CaseAttachmentView.as_view()),
 ]

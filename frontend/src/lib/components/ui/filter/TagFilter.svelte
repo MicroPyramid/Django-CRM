@@ -70,14 +70,18 @@
   function getTagStyle(color) {
     const colorMap = {
       blue: 'bg-blue-500/15 text-blue-600 border-blue-500/30 dark:bg-blue-500/25 dark:text-blue-400 dark:border-blue-400/30',
-      green: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/25 dark:text-emerald-400 dark:border-emerald-400/30',
+      green:
+        'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/25 dark:text-emerald-400 dark:border-emerald-400/30',
       red: 'bg-rose-500/15 text-rose-600 border-rose-500/30 dark:bg-rose-500/25 dark:text-rose-400 dark:border-rose-400/30',
-      yellow: 'bg-amber-500/15 text-amber-600 border-amber-500/30 dark:bg-amber-500/25 dark:text-amber-400 dark:border-amber-400/30',
-      purple: 'bg-violet-500/15 text-violet-600 border-violet-500/30 dark:bg-violet-500/25 dark:text-violet-400 dark:border-violet-400/30',
+      yellow:
+        'bg-amber-500/15 text-amber-600 border-amber-500/30 dark:bg-amber-500/25 dark:text-amber-400 dark:border-amber-400/30',
+      purple:
+        'bg-violet-500/15 text-violet-600 border-violet-500/30 dark:bg-violet-500/25 dark:text-violet-400 dark:border-violet-400/30',
       pink: 'bg-pink-500/15 text-pink-600 border-pink-500/30 dark:bg-pink-500/25 dark:text-pink-400 dark:border-pink-400/30',
-      orange: 'bg-orange-500/15 text-orange-600 border-orange-500/30 dark:bg-orange-500/25 dark:text-orange-400 dark:border-orange-400/30',
+      orange:
+        'bg-orange-500/15 text-orange-600 border-orange-500/30 dark:bg-orange-500/25 dark:text-orange-400 dark:border-orange-400/30',
       cyan: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30 dark:bg-cyan-500/25 dark:text-cyan-400 dark:border-cyan-400/30',
-      gray: 'bg-slate-500/15 text-slate-600 border-slate-500/30 dark:bg-slate-500/25 dark:text-slate-400 dark:border-slate-400/30',
+      gray: 'bg-slate-500/15 text-slate-600 border-slate-500/30 dark:bg-slate-500/25 dark:text-slate-400 dark:border-slate-400/30'
     };
     return colorMap[color || 'blue'] || colorMap.blue;
   }
@@ -85,7 +89,7 @@
 
 <div class={cn('flex flex-col gap-1.5', className)}>
   {#if label}
-    <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+    <span class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase">
       {label}
     </span>
   {/if}
@@ -106,15 +110,16 @@
             'hover:border-input hover:bg-background/80',
             // Focus state
             'focus:border-primary/50 focus:bg-background',
-            'focus:ring-2 focus:ring-primary/20',
+            'focus:ring-primary/20 focus:ring-2',
             // Dark mode
-            'dark:bg-white/[0.03] dark:border-white/[0.08]',
-            'dark:hover:bg-white/[0.05] dark:hover:border-white/[0.12]',
-            'dark:focus:bg-white/[0.06] dark:focus:border-primary/40',
+            'dark:border-white/[0.08] dark:bg-white/[0.03]',
+            'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
+            'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
             // Active state
-            hasSelection && 'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
+            hasSelection &&
+              'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
             // Open state
-            open && 'ring-2 ring-primary/20 dark:ring-primary/30'
+            open && 'ring-primary/20 dark:ring-primary/30 ring-2'
           )}
           {...props}
         >
@@ -141,7 +146,7 @@
               <span
                 class={cn(
                   'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5',
-                  'bg-primary text-[10px] font-bold text-primary-foreground',
+                  'bg-primary text-primary-foreground text-[10px] font-bold',
                   'animate-in fade-in zoom-in duration-200'
                 )}
               >
@@ -175,7 +180,7 @@
             {/if}
             <ChevronDown
               class={cn(
-                'h-4 w-4 text-muted-foreground/50 transition-transform duration-200',
+                'text-muted-foreground/50 h-4 w-4 transition-transform duration-200',
                 open && 'rotate-180'
               )}
             />
@@ -190,18 +195,18 @@
       class={cn(
         'tag-filter-content',
         'w-[280px] overflow-hidden rounded-xl p-1',
-        'border border-border/60 bg-popover/95 backdrop-blur-md',
+        'border-border/60 bg-popover/95 border backdrop-blur-md',
         'shadow-lg shadow-black/5',
-        'dark:border-white/[0.08] dark:bg-popover/90',
+        'dark:bg-popover/90 dark:border-white/[0.08]',
         'dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]',
         'animate-in fade-in-0 zoom-in-95 duration-150'
       )}
     >
       {#if tags.length === 0}
         <div class="flex flex-col items-center justify-center py-6 text-center">
-          <Tag class="mb-2 h-8 w-8 text-muted-foreground/30" />
-          <p class="text-sm font-medium text-muted-foreground">No tags available</p>
-          <p class="mt-1 text-xs text-muted-foreground/60">Create tags to organize your leads</p>
+          <Tag class="text-muted-foreground/30 mb-2 h-8 w-8" />
+          <p class="text-muted-foreground text-sm font-medium">No tags available</p>
+          <p class="text-muted-foreground/60 mt-1 text-xs">Create tags to organize your leads</p>
         </div>
       {:else}
         <!-- Header with selected count -->
@@ -212,13 +217,13 @@
               'bg-primary/5 dark:bg-primary/10'
             )}
           >
-            <span class="text-xs font-medium text-primary">
+            <span class="text-primary text-xs font-medium">
               {selectedIds.length} tag{selectedIds.length > 1 ? 's' : ''} selected
             </span>
             <button
               type="button"
               onclick={clearAll}
-              class="text-xs font-medium text-primary/70 hover:text-primary transition-colors"
+              class="text-primary/70 hover:text-primary text-xs font-medium transition-colors"
             >
               Clear all
             </button>
@@ -237,9 +242,7 @@
                 'rounded-lg px-2.5 py-2',
                 'transition-all duration-150',
                 'outline-none',
-                isSelected
-                  ? 'bg-primary/10 dark:bg-primary/15'
-                  : 'hover:bg-muted/80',
+                isSelected ? 'bg-primary/10 dark:bg-primary/15' : 'hover:bg-muted/80',
                 'animate-in fade-in-0 slide-in-from-left-1'
               )}
               style="animation-delay: {i * 15}ms"
@@ -252,7 +255,7 @@
                   'border transition-all duration-150',
                   isSelected
                     ? 'border-primary bg-primary text-primary-foreground scale-100'
-                    : 'border-border/60 bg-transparent scale-90 group-hover:scale-100 group-hover:border-primary/50'
+                    : 'border-border/60 group-hover:border-primary/50 scale-90 bg-transparent group-hover:scale-100'
                 )}
               >
                 {#if isSelected}
@@ -267,7 +270,7 @@
                   'text-xs font-semibold',
                   'transition-all duration-150',
                   getTagStyle(tag.color),
-                  isSelected && 'ring-1 ring-primary/20'
+                  isSelected && 'ring-primary/20 ring-1'
                 )}
               >
                 <Hash class="h-3 w-3 opacity-60" />
@@ -278,7 +281,7 @@
               {#if isSelected}
                 <div
                   class={cn(
-                    'absolute right-2 h-2 w-2 rounded-full bg-primary',
+                    'bg-primary absolute right-2 h-2 w-2 rounded-full',
                     'animate-in fade-in zoom-in duration-200'
                   )}
                 ></div>
@@ -356,12 +359,7 @@
     inset: 0;
     border-radius: inherit;
     opacity: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--primary) 50%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
     transition: opacity 0.3s ease;
   }
 

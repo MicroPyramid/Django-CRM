@@ -23,6 +23,7 @@
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^24.0.0",
     "bits-ui": "^2.15.6",
     "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",
@@ -42,7 +43,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "svelte-eslint-parser>eslint-scope": "^9.1.0"
+    }
   },
   "dependencies": {
     "axios": "^1.13.5",

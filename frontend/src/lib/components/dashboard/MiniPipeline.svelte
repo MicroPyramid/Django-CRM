@@ -35,7 +35,8 @@
       textColor: 'text-[var(--stage-qualified)]',
       bgColor: 'bg-[var(--stage-qualified-bg)] dark:bg-[var(--stage-qualified)]/15',
       borderColor: 'border-[var(--stage-qualified)]/30',
-      glowColor: 'hover:shadow-[var(--stage-qualified)]/10 dark:hover:shadow-[var(--stage-qualified)]/20'
+      glowColor:
+        'hover:shadow-[var(--stage-qualified)]/10 dark:hover:shadow-[var(--stage-qualified)]/20'
     },
     {
       id: 'PROPOSAL',
@@ -43,7 +44,8 @@
       textColor: 'text-[var(--stage-proposal)]',
       bgColor: 'bg-[var(--stage-proposal-bg)] dark:bg-[var(--stage-proposal)]/15',
       borderColor: 'border-[var(--stage-proposal)]/30',
-      glowColor: 'hover:shadow-[var(--stage-proposal)]/10 dark:hover:shadow-[var(--stage-proposal)]/20'
+      glowColor:
+        'hover:shadow-[var(--stage-proposal)]/10 dark:hover:shadow-[var(--stage-proposal)]/20'
     },
     {
       id: 'NEGOTIATION',
@@ -51,7 +53,8 @@
       textColor: 'text-[var(--stage-negotiation)]',
       bgColor: 'bg-[var(--stage-negotiation-bg)] dark:bg-[var(--stage-negotiation)]/15',
       borderColor: 'border-[var(--stage-negotiation)]/30',
-      glowColor: 'hover:shadow-[var(--stage-negotiation)]/10 dark:hover:shadow-[var(--stage-negotiation)]/20'
+      glowColor:
+        'hover:shadow-[var(--stage-negotiation)]/10 dark:hover:shadow-[var(--stage-negotiation)]/20'
     },
     {
       id: 'CLOSED_WON',
@@ -83,14 +86,16 @@
         class="group relative min-w-[130px] flex-1 overflow-hidden rounded-[var(--radius-lg)] border px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg {stage.borderColor} {stage.bgColor} {stage.glowColor}"
       >
         <!-- Gradient overlay on hover -->
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-white/5"></div>
+        <div
+          class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-white/5"
+        ></div>
 
         <div class="relative flex flex-col gap-2">
           <!-- Stage header -->
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <div class="size-2.5 rounded-full {stage.color} shadow-sm"></div>
-              <span class="text-[var(--text-primary)] text-xs font-semibold tracking-tight">
+              <span class="text-xs font-semibold tracking-tight text-[var(--text-primary)]">
                 {data.label || stage.id.replace('_', ' ')}
               </span>
             </div>
@@ -107,7 +112,7 @@
             {#if stage.icon}
               <stage.icon class="size-4 {stage.textColor}" />
             {/if}
-            <p class="text-[var(--text-primary)] text-lg font-bold tabular-nums tracking-tight">
+            <p class="text-lg font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
               {formatCurrency(data.value, currency, true)}
             </p>
           </div>
@@ -117,7 +122,9 @@
       <!-- Connector arrows between active stages -->
       {#if index < 4}
         <div class="flex-shrink-0 px-1">
-          <ChevronRight class="size-5 text-[var(--text-tertiary)]/30 transition-colors group-hover:text-[var(--text-tertiary)]/50" />
+          <ChevronRight
+            class="size-5 text-[var(--text-tertiary)]/30 transition-colors group-hover:text-[var(--text-tertiary)]/50"
+          />
         </div>
       {/if}
 
@@ -125,7 +132,10 @@
       {#if index === 3}
         <div class="flex flex-shrink-0 flex-col items-center gap-1 px-2">
           <div class="h-4 w-px bg-[var(--border-default)]/50"></div>
-          <span class="text-[var(--text-tertiary)]/50 text-[8px] font-medium uppercase tracking-widest">Closed</span>
+          <span
+            class="text-[8px] font-medium tracking-widest text-[var(--text-tertiary)]/50 uppercase"
+            >Closed</span
+          >
           <div class="h-4 w-px bg-[var(--border-default)]/50"></div>
         </div>
       {/if}

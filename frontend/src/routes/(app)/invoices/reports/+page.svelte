@@ -75,7 +75,9 @@
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
     <!-- Total Invoiced -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-[var(--text-secondary)]">Total Invoiced</p>
@@ -83,7 +85,9 @@
             {formatCurrency(Number(dashboard.summary?.total_invoiced || 0), 'USD')}
           </p>
         </div>
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-light)]">
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-light)]"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -106,7 +110,9 @@
     </div>
 
     <!-- Total Paid -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-[var(--text-secondary)]">Total Collected</p>
@@ -114,7 +120,9 @@
             {formatCurrency(Number(dashboard.summary?.total_paid || 0), 'USD')}
           </p>
         </div>
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-success-light)]">
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-success-light)]"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -135,7 +143,9 @@
     </div>
 
     <!-- Outstanding -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-[var(--text-secondary)]">Outstanding</p>
@@ -143,7 +153,9 @@
             {formatCurrency(Number(dashboard.summary?.total_due || 0), 'USD')}
           </p>
         </div>
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-light)]">
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-light)]"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -164,15 +176,21 @@
     </div>
 
     <!-- Overdue -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-[var(--text-secondary)]">Overdue ({dashboard.overdue?.count || 0})</p>
+          <p class="text-sm text-[var(--text-secondary)]">
+            Overdue ({dashboard.overdue?.count || 0})
+          </p>
           <p class="mt-1 text-2xl font-bold text-[var(--color-negative-default)]">
             {formatCurrency(Number(dashboard.overdue?.amount || 0), 'USD')}
           </p>
         </div>
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-negative-light)]">
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-negative-light)]"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -199,7 +217,9 @@
   <!-- Recent Activity & Status -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Recent Activity -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <h3 class="mb-4 text-lg font-semibold text-[var(--text-primary)]">Last 30 Days</h3>
       <div class="space-y-4">
         <div class="flex items-center justify-between">
@@ -210,11 +230,15 @@
         </div>
         <div class="flex items-center justify-between">
           <span class="text-[var(--text-secondary)]">Invoices Created</span>
-          <span class="font-medium text-[var(--text-primary)]">{dashboard.recent_activity?.invoices_created_30d || 0}</span>
+          <span class="font-medium text-[var(--text-primary)]"
+            >{dashboard.recent_activity?.invoices_created_30d || 0}</span
+          >
         </div>
         <div class="flex items-center justify-between">
           <span class="text-[var(--text-secondary)]">Invoices Paid</span>
-          <span class="font-medium text-[var(--text-primary)]">{dashboard.recent_activity?.invoices_paid_30d || 0}</span>
+          <span class="font-medium text-[var(--text-primary)]"
+            >{dashboard.recent_activity?.invoices_paid_30d || 0}</span
+          >
         </div>
         <div class="flex items-center justify-between">
           <span class="text-[var(--text-secondary)]">Total Invoiced</span>
@@ -226,7 +250,9 @@
     </div>
 
     <!-- Status Breakdown -->
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+    <div
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+    >
       <h3 class="mb-4 text-lg font-semibold text-[var(--text-primary)]">Invoice Status</h3>
       <div class="space-y-3">
         {#each Object.entries(dashboard.status_counts || {}) as [status, count]}
@@ -241,7 +267,9 @@
   </div>
 
   <!-- Revenue Chart Section -->
-  <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+  <div
+    class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+  >
     <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
       <h3 class="text-lg font-semibold text-[var(--text-primary)]">Revenue Over Time</h3>
       <div class="flex flex-wrap gap-3">
@@ -305,7 +333,9 @@
           <tfoot>
             <tr class="border-t border-[var(--border-default)] bg-[var(--surface-sunken)]">
               <td class="py-3 font-medium text-[var(--text-primary)]">Total</td>
-              <td class="py-3 text-right font-medium text-[var(--text-primary)]">{revenue.total?.count || 0}</td>
+              <td class="py-3 text-right font-medium text-[var(--text-primary)]"
+                >{revenue.total?.count || 0}</td
+              >
               <td class="py-3 text-right font-bold text-[var(--color-success-default)]">
                 {formatCurrency(Number(revenue.total?.revenue || 0), 'USD')}
               </td>
@@ -314,12 +344,16 @@
         </table>
       </div>
     {:else}
-      <div class="py-8 text-center text-[var(--text-secondary)]">No revenue data for the selected period</div>
+      <div class="py-8 text-center text-[var(--text-secondary)]">
+        No revenue data for the selected period
+      </div>
     {/if}
   </div>
 
   <!-- Aging Report -->
-  <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+  <div
+    class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+  >
     <h3 class="mb-6 text-lg font-semibold text-[var(--text-primary)]">Accounts Receivable Aging</h3>
 
     <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-5">
@@ -329,7 +363,9 @@
         <p class="mt-1 text-xl font-bold text-[var(--color-success-default)]">
           {formatCurrency(Number(aging.current?.amount || 0), 'USD')}
         </p>
-        <p class="text-sm text-[var(--color-success-default)]/80">{aging.current?.count || 0} invoices</p>
+        <p class="text-sm text-[var(--color-success-default)]/80">
+          {aging.current?.count || 0} invoices
+        </p>
       </div>
 
       <!-- 1-30 Days -->
@@ -338,7 +374,9 @@
         <p class="mt-1 text-xl font-bold text-[var(--stage-negotiation)]">
           {formatCurrency(Number(aging['1_30_days']?.amount || 0), 'USD')}
         </p>
-        <p class="text-sm text-[var(--stage-negotiation)]/80">{aging['1_30_days']?.count || 0} invoices</p>
+        <p class="text-sm text-[var(--stage-negotiation)]/80">
+          {aging['1_30_days']?.count || 0} invoices
+        </p>
       </div>
 
       <!-- 31-60 Days -->
@@ -347,7 +385,9 @@
         <p class="mt-1 text-xl font-bold text-[var(--color-primary-default)]">
           {formatCurrency(Number(aging['31_60_days']?.amount || 0), 'USD')}
         </p>
-        <p class="text-sm text-[var(--color-primary-default)]/80">{aging['31_60_days']?.count || 0} invoices</p>
+        <p class="text-sm text-[var(--color-primary-default)]/80">
+          {aging['31_60_days']?.count || 0} invoices
+        </p>
       </div>
 
       <!-- 61-90 Days -->
@@ -356,7 +396,9 @@
         <p class="mt-1 text-xl font-bold text-[var(--color-negative-default)]">
           {formatCurrency(Number(aging['61_90_days']?.amount || 0), 'USD')}
         </p>
-        <p class="text-sm text-[var(--color-negative-default)]/80">{aging['61_90_days']?.count || 0} invoices</p>
+        <p class="text-sm text-[var(--color-negative-default)]/80">
+          {aging['61_90_days']?.count || 0} invoices
+        </p>
       </div>
 
       <!-- Over 90 Days -->
@@ -365,7 +407,9 @@
         <p class="mt-1 text-xl font-bold text-[var(--color-negative-default)]">
           {formatCurrency(Number(aging['over_90_days']?.amount || 0), 'USD')}
         </p>
-        <p class="text-sm text-[var(--color-negative-default)]/80">{aging['over_90_days']?.count || 0} invoices</p>
+        <p class="text-sm text-[var(--color-negative-default)]/80">
+          {aging['over_90_days']?.count || 0} invoices
+        </p>
       </div>
     </div>
 
@@ -382,19 +426,27 @@
   </div>
 
   <!-- Estimates Summary -->
-  <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+  <div
+    class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+  >
     <h3 class="mb-4 text-lg font-semibold text-[var(--text-primary)]">Estimates Overview</h3>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div class="rounded-lg bg-[var(--color-primary-light)] p-4 text-center">
-        <p class="text-3xl font-bold text-[var(--color-primary-default)]">{dashboard.estimates?.pending || 0}</p>
+        <p class="text-3xl font-bold text-[var(--color-primary-default)]">
+          {dashboard.estimates?.pending || 0}
+        </p>
         <p class="mt-1 text-sm text-[var(--color-primary-default)]">Pending</p>
       </div>
       <div class="rounded-lg bg-[var(--color-success-light)] p-4 text-center">
-        <p class="text-3xl font-bold text-[var(--color-success-default)]">{dashboard.estimates?.accepted || 0}</p>
+        <p class="text-3xl font-bold text-[var(--color-success-default)]">
+          {dashboard.estimates?.accepted || 0}
+        </p>
         <p class="mt-1 text-sm text-[var(--color-success-default)]">Accepted</p>
       </div>
       <div class="rounded-lg bg-[var(--color-negative-light)] p-4 text-center">
-        <p class="text-3xl font-bold text-[var(--color-negative-default)]">{dashboard.estimates?.declined || 0}</p>
+        <p class="text-3xl font-bold text-[var(--color-negative-default)]">
+          {dashboard.estimates?.declined || 0}
+        </p>
         <p class="mt-1 text-sm text-[var(--color-negative-default)]">Declined</p>
       </div>
     </div>

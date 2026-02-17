@@ -613,4 +613,133 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
                         self.fail(f"RLS not enabled on {table}")
 
 
+class TestPermissionClasses(MultiTenancyBaseTestCase):
+    """Test custom permission classes."""
+
+    def test_has_org_context_with_profile(self):
+        """HasOrgContext allows when profile and org are set."""
+        from common.permissions import HasOrgContext
+
+        request = MagicMock()
+        request.profile = self.profile_a
+        request.profile.is_active = True
+        request.org = self.org_a
+        perm = HasOrgContext()
+        self.assertTrue(perm.has_permission(request, None))
+
+    def test_has_org_context_without_profile(self):
+        """HasOrgContext denies when profile is missing."""
+        from common.permissions import HasOrgContext
+
+        request = MagicMock(spec=[])
+        perm = HasOrgContext()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_has_org_context_none_profile(self):
+        """HasOrgContext denies when profile is None."""
+        from common.permissions import HasOrgContext
+
+        request = MagicMock()
+        request.profile = None
+        perm = HasOrgContext()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_has_org_context_without_org(self):
+        """HasOrgContext denies when org is missing."""
+        from common.permissions import HasOrgContext
+
+        request = MagicMock()
+        request.profile = self.profile_a
+        request.profile.is_active = True
+        request.org = None
+        perm = HasOrgContext()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_has_org_context_inactive_profile(self):
+        """HasOrgContext denies when profile is inactive."""
+        from common.permissions import HasOrgContext
+
+        request = MagicMock()
+        request.profile = self.profile_a
+        request.profile.is_active = False
+        request.org = self.org_a
+        perm = HasOrgContext()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_org_admin_with_admin_role(self):
+        """IsOrgAdmin allows ADMIN role."""
+        from common.permissions import IsOrgAdmin
+
+        request = MagicMock()
+        request.profile = self.profile_a
+        request.profile.role = "ADMIN"
+        request.profile.is_organization_admin = False
+        perm = IsOrgAdmin()
+        self.assertTrue(perm.has_permission(request, None))
+
+    def test_is_org_admin_with_org_admin_flag(self):
+        """IsOrgAdmin allows organization_admin flag."""
+        from common.permissions import IsOrgAdmin
+
+        request = MagicMock()
+        request.profile = self.profile_a
+        request.profile.role = "USER"
+        request.profile.is_organization_admin = True
+        perm = IsOrgAdmin()
+        self.assertTrue(perm.has_permission(request, None))
+
+    def test_is_org_admin_non_admin(self):
+        """IsOrgAdmin denies regular user."""
+        from common.permissions import IsOrgAdmin
+
+        request = MagicMock()
+        request.profile = MagicMock()
+        request.profile.role = "USER"
+        request.profile.is_organization_admin = False
+        perm = IsOrgAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_org_admin_no_profile(self):
+        """IsOrgAdmin denies when no profile."""
+        from common.permissions import IsOrgAdmin
+
+        request = MagicMock()
+        request.profile = None
+        perm = IsOrgAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_super_admin_with_super_email(self):
+        """IsSuperAdmin allows micropyramid.com email."""
+        from common.permissions import IsSuperAdmin
+
+        user = MagicMock()
+        user.is_authenticated = True
+        user.email = "admin@micropyramid.com"
+        request = MagicMock()
+        request.user = user
+        perm = IsSuperAdmin()
+        self.assertTrue(perm.has_permission(request, None))
+
+    def test_is_super_admin_regular_email(self):
+        """IsSuperAdmin denies non-micropyramid emails."""
+        from common.permissions import IsSuperAdmin
+
+        user = MagicMock()
+        user.is_authenticated = True
+        user.email = "admin@test.com"
+        request = MagicMock()
+        request.user = user
+        perm = IsSuperAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_super_admin_unauthenticated(self):
+        """IsSuperAdmin denies unauthenticated user."""
+        from common.permissions import IsSuperAdmin
+
+        request = MagicMock()
+        request.user = None
+        perm = IsSuperAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+
 # Run tests with: pytest common/tests/test_multitenancy.py -v

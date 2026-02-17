@@ -118,7 +118,7 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
                 {"name": "Done", "order": 3, "color": "#10B981"},
             ]
             for col_data in default_columns:
-                BoardColumn.objects.create(board=board, **col_data)
+                BoardColumn.objects.create(board=board, org=org, created_by=request.user, **col_data)
 
         return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
 
@@ -330,7 +330,7 @@ class BoardColumnListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        column = serializer.save(board=board, created_by=request.user)
+        column = serializer.save(board=board, org=org, created_by=request.user)
         return Response(
             BoardColumnSerializer(column).data, status=status.HTTP_201_CREATED
         )
@@ -402,7 +402,7 @@ class BoardTaskListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        task = serializer.save(column=column, created_by=request.user)
+        task = serializer.save(column=column, org=org, created_by=request.user)
 
         # Handle assigned_to
         if "assigned_to_ids" in data:

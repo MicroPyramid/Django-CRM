@@ -57,7 +57,9 @@
       </div>
 
       <!-- Form Card -->
-      <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm">
+      <div
+        class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-6 shadow-sm"
+      >
         <form
           action="/org/new"
           method="POST"
@@ -84,27 +86,41 @@
               class="w-full rounded-lg border border-[var(--border-default)] px-4 py-2.5 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] transition-colors focus:border-[var(--color-primary-default)] focus:ring-2 focus:ring-[var(--color-primary-default)]/20 focus:outline-none disabled:bg-[var(--surface-sunken)] disabled:text-[var(--text-secondary)]"
               placeholder="e.g. Acme Inc."
             />
-            <p class="text-xs text-[var(--text-secondary)]">This will be your workspace name in BottleCRM</p>
+            <p class="text-xs text-[var(--text-secondary)]">
+              This will be your workspace name in BottleCRM
+            </p>
           </div>
 
           <!-- Error Message -->
           {#if form?.error}
-            <div class="flex items-start gap-3 rounded-lg border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-4">
+            <div
+              class="flex items-start gap-3 rounded-lg border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-4"
+            >
               <AlertCircle class="h-5 w-5 shrink-0 text-[var(--color-negative-default)]" />
               <div>
-                <p class="text-sm font-medium text-[var(--color-negative-default)]">Unable to create organization</p>
-                <p class="mt-1 text-sm text-[var(--color-negative-default)]/80">{form.error.name || 'Please try again'}</p>
+                <p class="text-sm font-medium text-[var(--color-negative-default)]">
+                  Unable to create organization
+                </p>
+                <p class="mt-1 text-sm text-[var(--color-negative-default)]/80">
+                  {form.error.name || 'Please try again'}
+                </p>
               </div>
             </div>
           {/if}
 
           <!-- Success Message -->
           {#if form?.data}
-            <div class="flex items-start gap-3 rounded-lg border border-[var(--color-success-default)]/20 bg-[var(--color-success-light)] p-4">
+            <div
+              class="flex items-start gap-3 rounded-lg border border-[var(--color-success-default)]/20 bg-[var(--color-success-light)] p-4"
+            >
               <Check class="h-5 w-5 shrink-0 text-[var(--color-success-default)]" />
               <div>
-                <p class="text-sm font-medium text-[var(--color-success-default)]">Organization created!</p>
-                <p class="mt-1 text-sm text-[var(--color-success-default)]/80">Redirecting to your organizations...</p>
+                <p class="text-sm font-medium text-[var(--color-success-default)]">
+                  Organization created!
+                </p>
+                <p class="mt-1 text-sm text-[var(--color-success-default)]/80">
+                  Redirecting to your organizations...
+                </p>
               </div>
             </div>
           {/if}

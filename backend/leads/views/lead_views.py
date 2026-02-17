@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -215,9 +216,30 @@ class LeadListView(APIView, LimitOffsetPagination):
         data = request.data
         serializer = LeadCreateSerializer(data=data, request_obj=request)
         if serializer.is_valid():
-            lead_obj = serializer.save(
-                created_by=request.profile.user, org=request.profile.org
-            )
+            try:
+                lead_obj = serializer.save(
+                    created_by=request.profile.user, org=request.profile.org
+                )
+            except IntegrityError as e:
+                if "email" in str(e).lower():
+                    return Response(
+                        {
+                            "error": True,
+                            "errors": {
+                                "email": [
+                                    "A lead with this email already exists in your organization."
+                                ]
+                            },
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "A lead with these details already exists.",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if data.get("tags", None):
                 tags = data.get("tags")
                 tag_objs = Tags.objects.filter(

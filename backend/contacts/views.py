@@ -433,7 +433,7 @@ class ContactDetailView(APIView):
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
                 "assigned_data": assigned_data,
                 "tasks": TaskSerializer(
-                    contact_obj.contacts_tasks.all(), many=True
+                    contact_obj.task_contacts.all(), many=True
                 ).data,
                 "users_mention": users_mention,
             }

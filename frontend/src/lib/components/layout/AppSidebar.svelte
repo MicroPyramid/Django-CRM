@@ -309,15 +309,22 @@
                     <div
                       class="flex size-6 items-center justify-center rounded-md transition-all duration-200
                         {currentPath === item.href
-                        ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
-                        : 'text-current group-hover/item:bg-sidebar-accent'}"
+                        ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
+                        : 'group-hover/item:bg-sidebar-accent text-current'}"
                     >
                       <item.icon
-                        class="size-[15px] transition-transform duration-200 {currentPath === item.href ? 'scale-105' : 'group-hover/item:scale-105'}"
+                        class="size-[15px] transition-transform duration-200 {currentPath ===
+                        item.href
+                          ? 'scale-105'
+                          : 'group-hover/item:scale-105'}"
                         strokeWidth={2}
                       />
                     </div>
-                    <span class="text-[13px] {currentPath === item.href ? 'font-semibold' : 'font-medium'}">{item.label}</span>
+                    <span
+                      class="text-[13px] {currentPath === item.href
+                        ? 'font-semibold'
+                        : 'font-medium'}">{item.label}</span
+                    >
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
@@ -362,12 +369,16 @@
                             <div
                               class="flex size-6 items-center justify-center rounded-md transition-all duration-200
                                 {hasActiveChild(item.children ?? [])
-                                ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
-                                : 'text-current group-hover/item:bg-sidebar-accent'}"
+                                ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
+                                : 'group-hover/item:bg-sidebar-accent text-current'}"
                             >
                               <item.icon class="size-[15px]" strokeWidth={2} />
                             </div>
-                            <span class="text-[13px] {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}">{item.label}</span>
+                            <span
+                              class="text-[13px] {hasActiveChild(item.children ?? [])
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             <ChevronDown
                               class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
                             />
@@ -378,7 +389,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub
-                      class="mt-1.5 ml-[11px] space-y-0.5 border-l border-sidebar-border/40 py-1 pl-3"
+                      class="border-sidebar-border/40 mt-1.5 ml-[11px] space-y-0.5 border-l py-1 pl-3"
                     >
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
@@ -395,7 +406,11 @@
                                   class="size-3.5 transition-colors duration-200"
                                   strokeWidth={currentPath === navChild.href ? 2.25 : 1.75}
                                 />
-                                <span class="text-[12px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}">{navChild.label}</span>
+                                <span
+                                  class="text-[12px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                               </a>
                             {/snippet}
                           </Sidebar.MenuSubButton>
@@ -440,15 +455,22 @@
                     <div
                       class="flex size-6 items-center justify-center rounded-md transition-all duration-200
                         {currentPath === item.href
-                        ? 'bg-[var(--color-primary-default)] text-white shadow-sm shadow-[var(--color-primary-default)]/25'
-                        : 'text-current group-hover/item:bg-sidebar-accent'}"
+                        ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
+                        : 'group-hover/item:bg-sidebar-accent text-current'}"
                     >
                       <item.icon
-                        class="size-[15px] transition-transform duration-200 {currentPath === item.href ? 'scale-105' : 'group-hover/item:scale-105'}"
+                        class="size-[15px] transition-transform duration-200 {currentPath ===
+                        item.href
+                          ? 'scale-105'
+                          : 'group-hover/item:scale-105'}"
                         strokeWidth={2}
                       />
                     </div>
-                    <span class="text-[13px] {currentPath === item.href ? 'font-semibold' : 'font-medium'}">{item.label}</span>
+                    <span
+                      class="text-[13px] {currentPath === item.href
+                        ? 'font-semibold'
+                        : 'font-medium'}">{item.label}</span
+                    >
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
@@ -587,21 +609,30 @@
             <DropdownMenu.Group class="flex gap-1 px-2 py-1.5">
               <button
                 onclick={() => setTheme('light')}
-                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'light' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme ===
+                'light'
+                  ? 'bg-[#ff7a59]/10 text-[#ff7a59]'
+                  : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Sun class="size-4" />
                 <span class="text-[10px] font-medium">Light</span>
               </button>
               <button
                 onclick={() => setTheme('dark')}
-                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'dark' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme ===
+                'dark'
+                  ? 'bg-[#ff7a59]/10 text-[#ff7a59]'
+                  : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Moon class="size-4" />
                 <span class="text-[10px] font-medium">Dark</span>
               </button>
               <button
                 onclick={() => setTheme('system')}
-                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme === 'system' ? 'bg-[#ff7a59]/10 text-[#ff7a59]' : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
+                class="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 transition-colors {theme ===
+                'system'
+                  ? 'bg-[#ff7a59]/10 text-[#ff7a59]'
+                  : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Monitor class="size-4" />
                 <span class="text-[10px] font-medium">System</span>

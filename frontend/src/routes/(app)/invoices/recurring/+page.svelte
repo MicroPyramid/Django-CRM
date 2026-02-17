@@ -19,13 +19,41 @@
 
   // Frequency options - using design system tokens
   const FREQUENCIES = [
-    { value: 'WEEKLY', label: 'Weekly', color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)]' },
-    { value: 'BIWEEKLY', label: 'Bi-weekly', color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)]' },
-    { value: 'MONTHLY', label: 'Monthly', color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)]' },
-    { value: 'QUARTERLY', label: 'Quarterly', color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)]' },
-    { value: 'SEMI_ANNUALLY', label: 'Semi-annually', color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)]' },
-    { value: 'YEARLY', label: 'Yearly', color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)]' },
-    { value: 'CUSTOM', label: 'Custom', color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]' }
+    {
+      value: 'WEEKLY',
+      label: 'Weekly',
+      color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)]'
+    },
+    {
+      value: 'BIWEEKLY',
+      label: 'Bi-weekly',
+      color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)]'
+    },
+    {
+      value: 'MONTHLY',
+      label: 'Monthly',
+      color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)]'
+    },
+    {
+      value: 'QUARTERLY',
+      label: 'Quarterly',
+      color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)]'
+    },
+    {
+      value: 'SEMI_ANNUALLY',
+      label: 'Semi-annually',
+      color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)]'
+    },
+    {
+      value: 'YEARLY',
+      label: 'Yearly',
+      color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)]'
+    },
+    {
+      value: 'CUSTOM',
+      label: 'Custom',
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
+    }
   ];
 
   // Status options
@@ -592,7 +620,9 @@
         </svg>
         Filters
         {#if activeFiltersCount() > 0}
-          <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
+          <span
+            class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]"
+          >
             {activeFiltersCount()}
           </span>
         {/if}
@@ -688,11 +718,15 @@
   <CrmTable data={recurringInvoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
           <span class="text-4xl">🔄</span>
         </div>
-        <h3 class="text-[var(--text-primary)] text-lg font-medium">No recurring invoices yet</h3>
-        <p class="text-[var(--text-secondary)] text-sm">Create your first recurring invoice template</p>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No recurring invoices yet</h3>
+        <p class="text-sm text-[var(--text-secondary)]">
+          Create your first recurring invoice template
+        </p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}

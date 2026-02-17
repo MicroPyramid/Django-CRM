@@ -892,11 +892,15 @@
   <!-- Accounts Table -->
   {#if filteredAccounts.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+      <div
+        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+      >
         <Building2 class="size-8 text-[var(--text-tertiary)]" />
       </div>
-      <h3 class="text-[var(--text-primary)] text-lg font-medium">No accounts found</h3>
-      <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new account</p>
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
+      <p class="mt-1 text-sm text-[var(--text-secondary)]">
+        Try adjusting your filters or create a new account
+      </p>
     </div>
   {:else}
     <!-- Desktop Table using CrmTable -->
@@ -909,10 +913,12 @@
       >
         {#snippet emptyState()}
           <div class="flex flex-col items-center justify-center py-16 text-center">
-            <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+            <div
+              class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+            >
               <Building2 class="size-8 text-[var(--text-tertiary)]" />
             </div>
-            <h3 class="text-[var(--text-primary)] text-lg font-medium">No accounts found</h3>
+            <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
           </div>
         {/snippet}
       </CrmTable>
@@ -1013,7 +1019,9 @@
         <div class="flex gap-2">
           <AlertTriangle class="mt-0.5 size-4 shrink-0 text-[var(--color-negative-default)]" />
           <div>
-            <p class="text-sm font-medium text-[var(--color-negative-default)]">This account is closed</p>
+            <p class="text-sm font-medium text-[var(--color-negative-default)]">
+              This account is closed
+            </p>
             <p class="mt-0.5 text-xs text-[var(--color-negative-default)]/80">
               Reopen the account to make changes
             </p>
@@ -1025,9 +1033,7 @@
     <!-- Related entity stats (view mode only) -->
     {#if drawerMode !== 'create' && selectedAccount}
       <div class="mb-4">
-        <p
-          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
-        >
+        <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
           Related
         </p>
         <div class="grid grid-cols-4 gap-2">
@@ -1073,9 +1079,7 @@
       <!-- Quick actions (for active accounts only) -->
       {#if !isClosed}
         <div class="mb-4">
-          <p
-            class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
-          >
+          <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
             Quick Actions
           </p>
           <div class="flex gap-2">
@@ -1103,9 +1107,7 @@
 
       <!-- Metadata -->
       <div>
-        <p
-          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
-        >
+        <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
@@ -1131,7 +1133,7 @@
           entityType="accounts"
           initialComments={selectedAccount.comments || []}
           currentUserEmail={currentUser?.email}
-          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+          isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
         />
       </div>
     {/if}

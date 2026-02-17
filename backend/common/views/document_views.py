@@ -334,14 +334,17 @@ class DocumentDetailView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
         serializer = DocumentCreateSerializer(
-            data=params, instance=self.object, request_obj=request
+            data=params, instance=self.object, request_obj=request, partial=True
         )
         if serializer.is_valid():
-            doc = serializer.save(
-                document_file=request.FILES.get("document_file"),
-                status=params.get("status"),
-                org=request.profile.org,
-            )
+            save_kwargs = {
+                "org": request.profile.org,
+            }
+            if request.FILES.get("document_file"):
+                save_kwargs["document_file"] = request.FILES.get("document_file")
+            if params.get("status"):
+                save_kwargs["status"] = params.get("status")
+            doc = serializer.save(**save_kwargs)
             doc.shared_to.clear()
             if params.get("shared_to"):
                 assinged_to_list = params.get("shared_to")

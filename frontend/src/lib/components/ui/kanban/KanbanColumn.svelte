@@ -124,17 +124,21 @@
     <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r {getColumnGradient(column)}"></div>
 
     <!-- Glass header content -->
-    <div class="relative flex items-center justify-between px-4 py-3 backdrop-blur-sm
-      bg-white/60 dark:bg-white/[0.04]
-      border border-white/20 dark:border-white/[0.06]
-      border-b-0">
+    <div
+      class="relative flex items-center justify-between border border-b-0 border-white/20
+      bg-white/60 px-4
+      py-3 backdrop-blur-sm dark:border-white/[0.06]
+      dark:bg-white/[0.04]"
+    >
       <div class="flex items-center gap-2.5">
         <h3 class="text-sm font-bold tracking-tight text-gray-800 dark:text-white/90">
           {column.name}
         </h3>
         <div class="flex items-center gap-1.5">
           <span
-            class="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r {getColumnGradient(column)} px-1.5 text-[0.65rem] font-bold text-white shadow-sm"
+            class="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r {getColumnGradient(
+              column
+            )} px-1.5 text-[0.65rem] font-bold text-white shadow-sm"
           >
             {itemCount}
           </span>
@@ -142,8 +146,8 @@
             <span
               class="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-wide
                 {isAtWipLimit
-                  ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'
-                  : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400'}"
+                ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'
+                : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400'}"
             >
               max {column.wip_limit}
             </span>
@@ -153,7 +157,9 @@
 
       <!-- Column value indicator -->
       {#if columnValue() > 0}
-        <div class="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 dark:bg-emerald-500/10">
+        <div
+          class="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 dark:bg-emerald-500/10"
+        >
           <TrendingUp class="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
           <span class="text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">
             {formatColumnValue(columnValue())}
@@ -165,17 +171,14 @@
 
   <!-- Column Content - Cards container -->
   <div
-    class="column-content flex-1 space-y-2.5 overflow-y-auto px-2 py-3
+    class="column-content flex-1 space-y-2.5 overflow-y-auto border-x border-white/20
       bg-gradient-to-b from-gray-50/80 to-gray-100/50
-      dark:from-white/[0.02] dark:to-white/[0.01]
-      border-x border-white/20 dark:border-white/[0.04]"
+      px-2 py-3
+      dark:border-white/[0.04] dark:from-white/[0.02] dark:to-white/[0.01]"
     style="max-height: calc(100vh - 280px)"
   >
     {#each column.items as item, index (item.id)}
-      <div
-        class="card-wrapper animate-in"
-        style="animation-delay: {Math.min(index * 40, 300)}ms"
-      >
+      <div class="card-wrapper animate-in" style="animation-delay: {Math.min(index * 40, 300)}ms">
         {#if CardComponent}
           <CardComponent
             {item}
@@ -217,12 +220,15 @@
 
   <!-- Column Footer - Subtle summary -->
   <div
-    class="column-footer flex items-center justify-center rounded-b-2xl px-4 py-2
-      bg-white/40 dark:bg-white/[0.02]
-      border border-t-0 border-white/20 dark:border-white/[0.04]"
+    class="column-footer flex items-center justify-center rounded-b-2xl border border-t-0
+      border-white/20 bg-white/40
+      px-4 py-2 dark:border-white/[0.04] dark:bg-white/[0.02]"
   >
-    <span class="text-[0.65rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
-      {itemCount} {itemCount === 1 ? itemName : itemName + 's'}
+    <span
+      class="text-[0.65rem] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-500"
+    >
+      {itemCount}
+      {itemCount === 1 ? itemName : itemName + 's'}
     </span>
   </div>
 </div>
@@ -244,36 +250,20 @@
   }
 
   .kanban-column.drag-over .column-content {
-    background: linear-gradient(
-      to bottom,
-      rgba(34, 211, 238, 0.08),
-      rgba(34, 211, 238, 0.03)
-    );
+    background: linear-gradient(to bottom, rgba(34, 211, 238, 0.08), rgba(34, 211, 238, 0.03));
   }
 
   :global(.dark) .kanban-column.drag-over .column-content {
-    background: linear-gradient(
-      to bottom,
-      rgba(34, 211, 238, 0.1),
-      rgba(34, 211, 238, 0.02)
-    );
+    background: linear-gradient(to bottom, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.02));
   }
 
   /* WIP exceeded state */
   .kanban-column.wip-exceeded .column-header {
-    background: linear-gradient(
-      to right,
-      rgba(251, 113, 133, 0.1),
-      rgba(251, 113, 133, 0.05)
-    );
+    background: linear-gradient(to right, rgba(251, 113, 133, 0.1), rgba(251, 113, 133, 0.05));
   }
 
   :global(.dark) .kanban-column.wip-exceeded .column-header {
-    background: linear-gradient(
-      to right,
-      rgba(251, 113, 133, 0.15),
-      rgba(251, 113, 133, 0.05)
-    );
+    background: linear-gradient(to right, rgba(251, 113, 133, 0.15), rgba(251, 113, 133, 0.05));
   }
 
   /* Card animation on load */

@@ -189,37 +189,44 @@
     {
       value: 'call',
       label: 'Call',
-      color: 'bg-[var(--activity-call)]/10 text-[var(--activity-call)] dark:bg-[var(--activity-call)]/15'
+      color:
+        'bg-[var(--activity-call)]/10 text-[var(--activity-call)] dark:bg-[var(--activity-call)]/15'
     },
     {
       value: 'email',
       label: 'Email',
-      color: 'bg-[var(--activity-email)]/10 text-[var(--activity-email)] dark:bg-[var(--activity-email)]/15'
+      color:
+        'bg-[var(--activity-email)]/10 text-[var(--activity-email)] dark:bg-[var(--activity-email)]/15'
     },
     {
       value: 'existing customer',
       label: 'Existing Customer',
-      color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
+      color:
+        'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
     },
     {
       value: 'partner',
       label: 'Partner',
-      color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+      color:
+        'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
     },
     {
       value: 'public relations',
       label: 'Public Relations',
-      color: 'bg-[var(--activity-meeting)]/10 text-[var(--activity-meeting)] dark:bg-[var(--activity-meeting)]/15'
+      color:
+        'bg-[var(--activity-meeting)]/10 text-[var(--activity-meeting)] dark:bg-[var(--activity-meeting)]/15'
     },
     {
       value: 'campaign',
       label: 'Campaign',
-      color: 'bg-[var(--stage-qualified)]/10 text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+      color:
+        'bg-[var(--stage-qualified)]/10 text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'other',
       label: 'Other',
-      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] dark:bg-[var(--surface-sunken)]'
+      color:
+        'bg-[var(--surface-sunken)] text-[var(--text-secondary)] dark:bg-[var(--surface-sunken)]'
     }
   ];
 
@@ -1620,7 +1627,9 @@
     <!-- Table View -->
     {#if filteredLeads.length === 0}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
           <User class="size-8 text-[var(--text-tertiary)]" />
         </div>
         <h3 class="text-lg font-medium text-[var(--text-primary)]">No leads found</h3>
@@ -1638,7 +1647,9 @@
         >
           {#snippet emptyState()}
             <div class="flex flex-col items-center justify-center py-16 text-center">
-              <div class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+              <div
+                class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+              >
                 <User class="size-6 text-[var(--text-tertiary)]" />
               </div>
               <h3 class="text-lg font-medium text-[var(--text-primary)]">No leads found</h3>
@@ -1740,7 +1751,7 @@
         entityType="leads"
         initialComments={drawerData.comments || []}
         currentUserEmail={currentUser?.email}
-        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+        isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
       />
     {/if}
   {/snippet}

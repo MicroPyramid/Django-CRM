@@ -47,7 +47,9 @@
 
 <div class="relative min-h-screen">
   <!-- Subtle gradient mesh background with orange tint -->
-  <div class="gradient-mesh noise-overlay pointer-events-none fixed inset-0 -z-10 opacity-50 dark:opacity-30"></div>
+  <div
+    class="gradient-mesh noise-overlay pointer-events-none fixed inset-0 -z-10 opacity-50 dark:opacity-30"
+  ></div>
 
   <div class="space-y-8 p-6 md:p-8">
     <!-- Header Section with orange gradient accent -->
@@ -55,18 +57,21 @@
       <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div class="space-y-2">
           <div class="flex items-center gap-3">
-            <div class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--color-primary-default)] to-[var(--stage-contacted)] shadow-lg dark:shadow-[var(--color-primary-default)]/20">
+            <div
+              class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--color-primary-default)] to-[var(--stage-contacted)] shadow-lg dark:shadow-[var(--color-primary-default)]/20"
+            >
               <Sparkles class="size-5 text-white" />
             </div>
             <div>
-              <p class="text-[var(--text-secondary)] text-sm font-medium">{getGreeting()}</p>
-              <h1 class="text-[var(--text-primary)] text-2xl font-bold tracking-tight md:text-3xl">
+              <p class="text-sm font-medium text-[var(--text-secondary)]">{getGreeting()}</p>
+              <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)] md:text-3xl">
                 Dashboard
               </h1>
             </div>
           </div>
-          <p class="text-[var(--text-secondary)] max-w-md text-sm">
-            Here's what's happening with your CRM today. Stay on top of your pipeline and close more deals.
+          <p class="max-w-md text-sm text-[var(--text-secondary)]">
+            Here's what's happening with your CRM today. Stay on top of your pipeline and close more
+            deals.
           </p>
         </div>
       </div>
@@ -76,11 +81,15 @@
       <div
         class="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
       >
-        <div class="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20">
+        <div
+          class="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20"
+        >
           <AlertCircle class="size-5 text-[var(--color-negative-default)]" />
         </div>
         <div>
-          <p class="text-sm font-medium text-[var(--color-negative-default)]">Error loading dashboard</p>
+          <p class="text-sm font-medium text-[var(--color-negative-default)]">
+            Error loading dashboard
+          </p>
           <p class="text-xs text-[var(--color-negative-default)]/80">{data.error}</p>
         </div>
       </div>
@@ -96,15 +105,21 @@
       </div>
 
       <!-- Pipeline Overview - Full Width with glass effect -->
-      <div class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm dark:shadow-lg dark:shadow-black/10">
+      <div
+        class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:shadow-lg dark:shadow-black/10 dark:backdrop-blur-sm"
+      >
         <div class="mb-5 flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15">
+            <div
+              class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
+            >
               <TrendingUp class="size-5 text-[var(--color-primary-default)]" />
             </div>
             <div>
-              <h2 class="text-[var(--text-primary)] text-base font-semibold tracking-tight">Sales Pipeline</h2>
-              <p class="text-[var(--text-tertiary)] text-xs">{currencyNote}</p>
+              <h2 class="text-base font-semibold tracking-tight text-[var(--text-primary)]">
+                Sales Pipeline
+              </h2>
+              <p class="text-xs text-[var(--text-tertiary)]">{currencyNote}</p>
             </div>
           </div>
         </div>

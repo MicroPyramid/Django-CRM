@@ -46,7 +46,7 @@ class BoardTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoardTask
         fields = "__all__"
-        read_only_fields = ("id", "created_at", "updated_at", "completed_at")
+        read_only_fields = ("id", "created_at", "updated_at", "completed_at", "org", "column")
 
 
 class BoardColumnSerializer(serializers.ModelSerializer):
@@ -58,7 +58,7 @@ class BoardColumnSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoardColumn
         fields = "__all__"
-        read_only_fields = ("id", "created_at", "updated_at", "board")
+        read_only_fields = ("id", "created_at", "updated_at", "board", "org")
 
     @extend_schema_field(int)
     def get_task_count(self, obj):

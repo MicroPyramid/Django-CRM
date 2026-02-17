@@ -23,26 +23,27 @@
   let { leads = [] } = $props();
 
   // Using design system lead temperature tokens
-  const ratingConfig = /** @type {Record<string, { bg: string, text: string, border: string, iconColor: string }>} */ ({
-    HOT: {
-      bg: 'bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15',
-      text: 'text-[var(--lead-hot)]',
-      border: 'border-[var(--lead-hot)]/30',
-      iconColor: 'text-[var(--lead-hot)]'
-    },
-    WARM: {
-      bg: 'bg-[var(--lead-warm-bg)] dark:bg-[var(--lead-warm)]/15',
-      text: 'text-[var(--lead-warm)]',
-      border: 'border-[var(--lead-warm)]/30',
-      iconColor: 'text-[var(--lead-warm)]'
-    },
-    COLD: {
-      bg: 'bg-[var(--lead-cold-bg)] dark:bg-[var(--lead-cold)]/15',
-      text: 'text-[var(--lead-cold)]',
-      border: 'border-[var(--lead-cold)]/30',
-      iconColor: 'text-[var(--lead-cold)]'
-    }
-  });
+  const ratingConfig =
+    /** @type {Record<string, { bg: string, text: string, border: string, iconColor: string }>} */ ({
+      HOT: {
+        bg: 'bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15',
+        text: 'text-[var(--lead-hot)]',
+        border: 'border-[var(--lead-hot)]/30',
+        iconColor: 'text-[var(--lead-hot)]'
+      },
+      WARM: {
+        bg: 'bg-[var(--lead-warm-bg)] dark:bg-[var(--lead-warm)]/15',
+        text: 'text-[var(--lead-warm)]',
+        border: 'border-[var(--lead-warm)]/30',
+        iconColor: 'text-[var(--lead-warm)]'
+      },
+      COLD: {
+        bg: 'bg-[var(--lead-cold-bg)] dark:bg-[var(--lead-cold)]/15',
+        text: 'text-[var(--lead-cold)]',
+        border: 'border-[var(--lead-cold)]/30',
+        iconColor: 'text-[var(--lead-cold)]'
+      }
+    });
 
   /**
    * Format date for display
@@ -90,14 +91,20 @@
   }
 </script>
 
-<div class="flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+<div
+  class="flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm"
+>
   <!-- Header - Orange accent for hot leads -->
-  <div class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4">
+  <div
+    class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4"
+  >
     <div class="flex items-center gap-3">
-      <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15">
+      <div
+        class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--lead-hot-bg)] dark:bg-[var(--lead-hot)]/15"
+      >
         <Flame class="size-4 text-[var(--lead-hot)]" />
       </div>
-      <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">Hot Leads</h3>
+      <h3 class="text-sm font-semibold tracking-tight text-[var(--text-primary)]">Hot Leads</h3>
     </div>
     <Button variant="ghost" size="sm" href="/leads?rating=HOT" class="gap-1 text-xs font-medium">
       View all
@@ -109,11 +116,13 @@
   <div class="flex-1 overflow-auto">
     {#if leads.length === 0}
       <div class="flex h-full flex-col items-center justify-center py-10 text-center">
-        <div class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+        >
           <Sparkles class="size-6 text-[var(--text-tertiary)]" />
         </div>
-        <p class="text-[var(--text-secondary)] text-sm font-medium">No hot leads</p>
-        <p class="text-[var(--text-tertiary)] text-xs">Mark leads as "Hot" to see them here</p>
+        <p class="text-sm font-medium text-[var(--text-secondary)]">No hot leads</p>
+        <p class="text-xs text-[var(--text-tertiary)]">Mark leads as "Hot" to see them here</p>
       </div>
     {:else}
       <div class="divide-y divide-[var(--border-default)]/30">
@@ -125,10 +134,12 @@
           >
             <!-- Lead info -->
             <div class="min-w-0 flex-1">
-              <p class="text-[var(--text-primary)] truncate text-sm font-medium transition-colors group-hover:text-[var(--color-primary-default)]">
+              <p
+                class="truncate text-sm font-medium text-[var(--text-primary)] transition-colors group-hover:text-[var(--color-primary-default)]"
+              >
                 {getLeadName(lead)}
               </p>
-              <p class="text-[var(--text-secondary)] mt-0.5 truncate text-xs">
+              <p class="mt-0.5 truncate text-xs text-[var(--text-secondary)]">
                 {lead.company || 'No company'}
               </p>
             </div>
@@ -147,7 +158,9 @@
                 <Calendar class="size-3.5 text-[var(--text-tertiary)]" />
                 <span
                   class="text-xs font-medium tabular-nums
-                    {isOverdue(lead.next_follow_up) ? 'text-[var(--task-overdue)]' : 'text-[var(--text-secondary)]'}"
+                    {isOverdue(lead.next_follow_up)
+                    ? 'text-[var(--task-overdue)]'
+                    : 'text-[var(--text-secondary)]'}"
                 >
                   {formatFollowUp(lead.next_follow_up)}
                 </span>
@@ -155,7 +168,9 @@
             {/if}
 
             <!-- Hover actions -->
-            <div class="flex flex-shrink-0 gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100">
+            <div
+              class="flex flex-shrink-0 gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100"
+            >
               <Button
                 variant="ghost"
                 size="icon"

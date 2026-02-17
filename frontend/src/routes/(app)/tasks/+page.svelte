@@ -61,17 +61,20 @@
     {
       value: 'New',
       label: 'New',
-      color: 'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
+      color:
+        'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
     },
     {
       value: 'In Progress',
       label: 'In Progress',
-      color: 'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
+      color:
+        'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
     },
     {
       value: 'Completed',
       label: 'Completed',
-      color: 'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
+      color:
+        'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
     }
   ];
 
@@ -79,17 +82,20 @@
     {
       value: 'High',
       label: 'High',
-      color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
+      color:
+        'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
     },
     {
       value: 'Medium',
       label: 'Medium',
-      color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
+      color:
+        'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
     },
     {
       value: 'Low',
       label: 'Low',
-      color: 'bg-[var(--priority-low-bg)] text-[var(--priority-low)] dark:bg-[var(--priority-low)]/15'
+      color:
+        'bg-[var(--priority-low-bg)] text-[var(--priority-low)] dark:bg-[var(--priority-low)]/15'
     }
   ];
 
@@ -1272,11 +1278,15 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <div
+            class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+          >
             <CheckSquare class="size-8 text-[var(--text-tertiary)]" />
           </div>
-          <h3 class="text-[var(--text-primary)] text-lg font-medium">No tasks found</h3>
-          <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new task</p>
+          <h3 class="text-lg font-medium text-[var(--text-primary)]">No tasks found</h3>
+          <p class="mt-1 text-sm text-[var(--text-secondary)]">
+            Try adjusting your filters or create a new task
+          </p>
         </div>
       {/snippet}
     </CrmTable>
@@ -1541,7 +1551,7 @@
           entityType="tasks"
           initialComments={selectedTask.comments || []}
           currentUserEmail={currentUser?.email}
-          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+          isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
         />
       </div>
     {/if}

@@ -58,8 +58,8 @@
 
       <!-- SSO Notice -->
       <p class="sso-notice">
-        We use Google Sign-In for secure, passwordless authentication.
-        Your data is protected with enterprise-grade security.
+        We use Google Sign-In for secure, passwordless authentication. Your data is protected with
+        enterprise-grade security.
       </p>
     </div>
 

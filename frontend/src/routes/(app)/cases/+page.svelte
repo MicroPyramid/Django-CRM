@@ -983,11 +983,15 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <div
+            class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+          >
             <Briefcase class="size-8 text-[var(--text-tertiary)]" />
           </div>
-          <h3 class="text-[var(--text-primary)] text-lg font-medium">No cases found</h3>
-          <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new case</p>
+          <h3 class="text-lg font-medium text-[var(--text-primary)]">No cases found</h3>
+          <p class="mt-1 text-sm text-[var(--text-secondary)]">
+            Try adjusting your filters or create a new case
+          </p>
         </div>
       {/snippet}
     </CrmTable>
@@ -1039,7 +1043,7 @@
         entityType="cases"
         initialComments={drawer.selected.comments || []}
         currentUserEmail={currentUser?.email}
-        isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+        isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
       />
     {/if}
   {/snippet}

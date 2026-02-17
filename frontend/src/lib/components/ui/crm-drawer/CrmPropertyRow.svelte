@@ -184,15 +184,17 @@
 
 <div
   class={cn(
-    'group -mx-3 flex min-h-[44px] items-center rounded-lg px-3 transition-all duration-150 hover:bg-muted/40',
+    'group hover:bg-muted/40 -mx-3 flex min-h-[44px] items-center rounded-lg px-3 transition-all duration-150',
     className
   )}
 >
   <!-- Label with icon -->
-  <div class="flex w-32 shrink-0 items-center gap-2.5 text-[13px] font-medium text-muted-foreground">
+  <div
+    class="text-muted-foreground flex w-32 shrink-0 items-center gap-2.5 text-[13px] font-medium"
+  >
     {#if Icon}
-      <div class="flex h-6 w-6 items-center justify-center rounded-md bg-muted/50">
-        <Icon class="h-3.5 w-3.5 text-muted-foreground/70" />
+      <div class="bg-muted/50 flex h-6 w-6 items-center justify-center rounded-md">
+        <Icon class="text-muted-foreground/70 h-3.5 w-3.5" />
       </div>
     {/if}
     {label}
@@ -207,12 +209,12 @@
         oninput={handleInput}
         {placeholder}
         disabled={!editable}
-        class="w-full rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm font-medium text-foreground transition-all outline-none placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-1 focus:ring-primary/20"
+        class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm font-medium transition-all outline-none focus:ring-1"
       />
     {:else if type === 'number'}
       <div class="flex items-center">
         {#if prefix}
-          <span class="mr-1.5 text-sm font-medium text-muted-foreground">{prefix}</span>
+          <span class="text-muted-foreground mr-1.5 text-sm font-medium">{prefix}</span>
         {/if}
         <input
           type="number"
@@ -220,7 +222,7 @@
           oninput={handleNumberInput}
           {placeholder}
           disabled={!editable}
-          class="w-full rounded-lg border-0 bg-transparent px-2 py-1.5 text-sm font-medium text-foreground tabular-nums transition-all outline-none placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-1 focus:ring-primary/20"
+          class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full rounded-lg border-0 bg-transparent px-2 py-1.5 text-sm font-medium tabular-nums transition-all outline-none focus:ring-1"
         />
       </div>
     {:else if type === 'date'}
@@ -231,11 +233,11 @@
               {...props}
               type="button"
               class={cn(
-                'inline-flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all hover:bg-muted/30',
+                'hover:bg-muted/30 inline-flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all',
                 !value ? 'text-muted-foreground/50' : 'text-foreground'
               )}
             >
-              <CalendarIcon class="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+              <CalendarIcon class="text-muted-foreground/60 h-3.5 w-3.5 shrink-0" />
               {formatDateDisplay(value)}
             </button>
           {/snippet}
@@ -250,7 +252,7 @@
         {placeholder}
         disabled={!editable}
         rows={3}
-        class="w-full resize-none rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm text-foreground transition-all outline-none placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-1 focus:ring-primary/20"
+        class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full resize-none rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm transition-all outline-none focus:ring-1"
         >{value || ''}</textarea
       >
     {:else if type === 'select'}
@@ -260,11 +262,15 @@
             <button
               {...props}
               type="button"
-              class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm ring-1 ring-inset ring-black/5 transition-all duration-150 hover:shadow dark:ring-white/10 {getOptionStyle(
+              class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm ring-1 ring-black/5 transition-all duration-150 ring-inset hover:shadow dark:ring-white/10 {getOptionStyle(
                 value
               )}"
             >
-              <span class="h-2 w-2 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/20 {getOptionBgColor(value)}"></span>
+              <span
+                class="h-2 w-2 rounded-full ring-1 ring-black/10 ring-inset dark:ring-white/20 {getOptionBgColor(
+                  value
+                )}"
+              ></span>
               {getOptionLabel(value)}
             </button>
           {/snippet}
@@ -275,11 +281,14 @@
               onclick={() => handleSelectChange(option.value)}
               class="flex items-center gap-2.5 rounded-lg px-2.5 py-2"
             >
-              <span class="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/20 {option.color?.split(' ')[0] || 'bg-gray-400'}"
+              <span
+                class="h-2.5 w-2.5 rounded-full ring-1 ring-black/10 ring-inset dark:ring-white/20 {option.color?.split(
+                  ' '
+                )[0] || 'bg-gray-400'}"
               ></span>
               <span class="font-medium">{option.label}</span>
               {#if value === option.value}
-                <Check class="ml-auto h-4 w-4 text-primary" />
+                <Check class="text-primary ml-auto h-4 w-4" />
               {/if}
             </DropdownMenu.Item>
           {/each}
@@ -291,11 +300,11 @@
         onclick={handleCheckboxToggle}
         disabled={!editable}
         class="flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all duration-150 {value
-          ? 'border-primary bg-primary shadow-sm shadow-primary/25'
+          ? 'border-primary bg-primary shadow-primary/25 shadow-sm'
           : 'border-muted-foreground/30 hover:border-muted-foreground/50'}"
       >
         {#if value}
-          <Check class="h-3.5 w-3.5 text-primary-foreground" />
+          <Check class="text-primary-foreground h-3.5 w-3.5" />
         {/if}
       </button>
     {:else if type === 'color'}
@@ -305,9 +314,9 @@
           value={value || '#3B82F6'}
           oninput={handleColorInput}
           disabled={!editable}
-          class="h-8 w-10 cursor-pointer rounded-lg border border-border/50 bg-transparent p-0.5 shadow-sm"
+          class="border-border/50 h-8 w-10 cursor-pointer rounded-lg border bg-transparent p-0.5 shadow-sm"
         />
-        <span class="font-mono text-xs text-muted-foreground">{value || '#3B82F6'}</span>
+        <span class="text-muted-foreground font-mono text-xs">{value || '#3B82F6'}</span>
       </div>
     {:else if type === 'multiselect'}
       <EditableMultiSelect
@@ -319,7 +328,7 @@
         onchange={handleMultiSelectChange}
       />
     {:else if type === 'readonly'}
-      <span class="px-2.5 py-1.5 text-sm font-medium text-foreground">
+      <span class="text-foreground px-2.5 py-1.5 text-sm font-medium">
         {#if value}
           {value}
         {:else}
