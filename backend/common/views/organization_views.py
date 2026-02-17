@@ -55,14 +55,13 @@ class OrgProfileCreateView(APIView):
                     "status": status.HTTP_201_CREATED,
                 }
             )
-        else:
-            return Response(
-                {
-                    "error": True,
-                    "errors": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {
+                "error": True,
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     @extend_schema(
         operation_id="org_list",

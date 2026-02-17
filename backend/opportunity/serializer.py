@@ -3,7 +3,6 @@ from rest_framework import serializers
 
 from accounts.serializer import AccountSerializer
 from common.serializer import (
-    AttachmentsSerializer,
     OrganizationSerializer,
     ProfileSerializer,
     TagsSerializer,

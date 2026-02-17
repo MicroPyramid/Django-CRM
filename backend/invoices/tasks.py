@@ -9,7 +9,6 @@ Tasks include:
 - Estimate expiry checking
 """
 
-import datetime
 import logging
 
 from celery import shared_task
@@ -41,7 +40,7 @@ def send_email(invoice_id, recipients, org_id, domain="localhost", protocol="htt
     set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
-        logger.warning(f"Invoice {invoice_id} not found")
+        logger.warning("Invoice %s not found", invoice_id)
         return
 
     for user_id in recipients:
@@ -68,10 +67,12 @@ def send_email(invoice_id, recipients, org_id, domain="localhost", protocol="htt
             try:
                 msg.send()
                 logger.info(
-                    f"Sent assignment email for invoice {invoice_id} to {profile.user.email}"
+                    "Sent assignment email for invoice %s to %s",
+                    invoice_id,
+                    profile.user.email,
                 )
             except Exception as e:
-                logger.error(f"Failed to send email: {e}")
+                logger.error("Failed to send email: %s", e)
 
 
 @shared_task
@@ -94,11 +95,11 @@ def send_invoice_to_client(
     set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
-        logger.warning(f"Invoice {invoice_id} not found")
+        logger.warning("Invoice %s not found", invoice_id)
         return
 
     if not invoice.client_email:
-        logger.warning(f"Invoice {invoice_id} has no client email")
+        logger.warning("Invoice %s has no client email", invoice_id)
         return
 
     subject = f"Invoice #{invoice.invoice_number} from {invoice.org.name}"
@@ -131,7 +132,7 @@ def send_invoice_to_client(
             filename = generate_invoice_filename(invoice)
             msg.attach(filename, pdf_content, "application/pdf")
         except Exception as e:
-            logger.error(f"Failed to generate PDF for invoice {invoice_id}: {e}")
+            logger.error("Failed to generate PDF for invoice %s: %s", invoice_id, e)
 
     try:
         msg.send()
@@ -141,9 +142,9 @@ def send_invoice_to_client(
         if invoice.status == "Draft":
             invoice.status = "Sent"
         invoice.save()
-        logger.info(f"Sent invoice {invoice_id} to {invoice.client_email}")
+        logger.info("Sent invoice %s to %s", invoice_id, invoice.client_email)
     except Exception as e:
-        logger.error(f"Failed to send invoice email: {e}")
+        logger.error("Failed to send invoice email: %s", e)
 
 
 @shared_task
@@ -162,7 +163,7 @@ def create_invoice_history(invoice_id, updated_by_user_id, changed_fields, org_i
     set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
-        logger.warning(f"Invoice {invoice_id} not found")
+        logger.warning("Invoice %s not found", invoice_id)
         return
 
     updated_by = Profile.objects.filter(id=updated_by_user_id).first()
@@ -206,7 +207,7 @@ def create_invoice_history(invoice_id, updated_by_user_id, changed_fields, org_i
         due_date=invoice.due_date,
         org=invoice.org,
     )
-    logger.info(f"Created history entry for invoice {invoice_id}")
+    logger.info("Created history entry for invoice %s", invoice_id)
 
 
 @shared_task
@@ -232,7 +233,8 @@ def generate_recurring_invoices():
             recurring.is_active = False
             recurring.save()
             logger.info(
-                f"Deactivated recurring invoice {recurring.id} - end date reached"
+                "Deactivated recurring invoice %s - end date reached",
+                recurring.id,
             )
             continue
 
@@ -284,7 +286,7 @@ def generate_recurring_invoices():
             recurring.invoices_generated += 1
             recurring.save()
 
-            logger.info(f"Created invoice {invoice.id} from recurring {recurring.id}")
+            logger.info("Created invoice %s from recurring %s", invoice.id, recurring.id)
 
             # Auto-send if enabled
             if recurring.auto_send:
@@ -299,7 +301,9 @@ def generate_recurring_invoices():
 
         except Exception as e:
             logger.error(
-                f"Failed to generate invoice from recurring {recurring.id}: {e}"
+                "Failed to generate invoice from recurring %s: %s",
+                recurring.id,
+                e,
             )
 
     logger.info("Finished recurring invoice generation")
@@ -328,9 +332,9 @@ def check_overdue_invoices():
         invoice.status = "Overdue"
         invoice.save()
         count += 1
-        logger.info(f"Marked invoice {invoice.id} as overdue")
+        logger.info("Marked invoice %s as overdue", invoice.id)
 
-    logger.info(f"Marked {count} invoices as overdue")
+    logger.info("Marked %d invoices as overdue", count)
 
 
 @shared_task
@@ -349,16 +353,16 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
     set_rls_context(org_id)
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
-        logger.warning(f"Invoice {invoice_id} not found")
+        logger.warning("Invoice %s not found", invoice_id)
         return
 
     if not invoice.client_email:
-        logger.warning(f"Invoice {invoice_id} has no client email")
+        logger.warning("Invoice %s has no client email", invoice_id)
         return
 
     # Don't send reminders for paid or cancelled invoices
     if invoice.status in ["Paid", "Cancelled"]:
-        logger.info(f"Skipping reminder for {invoice_id} - status is {invoice.status}")
+        logger.info("Skipping reminder for %s - status is %s", invoice_id, invoice.status)
         return
 
     subject = f"Payment Reminder: Invoice #{invoice.invoice_number}"
@@ -391,9 +395,9 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
         invoice.last_reminder_sent = timezone.now()
         invoice.reminder_count += 1
         invoice.save()
-        logger.info(f"Sent payment reminder for invoice {invoice_id}")
+        logger.info("Sent payment reminder for invoice %s", invoice_id)
     except Exception as e:
-        logger.error(f"Failed to send payment reminder: {e}")
+        logger.error("Failed to send payment reminder: %s", e)
 
 
 @shared_task
@@ -492,9 +496,9 @@ def check_expired_estimates():
         estimate.status = "Expired"
         estimate.save()
         count += 1
-        logger.info(f"Marked estimate {estimate.id} as expired")
+        logger.info("Marked estimate %s as expired", estimate.id)
 
-    logger.info(f"Marked {count} estimates as expired")
+    logger.info("Marked %d estimates as expired", count)
 
 
 @shared_task
@@ -517,11 +521,11 @@ def send_estimate_to_client(
     set_rls_context(org_id)
     estimate = Estimate.objects.filter(id=estimate_id).first()
     if not estimate:
-        logger.warning(f"Estimate {estimate_id} not found")
+        logger.warning("Estimate %s not found", estimate_id)
         return
 
     if not estimate.client_email:
-        logger.warning(f"Estimate {estimate_id} has no client email")
+        logger.warning("Estimate %s has no client email", estimate_id)
         return
 
     subject = f"Estimate #{estimate.estimate_number} from {estimate.org.name}"
@@ -552,7 +556,7 @@ def send_estimate_to_client(
             filename = generate_estimate_filename(estimate)
             msg.attach(filename, pdf_content, "application/pdf")
         except Exception as e:
-            logger.error(f"Failed to generate PDF for estimate {estimate_id}: {e}")
+            logger.error("Failed to generate PDF for estimate %s: %s", estimate_id, e)
 
     try:
         msg.send()
@@ -560,6 +564,6 @@ def send_estimate_to_client(
         if estimate.status == "Draft":
             estimate.status = "Sent"
         estimate.save()
-        logger.info(f"Sent estimate {estimate_id} to {estimate.client_email}")
+        logger.info("Sent estimate %s to %s", estimate_id, estimate.client_email)
     except Exception as e:
-        logger.error(f"Failed to send estimate email: {e}")
+        logger.error("Failed to send estimate email: %s", e)

@@ -140,7 +140,7 @@ if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
 elif ENV_TYPE == "prod":
-    from .server_settings import *
+    from .server_settings import *  # noqa: F401
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@localhost")

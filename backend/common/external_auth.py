@@ -34,7 +34,7 @@ class APIKeyAuthentication(BaseAuthentication):
             ).first()
 
             if not profile:
-                logger.error(f"No active admin profile found for org {organization.id}")
+                logger.error("No active admin profile found for org %s", organization.id)
                 raise AuthenticationFailed("Invalid API Key configuration")
 
             # Set org context on request for downstream use
@@ -42,12 +42,12 @@ class APIKeyAuthentication(BaseAuthentication):
             request.org = organization
             request.META["org"] = str(organization.id)
 
-            logger.debug(f"API key authenticated: org={organization.id}")
+            logger.debug("API key authenticated: org=%s", organization.id)
             return (profile.user, None)
 
-        except Org.DoesNotExist:
+        except Org.DoesNotExist as exc:
             logger.warning("Invalid API key attempted")
-            raise AuthenticationFailed("Invalid API Key")
+            raise AuthenticationFailed("Invalid API Key") from exc
 
 
 class APIKeyAuthenticationScheme(OpenApiAuthenticationExtension):

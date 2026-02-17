@@ -5,5 +5,4 @@ class CommonConfig(AppConfig):
     name = "common"
 
     def ready(self):
-        # Import signals to register them
-        import common.signals  # noqa: F401
+        import common.signals  # noqa: F401  # pylint: disable=unused-import

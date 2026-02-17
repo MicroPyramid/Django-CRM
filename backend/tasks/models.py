@@ -189,8 +189,6 @@ class BoardTask(BaseModel):
 
     @property
     def is_overdue(self):
-        from django.utils import timezone
-
         if self.due_date and not self.is_completed:
             return timezone.now() > self.due_date
         return False

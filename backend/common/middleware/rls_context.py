@@ -70,11 +70,11 @@ class SetOrgContext:
                 cursor.execute(
                     "SELECT set_config('app.current_org', %s, false)", [org_id]
                 )
-                logger.debug(f"Set RLS context: app.current_org = {org_id}")
+                logger.debug("Set RLS context: app.current_org = %s", org_id)
 
         except Exception as e:
             # RLS might not be configured - log but don't fail
-            logger.debug(f"Could not set RLS context: {e}")
+            logger.debug("Could not set RLS context: %s", e)
 
     def _reset_org_context(self):
         """
@@ -167,7 +167,7 @@ class RequireOrgContext:
                     "SELECT set_config('app.current_org', %s, false)", [org_id]
                 )
         except Exception as e:
-            logger.warning(f"Failed to set RLS context: {e}")
+            logger.warning("Failed to set RLS context: %s", e)
 
     def _reset_org_context(self):
         """Reset PostgreSQL session variable after request."""

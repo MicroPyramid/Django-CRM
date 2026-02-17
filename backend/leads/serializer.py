@@ -1,10 +1,8 @@
 from rest_framework import serializers
 
-from accounts.models import Account
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
-    OrganizationSerializer,
     ProfileSerializer,
     TagsSerializer,
     TeamsSerializer,

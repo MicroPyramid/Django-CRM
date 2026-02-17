@@ -14,7 +14,6 @@ from common.models import Attachments, Comment, Profile, Tags, Teams, User
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
-    CommentSerializer,
     LeadCommentSerializer,
     ProfileSerializer,
     TeamsSerializer,
@@ -321,7 +320,6 @@ class LeadDetailView(APIView):
         return get_object_or_404(Lead, id=pk, org=self.request.profile.org)
 
     def get_context_data(self, **kwargs):
-        params = self.request.query_params
         context = {}
         user_assgn_list = [
             assigned_to.id for assigned_to in self.lead_obj.assigned_to.all()

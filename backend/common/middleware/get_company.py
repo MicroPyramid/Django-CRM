@@ -1,21 +1,14 @@
 import logging
 
-import jwt
-from crum import get_current_user
-from django.conf import settings
-from django.contrib.auth import logout
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.utils.functional import SimpleLazyObject
-from rest_framework import status
+from django.core.exceptions import PermissionDenied
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.response import Response
 
-from common.models import Org, Profile, User
+from common.models import Org, Profile
 
 logger = logging.getLogger(__name__)
 
 
-class GetProfileAndOrg(object):
+class GetProfileAndOrg:
     """
     Middleware to extract and validate organization context from JWT tokens.
 
@@ -82,7 +75,7 @@ class GetProfileAndOrg(object):
             if not org_id:
                 # Token doesn't have org context - this is allowed for some endpoints
                 # like /api/auth/me/ or initial login
-                logger.debug(f"JWT token for user {user_id} has no org_id claim")
+                logger.debug("JWT token for user %s has no org_id claim", user_id)
                 return
 
             # Validate user membership in the org
@@ -92,27 +85,28 @@ class GetProfileAndOrg(object):
                 )
                 request.profile = profile
                 request.org = profile.org
-                logger.debug(f"Set org context from JWT: user={user_id}, org={org_id}")
+                logger.debug("Set org context from JWT: user=%s, org=%s", user_id, org_id)
 
-            except Profile.DoesNotExist:
+            except Profile.DoesNotExist as exc:
                 # User doesn't have access to this org anymore
                 # This can happen if membership was revoked after token was issued
                 logger.warning(
-                    f"User {user_id} no longer has access to org {org_id}. "
-                    "Token may be stale."
+                    "User %s no longer has access to org %s. Token may be stale.",
+                    user_id,
+                    org_id,
                 )
                 raise PermissionDenied(
                     "You no longer have access to this organization. "
                     "Please login again."
-                )
+                ) from exc
 
         except (IndexError, KeyError) as e:
-            logger.warning(f"Malformed Authorization header: {e}")
+            logger.warning("Malformed Authorization header: %s", e)
             # Let DRF authentication handle this
             return
 
         except Exception as e:
-            logger.warning(f"JWT validation failed: {e}")
+            logger.warning("JWT validation failed: %s", e)
             # Let DRF authentication handle invalid tokens
             return
 
@@ -127,15 +121,15 @@ class GetProfileAndOrg(object):
             ).first()
 
             if not profile:
-                logger.error(f"No active admin profile found for org {organization.id}")
+                logger.error("No active admin profile found for org %s", organization.id)
                 raise AuthenticationFailed("Invalid API Key configuration")
 
             request.profile = profile
             request.org = organization
             request.META["org"] = str(organization.id)
 
-            logger.debug(f"Set org context from API key: org={organization.id}")
+            logger.debug("Set org context from API key: org=%s", organization.id)
 
-        except Org.DoesNotExist:
+        except Org.DoesNotExist as exc:
             logger.warning("Invalid API key attempted")
-            raise AuthenticationFailed("Invalid API Key")
+            raise AuthenticationFailed("Invalid API Key") from exc

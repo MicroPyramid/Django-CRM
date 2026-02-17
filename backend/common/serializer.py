@@ -1,12 +1,9 @@
 import re
 
 from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_decode
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from common.utils import CURRENCY_SYMBOLS
 from common.models import (
@@ -193,10 +190,10 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         content_type_str = validated_data.pop("content_type")
         try:
             content_type = ContentType.objects.get(model=content_type_str.lower())
-        except ContentType.DoesNotExist:
+        except ContentType.DoesNotExist as exc:
             raise serializers.ValidationError(
                 f"Invalid content type: {content_type_str}"
-            )
+            ) from exc
 
         validated_data["content_type"] = content_type
         return super().create(validated_data)
@@ -415,10 +412,10 @@ class AttachmentsCreateSerializer(serializers.ModelSerializer):
         content_type_str = validated_data.pop("content_type")
         try:
             content_type = ContentType.objects.get(model=content_type_str.lower())
-        except ContentType.DoesNotExist:
+        except ContentType.DoesNotExist as exc:
             raise serializers.ValidationError(
                 f"Invalid content type: {content_type_str}"
-            )
+            ) from exc
 
         validated_data["content_type"] = content_type
         return super().create(validated_data)

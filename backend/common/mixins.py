@@ -1,6 +1,3 @@
-# Python imports
-import uuid
-
 # Django imports
 from common.models import models
 

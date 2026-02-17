@@ -3,8 +3,6 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import (
-    OpenApiExample,
-    OpenApiParameter,
     extend_schema,
     inline_serializer,
 )

@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
-
 from django.test import TestCase
 from django.test.utils import override_settings
 
 from accounts.tests import AccountCreateTest
 from cases.tests import CaseCreation
-from common.models import Comment, User
+from common.models import User
 from common.tasks import (
     resend_activation_link_to_user,
     send_email_to_new_user,
@@ -96,7 +94,7 @@ class TestUserMentionsForAccountComments(AccountCreateTest, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.account = self.account
         self.comment.save()
 
@@ -126,7 +124,7 @@ class TestUserMentionsForContactsComments(ContactObjectsCreation, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.contact = self.contact
         self.comment.save()
 
@@ -156,7 +154,7 @@ class TestUserMentionsForLeadsComments(TestLeadModel, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.lead = self.lead
         self.comment.save()
 
@@ -186,7 +184,7 @@ class TestUserMentionsForOpportunityComments(OpportunityModel, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.opportunity = self.opportunity
         self.comment.save()
 
@@ -216,7 +214,7 @@ class TestUserMentionsForCasesComments(CaseCreation, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.case = self.case
         self.comment.save()
 
@@ -246,7 +244,7 @@ class TestUserMentionsForTasksComments(TaskCreateTest, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.task = self.task
         self.comment.save()
 
@@ -276,7 +274,7 @@ class TestUserMentionsForInvoiceComments(InvoiceCreateTest, TestCase):
         self.user_comment.set_password("password")
         self.user_comment.save()
 
-        self.comment.comment = "content @{}".format(self.user_comment.username)
+        self.comment.comment = f"content @{self.user_comment.username}"
         self.comment.invoice = self.invoice
         self.comment.save()
 

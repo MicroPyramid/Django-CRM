@@ -89,11 +89,6 @@ def cleanup_negative_amounts(apps, schema_editor):
         print(f"  Set {updated} negative opportunity_amount values to NULL")
 
 
-def reverse_noop(apps, schema_editor):
-    """No reverse operation - data cleanup cannot be undone."""
-    pass
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("common", "0008_enable_rls_product_invoice_line_item"),
@@ -106,22 +101,22 @@ class Migration(migrations.Migration):
         # Run data cleanup BEFORE adding constraints
         migrations.RunPython(
             cleanup_duplicate_lead_emails,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         migrations.RunPython(
             cleanup_long_phone_numbers,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         migrations.RunPython(
             cleanup_invalid_probability,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         migrations.RunPython(
             cleanup_negative_amounts,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         # Now safe to add constraints

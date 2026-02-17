@@ -1,14 +1,12 @@
 import binascii
-import datetime
 import os
 import time
 import uuid
 
-from django.contrib.auth.models import AbstractBaseUser, AbstractUser, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
@@ -398,7 +396,7 @@ class Attachments(BaseModel):
 
 def document_path(self, filename):
     hash_ = int(time.time())
-    return "%s/%s/%s" % ("docs", hash_, filename)
+    return f"docs/{hash_}/{filename}"
 
 
 class Document(BaseModel):
@@ -676,4 +674,4 @@ class ContactFormSubmission(BaseModel):
 
 
 # Import SecurityAuditLog so Django discovers it for migrations
-from common.audit_log import SecurityAuditLog
+from common.audit_log import SecurityAuditLog  # noqa: F401,E402  # pylint: disable=unused-import

@@ -27,11 +27,6 @@ def cleanup_negative_amounts(apps, schema_editor):
         print(f"  Set {updated} negative amount values to NULL")
 
 
-def reverse_noop(apps, schema_editor):
-    """No reverse operation - data cleanup cannot be undone."""
-    pass
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("accounts", "0006_add_enterprise_constraints"),
@@ -45,12 +40,12 @@ class Migration(migrations.Migration):
         # Run data cleanup BEFORE adding constraints
         migrations.RunPython(
             cleanup_invalid_probability,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         migrations.RunPython(
             cleanup_negative_amounts,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         # Now safe to add constraints

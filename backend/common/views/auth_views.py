@@ -5,21 +5,18 @@ import secrets
 import requests
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer
 
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
-
 from common import serializer
 from common.models import Org, Profile, User
+from common.serializer import OrgAwareRefreshToken
 
 logger = logging.getLogger(__name__)
-from common.serializer import OrgAwareRefreshToken
 
 
 class GoogleOAuthCallbackView(APIView):
@@ -54,7 +51,6 @@ class GoogleOAuthCallbackView(APIView):
     def post(self, request):
         import base64
 
-        from django.conf import settings as django_settings
         from django.utils import timezone
 
         code = request.data.get("code")
@@ -73,8 +69,8 @@ class GoogleOAuthCallbackView(APIView):
                 "https://oauth2.googleapis.com/token",
                 data={
                     "code": code,
-                    "client_id": django_settings.GOOGLE_CLIENT_ID,
-                    "client_secret": django_settings.GOOGLE_CLIENT_SECRET,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
                     "redirect_uri": redirect_uri,
                     "grant_type": "authorization_code",
                     "code_verifier": code_verifier,
@@ -209,7 +205,7 @@ class GoogleIdTokenView(APIView):
             )
 
         # Get or create user
-        user, created = User.objects.get_or_create(
+        user, _created = User.objects.get_or_create(
             email=email,
             defaults={
                 "profile_pic": picture,

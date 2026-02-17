@@ -3,7 +3,6 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams

@@ -22,6 +22,8 @@ from invoices.pdf import (
     generate_estimate_filename,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class PublicInvoiceView(APIView):
     """

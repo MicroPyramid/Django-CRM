@@ -2,7 +2,6 @@ import datetime
 
 from celery import shared_task
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.db import connection
 from django.template.loader import render_to_string
@@ -50,12 +49,9 @@ def send_email_to_new_user(user_id):
         user_obj.activation_key = activation_key
         user_obj.save()
 
-        context["complete_url"] = context[
-            "url"
-        ] + "/auth/activate-user/{}/{}/{}/".format(
-            context["uid"][0],
-            context["token"],
-            activation_key,
+        context["complete_url"] = (
+            context["url"]
+            + f"/auth/activate-user/{context['uid'][0]}/{context['token']}/{activation_key}/"
         )
         recipients = [
             user_email,
@@ -237,12 +233,9 @@ def resend_activation_link_to_user(
         user_obj.key_expires = timezone.now() + datetime.timedelta(hours=2)
         user_obj.save()
 
-        context["complete_url"] = context[
-            "url"
-        ] + "/auth/activate_user/{}/{}/{}/".format(
-            context["uid"][0],
-            context["token"],
-            activation_key,
+        context["complete_url"] = (
+            context["url"]
+            + f"/auth/activate_user/{context['uid'][0]}/{context['token']}/{activation_key}/"
         )
         recipients = [user_email]
         subject = "Welcome to Bottle CRM"

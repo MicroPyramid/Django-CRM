@@ -245,7 +245,7 @@ class TeamsDetailView(APIView):
             data=params, instance=self.team, request_obj=request, partial=True
         )
         if serializer.is_valid():
-            team_obj = serializer.save()
+            serializer.save()
             return Response(
                 {"error": False, "message": "Team Updated Successfully"},
                 status=status.HTTP_200_OK,

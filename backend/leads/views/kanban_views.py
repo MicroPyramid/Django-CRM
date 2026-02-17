@@ -93,9 +93,8 @@ class LeadKanbanView(APIView):
         if pipeline_id:
             # Pipeline-based kanban
             return self._get_pipeline_kanban(queryset, pipeline_id, org)
-        else:
-            # Status-based kanban
-            return self._get_status_kanban(queryset)
+        # Status-based kanban
+        return self._get_status_kanban(queryset)
 
     def _apply_filters(self, queryset, params):
         """Apply common filters to queryset."""

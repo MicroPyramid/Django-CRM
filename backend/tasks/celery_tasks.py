@@ -1,13 +1,9 @@
 from celery import shared_task
-from django.conf import settings
 from django.core.mail import EmailMessage
-from django.shortcuts import reverse
 from django.template.loader import render_to_string
 
-from accounts.models import Account
 from common.models import User
 from common.tasks import set_rls_context
-from contacts.models import Contact
 from tasks.models import Task
 
 
@@ -17,7 +13,6 @@ def send_email(
 ):
     set_rls_context(org_id)
     task = Task.objects.filter(id=task_id).first()
-    created_by = task.created_by
     for user in recipients:
         recipients_list = []
         user = User.objects.filter(id=user, is_active=True).first()
