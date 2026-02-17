@@ -20,7 +20,10 @@ from common.serializer import (
     TeamsSerializer,
 )
 from contacts.models import Contact
+from cases.models import Case
 from contacts.serializer import ContactSerializer
+from leads.models import Lead
+from opportunity.models import Opportunity
 from tasks import swagger_params
 from tasks.models import Task
 from tasks.serializer import (
@@ -222,8 +225,6 @@ class TaskListView(APIView, LimitOffsetPagination):
 
             # Handle new FK relationships with org validation
             if params.get("opportunity"):
-                from opportunity.models import Opportunity
-
                 opp = Opportunity.objects.filter(
                     id=params.get("opportunity"), org=request.profile.org
                 ).first()
@@ -232,8 +233,6 @@ class TaskListView(APIView, LimitOffsetPagination):
                     task_obj.save()
 
             if params.get("case"):
-                from cases.models import Case
-
                 case = Case.objects.filter(
                     id=params.get("case"), org=request.profile.org
                 ).first()
@@ -242,8 +241,6 @@ class TaskListView(APIView, LimitOffsetPagination):
                     task_obj.save()
 
             if params.get("lead"):
-                from leads.models import Lead
-
                 lead = Lead.objects.filter(
                     id=params.get("lead"), org=request.profile.org
                 ).first()
@@ -530,8 +527,6 @@ class TaskDetailView(APIView):
 
             # Handle FK relationships with org validation
             if params.get("opportunity"):
-                from opportunity.models import Opportunity
-
                 opp = Opportunity.objects.filter(
                     id=params.get("opportunity"), org=request.profile.org
                 ).first()
@@ -540,8 +535,6 @@ class TaskDetailView(APIView):
                 task_obj.opportunity = None
 
             if params.get("case"):
-                from cases.models import Case
-
                 case = Case.objects.filter(
                     id=params.get("case"), org=request.profile.org
                 ).first()
@@ -550,8 +543,6 @@ class TaskDetailView(APIView):
                 task_obj.case = None
 
             if params.get("lead"):
-                from leads.models import Lead
-
                 lead = Lead.objects.filter(
                     id=params.get("lead"), org=request.profile.org
                 ).first()
@@ -679,8 +670,6 @@ class TaskDetailView(APIView):
             # Handle FK relationships with org validation
             if "opportunity" in params:
                 if params.get("opportunity"):
-                    from opportunity.models import Opportunity
-
                     opp = Opportunity.objects.filter(
                         id=params.get("opportunity"), org=request.profile.org
                     ).first()
@@ -690,8 +679,6 @@ class TaskDetailView(APIView):
 
             if "case" in params:
                 if params.get("case"):
-                    from cases.models import Case
-
                     case = Case.objects.filter(
                         id=params.get("case"), org=request.profile.org
                     ).first()
@@ -701,8 +688,6 @@ class TaskDetailView(APIView):
 
             if "lead" in params:
                 if params.get("lead"):
-                    from leads.models import Lead
-
                     lead = Lead.objects.filter(
                         id=params.get("lead"), org=request.profile.org
                     ).first()

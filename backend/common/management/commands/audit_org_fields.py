@@ -186,7 +186,7 @@ class Command(BaseCommand):
         """Attempt to fix NULL org values by inferring from related objects."""
         from common.models import Address, Profile
 
-        for app_label, model_name, null_count, _total_count in issues:
+        for _app_label, model_name, null_count, _total_count in issues:
             if model_name == "Address":
                 # Address can be inferred from Profile.address relationship
                 fixed = 0

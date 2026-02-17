@@ -674,4 +674,4 @@ class ContactFormSubmission(BaseModel):
 
 
 # Import SecurityAuditLog so Django discovers it for migrations
-from common.audit_log import SecurityAuditLog  # noqa: F401,E402
+from common.audit_log import SecurityAuditLog  # noqa: F401,E402  # pylint: disable=unused-import

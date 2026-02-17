@@ -56,11 +56,6 @@ def cleanup_negative_revenue(apps, schema_editor):
         print(f"  Set {updated} negative annual_revenue values to NULL")
 
 
-def reverse_noop(apps, schema_editor):
-    """No reverse operation - data cleanup cannot be undone."""
-    pass
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("accounts", "0005_add_currency_fields"),
@@ -73,12 +68,12 @@ class Migration(migrations.Migration):
         # Run data cleanup BEFORE adding constraints
         migrations.RunPython(
             cleanup_duplicate_account_names,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         migrations.RunPython(
             cleanup_negative_revenue,
-            reverse_noop,
+            migrations.RunPython.noop,
             elidable=True,
         ),
         # Now safe to add constraints

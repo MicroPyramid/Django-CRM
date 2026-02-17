@@ -27,7 +27,6 @@ from invoices.models import (
     Payment,
     Product,
     RecurringInvoice,
-    RecurringInvoiceLineItem,
 )
 from invoices.pdf import (
     generate_estimate_filename,
