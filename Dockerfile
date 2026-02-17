@@ -1,41 +1,27 @@
-FROM ubuntu:24.04
+FROM python:3.12-slim-bookworm
 
-# invalidate cache
-ARG APP_NAME
+# Prevent Python from buffering stdout/stderr (useful for Docker logs)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# test arg
-RUN test -n "$APP_NAME"
+# Install system dependencies for WeasyPrint (cairo, pango) and PostgreSQL
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
 
-# install system packages
-RUN apt-get update -y
-RUN apt-get install -y \
-  python3-pip \
-  python3-venv \
-  build-essential \
-  libpq-dev \
-  libmariadbclient-dev \
-  libjpeg62-dev \
-  zlib1g-dev \
-  libwebp-dev \
-  curl  \
-  vim \
-  net-tools
+WORKDIR /app
 
-# setup user
-RUN useradd -ms /bin/bash ubuntu
-USER ubuntu
+# Install Python dependencies (layer cached)
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# install app
-RUN mkdir -p /home/ubuntu/"$APP_NAME"/"$APP_NAME"
-WORKDIR /home/ubuntu/"$APP_NAME"/"$APP_NAME"
-COPY . .
-RUN python3 -m venv ../venv
-RUN . ../venv/bin/activate
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -U pip
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install -r requirements.txt
-RUN /home/ubuntu/"$APP_NAME"/venv/bin/pip install gunicorn
+# Copy backend source
+COPY backend/ .
 
-# setup path
-ENV PATH="${PATH}:/home/ubuntu/$APP_NAME/$APP_NAME/scripts"
-
-USER ubuntu
+EXPOSE 8000

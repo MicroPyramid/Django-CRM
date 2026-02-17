@@ -54,6 +54,9 @@ frontend/pnpm-lock.yaml
 logs/
 *.log
 
+# Docker local overrides
+.env.docker.local
+
 # OS
 .DS_Store
 Thumbs.db
