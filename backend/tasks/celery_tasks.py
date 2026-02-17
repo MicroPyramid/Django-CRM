@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import reverse
@@ -10,10 +10,8 @@ from common.tasks import set_rls_context
 from contacts.models import Contact
 from tasks.models import Task
 
-app = Celery("redis://")
 
-
-@app.task
+@shared_task
 def send_email(
     task_id, recipients, org_id, domain="demo.django-crm.io", protocol="http"
 ):

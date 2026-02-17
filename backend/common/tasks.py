@@ -1,6 +1,6 @@
 import datetime
 
-from celery import Celery
+from celery import shared_task
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
@@ -12,8 +12,6 @@ from django.utils.http import urlsafe_base64_encode
 
 from common.models import Comment, Profile, Teams, User
 from common.token_generator import account_activation_token
-
-app = Celery("redis://")
 
 
 def set_rls_context(org_id):
@@ -33,7 +31,7 @@ def set_rls_context(org_id):
             )
 
 
-@app.task
+@shared_task
 def send_email_to_new_user(user_id):
     """Send Mail To Users When their account is created"""
     user_obj = User.objects.filter(id=user_id).first()
@@ -75,7 +73,7 @@ def send_email_to_new_user(user_id):
         msg.send()
 
 
-@app.task
+@shared_task
 def send_email_user_mentions(
     comment_id,
     called_from,
@@ -145,7 +143,7 @@ def send_email_user_mentions(
                 msg.send()
 
 
-@app.task
+@shared_task
 def send_email_user_status(
     user_id,
     status_changed_user="",
@@ -185,7 +183,7 @@ def send_email_user_status(
             msg.send()
 
 
-@app.task
+@shared_task
 def send_email_user_delete(
     user_email,
     deleted_by="",
@@ -211,7 +209,7 @@ def send_email_user_delete(
             msg.send()
 
 
-@app.task
+@shared_task
 def resend_activation_link_to_user(
     user_email="",
 ):
@@ -260,7 +258,7 @@ def resend_activation_link_to_user(
             msg.send()
 
 
-@app.task
+@shared_task
 def remove_users(removed_users_list, team_id, org_id=None):
     # Set RLS context for org-scoped queries
     set_rls_context(org_id)
@@ -311,7 +309,7 @@ def remove_users(removed_users_list, team_id, org_id=None):
                     invoice.assigned_to.remove(user)
 
 
-@app.task
+@shared_task
 def update_team_users(team_id, org_id=None):
     """this function updates assigned_to field on all models when a team is updated"""
     # Set RLS context for org-scoped queries

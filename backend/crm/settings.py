@@ -10,7 +10,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["SECRET_KEY"]
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
+
+if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
+    if os.environ.get("ENV_TYPE", "dev") != "dev":
+        raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
@@ -86,11 +90,11 @@ WSGI_APPLICATION = "crm.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["DBNAME"],
-        "USER": os.environ["DBUSER"],
-        "PASSWORD": os.environ["DBPASSWORD"],
-        "HOST": os.environ["DBHOST"],
-        "PORT": os.environ["DBPORT"],
+        "NAME": os.environ.get("DBNAME", "crm_db"),
+        "USER": os.environ.get("DBUSER", "postgres"),
+        "PASSWORD": os.environ.get("DBPASSWORD", "postgres"),
+        "HOST": os.environ.get("DBHOST", "localhost"),
+        "PORT": os.environ.get("DBPORT", "5432"),
     }
 }
 
@@ -131,20 +135,20 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
-ENV_TYPE = os.environ["ENV_TYPE"]
+ENV_TYPE = os.environ.get("ENV_TYPE", "dev")
 if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
 elif ENV_TYPE == "prod":
     from .server_settings import *
 
-DEFAULT_FROM_EMAIL = os.environ["DEFAULT_FROM_EMAIL"]
-ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@localhost")
 
 
 # celery Tasks
-CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
-CELERY_RESULT_BACKEND = os.environ["CELERY_RESULT_BACKEND"]
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
 
 LOGGING = {
@@ -306,9 +310,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
-DOMAIN_NAME = os.getenv("DOMAIN_NAME")
-
-
 SIMPLE_JWT = {
     # Security: Reduced token lifetimes
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -330,8 +331,8 @@ SIMPLE_JWT = {
 JWT_ALGO = "HS256"
 
 
-DOMAIN_NAME = os.environ["DOMAIN_NAME"]
-SWAGGER_ROOT_URL = os.environ["SWAGGER_ROOT_URL"]
+DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "http://localhost:8000")
+SWAGGER_ROOT_URL = os.environ.get("SWAGGER_ROOT_URL", "http://localhost:8000")
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
