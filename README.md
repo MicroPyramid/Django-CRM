@@ -120,11 +120,48 @@ celery -A crm worker --loglevel=INFO
 
 ## Docker Setup
 
+Run the full stack (backend, frontend, PostgreSQL, Redis, Celery) with a single command:
+
 ```bash
-# Build and run with Docker Compose
-docker build -t bottlecrm:latest -f docker/dockerfile .
-docker-compose -f docker/docker-compose.yml up
+# Start all services (first run will build images)
+docker compose up --build
+
+# Create an admin user
+docker compose exec backend python manage.py createsuperuser
+
+# (Optional) Load sample data
+docker compose exec backend python manage.py seed_data --email admin@example.com
 ```
+
+Once running:
+- **Frontend**: http://localhost:5173
+- **API / Swagger**: http://localhost:8000/swagger-ui/
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+
+### Daily workflow
+
+```bash
+docker compose up           # start all services (code changes auto-reload)
+docker compose down         # stop all services
+docker compose down -v      # stop and delete all data (full reset)
+```
+
+### Running commands inside containers
+
+```bash
+docker compose exec backend python manage.py migrate
+docker compose exec backend python -m pytest
+docker compose exec backend python manage.py manage_rls --status
+```
+
+### Custom environment overrides
+
+The default env vars live in `.env.docker` (committed). To override locally without touching git:
+
+1. Copy `.env.docker` to `.env.docker.local`
+2. Edit values as needed
+3. Update `env_file` in `docker-compose.yml` to point to `.env.docker.local`
 
 ## Project Structure
 
@@ -146,8 +183,16 @@ Django-CRM/
 │   │   └── routes/        # SvelteKit routes
 │   │       ├── (app)/     # Authenticated app routes
 │   │       └── (no-layout)/ # Auth pages (login, etc.)
-│   └── static/            # Static assets
-└── docker/                 # Docker configuration
+│   ├── static/            # Static assets
+│   └── Dockerfile         # Frontend dev container
+├── docker/                 # Docker support files
+│   ├── backend/
+│   │   └── entrypoint.sh  # DB wait + migrate + runserver
+│   └── postgres/
+│       └── init-rls-user.sql # Creates non-superuser for RLS
+├── Dockerfile              # Backend / Celery image
+├── docker-compose.yml      # Full-stack dev environment
+└── .env.docker             # Docker env vars (dev defaults)
 ```
 
 ## Multi-Tenancy & Security

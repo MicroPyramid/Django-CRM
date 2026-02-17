@@ -1,0 +1,42 @@
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+*.egg-info
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Frontend (built separately)
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+
+# Mobile app
+mobile/
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# Env files (injected at runtime)
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# Misc
+*.md
+*.log
+.DS_Store
+Thumbs.db
+.playwright-mcp
