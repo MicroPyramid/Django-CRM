@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from common import serializer
-from common.models import Profile, User
+from common.models import Org, Profile, User
 from common.serializer import OrgAwareRefreshToken
 
 logger = logging.getLogger(__name__)

@@ -211,6 +211,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         },
     )
     def post(self, request, *args, **kwargs):
+        """Create a new lead, optionally converting it to an account immediately."""
         data = request.data
         serializer = LeadCreateSerializer(data=data, request_obj=request)
         if serializer.is_valid():
@@ -229,13 +230,6 @@ class LeadListView(APIView, LimitOffsetPagination):
                     id__in=data.get("contacts"), org=request.profile.org
                 )
                 lead_obj.contacts.add(*obj_contact)
-
-            recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
-            send_email_to_assigned_user.delay(
-                recipients,
-                lead_obj.id,
-                str(request.profile.org.id),
-            )
 
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
@@ -272,6 +266,17 @@ class LeadListView(APIView, LimitOffsetPagination):
                 )
                 lead_obj.assigned_to.add(*profiles)
 
+            # Send email to assigned users (after assignees are set)
+            # Skip if status is "converted" - that branch handles its own email
+            if data.get("status") != "converted":
+                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                if recipients:
+                    send_email_to_assigned_user.delay(
+                        recipients,
+                        lead_obj.id,
+                        str(request.profile.org.id),
+                    )
+
             if data.get("status") == "converted":
                 from leads.services import convert_lead_to_account
 
@@ -279,10 +284,11 @@ class LeadListView(APIView, LimitOffsetPagination):
                     lead_obj, request
                 )
 
-                if data.get("assigned_to", None):
-                    assigned_to_list = data.getlist("assigned_to")
+                # Send email to assigned users for converted leads
+                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                if recipients:
                     send_email_to_assigned_user.delay(
-                        assigned_to_list,
+                        recipients,
                         lead_obj.id,
                         str(request.profile.org.id),
                     )
@@ -546,6 +552,7 @@ class LeadDetailView(APIView):
         },
     )
     def put(self, request, pk, **kwargs):
+        """Fully update a lead, optionally converting it to an account."""
         params = request.data
         self.lead_obj = self.get_object(pk)
         if self.lead_obj.org != request.profile.org:
@@ -556,6 +563,9 @@ class LeadDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
+        previous_assigned_to_users = list(
+            self.lead_obj.assigned_to.all().values_list("id", flat=True)
+        )
         serializer = LeadCreateSerializer(
             data=params,
             instance=self.lead_obj,
@@ -563,9 +573,6 @@ class LeadDetailView(APIView):
         )
         if serializer.is_valid():
             lead_obj = serializer.save()
-            previous_assigned_to_users = list(
-                lead_obj.assigned_to.all().values_list("id", flat=True)
-            )
             lead_obj.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
@@ -574,15 +581,6 @@ class LeadDetailView(APIView):
                 )
                 lead_obj.tags.add(*tag_objs)
 
-            assigned_to_list = list(
-                lead_obj.assigned_to.all().values_list("id", flat=True)
-            )
-            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-            send_email_to_assigned_user.delay(
-                recipients,
-                lead_obj.id,
-                str(request.profile.org.id),
-            )
             if request.FILES.get("lead_attachment"):
                 attachment = Attachments()
                 attachment.created_by = request.profile.user
@@ -635,6 +633,21 @@ class LeadDetailView(APIView):
                 )
                 lead_obj.assigned_to.add(*profiles)
 
+            # Send email to newly assigned users (after assignees are updated)
+            # Skip if status is "converted" - that branch handles its own email
+            if params.get("status") != "converted":
+                current_assigned_users = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
+                # Only email users who were newly assigned
+                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                if recipients:
+                    send_email_to_assigned_user.delay(
+                        recipients,
+                        lead_obj.id,
+                        str(request.profile.org.id),
+                    )
+
             if params.get("status") == "converted":
                 from leads.services import convert_lead_to_account
 
@@ -642,10 +655,11 @@ class LeadDetailView(APIView):
                     lead_obj, request
                 )
 
-                if params.get("assigned_to"):
-                    assigned_to_list = params.get("assigned_to")
+                # Send email to all assigned users for converted leads
+                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                if recipients:
                     send_email_to_assigned_user.delay(
-                        assigned_to_list,
+                        recipients,
                         lead_obj.id,
                         str(request.profile.org.id),
                     )
@@ -726,6 +740,15 @@ class LeadDetailView(APIView):
                 self.lead_obj, request
             )
 
+            # Send email to assigned users for converted leads
+            recipients = list(self.lead_obj.assigned_to.all().values_list("id", flat=True))
+            if recipients:
+                send_email_to_assigned_user.delay(
+                    recipients,
+                    self.lead_obj.id,
+                    str(request.profile.org.id),
+                )
+
             return Response(
                 {
                     "error": False,
@@ -738,6 +761,11 @@ class LeadDetailView(APIView):
             )
 
         # Handle regular partial updates
+        # Capture previous assignees for email notification
+        previous_assigned_to_users = list(
+            self.lead_obj.assigned_to.all().values_list("id", flat=True)
+        )
+
         serializer = LeadCreateSerializer(
             data=params,
             instance=self.lead_obj,
@@ -811,6 +839,18 @@ class LeadDetailView(APIView):
                         id__in=assigned_ids, org=request.profile.org
                     )
                     lead_obj.assigned_to.add(*profiles)
+
+                # Send email to newly assigned users (after assignees are updated)
+                current_assigned_users = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
+                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                if recipients:
+                    send_email_to_assigned_user.delay(
+                        recipients,
+                        lead_obj.id,
+                        str(request.profile.org.id),
+                    )
 
             return Response(
                 {"error": False, "message": "Lead updated Successfully"},
