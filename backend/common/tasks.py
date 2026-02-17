@@ -246,8 +246,7 @@ def resend_activation_link_to_user(
             context["token"],
             activation_key,
         )
-        recipients = [context["complete_url"]]
-        recipients.append(user_email)
+        recipients = [user_email]
         subject = "Welcome to Bottle CRM"
         html_content = render_to_string("user_status_in.html", context=context)
         if recipients:
