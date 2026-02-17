@@ -739,7 +739,7 @@ class InvoiceSeeder:
 
         recurring = []
 
-        for i in range(count):
+        for _ in range(count):
             account = random.choice(accounts)
             account_contacts = (
                 list(account.contacts.all()) if hasattr(account, "contacts") else []

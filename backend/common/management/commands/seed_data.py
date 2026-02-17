@@ -21,16 +21,12 @@ from common.models import Org, Profile, Tags, Teams, User
 from common.rls import get_set_context_sql
 from common.utils import (
     CASE_TYPE,
-    COUNTRIES,
     CURRENCY_CODES,
     INDCHOICES,
     LEAD_SOURCE,
-    LEAD_STATUS,
     OPPORTUNITY_TYPES,
     PRIORITY_CHOICE,
     SOURCES,
-    STAGES,
-    STATUS_CHOICE,
 )
 from invoices.seed import InvoiceSeeder
 
@@ -274,7 +270,7 @@ class Command(BaseCommand):
                 with impersonate(self.admin_user):
                     self.seed_all(options)
         except Exception as e:
-            raise CommandError(f"Seeding failed: {e}")
+            raise CommandError(f"Seeding failed: {e}") from e
 
         elapsed = (timezone.now() - start_time).total_seconds()
         self.print_summary(elapsed)

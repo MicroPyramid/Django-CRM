@@ -470,9 +470,6 @@ class TaskDetailView(APIView):
         )
         if serializer.is_valid():
             task_obj = serializer.save()
-            previous_assigned_to_users = list(
-                task_obj.assigned_to.all().values_list("id", flat=True)
-            )
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")

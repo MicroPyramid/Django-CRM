@@ -103,8 +103,7 @@ class CaseKanbanView(APIView):
 
         if pipeline_id:
             return self._get_pipeline_kanban(queryset, pipeline_id, org)
-        else:
-            return self._get_status_kanban(queryset)
+        return self._get_status_kanban(queryset)
 
     def _apply_filters(self, queryset, params):
         """Apply common filters to queryset."""

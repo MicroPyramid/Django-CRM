@@ -1,6 +1,6 @@
-from datetime import date, timedelta
+from datetime import date
 
-from django.db.models import Q, Sum, Count, F, DecimalField
+from django.db.models import Q, Sum, F, DecimalField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer

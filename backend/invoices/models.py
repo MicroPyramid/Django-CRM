@@ -390,7 +390,7 @@ class Invoice(AssignableMixin, BaseModel):
         """Generate unique invoice number: INV-YYYYMMDD-XXXX"""
         from django.db import transaction
         from django.db.models import Max
-        from django.db.models.functions import Cast, Substr, Length
+        from django.db.models.functions import Cast, Substr
         from django.db.models import IntegerField
 
         date_str = datetime.datetime.now().strftime("%Y%m%d")
@@ -1074,17 +1074,17 @@ class RecurringInvoice(AssignableMixin, BaseModel):
 
         if self.frequency == "WEEKLY":
             return current + timedelta(weeks=1)
-        elif self.frequency == "BIWEEKLY":
+        if self.frequency == "BIWEEKLY":
             return current + timedelta(weeks=2)
-        elif self.frequency == "MONTHLY":
+        if self.frequency == "MONTHLY":
             return current + relativedelta(months=1)
-        elif self.frequency == "QUARTERLY":
+        if self.frequency == "QUARTERLY":
             return current + relativedelta(months=3)
-        elif self.frequency == "SEMI_ANNUALLY":
+        if self.frequency == "SEMI_ANNUALLY":
             return current + relativedelta(months=6)
-        elif self.frequency == "YEARLY":
+        if self.frequency == "YEARLY":
             return current + relativedelta(years=1)
-        elif self.frequency == "CUSTOM" and self.custom_days:
+        if self.frequency == "CUSTOM" and self.custom_days:
             return current + timedelta(days=self.custom_days)
 
         return current + relativedelta(months=1)

@@ -30,9 +30,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
         queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
             "-id"
         )
-        if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
-            queryset = queryset
-        else:
+        if not (self.request.user.is_superuser or self.request.profile.role == "ADMIN"):
             if self.request.profile.documents():
                 doc_ids = self.request.profile.documents().values_list("id", flat=True)
                 shared_ids = queryset.filter(
@@ -430,7 +428,7 @@ class DocumentDetailView(APIView):
             data=params, instance=self.object, request_obj=request, partial=True
         )
         if serializer.is_valid():
-            doc = serializer.save(
+            serializer.save(
                 org=request.profile.org,
             )
             return Response(

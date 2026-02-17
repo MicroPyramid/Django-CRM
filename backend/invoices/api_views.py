@@ -1,11 +1,12 @@
+import datetime
 import logging
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.db.models import Q, Sum, Count
-from datetime import timedelta
-import datetime
 from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -15,16 +16,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-logger = logging.getLogger(__name__)
-
 from common.models import Attachments, Comment
 from common.permissions import HasOrgContext
 from common.serializer import AttachmentsSerializer, CommentSerializer
 from invoices.models import (
     Estimate,
-    EstimateLineItem,
     Invoice,
-    InvoiceHistory,
     InvoiceLineItem,
     InvoiceTemplate,
     Payment,
@@ -32,9 +29,14 @@ from invoices.models import (
     RecurringInvoice,
     RecurringInvoiceLineItem,
 )
+from invoices.pdf import (
+    generate_estimate_filename,
+    generate_estimate_pdf,
+    generate_invoice_filename,
+    generate_invoice_pdf,
+)
 from invoices.serializer import (
     EstimateCreateSerializer,
-    EstimateLineItemSerializer,
     EstimateListSerializer,
     EstimateSerializer,
     InvoiceCreateSerializer,
@@ -50,18 +52,12 @@ from invoices.serializer import (
     ProductCreateSerializer,
     ProductSerializer,
     RecurringInvoiceCreateSerializer,
-    RecurringInvoiceLineItemSerializer,
     RecurringInvoiceListSerializer,
     RecurringInvoiceSerializer,
 )
-from invoices.pdf import (
-    generate_estimate_filename,
-    generate_estimate_pdf,
-    generate_invoice_filename,
-    generate_invoice_pdf,
-)
-from django.db import transaction
 from invoices.tasks import create_invoice_history, send_email, send_invoice_to_client
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================

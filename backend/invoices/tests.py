@@ -9,7 +9,7 @@ from common.models import Address, Attachments, Comment, Company, Teams, User
 from invoices.models import Invoice, InvoiceHistory
 
 
-class InvoiceCreateTest(object):
+class InvoiceCreateTest:
     def setUp(self):
         self.company, _ = Company.objects.get_or_create(
             name="test company",
@@ -516,8 +516,6 @@ class InvoiceDeleteTestCase(InvoiceCreateTest, TestCase):
         self.assertEqual(self.invoice.is_paid_or_cancelled(), True)
         response = self.client.get(
             reverse("invoices:invoice_delete", args=(self.invoice.id,))
-            + "?view_account={}".format(
-                self.account.id,
-            )
+            + f"?view_account={self.account.id}"
         )
         self.assertEqual(response.status_code, 302)

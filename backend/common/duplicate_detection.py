@@ -8,8 +8,6 @@ email, phone, name, and other identifying fields.
 import re
 from typing import TYPE_CHECKING
 
-from django.db.models import Q
-
 if TYPE_CHECKING:
     from accounts.models import Account
     from contacts.models import Contact

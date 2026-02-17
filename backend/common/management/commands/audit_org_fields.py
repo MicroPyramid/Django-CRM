@@ -12,7 +12,6 @@ Usage:
 
 from django.apps import apps
 from django.core.management.base import BaseCommand
-from django.db import connection
 
 
 class Command(BaseCommand):
@@ -36,7 +35,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        check_only = options["check"]
         fix = options["fix"]
         verbose = options["verbose"]
 
@@ -186,11 +184,9 @@ class Command(BaseCommand):
 
     def _fix_null_orgs(self, issues):
         """Attempt to fix NULL org values by inferring from related objects."""
-        from common.models import Address, Profile, Tags
+        from common.models import Address, Profile
 
-        for app_label, model_name, null_count, total_count in issues:
-            model = apps.get_model(app_label, model_name)
-
+        for app_label, model_name, null_count, _total_count in issues:
             if model_name == "Address":
                 # Address can be inferred from Profile.address relationship
                 fixed = 0
@@ -215,7 +211,7 @@ class Command(BaseCommand):
                 # Tags are harder - might need to check which entities use them
                 self.stdout.write(
                     self.style.WARNING(
-                        f"  Tags with NULL org need manual review. "
+                        "  Tags with NULL org need manual review. "
                         "Consider checking Account.tags, Lead.tags, etc. for usage."
                     )
                 )

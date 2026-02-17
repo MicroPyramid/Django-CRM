@@ -83,44 +83,47 @@ class UsersListView(APIView, LimitOffsetPagination):
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        else:
-            params = request.data
-            if params:
-                user_serializer = CreateUserSerializer(
-                    data=params, org=request.profile.org
+        params = request.data
+        if params:
+            user_serializer = CreateUserSerializer(
+                data=params, org=request.profile.org
+            )
+            address_serializer = BillingAddressSerializer(data=params)
+            profile_serializer = CreateProfileSerializer(data=params)
+            data = {}
+            if not user_serializer.is_valid():
+                data["user_errors"] = dict(user_serializer.errors)
+            if not profile_serializer.is_valid():
+                data["profile_errors"] = profile_serializer.errors
+            if not address_serializer.is_valid():
+                data["address_errors"] = (address_serializer.errors,)
+            if data:
+                return Response(
+                    {"error": True, "errors": data},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-                address_serializer = BillingAddressSerializer(data=params)
-                profile_serializer = CreateProfileSerializer(data=params)
-                data = {}
-                if not user_serializer.is_valid():
-                    data["user_errors"] = dict(user_serializer.errors)
-                if not profile_serializer.is_valid():
-                    data["profile_errors"] = profile_serializer.errors
-                if not address_serializer.is_valid():
-                    data["address_errors"] = (address_serializer.errors,)
-                if data:
-                    return Response(
-                        {"error": True, "errors": data},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                if address_serializer.is_valid():
-                    address_obj = address_serializer.save()
-                    user = user_serializer.save(
-                        is_active=True,
-                    )
-                    user.email = user.email
-                    user.save()
-                    profile = Profile.objects.create(
-                        user=user,
-                        date_of_joining=timezone.now(),
-                        role=params.get("role"),
-                        address=address_obj,
-                        org=request.profile.org,
-                    )
-                    return Response(
-                        {"error": False, "message": "User Created Successfully"},
-                        status=status.HTTP_201_CREATED,
-                    )
+            if address_serializer.is_valid():
+                address_obj = address_serializer.save()
+                user = user_serializer.save(
+                    is_active=True,
+                )
+                user.email = user.email
+                user.save()
+                Profile.objects.create(
+                    user=user,
+                    date_of_joining=timezone.now(),
+                    role=params.get("role"),
+                    address=address_obj,
+                    org=request.profile.org,
+                )
+                return Response(
+                    {"error": False, "message": "User Created Successfully"},
+                    status=status.HTTP_201_CREATED,
+                )
+        return Response(
+            {"error": True, "errors": "Invalid request"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     @extend_schema(
         tags=["users"],
@@ -387,7 +390,7 @@ class UserDetailView(APIView):
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
         if serializer.is_valid():
-            user = serializer.save()
+            serializer.save()
         if profile_serializer.is_valid():
             profile = profile_serializer.save()
             return Response(

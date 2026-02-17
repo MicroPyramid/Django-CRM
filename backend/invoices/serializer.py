@@ -497,19 +497,19 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def validate(self, data):
+    def validate(self, attrs):
         """Cross-field validation"""
-        account_id = data.get("account_id")
-        contact_id = data.get("contact_id")
+        account_id = attrs.get("account_id")
+        contact_id = attrs.get("contact_id")
 
         # Validate contact belongs to account (if both provided)
         if account_id and contact_id and self.org:
             contact = Contact.objects.filter(id=contact_id, org=self.org).first()
             if contact and contact.account_id and contact.account_id != account_id:
                 raise serializers.ValidationError(
-                    {"contact_id": f"Contact does not belong to the selected account"}
+                    {"contact_id": "Contact does not belong to the selected account"}
                 )
-        return data
+        return attrs
 
     def create(self, validated_data):
         line_items_data = validated_data.pop("line_items", [])

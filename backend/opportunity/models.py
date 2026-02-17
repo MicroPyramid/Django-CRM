@@ -5,7 +5,6 @@ from django.db import models
 from django.db.models import Q, Sum
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
@@ -161,7 +160,7 @@ class Opportunity(AssignableMixin, BaseModel):
             self.amount = total
             self.amount_source = "CALCULATED"
             return True
-        elif self.amount_source == "CALCULATED":
+        if self.amount_source == "CALCULATED":
             # No line items but was calculated - reset to manual
             self.amount_source = "MANUAL"
             self.amount = Decimal("0")

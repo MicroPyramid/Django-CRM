@@ -12,7 +12,9 @@ from common.tasks import set_rls_context
 from leads.models import Lead
 
 
-def get_rendered_html(template_name, context={}):
+def get_rendered_html(template_name, context=None):
+    if context is None:
+        context = {}
     html_content = render_to_string(template_name, context)
     return html_content
 
@@ -23,12 +25,20 @@ def send_email(
     html_content,
     text_content=None,
     from_email=None,
-    recipients=[],
-    attachments=[],
-    bcc=[],
-    cc=[],
+    recipients=None,
+    attachments=None,
+    bcc=None,
+    cc=None,
 ):
     # send email to user with attachment
+    if recipients is None:
+        recipients = []
+    if attachments is None:
+        attachments = []
+    if bcc is None:
+        bcc = []
+    if cc is None:
+        cc = []
     if not from_email:
         from_email = settings.DEFAULT_FROM_EMAIL
     if not text_content:
@@ -53,7 +63,7 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_i
         return False
 
     users = Profile.objects.filter(id__in=new_assigned_to_list).distinct()
-    subject = "Lead '%s' has been assigned to you" % lead_instance
+    subject = f"Lead '{lead_instance}' has been assigned to you"
     from_email = settings.DEFAULT_FROM_EMAIL
     template_name = "assigned_to/leads_assigned.html"
 
@@ -72,6 +82,7 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_i
             mail_kwargs["html_content"] = html_content
             mail_kwargs["recipients"] = [profile.user.email]
             send_email.delay(**mail_kwargs)
+    return None
 
 
 @shared_task

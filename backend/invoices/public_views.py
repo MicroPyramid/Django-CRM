@@ -12,8 +12,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-logger = logging.getLogger(__name__)
-
 from invoices.models import Invoice, Estimate, InvoiceTemplate
 from invoices.pdf import (
     generate_invoice_pdf,
@@ -21,6 +19,8 @@ from invoices.pdf import (
     generate_estimate_pdf,
     generate_estimate_filename,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PublicInvoiceView(APIView):

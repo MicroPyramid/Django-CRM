@@ -35,7 +35,7 @@ def get_default_css():
         os.path.dirname(__file__), "templates", "invoices", "pdf", "invoice.css"
     )
     if os.path.exists(css_path):
-        with open(css_path, "r") as f:
+        with open(css_path, "r", encoding="utf-8") as f:
             return f.read()
     return get_fallback_css()
 
