@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template import Context, Template
@@ -8,10 +8,8 @@ from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Profile
 from common.tasks import set_rls_context
 
-app = Celery("redis://")
 
-
-@app.task
+@shared_task
 def send_email(email_obj_id, org_id):
     set_rls_context(org_id)
     email_obj = AccountEmail.objects.filter(id=email_obj_id).first()
@@ -58,7 +56,7 @@ def send_email(email_obj_id, org_id):
                     pass
 
 
-@app.task
+@shared_task
 def send_email_to_assigned_user(recipients, account_id, org_id):
     """Send Mail To Users When they are assigned to an account"""
     set_rls_context(org_id)

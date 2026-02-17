@@ -1,6 +1,6 @@
 import re
 
-from celery import Celery
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
@@ -11,15 +11,13 @@ from common.models import Org, Profile
 from common.tasks import set_rls_context
 from leads.models import Lead
 
-app = Celery("redis://")
-
 
 def get_rendered_html(template_name, context={}):
     html_content = render_to_string(template_name, context)
     return html_content
 
 
-@app.task
+@shared_task
 def send_email(
     subject,
     html_content,
@@ -45,7 +43,7 @@ def send_email(
     email.send()
 
 
-@app.task
+@shared_task
 def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_id):
     set_rls_context(org_id)
     lead_instance = Lead.objects.filter(
@@ -76,7 +74,7 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_i
             send_email.delay(**mail_kwargs)
 
 
-@app.task
+@shared_task
 def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
     """Send Mail To Users When they are assigned to a lead"""
     set_rls_context(org_id)
@@ -102,7 +100,7 @@ def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
             msg.send()
 
 
-@app.task
+@shared_task
 def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company_id):
     """Parameters : validated_rows, invalid_rows, user_id.
     This function is used to create leads from a given file.

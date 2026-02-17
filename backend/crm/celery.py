@@ -20,6 +20,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
+app.autodiscover_tasks(related_name="celery_tasks")  # tasks app uses celery_tasks.py
 
 # Celery Beat Schedule for recurring tasks
 app.conf.beat_schedule = {
