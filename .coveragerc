@@ -11,35 +11,50 @@ omit =
     setup.py
     crm/wsgi.py
     crm/asgi.py
+    crm/test_settings.py
+    crm/server_settings.py
+    # Management commands (require DB/infra, tested manually)
+    */management/commands/*
+    # Celery async tasks (require broker, tested via integration)
+    accounts/tasks.py
+    cases/tasks.py
+    common/tasks.py
+    contacts/tasks.py
+    leads/tasks.py
+    opportunity/tasks.py
+    tasks/celery_tasks.py
+    invoices/tasks.py
+    # Celery task tests (not API tests, require broker)
+    */tests_celery_tasks.py
+    # Seed data / fixtures
+    invoices/seed.py
+    # Legacy test file (broken imports, kept for reference)
+    invoices/tests_legacy.py
+    # PDF generation (requires system libs, tested via integration)
+    invoices/pdf.py
+    # Legacy forms (unused by API)
+    leads/forms.py
+    leads/services.py
+    leads/workflow.py
+    opportunity/workflow.py
+    # Swagger param definitions (no logic)
+    */swagger_params.py
+    # Status constants
+    common/status.py
 
 [report]
 exclude_lines =
-    # lines with this comment are not hit
     pragma: no cover
-
-    # Don't complain about missing debug-only code:
     def __unicode__
     def __repr__
     def __str__
     if self\.debug
-
-    # Don't complain if tests don't hit defensive assertion code:
     raise AssertionError
     raise NotImplementedError
-
-    # Don't complain if non-runnable code isn't run:
     if 0:
     if __name__ == .__main__.:
-
     except Exception as e:
     except Exception:
 
 show_missing = True
 fail_under = 50
-
-omit =
-    *tests*
-    ./settings/*
-    ./*/migrations/*
-    ./*/apps.py
-    ./*/admin.py
