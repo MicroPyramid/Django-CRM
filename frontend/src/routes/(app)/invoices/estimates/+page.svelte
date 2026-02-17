@@ -19,12 +19,41 @@
 
   // Estimate status options - using design system tokens
   const ESTIMATE_STATUSES = [
-    { value: 'Draft', label: 'Draft', color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]' },
-    { value: 'Sent', label: 'Sent', color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15' },
-    { value: 'Viewed', label: 'Viewed', color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15' },
-    { value: 'Accepted', label: 'Accepted', color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15' },
-    { value: 'Declined', label: 'Declined', color: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15' },
-    { value: 'Expired', label: 'Expired', color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15' }
+    {
+      value: 'Draft',
+      label: 'Draft',
+      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
+    },
+    {
+      value: 'Sent',
+      label: 'Sent',
+      color:
+        'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
+    },
+    {
+      value: 'Viewed',
+      label: 'Viewed',
+      color:
+        'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+    },
+    {
+      value: 'Accepted',
+      label: 'Accepted',
+      color:
+        'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
+    },
+    {
+      value: 'Declined',
+      label: 'Declined',
+      color:
+        'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15'
+    },
+    {
+      value: 'Expired',
+      label: 'Expired',
+      color:
+        'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    }
   ];
 
   /**
@@ -736,7 +765,9 @@
           </svg>
           Filters
           {#if activeFiltersCount() > 0}
-            <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
+            <span
+              class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]"
+            >
               {activeFiltersCount()}
             </span>
           {/if}
@@ -842,11 +873,15 @@
   <CrmTable data={estimates} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
           <span class="text-4xl">📋</span>
         </div>
-        <h3 class="text-[var(--text-primary)] text-lg font-medium">No estimates yet</h3>
-        <p class="text-[var(--text-secondary)] text-sm">Create your first estimate to get started</p>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No estimates yet</h3>
+        <p class="text-sm text-[var(--text-secondary)]">
+          Create your first estimate to get started
+        </p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}

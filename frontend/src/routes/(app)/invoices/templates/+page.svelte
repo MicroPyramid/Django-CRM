@@ -355,7 +355,9 @@
         </svg>
         Filters
         {#if activeFiltersCount() > 0}
-          <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
+          <span
+            class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]"
+          >
             {activeFiltersCount()}
           </span>
         {/if}
@@ -400,11 +402,13 @@
   <CrmTable data={templates} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
           <span class="text-4xl">🎨</span>
         </div>
-        <h3 class="text-[var(--text-primary)] text-lg font-medium">No templates yet</h3>
-        <p class="text-[var(--text-secondary)] text-sm">Create your first invoice template</p>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No templates yet</h3>
+        <p class="text-sm text-[var(--text-secondary)]">Create your first invoice template</p>
       </div>
     {/snippet}
     {#snippet cellContent(row, column)}
@@ -420,7 +424,10 @@
         {/if}
       {:else if column.key === 'primaryColor'}
         <div class="flex items-center gap-2">
-          <div class="h-5 w-5 rounded border border-[var(--border-default)]" style="background-color: {row.primaryColor}"></div>
+          <div
+            class="h-5 w-5 rounded border border-[var(--border-default)]"
+            style="background-color: {row.primaryColor}"
+          ></div>
           <span class="text-xs text-[var(--text-secondary)]">{row.primaryColor}</span>
         </div>
       {:else}

@@ -87,7 +87,7 @@
 
 <div class={cn('flex flex-col gap-1.5', className)}>
   {#if label}
-    <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+    <span class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase">
       {label}
     </span>
   {/if}
@@ -108,15 +108,16 @@
             'hover:border-input hover:bg-background/80',
             // Focus state
             'focus:border-primary/50 focus:bg-background',
-            'focus:ring-2 focus:ring-primary/20',
+            'focus:ring-primary/20 focus:ring-2',
             // Dark mode
-            'dark:bg-white/[0.03] dark:border-white/[0.08]',
-            'dark:hover:bg-white/[0.05] dark:hover:border-white/[0.12]',
-            'dark:focus:bg-white/[0.06] dark:focus:border-primary/40',
+            'dark:border-white/[0.08] dark:bg-white/[0.03]',
+            'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
+            'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
             // Active state
-            hasValue && 'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
+            hasValue &&
+              'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
             // Open state
-            open && 'ring-2 ring-primary/20 dark:ring-primary/30'
+            open && 'ring-primary/20 dark:ring-primary/30 ring-2'
           )}
           {...props}
         >
@@ -132,7 +133,9 @@
           <div class="flex shrink-0 items-center gap-1">
             {#if hasValue}
               <!-- Active indicator dot -->
-              <div class="h-1.5 w-1.5 rounded-full bg-primary animate-in fade-in zoom-in duration-200"></div>
+              <div
+                class="bg-primary animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full duration-200"
+              ></div>
               <!-- Clear button -->
               <span
                 role="button"
@@ -161,7 +164,7 @@
             {/if}
             <ChevronDown
               class={cn(
-                'h-4 w-4 text-muted-foreground/50 transition-transform duration-200',
+                'text-muted-foreground/50 h-4 w-4 transition-transform duration-200',
                 open && 'rotate-180'
               )}
             />
@@ -176,9 +179,9 @@
       class={cn(
         'select-filter-content',
         'w-[220px] overflow-hidden rounded-xl p-1',
-        'border border-border/60 bg-popover/95 backdrop-blur-md',
+        'border-border/60 bg-popover/95 border backdrop-blur-md',
         'shadow-lg shadow-black/5',
-        'dark:border-white/[0.08] dark:bg-popover/90',
+        'dark:bg-popover/90 dark:border-white/[0.08]',
         'dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]',
         'animate-in fade-in-0 zoom-in-95 duration-150'
       )}
@@ -193,7 +196,7 @@
             'rounded-lg px-2.5 py-2 text-sm',
             'transition-all duration-150',
             'outline-none',
-            (!value || value === 'ALL')
+            !value || value === 'ALL'
               ? 'bg-primary/10 text-primary dark:bg-primary/20'
               : 'text-foreground/80 hover:bg-muted/80 hover:text-foreground'
           )}
@@ -203,9 +206,9 @@
             class={cn(
               'flex h-4 w-4 items-center justify-center rounded-full',
               'border transition-all duration-150',
-              (!value || value === 'ALL')
+              !value || value === 'ALL'
                 ? 'border-primary bg-primary text-primary-foreground scale-100'
-                : 'border-border bg-transparent scale-90 group-hover:scale-100 group-hover:border-primary/50'
+                : 'border-border group-hover:border-primary/50 scale-90 bg-transparent group-hover:scale-100'
             )}
           >
             {#if !value || value === 'ALL'}
@@ -214,7 +217,7 @@
           </div>
           <span class="font-medium">{allLabel}</span>
         </button>
-        <div class="my-1 h-px bg-border/50 dark:bg-white/[0.06]"></div>
+        <div class="bg-border/50 my-1 h-px dark:bg-white/[0.06]"></div>
       {/if}
 
       <!-- Options -->
@@ -245,7 +248,7 @@
                 'border transition-all duration-150',
                 isSelected
                   ? 'border-primary bg-primary text-primary-foreground scale-100'
-                  : 'border-border/60 bg-transparent scale-90 group-hover:scale-100 group-hover:border-primary/50'
+                  : 'border-border/60 group-hover:border-primary/50 scale-90 bg-transparent group-hover:scale-100'
               )}
             >
               {#if isSelected}
@@ -270,7 +273,7 @@
       <span
         class={cn(
           'inline-flex items-center gap-1 rounded-full',
-          'bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary',
+          'bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium',
           'dark:bg-primary/20',
           'animate-in fade-in zoom-in duration-200'
         )}
@@ -326,12 +329,7 @@
     inset: 0;
     border-radius: inherit;
     opacity: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--primary) 50%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
     transition: opacity 0.3s ease;
   }
 

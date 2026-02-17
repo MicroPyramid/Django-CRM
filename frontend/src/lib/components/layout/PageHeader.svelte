@@ -11,18 +11,15 @@
 </script>
 
 <header
-  class="sticky top-0 z-10 border-b border-border/40 bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60"
+  class="border-border/40 from-background via-background to-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 border-b bg-gradient-to-r backdrop-blur-2xl"
 >
   <!-- Ambient glow effect for dark mode -->
-  <div
-    class="pointer-events-none absolute inset-0 overflow-hidden"
-    aria-hidden="true"
-  >
+  <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
     <div
-      class="absolute -top-24 left-1/4 h-48 w-96 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"
+      class="bg-primary/5 dark:bg-primary/10 absolute -top-24 left-1/4 h-48 w-96 rounded-full blur-3xl"
     ></div>
     <div
-      class="absolute -top-24 right-1/4 h-48 w-64 rounded-full bg-accent/5 blur-3xl dark:bg-cyan-500/8"
+      class="bg-accent/5 absolute -top-24 right-1/4 h-48 w-64 rounded-full blur-3xl dark:bg-cyan-500/8"
     ></div>
   </div>
 
@@ -31,20 +28,20 @@
     <div class="flex flex-col gap-1">
       <div class="flex items-baseline gap-3">
         <h1
-          class="text-2xl font-bold tracking-tight text-foreground md:text-[1.75rem]"
+          class="text-foreground text-2xl font-bold tracking-tight md:text-[1.75rem]"
           style="letter-spacing: -0.025em;"
         >
           {title}
         </h1>
         {#if subtitle}
           <span class="hidden items-center gap-2 sm:flex">
-            <span class="h-1 w-1 rounded-full bg-muted-foreground/30"></span>
-            <p class="text-sm font-medium text-muted-foreground/80">{subtitle}</p>
+            <span class="bg-muted-foreground/30 h-1 w-1 rounded-full"></span>
+            <p class="text-muted-foreground/80 text-sm font-medium">{subtitle}</p>
           </span>
         {/if}
       </div>
       {#if subtitle}
-        <p class="text-sm font-medium text-muted-foreground/80 sm:hidden">{subtitle}</p>
+        <p class="text-muted-foreground/80 text-sm font-medium sm:hidden">{subtitle}</p>
       {/if}
     </div>
 
@@ -58,6 +55,6 @@
 
   <!-- Bottom accent line -->
   <div
-    class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent"
+    class="via-border/60 absolute right-0 bottom-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
   ></div>
 </header>

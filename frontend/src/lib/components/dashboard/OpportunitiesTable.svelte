@@ -27,44 +27,45 @@
   let { opportunities = [] } = $props();
 
   // Using design system stage tokens
-  const stageConfig = /** @type {Record<string, { label: string, bg: string, text: string, border: string }>} */ ({
-    PROSPECTING: {
-      label: 'Prospecting',
-      bg: 'bg-[var(--stage-new-bg)] dark:bg-[var(--stage-new)]/15',
-      text: 'text-[var(--stage-new)]',
-      border: 'border-[var(--stage-new)]/30'
-    },
-    QUALIFICATION: {
-      label: 'Qualification',
-      bg: 'bg-[var(--stage-qualified-bg)] dark:bg-[var(--stage-qualified)]/15',
-      text: 'text-[var(--stage-qualified)]',
-      border: 'border-[var(--stage-qualified)]/30'
-    },
-    PROPOSAL: {
-      label: 'Proposal',
-      bg: 'bg-[var(--stage-proposal-bg)] dark:bg-[var(--stage-proposal)]/15',
-      text: 'text-[var(--stage-proposal)]',
-      border: 'border-[var(--stage-proposal)]/30'
-    },
-    NEGOTIATION: {
-      label: 'Negotiation',
-      bg: 'bg-[var(--stage-negotiation-bg)] dark:bg-[var(--stage-negotiation)]/15',
-      text: 'text-[var(--stage-negotiation)]',
-      border: 'border-[var(--stage-negotiation)]/30'
-    },
-    CLOSED_WON: {
-      label: 'Won',
-      bg: 'bg-[var(--stage-won-bg)] dark:bg-[var(--stage-won)]/15',
-      text: 'text-[var(--stage-won)]',
-      border: 'border-[var(--stage-won)]/30'
-    },
-    CLOSED_LOST: {
-      label: 'Lost',
-      bg: 'bg-[var(--stage-lost-bg)] dark:bg-[var(--stage-lost)]/15',
-      text: 'text-[var(--stage-lost)]',
-      border: 'border-[var(--stage-lost)]/30'
-    }
-  });
+  const stageConfig =
+    /** @type {Record<string, { label: string, bg: string, text: string, border: string }>} */ ({
+      PROSPECTING: {
+        label: 'Prospecting',
+        bg: 'bg-[var(--stage-new-bg)] dark:bg-[var(--stage-new)]/15',
+        text: 'text-[var(--stage-new)]',
+        border: 'border-[var(--stage-new)]/30'
+      },
+      QUALIFICATION: {
+        label: 'Qualification',
+        bg: 'bg-[var(--stage-qualified-bg)] dark:bg-[var(--stage-qualified)]/15',
+        text: 'text-[var(--stage-qualified)]',
+        border: 'border-[var(--stage-qualified)]/30'
+      },
+      PROPOSAL: {
+        label: 'Proposal',
+        bg: 'bg-[var(--stage-proposal-bg)] dark:bg-[var(--stage-proposal)]/15',
+        text: 'text-[var(--stage-proposal)]',
+        border: 'border-[var(--stage-proposal)]/30'
+      },
+      NEGOTIATION: {
+        label: 'Negotiation',
+        bg: 'bg-[var(--stage-negotiation-bg)] dark:bg-[var(--stage-negotiation)]/15',
+        text: 'text-[var(--stage-negotiation)]',
+        border: 'border-[var(--stage-negotiation)]/30'
+      },
+      CLOSED_WON: {
+        label: 'Won',
+        bg: 'bg-[var(--stage-won-bg)] dark:bg-[var(--stage-won)]/15',
+        text: 'text-[var(--stage-won)]',
+        border: 'border-[var(--stage-won)]/30'
+      },
+      CLOSED_LOST: {
+        label: 'Lost',
+        bg: 'bg-[var(--stage-lost-bg)] dark:bg-[var(--stage-lost)]/15',
+        text: 'text-[var(--stage-lost)]',
+        border: 'border-[var(--stage-lost)]/30'
+      }
+    });
 
   /**
    * Calculate days until close
@@ -98,14 +99,22 @@
   );
 </script>
 
-<div class="flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm">
+<div
+  class="flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] dark:bg-[var(--surface-raised)]/80 dark:backdrop-blur-sm"
+>
   <!-- Header - Green/Success accent for opportunities -->
-  <div class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4">
+  <div
+    class="flex items-center justify-between border-b border-[var(--border-default)]/50 px-5 py-4"
+  >
     <div class="flex items-center gap-3">
-      <div class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15">
+      <div
+        class="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15"
+      >
         <Sparkles class="size-4 text-[var(--color-success-default)]" />
       </div>
-      <h3 class="text-[var(--text-primary)] text-sm font-semibold tracking-tight">My Opportunities</h3>
+      <h3 class="text-sm font-semibold tracking-tight text-[var(--text-primary)]">
+        My Opportunities
+      </h3>
     </div>
     <Button variant="ghost" size="sm" href="/opportunities" class="gap-1 text-xs font-medium">
       View all
@@ -117,11 +126,13 @@
   <div class="flex-1 overflow-auto">
     {#if openOpportunities.length === 0}
       <div class="flex h-full flex-col items-center justify-center py-10 text-center">
-        <div class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+        >
           <Sparkles class="size-6 text-[var(--text-tertiary)]" />
         </div>
-        <p class="text-[var(--text-secondary)] text-sm font-medium">No open opportunities</p>
-        <p class="text-[var(--text-tertiary)] text-xs">Create one to start tracking</p>
+        <p class="text-sm font-medium text-[var(--text-secondary)]">No open opportunities</p>
+        <p class="text-xs text-[var(--text-tertiary)]">Create one to start tracking</p>
       </div>
     {:else}
       <div class="divide-y divide-[var(--border-default)]/30">
@@ -135,14 +146,18 @@
             <!-- Top row: Name and Amount -->
             <div class="mb-2.5 flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <p class="text-[var(--text-primary)] truncate text-sm font-medium transition-colors group-hover:text-[var(--color-primary-default)]">
+                <p
+                  class="truncate text-sm font-medium text-[var(--text-primary)] transition-colors group-hover:text-[var(--color-primary-default)]"
+                >
                   {opp.name}
                 </p>
-                <p class="text-[var(--text-secondary)] mt-0.5 truncate text-xs">
+                <p class="mt-0.5 truncate text-xs text-[var(--text-secondary)]">
                   {opp.account?.name || 'No account'}
                 </p>
               </div>
-              <span class="text-[var(--text-primary)] flex-shrink-0 text-base font-bold tabular-nums tracking-tight">
+              <span
+                class="flex-shrink-0 text-base font-bold tracking-tight text-[var(--text-primary)] tabular-nums"
+              >
                 {formatCurrency(opp.amount, opp.currency || 'USD')}
               </span>
             </div>
@@ -159,7 +174,9 @@
               <!-- Probability progress -->
               <div class="flex flex-1 items-center gap-2">
                 <Progress value={opp.probability || 0} class="h-1.5 flex-1" />
-                <span class="text-[var(--text-secondary)] w-8 text-right text-xs font-medium tabular-nums">
+                <span
+                  class="w-8 text-right text-xs font-medium text-[var(--text-secondary)] tabular-nums"
+                >
                   {opp.probability || 0}%
                 </span>
               </div>
@@ -171,10 +188,10 @@
                   <span
                     class="text-xs font-medium tabular-nums
                       {daysUntilClose < 0
-                        ? 'text-[var(--task-overdue)]'
-                        : daysUntilClose <= 7
-                          ? 'text-[var(--task-due-today)]'
-                          : 'text-[var(--text-secondary)]'}"
+                      ? 'text-[var(--task-overdue)]'
+                      : daysUntilClose <= 7
+                        ? 'text-[var(--task-due-today)]'
+                        : 'text-[var(--text-secondary)]'}"
                   >
                     {formatDaysUntilClose(daysUntilClose)}
                   </span>

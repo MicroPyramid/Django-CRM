@@ -24,27 +24,32 @@
     {
       value: 'Sent',
       label: 'Sent',
-      color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
+      color:
+        'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
     },
     {
       value: 'Viewed',
       label: 'Viewed',
-      color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+      color:
+        'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'Partially_Paid',
       label: 'Partially Paid',
-      color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
+      color:
+        'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
     },
     {
       value: 'Paid',
       label: 'Paid',
-      color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
+      color:
+        'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
     },
     {
       value: 'Overdue',
       label: 'Overdue',
-      color: 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15'
+      color:
+        'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15'
     },
     {
       value: 'Cancelled',
@@ -336,7 +341,9 @@
           <Filter class="size-4" />
           Filters
           {#if activeFiltersCount > 0}
-            <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]">
+            <span
+              class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]"
+            >
               {activeFiltersCount}
             </span>
           {/if}
@@ -416,11 +423,15 @@
   <CrmTable data={invoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
     {#snippet emptyState()}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
           <span class="text-4xl">📄</span>
         </div>
-        <h3 class="text-[var(--text-primary)] text-lg font-medium">No invoices yet</h3>
-        <p class="text-[var(--text-secondary)] mb-4 text-sm">Create your first invoice to get started</p>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No invoices yet</h3>
+        <p class="mb-4 text-sm text-[var(--text-secondary)]">
+          Create your first invoice to get started
+        </p>
         <Button onclick={createNewInvoice} class="gap-2">
           <Plus class="size-4" />
           Create Invoice

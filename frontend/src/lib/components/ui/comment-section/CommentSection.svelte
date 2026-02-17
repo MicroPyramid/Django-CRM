@@ -136,15 +136,13 @@
 
       // Replace temp comment with real one if response contains it
       if (result?.id) {
-        comments = comments.map(c =>
-          c.id === tempId ? { ...result, comment: commentText } : c
-        );
+        comments = comments.map((c) => (c.id === tempId ? { ...result, comment: commentText } : c));
       }
 
       toast.success('Comment added');
     } catch (err) {
       // Revert on error
-      comments = comments.filter(c => c.id !== tempId);
+      comments = comments.filter((c) => c.id !== tempId);
       newComment = commentText; // Restore the text
       console.error('Failed to add comment:', err);
       toast.error(err?.message || 'Failed to add comment');
@@ -171,7 +169,7 @@
     const originalComments = [...comments];
 
     // Optimistic remove
-    comments = comments.filter(c => c.id !== commentId);
+    comments = comments.filter((c) => c.id !== commentId);
 
     try {
       const apiModule = getApiModule();
@@ -204,7 +202,9 @@
       <MessageSquare class="h-4 w-4" />
       <span>Comments</span>
       {#if comments.length > 0}
-        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+        <span
+          class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+        >
           {comments.length}
         </span>
       {/if}
@@ -222,10 +222,16 @@
           class="min-h-[80px] resize-none pr-4 pb-8"
           disabled={isSubmitting}
         />
-        <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between">
+        <div class="absolute right-3 bottom-2 left-3 flex items-center justify-between">
           <span class="text-[10px] text-gray-400 dark:text-gray-500">
             {#if newComment.trim()}
-              Press <kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 text-[10px] font-medium dark:border-gray-700 dark:bg-gray-800">Ctrl</kbd>+<kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 text-[10px] font-medium dark:border-gray-700 dark:bg-gray-800">Enter</kbd> to send
+              Press <kbd
+                class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 text-[10px] font-medium dark:border-gray-700 dark:bg-gray-800"
+                >Ctrl</kbd
+              >+<kbd
+                class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 text-[10px] font-medium dark:border-gray-700 dark:bg-gray-800"
+                >Enter</kbd
+              > to send
             {/if}
           </span>
           <Button
@@ -248,8 +254,12 @@
 
   <!-- Comments List -->
   {#if comments.length === 0}
-    <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-8 dark:border-gray-800">
-      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-900">
+    <div
+      class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-8 dark:border-gray-800"
+    >
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-900"
+      >
         <MessageSquare class="h-5 w-5 text-gray-400 dark:text-gray-600" />
       </div>
       <p class="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">No comments yet</p>
@@ -264,7 +274,9 @@
           <div class="flex gap-3">
             <!-- Avatar -->
             <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase {getAvatarColor(comment)}"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase {getAvatarColor(
+                comment
+              )}"
             >
               {getCommenterInitials(comment)}
             </div>
@@ -280,7 +292,7 @@
                 </span>
               </div>
 
-              <p class="mt-1 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">
+              <p class="mt-1 text-sm whitespace-pre-wrap text-gray-600 dark:text-gray-400">
                 {comment.comment}
               </p>
             </div>
@@ -290,7 +302,7 @@
               <button
                 type="button"
                 onclick={() => confirmDelete(comment)}
-                class="absolute right-2 top-2 rounded-md p-1.5 text-gray-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                class="absolute top-2 right-2 rounded-md p-1.5 text-gray-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                 disabled={deletingCommentId === comment.id}
                 title="Delete comment"
               >
@@ -310,7 +322,7 @@
     {#if hasMoreComments}
       <button
         type="button"
-        onclick={() => showAllComments = !showAllComments}
+        onclick={() => (showAllComments = !showAllComments)}
         class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
       >
         {#if showAllComments}

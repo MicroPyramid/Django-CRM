@@ -819,7 +819,9 @@
   <!-- Table -->
   {#if filteredContacts.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+      <div
+        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+      >
         <User class="size-8 text-[var(--text-tertiary)]" />
       </div>
       <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
@@ -835,7 +837,9 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]">
+          <div
+            class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+          >
             <User class="size-6 text-[var(--text-tertiary)]" />
           </div>
           <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
@@ -874,9 +878,7 @@
     <!-- Metadata (view mode only) -->
     {#if drawerMode !== 'create' && selectedContact}
       <div>
-        <p
-          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
-        >
+        <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
@@ -902,7 +904,7 @@
           entityType="contacts"
           initialComments={selectedContact.comments || []}
           currentUserEmail={currentUser?.email}
-          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+          isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
         />
       </div>
     {/if}

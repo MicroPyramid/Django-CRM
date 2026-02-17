@@ -91,39 +91,49 @@
   {...restProps}
 >
   <!-- Subtle gradient overlay on hover -->
-  <div class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-    <div class="absolute inset-0 bg-gradient-to-br from-[var(--color-primary-default)]/5 via-transparent to-transparent dark:from-[var(--color-primary-default)]/[0.03]"></div>
+  <div
+    class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+  >
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-[var(--color-primary-default)]/5 via-transparent to-transparent dark:from-[var(--color-primary-default)]/[0.03]"
+    ></div>
   </div>
 
   <div class="relative flex items-start justify-between gap-4">
     <div class="flex min-w-0 flex-col gap-1.5">
       <!-- Label -->
-      <p class="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">
+      <p class="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
         {label}
       </p>
 
       <!-- Value -->
-      <p class="text-[var(--text-primary)] truncate text-2xl font-bold tabular-nums tracking-tight lg:text-3xl">
+      <p
+        class="truncate text-2xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums lg:text-3xl"
+      >
         {value}
       </p>
 
       <!-- Subtitle -->
       {#if subtitle}
-        <p class="text-[var(--text-tertiary)] text-[10px] font-medium">{subtitle}</p>
+        <p class="text-[10px] font-medium text-[var(--text-tertiary)]">{subtitle}</p>
       {/if}
 
       <!-- Trend indicator -->
       {#if hasTrend}
         <div class="mt-1 flex items-center gap-1.5">
           {#if isPositive}
-            <div class="flex items-center gap-1 rounded-full bg-[var(--color-success-light)] px-2 py-0.5 dark:bg-[var(--stage-won)]/15">
+            <div
+              class="flex items-center gap-1 rounded-full bg-[var(--color-success-light)] px-2 py-0.5 dark:bg-[var(--stage-won)]/15"
+            >
               <TrendingUp class="size-3 text-[var(--stage-won)]" />
               <span class="text-xs font-semibold text-[var(--stage-won)]">
                 +{trend}%
               </span>
             </div>
           {:else}
-            <div class="flex items-center gap-1 rounded-full bg-[var(--stage-lost-bg)] px-2 py-0.5 dark:bg-[var(--stage-lost)]/15">
+            <div
+              class="flex items-center gap-1 rounded-full bg-[var(--stage-lost-bg)] px-2 py-0.5 dark:bg-[var(--stage-lost)]/15"
+            >
               <TrendingDown class="size-3 text-[var(--stage-lost)]" />
               <span class="text-xs font-semibold text-[var(--stage-lost)]">
                 {trend}%
@@ -131,7 +141,7 @@
             </div>
           {/if}
           {#if trendLabel}
-            <span class="text-[var(--text-tertiary)] text-[10px]">{trendLabel}</span>
+            <span class="text-[10px] text-[var(--text-tertiary)]">{trendLabel}</span>
           {/if}
         </div>
       {/if}

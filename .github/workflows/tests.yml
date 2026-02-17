@@ -80,7 +80,6 @@ jobs:
 
   frontend-checks:
     runs-on: ubuntu-latest
-    continue-on-error: true  # Pre-existing lint/formatting issues; will enforce once fixed
 
     steps:
       - uses: actions/checkout@v4

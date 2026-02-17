@@ -130,7 +130,8 @@ export const leadStatusOptions = [
   {
     value: 'IN_PROCESS',
     label: 'In Process',
-    color: 'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
+    color:
+      'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
   },
   {
     value: 'CONVERTED',
@@ -140,7 +141,8 @@ export const leadStatusOptions = [
   {
     value: 'RECYCLED',
     label: 'Recycled',
-    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    color:
+      'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'CLOSED',
@@ -173,22 +175,26 @@ export const priorityOptions = [
   {
     value: 'URGENT',
     label: 'Urgent',
-    color: 'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
+    color:
+      'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
   },
   {
     value: 'HIGH',
     label: 'High',
-    color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
+    color:
+      'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
   },
   {
     value: 'NORMAL',
     label: 'Normal',
-    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
+    color:
+      'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'MEDIUM',
     label: 'Medium',
-    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
+    color:
+      'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'LOW',
@@ -202,22 +208,26 @@ export const taskStatusOptions = [
   {
     value: 'NOT STARTED',
     label: 'Not Started',
-    color: 'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
+    color:
+      'bg-[var(--task-upcoming-bg)] text-[var(--task-upcoming)] dark:bg-[var(--task-upcoming)]/15'
   },
   {
     value: 'IN PROGRESS',
     label: 'In Progress',
-    color: 'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
+    color:
+      'bg-[var(--task-due-today-bg)] text-[var(--task-due-today)] dark:bg-[var(--task-due-today)]/15'
   },
   {
     value: 'PENDING',
     label: 'Pending',
-    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    color:
+      'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'COMPLETED',
     label: 'Completed',
-    color: 'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
+    color:
+      'bg-[var(--task-completed-bg)] text-[var(--task-completed)] dark:bg-[var(--task-completed)]/15'
   },
   {
     value: 'DEFERRED',
@@ -236,12 +246,14 @@ export const caseStatusOptions = [
   {
     value: 'Assigned',
     label: 'Assigned',
-    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+    color:
+      'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'Pending',
     label: 'Pending',
-    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
+    color:
+      'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   },
   {
     value: 'Closed',
@@ -256,7 +268,8 @@ export const caseStatusOptions = [
   {
     value: 'Duplicate',
     label: 'Duplicate',
-    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    color:
+      'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   }
 ];
 
@@ -265,12 +278,14 @@ export const caseTypeOptions = [
   {
     value: 'Question',
     label: 'Question',
-    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+    color:
+      'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'Incident',
     label: 'Incident',
-    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    color:
+      'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   },
   {
     value: 'Problem',
@@ -289,17 +304,20 @@ export const casePriorityOptions = [
   {
     value: 'Normal',
     label: 'Normal',
-    color: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
+    color:
+      'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)] dark:bg-[var(--priority-medium)]/15'
   },
   {
     value: 'High',
     label: 'High',
-    color: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
+    color:
+      'bg-[var(--priority-high-bg)] text-[var(--priority-high)] dark:bg-[var(--priority-high)]/15'
   },
   {
     value: 'Urgent',
     label: 'Urgent',
-    color: 'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
+    color:
+      'bg-[var(--priority-urgent-bg)] text-[var(--priority-urgent)] dark:bg-[var(--priority-urgent)]/15'
   }
 ];
 
@@ -308,7 +326,8 @@ export const accountStatusOptions = [
   {
     value: 'ACTIVE',
     label: 'Active',
-    color: 'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
+    color:
+      'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
   },
   {
     value: 'INACTIVE',
@@ -318,7 +337,8 @@ export const accountStatusOptions = [
   {
     value: 'PENDING',
     label: 'Pending',
-    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
+    color:
+      'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   }
 ];
 
@@ -332,17 +352,20 @@ export const opportunityStageOptions = [
   {
     value: 'QUALIFICATION',
     label: 'Qualification',
-    color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+    color:
+      'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
   },
   {
     value: 'PROPOSAL',
     label: 'Proposal',
-    color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
+    color:
+      'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
   },
   {
     value: 'NEGOTIATION',
     label: 'Negotiation',
-    color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
+    color:
+      'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
   },
   {
     value: 'CLOSED_WON',

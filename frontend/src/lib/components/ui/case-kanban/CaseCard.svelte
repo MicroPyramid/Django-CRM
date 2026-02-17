@@ -1,5 +1,13 @@
 <script>
-  import { Building2, AlertTriangle, ShieldAlert, HelpCircle, AlertOctagon, FileWarning, Timer } from '@lucide/svelte';
+  import {
+    Building2,
+    AlertTriangle,
+    ShieldAlert,
+    HelpCircle,
+    AlertOctagon,
+    FileWarning,
+    Timer
+  } from '@lucide/svelte';
 
   /**
    * @typedef {Object} Case
@@ -134,12 +142,14 @@
 
 <div
   class="case-card group relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-300 ease-out
-    {isSlaBreached ? 'border-l-[3px] border-l-rose-500' : 'border-white/10 dark:border-white/[0.06]'}
-    bg-white/80 dark:bg-white/[0.03]
-    backdrop-blur-sm
-    hover:border-white/20 dark:hover:border-white/[0.1]
-    hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20
-    hover:-translate-y-0.5"
+    {isSlaBreached
+    ? 'border-l-[3px] border-l-rose-500'
+    : 'border-white/10 dark:border-white/[0.06]'}
+    bg-white/80 backdrop-blur-sm
+    hover:-translate-y-0.5
+    hover:border-white/20 hover:shadow-lg
+    hover:shadow-black/5 dark:bg-white/[0.03] dark:hover:border-white/[0.1]
+    dark:hover:shadow-black/20"
   class:urgent-card={priority === 'Urgent'}
   class:sla-breach-card={isSlaBreached}
   draggable="true"
@@ -151,24 +161,33 @@
   tabindex="0"
 >
   <!-- Subtle gradient overlay for depth -->
-  <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.02]"></div>
+  <div
+    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.02]"
+  ></div>
 
   <!-- Urgent/SLA breach animated glow -->
   {#if priority === 'Urgent' || isSlaBreached}
-    <div class="urgent-glow pointer-events-none absolute -inset-[1px] rounded-xl bg-gradient-to-r from-rose-500/20 via-red-500/20 to-rose-500/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"></div>
+    <div
+      class="urgent-glow pointer-events-none absolute -inset-[1px] rounded-xl bg-gradient-to-r from-rose-500/20 via-red-500/20 to-rose-500/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"
+    ></div>
   {/if}
 
   <div class="relative p-3.5">
     <!-- Header: Title + SLA Warning -->
     <div class="flex items-start justify-between gap-2">
-      <h4 class="flex-1 truncate text-[0.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-white/95">
+      <h4
+        class="flex-1 truncate text-[0.9rem] leading-tight font-semibold tracking-tight text-gray-900 dark:text-white/95"
+      >
         {name}
       </h4>
 
       {#if isSlaBreached}
-        <div class="sla-warning flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-rose-500/25 to-red-500/25 px-2 py-0.5 text-rose-600 dark:text-rose-400" title="SLA Breached">
+        <div
+          class="sla-warning flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-rose-500/25 to-red-500/25 px-2 py-0.5 text-rose-600 dark:text-rose-400"
+          title="SLA Breached"
+        >
           <Timer class="h-3.5 w-3.5" />
-          <span class="text-[0.6rem] font-bold uppercase tracking-wider">SLA</span>
+          <span class="text-[0.6rem] font-bold tracking-wider uppercase">SLA</span>
         </div>
       {/if}
     </div>
@@ -193,8 +212,10 @@
 
       {#if config}
         {@const PriorityIcon = config.icon}
-        <div class="priority-badge flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider {config.bg} {config.text} {config.border} border"
-          class:priority-pulse={config.pulse}>
+        <div
+          class="priority-badge flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wider uppercase {config.bg} {config.text} {config.border} border"
+          class:priority-pulse={config.pulse}
+        >
           <PriorityIcon class="h-3 w-3" />
           {priority}
         </div>
@@ -207,7 +228,9 @@
         <div class="flex items-center -space-x-2">
           {#each assignees.slice(0, 3) as assignee, i (assignee.id)}
             <div
-              class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br {getAvatarColor(getAssigneeName(assignee))} text-[0.7rem] font-semibold text-white shadow-sm ring-2 ring-white dark:ring-gray-900"
+              class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br {getAvatarColor(
+                getAssigneeName(assignee)
+              )} text-[0.7rem] font-semibold text-white shadow-sm ring-2 ring-white dark:ring-gray-900"
               style="z-index: {3 - i}"
               title={getAssigneeName(assignee)}
             >
@@ -226,7 +249,10 @@
 
         <!-- Urgent indicator -->
         {#if priority === 'Urgent' && !isSlaBreached}
-          <div class="flex items-center gap-1 text-rose-500 dark:text-rose-400" title="Urgent priority">
+          <div
+            class="flex items-center gap-1 text-rose-500 dark:text-rose-400"
+            title="Urgent priority"
+          >
             <AlertOctagon class="h-4 w-4" />
           </div>
         {/if}
@@ -246,11 +272,15 @@
   }
 
   :global(.dark) .case-card {
-    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --card-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   :global(.dark) .case-card:hover {
-    --card-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 8px 20px -8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --card-shadow:
+      0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 8px 20px -8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .case-card:active {
@@ -260,7 +290,9 @@
   }
 
   :global(.dark) .case-card:active {
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px -5px rgba(34, 211, 238, 0.15);
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 30px -5px rgba(34, 211, 238, 0.15);
   }
 
   .case-card:focus-visible {
@@ -270,16 +302,28 @@
 
   /* Urgent card special styling */
   .urgent-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 251, 250, 0.95) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 251, 250, 0.95) 100%
+    );
   }
 
   :global(.dark) .urgent-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(251, 113, 133, 0.03) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(251, 113, 133, 0.03) 100%
+    );
   }
 
   /* SLA breach card special styling */
   .sla-breach-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(254, 242, 242, 0.95) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(254, 242, 242, 0.95) 100%
+    );
   }
 
   :global(.dark) .sla-breach-card {
@@ -292,7 +336,8 @@
   }
 
   @keyframes sla-pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -306,7 +351,8 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -321,7 +367,8 @@
   }
 
   @keyframes shimmer-glow {
-    0%, 100% {
+    0%,
+    100% {
       background-position: 0% 50%;
     }
     50% {

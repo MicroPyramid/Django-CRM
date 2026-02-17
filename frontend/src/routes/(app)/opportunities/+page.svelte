@@ -70,17 +70,20 @@
     {
       value: 'QUALIFICATION',
       label: 'Qualification',
-      color: 'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
+      color:
+        'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
     },
     {
       value: 'PROPOSAL',
       label: 'Proposal',
-      color: 'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
+      color:
+        'bg-[var(--stage-proposal-bg)] text-[var(--stage-proposal)] dark:bg-[var(--stage-proposal)]/15'
     },
     {
       value: 'NEGOTIATION',
       label: 'Negotiation',
-      color: 'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
+      color:
+        'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
     },
     {
       value: 'CLOSED_WON',
@@ -105,7 +108,8 @@
   const sourceOptions = OPPORTUNITY_SOURCES.map((s) => ({
     value: s.value,
     label: s.label,
-    color: 'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+    color:
+      'bg-[var(--color-primary-light)] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
   }));
 
   // Currency options - using design system tokens
@@ -1261,11 +1265,15 @@
   <!-- Table View -->
   {#if filteredOpportunities.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+      <div
+        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+      >
         <Target class="size-8 text-[var(--text-tertiary)]" />
       </div>
-      <h3 class="text-[var(--text-primary)] text-lg font-medium">No opportunities found</h3>
-      <p class="text-[var(--text-secondary)] mt-1 text-sm">Try adjusting your filters or create a new opportunity</p>
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
+      <p class="mt-1 text-sm text-[var(--text-secondary)]">
+        Try adjusting your filters or create a new opportunity
+      </p>
     </div>
   {:else}
     <CrmTable
@@ -1277,10 +1285,12 @@
     >
       {#snippet emptyState()}
         <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]">
+          <div
+            class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+          >
             <Target class="size-8 text-[var(--text-tertiary)]" />
           </div>
-          <h3 class="text-[var(--text-primary)] text-lg font-medium">No opportunities found</h3>
+          <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
         </div>
       {/snippet}
     </CrmTable>
@@ -1315,9 +1325,7 @@
     <!-- Account and Owner info (view mode only) -->
     {#if drawerMode !== 'create' && selectedRow}
       <div class="mb-4">
-        <p
-          class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase"
-        >
+        <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
           Details
         </p>
         <div class="grid grid-cols-2 gap-3 text-sm">
@@ -1511,7 +1519,7 @@
           entityType="opportunity"
           initialComments={selectedRow.comments || []}
           currentUserEmail={currentUser?.email}
-          isAdmin={currentUser?.organizations?.some(o => o.role === 'ADMIN')}
+          isAdmin={currentUser?.organizations?.some((o) => o.role === 'ADMIN')}
         />
       </div>
     {/if}

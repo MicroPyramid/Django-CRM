@@ -39,7 +39,9 @@
       <!-- Page Header -->
       <div class="mb-8 text-center">
         <h1 class="text-2xl font-bold text-[var(--text-primary)]">Select an organization</h1>
-        <p class="mt-2 text-[var(--text-secondary)]">Choose which organization you'd like to work in</p>
+        <p class="mt-2 text-[var(--text-secondary)]">
+          Choose which organization you'd like to work in
+        </p>
       </div>
 
       <!-- Organizations List -->
@@ -115,7 +117,9 @@
         </div>
       {:else}
         <!-- Empty State -->
-        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-12 text-center shadow-sm">
+        <div
+          class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-default)] p-12 text-center shadow-sm"
+        >
           <div
             class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-sunken)]"
           >

@@ -81,7 +81,7 @@
   {#if showLabel && label}
     <label
       for="search-input"
-      class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70"
+      class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase"
     >
       {label}
     </label>
@@ -91,7 +91,7 @@
     <!-- Search icon with pulse on focus -->
     <div
       class={cn(
-        'absolute left-3 top-1/2 -translate-y-1/2',
+        'absolute top-1/2 left-3 -translate-y-1/2',
         'transition-all duration-300 ease-out',
         isFocused ? 'text-primary scale-110' : 'text-muted-foreground'
       )}
@@ -114,24 +114,24 @@
         'search-input',
         'flex h-9 w-full rounded-lg',
         'bg-background/60 backdrop-blur-sm',
-        'border border-input/60',
-        'pl-9 pr-9 text-sm',
+        'border-input/60 border',
+        'pr-9 pl-9 text-sm',
         'placeholder:text-muted-foreground/50',
         'transition-all duration-200 ease-out',
         'outline-none',
         'hover:border-input hover:bg-background/80',
         'focus:border-primary/50 focus:bg-background',
-        'focus:ring-2 focus:ring-primary/20',
-        'dark:bg-white/[0.03] dark:border-white/[0.08]',
-        'dark:hover:bg-white/[0.05] dark:hover:border-white/[0.12]',
-        'dark:focus:bg-white/[0.06] dark:focus:border-primary/40',
+        'focus:ring-primary/20 focus:ring-2',
+        'dark:border-white/[0.08] dark:bg-white/[0.03]',
+        'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
+        'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
         'dark:focus:ring-primary/30',
         inputValue && 'pr-16'
       )}
     />
 
     <!-- Right side: shortcut hint or clear button -->
-    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+    <div class="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
       {#if inputValue}
         <!-- Clear button -->
         <button
@@ -152,8 +152,8 @@
         <div
           class={cn(
             'hidden items-center gap-0.5 sm:flex',
-            'rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5',
-            'text-[10px] font-medium text-muted-foreground/60',
+            'border-border/60 bg-muted/50 rounded-md border px-1.5 py-0.5',
+            'text-muted-foreground/60 text-[10px] font-medium',
             'dark:border-white/[0.06] dark:bg-white/[0.03]'
           )}
         >
