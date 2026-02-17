@@ -50,7 +50,6 @@ frontend/build/
 frontend/.env
 frontend/.env.local
 frontend/package-lock.json
-frontend/pnpm-lock.yaml
 
 # Logs
 logs/
