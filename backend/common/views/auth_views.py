@@ -1,4 +1,5 @@
 import json
+import logging
 import secrets
 
 import requests
@@ -16,6 +17,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from common import serializer
 from common.models import Org, Profile, User
+
+logger = logging.getLogger(__name__)
 from common.serializer import OrgAwareRefreshToken
 
 
@@ -192,9 +195,10 @@ class GoogleIdTokenView(APIView):
             )
             email = idinfo.get("email")
             picture = idinfo.get("picture", "")
-        except ValueError as e:
+        except ValueError:
+            logger.warning("Google OAuth token validation failed", exc_info=True)
             return Response(
-                {"error": f"Invalid token: {str(e)}"},
+                {"error": "Invalid token"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
