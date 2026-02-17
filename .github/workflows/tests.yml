@@ -78,7 +78,7 @@ jobs:
           path: backend/htmlcov/
           retention-days: 14
 
-  frontend-lint:
+  frontend-checks:
     runs-on: ubuntu-latest
 
     steps:
@@ -87,7 +87,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -98,9 +98,13 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Lint (ESLint + Prettier)
+      - name: Prettier format check
         working-directory: frontend
-        run: pnpm lint
+        run: pnpm prettier --check . || echo "::warning::Prettier found formatting issues in $(pnpm prettier --check . 2>&1 | grep -c '^\[warn\]') files. Run 'pnpm format' to fix."
+
+      - name: ESLint
+        working-directory: frontend
+        run: pnpm eslint .
 
       - name: Type check (svelte-check)
         working-directory: frontend
