@@ -11,7 +11,7 @@ from common.serializer import (
 )
 from contacts.serializer import ContactSerializer
 from invoices.serializer import ProductSerializer
-from opportunity.models import Opportunity, OpportunityLineItem, StageAgingConfig
+from opportunity.models import Opportunity, OpportunityLineItem, SalesGoal, StageAgingConfig
 
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
@@ -290,3 +290,81 @@ class StageAgingConfigSerializer(serializers.ModelSerializer):
         model = StageAgingConfig
         fields = ("id", "stage", "expected_days", "warning_days")
         read_only_fields = ("id",)
+
+
+class SalesGoalSerializer(serializers.ModelSerializer):
+    assigned_to_detail = ProfileSerializer(source="assigned_to", read_only=True)
+    team_detail = serializers.SerializerMethodField()
+    progress_value = serializers.SerializerMethodField()
+    progress_percent = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SalesGoal
+        fields = (
+            "id",
+            "name",
+            "goal_type",
+            "target_value",
+            "period_type",
+            "period_start",
+            "period_end",
+            "assigned_to",
+            "assigned_to_detail",
+            "team",
+            "team_detail",
+            "is_active",
+            "milestone_50_notified",
+            "milestone_90_notified",
+            "milestone_100_notified",
+            "org",
+            "created_at",
+            "updated_at",
+            "progress_value",
+            "progress_percent",
+            "status",
+        )
+
+    def get_team_detail(self, obj):
+        if obj.team:
+            return {"id": str(obj.team.id), "name": obj.team.name}
+        return None
+
+    def get_progress_value(self, obj):
+        return float(obj.compute_progress())
+
+    def get_progress_percent(self, obj):
+        return obj.progress_percent
+
+    def get_status(self, obj):
+        return obj.status
+
+
+class SalesGoalCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SalesGoal
+        fields = (
+            "name",
+            "goal_type",
+            "target_value",
+            "period_type",
+            "period_start",
+            "period_end",
+            "assigned_to",
+            "team",
+            "is_active",
+        )
+
+    def validate(self, data):
+        period_start = data.get("period_start", getattr(self.instance, "period_start", None))
+        period_end = data.get("period_end", getattr(self.instance, "period_end", None))
+        if period_start and period_end and period_end <= period_start:
+            raise serializers.ValidationError(
+                {"period_end": "Period end must be after period start."}
+            )
+        target_value = data.get("target_value", getattr(self.instance, "target_value", None))
+        if target_value is not None and target_value <= 0:
+            raise serializers.ValidationError(
+                {"target_value": "Target value must be greater than 0."}
+            )
+        return data

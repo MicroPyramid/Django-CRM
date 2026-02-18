@@ -219,6 +219,32 @@ class ApiHomeView(APIView):
         ).order_by("due_date")[:10]
         context["tasks"] = TaskSerializer(upcoming_tasks, many=True).data
 
+        # Goal summary for current user
+        from opportunity.models import SalesGoal
+
+        active_goals = (
+            SalesGoal.objects.filter(
+                org=org,
+                is_active=True,
+                period_start__lte=today,
+                period_end__gte=today,
+            )
+            .filter(Q(assigned_to=profile) | Q(team__in=profile.user_teams.all()))
+            .distinct()[:3]
+        )
+        context["goal_summary"] = [
+            {
+                "id": str(g.id),
+                "name": g.name,
+                "goal_type": g.goal_type,
+                "target_value": float(g.target_value),
+                "progress_value": float(g.compute_progress()),
+                "progress_percent": g.progress_percent,
+                "status": g.status,
+            }
+            for g in active_goals
+        ]
+
         # Include recent activities (avoid separate API call)
         activities = (
             Activity.objects.filter(org=org)

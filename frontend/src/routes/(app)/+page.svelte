@@ -3,6 +3,7 @@
   import {
     KPICard,
     FocusBar,
+    GoalProgress,
     MiniPipeline,
     PipelineChart,
     TaskList,
@@ -22,6 +23,7 @@
   const pipelineByStage = $derived(data.pipelineByStage || {});
   const revenueMetrics = $derived(data.revenueMetrics || {});
   const hotLeads = $derived(data.hotLeads || []);
+  const goalSummary = $derived(data.goalSummary || []);
 
   // Get org's default currency for KPI display
   const orgCurrency = $derived($orgSettings.default_currency || 'USD');
@@ -179,10 +181,11 @@
         </div>
       </div>
 
-      <!-- Tasks + Opportunities -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <!-- Tasks + Opportunities + Goals -->
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <TaskList tasks={recentData.tasks || []} />
         <OpportunitiesTable opportunities={recentData.opportunities || []} />
+        <GoalProgress goals={goalSummary} />
       </div>
 
       <!-- Activity Feed - Full Width -->

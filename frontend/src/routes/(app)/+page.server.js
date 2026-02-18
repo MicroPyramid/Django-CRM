@@ -142,7 +142,8 @@ export async function load({ locals, cookies }) {
         won_this_month: 0,
         conversion_rate: 0
       },
-      hotLeads: hotLeads
+      hotLeads: hotLeads,
+      goalSummary: dashboardResponse.goal_summary || []
     };
   } catch (error) {
     console.error('Dashboard load error:', error);
