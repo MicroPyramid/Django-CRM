@@ -257,7 +257,7 @@ class TestSalesGoalAPI:
             ),
         }
         response = admin_client.post(self.GOALS_URL, data, format="json")
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.data["error"] is False
         assert SalesGoal.objects.filter(name="New Goal", org=org_a).exists()
 

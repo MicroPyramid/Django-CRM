@@ -223,7 +223,7 @@ class ApiHomeView(APIView):
         from opportunity.models import SalesGoal
 
         goal_filter = Q(assigned_to=profile) | Q(team__in=profile.user_teams.all())
-        if profile.role == "ADMIN":
+        if is_admin:
             goal_filter |= Q(assigned_to__isnull=True, team__isnull=True)
 
         active_goals = (

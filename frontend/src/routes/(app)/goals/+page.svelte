@@ -15,6 +15,7 @@
   import { formatCurrency } from '$lib/utils/formatting.js';
   import { orgSettings } from '$lib/stores/org.js';
   import { getCurrentUser } from '$lib/api.js';
+  import { getStatusColor, getProgressColor } from '$lib/utils/goals.js';
 
   const goalTypeOptions = [
     {
@@ -149,23 +150,22 @@
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
+    const pad = (/** @type {number} */ n) => String(n).padStart(2, '0');
 
     switch (periodType) {
       case 'MONTHLY': {
-        const start = new Date(year, month, 1);
-        const end = new Date(year, month + 1, 0);
+        const lastDay = new Date(year, month + 1, 0).getDate();
         return {
-          start: start.toISOString().split('T')[0],
-          end: end.toISOString().split('T')[0]
+          start: `${year}-${pad(month + 1)}-01`,
+          end: `${year}-${pad(month + 1)}-${pad(lastDay)}`
         };
       }
       case 'QUARTERLY': {
         const qStart = Math.floor(month / 3) * 3;
-        const start = new Date(year, qStart, 1);
-        const end = new Date(year, qStart + 3, 0);
+        const lastDay = new Date(year, qStart + 3, 0).getDate();
         return {
-          start: start.toISOString().split('T')[0],
-          end: end.toISOString().split('T')[0]
+          start: `${year}-${pad(qStart + 1)}-01`,
+          end: `${year}-${pad(qStart + 3)}-${pad(lastDay)}`
         };
       }
       case 'YEARLY': {
@@ -226,6 +226,7 @@
   /** @param {Event} e */
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!isAdmin) return;
     const form = /** @type {HTMLFormElement} */ (e.target);
     const fd = new FormData(form);
 
@@ -315,35 +316,6 @@
     return goals;
   });
 
-  /**
-   * Get color class for status
-   * @param {string} statusValue
-   */
-  function getStatusColor(statusValue) {
-    switch (statusValue) {
-      case 'on_track':
-        return 'text-emerald-600 dark:text-emerald-400';
-      case 'at_risk':
-        return 'text-amber-600 dark:text-amber-400';
-      case 'behind':
-        return 'text-red-600 dark:text-red-400';
-      case 'completed':
-        return 'text-blue-600 dark:text-blue-400';
-      default:
-        return 'text-[var(--text-secondary)]';
-    }
-  }
-
-  /**
-   * Get progress bar color
-   * @param {number} percent
-   */
-  function getProgressColor(percent) {
-    if (percent >= 100) return '[&>[data-slot=progress-indicator]]:bg-blue-500';
-    if (percent >= 75) return '[&>[data-slot=progress-indicator]]:bg-emerald-500';
-    if (percent >= 50) return '[&>[data-slot=progress-indicator]]:bg-amber-500';
-    return '[&>[data-slot=progress-indicator]]:bg-red-500';
-  }
 </script>
 
 <svelte:head>

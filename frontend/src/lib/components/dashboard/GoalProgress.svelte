@@ -4,39 +4,12 @@
   import { formatCurrency } from '$lib/utils/formatting.js';
   import { orgSettings } from '$lib/stores/org.js';
   import { resolve } from '$app/paths';
+  import { getStatusColor, getProgressColor } from '$lib/utils/goals.js';
 
   /** @type {{ goals?: any[] }} */
   let { goals = [] } = $props();
 
   const orgCurrency = $derived($orgSettings.default_currency || 'USD');
-
-  /**
-   * @param {string} statusValue
-   */
-  function getStatusColor(statusValue) {
-    switch (statusValue) {
-      case 'on_track':
-        return 'text-emerald-600 dark:text-emerald-400';
-      case 'at_risk':
-        return 'text-amber-600 dark:text-amber-400';
-      case 'behind':
-        return 'text-red-600 dark:text-red-400';
-      case 'completed':
-        return 'text-blue-600 dark:text-blue-400';
-      default:
-        return 'text-[var(--text-secondary)]';
-    }
-  }
-
-  /**
-   * @param {number} percent
-   */
-  function getProgressColor(percent) {
-    if (percent >= 100) return '[&>[data-slot=progress-indicator]]:bg-blue-500';
-    if (percent >= 75) return '[&>[data-slot=progress-indicator]]:bg-emerald-500';
-    if (percent >= 50) return '[&>[data-slot=progress-indicator]]:bg-amber-500';
-    return '[&>[data-slot=progress-indicator]]:bg-red-500';
-  }
 </script>
 
 <div
@@ -74,7 +47,7 @@
     </div>
   {:else}
     <div class="space-y-4">
-      {#each goals as goal}
+      {#each goals as goal (goal.id)}
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
             <span class="truncate text-sm font-medium text-[var(--text-primary)]">{goal.name}</span>

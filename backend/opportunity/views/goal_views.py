@@ -44,7 +44,9 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         if params.get("search"):
             queryset = queryset.filter(name__icontains=params["search"])
 
-        return queryset.distinct()
+        return queryset.select_related(
+            "assigned_to", "assigned_to__user", "team"
+        ).distinct()
 
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset(request)
@@ -52,11 +54,8 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         serializer = SalesGoalSerializer(results, many=True)
 
         total_count = self.count
-        offset = None
-        if results:
-            offset = queryset.filter(id__gte=results[-1].id).count()
-            if offset == total_count:
-                offset = None
+        next_offset = self.offset + len(results) if results else None
+        offset = next_offset if (results and next_offset < total_count) else None
 
         return Response(
             {
@@ -82,7 +81,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
             )
             return Response(
                 {"error": False, "message": "Goal Created Successfully"},
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
         return Response(
             {"error": True, "errors": serializer.errors},
