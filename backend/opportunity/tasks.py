@@ -160,15 +160,23 @@ def check_goal_milestones():
             )
 
             for goal in goals:
-                percent = goal.progress_percent
                 progress_value = goal.compute_progress()
+                if goal.target_value and goal.target_value != 0:
+                    percent = min(
+                        int(progress_value / goal.target_value * 100), 100
+                    )
+                else:
+                    percent = 0
                 notifications = []
 
                 if percent >= 100 and not goal.milestone_100_notified:
                     goal.milestone_100_notified = True
+                    goal.milestone_90_notified = True
+                    goal.milestone_50_notified = True
                     notifications.append(("100%", percent, progress_value))
                 elif percent >= 90 and not goal.milestone_90_notified:
                     goal.milestone_90_notified = True
+                    goal.milestone_50_notified = True
                     notifications.append(("90%", percent, progress_value))
                 elif percent >= 50 and not goal.milestone_50_notified:
                     goal.milestone_50_notified = True

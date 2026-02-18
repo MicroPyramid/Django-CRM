@@ -463,7 +463,14 @@ class SalesGoal(BaseModel):
         return f"{self.name} ({self.get_goal_type_display()})"
 
     def compute_progress(self):
-        """Compute current progress toward this goal from CLOSED_WON opportunities."""
+        """Compute current progress toward this goal from CLOSED_WON opportunities.
+
+        Results are cached on the instance to avoid redundant DB queries when
+        progress_percent and status are accessed in the same request.
+        """
+        if hasattr(self, "_cached_progress"):
+            return self._cached_progress
+
         opps = Opportunity.objects.filter(
             org=self.org,
             stage="CLOSED_WON",
@@ -479,10 +486,14 @@ class SalesGoal(BaseModel):
             opps = opps.filter(assigned_to__in=team_members)
 
         if self.goal_type == "REVENUE":
-            return opps.aggregate(
+            result = opps.aggregate(
                 total=Coalesce(Sum("amount"), Decimal("0"))
             )["total"]
-        return Decimal(str(opps.count()))
+        else:
+            result = Decimal(str(opps.count()))
+
+        self._cached_progress = result
+        return result
 
     @property
     def progress_percent(self):

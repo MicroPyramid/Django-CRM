@@ -222,6 +222,10 @@ class ApiHomeView(APIView):
         # Goal summary for current user
         from opportunity.models import SalesGoal
 
+        goal_filter = Q(assigned_to=profile) | Q(team__in=profile.user_teams.all())
+        if profile.role == "ADMIN":
+            goal_filter |= Q(assigned_to__isnull=True, team__isnull=True)
+
         active_goals = (
             SalesGoal.objects.filter(
                 org=org,
@@ -229,7 +233,7 @@ class ApiHomeView(APIView):
                 period_start__lte=today,
                 period_end__gte=today,
             )
-            .filter(Q(assigned_to=profile) | Q(team__in=profile.user_teams.all()))
+            .filter(goal_filter)
             .distinct()[:3]
         )
         context["goal_summary"] = [

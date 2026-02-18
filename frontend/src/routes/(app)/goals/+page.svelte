@@ -1,5 +1,6 @@
 <script>
   import { invalidateAll } from '$app/navigation';
+  import { deserialize } from '$app/forms';
   import { page } from '$app/stores';
   import { toast } from 'svelte-sonner';
   import { Plus, Trophy, Target, User, Users, Trash2, X } from '@lucide/svelte';
@@ -111,8 +112,8 @@
    */
   function formatPeriod(row) {
     if (!row.periodStart || !row.periodEnd) return '-';
-    const start = new Date(row.periodStart);
-    const end = new Date(row.periodEnd);
+    const [sy, sm, sd] = row.periodStart.split('-').map(Number);
+    const [ey, em, ed] = row.periodEnd.split('-').map(Number);
     const monthNames = [
       'Jan',
       'Feb',
@@ -128,16 +129,16 @@
       'Dec'
     ];
     if (row.periodType === 'MONTHLY') {
-      return `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
+      return `${monthNames[sm - 1]} ${sy}`;
     }
     if (row.periodType === 'QUARTERLY') {
-      const quarter = Math.floor(start.getMonth() / 3) + 1;
-      return `Q${quarter} ${start.getFullYear()}`;
+      const quarter = Math.floor((sm - 1) / 3) + 1;
+      return `Q${quarter} ${sy}`;
     }
     if (row.periodType === 'YEARLY') {
-      return `${start.getFullYear()}`;
+      return `${sy}`;
     }
-    return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
+    return `${monthNames[sm - 1]} ${sd} - ${monthNames[em - 1]} ${ed}, ${ey}`;
   }
 
   /**
@@ -247,14 +248,16 @@
         isCreating ? '?/create' : '?/update',
         { method: 'POST', body: fd }
       );
-      const result = await response.json();
+      const result = deserialize(await response.text());
 
-      if (result.type === 'success' || result.data?.success) {
+      if (result.type === 'success') {
         toast.success(isCreating ? 'Goal created successfully' : 'Goal updated successfully');
         drawerOpen = false;
         await invalidateAll();
+      } else if (result.type === 'failure') {
+        toast.error(/** @type {string} */ (result.data?.message) || 'Failed to save goal');
       } else {
-        toast.error(result.data?.message || 'Failed to save goal');
+        toast.error('Failed to save goal');
       }
     } catch (err) {
       toast.error('Failed to save goal');
@@ -275,16 +278,18 @@
 
     try {
       const response = await fetch('?/delete', { method: 'POST', body: fd });
-      const result = await response.json();
+      const result = deserialize(await response.text());
 
-      if (result.type === 'success' || result.data?.success) {
+      if (result.type === 'success') {
         toast.success('Goal deleted successfully');
         deleteDialogOpen = false;
         goalToDelete = null;
         drawerOpen = false;
         await invalidateAll();
+      } else if (result.type === 'failure') {
+        toast.error(/** @type {string} */ (result.data?.message) || 'Failed to delete goal');
       } else {
-        toast.error(result.data?.message || 'Failed to delete goal');
+        toast.error('Failed to delete goal');
       }
     } catch (err) {
       toast.error('Failed to delete goal');

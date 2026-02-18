@@ -3,6 +3,7 @@
   import { Progress } from '$lib/components/ui/progress/index.js';
   import { formatCurrency } from '$lib/utils/formatting.js';
   import { orgSettings } from '$lib/stores/org.js';
+  import { resolve } from '$app/paths';
 
   /** @type {{ goals?: any[] }} */
   let { goals = [] } = $props();
@@ -53,7 +54,7 @@
       </h2>
     </div>
     <a
-      href="/goals"
+      href={resolve('/goals')}
       class="flex items-center gap-1 text-xs font-medium text-[var(--color-primary-default)] hover:underline"
     >
       View All
@@ -65,7 +66,7 @@
     <div class="py-6 text-center">
       <p class="mb-2 text-sm text-[var(--text-tertiary)]">No active goals</p>
       <a
-        href="/goals"
+        href={resolve('/goals')}
         class="text-xs font-medium text-[var(--color-primary-default)] hover:underline"
       >
         Create a goal

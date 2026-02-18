@@ -183,6 +183,12 @@ class SalesGoalLeaderboardView(APIView):
         leaderboard = []
         for goal in goals:
             progress = goal.compute_progress()
+            if goal.target_value and goal.target_value != 0:
+                percent = min(
+                    int(float(progress) / float(goal.target_value) * 100), 100
+                )
+            else:
+                percent = 0
             leaderboard.append(
                 {
                     "goal_id": str(goal.id),
@@ -194,7 +200,7 @@ class SalesGoalLeaderboardView(APIView):
                     },
                     "target": float(goal.target_value),
                     "achieved": float(progress),
-                    "percent": goal.progress_percent,
+                    "percent": percent,
                 }
             )
 
