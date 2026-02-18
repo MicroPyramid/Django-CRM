@@ -376,6 +376,18 @@ COUNTRIES = (
     ("ZW", _("Zimbabwe")),
 )
 
+GOAL_TYPES = (
+    ("REVENUE", "Revenue"),
+    ("DEALS_CLOSED", "Deals Closed"),
+)
+
+PERIOD_TYPES = (
+    ("MONTHLY", "Monthly"),
+    ("QUARTERLY", "Quarterly"),
+    ("YEARLY", "Yearly"),
+    ("CUSTOM", "Custom"),
+)
+
 CURRENCY_CODES = (
     ("USD", _("USD, Dollar")),
     ("EUR", _("EUR, Euro")),

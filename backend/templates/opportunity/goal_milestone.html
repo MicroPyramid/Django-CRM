@@ -1,0 +1,49 @@
+{% extends 'root_email_template_new.html' %}
+
+{% block heading %}
+Congratulations, {{ user.get_username }}!
+{% endblock heading %}
+
+{% block content_body %}
+<p>Your sales goal <strong>"{{ goal.name }}"</strong> has reached the <strong>{{ milestone }}</strong> milestone!</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+  <tbody>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;width:40%;">Goal</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ goal.name }}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Type</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ goal.get_goal_type_display }}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Milestone</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#16a34a;font-weight:600;">{{ milestone }}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Progress</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ percent }}%</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Achieved</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ achieved }}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Target</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ goal.target_value }}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;">Period</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">{{ goal.period_start }} &ndash; {{ goal.period_end }}</td>
+    </tr>
+  </tbody>
+</table>
+{% endblock content_body %}
+
+{% block button_link %}
+<div style="margin-bottom:20px">
+    <a href="{{url}}/goals"
+        style="display:block;width:200px;background:#16a34a;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none">View Goals</a>
+</div>
+{% endblock button_link %}

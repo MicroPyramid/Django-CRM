@@ -1,8 +1,10 @@
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
@@ -10,7 +12,14 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import Account
 from common.base import AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
-from common.utils import CURRENCY_CODES, OPPORTUNITY_TYPES, SOURCES, STAGES
+from common.utils import (
+    CURRENCY_CODES,
+    GOAL_TYPES,
+    OPPORTUNITY_TYPES,
+    PERIOD_TYPES,
+    SOURCES,
+    STAGES,
+)
 from contacts.models import Contact
 
 
@@ -399,3 +408,122 @@ class StageAgingConfig(BaseModel):
 
     def __str__(self):
         return f"{self.org.name} - {self.stage}: {self.expected_days}d"
+
+
+class SalesGoal(BaseModel):
+    """Sales goal / quota for tracking revenue or deals closed targets."""
+
+    name = models.CharField(_("Goal Name"), max_length=255)
+    goal_type = models.CharField(
+        _("Goal Type"), max_length=20, choices=GOAL_TYPES
+    )
+    target_value = models.DecimalField(
+        _("Target Value"), max_digits=12, decimal_places=2
+    )
+    period_type = models.CharField(
+        _("Period Type"), max_length=20, choices=PERIOD_TYPES
+    )
+    period_start = models.DateField(_("Period Start"))
+    period_end = models.DateField(_("Period End"))
+    assigned_to = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales_goals",
+    )
+    team = models.ForeignKey(
+        Teams,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales_goals",
+    )
+    is_active = models.BooleanField(default=True)
+    milestone_50_notified = models.BooleanField(default=False)
+    milestone_90_notified = models.BooleanField(default=False)
+    milestone_100_notified = models.BooleanField(default=False)
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="sales_goals",
+    )
+
+    class Meta:
+        verbose_name = "Sales Goal"
+        verbose_name_plural = "Sales Goals"
+        db_table = "sales_goal"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["org", "period_start", "period_end"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_goal_type_display()})"
+
+    def compute_progress(self):
+        """Compute current progress toward this goal from CLOSED_WON opportunities.
+
+        Results are cached on the instance to avoid redundant DB queries when
+        progress_percent and status are accessed in the same request.
+        """
+        if hasattr(self, "_cached_progress"):
+            return self._cached_progress
+
+        opps = Opportunity.objects.filter(
+            org=self.org,
+            stage="CLOSED_WON",
+            closed_on__gte=self.period_start,
+            closed_on__lte=self.period_end,
+        )
+        if self.assigned_to:
+            opps = opps.filter(assigned_to=self.assigned_to)
+        elif self.team:
+            team_members = Profile.objects.filter(
+                user_teams=self.team, is_active=True
+            )
+            opps = opps.filter(assigned_to__in=team_members)
+
+        if self.goal_type == "REVENUE":
+            result = opps.aggregate(
+                total=Coalesce(Sum("amount"), Decimal("0"))
+            )["total"]
+        else:
+            result = Decimal(str(opps.count()))
+
+        self._cached_progress = result
+        return result
+
+    @property
+    def progress_percent(self):
+        """Progress as an integer percentage, capped at 100."""
+        if not self.target_value or self.target_value == 0:
+            return 0
+        progress = self.compute_progress()
+        return min(int(progress / self.target_value * 100), 100)
+
+    @property
+    def status(self):
+        """Goal status based on progress vs expected pace."""
+        percent = self.progress_percent
+        if percent >= 100:
+            return "completed"
+
+        today = date.today()
+        if today < self.period_start:
+            expected_pace = 0
+        elif today >= self.period_end:
+            expected_pace = 100
+        else:
+            total_days = (self.period_end - self.period_start).days or 1
+            elapsed_days = (today - self.period_start).days
+            expected_pace = (elapsed_days / total_days) * 100
+
+        if expected_pace == 0:
+            return "on_track"
+        if percent >= expected_pace:
+            return "on_track"
+        if percent >= expected_pace * 0.8:
+            return "at_risk"
+        return "behind"

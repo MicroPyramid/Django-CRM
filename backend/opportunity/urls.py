@@ -1,6 +1,11 @@
 from django.urls import path
 
 from opportunity.views.aging_views import StageAgingConfigView
+from opportunity.views.goal_views import (
+    SalesGoalDetailView,
+    SalesGoalLeaderboardView,
+    SalesGoalListView,
+)
 from opportunity.views.line_item_views import (
     OpportunityLineItemDetailView,
     OpportunityLineItemListView,
@@ -19,6 +24,9 @@ app_name = "api_opportunities"
 urlpatterns = [
     path("", OpportunityListView.as_view()),
     path("aging-config/", StageAgingConfigView.as_view()),
+    path("goals/", SalesGoalListView.as_view()),
+    path("goals/leaderboard/", SalesGoalLeaderboardView.as_view()),
+    path("goals/<str:pk>/", SalesGoalDetailView.as_view()),
     path("<str:pk>/", OpportunityDetailView.as_view()),
     path("comment/<str:pk>/", OpportunityCommentView.as_view()),
     path("attachment/<str:pk>/", OpportunityAttachmentView.as_view()),

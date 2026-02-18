@@ -35,7 +35,8 @@
     BarChart3,
     Tag,
     Sparkles,
-    Home
+    Home,
+    Trophy
   } from '@lucide/svelte';
 
   /**
@@ -178,6 +179,13 @@
       href: '/opportunities',
       label: 'Deals',
       icon: Sparkles,
+      type: 'link',
+      preload: 'off'
+    },
+    {
+      href: '/goals',
+      label: 'Goals',
+      icon: Trophy,
       type: 'link',
       preload: 'off'
     },

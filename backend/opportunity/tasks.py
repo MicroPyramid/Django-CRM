@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from datetime import date
 
 from celery import shared_task
 from django.conf import settings
@@ -9,7 +10,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from common.models import Org, Profile
-from opportunity.models import Opportunity, StageAgingConfig
+from opportunity.models import Opportunity, SalesGoal, StageAgingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -139,3 +140,108 @@ def send_stale_deals_alert(org, stale_opps):
             logger.exception(
                 "Failed to send stale deals alert to %s", profile.user.email
             )
+
+
+@shared_task
+def check_goal_milestones():
+    """Daily: check goal progress milestones and send notifications."""
+    today = date.today()
+    orgs = Org.objects.filter(is_active=True)
+
+    for org in orgs:
+        try:
+            _set_rls_context_safe(str(org.id))
+
+            goals = SalesGoal.objects.filter(
+                org=org,
+                is_active=True,
+                period_start__lte=today,
+                period_end__gte=today,
+            )
+
+            for goal in goals:
+                progress_value = goal.compute_progress()
+                if goal.target_value and goal.target_value != 0:
+                    percent = min(
+                        int(progress_value / goal.target_value * 100), 100
+                    )
+                else:
+                    percent = 0
+                notifications = []
+
+                if percent >= 100 and not goal.milestone_100_notified:
+                    goal.milestone_100_notified = True
+                    goal.milestone_90_notified = True
+                    goal.milestone_50_notified = True
+                    notifications.append(("100%", percent, progress_value))
+                elif percent >= 90 and not goal.milestone_90_notified:
+                    goal.milestone_90_notified = True
+                    goal.milestone_50_notified = True
+                    notifications.append(("90%", percent, progress_value))
+                elif percent >= 50 and not goal.milestone_50_notified:
+                    goal.milestone_50_notified = True
+                    notifications.append(("50%", percent, progress_value))
+
+                if notifications:
+                    goal.save(
+                        update_fields=[
+                            "milestone_50_notified",
+                            "milestone_90_notified",
+                            "milestone_100_notified",
+                        ]
+                    )
+
+                    recipients = []
+                    if goal.assigned_to:
+                        recipients.append(goal.assigned_to)
+                    elif goal.team:
+                        recipients.extend(
+                            Profile.objects.filter(
+                                user_teams=goal.team, is_active=True
+                            )
+                        )
+                    else:
+                        recipients.extend(
+                            Profile.objects.filter(
+                                org=org, role="ADMIN", is_active=True
+                            )
+                        )
+
+                    for milestone_label, pct, achieved in notifications:
+                        for profile in recipients:
+                            _send_goal_milestone_email(
+                                profile, goal, milestone_label, pct, achieved
+                            )
+        except Exception:
+            logger.exception(
+                "Error processing goal milestones for org %s", org.id
+            )
+
+
+def _send_goal_milestone_email(profile, goal, milestone_label, percent, achieved):
+    """Send a milestone notification email for a sales goal."""
+    context = {
+        "user": profile.user,
+        "goal": goal,
+        "milestone": milestone_label,
+        "percent": percent,
+        "achieved": achieved,
+        "url": settings.DOMAIN_NAME,
+    }
+    subject = f"[BottleCRM] Goal '{goal.name}' reached {milestone_label}!"
+    html_content = render_to_string(
+        "opportunity/goal_milestone.html", context=context
+    )
+    msg = EmailMessage(
+        subject,
+        html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[profile.user.email],
+    )
+    msg.content_subtype = "html"
+    try:
+        msg.send()
+    except Exception:
+        logger.exception(
+            "Failed to send goal milestone email to %s", profile.user.email
+        )

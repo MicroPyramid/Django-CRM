@@ -49,4 +49,9 @@ app.conf.beat_schedule = {
         "task": "opportunity.tasks.check_stale_opportunities",
         "schedule": crontab(hour=8, minute=0),
     },
+    # Check goal milestones and send notifications - daily at 9:15 AM
+    "check-goal-milestones": {
+        "task": "opportunity.tasks.check_goal_milestones",
+        "schedule": crontab(hour=9, minute=15),
+    },
 }
