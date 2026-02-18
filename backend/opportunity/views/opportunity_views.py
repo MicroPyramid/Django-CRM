@@ -1,7 +1,9 @@
 import json
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
@@ -22,7 +24,7 @@ from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from opportunity import swagger_params
-from opportunity.models import Opportunity
+from opportunity.models import Opportunity, StageAgingConfig
 from opportunity.serializer import (
     OpportunityCreateSerializer,
     OpportunityCreateSwaggerSerializer,
@@ -30,6 +32,7 @@ from opportunity.serializer import (
     OpportunitySerializer,
 )
 from opportunity.tasks import send_email_to_assigned_user
+from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
@@ -92,6 +95,30 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(amount__gte=params.get("amount__gte"))
             if params.get("amount__lte"):
                 queryset = queryset.filter(amount__lte=params.get("amount__lte"))
+
+            if params.get("rotten") == "true":
+                # Filter for rotten deals: open stages where days exceed threshold
+                queryset = queryset.exclude(stage__in=CLOSED_STAGES)
+                org = self.request.profile.org
+                aging_configs = {
+                    c.stage: c
+                    for c in StageAgingConfig.objects.filter(org=org)
+                }
+                rotten_ids = []
+                for opp in queryset:
+                    stage = opp.stage
+                    config = aging_configs.get(stage)
+                    expected = (
+                        config.expected_days
+                        if config
+                        else DEFAULT_STAGE_EXPECTED_DAYS.get(stage)
+                    )
+                    if expected and opp.stage_changed_at:
+                        threshold = expected * ROTTEN_MULTIPLIER
+                        days = (timezone.now() - opp.stage_changed_at).days
+                        if days >= threshold:
+                            rotten_ids.append(opp.pk)
+                queryset = queryset.filter(pk__in=rotten_ids)
 
         context = {}
         results_opportunities = self.paginate_queryset(

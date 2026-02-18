@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
+from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
@@ -93,6 +94,11 @@ class Opportunity(AssignableMixin, BaseModel):
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
 
+    # Deal Aging
+    stage_changed_at = models.DateTimeField(
+        _("Stage Changed At"), null=True, blank=True
+    )
+
     # System Fields
     is_active = models.BooleanField(default=True)
     org = models.ForeignKey(
@@ -167,13 +173,66 @@ class Opportunity(AssignableMixin, BaseModel):
             return True
         return False
 
+    @property
+    def days_in_current_stage(self):
+        """Number of days the deal has been in its current stage."""
+        if not self.stage_changed_at:
+            return 0
+        delta = timezone.now() - self.stage_changed_at
+        return delta.days
+
+    @property
+    def aging_status(self):
+        """Return 'green', 'yellow', or 'red' based on deal aging."""
+        from .workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
+
+        if self.stage in CLOSED_STAGES:
+            return "green"
+
+        # Look up per-org config, fall back to defaults
+        expected = DEFAULT_STAGE_EXPECTED_DAYS.get(self.stage)
+        try:
+            config = StageAgingConfig.objects.get(org=self.org, stage=self.stage)
+            expected = config.expected_days
+            warning = config.warning_days
+        except StageAgingConfig.DoesNotExist:
+            warning = None
+
+        if expected is None:
+            return "green"
+
+        days = self.days_in_current_stage
+        rotten_threshold = expected * ROTTEN_MULTIPLIER
+
+        if days >= rotten_threshold:
+            return "red"
+        if warning and days >= warning:
+            return "yellow"
+        if days >= expected:
+            return "yellow"
+        return "green"
+
     def save(self, *args, **kwargs):
-        """Auto-set probability based on stage if not manually set."""
+        """Auto-set probability and track stage changes."""
         from .workflow import STAGE_PROBABILITIES
 
         # Auto-set probability based on stage (only if probability is default/0)
         if self.probability == 0 or self.probability is None:
             self.probability = STAGE_PROBABILITIES.get(self.stage, 0)
+
+        # Track stage changes for deal aging
+        if not self._state.adding:
+            old_stage = (
+                Opportunity.objects.filter(pk=self.pk)
+                .values_list("stage", flat=True)
+                .first()
+            )
+            if old_stage and old_stage != self.stage:
+                self.stage_changed_at = timezone.now()
+        else:
+            # New record
+            if not self.stage_changed_at:
+                self.stage_changed_at = timezone.now()
 
         super().save(*args, **kwargs)
 
@@ -294,3 +353,29 @@ class OpportunityLineItem(BaseModel):
         if opportunity:
             opportunity.recalculate_amount()
             opportunity.save(update_fields=["amount", "amount_source"])
+
+
+class StageAgingConfig(BaseModel):
+    """Per-org configuration for expected days in each pipeline stage."""
+
+    org = models.ForeignKey(
+        Org,
+        on_delete=models.CASCADE,
+        related_name="stage_aging_configs",
+    )
+    stage = models.CharField(_("Stage"), max_length=64, choices=STAGES)
+    expected_days = models.PositiveIntegerField(
+        _("Expected Days"), default=14
+    )
+    warning_days = models.PositiveIntegerField(
+        _("Warning Days"), null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Stage Aging Config"
+        verbose_name_plural = "Stage Aging Configs"
+        db_table = "stage_aging_config"
+        unique_together = ("org", "stage")
+
+    def __str__(self):
+        return f"{self.org.name} - {self.stage}: {self.expected_days}d"

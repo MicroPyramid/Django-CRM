@@ -24,7 +24,8 @@
     Filter,
     Package,
     Trash2,
-    Receipt
+    Receipt,
+    Clock
   } from '@lucide/svelte';
   import { PageHeader } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -184,6 +185,27 @@
       options: typeOptions,
       width: 'w-32',
       canHide: true
+    },
+    {
+      key: 'daysInStage',
+      label: 'Age',
+      type: 'text',
+      width: 'w-20',
+      canHide: true,
+      editable: false,
+      getValue: (row) => {
+        if (['CLOSED_WON', 'CLOSED_LOST'].includes(row.stage)) return '-';
+        return `${row.daysInStage ?? 0}d`;
+      },
+      format: (value, row) => {
+        if (['CLOSED_WON', 'CLOSED_LOST'].includes(row?.stage)) return '-';
+        return `${row?.daysInStage ?? 0}d`;
+      },
+      cellClass: (row) => {
+        if (row.agingStatus === 'red') return 'text-red-600 font-semibold';
+        if (row.agingStatus === 'yellow') return 'text-amber-500 font-medium';
+        return 'text-green-600';
+      }
     }
   ];
 
@@ -427,7 +449,8 @@
       'created_at_gte',
       'created_at_lte',
       'closed_on_gte',
-      'closed_on_lte'
+      'closed_on_lte',
+      'rotten'
     ].forEach((key) => url.searchParams.delete(key));
     // Set new params
     Object.entries(newFilters).forEach(([key, value]) => {
@@ -551,6 +574,8 @@
         return opp.stage === 'CLOSED_WON';
       } else if (statusChipFilter === 'lost') {
         return opp.stage === 'CLOSED_LOST';
+      } else if (statusChipFilter === 'stale') {
+        return opp.agingStatus === 'red';
       }
       return true;
     });
@@ -565,6 +590,9 @@
   );
   const lostCount = $derived(
     opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length
+  );
+  const staleCount = $derived(
+    opportunities.filter((/** @type {any} */ o) => o.agingStatus === 'red').length
   );
 
   let currentUser = $state(null);
@@ -1165,6 +1193,26 @@
             {lostCount}
           </span>
         </button>
+        {#if staleCount > 0}
+          <button
+            type="button"
+            onclick={() => (statusChipFilter = 'stale')}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'stale'
+              ? 'bg-red-600 text-white'
+              : 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'}"
+          >
+            <Clock class="h-3.5 w-3.5" />
+            Stale
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'stale'
+                ? 'bg-black/20 text-white/90'
+                : 'bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300'}"
+            >
+              {staleCount}
+            </span>
+          </button>
+        {/if}
       </div>
 
       <div class="bg-border mx-1 h-6 w-px"></div>
@@ -1340,6 +1388,14 @@
               <p class="text-xs text-[var(--text-tertiary)]">Created</p>
               <p class="font-medium text-[var(--text-primary)]">
                 {formatRelativeDate(selectedRow.createdAt)}
+              </p>
+            </div>
+          {/if}
+          {#if !isClosed && selectedRow.daysInStage != null}
+            <div>
+              <p class="text-xs text-[var(--text-tertiary)]">Days in Stage</p>
+              <p class="font-medium {selectedRow.agingStatus === 'red' ? 'text-red-600' : selectedRow.agingStatus === 'yellow' ? 'text-amber-500' : 'text-[var(--text-primary)]'}">
+                {selectedRow.daysInStage}d
               </p>
             </div>
           {/if}

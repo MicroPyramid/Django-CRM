@@ -11,7 +11,7 @@ from common.serializer import (
 )
 from contacts.serializer import ContactSerializer
 from invoices.serializer import ProductSerializer
-from opportunity.models import Opportunity, OpportunityLineItem
+from opportunity.models import Opportunity, OpportunityLineItem, StageAgingConfig
 
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
@@ -129,6 +129,8 @@ class OpportunitySerializer(serializers.ModelSerializer):
     line_items = OpportunityLineItemSerializer(read_only=True, many=True)
     created_on_arrow = serializers.SerializerMethodField()
     line_items_total = serializers.SerializerMethodField()
+    days_in_stage = serializers.SerializerMethodField()
+    aging_status = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
     def get_created_on_arrow(self, obj):
@@ -138,6 +140,14 @@ class OpportunitySerializer(serializers.ModelSerializer):
     def get_line_items_total(self, obj):
         """Calculate total from line items"""
         return sum(item.total for item in obj.line_items.all())
+
+    @extend_schema_field(int)
+    def get_days_in_stage(self, obj):
+        return obj.days_in_current_stage
+
+    @extend_schema_field(str)
+    def get_aging_status(self, obj):
+        return obj.aging_status
 
     class Meta:
         model = Opportunity
@@ -175,6 +185,10 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "is_active",
             "org",
             "created_on_arrow",
+            # Deal Aging
+            "stage_changed_at",
+            "days_in_stage",
+            "aging_status",
         )
 
 
@@ -268,3 +282,10 @@ class OpportunityDetailEditSwaggerSerializer(serializers.Serializer):
 
 class OpportunityCommentEditSwaggerSerializer(serializers.Serializer):
     comment = serializers.CharField()
+
+
+class StageAgingConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StageAgingConfig
+        fields = ("id", "stage", "expected_days", "warning_days")
+        read_only_fields = ("id",)
