@@ -28,5 +28,5 @@ DEFAULT_STAGE_EXPECTED_DAYS = {
     "NEGOTIATION": 10,
 }
 
-# Red threshold multiplier: deal is "rotten" when days > expected_days * ROTTEN_MULTIPLIER
+# Red threshold multiplier: deal is "rotten" when days >= expected_days * ROTTEN_MULTIPLIER
 ROTTEN_MULTIPLIER = 1.5

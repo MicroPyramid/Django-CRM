@@ -36,8 +36,6 @@ class TestStageChangedAtTracking:
         assert before <= opp.stage_changed_at <= after
 
     def test_stage_changed_at_updates_on_stage_change(self, opportunity):
-        original_time = opportunity.stage_changed_at
-
         # Simulate time passing
         opportunity.stage_changed_at = timezone.now() - timedelta(days=5)
         opportunity.save(update_fields=["stage_changed_at"])

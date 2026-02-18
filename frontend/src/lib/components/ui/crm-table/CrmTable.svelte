@@ -315,7 +315,7 @@
                       {/if}
                     </button>
                   {:else}
-                    <span class="text-sm text-gray-900 dark:text-gray-100">
+                    <span class="text-sm {column.cellClass ? column.cellClass(row) : 'text-gray-900 dark:text-gray-100'}">
                       {#if formattedValue}
                         {formattedValue}
                       {:else}

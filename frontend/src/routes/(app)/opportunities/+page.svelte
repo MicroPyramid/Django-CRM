@@ -197,10 +197,6 @@
         if (['CLOSED_WON', 'CLOSED_LOST'].includes(row.stage)) return '-';
         return `${row.daysInStage ?? 0}d`;
       },
-      format: (value, row) => {
-        if (['CLOSED_WON', 'CLOSED_LOST'].includes(row?.stage)) return '-';
-        return `${row?.daysInStage ?? 0}d`;
-      },
       cellClass: (row) => {
         if (row.agingStatus === 'red') return 'text-red-600 font-semibold';
         if (row.agingStatus === 'yellow') return 'text-amber-500 font-medium';
@@ -556,7 +552,7 @@
   const stats = $derived(data.stats || { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 });
 
   // Status chip filter for quick filtering (client-side on top of server filters)
-  let statusChipFilter = $state('ALL');
+  let statusChipFilter = $state($page.url.searchParams.get('rotten') === 'true' ? 'stale' : 'ALL');
 
   // Filter panel expansion state
   let filtersExpanded = $state(false);
@@ -575,7 +571,7 @@
       } else if (statusChipFilter === 'lost') {
         return opp.stage === 'CLOSED_LOST';
       } else if (statusChipFilter === 'stale') {
-        return opp.agingStatus === 'red';
+        return true; // Server-side filtered via ?rotten=true
       }
       return true;
     });
@@ -1127,7 +1123,7 @@
       <div class="flex gap-1">
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'ALL')}
+          onclick={() => { statusChipFilter = 'ALL'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
             ? 'bg-[var(--color-primary-default)] text-white'
@@ -1144,7 +1140,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'open')}
+          onclick={() => { statusChipFilter = 'open'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'open'
             ? 'bg-[var(--stage-qualified)] text-white'
@@ -1161,7 +1157,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'won')}
+          onclick={() => { statusChipFilter = 'won'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'won'
             ? 'bg-[var(--stage-won)] text-white'
@@ -1178,7 +1174,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'lost')}
+          onclick={() => { statusChipFilter = 'lost'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'lost'
             ? 'bg-[var(--stage-lost)] text-white'
@@ -1196,7 +1192,7 @@
         {#if staleCount > 0}
           <button
             type="button"
-            onclick={() => (statusChipFilter = 'stale')}
+            onclick={() => { statusChipFilter = 'stale'; updateFilters({ rotten: 'true' }); }}
             class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
             'stale'
               ? 'bg-red-600 text-white'
@@ -1394,7 +1390,7 @@
           {#if !isClosed && selectedRow.daysInStage != null}
             <div>
               <p class="text-xs text-[var(--text-tertiary)]">Days in Stage</p>
-              <p class="font-medium {selectedRow.agingStatus === 'red' ? 'text-red-600' : selectedRow.agingStatus === 'yellow' ? 'text-amber-500' : 'text-[var(--text-primary)]'}">
+              <p class="font-medium {selectedRow.agingStatus === 'red' ? 'text-red-600' : selectedRow.agingStatus === 'yellow' ? 'text-amber-500' : 'text-green-600'}">
                 {selectedRow.daysInStage}d
               </p>
             </div>

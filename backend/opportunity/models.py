@@ -181,9 +181,13 @@ class Opportunity(AssignableMixin, BaseModel):
         delta = timezone.now() - self.stage_changed_at
         return delta.days
 
-    @property
-    def aging_status(self):
-        """Return 'green', 'yellow', or 'red' based on deal aging."""
+    def get_aging_status(self, aging_configs=None):
+        """Return 'green', 'yellow', or 'red' based on deal aging.
+
+        Args:
+            aging_configs: Optional dict {stage: StageAgingConfig} to avoid DB queries.
+                           Pass this when processing lists to prevent N+1.
+        """
         from .workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 
         if self.stage in CLOSED_STAGES:
@@ -191,12 +195,18 @@ class Opportunity(AssignableMixin, BaseModel):
 
         # Look up per-org config, fall back to defaults
         expected = DEFAULT_STAGE_EXPECTED_DAYS.get(self.stage)
-        try:
-            config = StageAgingConfig.objects.get(org=self.org, stage=self.stage)
+        warning = None
+
+        if aging_configs is not None:
+            config = aging_configs.get(self.stage)
+        else:
+            config = StageAgingConfig.objects.filter(
+                org=self.org, stage=self.stage
+            ).first()
+
+        if config:
             expected = config.expected_days
             warning = config.warning_days
-        except StageAgingConfig.DoesNotExist:
-            warning = None
 
         if expected is None:
             return "green"
@@ -211,6 +221,11 @@ class Opportunity(AssignableMixin, BaseModel):
         if days >= expected:
             return "yellow"
         return "green"
+
+    @property
+    def aging_status(self):
+        """Return 'green', 'yellow', or 'red' based on deal aging."""
+        return self.get_aging_status()
 
     def save(self, *args, **kwargs):
         """Auto-set probability and track stage changes."""
@@ -229,6 +244,11 @@ class Opportunity(AssignableMixin, BaseModel):
             )
             if old_stage and old_stage != self.stage:
                 self.stage_changed_at = timezone.now()
+                # Ensure stage_changed_at is persisted when update_fields is used
+                if kwargs.get("update_fields") is not None:
+                    update_fields = set(kwargs["update_fields"])
+                    update_fields.add("stage_changed_at")
+                    kwargs["update_fields"] = list(update_fields)
         else:
             # New record
             if not self.stage_changed_at:

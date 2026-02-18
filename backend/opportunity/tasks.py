@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 
 from celery import shared_task
@@ -9,6 +10,8 @@ from django.utils import timezone
 
 from common.models import Org, Profile
 from opportunity.models import Opportunity, StageAgingConfig
+
+logger = logging.getLogger(__name__)
 
 
 def _set_rls_context_safe(org_id):
@@ -54,38 +57,44 @@ def check_stale_opportunities():
     orgs = Org.objects.filter(is_active=True)
 
     for org in orgs:
-        _set_rls_context_safe(str(org.id))
+        try:
+            _set_rls_context_safe(str(org.id))
 
-        aging_configs = {
-            c.stage: c for c in StageAgingConfig.objects.filter(org=org)
-        }
+            aging_configs = {
+                c.stage: c for c in StageAgingConfig.objects.filter(org=org)
+            }
 
-        open_opps = Opportunity.objects.filter(
-            org=org, is_active=True
-        ).exclude(stage__in=CLOSED_STAGES).select_related("org")
+            open_opps = Opportunity.objects.filter(
+                org=org, is_active=True
+            ).exclude(stage__in=CLOSED_STAGES).select_related("org")
 
-        stale_opps = []
-        for opp in open_opps:
-            if not opp.stage_changed_at:
-                continue
-            config = aging_configs.get(opp.stage)
-            expected = (
-                config.expected_days
-                if config
-                else DEFAULT_STAGE_EXPECTED_DAYS.get(opp.stage)
-            )
-            if expected is None:
-                continue
-            days = (now - opp.stage_changed_at).days
-            if days >= expected * ROTTEN_MULTIPLIER:
-                stale_opps.append((opp, days, expected))
+            stale_opps = []
+            for opp in open_opps:
+                if not opp.stage_changed_at:
+                    continue
+                config = aging_configs.get(opp.stage)
+                expected = (
+                    config.expected_days
+                    if config
+                    else DEFAULT_STAGE_EXPECTED_DAYS.get(opp.stage)
+                )
+                if expected is None:
+                    continue
+                days = (now - opp.stage_changed_at).days
+                if days >= expected * ROTTEN_MULTIPLIER:
+                    stale_opps.append((opp, days, expected))
 
-        if stale_opps:
-            send_stale_deals_alert(org, stale_opps)
+            if stale_opps:
+                send_stale_deals_alert(org, stale_opps)
+        except Exception:
+            logger.exception("Error processing stale deals for org %s", org.id)
 
 
 def send_stale_deals_alert(org, stale_opps):
     """Send per-user email alerts for rotten deals."""
+    # Pre-fetch org admins for unassigned deals
+    org_admins = list(Profile.objects.filter(org=org, role="ADMIN", is_active=True))
+
     # Group by assigned users
     user_deals = defaultdict(list)
     for opp, days, expected in stale_opps:
@@ -95,8 +104,7 @@ def send_stale_deals_alert(org, stale_opps):
                 user_deals[profile].append((opp, days, expected))
         else:
             # No one assigned - alert org admins
-            admins = Profile.objects.filter(org=org, role="ADMIN", is_active=True)
-            for admin in admins:
+            for admin in org_admins:
                 user_deals[admin].append((opp, days, expected))
 
     for profile, deals in user_deals.items():
@@ -125,4 +133,9 @@ def send_stale_deals_alert(org, stale_opps):
             to=[profile.user.email],
         )
         msg.content_subtype = "html"
-        msg.send()
+        try:
+            msg.send()
+        except Exception:
+            logger.exception(
+                "Failed to send stale deals alert to %s", profile.user.email
+            )

@@ -7,10 +7,16 @@ from django.db import migrations, models
 
 
 def backfill_stage_changed_at(apps, schema_editor):
-    """Set stage_changed_at = created_at for existing opportunities."""
+    """Set stage_changed_at = now for existing opportunities.
+
+    Uses now() instead of created_at so existing long-lived deals are not
+    immediately flagged as stale on the first check_stale_opportunities run.
+    """
+    from django.utils import timezone
+
     Opportunity = apps.get_model('opportunity', 'Opportunity')
     Opportunity.objects.filter(stage_changed_at__isnull=True).update(
-        stage_changed_at=models.F('created_at')
+        stage_changed_at=timezone.now()
     )
 
 

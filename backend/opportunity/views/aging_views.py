@@ -53,18 +53,34 @@ class StageAgingConfigView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        valid_stages = {s for s, _ in STAGES if s not in CLOSED_STAGES}
         results = []
         for item in configs_data:
             stage = item.get("stage")
-            if not stage or stage in CLOSED_STAGES:
+            if not stage or stage not in valid_stages:
                 continue
+
+            expected_days = item.get("expected_days", 14)
+            try:
+                expected_days = int(expected_days)
+            except (TypeError, ValueError):
+                continue
+            if expected_days < 1:
+                continue
+
+            warning_days = item.get("warning_days")
+            if warning_days is not None:
+                try:
+                    warning_days = int(warning_days)
+                except (TypeError, ValueError):
+                    warning_days = None
 
             config, _ = StageAgingConfig.objects.update_or_create(
                 org=org,
                 stage=stage,
                 defaults={
-                    "expected_days": item.get("expected_days", 14),
-                    "warning_days": item.get("warning_days"),
+                    "expected_days": expected_days,
+                    "warning_days": warning_days,
                 },
             )
             results.append(StageAgingConfigSerializer(config).data)

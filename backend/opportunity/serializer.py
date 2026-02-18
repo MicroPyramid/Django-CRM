@@ -147,7 +147,8 @@ class OpportunitySerializer(serializers.ModelSerializer):
 
     @extend_schema_field(str)
     def get_aging_status(self, obj):
-        return obj.aging_status
+        aging_configs = self.context.get("aging_configs")
+        return obj.get_aging_status(aging_configs=aging_configs)
 
     class Meta:
         model = Opportunity
