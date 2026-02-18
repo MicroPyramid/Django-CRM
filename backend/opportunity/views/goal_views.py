@@ -62,7 +62,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
                 "goals": serializer.data,
                 "goals_count": total_count,
                 "offset": offset,
-                "per_page": 10,
+                "per_page": self.get_limit(request),
             }
         )
 
@@ -181,6 +181,7 @@ class SalesGoalLeaderboardView(APIView):
 
         leaderboard = []
         for goal in goals:
+            # compute_progress() results are cached on the instance
             progress = goal.compute_progress()
             if goal.target_value and goal.target_value != 0:
                 percent = min(

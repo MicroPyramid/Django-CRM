@@ -52,7 +52,7 @@
           <div class="flex items-center justify-between">
             <span class="truncate text-sm font-medium text-[var(--text-primary)]">{goal.name}</span>
             <span class="text-xs font-semibold {getStatusColor(goal.status)}">
-              {goal.progress_percent}%
+              {goal.progress_percent ?? 0}%
             </span>
           </div>
           <Progress

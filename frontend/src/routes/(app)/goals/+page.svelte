@@ -412,7 +412,10 @@
           {#each filteredGoals as goal (goal.id)}
             <tr
               class="cursor-pointer border-b border-[var(--border-default)] transition-colors hover:bg-[var(--surface-sunken)]/50"
+              tabindex="0"
+              role="button"
               onclick={() => openEditDrawer(goal)}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditDrawer(goal); } }}
             >
               <!-- Name -->
               <td class="px-4 py-3 font-medium text-[var(--text-primary)]">

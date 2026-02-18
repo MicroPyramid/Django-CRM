@@ -518,4 +518,5 @@ class TestGoalMilestoneTask:
         # Should not trigger 90% (only at 60%)
         assert goal.milestone_90_notified is False
         # Already had 50% notified, should not re-send
-        # mock_send may be called for other things, but milestone_50 was already True
+        assert goal.milestone_50_notified is True
+        assert mock_send.call_count == 0

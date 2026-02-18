@@ -127,7 +127,7 @@ export async function load({ locals, cookies, url }) {
     };
   } catch (err) {
     console.error('Error loading goals from API:', err);
-    throw error(500, `Failed to load goals: ${err.message}`);
+    throw error(500, 'Failed to load goals');
   }
 }
 
